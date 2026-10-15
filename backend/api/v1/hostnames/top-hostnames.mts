@@ -69,7 +69,10 @@ app.route('/api/v1/hostnames/top').get(async ctx => {
   if (!currentUser) searchOptions.limit = clampAnonLimit(searchOptions.limit)
 
   const { results, page_info } = currentUser
-    ? await searchTopHostnames(searchOptions)
+    ? await searchTopHostnames({
+        ...searchOptions,
+        includePrivate: currentUserCanFilterHostnameModeration(currentUser),
+      })
     : await searchTopHostnamesCached(searchOptions)
 
   if (!currentUser) {

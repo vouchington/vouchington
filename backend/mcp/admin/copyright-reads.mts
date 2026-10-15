@@ -60,7 +60,16 @@ const emailIntake = createAdminTool<{ id: string }>({
         properties: {
           id: { type: 'string', format: 'uuid' },
           received_at: { type: 'string', format: 'date-time' },
-          review_path: { type: 'string', enum: ['initial', 'unresolved_thread', 'matched_thread'] },
+          review_path: {
+            type: 'string',
+            enum: [
+              'ancestor_notice_conflict',
+              'duplicate_message_id',
+              'initial',
+              'matched_thread',
+              'unresolved_thread',
+            ],
+          },
           linked_notice: {
             anyOf: [
               {

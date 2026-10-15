@@ -1,5 +1,6 @@
 /* eslint-disable no-mistakes/vitest-mock-test-file-naming -- Routed to backend-mocks for the project-level @sentry/node mock (vitest.setup.sentry-mock.mts); asserts sentryCaptureExceptionMock. No in-file vi.mock, so the rule's unnecessaryMock branch fires; the .mock suffix is load-bearing for routing. */
 import createHttpError from 'http-errors'
+import { COPYRIGHT_EMAIL_THREAD_CHANGED } from '@modules/on-error/error-codes'
 import { createTestUser } from '@voucha/test-helpers'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
@@ -113,6 +114,30 @@ describe('callMcpTool result errors', () => {
       expect(sentryCaptureExceptionMock).not.toHaveBeenCalled()
     },
   )
+
+  it('preserves the staff email graph conflict code across the MCP error envelope', async () => {
+    const currentUser = { ...(await createTestUser()), membership_plan: null }
+    const failure = Object.assign(createHttpError(409, 'Copyright email thread changed'), {
+      code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+    })
+    stubToolFunction(() => Promise.reject(failure))
+
+    const result = await callMcpTool(
+      TOOL_NAME,
+      optionArgs('search'),
+      currentUser,
+      ['topics:read'],
+      USER_MCP_SERVER_CONFIG,
+    )
+    expect(JSON.parse((result.content[0] as { text: string }).text)).toEqual({
+      error: {
+        status: 409,
+        code: COPYRIGHT_EMAIL_THREAD_CHANGED,
+        message: 'Copyright email thread changed',
+        retryable: false,
+      },
+    })
+  })
 
   it('reports other tool failures with the generic message', async () => {
     const failure = new RangeError('limit must be between 1 and 100')

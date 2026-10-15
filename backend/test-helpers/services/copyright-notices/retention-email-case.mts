@@ -24,7 +24,9 @@ import { createRetentionParsedEmail, type RetentionCase } from './retention-pars
  * The incident was then dispositioned and the restriction lifted, so only the retention clock
  * keeps the case from the sweep.
  */
-export async function createRetentionEmailCase(): Promise<RetentionCase & { intakeId: string }> {
+export async function createRetentionEmailCase(
+  options: { messageId?: string } = {},
+): Promise<RetentionCase & { intakeId: string }> {
   const [poster, moderatorRecord] = await Promise.all([
     createTestUserDirect(),
     createTestUserDirect(),
@@ -40,7 +42,7 @@ export async function createRetentionEmailCase(): Promise<RetentionCase & { inta
   await insertTestPostImage({ postId, imageId })
   const placement = await getTestPostImagePlacement(postId, imageId)
   if (!placement) throw new Error('fixture image placement disappeared')
-  const intake = await createRetentionParsedEmail('promoted')
+  const intake = await createRetentionParsedEmail('promoted', options)
   await appendCopyrightEmailIntakeRecommendation({
     intakeId: intake.id,
     inputSha256: randomBytes(32),

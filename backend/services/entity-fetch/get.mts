@@ -21,7 +21,7 @@ import { getHostnameElectionsByIdBatch } from '@services/elections-votes/hostnam
 import { getPostElectionById } from '@services/elections-votes/post/get-election'
 import { getPostElectionsByIdBatch } from '@services/elections-votes/post/get-election-batch'
 import { getRssFeedItemElectionsByIdBatch } from '@services/elections-votes/rss-feed-item/get-election-batch'
-import { getUrlByAny } from '@services/urls/get'
+import { getUrlByAnyCached } from '@services/urls/get'
 import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 import { getUrlHostnamesByAnyBatch } from '@services/urls-hostnames/get-batch'
 import { caches } from '@services/entity-cache/caches'
@@ -63,7 +63,7 @@ export const getEntityRelationElectionByTargetCachedBatch =
   caches.entity_relation_elections.cacheGetByAnyBatch(getEntityRelationElectionsByTargetBatch)
 export const getRssFeedItemByIdCachedBatch =
   caches.rss_feed_items.cacheGetByAnyBatch(getRssFeedItemsByIdBatch)
-export const getUrlByAnyCached = caches.urls.cacheGetByAny(getUrlByAny)
+export { getUrlByAnyCached }
 export const getUrlHostnameByAnyCached = caches.url_hostnames.cacheGetByAny(getUrlHostnameByAny)
 export const getUrlHostnameByAnyCachedBatch =
   caches.url_hostnames.cacheGetByAnyBatch(getUrlHostnamesByAnyBatch)

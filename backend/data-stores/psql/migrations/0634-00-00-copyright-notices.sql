@@ -3,6 +3,7 @@ CREATE TYPE copyright_notice_lifecycle_change_types AS ENUM ('notice_received', 
     'appeal_reviewed', 'counter_notice_reviewed', 'evidence_artifact_recorded',
     'outbound_correspondence_created', 'agent_correspondence_approved',
     'email_correspondence_admitted', 'email_correspondence_rejected',
+    'email_intake_manually_associated',
     'provisional_restriction_imposed', 'mandatory_human_review_completed', 'restriction_lifted_by_administrator',
     'legal_hold_assessed', 'legal_hold_resolved', 'counter_notice_deadline_started',
     'restoration_intent_created', 'reversal_restoration_intent_created',
@@ -122,17 +123,28 @@ CREATE TABLE copyright_notice_submissions (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_storage_objects (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  storage_key text NOT NULL UNIQUE CHECK (char_length(storage_key) BETWEEN 1 AND 1024 AND NOT starts_with(storage_key, 'erased:')),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable
+  BEFORE UPDATE ON copyright_notice_storage_objects
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+COMMENT ON TABLE copyright_notice_storage_objects IS 'One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.';
+COMMENT ON COLUMN copyright_notice_storage_objects.storage_key IS 'Unique private object-storage key; the row is deleted only after no intake or artifact references it.';
+
 CREATE TABLE copyright_notice_evidence_artifacts (
   copyright_notice_id uuid NOT NULL,
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_submission_id uuid NOT NULL,
-  storage_key text NOT NULL,
+  storage_object_id uuid REFERENCES copyright_notice_storage_objects(id) ON DELETE RESTRICT,
   sha256 bytea NOT NULL CHECK (octet_length(sha256) = 32),
   media_type_id bigint NOT NULL REFERENCES media_types(id) ON DELETE RESTRICT,
   byte_size integer NOT NULL CHECK (byte_size >= 0),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_copyrig_notice_evidence_artifact__submission_id__storage_key UNIQUE (copyright_notice_submission_id, storage_key),
+  CONSTRAINT uq_copyright_evidence_artifacts__submission_object UNIQUE (copyright_notice_submission_id, storage_object_id),
   CONSTRAINT fk_copyright_artifacts__parent_notice
     FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id)
     REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE,
@@ -358,6 +370,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
   CHECK ((change_type = 'counter_notice_reviewed') = (is_counter_notice_accepted IS NOT NULL)),
   CHECK ((change_type = 'mandatory_human_review_completed') = (review_action IS NOT NULL)),
   CHECK (change_type <> 'media_delivery_registry_replayed' OR replay_reason IS NOT NULL),
+  CHECK (change_type <> 'email_intake_manually_associated' OR changed_by_id IS NOT NULL),
   -- A replayed reply to a declined email intake belongs to no case; every other event names one.
   CONSTRAINT copyright_lifecycle_event_notice_scope CHECK (
     copyright_notice_id IS NOT NULL OR change_type = 'delivery_intent_replayed'
@@ -390,7 +403,7 @@ CREATE TABLE copyright_notice_lifecycle_changes (
         'copyright_action_replayed', 'restoration_unavailable',
         'restriction_lifted_placement_retained', 'restoration_authorized_pending_delivery',
         'placement_withheld', 'placement_restored') THEN copyright_notice_action_intent_id IS NOT NULL
-      WHEN change_type = 'email_correspondence_rejected' THEN copyright_notice_email_intake_id IS NOT NULL
+      WHEN change_type IN ('email_correspondence_rejected', 'email_intake_manually_associated') THEN copyright_notice_email_intake_id IS NOT NULL
       WHEN change_type = 'delivery_intent_replayed' THEN copyright_notice_delivery_work_item_id IS NOT NULL
       WHEN change_type = 'media_delivery_registry_replayed' THEN media_delivery_registry_record_id IS NOT NULL
       WHEN change_type IN ('guest_capability_issued', 'guest_capability_revoked',
@@ -711,6 +724,20 @@ END;
 $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_reject_copyright_missing_storage_object()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NOT NULL THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND to_jsonb(OLD) ->> TG_ARGV[0] IS NULL THEN RETURN NEW; END IF;
+  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'copyright evidence requires a stored object before retention erasure' USING ERRCODE = 'check_violation';
+END;
+$$;
+COMMENT ON FUNCTION fn_reject_copyright_missing_storage_object() IS 'Reject missing intake or artifact object identities except when controlled retention erasure clears them.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_copyright_immutable_with_actor_erasure()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -825,6 +852,8 @@ $$;
 CREATE TRIGGER trigger_copyright_notice_submissions_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_submission();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE UPDATE OR DELETE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_notice_assessments_immutable BEFORE UPDATE OR DELETE ON copyright_notice_submission_assessments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('assessed_by_id');
 
@@ -1176,7 +1205,7 @@ COMMENT ON COLUMN copyright_notice_correspondence_messages.sent_at IS 'One-way t
 
 COMMENT ON TABLE copyright_notice_evidence_artifacts IS 'Private immutable evidence, including original inbound email MIME and attachments.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.copyright_notice_submission_id IS 'Submission whose preserved source or attachment this artifact represents.';
-COMMENT ON COLUMN copyright_notice_evidence_artifacts.storage_key IS 'Private object-storage key; never included in member projections.';
+COMMENT ON COLUMN copyright_notice_evidence_artifacts.storage_object_id IS 'Registry identity of private evidence bytes; cleared only by retention erasure after unshared object deletion.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.sha256 IS 'SHA-256 digest used to verify immutable evidence bytes.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.media_type_id IS 'Untrusted declared or detected media type used only for quarantined processing.';
 COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved artifact byte length for bounds and integrity checks.';
@@ -1184,7 +1213,7 @@ COMMENT ON COLUMN copyright_notice_evidence_artifacts.byte_size IS 'Preserved ar
 COMMENT ON TABLE copyright_notice_lifecycle_changes IS 'Append-only legal workflow audit trail.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_id IS 'Legal case whose transition or correspondence event was recorded; NULL only for a replayed email-intake reply, which belongs to no case.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.change_type IS 'Versioned legal workflow event name.';
-COMMENT ON COLUMN copyright_notice_lifecycle_changes.changed_by_id IS 'User or staff actor for the event; NULL for system activity or after account deletion.';
+COMMENT ON COLUMN copyright_notice_lifecycle_changes.changed_by_id IS 'Retained user or staff actor identity for the event; NULL only for events that do not require an actor.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_action_intent_id IS 'Concrete action intent source; its restriction is derived through the required restriction FK.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_id IS 'Submission whose receipt or review this event records.';
 COMMENT ON COLUMN copyright_notice_lifecycle_changes.copyright_notice_submission_assessment_id IS 'Assessment that this event records.';
@@ -1226,3 +1255,6 @@ CREATE TRIGGER trigger_copyright_lifecycle_change_rationales_immutable BEFORE UP
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_evidence_artifacts__media_type_id ON copyright_notice_evidence_artifacts (media_type_id);
+CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id
+  ON copyright_notice_evidence_artifacts (storage_object_id)
+  WHERE storage_object_id IS NOT NULL;

@@ -1,15 +1,20 @@
 import sql from 'sql-template-strings'
 import type { QueryExecutor } from '@data-stores/psql/types'
+import type { RecentAutomodActionSourceType } from './types.mts'
 
 export async function hasOtherActiveAutomodSignals(input: {
   communityId: string
   postId: string
-  sourceKey: string
+  sourceType: RecentAutomodActionSourceType
+  sourceId: string
+  inputSha256: Buffer | null
   query: QueryExecutor
 }): Promise<boolean> {
   const { rows } = await input.query(sql`/* hasOtherActiveAutomodSignals */
     WITH active_signal AS (
-      SELECT 'openai_omni:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key
+      SELECT 'openai_omni'::moderation_training_source_types AS source_type,
+        p.id AS post_id, NULL::uuid AS agent_moderation_id,
+        version.content_sha256 AS input_sha256
       FROM posts p
       JOIN post_moderation_versions version
         ON version.post_id = p.id
@@ -39,7 +44,9 @@ export async function hasOtherActiveAutomodSignals(input: {
             AND mtf.input_sha256 IS NOT DISTINCT FROM version.content_sha256
         )
       UNION ALL
-      SELECT 'spam_detection:' || p.id::text || ':' || encode(version.content_sha256, 'hex') AS source_key
+      SELECT 'spam_detection'::moderation_training_source_types AS source_type,
+        p.id AS post_id, NULL::uuid AS agent_moderation_id,
+        version.content_sha256 AS input_sha256
       FROM posts p
       JOIN post_moderation_versions version
         ON version.post_id = p.id
@@ -69,7 +76,9 @@ export async function hasOtherActiveAutomodSignals(input: {
             AND mtf.input_sha256 IS NOT DISTINCT FROM version.content_sha256
         )
       UNION ALL
-      SELECT 'agent_moderation:' || am.id::text AS source_key
+      SELECT 'agent_moderation'::moderation_training_source_types AS source_type,
+        p.id AS post_id, am.id AS agent_moderation_id,
+        NULL::bytea AS input_sha256
       FROM agent_moderations am
       JOIN posts p ON p.id = am.post_id
       LEFT JOIN community_agent_prompts cap ON cap.id = am.prompt_id
@@ -90,7 +99,9 @@ export async function hasOtherActiveAutomodSignals(input: {
             AND mtf.agent_moderation_id = am.id
         )
       UNION ALL
-      SELECT 'community_prompt:' || am.id::text AS source_key
+      SELECT 'community_prompt'::moderation_training_source_types AS source_type,
+        p.id AS post_id, am.id AS agent_moderation_id,
+        NULL::bytea AS input_sha256
       FROM agent_moderations am
       JOIN posts p ON p.id = am.post_id
       JOIN community_agent_prompts cap ON cap.id = am.prompt_id
@@ -126,7 +137,13 @@ export async function hasOtherActiveAutomodSignals(input: {
     )
     SELECT 1
     FROM active_signal
-    WHERE source_key IS DISTINCT FROM ${input.sourceKey}
+    WHERE source_type <> ${input.sourceType}::moderation_training_source_types
+      OR CASE
+        WHEN source_type IN ('agent_moderation', 'community_prompt')
+          THEN agent_moderation_id <> ${input.sourceId}::uuid
+        ELSE post_id <> ${input.sourceId}::uuid
+          OR input_sha256 IS DISTINCT FROM ${input.inputSha256}::bytea
+      END
     LIMIT 1
   `)
   return rows.length > 0

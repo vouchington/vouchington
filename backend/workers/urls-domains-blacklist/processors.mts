@@ -1,6 +1,7 @@
 import { getAllBlacklistSources } from '@services/urls-domains-blacklist'
 import { syncBlacklistSourceById } from '@services/urls-domains-blacklist-sync'
 import { enqueueBulkSourceSyncs } from '@queues/urls-domains-blacklist/enqueues'
+export { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import type {
   BlacklistDispatcherData,
   BlacklistSourceSyncData,

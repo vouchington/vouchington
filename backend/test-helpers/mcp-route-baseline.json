@@ -1270,7 +1270,8 @@
         "years_of_credit_history"
       ]
     ],
-    "I125": [["ids"]]
+    "I125": [["ids"]],
+    "I126": [["copyright_notice_id", "intake_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4305,5 +4306,22 @@
       }
     ]
   },
-  "additions": {}
+  "additions": {
+    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
+      "pullRequest": 2763,
+      "contracts": [
+        {
+          "surface": "admin_mcp",
+          "facts": "F25",
+          "inputFields": "I126",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "associate_copyright_email_intake_with_notice",
+            "option": null
+          },
+          "decision": true
+        }
+      ]
+    }
+  }
 }

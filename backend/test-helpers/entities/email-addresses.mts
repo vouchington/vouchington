@@ -5,18 +5,19 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 
 import { read, write, beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
-import { ValkeyCache } from '@data-stores/valkey/cache'
 import sql from 'sql-template-strings'
+import { upsertTestEmailDomainHostnameId, upsertTestHostnameId } from './email-domain-hostname.mts'
 
 /**
  * Insert a verified email address for a user into user_email_addresses.
  * This simulates a user who has completed email verification.
  */
 export async function addVerifiedEmailForUser(userId: string, email: string): Promise<void> {
+  const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(email)
   await write(
     allowUnannotatedQuery(sql`
-    INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-    VALUES (${userId}, ${email}, false)
+    INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+    VALUES (${userId}, ${email}, ${emailDomainHostnameId}, false)
     ON CONFLICT (user_id, email_address) DO NOTHING
   `),
   )
@@ -31,6 +32,7 @@ export async function setPrimaryEmailForUser(userId: string, email: string): Pro
   {
     await using transaction = await beginTransaction()
     const query = transaction
+    const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(normalizedEmail, { query })
     await write(
       sql`/* setPrimaryEmailForUser */
         UPDATE user_email_addresses SET is_primary = FALSE WHERE user_id = ${userId}
@@ -45,9 +47,11 @@ export async function setPrimaryEmailForUser(userId: string, email: string): Pro
     )
     await write(
       sql`/* setPrimaryEmailForUser */
-        INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-        VALUES (${userId}, ${normalizedEmail}, TRUE)
-        ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE
+        INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+        VALUES (${userId}, ${normalizedEmail}, ${emailDomainHostnameId}, TRUE)
+        ON CONFLICT (user_id, email_address) DO UPDATE SET
+          email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
+          is_primary = TRUE
       `,
       { query },
     )
@@ -74,19 +78,21 @@ export async function addDisposableEmailForUser(
   `),
   )
   const sourceId = sourceRows[0].id
+  const blockedHostnameId = await upsertTestHostnameId(domain, {}, 'private_email')
 
   await write(
     allowUnannotatedQuery(sql`
-    INSERT INTO blocklisted_domains (source_id, domain)
-    VALUES (${sourceId}, ${domain})
+    INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
+    VALUES (${sourceId}, ${domain}, ${blockedHostnameId})
     ON CONFLICT (domain, source_id) DO NOTHING
   `),
   )
 
+  const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(email)
   await write(
     allowUnannotatedQuery(sql`
-    INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-    VALUES (${userId}, ${email}, false)
+    INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+    VALUES (${userId}, ${email}, ${emailDomainHostnameId}, false)
     ON CONFLICT (user_id, email_address) DO NOTHING
   `),
   )
@@ -105,11 +111,12 @@ export async function addDisposableDomain(domain: string): Promise<void> {
   `),
   )
   const sourceId = sourceRows[0].id
+  const blockedHostnameId = await upsertTestHostnameId(domain, {}, 'private_email')
 
   await write(
     allowUnannotatedQuery(sql`
-    INSERT INTO blocklisted_domains (source_id, domain)
-    VALUES (${sourceId}, ${domain})
+    INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
+    VALUES (${sourceId}, ${domain}, ${blockedHostnameId})
     ON CONFLICT (domain, source_id) DO NOTHING
   `),
   )
@@ -155,16 +162,4 @@ export async function getLatestEmailAddressLoginTokenHash(
   `),
   )
   return (rows[0]?.token as string | null) ?? null
-}
-
-/**
- * Invalidate email domain validation cache
- */
-export async function invalidateEmailDomainCaches(): Promise<void> {
-  const cache = new ValkeyCache({
-    prefix: 'email-domain-validation',
-    ttlSeconds: 3_600,
-  })
-
-  await cache.invalidate()
 }

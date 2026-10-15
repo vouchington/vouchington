@@ -1,10 +1,12 @@
 import { insertExplainHostnameFlagSources } from '@voucha/test-helpers/entities/explain-bloom-repair'
 import { bloomRepairSeedWindow } from './bloom-reconciliation.mts'
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { seedUuid } from './common.mts'
 
+export const HOSTNAME_FLAG_SEED_ROW_COUNT = 11
+
 export async function seedHostnameFlags(): Promise<void> {
-  const rows = Array.from({ length: 11 }, (_, i) => ({
+  const rows = Array.from({ length: HOSTNAME_FLAG_SEED_ROW_COUNT }, (_, i) => ({
     id: seedUuid(1100 + i, '02'),
     hostname: `seed-flags-${i}.example.com`,
     crawlable: i >= 5 && i !== 10,
@@ -22,4 +24,20 @@ export async function seedHostnameFlags(): Promise<void> {
     [JSON.stringify(rows)],
   )
   await transaction.commit()
+}
+
+/** A large work backlog with one bounded due page for the indexed claim scenario. */
+export async function seedHostnameCacheInvalidationWork(): Promise<void> {
+  await write(
+    `/* seedExplainHostnameCacheInvalidationWork */
+    INSERT INTO url_hostname_cache_invalidation_work_items (url_hostname_id, available_at)
+    SELECT id,
+      CASE WHEN ordinal <= 1000 THEN CURRENT_TIMESTAMP
+        ELSE CURRENT_TIMESTAMP + INTERVAL '1 day' END
+    FROM (
+      SELECT id, row_number() OVER (ORDER BY hostname) AS ordinal
+      FROM url_hostnames WHERE hostname LIKE 'seed-blocked-%.example.net'
+    ) seed
+    ON CONFLICT (url_hostname_id) DO NOTHING`,
+  )
 }

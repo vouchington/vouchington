@@ -1,4 +1,5 @@
 import { expect, it, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import {
   createTestUser,
   getUrlHostnameTopicId,
@@ -7,8 +8,99 @@ import {
 } from '@voucha/test-helpers'
 import { linkHostnameToSourceTopic, setTopicHostnameLink } from './hostname-link.mts'
 import { getTopicByAny } from './get.mts'
+import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
+import { getUrlHostnameById } from '../urls-hostnames/get.mts'
+import { caches } from '@services/entity-cache/caches'
+import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import {
+  failNextHostnameCacheDeleteForTest,
+  getHostnameCacheInvalidationWorkForTest,
+  makeHostnameCacheInvalidationAvailableForTest,
+} from '@voucha/test-helpers/hostname-cache-invalidation'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 
 describe('hostname-link', () => {
+  it('promotes an existing email-only hostname when a topic links it by ID', async () => {
+    const user = await createTestUser({ administrator: true })
+    const suffix = randomUUID()
+    const topicId = await insertTestTopic({
+      name: `Email Domain Topic ${suffix}`,
+      slug: `email-domain-topic-${suffix}`,
+      createdById: user.id,
+    })
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@topic-${suffix}.example.com`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+
+    await setTopicHostnameLink(topicId, hostnameId)
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+  })
+
+  it('evicts a cached email-only hostname after its topic link commits', async () => {
+    const user = await createTestUser({ administrator: true })
+    const suffix = randomUUID()
+    const topicId = await insertTestTopic({
+      name: `Cached Hostname Topic ${suffix}`,
+      slug: `cached-hostname-topic-${suffix}`,
+      createdById: user.id,
+    })
+    const domain = `cached-topic-${suffix}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+    await caches.url_hostnames.set(domain, privateHostname)
+
+    await withCommittedPostgresTransactionForTest(async query => {
+      await setTopicHostnameLink(topicId, hostnameId, { query })
+      expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeNull()
+    })
+
+    for (const key of [hostnameId, domain]) {
+      expect((await getUrlHostnameByAnyCached(key))?.publicly_introduced_at).toBeInstanceOf(Date)
+    }
+  })
+
+  it.each(['primary', 'source'] as const)(
+    'retains %s topic promotion for cache retry after eviction fails',
+    async kind => {
+      const user = await createTestUser({ administrator: true })
+      const suffix = randomUUID()
+      const topicId = await insertTestTopic({
+        name: `Cache Retry ${kind} ${suffix}`,
+        slug: `cache-retry-${kind}-${suffix}`,
+        createdById: user.id,
+        ...(kind === 'source' ? { topicType: 'rss_feed' as const } : {}),
+      })
+      const domain = `cache-retry-${kind}-${suffix}.example.com`
+      const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+      if (!hostnameId) throw new Error('Expected email domain hostname')
+      const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+      expect(privateHostname?.publicly_introduced_at).toBeNull()
+      await caches.url_hostnames.set(hostnameId, privateHostname)
+
+      const restoreFailure = failNextHostnameCacheDeleteForTest(hostnameId)
+      try {
+        if (kind === 'source') await linkHostnameToSourceTopic(topicId, hostnameId)
+        else await setTopicHostnameLink(topicId, hostnameId)
+      } finally {
+        restoreFailure()
+      }
+      expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+      expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toMatchObject({
+        lease_token: null,
+        attempt_count: 1,
+      })
+      await makeHostnameCacheInvalidationAvailableForTest(hostnameId)
+      expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] })).toBe(1)
+      expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeInstanceOf(
+        Date,
+      )
+    },
+  )
+
   it('setTopicHostnameLink links topic and hostname in both directions', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 8)

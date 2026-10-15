@@ -4,6 +4,10 @@
 
 Search hostnames with optional filters.
 
+Anonymous and non-admin searches show only hostnames that have been introduced by a public URL,
+topic, staff action, or URL blocklist. Resolving a user's email domain alone never makes it
+searchable. Administrators can search private hostname identities for support and moderation.
+
 Query parameters:
 
 - `after` — opaque cursor from `page_info.end_cursor`

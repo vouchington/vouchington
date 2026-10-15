@@ -146,10 +146,9 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
   })
 
   it('dispatches a due hostname into the per-hostname queue job', async () => {
-    const hostnameId = await insertTestUrlHostname({
-      hostname: `sweep-${randomUUID()}.example.com`,
-      is_crawlable: true,
-    })
+    const hostname = `sweep-${randomUUID()}.example.com`
+    const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
+    await insertTestUrl({ url: `https://${hostname}/crawlable`, hostnameId })
     onTestFinished(async () => {
       try {
         await updateUrlHostname(hostnameId, { is_crawlable: false })

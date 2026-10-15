@@ -13,6 +13,7 @@ import type { BlacklistDispatcherData, BlacklistSourceSyncData, ProcessorJobs } 
 
 const DISPATCHER_JOB_NAME: ProcessorJobs = 'processBlacklistDispatcher'
 const SYNC_JOB_NAME: ProcessorJobs = 'processBlacklistSourceSync'
+const CACHE_INVALIDATION_JOB_NAME: ProcessorJobs = 'drainHostnameCacheInvalidationWork'
 
 const defaults = {
   attempts: URLS_DOMAINS_BLACKLIST_DEFAULTS.attempts,
@@ -36,6 +37,25 @@ const enqueueSourceSyncJob = createEnqueueFunction<BlacklistSourceSyncData, Proc
   jobName: SYNC_JOB_NAME,
   defaults,
 })
+
+const enqueueHostnameCacheInvalidationSweepJob = createEnqueueFunction<
+  Record<string, never>,
+  ProcessorJobs
+>({
+  queue: urlsDomainsBlacklist,
+  queueName: QUEUE_NAME,
+  jobName: CACHE_INVALIDATION_JOB_NAME,
+  defaults,
+})
+
+export const enqueueHostnameCacheInvalidationSweep = (): EnqueueReturnType =>
+  enqueueHostnameCacheInvalidationSweepJob(
+    {},
+    {
+      priority: PRIORITY_DEFAULT,
+      ordering: URLS_DOMAINS_BLACKLIST_ORDERING.cacheInvalidation,
+    },
+  )
 
 const enqueueBulkSourceSyncJobs = createBulkEnqueueFunction<
   BlacklistSourceSyncData & { delayMs: number },

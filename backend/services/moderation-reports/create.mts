@@ -14,7 +14,7 @@ import { decorateModerationEnqueueError } from './enqueue-observability.mts'
 import { enqueueReportIntegrityCheck } from './integrity.mts'
 import type { CreateModerationReportInput } from './parse.mts'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { getPrivateUserByAny } from '@services/users'
+import { getPrivateUserByAny, isAdminUser } from '@services/users'
 import {
   currentUserCanReportVisiblePost,
   type ReportablePostAccessInput,
@@ -90,6 +90,9 @@ async function assertReportableEntity(
     return
   }
 
+  const canSeePrivateHostname =
+    input.entityType === 'url_hostname' && isAdminUser(await getPrivateUserByAny(currentUserId))
+
   const { rows } = await read(sql`/* assertReportableEntity */
     SELECT
       CASE
@@ -97,7 +100,11 @@ async function assertReportableEntity(
           SELECT id FROM users WHERE id = ${input.entityId} AND deleted_at IS NULL LIMIT 1
         )
         WHEN ${input.entityType} = 'url_hostname' THEN (
-          SELECT id FROM url_hostnames WHERE id = ${input.entityId} AND NOT is_blocked LIMIT 1
+          SELECT id FROM url_hostnames
+          WHERE id = ${input.entityId}
+            AND NOT is_blocked
+            AND (publicly_introduced_at IS NOT NULL OR ${canSeePrivateHostname})
+          LIMIT 1
         )
       END AS owner_id
   `)

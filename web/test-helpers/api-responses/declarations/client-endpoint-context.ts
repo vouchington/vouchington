@@ -14,10 +14,7 @@ export interface WebFixtureClientEndpointContext {
     'createApiKey' | 'getApiKeys' | 'rotateApiKey'
   >
   readonly auth: Pick<typeof import('@/lib/api/client/auth'), 'acknowledgeOAuthAuthorization'>
-  readonly captchaConfig: Pick<
-    typeof import('@/lib/api/client/captcha-config'),
-    'fetchCaptchaConfig'
-  >
+  readonly captchaConfig: typeof import('@/lib/api/client/captcha-config')
   readonly communities: Pick<
     typeof import('@/lib/api/client/communities'),
     'fetchCommunityPinnedPosts' | 'updateCommunityPostTypeSettings'
@@ -65,10 +62,12 @@ export interface WebFixtureClientEndpointContext {
   >
   readonly copyrightEmailIntakes: Pick<
     typeof import('@/lib/api/client/copyright-email-intakes'),
+    | 'associateCopyrightEmailIntakeWithNotice'
     | 'listCopyrightEmailIntakes'
     | 'rejectCopyrightEmailIntake'
     | 'requestCopyrightEmailIntakeInformation'
   >
+  readonly copyrightNoticeAssociationTarget: typeof import('@/lib/api/client/copyright-notice-association-target')
   readonly copyrightEuDisputeSettlements: Pick<
     typeof import('@/lib/api/client/copyright-eu-dispute-settlements'),
     'listCopyrightEuDisputeSettlements'

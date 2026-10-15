@@ -36,6 +36,7 @@ function buildSearchFilters(
   effectiveTopicIds: string[],
 ): ReturnType<typeof sql>[] {
   const filters: ReturnType<typeof sql>[] = []
+  if (!options.includePrivate) filters.push(sql`publicly_introduced_at IS NOT NULL`)
   appendTextFilter(filters, options)
   appendBooleanFilter(filters, 'is_blocked', options.is_blocked)
   appendBooleanFilter(filters, 'is_crawlable', options.is_crawlable)

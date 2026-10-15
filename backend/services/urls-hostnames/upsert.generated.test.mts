@@ -2,6 +2,20 @@ import { it, expect, describe } from 'vitest'
 import { upsertUrlHostnames } from './upsert.mts'
 import { getUrlHostnameById } from './get.mts'
 import { getLocalHostnamePolicy } from './policies.mts'
+import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
+import { getCrawlHostnameCandidates } from '../crawls/hostname-dispatch-candidates.mts'
+import { addUrl } from '../urls/upsert.mts'
+import { caches } from '@services/entity-cache/caches'
+import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { createTestUser } from '@voucha/test-helpers'
+import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
+import {
+  failNextHostnameCacheDeleteForTest,
+  getHostnameCacheInvalidationWorkForTest,
+  makeHostnameCacheInvalidationAvailableForTest,
+} from '@voucha/test-helpers/hostname-cache-invalidation'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 
 describe('upsert.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
@@ -90,5 +104,134 @@ describe('upsert.generated', () => {
     const hostnameId2 = [...hostnamesMap2.values()][0]
 
     expect(hostnameId1).toBe(hostnameId2)
+  })
+
+  it('keeps an email-only hostname private and out of crawl work', async () => {
+    const domain = `email-private-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`reader@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const bucketDays = 31000 + Math.floor(Math.random() * 1000)
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
+
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(false)
+  })
+
+  it('does not dispatch a public staff hostname until it has URL work', async () => {
+    const domain = `staff-url-less-${crypto.randomUUID()}.example.com`
+    const staff = await createTestUser({ administrator: true })
+    const hostnameId = (await upsertUrlHostnames(staff.id, [domain])).get(domain)
+    if (!hostnameId) throw new Error('Expected staff hostname')
+    const bucketDays = 29000 + Math.floor(Math.random() * 1000)
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
+
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(false)
+  })
+
+  it('promotes a private email hostname once when a URL arrives, retaining its ID', async () => {
+    const domain = `email-promoted-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`writer@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const bucketDays = 32000 + Math.floor(Math.random() * 700)
+    await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
+    await addUrl(null, `https://${domain}/first`)
+
+    const firstIntroduction = (await getUrlHostnameById(hostnameId))?.publicly_introduced_at
+    expect(firstIntroduction).toBeInstanceOf(Date)
+    expect(await resolveEmailDomainHostnameId(`other@${domain}`)).toBe(hostnameId)
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toEqual(
+      firstIntroduction,
+    )
+    const candidates = await getCrawlHostnameCandidates(
+      {
+        sweepStartedAt: new Date(Date.now() + 86_400_000).toISOString(),
+        rangeLimit: 10,
+        afterBucketDays: 0,
+        bucketDays,
+        range: 0,
+      },
+      10,
+    )
+    expect(candidates.find(row => row.id === hostnameId)?.has_url).toBe(true)
+  })
+
+  it('evicts a cached private hostname after public URL promotion', async () => {
+    const domain = `email-cached-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+    await caches.url_hostnames.set(domain, privateHostname)
+
+    await addUrl(null, `https://${domain}/first`)
+
+    for (const key of [hostnameId, domain]) {
+      const hostname = await getUrlHostnameByAnyCached(key)
+      expect(hostname?.id).toBe(hostnameId)
+      expect(hostname?.publicly_introduced_at).toBeTruthy()
+    }
+  })
+
+  it('evicts a promoted hostname only after its transaction commits', async () => {
+    const domain = `email-transaction-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+
+    await withCommittedPostgresTransactionForTest(async query => {
+      await upsertUrlHostnames(null, [domain], { query })
+      expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeNull()
+    })
+
+    expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeTruthy()
+  })
+
+  it('retains a committed public promotion for cache retry after eviction fails', async () => {
+    const domain = `email-cache-retry-${crypto.randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!hostnameId) throw new Error('Expected email domain hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(hostnameId)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    await caches.url_hostnames.set(hostnameId, privateHostname)
+
+    const restoreFailure = failNextHostnameCacheDeleteForTest(hostnameId)
+    try {
+      await upsertUrlHostnames(null, [domain])
+    } finally {
+      restoreFailure()
+    }
+    expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect(await getHostnameCacheInvalidationWorkForTest(hostnameId)).toMatchObject({
+      lease_token: null,
+      attempt_count: 1,
+    })
+    await makeHostnameCacheInvalidationAvailableForTest(hostnameId)
+    expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] })).toBe(1)
+    expect((await getUrlHostnameByAnyCached(hostnameId))?.publicly_introduced_at).toBeInstanceOf(
+      Date,
+    )
   })
 })

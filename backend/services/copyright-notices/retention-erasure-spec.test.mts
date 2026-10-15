@@ -28,7 +28,9 @@ const GUARD_REJECTION = { rejectedWith: '23514' }
  */
 const changesWithoutPermit = (spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]) =>
   spec.table === 'copyright_notice_delivery_work_items' ||
-  Object.values(spec.columns).every(kind => kind === 'null')
+  (spec.table !== 'copyright_notice_email_thread_references' &&
+    spec.table !== 'copyright_notice_email_intake_notice_links' &&
+    Object.values(spec.columns).every(kind => kind === 'null'))
 
 /**
  * Tables the sweep deliberately keeps whole: EU and UK cases (the EU-only tables and the shared

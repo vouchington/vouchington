@@ -23,6 +23,7 @@ import { entityRelationMetadatum } from '@services/entity-relations/metadata'
 import '@voucha/test-helpers/entity-url-guard-registrations'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { blockHostname } from './block-hostname.mts'
+import { unblockHostname } from './unblock-hostname.mts'
 import { hostnameBlockingWorkConfig } from './work-limits.mts'
 import { DEFAULT_PENALTY_MULTIPLIER } from '@services/vote-integrity/config'
 
@@ -48,6 +49,25 @@ describe('block-hostname', () => {
   }
 
   describe('blockHostname', () => {
+    it('introduces private target and subdomain on staff block without clearing provenance on unblock', async () => {
+      const moderator = (await createTestUser({ administrator: true })) as PrivateUser
+      const hostname = randomHostname()
+      const targetId = uuidv7()
+      const childId = uuidv7()
+      await insertTestUrlHostname({ id: targetId, hostname })
+      await insertTestUrlHostname({ id: childId, hostname: `child.${hostname}` })
+      expect((await getTestHostnameRow(targetId))?.publicly_introduced_at).toBeNull()
+      expect((await getTestHostnameRow(childId))?.publicly_introduced_at).toBeNull()
+
+      await blockHostname(moderator.id, targetId, { penalizeCreators: false })
+      const introducedAt = (await getTestHostnameRow(targetId))?.publicly_introduced_at
+      expect(introducedAt).toBeInstanceOf(Date)
+      expect((await getTestHostnameRow(childId))?.publicly_introduced_at).toBeInstanceOf(Date)
+
+      await unblockHostname(moderator.id, targetId)
+      expect((await getTestHostnameRow(targetId))?.publicly_introduced_at).toEqual(introducedAt)
+    })
+
     it('throws 404 for a non-existent hostname', async () => {
       await expect(blockHostname(admin.id, uuidv7())).rejects.toMatchObject({ status: 404 })
     })

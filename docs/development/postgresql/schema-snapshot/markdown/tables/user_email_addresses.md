@@ -6,13 +6,14 @@ Email addresses associated with user accounts. Composite PK on (user_id, email_a
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                           |
-| --------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------- |
-| `user_id`       | `uuid`                     | no       |                     |          |           |           | The user who owns this email address.             |
-| `email_address` | `text`                     | no       |                     |          |           |           | Normalized (lowercase, trimmed) email address.    |
-| `created_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                   |
-| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                   |
-| `is_primary`    | `boolean`                  | yes      | `true`              |          |           |           | Whether this is the user's primary email address. |
+| Column                     | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                   |
+| -------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------- |
+| `user_id`                  | `uuid`                     | no       |                     |          |           |           | The user who owns this email address.                     |
+| `email_address`            | `text`                     | no       |                     |          |           |           | Normalized (lowercase, trimmed) email address.            |
+| `email_domain_hostname_id` | `uuid`                     | no       |                     |          |           |           | Resolved email domain hostname identity for policy reads. |
+| `created_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                           |
+| `updated_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                           |
+| `is_primary`               | `boolean`                  | yes      | `true`              |          |           |           | Whether this is the user's primary email address.         |
 
 **Primary key:** `PRIMARY KEY (user_id, email_address)`
 
@@ -27,11 +28,13 @@ _none_
 
 **Foreign keys:**
 
+- `fk_user_email_addresses__email_domain_hostname`: `FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 - `user_email_addresses_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_user_email_addresses__email`: `CREATE INDEX idx_user_email_addresses__email ON public.user_email_addresses USING btree (email_address)`
+- `idx_user_email_addresses__email_domain_hostname_id`: `CREATE INDEX idx_user_email_addresses__email_domain_hostname_id ON public.user_email_addresses USING btree (email_domain_hostname_id)`
 - `idx_user_email_addresses__email_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses__email_primary ON public.user_email_addresses USING btree (email_address) WHERE (is_primary = true)`
 - `idx_user_email_addresses__user_primary`: `CREATE UNIQUE INDEX idx_user_email_addresses__user_primary ON public.user_email_addresses USING btree (user_id) WHERE (is_primary = true)`
 - `idx_user_email_addresses__user_primary_created_email`: `CREATE INDEX idx_user_email_addresses__user_primary_created_email ON public.user_email_addresses USING btree (user_id, ((is_primary)::integer) DESC, created_at, email_address)`

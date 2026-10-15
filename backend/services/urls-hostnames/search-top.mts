@@ -7,6 +7,7 @@ export type SearchTopHostnamesOptions = {
   limit?: number
   after?: string
   topic_id?: string
+  includePrivate?: boolean
 }
 
 export async function searchTopHostnames(
@@ -18,6 +19,7 @@ export async function searchTopHostnames(
   )
   const values: unknown[] = []
   const filters: string[] = ['NOT is_blocked', 'votes_count_up > 0']
+  if (!options.includePrivate) filters.push('publicly_introduced_at IS NOT NULL')
 
   if (options.topic_id) {
     filters.push(`topic_id = $${values.push(options.topic_id)}`)

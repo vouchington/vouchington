@@ -92,6 +92,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         amazon_ses_message_id: data.sesMessageId,
         received_at: new Date(),
         raw_storage_key: 'email/ses-copyright-message/original.eml',
+        raw_storage_object_id: 'object-id',
         raw_sha256: Buffer.alloc(32, 7),
         raw_media_type_id: '1',
         raw_mime_type: 'message/rfc822',
@@ -107,7 +108,8 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       subject: 'Copyright notice',
       bodyText: 'Notice body',
       emailMessageId: '<copyright@example.test>',
-      replyRefs: ['<prior@example.test>'],
+      inReplyTo: [],
+      references: ['<prior@example.test>'],
       recipientEmails: ['dmca@inbound.voucha.ai'],
       attachments: [
         {
@@ -159,6 +161,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         fromEmail: 'claimant@example.test',
         fromName: 'Copyright claimant',
         messageId: '<copyright@example.test>',
+        inReplyTo: [],
         replyReferences: ['<prior@example.test>'],
         attachments: [expect.objectContaining({ filename: 'evidence.pdf' })],
       }),
@@ -201,6 +204,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
       amazon_ses_message_id: data.sesMessageId,
       received_at: new Date(),
       raw_storage_key: 'email/ses-malformed-copyright/evidence.eml',
+      raw_storage_object_id: 'object-id',
       raw_sha256: Buffer.alloc(32, 8),
       raw_media_type_id: '1',
       raw_mime_type: 'message/rfc822',

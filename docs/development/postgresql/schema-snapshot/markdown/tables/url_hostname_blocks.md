@@ -6,17 +6,18 @@ Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintai
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                         | Nullable | Default                               | Identity | Generated | Collation | Comment                                                                |
-| ----------------- | ---------------------------- | -------- | ------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`              | `uuid`                       | no       | `uuidv7()`                            |          |           |           |                                                                        |
-| `url_hostname_id` | `uuid`                       | no       |                                       |          |           |           | The blocked hostname.                                                  |
-| `blocked_by_id`   | `uuid`                       | yes      |                                       |          |           |           | Admin who issued the block.                                            |
-| `blocked_source`  | `url_hostname_block_sources` | no       | `'admin'::url_hostname_block_sources` |          |           |           | Who initiated the block: admin, google_web_risk, parent_hostname, etc. |
-| `reason`          | `text`                       | yes      |                                       |          |           |           | Optional reason for the block.                                         |
-| `created_at`      | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)`          |          | virtual   |           |                                                                        |
-| `updated_at`      | `timestamp with time zone`   | yes      | `CURRENT_TIMESTAMP`                   |          |           |           |                                                                        |
-| `lifted_at`       | `timestamp with time zone`   | yes      |                                       |          |           |           | When the block was lifted. NULL means still active.                    |
-| `lifted_by_id`    | `uuid`                       | yes      |                                       |          |           |           | Who lifted the block.                                                  |
+| Column                       | Type                         | Nullable | Default                               | Identity | Generated | Collation | Comment                                                                |
+| ---------------------------- | ---------------------------- | -------- | ------------------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
+| `id`                         | `uuid`                       | no       | `uuidv7()`                            |          |           |           |                                                                        |
+| `url_hostname_id`            | `uuid`                       | no       |                                       |          |           |           | The blocked hostname.                                                  |
+| `blocked_by_id`              | `uuid`                       | yes      |                                       |          |           |           | Admin who issued the block.                                            |
+| `blocked_source`             | `url_hostname_block_sources` | no       | `'admin'::url_hostname_block_sources` |          |           |           | Who initiated the block: admin, google_web_risk, parent_hostname, etc. |
+| `domain_blocklist_source_id` | `bigint`                     | yes      |                                       |          |           |           | External blacklist source for projected URL or email domain blocks.    |
+| `reason`                     | `text`                       | yes      |                                       |          |           |           | Optional reason for the block.                                         |
+| `created_at`                 | `timestamp with time zone`   | yes      | `uuid_extract_timestamp(id)`          |          | virtual   |           |                                                                        |
+| `updated_at`                 | `timestamp with time zone`   | yes      | `CURRENT_TIMESTAMP`                   |          |           |           |                                                                        |
+| `lifted_at`                  | `timestamp with time zone`   | yes      |                                       |          |           |           | When the block was lifted. NULL means still active.                    |
+| `lifted_by_id`               | `uuid`                       | yes      |                                       |          |           |           | Who lifted the block.                                                  |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -24,21 +25,28 @@ Not partitioned — growth: unbounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `chk_url_hostname_blocks__domain_source`: `CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))`
 
 **Foreign keys:**
 
+- `fk_url_hostname_blocks__domain_blocklist_source`: `FOREIGN KEY (domain_blocklist_source_id) REFERENCES domain_blocklist_sources(id) ON DELETE RESTRICT`
 - `url_hostname_blocks_blocked_by_id_fkey`: `FOREIGN KEY (blocked_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `url_hostname_blocks_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `url_hostname_blocks_url_hostname_id_fkey`: `FOREIGN KEY (url_hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_url_hostname_blocks__active_domain_source`: `CREATE UNIQUE INDEX idx_url_hostname_blocks__active_domain_source ON public.url_hostname_blocks USING btree (url_hostname_id, domain_blocklist_source_id) WHERE ((domain_blocklist_source_id IS NOT NULL) AND (lifted_at IS NULL))`
+- `idx_url_hostname_blocks__active_nonfeed`: `CREATE INDEX idx_url_hostname_blocks__active_nonfeed ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE ((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))`
+- `idx_url_hostname_blocks__domain_blocklist_source_id`: `CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id ON public.url_hostname_blocks USING btree (domain_blocklist_source_id) WHERE (domain_blocklist_source_id IS NOT NULL)`
 - `idx_url_hostname_blocks__hostname`: `CREATE INDEX idx_url_hostname_blocks__hostname ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE (lifted_at IS NULL)`
 - `idx_url_hostname_blocks__url_hostname_id`: `CREATE INDEX idx_url_hostname_blocks__url_hostname_id ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE (url_hostname_id IS NOT NULL)`
 - `url_hostname_blocks_pkey`: `CREATE UNIQUE INDEX url_hostname_blocks_pkey ON public.url_hostname_blocks USING btree (id)`
 
 **Triggers:**
 
-- `trigger_sync_url_hostname_blocked`: `CREATE TRIGGER trigger_sync_url_hostname_blocked AFTER INSERT OR DELETE OR UPDATE OF lifted_at ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_project_url_hostname_blocked()`
+- `trigger_update_url_hostname_blocked_after_delete`: `CREATE TRIGGER trigger_update_url_hostname_blocked_after_delete AFTER DELETE ON public.url_hostname_blocks REFERENCING OLD TABLE AS deleted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_delete()`
+- `trigger_update_url_hostname_blocked_after_insert`: `CREATE TRIGGER trigger_update_url_hostname_blocked_after_insert AFTER INSERT ON public.url_hostname_blocks REFERENCING NEW TABLE AS inserted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_insert()`
+- `trigger_update_url_hostname_blocked_after_update`: `CREATE TRIGGER trigger_update_url_hostname_blocked_after_update AFTER UPDATE ON public.url_hostname_blocks REFERENCING OLD TABLE AS prior_blocks NEW TABLE AS updated_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_update()`
 - `trigger_url_hostname_blocks_updated_at`: `CREATE TRIGGER trigger_url_hostname_blocks_updated_at BEFORE UPDATE ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

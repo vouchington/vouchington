@@ -46,6 +46,7 @@ export const copyrightTimelineEventAudience = {
   agent_correspondence_approved: 'staff',
   email_correspondence_admitted: 'staff',
   email_correspondence_rejected: 'staff',
+  email_intake_manually_associated: 'staff',
   // Internal delivery and replay plumbing.
   restoration_intent_created: 'staff',
   reversal_restoration_intent_created: 'staff',

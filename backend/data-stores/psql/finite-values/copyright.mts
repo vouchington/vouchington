@@ -92,7 +92,7 @@ export const COPYRIGHT_FINITE_VALUES = {
   copyright_notice_email_intake_link_kinds: ['initial', 'thread'],
   copyright_notice_email_intake_parse_statuses: ['succeeded', 'failed'],
   copyright_notice_email_intake_review_decisions: ['approved', 'rejected', 'legal_process'],
-  copyright_notice_email_thread_reference_kinds: ['message_id', 'reply_reference'],
+  copyright_notice_email_thread_reference_kinds: ['message_id', 'in_reply_to', 'references'],
   copyright_notice_form_screening_recommendations: ['not_obviously_invalid', 'invalid_or_spam'],
   copyright_notice_legal_hold_assessment_ccb_claim_kinds: ['claim', 'counterclaim'],
   copyright_notice_legal_hold_assessment_proceeding_kinds: ['federal_court', 'ccb'],

@@ -25245,7 +25245,13 @@
                         "$ref": "#/$defs/S1"
                       },
                       "review_path": {
-                        "enum": ["initial", "matched_thread", "unresolved_thread"],
+                        "enum": [
+                          "ancestor_notice_conflict",
+                          "duplicate_message_id",
+                          "initial",
+                          "matched_thread",
+                          "unresolved_thread"
+                        ],
                         "type": "string"
                       },
                       "waiting_reason": {
@@ -25351,7 +25357,13 @@
                     },
                     "review_path": {
                       "type": "string",
-                      "enum": ["initial", "unresolved_thread", "matched_thread"]
+                      "enum": [
+                        "ancestor_notice_conflict",
+                        "duplicate_message_id",
+                        "initial",
+                        "matched_thread",
+                        "unresolved_thread"
+                      ]
                     },
                     "linked_notice": {
                       "anyOf": [
@@ -26056,6 +26068,69 @@
             {
               "method": "POST",
               "path": "/api/v1/copyright-form-intakes/:id/reviews"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "associate_copyright_email_intake_with_notice",
+            "title": "Associate copyright email intake with notice",
+            "description": "Associate one unresolved copyright email intake with an existing notice.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "intake_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "copyright_notice_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["intake_id", "copyright_notice_id"],
+              "additionalProperties": false
+            },
+            "outputSchema": {
+              "additionalProperties": false,
+              "properties": {
+                "copyright_email_intake": {
+                  "$ref": "#/$defs/S1"
+                },
+                "copyright_notice": {
+                  "$ref": "#/$defs/S1"
+                }
+              },
+              "required": ["copyright_email_intake", "copyright_notice"],
+              "type": "object",
+              "$defs": {
+                "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id"],
+                  "type": "object"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["copyright-notices:read", "copyright-notices:write"]
+            }
+          },
+          "roles": ["administrator"],
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/copyright-email-intakes/:id/notice-associations"
             }
           ]
         },
@@ -36187,7 +36262,7 @@
           "tool": {
             "name": "review_copyright_email_intake",
             "title": "Review Copyright Email Intake",
-            "description": "approve: Approve a copyright email intake as a new notice, supplying the notice form yourself, exactly as the staff approval route takes it. First read the raw email on the staff email review page; get_copyright_email_intake returns structured facts only, without the raw email or contact details. The agent recommendation is guidance only, and no check compares your values with it: state each claimant field, each statutory declaration and every hosted image from the email itself. Every field except recommendation_id and manual_fallback_reason is required, and a missing or untrue has_good_faith_belief or has_accuracy_authority_under_penalty_of_perjury is rejected with 422, exactly as on the staff route. Send recommendation_id when you relied on the recommendation, or manual_fallback_reason when you did not.\nreject: Record the staff copyright decision reject copyright email intake.",
+            "description": "approve: Approve a copyright email intake as a new notice, supplying the notice form yourself, exactly as the staff approval route takes it. First read the raw email on the staff email review page; get_copyright_email_intake returns structured facts only, without the raw email or contact details. The agent recommendation is guidance only, and no check compares your values with it: state each claimant field, each statutory declaration and every hosted image from the email itself. Every field except recommendation_id and manual_fallback_reason is required, and a missing or untrue has_good_faith_belief or has_accuracy_authority_under_penalty_of_perjury is rejected with 422, exactly as on the staff route. Send recommendation_id when you relied on the recommendation, or manual_fallback_reason when you did not. If the thread changes during approval, the tool returns 409 copyright_email_thread_changed; refresh the staff queue and retry manually.\nreject: Record the staff copyright decision reject copyright email intake.",
             "inputSchema": {
               "type": "object",
               "oneOf": [

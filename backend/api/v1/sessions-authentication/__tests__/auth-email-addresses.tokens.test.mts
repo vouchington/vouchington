@@ -5,7 +5,6 @@ import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-to
 import {
   createUniqueTestEmail,
   overrideDynamicConfigFieldsForTest,
-  invalidateEmailDomainCaches,
   createTestBlacklistSource,
   insertTestDomainBlacklist,
 } from '@voucha/test-helpers'
@@ -34,7 +33,6 @@ describe('Email Address Authentication Routes', () => {
     const tokens = await createDeviceAndSessionTokens({ did, sid })
     deviceToken = tokens.deviceToken.token
     sessionToken = tokens.sessionToken.token
-    await invalidateEmailDomainCaches()
   }, 30_000)
 
   afterEach(async () => {

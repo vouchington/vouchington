@@ -8,6 +8,7 @@ export type RawRecentAutomodAction = Omit<
   categories: unknown
   confidence_score: string | number | null
   action_at: Date | string
+  input_sha256?: Buffer | null
   total_count?: string | number | null
   false_positive_count?: string | number | null
 }
@@ -33,7 +34,7 @@ export function parseAutomodActionSourceKey(
 }
 
 export function normalizeRecentAction(row: RawRecentAutomodAction): RecentAutomodAction {
-  const { total_count: _total, false_positive_count: _fp, ...action } = row
+  const { total_count: _total, false_positive_count: _fp, input_sha256: _digest, ...action } = row
   return {
     ...action,
     source_type: action.source_type,

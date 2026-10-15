@@ -52,14 +52,40 @@ The extraction records all statutory fields plus bounded source excerpts without
 declarations. Ordinary approval identifies the recommendation reviewed; an agent failure requires
 an explicit manual-fallback reason.
 
-After an email intake is admitted, its Message-ID and reply references are correlated with keyed
-digests only. A matched inbound reply receives an immutable pending-review record and remains attached
-to the original MIME evidence and still receives the advisory extraction/recommendation. Staff must
-classify and admit it through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
+After an email intake is admitted, its Message-ID and reply references resolve keyed digests to
+private token UUIDs at ingestion. The first retained parse fixes those references for replay.
+Immutable ancestor edges store intake IDs for every unambiguous In-Reply-To and References token,
+including an ancestor that arrives later. A later duplicate never redirects an existing edge;
+new edges from a token with multiple Message-ID claimants wait for manual review. Thread reads
+join only UUIDs. Staff review paths are computed at read time, with an existing thread match taking
+precedence over a duplicate or conflicting-ancestor reason. A matched inbound reply receives an
+immutable pending-review record and remains attached to the original case and MIME evidence. It
+can be linked automatically only when every bounded ancestor path agrees on the case and its own
+Message-ID remains unambiguous. The promotion token-lock budget covers the combined unique set
+from references and matched links; an over-budget graph leaves replies for staff review while
+retaining the advisory extraction and recommendation. A new automatic link locks the intake and
+notice, then checks the erasure marker in a fresh statement; it cannot link to an erased notice.
+Already committed links remain immutable on replay. An unlinked intake can instead be
+associated to one existing notice by
+staff; the intake row is locked before the notice, the decision is reread under those locks, and
+the single link and staff-actor lifecycle event commit together. This opens the same pending
+correspondence review without adding ancestry edges or cascading to other replies. Staff must
+classify and admit a reply through the correspondence endpoint; the admission creates the case submission and inbound correspondence without allowing the agent to trigger a
 restriction, deadline, or outbound delivery. An accepted statutory counter-notice produces a
 case-scoped private forwarding correspondence containing the canonical declarations, consents,
 contact details, signature, and exact target IDs and URLs; those private details never enter the
 member projection.
+
+Private evidence objects have one storage registry identity per key. Email intakes and submitted
+artifacts reference that identity; promotion and correspondence reuse the intake's object ID.
+Retention erasure locks each registry row, then checks for other owners in a fresh statement before
+deleting any bucket version. It clears the erased case's references and deletes a registry row only
+when no intake or artifact still references it. Immutable legal receipts remain.
+Thread-token erasure takes the same sorted digest locks as ingestion, clears the erased case's
+token FKs, and overwrites a digest only when no other live intake or link owns that token.
+It takes those token locks before the notice row lock. If a newly linked reference adds a case
+token before the notice lock, the sweep detects the new digest in a fresh read and defers that
+case before deleting any evidence; the next run takes the complete lock set.
 
 The current screening execution, rather than the newest result UUID or any historical clear result,
 owns automatic authority. See [current screening authority](../../../../requirements/moderation/COPYRIGHT-NOTICES.md#current-screening-authority)

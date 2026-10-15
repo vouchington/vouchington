@@ -6,12 +6,11 @@ import {
   isAuthenticatedCopyrightEmail,
   type CopyrightEmailSesVerdicts,
 } from './email-ses-verdicts.mts'
-import { encryptSecret } from '@modules/token-secrets'
-import assert from 'http-assert'
+import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import {
   copyrightEmailIntakePurpose,
-  type CopyrightEmailAttachmentInput,
   type CopyrightEmailIntake,
   type CopyrightEmailIntakeForAgent,
 } from './email-intakes.mts'
@@ -20,28 +19,26 @@ import {
   type CopyrightEmailThreadMatch,
 } from './email-threading.mts'
 import {
+  validateCopyrightEmailParseInput,
+  type CopyrightEmailParseInput,
+} from './email-intake-parse-input.mts'
+import {
+  copyrightEmailReplyHeaders,
+  decryptCopyrightEmailReplyHeaders,
+  encryptCopyrightEmailReplyHeaders,
+} from './email-thread-references.mts'
+import {
   decryptAgentIntake,
   type AttachmentCiphertexts,
   type ParseCiphertexts,
 } from './email-intake-agent.mts'
-export type CopyrightEmailParseInput =
-  | {
-      status: 'succeeded'
-      fromEmail: string
-      fromName?: string
-      subject: string
-      bodyText: string
-      messageId: string | null
-      replyReferences: string[]
-      attachments: CopyrightEmailAttachmentInput[]
-    }
-  | { status: 'failed'; error: string }
+export type { CopyrightEmailParseInput } from './email-intake-parse-input.mts'
 
 export async function recordCopyrightEmailParse(
   intake: CopyrightEmailIntake,
   input: CopyrightEmailParseInput,
 ): Promise<CopyrightEmailThreadMatch | null> {
-  validateParseInput(input)
+  validateCopyrightEmailParseInput(input)
   const purpose = copyrightEmailIntakePurpose(intake.amazon_ses_message_id)
   await using transaction = await beginTransaction()
   // Serialize parser receipt eligibility with staff decisions before inserting parse rows.
@@ -60,21 +57,31 @@ export async function recordCopyrightEmailParse(
       ${input.status === 'succeeded' ? encryptSecret(input.subject, purpose) : null},
       ${input.status === 'succeeded' ? encryptSecret(input.bodyText, purpose) : null},
       ${input.status === 'succeeded' && input.messageId ? encryptSecret(input.messageId, purpose) : null},
-      ${
-        input.status === 'succeeded' && input.replyReferences.length > 0
-          ? encryptSecret(JSON.stringify(input.replyReferences), purpose)
-          : null
-      },
+      ${input.status === 'succeeded' ? encryptCopyrightEmailReplyHeaders(copyrightEmailReplyHeaders(input), purpose) : null},
       ${input.status === 'failed' ? encryptSecret(input.error, purpose) : null}
     ) ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
   `)
+  const retainedThread = !rowCount
+    ? (
+        await transaction<{
+          status: 'succeeded' | 'failed'
+          message_id_ciphertext: string | null
+          reply_references_ciphertext: string | null
+        }>(sql`/* recordCopyrightEmailParse:retainedThread */
+          SELECT status, message_id_ciphertext, reply_references_ciphertext
+          FROM copyright_notice_email_intake_parses
+          WHERE copyright_notice_email_intake_id = ${intake.id}
+        `)
+      ).rows[0]
+    : null
   if (rowCount && input.status === 'succeeded' && input.attachments.length > 0) {
     await insertCopyrightEmailAttachments(transaction, intake.id, input.attachments, purpose)
   }
   if (
     rowCount &&
     input.status === 'succeeded' &&
-    input.replyReferences.length === 0 &&
+    copyrightEmailReplyHeaders(input).inReplyTo.length === 0 &&
+    copyrightEmailReplyHeaders(input).references.length === 0 &&
     isCopyrightIntakeEnabled()
   ) {
     const { rows: verdicts } =
@@ -96,11 +103,25 @@ export async function recordCopyrightEmailParse(
       )
   }
   await transaction.commit()
-  if (input.status !== 'succeeded') return null
+  if (!rowCount && retainedThread?.status !== 'succeeded') return null
+  if (rowCount && input.status !== 'succeeded') return null
+  const headers = retainedThread
+    ? decryptCopyrightEmailReplyHeaders(retainedThread.reply_references_ciphertext, purpose)
+    : input.status === 'succeeded'
+      ? copyrightEmailReplyHeaders(input)
+      : null
+  if (!headers) return null
   return await recordCopyrightEmailThreadReferences({
     intakeId: intake.id,
-    messageId: input.messageId,
-    replyReferences: input.replyReferences,
+    messageId: retainedThread
+      ? retainedThread.message_id_ciphertext
+        ? decryptSecret(retainedThread.message_id_ciphertext, purpose)
+        : null
+      : input.status === 'succeeded'
+        ? input.messageId
+        : null,
+    inReplyTo: headers.inReplyTo,
+    references: headers.references,
   })
 }
 export async function getCopyrightEmailIntakeForAgent(
@@ -109,12 +130,14 @@ export async function getCopyrightEmailIntakeForAgent(
   await using transaction = await beginTransaction()
   const { rows } = await transaction<CopyrightEmailIntake & ParseCiphertexts>(
     sql`/* getCopyrightEmailIntakeForAgent */
-      SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key,
-        intake.raw_sha256, intake.raw_media_type_id,
+      SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
+        COALESCE(object.storage_key, ${COPYRIGHT_ERASED_KEY_PREFIX} || intake.id::text) AS raw_storage_key,
+        intake.raw_storage_object_id, intake.raw_sha256, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
         parse.sender_email_ciphertext, parse.sender_name_ciphertext,
         parse.subject_ciphertext, parse.body_ciphertext
       FROM copyright_notice_email_intakes intake
+      LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
       JOIN copyright_notice_email_intake_parses parse
         ON parse.copyright_notice_email_intake_id = intake.id AND parse.status = 'succeeded'
       WHERE intake.id = ${intakeId} LIMIT 1`,
@@ -133,37 +156,4 @@ export async function getCopyrightEmailIntakeForAgent(
   )
   await transaction.commit()
   return decryptAgentIntake(intake, attachments)
-}
-
-function validateParseInput(input: CopyrightEmailParseInput): void {
-  if (input.status === 'failed') {
-    assert(input.error.length > 0 && input.error.length <= 10_000, 422, 'Invalid parser failure')
-    return
-  }
-  assert(input.fromEmail.trim().length > 0 && input.fromEmail.length <= 320, 422, 'Invalid sender')
-  assert(!input.fromName || input.fromName.length <= 500, 422, 'Invalid sender name')
-  assert(input.subject.length > 0 && input.subject.length <= 10_000, 422, 'Invalid subject')
-  assert(input.bodyText.length > 0 && input.bodyText.length <= 2_000_000, 422, 'Invalid body')
-  assert(!input.messageId || input.messageId.length <= 10_000, 422, 'Invalid Message-ID')
-  assert(
-    input.replyReferences.length <= 100 &&
-      input.replyReferences.every(reference => reference.length > 0 && reference.length <= 10_000),
-    422,
-    'Invalid reply references',
-  )
-  assert(input.attachments.length <= 100, 422, 'Too many attachments')
-  assert(
-    input.attachments.every(
-      attachment =>
-        attachment.sha256.length === 32 &&
-        Number.isSafeInteger(attachment.byteSize) &&
-        attachment.byteSize >= 0 &&
-        attachment.mimeType.length > 0 &&
-        attachment.mimeType.length <= 255 &&
-        (!attachment.filename || attachment.filename.length <= 1024) &&
-        (!attachment.contentId || attachment.contentId.length <= 1024),
-    ),
-    422,
-    'Invalid attachment metadata',
-  )
 }

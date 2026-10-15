@@ -92,7 +92,10 @@ app.route('/api/v1/hostnames').get(async ctx => {
   }
 
   const { results: hostnames, page_info: hostnamesPageInfo } = currentUser
-    ? await searchUrlHostnames(searchOptions)
+    ? await searchUrlHostnames({
+        ...searchOptions,
+        includePrivate: currentUserCanFilterHostnameModeration(currentUser),
+      })
     : await searchUrlHostnamesCached(searchOptions)
 
   if (!currentUser) {

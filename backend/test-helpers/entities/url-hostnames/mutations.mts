@@ -103,8 +103,8 @@ function buildInsertUrlHostnameQuery(
   returningId: boolean,
 ) {
   const { is_emailable, is_crawlable } = options
-  let query = sql`/* buildInsertUrlHostnameQuery */ INSERT INTO url_hostnames (hostname`
-  let values = sql`${hostname}`
+  let query = sql`/* buildInsertUrlHostnameQuery */ INSERT INTO url_hostnames (hostname, publicly_introduced_at`
+  let values = sql`${hostname}, CURRENT_TIMESTAMP`
   if (is_emailable !== undefined) {
     query = query.append(sql`, is_emailable`)
     values = values.append(sql`, ${is_emailable}`)

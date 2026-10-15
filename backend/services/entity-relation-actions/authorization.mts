@@ -46,7 +46,9 @@ export async function currentUserCanBookmarkTarget(
     case 'url_hostname': {
       const hostname = await getUrlHostnameByAnyCached(entityId)
       return (
-        !!hostname && (!hostname.is_blocked || currentUserCanFilterHostnameModeration(currentUser))
+        !!hostname &&
+        ((!!hostname.publicly_introduced_at && !hostname.is_blocked) ||
+          currentUserCanFilterHostnameModeration(currentUser))
       )
     }
     case 'community':

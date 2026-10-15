@@ -34,6 +34,10 @@ import {
   admitCopyrightEmailCorrespondenceDecision,
   rejectCopyrightEmailCorrespondenceDecision,
 } from '@services/copyright-notices/copyright-email-decision-actions'
+import {
+  associateCopyrightEmailIntakeWithNotice,
+  getCopyrightNoticeAssociationTarget,
+} from '@services/copyright-notices/email-manual-association'
 import { replayCopyrightDeliveryIntentAndEnqueue } from '@services/copyright-notices/copyright-mcp-write-actions'
 import {
   parseCopyrightAppealDecisionInput,
@@ -54,6 +58,7 @@ import {
 } from '../../response-contract.mts'
 import type {
   CopyrightEmailApprovalRequest,
+  CopyrightEmailNoticeAssociationRequest,
   CopyrightEmailCorrespondenceRejectionRequest,
   CopyrightEmailCorrespondenceRequest,
   CopyrightEmailRejectionRequest,
@@ -363,6 +368,54 @@ app.route('/api/v1/copyright-email-intakes/:id/approvals').post(async (ctx: Cont
   )
   ctx.setStatus(201)
   ctx.json(decision)
+})
+
+app.route('/api/v1/copyright-email-intakes/:id/notice-associations').post(async (ctx: Context) => {
+  apiRequestContract<
+    'POST:/api/v1/copyright-email-intakes/:id/notice-associations',
+    CopyrightEmailNoticeAssociationRequest
+  >('POST:/api/v1/copyright-email-intakes/:id/notice-associations')
+  setPrivateNoStoreCacheHeaders(ctx)
+  ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanReviewCopyrightNotices,
+    'POST:/api/v1/copyright-email-intakes/:id/notice-associations',
+  )
+  assertNotSuspended(currentUser)
+  const intakeId = validateUUIDParam(ctx, 'id')
+  const parsedBody: unknown = await ctx.request.json('1mb')
+  assertObjectBody(ctx, parsedBody)
+  const body = parsedBody as Record<string, unknown>
+  ctx.assert(typeof body.copyright_notice_id === 'string', 422, 'copyright_notice_id is required')
+  validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/notice-associations', {
+    path: ctx.params,
+    body,
+  })
+  const association = await associateCopyrightEmailIntakeWithNotice(
+    currentUser,
+    intakeId,
+    body.copyright_notice_id as string,
+  )
+  ctx.setStatus(201)
+  ctx.json(association)
+})
+
+app.route('/api/v1/copyright-notices/:id/association-target').get(async (ctx: Context) => {
+  setPrivateNoStoreCacheHeaders(ctx)
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanReviewCopyrightNotices,
+    'GET:/api/v1/copyright-notices/:id/association-target',
+  )
+  assertNotSuspended(currentUser)
+  const noticeId = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'GET:/api/v1/copyright-notices/:id/association-target', {
+    path: ctx.params,
+  })
+  const notice = await getCopyrightNoticeAssociationTarget(currentUser, noticeId)
+  ctx.assert(notice, 404, 'Copyright notice not found')
+  ctx.json({ copyright_notice: notice })
 })
 
 app.route('/api/v1/copyright-form-intakes/:id/reviews').post(async (ctx: Context) => {

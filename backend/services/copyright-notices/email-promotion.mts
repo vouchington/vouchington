@@ -1,5 +1,6 @@
 /* oxlint-disable max-lines -- Email admission keeps evidence, provenance, threading, and delivery atomic. */
 import { beginTransaction } from '@data-stores/psql'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
@@ -10,13 +11,25 @@ import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
 import { copyrightEmailIntakePurpose, type CopyrightEmailIntake } from './email-intakes.mts'
-import { linkPendingCopyrightEmailRepliesInTransaction } from './email-threading.mts'
+import { linkPendingCopyrightEmailRepliesInTransaction } from './email-thread-link-pending.mts'
+import {
+  assertCopyrightEmailGraphUnchanged,
+  copyrightEmailThreadChangedError,
+  lockCopyrightEmailGraphIntakes,
+  readCopyrightEmailGraphTokens,
+  readCopyrightEmailThreadGraph,
+  type CopyrightEmailThreadGraph,
+} from './email-thread-graph.mts'
+import { getCopyrightEmailThreadGraphMaxRows } from './config.mts'
+import { lockCopyrightEmailThreadTokens } from './email-thread-ancestors.mts'
+import { assertCopyrightEmailUnresolvedReply } from './email-thread-review-path.mts'
 import {
   assertStatutoryEmailFields,
   type PromoteCopyrightEmailIntakeInput,
 } from './email-promotion-input.mts'
 import { copyrightPromotionText, copyrightReceiptText } from './statement-of-reasons-wording.mts'
 import { enforceCopyrightAssessment } from './enforce-assessment.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 
 export type { PromoteCopyrightEmailIntakeInput } from './email-promotion-input.mts'
 
@@ -42,16 +55,66 @@ async function assessAndEnforceCopyrightEmailIntake(
 async function admitCopyrightEmailIntake(
   input: PromoteCopyrightEmailIntakeInput,
 ): Promise<{ noticeId: string; submissionId: string }> {
+  const maxGraphRows = await getCopyrightEmailThreadGraphMaxRows()
   await using transaction = await beginTransaction()
+  const { rows: existing } = await transaction<{ id: string }>(sql`
+    /* promoteCopyrightEmailIntake:exists */
+    SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId}
+  `)
+  assert(existing[0], 404, 'Copyright email intake not found')
+  const graph = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)
+  observeSharedDbScope(
+    'promoteCopyrightEmailIntakeGraph',
+    { kind: 'ids', ids: [input.intakeId] },
+    undefined,
+    transaction,
+  )
+  const tokens = graph.overflow
+    ? { digests: [], overflow: false }
+    : await readCopyrightEmailGraphTokens(transaction, graph.intakeIds, maxGraphRows)
+  // Ingestion takes these same sorted token locks before it inserts a reference or an edge.
+  // Taking them before intake FOR UPDATE prevents an intake/token lock inversion.
+  if (!graph.overflow && !tokens.overflow)
+    await lockCopyrightEmailThreadTokens(transaction, tokens.digests)
+  await lockCopyrightEmailGraphIntakes(
+    transaction,
+    graph.overflow || tokens.overflow ? [input.intakeId] : graph.intakeIds,
+  )
+  observeSharedDbScope(
+    'promoteCopyrightEmailIntakeGraphLocked',
+    { kind: 'ids', ids: [input.intakeId] },
+    undefined,
+    transaction,
+  )
+  if (!graph.overflow && !tokens.overflow) {
+    const afterLock = await readCopyrightEmailThreadGraph(transaction, input.intakeId, maxGraphRows)
+    assertCopyrightEmailGraphUnchanged(graph, afterLock)
+    const afterTokens = await readCopyrightEmailGraphTokens(
+      transaction,
+      afterLock.intakeIds,
+      maxGraphRows,
+    )
+    if (
+      afterTokens.overflow ||
+      tokens.digests.length !== afterTokens.digests.length ||
+      tokens.digests.some((digest, index) => digest !== afterTokens.digests[index])
+    )
+      throw copyrightEmailThreadChangedError()
+  }
+  const shouldLinkReplies = !graph.overflow && !tokens.overflow
   const { rows: intakeRows } =
-    await transaction<CopyrightEmailIntake>(sql`/* promoteCopyrightEmailIntake:lock */
-    SELECT id, amazon_ses_message_id, received_at, raw_storage_key, raw_sha256, raw_media_type_id,
-      (SELECT mime_type FROM media_types WHERE id = raw_media_type_id) AS raw_mime_type, raw_byte_size
-    FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR UPDATE
+    await transaction<CopyrightEmailIntake>(sql`/* promoteCopyrightEmailIntake:read */
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
+      COALESCE(object.storage_key, ${COPYRIGHT_ERASED_KEY_PREFIX} || intake.id::text) AS raw_storage_key,
+      intake.raw_storage_object_id, intake.raw_sha256, intake.raw_media_type_id,
+      (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size
+    FROM copyright_notice_email_intakes intake
+    LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
+    WHERE intake.id = ${input.intakeId}
   `)
   const intake = intakeRows[0]
   assert(intake, 404, 'Copyright email intake not found')
-  await assertNotUnresolvedThreadReply(transaction, intake.id)
+  await assertCopyrightEmailUnresolvedReply(transaction, intake.id)
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
     decision: string
@@ -76,17 +139,45 @@ async function admitCopyrightEmailIntake(
       'Copyright email intake was already rejected',
     )
     // ast-grep-ignore: no-three-sequential-awaits -- the case link and reply backfill must commit before returning an idempotent promotion.
-    await transaction(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
+    const { rows: replayLinks } = await transaction<{
+      copyright_notice_id: string
+      link_kind: string
+    }>(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
       INSERT INTO copyright_notice_email_intake_notice_links (
         copyright_notice_email_intake_id, copyright_notice_id, link_kind
       ) VALUES (${intake.id}, ${prior.promoted_copyright_notice_id}, 'initial')
       ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
+      RETURNING copyright_notice_id, link_kind
     `)
-    await linkPendingCopyrightEmailRepliesInTransaction(
-      { initialIntakeId: intake.id, noticeId: prior.promoted_copyright_notice_id },
-      transaction,
+    const retainedLink =
+      replayLinks[0] ??
+      (
+        await transaction<{ copyright_notice_id: string; link_kind: string }>(sql`
+        /* promoteCopyrightEmailIntake:retainedInitialLink */
+        SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
+        WHERE copyright_notice_email_intake_id = ${intake.id}
+      `)
+      ).rows[0]
+    assert(
+      retainedLink?.copyright_notice_id === prior.promoted_copyright_notice_id &&
+        retainedLink.link_kind === 'initial',
+      409,
+      'Copyright email intake was linked concurrently',
     )
+    if (shouldLinkReplies)
+      await linkPendingCopyrightEmailRepliesInTransaction(
+        {
+          initialIntakeId: intake.id,
+          noticeId: prior.promoted_copyright_notice_id,
+          descendantIntakeIds: graph.descendantIntakeIds.filter(id => id !== intake.id),
+          graphIntakeIds: graph.intakeIds,
+        },
+        transaction,
+      )
     await transaction.commit()
+    if (graph.overflow) logCopyrightEmailGraphOverflow(prior.promoted_copyright_notice_id, graph)
+    if (tokens.overflow)
+      logCopyrightEmailTokenLockOverflow(prior.promoted_copyright_notice_id, maxGraphRows)
     return {
       noticeId: prior.promoted_copyright_notice_id,
       submissionId: prior.submission_id,
@@ -98,27 +189,33 @@ async function admitCopyrightEmailIntake(
     buildEmailNotice(input, purpose, intake.received_at),
     transaction,
   )
-  const submissionId = await recordEmailPromotion(transaction, intake, notice.id, input, purpose)
+  const submissionId = await recordEmailPromotion(
+    transaction,
+    intake,
+    notice.id,
+    input,
+    purpose,
+    graph,
+    shouldLinkReplies,
+  )
   await transaction.commit()
+  if (graph.overflow) logCopyrightEmailGraphOverflow(notice.id, graph)
+  if (tokens.overflow) logCopyrightEmailTokenLockOverflow(notice.id, maxGraphRows)
   return { noticeId: notice.id, submissionId }
 }
 
-async function assertNotUnresolvedThreadReply(
-  transaction: TransactionQuery,
-  intakeId: string,
-): Promise<void> {
-  const { rows } = await transaction(sql`/* promoteCopyrightEmailIntake:unresolvedReply */
-    SELECT 1 FROM copyright_notice_email_thread_references reference
-    WHERE reference.copyright_notice_email_intake_id = ${intakeId}
-      AND reference.reference_kind = 'reply_reference'
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = ${intakeId}
-          AND link.link_kind = 'thread'
-      )
-    LIMIT 1
-  `)
-  assert(!rows[0], 409, 'Unresolved reply email must wait for its root case')
+function logCopyrightEmailGraphOverflow(noticeId: string, graph: CopyrightEmailThreadGraph): void {
+  console.info('copyright_email_thread_graph_overflow', {
+    noticeId,
+    observedRows: graph.observedRows,
+  })
+}
+
+function logCopyrightEmailTokenLockOverflow(noticeId: string, maxRows: number): void {
+  console.info('copyright_email_thread_token_lock_overflow', {
+    noticeId,
+    observedRows: maxRows + 1,
+  })
 }
 
 async function assertNoThreadCorrespondenceDecision(
@@ -191,6 +288,8 @@ async function recordEmailPromotion(
   noticeId: string,
   input: PromoteCopyrightEmailIntakeInput,
   purpose: string,
+  graph: CopyrightEmailThreadGraph,
+  shouldLinkReplies: boolean,
 ): Promise<string> {
   const { rows } = await transaction<{
     id: string
@@ -201,8 +300,8 @@ async function recordEmailPromotion(
   assert(submission, 500, 'Email copyright submission was not created')
   // ast-grep-ignore: no-three-sequential-awaits -- immutable evidence, human review, thread linking, and delivery obligations are ordered in one transaction.
   await transaction(sql`/* promoteCopyrightEmailIntake:evidence */
-    INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size)
-    VALUES (${submission.id}, ${intake.raw_storage_key}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
+    INSERT INTO copyright_notice_evidence_artifacts (copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size)
+    VALUES (${submission.id}, ${intake.raw_storage_object_id}, ${intake.raw_sha256}, ${intake.raw_media_type_id}, ${intake.raw_byte_size})
   `)
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
@@ -217,16 +316,26 @@ async function recordEmailPromotion(
         purpose,
       )}, ${noticeId})
   `)
-  await transaction(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
+  const { rows: initialLinks } = await transaction<{ copyright_notice_email_intake_id: string }>(
+    sql`/* promoteCopyrightEmailIntake:initialThreadLink */
     INSERT INTO copyright_notice_email_intake_notice_links (
       copyright_notice_email_intake_id, copyright_notice_id, link_kind
     ) VALUES (${intake.id}, ${noticeId}, 'initial')
     ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
-  `)
-  await linkPendingCopyrightEmailRepliesInTransaction(
-    { initialIntakeId: intake.id, noticeId },
-    transaction,
+    RETURNING copyright_notice_email_intake_id
+  `,
   )
+  assert(initialLinks[0], 409, 'Copyright email intake was linked concurrently')
+  if (shouldLinkReplies)
+    await linkPendingCopyrightEmailRepliesInTransaction(
+      {
+        initialIntakeId: intake.id,
+        noticeId,
+        descendantIntakeIds: graph.descendantIntakeIds.filter(id => id !== intake.id),
+        graphIntakeIds: graph.intakeIds,
+      },
+      transaction,
+    )
   const { rows: arrivalReceipt } = await transaction<{
     id: string
   }>(sql`/* recordEmailPromotion:arrivalReceipt */

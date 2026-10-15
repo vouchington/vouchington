@@ -44,12 +44,12 @@ const caps = {
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
   admin_mcp: {
-    all: { count: 74, list: 260000, core: 50000, output: 220000 },
+    all: { count: 75, list: 260000, core: 50000, output: 220000 },
     Reader: { count: 0, list: 2, core: 2, output: 2 },
     Reviewer: { count: 8, list: 65000, core: 7000, output: 60000 },
   },
 }
-const allAdminDisabled = { count: 60, list: 203758, core: 33550, output: 192044 }
+const allAdminDisabled = { count: 60, list: 203858, core: 33550, output: 192144 }
 const baseInstructions = { mcp: 656, admin_mcp: 347 }
 const length = (value: unknown) => JSON.stringify(value).length
 

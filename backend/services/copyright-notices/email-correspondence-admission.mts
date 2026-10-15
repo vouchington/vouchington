@@ -9,6 +9,7 @@ import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { revokeCopyrightGuestCapabilitiesForWithdrawal } from './guest-capability-withdrawal.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 import { v7 as uuidv7 } from 'uuid'
 import { createGuestTerritorialComplaintFromEmail } from './territorial-complaint-email.mts'
 
@@ -78,11 +79,14 @@ export async function admitCopyrightEmailCorrespondence(input: {
   await using transaction = await beginTransaction()
   const { rows } =
     await transaction<PendingCorrespondence>(sql`/* admitCopyrightEmailCorrespondence:lock */
-    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at, intake.raw_storage_key,
+    SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
+      COALESCE(object.storage_key, ${COPYRIGHT_ERASED_KEY_PREFIX} || intake.id::text) AS raw_storage_key,
+      intake.raw_storage_object_id,
       intake.raw_sha256, intake.raw_media_type_id,
         (SELECT mime_type FROM media_types WHERE id = intake.raw_media_type_id) AS raw_mime_type, intake.raw_byte_size,
       link.copyright_notice_id AS notice_id, parse.body_ciphertext
     FROM copyright_notice_email_intakes intake
+    LEFT JOIN copyright_notice_storage_objects object ON object.id = intake.raw_storage_object_id
     JOIN copyright_notice_email_intake_notice_links link
       ON link.copyright_notice_email_intake_id = intake.id AND link.link_kind = 'thread'
     JOIN copyright_notice_email_intake_parses parse
@@ -167,8 +171,8 @@ export async function admitCopyrightEmailCorrespondence(input: {
   }
   await transaction(sql`/* admitCopyrightEmailCorrespondence:evidence */
     INSERT INTO copyright_notice_evidence_artifacts (
-      copyright_notice_submission_id, storage_key, sha256, media_type_id, byte_size
-    ) VALUES (${submission.id}, ${pending.raw_storage_key}, ${pending.raw_sha256}, ${pending.raw_media_type_id}, ${pending.raw_byte_size})
+      copyright_notice_submission_id, storage_object_id, sha256, media_type_id, byte_size
+    ) VALUES (${submission.id}, ${pending.raw_storage_object_id}, ${pending.raw_sha256}, ${pending.raw_media_type_id}, ${pending.raw_byte_size})
   `)
   const { rows: correspondenceRows } = await transaction<{
     id: string
@@ -330,6 +334,7 @@ type PendingCorrespondence = {
   amazon_ses_message_id: string
   received_at: Date
   raw_storage_key: string
+  raw_storage_object_id: string | null
   raw_sha256: Buffer
   raw_media_type_id: string
   raw_mime_type: string

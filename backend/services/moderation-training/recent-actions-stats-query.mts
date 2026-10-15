@@ -18,16 +18,10 @@ export function buildRecentAutomodActionsStatsQuery(
     ),
     historical_false_positives AS (
       SELECT
-        CASE
-          WHEN mtf.source_type IN ('agent_moderation', 'community_prompt')
-            THEN mtf.source_type::text || ':' || mtf.agent_moderation_id::text
-          WHEN mtf.source_type = 'openai_omni'
-            THEN mtf.source_type::text || ':' || mtf.post_id::text || ':' || encode(mtf.input_sha256, 'hex')
-          WHEN mtf.source_type = 'spam_detection'
-            THEN mtf.source_type::text || ':' || mtf.post_id::text || ':' || encode(mtf.input_sha256, 'hex')
-          ELSE mtf.source_type::text || ':' || mtf.post_id::text
-        END AS source_key,
-        mtf.source_type::text AS source_type,
+        mtf.source_type,
+        mtf.post_id,
+        mtf.agent_moderation_id,
+        mtf.input_sha256,
         p.post_type,
         mod.slug AS moderator_slug,
         CASE
@@ -70,7 +64,14 @@ export function buildRecentAutomodActionsStatsQuery(
         AND NOT EXISTS (
           SELECT 1
           FROM filtered_actions fa
-          WHERE fa.source_key = hfp.source_key
+          WHERE fa.source_type = hfp.source_type
+            AND (
+              (hfp.source_type IN ('agent_moderation', 'community_prompt')
+                AND fa.agent_moderation_id = hfp.agent_moderation_id)
+              OR (hfp.source_type IN ('openai_omni', 'spam_detection')
+                AND fa.post_id = hfp.post_id
+                AND fa.input_sha256 = hfp.input_sha256)
+            )
         )
     )
     SELECT

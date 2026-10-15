@@ -93,10 +93,10 @@ export async function insertTestRssFeedWithUrlId(data: {
   await insertTestUrlDirect(null, homePageUrl, { content_type: 'text/html' })
 
   const hostnameResult = await write(sql`/* insertTestRssFeedWithUrlId */
-    INSERT INTO url_hostnames (hostname)
-    VALUES (${hostname})
+    INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    VALUES (${hostname}, CURRENT_TIMESTAMP)
     ON CONFLICT (hostname) DO UPDATE
-    SET hostname = EXCLUDED.hostname
+    SET publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)
     RETURNING id
   `)
   await setTestTopicHostnameLink(data.topicId, hostnameResult.rows[0].id as string)

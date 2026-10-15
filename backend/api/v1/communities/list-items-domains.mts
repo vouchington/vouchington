@@ -16,6 +16,7 @@ import {
   searchCommunityListItems,
 } from '@services/communities'
 import { getUrlHostnamesByAnyBatch } from '@services/urls-hostnames'
+import { isAdminUser } from '@services/users'
 import { indexById } from '@modules/utils'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
@@ -40,7 +41,11 @@ app
       query: communityPageQueryInput(ctx.query),
     })
 
-    const result = await searchCommunityListItems(community.id, 'url_hostname', { limit, after })
+    const result = await searchCommunityListItems(community.id, 'url_hostname', {
+      limit,
+      after,
+      currentUser,
+    })
     const entityIds = result.results.map(item => item.entity_id)
 
     if (!currentUser) {
@@ -56,7 +61,10 @@ app
       community_list_items: indexById(result.results),
       url_hostnames: getUrlHostnamesByAnyBatch(entityIds).then(hostnames =>
         hostnames.reduce<Record<string, unknown>>((acc, hostname) => {
-          if (hostname) acc[hostname.id] = hostname
+          if (hostname) {
+            const { publicly_introduced_at: _introduction, ...responseHostname } = hostname
+            acc[hostname.id] = responseHostname
+          }
           return acc
         }, {}),
       ),
@@ -91,6 +99,7 @@ app
       community.id,
       'url_hostname',
       body.url_hostname_id,
+      { isAdministrator: isAdminUser(currentUser) },
     )
 
     ctx.setStatus(201)

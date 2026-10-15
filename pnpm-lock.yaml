@@ -3382,6 +3382,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../services/elections-votes
+      '@services/email-address-validator':
+        specifier: workspace:^
+        version: link:../services/email-address-validator
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../services/entity-cache
@@ -5872,15 +5875,18 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
@@ -6007,6 +6013,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -6582,6 +6591,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -7884,6 +7896,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
+      '@services/email-address-validator':
+        specifier: workspace:^
+        version: link:../email-address-validator
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -10501,6 +10516,9 @@ importers:
       '@services/bloom-filter-config':
         specifier: workspace:^
         version: link:../bloom-filter-config
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
@@ -10532,6 +10550,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../entity-cache
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
@@ -13095,6 +13116,9 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
+      '@services/entity-cache':
+        specifier: workspace:^
+        version: link:../../services/entity-cache
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist

@@ -1,5 +1,7 @@
 // Test-only email intake setup uses the real copyright service paths.
 import { PASSING_COPYRIGHT_EMAIL_SES_VERDICTS } from '@voucha/test-helpers/services/copyright-notices/email-ses-verdicts'
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import {
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
@@ -36,4 +38,30 @@ export async function createParsedCopyrightEmailIntake(
     attachments: [],
   })
   return intake
+}
+
+/** Inspect only the intake and placement owned by one promotion-race test. */
+export async function readCopyrightEmailPromotionEffects(intakeId: string, placementId: string) {
+  const { rows } = await write<{
+    reviews: number
+    evidence: number
+    deliveries: number
+    thread_reviews: number
+    notice_targets: number
+  }>(sql`/* readCopyrightEmailPromotionEffects */
+    SELECT
+      (SELECT count(*)::int FROM copyright_notice_email_intake_reviews
+       WHERE copyright_notice_email_intake_id = ${intakeId}) AS reviews,
+      (SELECT count(*)::int FROM copyright_notice_evidence_artifacts
+       WHERE storage_object_id = (
+         SELECT raw_storage_object_id FROM copyright_notice_email_intakes WHERE id = ${intakeId}
+       )) AS evidence,
+      (SELECT count(*)::int FROM copyright_notice_delivery_work_items
+       WHERE copyright_notice_email_intake_id = ${intakeId}) AS deliveries,
+      (SELECT count(*)::int FROM copyright_notice_email_correspondence_reviews
+       WHERE copyright_notice_email_intake_id = ${intakeId}) AS thread_reviews,
+      (SELECT count(*)::int FROM copyright_notice_targets
+       WHERE placement_id = ${placementId}) AS notice_targets
+  `)
+  return rows[0]!
 }

@@ -25,6 +25,10 @@ export type CopyrightEmailApprovalRequest = {
   targets: ApiArrayContract<CopyrightNoticeTargetRequest, 1, 20, false>
 }
 
+export type CopyrightEmailNoticeAssociationRequest = {
+  copyright_notice_id: ApiUuidContract
+}
+
 export type CopyrightEmailRejectionRequest = {
   rationale: string
   recommendation_id?: ApiUuidContract | null

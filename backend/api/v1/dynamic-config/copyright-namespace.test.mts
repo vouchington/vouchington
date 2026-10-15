@@ -83,6 +83,7 @@ describe('copyright dynamic-config namespace', () => {
     expect(current.body.namespace.config).toEqual({
       automaticProvisionalWithholding: false,
       mcpDecisionTools: false,
+      emailThreadGraphMaxRows: 1000,
       reviewTargetMinutes: 0,
       evidenceRetentionDeletion: false,
       evidenceRetentionDays: 0,

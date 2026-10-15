@@ -62,7 +62,7 @@ export type CopyrightLifecycleEventRecord = {
 export type CopyrightEvidenceArtifactRecord = {
   id: string
   copyright_notice_submission_id: string
-  storage_key: string
+  storage_object_id: string | null
   sha256: Buffer
   mime_type: string
   byte_size: number

@@ -52,6 +52,10 @@ export async function searchCommunityListItems(
       JOIN posts candidate_post ON candidate_post.id = list_item.post_id
       JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)`)
   }
+  if (itemType === 'url_hostname') {
+    query.append(sql`
+      JOIN url_hostnames candidate_hostname ON candidate_hostname.id = list_item.url_hostname_id`)
+  }
   query.append(sql`
     WHERE list_item.community_id = ${communityId}
       AND list_item.removed_at IS NULL`)
@@ -66,6 +70,10 @@ export async function searchCommunityListItems(
           includeArchivedCommunities: true,
         })
     query.append(sql` AND `).append(eligibility)
+  }
+  if (itemType === 'url_hostname' && !options?.currentUser?.roles.includes('administrator')) {
+    query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL
+      AND NOT candidate_hostname.is_blocked`)
   }
 
   if (cursorOrderIndex !== undefined && cursorId !== undefined) {
@@ -144,6 +152,15 @@ export async function getCommunityListItemCounts(
             AND list_item.removed_at IS NULL
             AND `)
         .append(eligibility)
+    } else if (itemType === 'url_hostname') {
+      query.append(sql` list_item
+        JOIN url_hostnames candidate_hostname ON candidate_hostname.id = list_item.url_hostname_id
+        WHERE list_item.community_id = ${communityId}
+          AND list_item.removed_at IS NULL`)
+      if (!options?.currentUser?.roles.includes('administrator')) {
+        query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL
+          AND NOT candidate_hostname.is_blocked`)
+      }
     } else {
       query.append(sql` list_item
         WHERE list_item.community_id = ${communityId}

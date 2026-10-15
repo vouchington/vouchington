@@ -55,6 +55,7 @@ export const COPYRIGHT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
     ttlSeconds: 3600,
   },
   'POST:/api/v1/copyright-email-intakes/:id/approvals': { category: 'sensitive' },
+  'POST:/api/v1/copyright-email-intakes/:id/notice-associations': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/rejections': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/legal-process': { category: 'sensitive' },
   'POST:/api/v1/copyright-email-intakes/:id/correspondence': { category: 'sensitive' },

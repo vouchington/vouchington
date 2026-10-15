@@ -167,9 +167,5 @@ function buildHiddenItemsCTE(currentUserId: string | undefined): SQLStatement {
 function buildExcludedHostnamesCTE(currentUserId: string | undefined): SQLStatement {
   return currentUserId
     ? buildExcludedHostnameIdsCTE(currentUserId)
-    : sql`excluded_hostname_ids AS (
-            SELECT id AS hostname_id
-            FROM url_hostnames
-            WHERE is_blocked
-          )`
+    : sql`excluded_hostname_ids AS (SELECT NULL::uuid AS hostname_id WHERE false)`
 }

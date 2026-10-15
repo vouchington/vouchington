@@ -3,6 +3,7 @@
 [Back to Hostnames API](../../../../../backend/api/v1/hostnames/README.md#get-apiv1hostnamessocial)
 
 List trusted domains from users the current user follows (ranked by friend upvote count).
+Only hostnames introduced publicly through URLs, topics, or staff actions appear.
 
 **Unauthorized.**
 

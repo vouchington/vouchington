@@ -3,6 +3,7 @@
 [Back to Hostnames API](../../../../../backend/api/v1/hostnames/README.md#get-apiv1hostnamescompare)
 
 Compare up to 10 domains side-by-side for vote counts, trust badges, and reputation.
+Hostnames known only through email addresses or email blocklists are omitted for non-administrators.
 
 Query parameters:
 

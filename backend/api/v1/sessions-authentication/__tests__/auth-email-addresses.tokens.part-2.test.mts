@@ -5,7 +5,6 @@ import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
 import {
   createUniqueTestEmail,
-  invalidateEmailDomainCaches,
   createAppAttestAssertionHeaders,
   useAppAttestBypassConfig,
 } from '@voucha/test-helpers'
@@ -25,7 +24,6 @@ describe('Email Address Authentication Routes', () => {
     const did = v7()
     const sid = v7()
     await createDeviceAndSessionTokens({ did, sid })
-    await invalidateEmailDomainCaches()
   }, 30_000)
 
   afterEach(async () => {

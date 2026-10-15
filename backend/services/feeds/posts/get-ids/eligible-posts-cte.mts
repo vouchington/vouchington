@@ -110,10 +110,12 @@ export function appendEligiblePostsSelect(
         SELECT 1
         FROM relation__post__related__url pru
         JOIN urls ON urls.id = pru.object_id
+        JOIN url_hostnames blocked_hostname ON blocked_hostname.id = urls.hostname_id
         WHERE pru.subject_id = posts.id
           AND pru.deleted_at IS NULL
           AND pru.votes_score_net > 0
-          AND urls.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
+          AND (urls.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
+               OR blocked_hostname.is_blocked)
       )
   `)
   if (postTypes?.length) {

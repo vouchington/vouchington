@@ -80,6 +80,44 @@ describe('copyright email intake threading', () => {
       review_path: 'matched_thread',
       linked_notice: { id: promoted.noticeId },
     })
+
+    const spoofedMessageId = `spoofed-${crypto.randomUUID()}@example.test`
+    await expect(
+      recordCopyrightEmailParse(intake, {
+        status: 'succeeded',
+        fromEmail: 'attacker@example.test',
+        subject: 'Changed replay headers',
+        bodyText: 'The immutable first parse still owns this reply.',
+        messageId: `<${spoofedMessageId}>`,
+        replyReferences: ['<not-the-original-root@example.test>'],
+        attachments: [],
+      }),
+    ).resolves.toMatchObject({
+      noticeId: promoted.noticeId,
+      matchedReference: rootMessageId,
+    })
+
+    const spoofReplySesId = `ses-spoof-reply-${crypto.randomUUID()}`
+    const { intake: spoofReply } = await createCopyrightEmailIntake({
+      sesMessageId: spoofReplySesId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${spoofReplySesId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 11),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await expect(
+      recordCopyrightEmailParse(spoofReply, {
+        status: 'succeeded',
+        fromEmail: 'attacker@example.test',
+        subject: 'Re: spoofed message',
+        bodyText: 'This references only the altered replay header.',
+        messageId: `<${crypto.randomUUID()}@example.test>`,
+        replyReferences: [`<${spoofedMessageId}>`],
+        attachments: [],
+      }),
+    ).resolves.toBeNull()
   })
 })
 

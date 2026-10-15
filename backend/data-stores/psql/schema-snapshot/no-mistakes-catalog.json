@@ -339,7 +339,7 @@
       "values": ["approved", "rejected", "legal_process"]
     },
     "copyright_notice_email_thread_reference_kinds": {
-      "values": ["message_id", "reply_reference"]
+      "values": ["message_id", "in_reply_to", "references"]
     },
     "copyright_notice_form_screening_attempt_states": {
       "values": ["pending", "failed", "completed"]
@@ -381,6 +381,7 @@
         "agent_correspondence_approved",
         "email_correspondence_admitted",
         "email_correspondence_rejected",
+        "email_intake_manually_associated",
         "provisional_restriction_imposed",
         "mandatory_human_review_completed",
         "restriction_lifted_by_administrator",
@@ -1168,7 +1169,7 @@
       ]
     },
     "url_hostname_block_sources": {
-      "values": ["admin", "google_web_risk", "parent_hostname"]
+      "values": ["admin", "google_web_risk", "parent_hostname", "url_blocklist", "email_blocklist"]
     },
     "user_deletion_external_work_kinds": {
       "values": ["cloudflare-cache-tag", "entity-relation-effects", "s3-export", "stripe-customer"]
@@ -1231,7 +1232,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)\n$function$\n"
     },
     "fn_copyright_retention_erasable_columns(table_name text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_key']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_key']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['lookup_token']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_reference_lookup']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
     },
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
@@ -1241,6 +1242,9 @@
     },
     "fn_create_copyright_delivery_attempt()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_copyright_delivery_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL\n    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN\n    INSERT INTO copyright_notice_delivery_attempt_results(attempt_id, sent_at, failed_at, bounced_at, abandoned_at)\n    SELECT id, CASE WHEN NEW.sent_at IS NOT NULL THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.failed_at IS NOT NULL OR (NEW.lease_token IS NULL AND NEW.failure_ciphertext IS NOT NULL AND NOT (NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.bounced_at IS NOT NULL THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.lease_token IS NULL AND NEW.failure_ciphertext IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END\n    FROM copyright_notice_delivery_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token\n    ON CONFLICT (attempt_id) DO NOTHING;\n  END IF;\n  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    INSERT INTO copyright_notice_delivery_attempts(work_item_id, generation, attempt_number, lease_token, started_at)\n      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at\n      FROM copyright_notice_delivery_attempts WHERE work_item_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_create_domain_blocklist_hostname_blocks()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_domain_blocklist_hostname_blocks()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO url_hostname_blocks (\n    url_hostname_id, domain_blocklist_source_id, blocked_source\n  )\n  SELECT inserted.url_hostname_id, inserted.source_id,\n    CASE source.type\n      WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources\n      ELSE 'url_blocklist'::url_hostname_block_sources\n    END\n  FROM inserted_domains inserted\n  JOIN domain_blocklist_sources source ON source.id = inserted.source_id\n  ORDER BY inserted.url_hostname_id, inserted.source_id\n  ON CONFLICT DO NOTHING;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_create_google_play_acknowledgment_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_google_play_acknowledgment_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO membership_google_play_acknowledgment_work_items (membership_google_play_acknowledgment_id, completed_at)\n  VALUES (NEW.id, COALESCE(NEW.acknowledged_at, NEW.skipped_at));\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1332,6 +1336,9 @@
     "fn_project_copyright_form_screening_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN\n    INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)\n      VALUES (NEW.copyright_notice_form_intake_id, NEW.id)\n    ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL, attempt_count = 0, available_at = clock_timestamp();\n  ELSIF NEW.completed_at IS NOT NULL OR NEW.failed_at IS NOT NULL THEN\n    DELETE FROM copyright_notice_form_screening_work_items WHERE attempt_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_project_domain_blocklist_hostname_block_lifts()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_domain_blocklist_hostname_block_lifts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostname_blocks block\n  SET lifted_at = CURRENT_TIMESTAMP\n  FROM deleted_domains deleted\n  WHERE block.url_hostname_id = deleted.url_hostname_id\n    AND block.domain_blocklist_source_id = deleted.source_id\n    AND block.lifted_at IS NULL;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
     "fn_project_handoff_deleted_user_image_surfaces()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_handoff_deleted_user_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-image', NULL, OLD.id, NULL, NULL, NULL);\n  UPDATE image_surface_placements\n  SET user_id = NULL\n  WHERE surface_kind = 'user-profile-image' AND user_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
     },
@@ -1394,9 +1401,6 @@
     },
     "fn_project_transparency_rollup()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  cohort RECORD;\n  delta_sign INTEGER := CASE WHEN TG_OP = 'DELETE' THEN -1 ELSE 1 END;\nBEGIN\n  FOR cohort IN EXECUTE format(\n    'SELECT (uuid_extract_timestamp(id) AT TIME ZONE ''UTC'')::date AS day,\n      NULL::uuid AS community_id, $1::moderation_transparency_metrics AS metric, %I::text::moderation_transparency_categories AS category,\n      count(*)::integer AS count FROM %I\n      WHERE moderation_transparency_community_id IS NULL\n      GROUP BY 1, 2, 3, 4 ORDER BY 1, 2 NULLS FIRST, 3, 4', TG_ARGV[1], TG_ARGV[0])\n    USING TG_ARGV[2]\n  LOOP\n    PERFORM fn_apply_moderation_transparency_daily_rollup(\n      cohort.day::timestamp AT TIME ZONE 'UTC', cohort.community_id,\n      cohort.metric::moderation_transparency_metrics, cohort.category::text::moderation_transparency_categories, delta_sign * cohort.count);\n  END LOOP;\n  RETURN NULL;\nEND $function$\n"
-    },
-    "fn_project_url_hostname_blocked()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_url_hostname_blocked()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostnames\n  SET is_blocked = EXISTS (\n    SELECT 1 FROM url_hostname_blocks\n    WHERE url_hostname_id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id)\n      AND lifted_at IS NULL\n  )\n  WHERE id = COALESCE(NEW.url_hostname_id, OLD.url_hostname_id);\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_user_profile_image_placement()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-image', NEW.profile_image_id, NEW.id, NULL, NULL, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1470,6 +1474,9 @@
     "fn_reject_copyright_delivery_intent_transition()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE next_state copyright_notice_delivery_intent_states;\nBEGIN\n  next_state := CASE WHEN NEW.bounced_at IS NOT NULL THEN 'bounced'::copyright_notice_delivery_intent_states WHEN NEW.sent_at IS NOT NULL THEN 'sent'::copyright_notice_delivery_intent_states WHEN NEW.failed_at IS NOT NULL THEN 'failed'::copyright_notice_delivery_intent_states WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_delivery_intent_states ELSE 'pending'::copyright_notice_delivery_intent_states END;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.sent_at IS NOT NULL AND (NEW.sent_at IS DISTINCT FROM OLD.sent_at\n      OR NEW.amazon_ses_message_id IS DISTINCT FROM OLD.amazon_ses_message_id))\n    OR (OLD.bounced_at IS NOT NULL AND NEW.bounced_at IS DISTINCT FROM OLD.bounced_at)\n    OR (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND next_state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state\n    AND NOT (\n      next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_reject_copyright_email_thread_reference_without_token()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_thread_reference_without_token()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.token_id IS NULL AND\n    (TG_OP = 'INSERT' OR current_setting('app.copyright_retention_erasure', true) IS DISTINCT FROM 'on') THEN\n    RAISE EXCEPTION 'Copyright email thread reference token may be cleared only by retention erasure';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_reject_copyright_human_actor()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_human_actor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NULL THEN\n    RAISE EXCEPTION 'copyright human decisions require an identified actor' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1478,6 +1485,9 @@
     },
     "fn_reject_copyright_lifecycle_event_source_notice()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.id = NEW.media_delivery_registry_record_id\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_reject_copyright_missing_storage_object()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_missing_storage_object()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NOT NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND to_jsonb(OLD) ->> TG_ARGV[0] IS NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright evidence requires a stored object before retention erasure' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_identity()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1665,6 +1675,9 @@
     "fn_update_copyright_delivery_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.available_at := COALESCE(NEW.available_at, clock_timestamp());\n  IF TG_OP = 'UPDATE' AND (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NULL) THEN NEW.generation := OLD.generation + 1; END IF;\n  IF NEW.sent_at IS NOT NULL OR NEW.failed_at IS NOT NULL OR NEW.bounced_at IS NOT NULL OR NEW.leased_at IS NULL THEN\n    NEW.lease_token := NULL; NEW.leased_at := NULL; NEW.lease_expires_at := NULL;\n  ELSE\n    NEW.lease_token := COALESCE(NEW.lease_token, uuidv7());\n    NEW.lease_expires_at := COALESCE(NEW.lease_expires_at, NEW.leased_at + interval '15 minutes');\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_update_domain_blocklist_hostname_block_source()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_domain_blocklist_hostname_block_source()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostname_blocks block\n  SET blocked_source = CASE NEW.type\n    WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources\n    ELSE 'url_blocklist'::url_hostname_block_sources\n  END\n  WHERE block.domain_blocklist_source_id = NEW.id\n    AND block.lifted_at IS NULL\n    AND block.blocked_source IS DISTINCT FROM CASE NEW.type\n      WHEN 'email' THEN 'email_blocklist'::url_hostname_block_sources\n      ELSE 'url_blocklist'::url_hostname_block_sources\n    END;\n  IF NEW.type = 'url' THEN\n    UPDATE url_hostnames host\n    SET publicly_introduced_at = COALESCE(host.publicly_introduced_at, CURRENT_TIMESTAMP)\n    FROM blocklisted_domains domain\n    WHERE domain.source_id = NEW.id\n      AND domain.url_hostname_id = host.id\n      AND host.publicly_introduced_at IS NULL;\n  END IF;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
     "fn_update_media_delivery_change_authority()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_media_delivery_change_authority()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_generation bigint; current_desired_state media_delivery_desired_states;\nBEGIN\n  SELECT generation, desired_state INTO current_generation, current_desired_state FROM media_delivery_registry_records\n    WHERE id = NEW.media_delivery_registry_record_id FOR NO KEY UPDATE;\n  IF current_generation IS DISTINCT FROM NEW.generation THEN RETURN NULL; END IF;\n  NEW.desired_state := current_desired_state;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1700,6 +1713,15 @@
     },
     "fn_update_updated_at()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = CURRENT_TIMESTAMP;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_url_hostname_blocked_after_delete()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM host.id FROM url_hostnames host\n  JOIN (\n    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH affected AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM deleted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_update_url_hostname_blocked_after_insert()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_insert()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  -- Lock every affected hostname even when it is already blocked. A concurrent\n  -- source removal must wait, then evaluate the remaining blocks in a fresh\n  -- READ COMMITTED statement.\n  PERFORM host.id FROM url_hostnames host\n  JOIN (\n    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH affected AS MATERIALIZED (\n    SELECT DISTINCT url_hostname_id AS id FROM inserted_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  )\n  UPDATE url_hostnames host SET is_blocked = TRUE\n  FROM affected WHERE host.id = affected.id AND NOT host.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
+    },
+    "fn_update_url_hostname_blocked_after_update()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM host.id FROM url_hostnames host\n  JOIN (\n    SELECT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n    UNION\n    SELECT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ) affected ON affected.id = host.id\n  ORDER BY host.id FOR UPDATE OF host;\n\n  WITH affected AS MATERIALIZED (\n    SELECT url_hostname_id AS id FROM prior_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n    UNION\n    SELECT url_hostname_id AS id FROM updated_blocks\n    WHERE lifted_at IS NULL AND blocked_source <> 'email_blocklist'\n  ), states AS MATERIALIZED (\n    SELECT affected.id, EXISTS (\n      SELECT 1 FROM url_hostname_blocks block\n      WHERE block.url_hostname_id = affected.id\n        AND block.lifted_at IS NULL AND block.blocked_source <> 'email_blocklist'\n    ) AS is_blocked FROM affected\n  )\n  UPDATE url_hostnames host SET is_blocked = states.is_blocked\n  FROM states WHERE host.id = states.id AND host.is_blocked IS DISTINCT FROM states.is_blocked;\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_update_url_hostname_crawl_policy_changed_at()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.is_crawlable IS DISTINCT FROM OLD.is_crawlable\n    OR NEW.is_blocked IS DISTINCT FROM OLD.is_blocked\n    OR NEW.age_threshold_days IS DISTINCT FROM OLD.age_threshold_days\n    OR NEW.requests_per_second_limit IS DISTINCT FROM OLD.requests_per_second_limit\n    OR NEW.attempt_threshold_hours IS DISTINCT FROM OLD.attempt_threshold_hours\n  THEN\n    NEW.crawl_policy_changed_at = GREATEST(\n      clock_timestamp(), OLD.crawl_policy_changed_at + INTERVAL '1 microsecond'\n    );\n  ELSE\n    NEW.crawl_policy_changed_at = OLD.crawl_policy_changed_at;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -6836,7 +6858,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "apple_user_email_address": {
           "comment": "Email address from the Apple profile.",
@@ -6866,7 +6888,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
+        },
+        "email_domain_hostname_id": {
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
@@ -6876,7 +6908,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -6897,6 +6929,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "fk_apple_accounts__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
           "validated": true
         }
       },
@@ -6942,6 +6982,29 @@
           ],
           "live": true,
           "predicate": "(apple_user_email_address IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_apple_accounts__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_apple_accounts__email_domain_hostname_id ON public.apple_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(email_domain_hostname_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -8049,7 +8112,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "domain": {
           "comment": "The blacklisted domain name (lowercase).",
@@ -8079,7 +8142,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
+        },
+        "url_hostname_id": {
+          "comment": "Resolved hostname identity used by block projections and readers.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
         }
       },
       "comment": "Individual blacklisted domains from external sources.",
@@ -8090,6 +8163,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "domain_blocklist_sources",
+          "validated": true
+        },
+        "blocklisted_domains_url_hostname_id_fkey": {
+          "columns": ["url_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
           "validated": true
         }
       },
@@ -8198,6 +8279,38 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "uq_blocklisted_domains__hostname_source": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_blocklisted_domains__hostname_source ON public.blocklisted_domains USING btree (url_hostname_id, source_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "source_id",
+              "descending": false,
+              "expression": "source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -8208,9 +8321,19 @@
       "triggers": {
         "trigger_blocklisted_domains_updated_at": {
           "definition": "CREATE TRIGGER trigger_blocklisted_domains_updated_at BEFORE UPDATE ON public.blocklisted_domains FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_create_domain_blocklist_hostname_blocks": {
+          "definition": "CREATE TRIGGER trigger_create_domain_blocklist_hostname_blocks AFTER INSERT ON public.blocklisted_domains REFERENCING NEW TABLE AS inserted_domains FOR EACH STATEMENT EXECUTE FUNCTION fn_create_domain_blocklist_hostname_blocks()"
+        },
+        "trigger_project_domain_blocklist_hostname_block_lifts": {
+          "definition": "CREATE TRIGGER trigger_project_domain_blocklist_hostname_block_lifts AFTER DELETE ON public.blocklisted_domains REFERENCING OLD TABLE AS deleted_domains FOR EACH STATEMENT EXECUTE FUNCTION fn_project_domain_blocklist_hostname_block_lifts()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_blocklisted_domains__hostname_source": {
+          "columns": ["url_hostname_id", "source_id"]
+        }
+      }
     },
     "bluesky_follow_records": {
       "checkConstraints": {
@@ -29546,10 +29669,6 @@
     },
     "copyright_notice_email_intake_notice_links": {
       "checkConstraints": {
-        "chk_copy_noti_email_intak_notic_links__matched_reference_lookup": {
-          "definition": "CHECK (((matched_reference_lookup IS NULL) OR (char_length(matched_reference_lookup) = 64)))",
-          "validated": true
-        },
         "copyright_notice_email_intake_notice_links_link_kind_check": {
           "definition": "CHECK ((link_kind = ANY (ARRAY['initial'::copyright_notice_email_intake_link_kinds, 'thread'::copyright_notice_email_intake_link_kinds])))",
           "validated": true
@@ -29616,9 +29735,9 @@
           "nullable": false,
           "ordinalPosition": 5
         },
-        "matched_reference_lookup": {
-          "comment": "Keyed digest that caused thread correlation.",
-          "dataType": "text",
+        "matched_token_id": {
+          "comment": "Private token identity that caused thread correlation; cleared when the case is erased.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -29635,6 +29754,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "fk_copyright_notice_email_intake_notice_links__matched_token": {
+          "columns": ["matched_token_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_thread_tokens",
           "validated": true
         },
         "fk_copyright_notice_email_intake_notice_links__notice": {
@@ -29676,6 +29803,29 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_email_intake_notice_links__matched_token": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token ON public.copyright_notice_email_intake_notice_links USING btree (matched_token_id) WHERE (matched_token_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "matched_token_id",
+              "descending": false,
+              "expression": "matched_token_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(matched_token_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_copyright_notice_email_intake_notice_links__notice": {
@@ -30628,10 +30778,6 @@
           "definition": "CHECK ((octet_length(raw_sha256) = 32))",
           "validated": true
         },
-        "copyright_notice_email_intakes_raw_storage_key_check": {
-          "definition": "CHECK (((char_length(raw_storage_key) >= 1) AND (char_length(raw_storage_key) <= 1024)))",
-          "validated": true
-        },
         "copyright_notice_email_intakes_spam_verdict_check": {
           "definition": "CHECK ((spam_verdict = ANY (ARRAY['pass'::email_security_verdicts, 'fail'::email_security_verdicts, 'gray'::email_security_verdicts, 'processing_failed'::email_security_verdicts, 'unknown'::email_security_verdicts])))",
           "validated": true
@@ -30726,14 +30872,14 @@
           "nullable": false,
           "ordinalPosition": 5
         },
-        "raw_storage_key": {
-          "comment": "Private immutable original RFC 5322 object. The original preserves every attachment and is retained before the SES source object can be deleted.",
-          "dataType": "text",
+        "raw_storage_object_id": {
+          "comment": "Registry identity of the immutable original RFC 5322 object; cleared only by retention erasure after the object is no longer shared.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 4
         },
         "received_at": {
@@ -30785,6 +30931,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "media_types",
+          "validated": true
+        },
+        "fk_copyright_notice_email_intakes__raw_storage_object": {
+          "columns": ["raw_storage_object_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_storage_objects",
           "validated": true
         }
       },
@@ -30858,6 +31012,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_copyright_notice_email_intakes__raw_storage_object_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id ON public.copyright_notice_email_intakes USING btree (raw_storage_object_id) WHERE (raw_storage_object_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "raw_storage_object_id",
+              "descending": false,
+              "expression": "raw_storage_object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(raw_storage_object_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_copyright_notice_email_intakes__received_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -30899,6 +31076,9 @@
       "triggers": {
         "trigger_copyright_email_intakes_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_email_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        },
+        "trigger_copyright_email_intakes_require_storage_object": {
+          "definition": "CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')"
         }
       },
       "uniqueConstraints": {
@@ -30907,14 +31087,150 @@
         }
       }
     },
-    "copyright_notice_email_thread_references": {
+    "copyright_notice_email_message_ancestors": {
       "checkConstraints": {
-        "copyright_notice_email_thread_references_lookup_token_check": {
-          "definition": "CHECK ((char_length(lookup_token) = 64))",
+        "chk_copyright_email_message_ancestors__distinct": {
+          "definition": "CHECK ((reply_message_intake_id <> ancestor_message_intake_id))",
           "validated": true
         },
+        "copyright_notice_email_message_ancestors_reference_kind_check": {
+          "definition": "CHECK ((reference_kind = ANY (ARRAY['in_reply_to'::copyright_notice_email_thread_reference_kinds, 'references'::copyright_notice_email_thread_reference_kinds])))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "ancestor_message_intake_id": {
+          "comment": "Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "reference_kind": {
+          "comment": "Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.",
+          "dataType": "copyright_notice_email_thread_reference_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "reply_message_intake_id": {
+          "comment": "Inbound reply intake that named the ancestor.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Immutable resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token, including an ancestor that arrives later.",
+      "foreignKeys": {
+        "fk_copyright_notice_email_message_ancestors__ancestor": {
+          "columns": ["ancestor_message_intake_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "fk_copyright_notice_email_message_ancestors__reply": {
+          "columns": ["reply_message_intake_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "copyright_notice_email_message_ancestors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_message_ancestors_pkey ON public.copyright_notice_email_message_ancestors USING btree (reply_message_intake_id, ancestor_message_intake_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reply_message_intake_id",
+              "descending": false,
+              "expression": "reply_message_intake_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "ancestor_message_intake_id",
+              "descending": false,
+              "expression": "ancestor_message_intake_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_notice_email_message_ancestors__ancestor_reply": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor_reply ON public.copyright_notice_email_message_ancestors USING btree (ancestor_message_intake_id, reply_message_intake_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ancestor_message_intake_id",
+              "descending": false,
+              "expression": "ancestor_message_intake_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "reply_message_intake_id",
+              "descending": false,
+              "expression": "reply_message_intake_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["reply_message_intake_id", "ancestor_message_intake_id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_message_ancestors_immutable": {
+          "definition": "CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_message_ancestors FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "copyright_notice_email_thread_references": {
+      "checkConstraints": {
         "copyright_notice_email_thread_references_reference_kind_check": {
-          "definition": "CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'reply_reference'::copyright_notice_email_thread_reference_kinds])))",
+          "definition": "CHECK ((reference_kind = ANY (ARRAY['message_id'::copyright_notice_email_thread_reference_kinds, 'in_reply_to'::copyright_notice_email_thread_reference_kinds, 'references'::copyright_notice_email_thread_reference_kinds])))",
           "validated": true
         }
       },
@@ -30949,18 +31265,8 @@
           "nullable": false,
           "ordinalPosition": 1
         },
-        "lookup_token": {
-          "comment": "Keyed digest of a normalized RFC message reference.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
         "reference_kind": {
-          "comment": "Whether the token names this message or a referenced parent.",
+          "comment": "Whether the token is this message's Message-ID, an In-Reply-To token, or a References token.",
           "dataType": "copyright_notice_email_thread_reference_kinds",
           "defaultExpression": null,
           "generated": null,
@@ -30968,9 +31274,19 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
+        },
+        "token_id": {
+          "comment": "Private token identity; NULL only after the owning case is erased under the retention-erasure flag.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         }
       },
-      "comment": "Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.",
+      "comment": "Private UUID references to keyed RFC Message-ID and In-Reply-To/References tokens.",
       "foreignKeys": {
         "fk_copyright_notice_email_thread_references__intake": {
           "columns": ["copyright_notice_email_intake_id"],
@@ -30978,6 +31294,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "fk_copyright_notice_email_thread_references__token": {
+          "columns": ["token_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_thread_tokens",
           "validated": true
         }
       },
@@ -31005,19 +31329,19 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_notice_email_thread_references__lookup": {
+        "idx_copyright_notice_email_thread_references__token": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_email_thread_references__lookup ON public.copyright_notice_email_thread_references USING btree (lookup_token, id)",
+          "definition": "CREATE INDEX idx_copyright_notice_email_thread_references__token ON public.copyright_notice_email_thread_references USING btree (token_id, id) WHERE (token_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "lookup_token",
+              "collation": null,
+              "column": "token_id",
               "descending": false,
-              "expression": "lookup_token",
+              "expression": "token_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
             {
@@ -31031,16 +31355,16 @@
             }
           ],
           "live": true,
-          "predicate": null,
+          "predicate": "(token_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
           "valid": true
         },
-        "uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind": {
+        "uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, lookup_token, reference_kind)",
+          "definition": "CREATE UNIQUE INDEX uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind ON public.copyright_notice_email_thread_references USING btree (copyright_notice_email_intake_id, token_id, reference_kind)",
           "immediate": true,
           "keys": [
             {
@@ -31053,12 +31377,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "lookup_token",
+              "collation": null,
+              "column": "token_id",
               "descending": false,
-              "expression": "lookup_token",
+              "expression": "token_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
             {
@@ -31087,11 +31411,119 @@
       "triggers": {
         "trigger_copyright_email_thread_references_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_email_thread_references_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        },
+        "trigger_copyright_email_thread_references_require_token": {
+          "definition": "CREATE TRIGGER trigger_copyright_email_thread_references_require_token BEFORE INSERT OR UPDATE ON public.copyright_notice_email_thread_references FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_thread_reference_without_token()"
         }
       },
       "uniqueConstraints": {
-        "uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind": {
-          "columns": ["copyright_notice_email_intake_id", "lookup_token", "reference_kind"]
+        "uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind": {
+          "columns": ["copyright_notice_email_intake_id", "token_id", "reference_kind"]
+        }
+      }
+    },
+    "copyright_notice_email_thread_tokens": {
+      "checkConstraints": {
+        "chk_copyright_notice_email_thread_tokens__lookup_digest": {
+          "definition": "CHECK ((lookup_digest ~ '^[0-9A-Fa-f]{64}$'::text))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "lookup_digest": {
+          "comment": "Keyed hex64 digest of a normalized RFC message reference; retention erasure overwrites it only when no live reference remains.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "Private UUID identities for keyed RFC message-reference digests; the digest survives while any live case or reply uses it.",
+      "foreignKeys": {},
+      "indexes": {
+        "copyright_notice_email_thread_tokens_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_thread_tokens_pkey ON public.copyright_notice_email_thread_tokens USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_copyright_notice_email_thread_tokens__lookup_digest": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_copyright_notice_email_thread_tokens__lookup_digest ON public.copyright_notice_email_thread_tokens USING btree (lookup_digest)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "lookup_digest",
+              "descending": false,
+              "expression": "lookup_digest",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_email_thread_tokens_immutable": {
+          "definition": "CREATE TRIGGER trigger_copyright_email_thread_tokens_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_thread_tokens FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        }
+      },
+      "uniqueConstraints": {
+        "uq_copyright_notice_email_thread_tokens__lookup_digest": {
+          "columns": ["lookup_digest"]
         }
       }
     },
@@ -31177,14 +31609,14 @@
           "nullable": false,
           "ordinalPosition": 5
         },
-        "storage_key": {
-          "comment": "Private object-storage key; never included in member projections.",
-          "dataType": "text",
+        "storage_object_id": {
+          "comment": "Registry identity of private evidence bytes; cleared only by retention erasure after unshared object deletion.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 4
         }
       },
@@ -31196,6 +31628,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "media_types",
+          "validated": true
+        },
+        "copyright_notice_evidence_artifacts_storage_object_id_fkey": {
+          "columns": ["storage_object_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_storage_objects",
           "validated": true
         },
         "fk_copyright_artifacts__parent_notice": {
@@ -31286,10 +31726,33 @@
           "unique": false,
           "valid": true
         },
-        "uq_copyrig_notice_evidence_artifact__submission_id__storage_key": {
+        "idx_copyright_notice_evidence_artifacts__storage_object_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_evidence_artifacts__storage_object_id ON public.copyright_notice_evidence_artifacts USING btree (storage_object_id) WHERE (storage_object_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "storage_object_id",
+              "descending": false,
+              "expression": "storage_object_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(storage_object_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "uq_copyright_evidence_artifacts__submission_object": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyrig_notice_evidence_artifact__submission_id__storage_key ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_key)",
+          "definition": "CREATE UNIQUE INDEX uq_copyright_evidence_artifacts__submission_object ON public.copyright_notice_evidence_artifacts USING btree (copyright_notice_submission_id, storage_object_id)",
           "immediate": true,
           "keys": [
             {
@@ -31302,12 +31765,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "storage_key",
+              "collation": null,
+              "column": "storage_object_id",
               "descending": false,
-              "expression": "storage_key",
+              "expression": "storage_object_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -31328,6 +31791,9 @@
         "trigger_copyright_notice_evidence_immutable": {
           "definition": "CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
         },
+        "trigger_copyright_notice_evidence_requires_storage_object": {
+          "definition": "CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id')"
+        },
         "trigger_update_copyright_artifacts_scope": {
           "definition": "CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')"
         }
@@ -31336,8 +31802,8 @@
         "copyright_notice_evidence_artifacts_copyright_notice_id_id_key": {
           "columns": ["copyright_notice_id", "id"]
         },
-        "uq_copyrig_notice_evidence_artifact__submission_id__storage_key": {
-          "columns": ["copyright_notice_submission_id", "storage_key"]
+        "uq_copyright_evidence_artifacts__submission_object": {
+          "columns": ["copyright_notice_submission_id", "storage_object_id"]
         }
       }
     },
@@ -33690,7 +34156,7 @@
           "validated": true
         },
         "copyright_lifecycle_event_source_shape": {
-          "definition": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_id, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = 'email_correspondence_rejected'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
+          "definition": "CHECK (((num_nonnulls(copyright_notice_submission_id, copyright_notice_submission_assessment_id, copyright_notice_evidence_artifact_id, copyright_notice_correspondence_id, copyright_notice_legal_hold_assessment_id, copyright_notice_legal_hold_resolution_id, copyright_notice_deadline_id, copyright_restriction_id, copyright_notice_action_intent_id, copyright_notice_email_intake_id, copyright_notice_delivery_work_item_id, media_delivery_registry_record_id, copyright_notice_guest_capability_id) =\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN 0\n    ELSE 1\nEND) AND\nCASE\n    WHEN (change_type = 'notice_received'::copyright_notice_lifecycle_change_types) THEN true\n    WHEN (change_type = ANY (ARRAY['supplement_received'::copyright_notice_lifecycle_change_types, 'appeal_received'::copyright_notice_lifecycle_change_types, 'counter_notice_received'::copyright_notice_lifecycle_change_types, 'withdrawal_received'::copyright_notice_lifecycle_change_types, 'court_or_ccb_hold_received'::copyright_notice_lifecycle_change_types, 'appeal_reviewed'::copyright_notice_lifecycle_change_types, 'counter_notice_reviewed'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_submission_id IS NOT NULL)\n    WHEN (change_type = 'submission_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_submission_assessment_id IS NOT NULL)\n    WHEN (change_type = 'evidence_artifact_recorded'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_evidence_artifact_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['outbound_correspondence_created'::copyright_notice_lifecycle_change_types, 'agent_correspondence_approved'::copyright_notice_lifecycle_change_types, 'email_correspondence_admitted'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_correspondence_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_assessed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_assessment_id IS NOT NULL)\n    WHEN (change_type = 'legal_hold_resolved'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_legal_hold_resolution_id IS NOT NULL)\n    WHEN (change_type = 'counter_notice_deadline_started'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_deadline_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['provisional_restriction_imposed'::copyright_notice_lifecycle_change_types, 'mandatory_human_review_completed'::copyright_notice_lifecycle_change_types, 'restriction_lifted_by_administrator'::copyright_notice_lifecycle_change_types])) THEN (copyright_restriction_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['restoration_intent_created'::copyright_notice_lifecycle_change_types, 'reversal_restoration_intent_created'::copyright_notice_lifecycle_change_types, 'copyright_action_replayed'::copyright_notice_lifecycle_change_types, 'restoration_unavailable'::copyright_notice_lifecycle_change_types, 'restriction_lifted_placement_retained'::copyright_notice_lifecycle_change_types, 'restoration_authorized_pending_delivery'::copyright_notice_lifecycle_change_types, 'placement_withheld'::copyright_notice_lifecycle_change_types, 'placement_restored'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_action_intent_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['email_correspondence_rejected'::copyright_notice_lifecycle_change_types, 'email_intake_manually_associated'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_email_intake_id IS NOT NULL)\n    WHEN (change_type = 'delivery_intent_replayed'::copyright_notice_lifecycle_change_types) THEN (copyright_notice_delivery_work_item_id IS NOT NULL)\n    WHEN (change_type = 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) THEN (media_delivery_registry_record_id IS NOT NULL)\n    WHEN (change_type = ANY (ARRAY['guest_capability_issued'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked'::copyright_notice_lifecycle_change_types, 'guest_capability_revoked_by_withdrawal'::copyright_notice_lifecycle_change_types])) THEN (copyright_notice_guest_capability_id IS NOT NULL)\n    ELSE false\nEND))",
           "validated": true
         },
         "copyright_notice_lifecycle_changes_check": {
@@ -33725,6 +34191,10 @@
           "definition": "CHECK (((change_type <> 'media_delivery_registry_replayed'::copyright_notice_lifecycle_change_types) OR (replay_reason IS NOT NULL)))",
           "validated": true
         },
+        "copyright_notice_lifecycle_changes_check8": {
+          "definition": "CHECK (((change_type <> 'email_intake_manually_associated'::copyright_notice_lifecycle_change_types) OR (changed_by_id IS NOT NULL)))",
+          "validated": true
+        },
         "copyright_notice_lifecycle_changes_recovery_source_check": {
           "definition": "CHECK ((recovery_source = ANY (ARRAY['durable_review'::copyright_notice_lifecycle_change_recovery_sources, 'durable_decision'::copyright_notice_lifecycle_change_recovery_sources])))",
           "validated": true
@@ -33750,7 +34220,7 @@
           "ordinalPosition": 3
         },
         "changed_by_id": {
-          "comment": "User or staff actor for the event; NULL for system activity or after account deletion.",
+          "comment": "Retained user or staff actor identity for the event; NULL only for events that do not require an actor.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
@@ -34607,7 +35077,7 @@
           "ordinalPosition": 5
         },
         "erased_object_count": {
-          "comment": "Count of stored evidence object keys the case referenced; every version of each was removed from the evidence bucket before this row was written.",
+          "comment": "Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written.",
           "dataType": "integer",
           "defaultExpression": null,
           "generated": null,
@@ -34709,6 +35179,111 @@
       "uniqueConstraints": {
         "copyright_notice_retention_erasures_copyright_notice_id_key": {
           "columns": ["copyright_notice_id"]
+        }
+      }
+    },
+    "copyright_notice_storage_objects": {
+      "checkConstraints": {
+        "copyright_notice_storage_objects_storage_key_check": {
+          "definition": "CHECK ((((char_length(storage_key) >= 1) AND (char_length(storage_key) <= 1024)) AND (NOT starts_with(storage_key, 'erased:'::text))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "storage_key": {
+          "comment": "Unique private object-storage key; the row is deleted only after no intake or artifact references it.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "One private evidence-bucket object identity shared by every intake or artifact that references its unique storage key.",
+      "foreignKeys": {},
+      "indexes": {
+        "copyright_notice_storage_objects_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_storage_objects_pkey ON public.copyright_notice_storage_objects USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_storage_objects_storage_key_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_storage_objects_storage_key_key ON public.copyright_notice_storage_objects USING btree (storage_key)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "storage_key",
+              "descending": false,
+              "expression": "storage_key",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_notice_storage_objects_key_immutable": {
+          "definition": "CREATE TRIGGER trigger_copyright_notice_storage_objects_key_immutable BEFORE UPDATE ON public.copyright_notice_storage_objects FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        }
+      },
+      "uniqueConstraints": {
+        "copyright_notice_storage_objects_storage_key_key": {
+          "columns": ["storage_key"]
         }
       }
     },
@@ -42801,6 +43376,9 @@
       "triggers": {
         "trigger_domain_blocklist_sources_updated_at": {
           "definition": "CREATE TRIGGER trigger_domain_blocklist_sources_updated_at BEFORE UPDATE ON public.domain_blocklist_sources FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_update_domain_blocklist_hostname_block_source": {
+          "definition": "CREATE TRIGGER trigger_update_domain_blocklist_hostname_block_source AFTER UPDATE OF type ON public.domain_blocklist_sources FOR EACH ROW WHEN ((old.type IS DISTINCT FROM new.type)) EXECUTE FUNCTION fn_update_domain_blocklist_hostname_block_source()"
         }
       },
       "uniqueConstraints": {
@@ -43325,7 +43903,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "access_token_expires_at": {
           "comment": "When the long-lived access token expires.",
@@ -43335,7 +43913,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "created_at": {
           "comment": null,
@@ -43345,7 +43923,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
+        },
+        "email_domain_hostname_id": {
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "facebook_user_data": {
           "comment": "Raw JSONB profile data from Facebook's /api/me endpoint.",
@@ -43355,7 +43943,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "facebook_user_email_address": {
           "comment": "Email address from the Facebook profile.",
@@ -43385,7 +43973,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -43395,7 +43983,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -43416,6 +44004,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "users",
+          "validated": true
+        },
+        "fk_facebook_accounts__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
           "validated": true
         }
       },
@@ -43441,6 +44037,29 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_facebook_accounts__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_accounts__email_domain_hostname_id ON public.facebook_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(email_domain_hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_facebook_accounts__facebook_user_email_address": {
@@ -44750,7 +45369,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "access_token_expires_at": {
           "comment": "When the current access token expires.",
@@ -44760,7 +45379,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "created_at": {
           "comment": null,
@@ -44770,7 +45389,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
+        },
+        "email_domain_hostname_id": {
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "friends_synced_at": {
           "comment": "When the user's GitHub friends list was last synced.",
@@ -44780,7 +45409,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "github_user_data": {
           "comment": "Raw JSONB profile data from the GitHub API.",
@@ -44790,7 +45419,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "github_user_email_address": {
           "comment": "Email address from the GitHub profile.",
@@ -44820,7 +45449,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "updated_at": {
           "comment": null,
@@ -44830,7 +45459,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The Voucha user linked to this GitHub account.",
@@ -44845,6 +45474,14 @@
       },
       "comment": "Linked GitHub accounts for OAuth authentication and friend-finding. Stores encrypted OAuth token ciphertext.",
       "foreignKeys": {
+        "fk_github_accounts__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
         "github_accounts_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "SET NULL",
@@ -44896,6 +45533,29 @@
           ],
           "live": true,
           "predicate": "(github_user_email_address IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_github_accounts__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_accounts__email_domain_hostname_id ON public.github_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(email_domain_hostname_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -45160,7 +45820,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
+        },
+        "email_domain_hostname_id": {
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "google_user_data": {
           "comment": "Raw JSONB profile data from Google OAuth.",
@@ -45170,7 +45840,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "google_user_email_address": {
           "comment": "Email address from the Google profile.",
@@ -45200,7 +45870,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -45215,6 +45885,14 @@
       },
       "comment": "Google OAuth accounts linked to users. Stores Google profile data.",
       "foreignKeys": {
+        "fk_google_accounts__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
         "google_accounts_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "SET NULL",
@@ -45266,6 +45944,29 @@
           ],
           "live": true,
           "predicate": "(google_user_email_address IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_google_accounts__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_google_accounts__email_domain_hostname_id ON public.google_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(email_domain_hostname_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -49570,7 +50271,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "access_token_expires_at": {
           "comment": "When the access token expires.",
@@ -49580,7 +50281,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -49590,7 +50291,17 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
+        },
+        "email_domain_hostname_id": {
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "id": {
           "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
@@ -49610,7 +50321,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "linkedin_user_email_address": {
           "comment": "Email address from the LinkedIn profile.",
@@ -49640,7 +50351,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -49650,7 +50361,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -49665,6 +50376,14 @@
       },
       "comment": "LinkedIn OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.",
       "foreignKeys": {
+        "fk_linkedin_accounts__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
         "linkedin_accounts_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "SET NULL",
@@ -49693,6 +50412,29 @@
           ],
           "live": true,
           "predicate": "(linkedin_user_email_address IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_linkedin_accounts__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_linkedin_accounts__email_domain_hostname_id ON public.linkedin_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(email_domain_hostname_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -62415,7 +63157,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "access_token_expires_at": {
           "comment": "When the access token expires.",
@@ -62425,7 +63167,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "created_at": {
           "comment": null,
@@ -62435,7 +63177,17 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
+        },
+        "email_domain_hostname_id": {
+          "comment": "Resolved provider email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "id": {
           "comment": "Internal UUIDv7 identity used by durable OAuth authorization references.",
@@ -62455,7 +63207,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "microsoft_user_email_address": {
           "comment": "Email address from the Microsoft profile.",
@@ -62485,7 +63237,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -62495,7 +63247,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The linked user. NULL if the user account has not been created yet.",
@@ -62510,6 +63262,14 @@
       },
       "comment": "Microsoft OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.",
       "foreignKeys": {
+        "fk_microsoft_accounts__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
         "microsoft_accounts_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "SET NULL",
@@ -62538,6 +63298,29 @@
           ],
           "live": true,
           "predicate": "(microsoft_user_email_address IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_microsoft_accounts__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_microsoft_accounts__email_domain_hostname_id ON public.microsoft_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(email_domain_hostname_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -124211,7 +124994,12 @@
       "uniqueConstraints": {}
     },
     "url_hostname_blocks": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "chk_url_hostname_blocks__domain_source": {
+          "definition": "CHECK (((blocked_source = ANY (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])) = (domain_blocklist_source_id IS NOT NULL)))",
+          "validated": true
+        }
+      },
       "columns": {
         "blocked_by_id": {
           "comment": "Admin who issued the block.",
@@ -124241,7 +125029,17 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
+        },
+        "domain_blocklist_source_id": {
+          "comment": "External blacklist source for projected URL or email domain blocks.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "id": {
           "comment": null,
@@ -124261,7 +125059,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "lifted_by_id": {
           "comment": "Who lifted the block.",
@@ -124271,7 +125069,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "reason": {
           "comment": "Optional reason for the block.",
@@ -124281,7 +125079,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "updated_at": {
           "comment": null,
@@ -124291,7 +125089,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "url_hostname_id": {
           "comment": "The blocked hostname.",
@@ -124306,6 +125104,14 @@
       },
       "comment": "Append-only history of hostname blocks. url_hostnames.blocked is trigger-maintained from this table and must not be written directly in app code. Canonical insert-then-cancel pattern. See community_bans for reference.",
       "foreignKeys": {
+        "fk_url_hostname_blocks__domain_blocklist_source": {
+          "columns": ["domain_blocklist_source_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "domain_blocklist_sources",
+          "validated": true
+        },
         "url_hostname_blocks_blocked_by_id_fkey": {
           "columns": ["blocked_by_id"],
           "onDelete": "SET NULL",
@@ -124332,6 +125138,84 @@
         }
       },
       "indexes": {
+        "idx_url_hostname_blocks__active_domain_source": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_url_hostname_blocks__active_domain_source ON public.url_hostname_blocks USING btree (url_hostname_id, domain_blocklist_source_id) WHERE ((domain_blocklist_source_id IS NOT NULL) AND (lifted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "domain_blocklist_source_id",
+              "descending": false,
+              "expression": "domain_blocklist_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((domain_blocklist_source_id IS NOT NULL) AND (lifted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_url_hostname_blocks__active_nonfeed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__active_nonfeed ON public.url_hostname_blocks USING btree (url_hostname_id) WHERE ((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((lifted_at IS NULL) AND (blocked_source <> ALL (ARRAY['url_blocklist'::url_hostname_block_sources, 'email_blocklist'::url_hostname_block_sources])))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_blocks__domain_blocklist_source_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_blocks__domain_blocklist_source_id ON public.url_hostname_blocks USING btree (domain_blocklist_source_id) WHERE (domain_blocklist_source_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "domain_blocklist_source_id",
+              "descending": false,
+              "expression": "domain_blocklist_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int8_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(domain_blocklist_source_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostname_blocks__hostname": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -124408,13 +125292,256 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_sync_url_hostname_blocked": {
-          "definition": "CREATE TRIGGER trigger_sync_url_hostname_blocked AFTER INSERT OR DELETE OR UPDATE OF lifted_at ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_project_url_hostname_blocked()"
+        "trigger_update_url_hostname_blocked_after_delete": {
+          "definition": "CREATE TRIGGER trigger_update_url_hostname_blocked_after_delete AFTER DELETE ON public.url_hostname_blocks REFERENCING OLD TABLE AS deleted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_delete()"
+        },
+        "trigger_update_url_hostname_blocked_after_insert": {
+          "definition": "CREATE TRIGGER trigger_update_url_hostname_blocked_after_insert AFTER INSERT ON public.url_hostname_blocks REFERENCING NEW TABLE AS inserted_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_insert()"
+        },
+        "trigger_update_url_hostname_blocked_after_update": {
+          "definition": "CREATE TRIGGER trigger_update_url_hostname_blocked_after_update AFTER UPDATE ON public.url_hostname_blocks REFERENCING OLD TABLE AS prior_blocks NEW TABLE AS updated_blocks FOR EACH STATEMENT EXECUTE FUNCTION fn_update_url_hostname_blocked_after_update()"
         },
         "trigger_url_hostname_blocks_updated_at": {
           "definition": "CREATE TRIGGER trigger_url_hostname_blocks_updated_at BEFORE UPDATE ON public.url_hostname_blocks FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
+      "uniqueConstraints": {}
+    },
+    "url_hostname_cache_invalidation_work_items": {
+      "checkConstraints": {
+        "chk_url_hostname_cache_invalidation_work_items__lease": {
+          "definition": "CHECK ((((lease_token IS NULL) AND (leased_at IS NULL) AND (lease_expires_at IS NULL)) OR ((lease_token IS NOT NULL) AND (leased_at IS NOT NULL) AND (lease_expires_at IS NOT NULL))))",
+          "validated": true
+        },
+        "url_hostname_cache_invalidation_work_items_attempt_count_check": {
+          "definition": "CHECK ((attempt_count >= 0))",
+          "validated": true
+        },
+        "url_hostname_cache_invalidation_work_items_generation_check": {
+          "definition": "CHECK ((generation > 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "attempt_count": {
+          "comment": "Claims of this current generation; re-enqueue resets the count.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8
+        },
+        "available_at": {
+          "comment": "Earliest time an unleased worker may claim this invalidation.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "enqueued_at": {
+          "comment": "Time of the latest policy change, used for cache-TTL pruning.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "generation": {
+          "comment": "Re-enqueue generation that fences an older lease completion.",
+          "dataType": "bigint",
+          "defaultExpression": "1",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "lease_expires_at": {
+          "comment": "Time after which another worker may reclaim the lease.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "lease_token": {
+          "comment": "Opaque worker ownership token required for completion or failure.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "leased_at": {
+          "comment": "Time the current invalidation lease began.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "url_hostname_id": {
+          "comment": "Live hostname whose cached policy must be evicted.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "One coalesced durable invalidation for both hostname-policy caches; completion deletes the current generation.",
+      "foreignKeys": {
+        "url_hostname_cache_invalidation_work_items_url_hostname_id_fkey": {
+          "columns": ["url_hostname_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_url_hostname_cache_invalidation_work_items__available": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_cache_invalidation_work_items__available ON public.url_hostname_cache_invalidation_work_items USING btree (available_at, url_hostname_id) WHERE (lease_token IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "available_at",
+              "descending": false,
+              "expression": "available_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(lease_token IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_cache_invalidation_work_items__enqueued_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_cache_invalidation_work_items__enqueued_at ON public.url_hostname_cache_invalidation_work_items USING btree (enqueued_at, url_hostname_id) WHERE (lease_token IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "enqueued_at",
+              "descending": false,
+              "expression": "enqueued_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(lease_token IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_url_hostname_cache_invalidation_work_items__lease_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostname_cache_invalidation_work_items__lease_expiry ON public.url_hostname_cache_invalidation_work_items USING btree (lease_expires_at, url_hostname_id) WHERE (lease_token IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "lease_expires_at",
+              "descending": false,
+              "expression": "lease_expires_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(lease_token IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "url_hostname_cache_invalidation_work_items_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX url_hostname_cache_invalidation_work_items_pkey ON public.url_hostname_cache_invalidation_work_items USING btree (url_hostname_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "url_hostname_id",
+              "descending": false,
+              "expression": "url_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["url_hostname_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "url_hostnames": {
@@ -124469,7 +125596,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "attempt_threshold_hours": {
           "comment": "Hours to wait before retrying a failed crawl.",
@@ -124479,7 +125606,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "consecutive_dns_failures": {
           "comment": "Number of consecutive DNS lookup failures for this hostname. Resets to 0 on any successful crawl. Resets to 1 (not incremented) when last_dns_failure_at is older than 7 days.",
@@ -124489,7 +125616,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "crawl_policy_changed_at": {
           "comment": "Most recent change to crawlability, block status, age threshold, rate limit, or attempt threshold; unrelated hostname updates leave it unchanged.",
@@ -124499,7 +125626,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "crawl_swept_at": {
           "comment": "Start time of the last completed per-hostname URL dispatch sweep; partial or failed sweeps do not advance it.",
@@ -124509,7 +125636,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "created_at": {
           "comment": null,
@@ -124519,7 +125646,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 35
         },
         "created_by_id": {
           "comment": null,
@@ -124529,7 +125656,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 34
         },
         "dns_disabled_at": {
           "comment": "When this hostname was automatically disabled due to repeated DNS failures. NULL if not auto-disabled. Clearing this (and resetting crawlable) is an admin-only action.",
@@ -124539,7 +125666,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "hostname": {
           "comment": "Lowercase, unique hostname (e.g. example.com).",
@@ -124569,7 +125696,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "is_crawlable": {
           "comment": "NOT NULL, default TRUE. TRUE permits crawling pages on this hostname; FALSE disables crawling.",
@@ -124579,7 +125706,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "is_emailable": {
           "comment": "Whether email addresses at this hostname are accepted.",
@@ -124589,7 +125716,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "last_dns_failure_at": {
           "comment": "When the most recent DNS lookup failure occurred for this hostname.",
@@ -124599,7 +125726,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
+        },
+        "publicly_introduced_at": {
+          "comment": "First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
         },
         "requests_per_second_limit": {
           "comment": "Max crawl requests per second for this hostname.",
@@ -124609,7 +125746,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "reversed_hostname": {
           "comment": "Hostname labels reversed (e.g. com.example.www) for efficient subdomain prefix scans.",
@@ -124619,7 +125756,7 @@
           "generatedExpression": "fn_reverse_hostname_labels(hostname)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "should_follow_link_rel": {
           "comment": "If TRUE, links to this hostname use rel=follow. Only for trusted sites.",
@@ -124629,7 +125766,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "should_ignore_robots_txt": {
           "comment": "Whether robots.txt allow/disallow rules are ignored for RSS feed fetches on this hostname. NULL = inherit from global DynamicConfig. TRUE = always ignore. FALSE = always enforce.",
@@ -124639,7 +125776,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "should_skip_web_risk": {
           "comment": "Whether Google Web Risk checks are skipped for this hostname and subdomains.",
@@ -124649,7 +125786,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "topic_id": {
           "comment": "The topic that owns this hostname (primary or additional domain). Many hostnames may share the same topic_id; the primary is identified by topics.hostname_id.",
@@ -124659,7 +125796,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "unreliable_status_codes": {
           "comment": "RSS feed fetch HTTP status codes that should retry instead of soft-deleting feeds for this hostname. NULL = no hostname override. Example: ARRAY[404] for unreliable YouTube feeds.",
@@ -124669,7 +125806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "updated_at": {
           "comment": null,
@@ -124679,7 +125816,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35
+          "ordinalPosition": 36
         },
         "votes_count_down": {
           "comment": null,
@@ -124689,7 +125826,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "votes_count_none": {
           "comment": null,
@@ -124699,7 +125836,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "votes_count_up": {
           "comment": null,
@@ -124709,7 +125846,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "votes_score_down": {
           "comment": null,
@@ -124719,7 +125856,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "votes_score_net": {
           "comment": null,
@@ -124729,7 +125866,7 @@
           "generatedExpression": "(votes_score_up - votes_score_down)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "votes_score_none": {
           "comment": null,
@@ -124739,7 +125876,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "votes_score_sort": {
           "comment": null,
@@ -124749,7 +125886,7 @@
           "generatedExpression": "fn_wilson_score_lower_bound(votes_score_up, ((votes_score_up + votes_score_none) + votes_score_down))",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "votes_score_up": {
           "comment": null,
@@ -124759,7 +125896,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "votes_snapshot_xip_count": {
           "comment": "Number of transactions still in progress in that vote-stat snapshot; lower is newer when the snapshot xmax is equal.",
@@ -124769,7 +125906,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 33
         },
         "votes_snapshot_xmax": {
           "comment": "Upper transaction-ID boundary of the PostgreSQL snapshot used for the persisted vote-stat aggregate.",
@@ -124779,7 +125916,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "web_risk_checked_url": {
           "comment": "URL that produced the Google Web Risk positive verdict for this hostname.",
@@ -124789,7 +125926,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "web_risk_expire_at": {
           "comment": "Google Web Risk expireTime for the positive verdict.",
@@ -124799,7 +125936,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "web_risk_threat_types": {
           "comment": "Google Web Risk threat types returned for the checked URL.",
@@ -124809,7 +125946,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         }
       },
       "comment": "Registered hostnames with crawl and moderation policies.",
@@ -128636,7 +129773,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "email_address": {
           "comment": "Normalized (lowercase, trimmed) email address.",
@@ -128648,6 +129785,16 @@
           "nullable": false,
           "ordinalPosition": 2
         },
+        "email_domain_hostname_id": {
+          "comment": "Resolved email domain hostname identity for policy reads.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
         "is_primary": {
           "comment": "Whether this is the user's primary email address.",
           "dataType": "boolean",
@@ -128656,7 +129803,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "updated_at": {
           "comment": null,
@@ -128666,7 +129813,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "user_id": {
           "comment": "The user who owns this email address.",
@@ -128681,6 +129828,14 @@
       },
       "comment": "Email addresses associated with user accounts. Composite PK on (user_id, email_address).",
       "foreignKeys": {
+        "fk_user_email_addresses__email_domain_hostname": {
+          "columns": ["email_domain_hostname_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
         "user_email_addresses_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -128704,6 +129859,29 @@
               "expression": "email_address",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_email_addresses__email_domain_hostname_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_email_addresses__email_domain_hostname_id ON public.user_email_addresses USING btree (email_domain_hostname_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "email_domain_hostname_id",
+              "descending": false,
+              "expression": "email_domain_hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -140706,12 +141884,12 @@
     },
     "view_url_hostnames": {
       "comment": "Hostname response projection; callers restrict moderation filters and private capabilities.",
-      "definition": " SELECT 'hostname'::text AS __entity_type,\n    id,\n    hostname,\n    is_blocked,\n    is_crawlable,\n    should_skip_web_risk,\n    should_follow_link_rel,\n    topic_id,\n    votes_score_net,\n    votes_count_up,\n    votes_count_down\n   FROM url_hostnames;",
+      "definition": " SELECT 'hostname'::text AS __entity_type,\n    id,\n    hostname,\n    publicly_introduced_at,\n    is_blocked,\n    is_crawlable,\n    should_skip_web_risk,\n    should_follow_link_rel,\n    topic_id,\n    votes_score_net,\n    votes_count_up,\n    votes_count_down\n   FROM url_hostnames;",
       "materialized": false
     },
     "view_urls": {
       "comment": "URL response projection; callers enforce URL visibility and paid crawl-history access.",
-      "definition": " SELECT 'url'::text AS __entity_type,\n    urls.id,\n    urls.url,\n    urls.pathname,\n    urls.search_params,\n    urls.canonical_url_id,\n    row_to_json(view_url_hostnames.*) AS hostname\n   FROM urls\n     JOIN view_url_hostnames ON urls.hostname_id = view_url_hostnames.id;",
+      "definition": " SELECT 'url'::text AS __entity_type,\n    urls.id,\n    urls.url,\n    urls.pathname,\n    urls.search_params,\n    urls.canonical_url_id,\n    (to_jsonb(view_url_hostnames.*) - 'publicly_introduced_at'::text)::json AS hostname\n   FROM urls\n     JOIN view_url_hostnames ON urls.hostname_id = view_url_hostnames.id;",
       "materialized": false
     },
     "view_user_list_items": {

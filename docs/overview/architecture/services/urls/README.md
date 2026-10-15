@@ -41,6 +41,10 @@ URL content types are stored in the `media_types` lookup table and referenced by
 
 Missing either form leaves the corresponding cache stale for up to the `urls_lookup` TTL (1 day) or `urls` entity TTL.
 
+Cached URL reads keep URL identity and metadata in the URL cache, then compose mutable hostname
+policy from the hostname cache by hostname ID. Feed and staff policy changes durably invalidate
+that hostname cache entry, so a retained URL cache entry cannot keep an old block or crawl policy.
+
 ## Related
 
 - Systems:

@@ -382,6 +382,7 @@ COMMENT ON COLUMN user_moderation_email_sends.sent_at IS 'When the email process
 CREATE TABLE IF NOT EXISTS user_email_addresses (
   user_id UUID REFERENCES users ON DELETE CASCADE,
   email_address TEXT NOT NULL,
+  email_domain_hostname_id UUID NOT NULL,
   CHECK (char_length(email_address) <= 255),
   CHECK (email_address = LOWER(email_address)),
   CHECK (email_address = TRIM(email_address)),
@@ -709,6 +710,7 @@ CREATE TABLE IF NOT EXISTS facebook_accounts (
   -- facebook user ID
   facebook_user_id TEXT PRIMARY KEY,
   facebook_user_email_address TEXT,
+  email_domain_hostname_id UUID,
   facebook_user_data JSONB NOT NULL, -- from /api/me
 
   -- long-lived access token (Facebook exchanges short-lived for long-lived server-side)
@@ -919,6 +921,7 @@ CREATE TABLE IF NOT EXISTS apple_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   apple_user_id TEXT PRIMARY KEY,
   apple_user_email_address TEXT,
+  email_domain_hostname_id UUID,
   apple_user_data JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -951,6 +954,7 @@ CREATE TABLE IF NOT EXISTS google_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   google_user_id TEXT PRIMARY KEY,
   google_user_email_address TEXT,
+  email_domain_hostname_id UUID,
   google_user_data JSONB NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -1029,6 +1033,7 @@ CREATE TABLE IF NOT EXISTS linkedin_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   linkedin_user_id TEXT NOT NULL UNIQUE,
   linkedin_user_email_address TEXT,
+  email_domain_hostname_id UUID,
   linkedin_user_data JSONB NOT NULL,
   access_token_ciphertext TEXT,
   refresh_token_ciphertext TEXT,
@@ -1074,6 +1079,7 @@ CREATE TABLE IF NOT EXISTS microsoft_accounts (
   user_id UUID REFERENCES users ON DELETE SET NULL,
   microsoft_user_id TEXT NOT NULL UNIQUE,
   microsoft_user_email_address TEXT,
+  email_domain_hostname_id UUID,
   microsoft_user_data JSONB NOT NULL,
   access_token_ciphertext TEXT,
   refresh_token_ciphertext TEXT,

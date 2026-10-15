@@ -1,6 +1,8 @@
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import onError from '@modules/on-error'
 import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -38,9 +40,10 @@ export async function blockHostname(
       ? await withTransactionOptions(options, run)
       : await blockHostnameInOwnedTransaction(run)
 
-  if (!options.query) {
-    await invalidate.url_hostnames(...txResult.hostnames)
-  }
+  if (!options.query && !options.client)
+    await drainHostnameCacheInvalidationWork({
+      hostnameIds: txResult.hostnames.map(hostname => hostname.id),
+    }).catch(onError)
 
   if (options.penalizeCreators !== false) {
     void enqueueBulkRecalculateUserVoteWeight(txResult.creatorIds, true)
@@ -92,6 +95,22 @@ async function blockHostnameWithQuery(
   const escapedForLike = targetHostname.replace(/[%_\\]/g, char => `\\${char}`)
   const subdomainPattern = `%.${escapedForLike}`
 
+  // Feed projection locks affected hostname rows by UUID. Take the same locks
+  // before either staff block insert can invoke the projection trigger.
+  await query(sql`/* blockHostname_lockAffectedHostnames */
+      SELECT id FROM url_hostnames
+      WHERE id = ${hostnameId} OR hostname LIKE ${subdomainPattern} ESCAPE '\\'
+      ORDER BY id FOR UPDATE
+    `)
+
+  // A staff block introduces the target and its subdomains to public hostname history.
+  await query(sql`/* blockHostname_introduceHostnames */
+      UPDATE url_hostnames
+      SET publicly_introduced_at = CURRENT_TIMESTAMP
+      WHERE publicly_introduced_at IS NULL
+        AND (id = ${hostnameId} OR hostname LIKE ${subdomainPattern} ESCAPE '\\')
+    `)
+
   await query(sql`/* blockHostname_blockTarget */
       INSERT INTO url_hostname_blocks (url_hostname_id, blocked_by_id, blocked_source)
       SELECT ${hostnameId}, ${adminUserId}, ${options.blockedSource ?? 'admin'}
@@ -99,6 +118,7 @@ async function blockHostnameWithQuery(
         SELECT 1 FROM url_hostname_blocks
         WHERE url_hostname_id = ${hostnameId}
           AND lifted_at IS NULL
+          AND domain_blocklist_source_id IS NULL
       )
     `)
   // Also update web_risk tracking columns on the hostname row itself (non-history metadata)
@@ -126,6 +146,7 @@ async function blockHostnameWithQuery(
           SELECT 1 FROM url_hostname_blocks
           WHERE url_hostname_id = url_hostnames.id
             AND lifted_at IS NULL
+            AND domain_blocklist_source_id IS NULL
         )
     `)
 
@@ -136,6 +157,7 @@ async function blockHostnameWithQuery(
     `)
   const hostnames = hostnameRowsForInvalidation as BlockedHostname[]
   const hostnameIds = hostnames.map(r => r.id)
+  await enqueueHostnameCacheInvalidation(query, hostnameIds)
 
   // Relation tables come from trusted hard-coded metadata, not user input.
   let { creatorIds, totalDeleted } = await softDeleteBlockedHostnameRelations(

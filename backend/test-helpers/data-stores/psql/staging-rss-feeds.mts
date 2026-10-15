@@ -73,10 +73,10 @@ export async function insertActiveFeedUnderOtherTopic(
   )
   await tx(
     allowUnannotatedQuery(sql`
-    INSERT INTO url_hostnames (hostname, is_crawlable)
-    SELECT ${feed.hostname}, TRUE
-    WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${feed.hostname})
-    ON CONFLICT DO NOTHING`),
+    INSERT INTO url_hostnames (hostname, is_crawlable, publicly_introduced_at)
+    SELECT ${feed.hostname}, TRUE, CURRENT_TIMESTAMP
+    ON CONFLICT (hostname) DO UPDATE SET
+      publicly_introduced_at = COALESCE(url_hostnames.publicly_introduced_at, EXCLUDED.publicly_introduced_at)`),
   )
   await tx(
     allowUnannotatedQuery(sql`

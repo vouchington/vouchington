@@ -5,14 +5,23 @@ import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright
 import { createCopyrightFormFixture } from '@voucha/test-helpers/copyright-route-fixtures'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { readCopyrightEmailIntakeReview } from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
+import {
+  readCopyrightEmailIntakeNoticeLinks,
+  readCopyrightEmailIntakeReview,
+} from '@voucha/test-helpers/data-stores/psql/copyright-email-intakes'
 import { useCopyrightIntakeEnvironment } from '@voucha/test-helpers/services/copyright-notices/intake-environment'
 
 const INTAKES = '/api/v1/copyright-email-intakes'
 const INVALID_BODY = 'Invalid request body'
 const RATIONALE = 'Staff reviewed the email.'
 const FALLBACK = 'No recommendation is available.'
-const DECISION_ROUTES = ['approvals', 'rejections', 'correspondence', 'correspondence-rejections']
+const DECISION_ROUTES = [
+  'approvals',
+  'rejections',
+  'correspondence',
+  'correspondence-rejections',
+  'notice-associations',
+]
 
 async function createStaff() {
   const staff = createRequest()
@@ -155,6 +164,19 @@ describe('copyright email intake request contracts', () => {
         .send({ ...body, has_good_faith_belief: false })
         .expect(422)
       expect(badAttestation.body.message).toBe('has_good_faith_belief must be accepted')
+    })
+  })
+
+  describe('POST /copyright-email-intakes/:id/notice-associations', () => {
+    it('rejects an unknown body key and leaves its own intake unlinked', async () => {
+      const intake = await createParsedCopyrightEmailIntake()
+      const staff = await createStaff()
+      const response = await staff
+        .post(`${INTAKES}/${intake.id}/notice-associations`)
+        .send({ copyright_notice_id: crypto.randomUUID(), injected: true })
+        .expect(422)
+      expect(response.body.message).toBe(INVALID_BODY)
+      expect(await readCopyrightEmailIntakeNoticeLinks(intake.id)).toEqual([])
     })
   })
 

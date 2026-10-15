@@ -5,7 +5,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
  *
  * - `excluded_hostnames`: collects reversed_hostname values from the user's block + mute relations
  * - `excluded_hostname_ids`: expands to all hostname IDs that match (including subdomains)
- *   and also includes site-wide blocked hostnames (blocked = TRUE)
+ *   for that user. Site-wide blocks are checked by hostname ID at each candidate.
  *
  * Subdomain matching: blocking "example.com" also blocks "sub.example.com".
  * Uses reversed_hostname (e.g. "com.example") so subdomain checks become
@@ -29,8 +29,6 @@ export function buildExcludedHostnameIdsCTE(userId: string): SQLStatement {
       FROM excluded_hostnames eh
       JOIN url_hostnames uh ON uh.reversed_hostname = eh.reversed_hostname
         OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
-      UNION ALL
-      SELECT id AS hostname_id FROM url_hostnames WHERE is_blocked
     )`
 }
 
@@ -39,7 +37,7 @@ export function buildExcludedHostnameIdsCTE(userId: string): SQLStatement {
  *
  * - `community_excluded_hostnames`: collects reversed_hostname values from the community's mute relations
  * - `excluded_hostname_ids`: expands to all hostname IDs that match (including subdomains)
- *   and also includes site-wide blocked hostnames (blocked = TRUE)
+ *   for that community. Site-wide blocks are checked by hostname ID at each candidate.
  */
 /** @public SQL builder fragment for community feed query composition */
 export function buildCommunityExcludedHostnameIdsCTE(communityId: string): SQLStatement {
@@ -55,7 +53,5 @@ export function buildCommunityExcludedHostnameIdsCTE(communityId: string): SQLSt
       FROM community_excluded_hostnames eh
       JOIN url_hostnames uh ON uh.reversed_hostname = eh.reversed_hostname
         OR uh.reversed_hostname LIKE eh.reversed_hostname || '.%'
-      UNION ALL
-      SELECT id AS hostname_id FROM url_hostnames WHERE is_blocked
     )`
 }

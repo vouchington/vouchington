@@ -13,12 +13,21 @@ ingests take matching unique-index locks.
 | -------------------------- | -------------------------------------------------------------------------------------------- |
 | `is_crawlable`             | Non-null, default `true`; `false` disables crawling                                          |
 | `is_blocked`               | Non-null, default `false`; `true` disallows the domain from site surfaces                    |
+| `publicly_introduced_at`   | First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identity  |
 | `should_follow_link_rel`   | When `true`, outbound links do not get `rel="nofollow"`                                      |
 | `consecutive_dns_failures` | Running count of consecutive DNS lookup failures (reset to 0 on any successful crawl)        |
 | `last_dns_failure_at`      | Timestamp of the most recent DNS failure (used for the 7-day stale-counter reset)            |
 | `dns_disabled_at`          | Set when the hostname is auto-disabled due to repeated DNS failures; cleared by admin action |
 
 Both flags use plain boolean predicates in every reader. Admin search keeps explicit true/false filters and omitting a filter includes either value. URL-blocklist rebuilds read the blocked and uncrawlable partial indexes in disjoint branches, emitting overlapping hostnames once.
+
+Email addresses and email blocklists resolve their domains to the shared hostname ID without
+introducing that hostname publicly. URL, topic, staff, and URL-blocklist writes set
+`publicly_introduced_at` on first introduction and never clear or replace it. Public hostname
+search, detail, comparison, top lists, and sitemaps require this timestamp; staff can inspect
+private rows. Email block state is read through the hostname ID, so blocklist changes do not
+rewrite stored addresses. Retention and deletion of email-only hostname identities are separate
+follow-up work.
 
 ## DNS Auto-Disable
 

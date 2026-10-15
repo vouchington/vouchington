@@ -17,7 +17,7 @@ import {
 } from '@voucha/test-helpers'
 import { registerOwnedBlocklistBloomRecoveryTests } from '@voucha/test-helpers/blocklist-bloom-recovery-tests'
 import { bloomValkeyClient } from '@data-stores/valkey'
-import { unlinkReadyMarkerIfValue } from './ready-marker.mts'
+import { blocklistBloomReadyKey, unlinkReadyMarkerIfValue } from './ready-marker.mts'
 import { checkBloomFilterRead } from './read-repair.mts'
 
 async function checkBloomFilter(hostname: string): Promise<boolean | null> {
@@ -215,7 +215,7 @@ describe('bloom-filter.generated', () => {
     })
 
     await insertTestDomainBlacklist(`warmup-ready-missing-${suffix}.com`, TEST_SOURCE_NAME)
-    await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', '1')
+    await bloomValkeyClient.set(blocklistBloomReadyKey('url-blocklist'), '1')
 
     await expect(warmUpUrlBlocklistBloomFilter()).resolves.toBeUndefined()
   })
@@ -238,7 +238,7 @@ describe('bloom-filter.generated', () => {
 
   it('addDomainsToBloomFilter swallows error and unlinks ready marker when bloom key is corrupted', async () => {
     // Corrupt the live Valkey key (bloom-filter:<name>) with a string — BF.MADD throws WRONGTYPE
-    await bloomValkeyClient.set('bloom-filter:url-blocklist:ready', 'stale')
+    await bloomValkeyClient.set(blocklistBloomReadyKey('url-blocklist'), 'stale')
     await bloomValkeyClient.set('bloom-filter:url-blocklist', 'corrupted')
     // Should resolve without throwing — error recovery is internal
     await expect(addDomainsToBloomFilter(['blocked.com'])).resolves.toBeUndefined()

@@ -104,6 +104,23 @@ immutable `(received_at, id)`, oldest first, so every email awaiting staff revie
 reachable after the first page. That includes an email whose parse was never recorded: its
 `parse_status` is `unparsed`, beside `succeeded` and `failed`, and staff review it from the original
 MIME object. A reviewer's decision refreshes the queue from its first page.
+An email approval whose ancestor intake or edge set changes while the moderator acts returns `409`
+with code `copyright_email_thread_changed` through REST and MCP. It writes no notice or decision;
+staff can refresh the intake and retry. A graph over the configured total-row budget still admits
+the initial notice but leaves its replies on this staff queue for manual review.
+
+`GET /api/v1/copyright-notices/:id/association-target` lets a copyright reviewer resolve a
+known case reference to its jurisdiction and received date for the staff notice picker. It can
+resolve an existing case before acceptance; it does not expose the case to public readers.
+
+`POST /api/v1/copyright-email-intakes/:id/notice-associations` accepts a JSON
+`{ copyright_notice_id: UUID }` from a copyright reviewer. It links that one unresolved intake
+to an existing notice, records the staff actor in the case lifecycle, and returns `201` with
+`{ copyright_notice: { id }, copyright_email_intake: { id } }`. The intake then follows the
+ordinary pending correspondence review. A missing notice or intake returns `404`; an intake
+linked or decided before or during the transaction returns `409` with code
+`copyright_email_thread_changed`. The same operation and errors are exposed by the admin MCP
+tool `associate_copyright_email_intake_with_notice`.
 
 Each queue item carries `waiting_reason` and `waiting_since`. An unreviewed intake is
 `awaiting_review` and waits since `received_at`. A declined intake whose reply failed or bounced

@@ -19,7 +19,10 @@ export type RetentionCase = {
  * A received, parsed email with an attachment, as the SES worker stores it. A reply carries a
  * reference to the message it answers, so it waits to be linked to its root case.
  */
-export async function createRetentionParsedEmail(label: string, options: { reply?: boolean } = {}) {
+export async function createRetentionParsedEmail(
+  label: string,
+  options: { reply?: boolean; messageId?: string } = {},
+) {
   const sesMessageId = `ses-${label}-${randomUUID()}`
   const { intake } = await createCopyrightEmailIntake({
     sesMessageId,
@@ -36,7 +39,7 @@ export async function createRetentionParsedEmail(label: string, options: { reply
     fromName: 'Sender Name',
     subject: `Subject ${label}`,
     bodyText: `Body of ${label}`,
-    messageId: `<${randomUUID()}@example.test>`,
+    messageId: options.messageId ?? `<${randomUUID()}@example.test>`,
     replyReferences: options.reply ? [`<${randomUUID()}@example.test>`] : [],
     attachments: [
       {

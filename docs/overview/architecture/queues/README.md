@@ -19,6 +19,10 @@ policy-managed queues.
 
 The [crawl-dispatch queue](crawl-dispatch/README.md) schedules bounded due-hostname sweeps hourly. Retained jobs preserve their cutoff and index position across capped continuations.
 
+The [URL/domain blacklist queue](urls-domains-blacklist/README.md) runs a five-minute
+bounded sweep of durable hostname-policy cache invalidations after sync, staff block,
+and unblock writers enqueue changed hostname IDs in PostgreSQL.
+
 ## Vote aggregation
 
 [`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity in one ranked-priority IO queue. The single worker dispatches by the unchanged job names and retains election ordering lanes.

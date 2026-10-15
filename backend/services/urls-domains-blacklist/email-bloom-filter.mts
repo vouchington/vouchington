@@ -3,7 +3,7 @@ import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import { newBloomReadyMarkerValue } from './ready-marker.mts'
+import { blocklistBloomReadyKey, newBloomReadyMarkerValue } from './ready-marker.mts'
 import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
@@ -28,7 +28,7 @@ function getEmailBloomFilter() {
 
 // Marker key set after each successful rebuild — used by reads as a reliable
 // readiness check instead of a bloom membership probe (which can false-positive).
-const BLOOM_READY_KEY = 'bloom-filter:email-blocklist:ready'
+const BLOOM_READY_KEY = blocklistBloomReadyKey('email-blocklist')
 
 export async function invalidateEmailBlocklistReadyMarker(): Promise<number> {
   return bloomValkeyClient.unlink([BLOOM_READY_KEY])

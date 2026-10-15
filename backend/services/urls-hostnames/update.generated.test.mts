@@ -3,6 +3,15 @@ import { updateUrlHostname } from './update.mts'
 import { upsertUrlHostnames } from './upsert.mts'
 import { getUrlHostnameById } from './get.mts'
 import { updateUrlHostnameBlocked } from '@voucha/test-helpers'
+import {
+  failNextHostnameCacheDeleteForTest,
+  getHostnameCacheInvalidationWorkForTest,
+  makeHostnameCacheInvalidationAvailableForTest,
+} from '@voucha/test-helpers/hostname-cache-invalidation'
+import { resolveEmailDomainHostnameId } from '../email-address-validator/email-domain-context.mts'
+import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
+import { drainHostnameCacheInvalidationWork } from '../entity-cache/hostname-invalidation-drain.mts'
+import { caches } from '../entity-cache/caches.mts'
 
 describe('update.generated', () => {
   const suffix = Math.random().toString(36).slice(2, 10)
@@ -73,5 +82,33 @@ describe('update.generated', () => {
 
     const updated = await updateUrlHostname(hostnameId, {})
     expect(updated).toBeNull()
+  })
+
+  it('retains staff promotion invalidation when cache eviction fails', async () => {
+    const domain = `update-private-${crypto.randomUUID()}.example.com`
+    const id = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    if (!id) throw new Error('Expected private hostname')
+    const privateHostname = await getUrlHostnameByAnyCached(id)
+    expect(privateHostname?.publicly_introduced_at).toBeNull()
+    if (!privateHostname) throw new Error('Expected cached private hostname')
+    await caches.url_hostnames.set(id, privateHostname)
+
+    const restoreFailure = failNextHostnameCacheDeleteForTest(id)
+    try {
+      await updateUrlHostname(id, { is_crawlable: false }, { introducePublicly: true })
+    } finally {
+      restoreFailure()
+    }
+    expect((await getUrlHostnameById(id))?.publicly_introduced_at).toBeInstanceOf(Date)
+    expect(await getHostnameCacheInvalidationWorkForTest(id)).toMatchObject({
+      lease_token: null,
+      attempt_count: 1,
+    })
+    expect((await getUrlHostnameByAnyCached(id))?.publicly_introduced_at).toBeNull()
+
+    await makeHostnameCacheInvalidationAvailableForTest(id)
+    expect(await drainHostnameCacheInvalidationWork({ hostnameIds: [id] })).toBe(1)
+    expect(await getHostnameCacheInvalidationWorkForTest(id)).toBeNull()
+    expect((await getUrlHostnameByAnyCached(id))?.publicly_introduced_at).toBeInstanceOf(Date)
   })
 })

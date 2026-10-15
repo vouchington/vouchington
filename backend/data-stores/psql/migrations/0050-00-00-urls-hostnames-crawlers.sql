@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   CHECK (char_length(hostname) <= 255),
   CHECK (hostname = LOWER(hostname)),
   CHECK (hostname = TRIM(hostname)),
+  publicly_introduced_at TIMESTAMPTZ,
 
   is_blocked BOOLEAN NOT NULL DEFAULT FALSE, -- moderation-history-guard-allow: trigger-maintained from url_hostname_blocks
   is_crawlable BOOLEAN NOT NULL DEFAULT TRUE, -- whether this hostname is crawlable, e.g. Reddit is not crawlable
@@ -88,6 +89,88 @@ CREATE TABLE IF NOT EXISTS url_hostnames (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+COMMENT ON COLUMN url_hostnames.publicly_introduced_at IS 'First public URL, topic, staff, or URL-blocklist introduction; NULL for email-only identities and email blocklist domains. Never cleared.';
+
+-- One durable cache repair per live hostname. A newer generation fences stale workers.
+CREATE TABLE IF NOT EXISTS url_hostname_cache_invalidation_work_items (
+  url_hostname_id UUID PRIMARY KEY REFERENCES url_hostnames(id) ON DELETE CASCADE,
+  generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
+  enqueued_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  available_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lease_token UUID,
+  leased_at TIMESTAMPTZ,
+  lease_expires_at TIMESTAMPTZ,
+  attempt_count INT NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  CONSTRAINT chk_url_hostname_cache_invalidation_work_items__lease CHECK (
+    (lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
+    OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at IS NOT NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_url_hostname_cache_invalidation_work_items__available
+  ON url_hostname_cache_invalidation_work_items (available_at, url_hostname_id)
+  WHERE lease_token IS NULL;
+CREATE INDEX IF NOT EXISTS idx_url_hostname_cache_invalidation_work_items__lease_expiry
+  ON url_hostname_cache_invalidation_work_items (lease_expires_at, url_hostname_id)
+  WHERE lease_token IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_url_hostname_cache_invalidation_work_items__enqueued_at
+  ON url_hostname_cache_invalidation_work_items (enqueued_at, url_hostname_id)
+  WHERE lease_token IS NULL;
+COMMENT ON TABLE url_hostname_cache_invalidation_work_items IS 'One coalesced durable invalidation for both hostname-policy caches; completion deletes the current generation.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.url_hostname_id IS 'Live hostname whose cached policy must be evicted.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.generation IS 'Re-enqueue generation that fences an older lease completion.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.enqueued_at IS 'Time of the latest policy change, used for cache-TTL pruning.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.available_at IS 'Earliest time an unleased worker may claim this invalidation.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.lease_token IS 'Opaque worker ownership token required for completion or failure.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.leased_at IS 'Time the current invalidation lease began.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.lease_expires_at IS 'Time after which another worker may reclaim the lease.';
+COMMENT ON COLUMN url_hostname_cache_invalidation_work_items.attempt_count IS 'Claims of this current generation; re-enqueue resets the count.';
+
+-- These address tables are created before url_hostnames; each stores the domain identity
+-- resolved when the address is written, and never copies the hostname's block state.
+ALTER TABLE user_email_addresses
+  ADD CONSTRAINT fk_user_email_addresses__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE user_email_addresses VALIDATE CONSTRAINT fk_user_email_addresses__email_domain_hostname;
+ALTER TABLE apple_accounts
+  ADD CONSTRAINT fk_apple_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE apple_accounts VALIDATE CONSTRAINT fk_apple_accounts__email_domain_hostname;
+ALTER TABLE google_accounts
+  ADD CONSTRAINT fk_google_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE google_accounts VALIDATE CONSTRAINT fk_google_accounts__email_domain_hostname;
+ALTER TABLE linkedin_accounts
+  ADD CONSTRAINT fk_linkedin_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE linkedin_accounts VALIDATE CONSTRAINT fk_linkedin_accounts__email_domain_hostname;
+ALTER TABLE facebook_accounts
+  ADD CONSTRAINT fk_facebook_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE facebook_accounts VALIDATE CONSTRAINT fk_facebook_accounts__email_domain_hostname;
+ALTER TABLE microsoft_accounts
+  ADD CONSTRAINT fk_microsoft_accounts__email_domain_hostname
+  FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE microsoft_accounts VALIDATE CONSTRAINT fk_microsoft_accounts__email_domain_hostname;
+
+CREATE INDEX idx_user_email_addresses__email_domain_hostname_id
+  ON user_email_addresses (email_domain_hostname_id);
+CREATE INDEX idx_apple_accounts__email_domain_hostname_id
+  ON apple_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_google_accounts__email_domain_hostname_id
+  ON google_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_linkedin_accounts__email_domain_hostname_id
+  ON linkedin_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_facebook_accounts__email_domain_hostname_id
+  ON facebook_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+CREATE INDEX idx_microsoft_accounts__email_domain_hostname_id
+  ON microsoft_accounts (email_domain_hostname_id) WHERE email_domain_hostname_id IS NOT NULL;
+COMMENT ON COLUMN user_email_addresses.email_domain_hostname_id IS 'Resolved email domain hostname identity for policy reads.';
+COMMENT ON COLUMN apple_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN google_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN linkedin_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN facebook_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
+COMMENT ON COLUMN microsoft_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__hostname__text_pattern_ops
@@ -308,9 +391,11 @@ COMMENT ON COLUMN domain_blocklist_sources.last_fetched_at IS 'When this source 
 CREATE TABLE IF NOT EXISTS blocklisted_domains (
   source_id BIGINT NOT NULL REFERENCES domain_blocklist_sources ON DELETE CASCADE,
   domain TEXT NOT NULL,
+  url_hostname_id UUID NOT NULL REFERENCES url_hostnames(id) ON DELETE RESTRICT,
   CHECK (domain = LOWER(domain)),
   CHECK (domain = TRIM(domain)),
   PRIMARY KEY (domain, source_id),
+  CONSTRAINT uq_blocklisted_domains__hostname_source UNIQUE (url_hostname_id, source_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -328,6 +413,7 @@ ON blocklisted_domains (source_id, domain);
 COMMENT ON TABLE blocklisted_domains IS 'Individual blacklisted domains from external sources.';
 COMMENT ON COLUMN blocklisted_domains.source_id IS 'The blacklist source this domain came from.';
 COMMENT ON COLUMN blocklisted_domains.domain IS 'The blacklisted domain name (lowercase).';
+COMMENT ON COLUMN blocklisted_domains.url_hostname_id IS 'Resolved hostname identity used by block projections and readers.';
 
 -- ==========================================================================
 -- 0030-00-00-url-hostname_crawler_configurations.sql

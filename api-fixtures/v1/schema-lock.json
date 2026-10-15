@@ -277,7 +277,7 @@
     },
     "GET:/api/v1/copyright-email-intakes/review-queue": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
-      "hash": "1ee21643428291a0c3b2c18dd19ef9aac13b34a5a9382f553d710dc497839103"
+      "hash": "6b03a4cd904759d29ee6794ed87cf1a80f7d3102e2126271b6ddfc9a62ef3b93"
     },
     "GET:/api/v1/copyright-eu-reports": {
       "fixtureIds": ["web.copyright.eu.transparency-report"],
@@ -301,6 +301,10 @@
         "web.copyright.notice.detail.populated"
       ],
       "hash": "e0f7f088c24e8b98ffda3c50279ef899de8a5d4f97737190f148c00a568e9173"
+    },
+    "GET:/api/v1/copyright-notices/:id/association-target": {
+      "fixtureIds": ["web.copyright.email-notice-association-target"],
+      "hash": "ee1a3707259f67125e49d2de7db8ca939eff1f91371871273cf1af8ba0bf438e"
     },
     "GET:/api/v1/copyright-notices/:id/eu-dispute-settlements": {
       "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],
@@ -1139,6 +1143,10 @@
     "POST:/api/v1/copyright-dsa-statement-submissions/:id/replays": {
       "fixtureIds": ["copyright.dsa-statement.replay"],
       "hash": "f265478422bf41f3614b9c61c8e8b7a0dc7dbbace8ffa8c715afa9e49307bec2"
+    },
+    "POST:/api/v1/copyright-email-intakes/:id/notice-associations": {
+      "fixtureIds": ["web.copyright.email-intake-notice-association"],
+      "hash": "e569faec88e3bcd1534e07bdbfe7b66cb0c2a82c1772209dbd74d7d47a00ab4d"
     },
     "POST:/api/v1/copyright-email-intakes/:id/rejections": {
       "fixtureIds": [
@@ -2935,6 +2943,10 @@
       "fixtureIds": ["web.copyright.email-intake-information-request.reply-queued"],
       "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
     },
+    "web.copyright.email-intake-notice-association": {
+      "fixtureIds": ["web.copyright.email-intake-notice-association"],
+      "hash": "4823a4a0458fced666cdb69e07b79627fd973a3557e6010523502af39ff72084"
+    },
     "web.copyright.email-intake-queue.default": {
       "fixtureIds": ["web.copyright.email-intake-queue.default"],
       "hash": "301a921796e646b7f7c8910869fc37566560ecc100ddb641a855e0cf5dcbd860"
@@ -2946,6 +2958,10 @@
     "web.copyright.email-intake-rejection.reply-queued": {
       "fixtureIds": ["web.copyright.email-intake-rejection.reply-queued"],
       "hash": "b1d883f88b6afb685bde0e61dde5a6d4f86437e8d587d34d77f59216e18d1386"
+    },
+    "web.copyright.email-notice-association-target": {
+      "fixtureIds": ["web.copyright.email-notice-association-target"],
+      "hash": "00c6c18a071795d87305d6ba91934aa25fbab7569befb8eed235e02e009d8a1a"
     },
     "web.copyright.eu.dispute-settlements.participant": {
       "fixtureIds": ["web.copyright.eu.dispute-settlements.participant"],

@@ -51,9 +51,18 @@ export async function insertExplainBloomRepairSources(
     ON CONFLICT DO NOTHING`)
   await transaction(
     `/* insertExplainBloomRepairSources */
-    INSERT INTO blocklisted_domains (source_id, domain, updated_at)
-    SELECT source.id, fixture.key || '.example.com', fixture.updated_at
+    INSERT INTO url_hostnames (hostname, publicly_introduced_at)
+    SELECT DISTINCT fixture.key || '.example.com', CURRENT_TIMESTAMP
+    FROM jsonb_to_recordset($1::jsonb) fixture(key text)
+    ON CONFLICT (hostname) DO NOTHING`,
+    [JSON.stringify(rows)],
+  )
+  await transaction(
+    `/* insertExplainBloomRepairSources */
+    INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id, updated_at)
+    SELECT source.id, fixture.key || '.example.com', hostname.id, fixture.updated_at
     FROM jsonb_to_recordset($1::jsonb) fixture(key text, updated_at timestamptz)
+    JOIN url_hostnames hostname ON hostname.hostname = fixture.key || '.example.com'
     CROSS JOIN domain_blocklist_sources source
     WHERE source.name IN ('seed-bloom-repair-url', 'seed-bloom-repair-email')
     ON CONFLICT DO NOTHING`,
@@ -88,8 +97,8 @@ export async function insertExplainHostnameFlagSources(
 ): Promise<void> {
   await using transaction = await beginTransaction()
   await transaction(
-    `/* insertExplainHostnameFlagSources */ INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at)
-    SELECT id, hostname, crawlable, updated_at FROM jsonb_to_recordset($1::jsonb)
+    `/* insertExplainHostnameFlagSources */ INSERT INTO url_hostnames (id, hostname, is_crawlable, updated_at, publicly_introduced_at)
+    SELECT id, hostname, crawlable, updated_at, CURRENT_TIMESTAMP FROM jsonb_to_recordset($1::jsonb)
       AS fixture(id uuid, hostname text, crawlable boolean, updated_at timestamptz) ON CONFLICT DO NOTHING`,
     [JSON.stringify(rows)],
   )

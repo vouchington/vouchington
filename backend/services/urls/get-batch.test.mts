@@ -17,6 +17,14 @@ describe('get-batch', () => {
     expect(results[1]).toBeNull()
   })
 
+  it('omits the internal hostname introduction time from nested URL results', async () => {
+    const urlId = await createTestUrlWithHostname()
+    const [url] = await getUrlsByIdBatch([urlId])
+
+    expect(url?.hostname).toBeDefined()
+    expect(url?.hostname).not.toHaveProperty('publicly_introduced_at')
+  })
+
   it('getUrlsByIdBatch preserves duplicate input positions for mixed-case IDs', async () => {
     const firstUrlId = await createTestUrlWithHostname()
     const secondUrlId = await createTestUrlWithHostname()

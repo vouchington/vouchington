@@ -1,10 +1,11 @@
-import { beginBoundedTransaction, write } from '@data-stores/psql'
+import { beginBoundedTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
 import onError from '@modules/on-error'
 import { invalidateVerifiedEmailCache } from '@services/contribution-gating/email-verification'
 import { providerTableConfigs, type OAuthProvider, type OAuthAccount } from './providers.mts'
 import { completeOAuthAuthorizationExchange } from './authorization-exchange-completion.mts'
+import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 
 export async function upsertOAuthAccount(
   provider: OAuthProvider,
@@ -41,23 +42,37 @@ export async function upsertOAuthAccount(
       )
     : null
 
+  await using transactionQuery = await beginBoundedTransaction({
+    connectionTimeoutMs: 10_000,
+    statementTimeoutMs: 2_000,
+  })
+  // X is not a verified-email source and has no email-domain FK.
+  const emailDomainHostnameId =
+    provider === 'x'
+      ? null
+      : await resolveEmailDomainHostnameId(providerUserEmailAddress, { query: transactionQuery })
+
   let query: string
   let values: unknown[]
 
   if (hasTokenColumns && hasRefreshToken) {
+    const ownsEmailDomain = provider !== 'x'
+    const dataParameter = ownsEmailDomain ? 4 : 3
     query = `/* upsertOAuthAccount */
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
+        ${ownsEmailDomain ? 'email_domain_hostname_id,' : ''}
         ${config.dataColumn},
         access_token_ciphertext,
         refresh_token_ciphertext,
         access_token_expires_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, ${ownsEmailDomain ? '$3, ' : ''}$${dataParameter}, $${dataParameter + 1}, $${dataParameter + 2}, $${dataParameter + 3})
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
+        ${ownsEmailDomain ? 'email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,' : ''}
         ${config.dataColumn} = ${providerDataUpdate},
         access_token_ciphertext = EXCLUDED.access_token_ciphertext,
         refresh_token_ciphertext = EXCLUDED.refresh_token_ciphertext,
@@ -72,6 +87,7 @@ export async function upsertOAuthAccount(
     values = [
       providerUserId,
       providerUserEmailAddress,
+      ...(ownsEmailDomain ? [emailDomainHostnameId] : []),
       JSON.stringify(providerUserData),
       accessTokenCiphertext,
       refreshTokenCiphertext,
@@ -82,14 +98,16 @@ export async function upsertOAuthAccount(
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
+        email_domain_hostname_id,
         ${config.dataColumn},
         access_token_ciphertext,
         access_token_expires_at
       )
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
+        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
         ${config.dataColumn} = ${providerDataUpdate},
         access_token_ciphertext = EXCLUDED.access_token_ciphertext,
         access_token_expires_at = EXCLUDED.access_token_expires_at
@@ -103,6 +121,7 @@ export async function upsertOAuthAccount(
     values = [
       providerUserId,
       providerUserEmailAddress,
+      emailDomainHostnameId,
       JSON.stringify(providerUserData),
       accessTokenCiphertext,
       tokens?.accessTokenExpiresAt ?? null,
@@ -112,12 +131,14 @@ export async function upsertOAuthAccount(
       INSERT INTO ${config.table} (
         ${config.providerUserIdColumn},
         ${config.emailColumn},
+        email_domain_hostname_id,
         ${config.dataColumn}
       )
-      VALUES ($1, $2, $3)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (${config.providerUserIdColumn})
       DO UPDATE SET
         ${config.emailColumn} = EXCLUDED.${config.emailColumn},
+        email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
         ${config.dataColumn} = ${providerDataUpdate}
       RETURNING
         ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
@@ -126,26 +147,19 @@ export async function upsertOAuthAccount(
         ${config.emailColumn} AS provider_user_email_address,
         ${config.dataColumn} AS provider_user_data
     `
-    values = [providerUserId, providerUserEmailAddress, JSON.stringify(providerUserData)]
+    values = [
+      providerUserId,
+      providerUserEmailAddress,
+      emailDomainHostnameId,
+      JSON.stringify(providerUserData),
+    ]
   }
 
-  const persistence = options.authorizationId
-    ? persistAuthorizedOAuthAccount()
-    : write<OAuthAccount>(query, values)
-  const { rows } = await persistence
-  if (!rows[0]) throw createHttpError(500, 'Failed to upsert OAuth account')
-  if (rows[0].user_id) await invalidateVerifiedEmailCache(rows[0].user_id).catch(onError)
-  return rows[0]
-
-  async function persistAuthorizedOAuthAccount() {
-    await using transactionQuery = await beginBoundedTransaction({
-      connectionTimeoutMs: 10_000,
-      statementTimeoutMs: 2_000,
-    })
-    const result = await transactionQuery<OAuthAccount>(query, values)
-    const account = result.rows[0]
-    if (!account) throw createHttpError(500, 'Failed to upsert OAuth account')
-    if (!options.authorizationId || !options.authorizationClaimId) {
+  const { rows } = await transactionQuery<OAuthAccount>(query, values)
+  const account = rows[0]
+  if (!account) throw createHttpError(500, 'Failed to upsert OAuth account')
+  if (options.authorizationId) {
+    if (!options.authorizationClaimId) {
       throw new Error('authorizationClaimId is required with authorizationId')
     }
     await completeOAuthAuthorizationExchange(
@@ -155,9 +169,10 @@ export async function upsertOAuthAccount(
       account.account_id ?? account.provider_user_id,
       transactionQuery,
     )
-    await transactionQuery.commit()
-    return result
   }
+  await transactionQuery.commit()
+  if (account.user_id) await invalidateVerifiedEmailCache(account.user_id).catch(onError)
+  return account
 }
 
 export function getOAuthTokenPurpose(

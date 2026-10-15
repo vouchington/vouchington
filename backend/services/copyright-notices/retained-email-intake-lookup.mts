@@ -12,7 +12,6 @@ import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
-import { COPYRIGHT_ERASED_KEY_PREFIX } from './retention-erasure-spec.mts'
 
 /** One bounded scan page, independent of staff decisions and delivery states. */
 export async function lookupRetainedCopyrightEmailIntakes(
@@ -41,7 +40,7 @@ export async function lookupRetainedCopyrightEmailIntakes(
       )
     : undefined
   const query = sql`/* lookupRetainedCopyrightEmailIntakes */
-    SELECT intake.id, intake.amazon_ses_message_id, intake.raw_storage_key,
+    SELECT intake.id, intake.amazon_ses_message_id, intake.raw_storage_object_id,
       parse.sender_email_ciphertext, link.copyright_notice_id AS linked_notice_id,
       to_char(intake.received_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_received_at
     FROM copyright_notice_email_intakes intake
@@ -60,7 +59,7 @@ export async function lookupRetainedCopyrightEmailIntakes(
   const { rows } = await transaction<{
     id: string
     amazon_ses_message_id: string
-    raw_storage_key: string
+    raw_storage_object_id: string | null
     sender_email_ciphertext: string | null
     linked_notice_id: string | null
     cursor_received_at: string
@@ -74,8 +73,7 @@ export async function lookupRetainedCopyrightEmailIntakes(
     const reference = { id: intake.id, linked_notice_id: intake.linked_notice_id }
     if (ciphertext === null) {
       // These are candidates, never matches: staff must inspect the retained MIME's From header.
-      if (!intake.raw_storage_key.startsWith(COPYRIGHT_ERASED_KEY_PREFIX))
-        rawReviewCandidates.push(reference)
+      if (intake.raw_storage_object_id) rawReviewCandidates.push(reference)
       continue
     }
     const sender = decryptSecret(

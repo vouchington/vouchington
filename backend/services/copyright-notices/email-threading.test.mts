@@ -11,10 +11,13 @@ import {
   markCopyrightDeliveryIntentSent,
   recordCopyrightEmailParse,
 } from './index.mts'
+import { getCopyrightStaffEmailIntake } from './read-models.mts'
 import { rejectCopyrightEmailIntake } from './email-rejection.mts'
 import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
+import { promoteInitialCopyrightEmail } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { markTestCopyrightNoticeErasedAndCommit } from '@voucha/test-helpers/copyright-email-manual-association'
 
 describe('copyright email threading', () => {
   it('links a reply to a sent outbound copyright email to its case for human review', async () => {
@@ -137,6 +140,137 @@ describe('copyright email threading', () => {
       noticeId: notice.id,
       matchedIntakeId: intake.id,
       matchedReference: inboundMessageId.slice(1, -1),
+    })
+
+    const waitingMessageId = `<${crypto.randomUUID()}@example.test>`
+    const waitingSesMessageId = `ses-inbound-waiting-${crypto.randomUUID()}`
+    const { intake: waiting } = await createCopyrightEmailIntake({
+      sesMessageId: waitingSesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${waitingSesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 9),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await recordCopyrightEmailParse(waiting, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Copyright notice',
+      bodyText: 'This notice is not a case yet.',
+      messageId: waitingMessageId,
+      replyReferences: [],
+      attachments: [],
+    })
+    const mixedSesMessageId = `ses-inbound-mixed-${crypto.randomUUID()}`
+    const { intake: mixed } = await createCopyrightEmailIntake({
+      sesMessageId: mixedSesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${mixedSesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 6),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await expect(
+      recordCopyrightEmailParse(mixed, {
+        status: 'succeeded',
+        fromEmail: 'claimant@example.test',
+        subject: 'Re: Copyright notice',
+        bodyText: 'This names both the sent mail and a notice that is not a case yet.',
+        messageId: `<${crypto.randomUUID()}@example.test>`,
+        replyReferences: [`<${outboundMessageId}>`, waitingMessageId],
+        attachments: [],
+      }),
+    ).resolves.toBeNull()
+    await expect(getCopyrightStaffEmailIntake(mixed.id, moderator)).resolves.toMatchObject({
+      review_path: 'unresolved_thread',
+      linked_notice: null,
+    })
+
+    const messageA = `<${crypto.randomUUID()}@example.test>`
+    const messageB = `<${crypto.randomUUID()}@example.test>`
+    const replyCSesMessageId = `ses-chain-c-${crypto.randomUUID()}`
+    const { intake: replyC } = await createCopyrightEmailIntake({
+      sesMessageId: replyCSesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${replyCSesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 5),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await recordCopyrightEmailParse(replyC, {
+      status: 'succeeded',
+      fromEmail: 'claimant@example.test',
+      subject: 'Re: Copyright notice',
+      bodyText: 'This arrived before the message it answers.',
+      messageId: `<${crypto.randomUUID()}@example.test>`,
+      replyReferences: [messageB],
+      attachments: [],
+    })
+    const replyBSesMessageId = `ses-chain-b-${crypto.randomUUID()}`
+    const { intake: replyB } = await createCopyrightEmailIntake({
+      sesMessageId: replyBSesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${replyBSesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 4),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await expect(
+      recordCopyrightEmailParse(replyB, {
+        status: 'succeeded',
+        fromEmail: 'claimant@example.test',
+        subject: 'Re: Copyright notice',
+        bodyText: 'This answers the sent mail and names a notice that is not a case yet.',
+        messageId: messageB,
+        replyReferences: [`<${outboundMessageId}>`, messageA],
+        attachments: [],
+      }),
+    ).resolves.toMatchObject({ noticeId: notice.id })
+    const promoter = await createTestUser({ extraRoles: ['moderator'] })
+    const promotedA = await promoteInitialCopyrightEmail({
+      moderator: promoter,
+      messageId: messageA,
+    })
+
+    await expect(getCopyrightStaffEmailIntake(replyB.id, promoter)).resolves.toMatchObject({
+      review_path: 'matched_thread',
+      linked_notice: { id: notice.id },
+    })
+    await expect(getCopyrightStaffEmailIntake(replyC.id, promoter)).resolves.toMatchObject({
+      review_path: 'ancestor_notice_conflict',
+      linked_notice: null,
+    })
+    expect(promotedA.noticeId).not.toBe(notice.id)
+
+    await markTestCopyrightNoticeErasedAndCommit(notice.id)
+    const afterErasureSesId = `ses-after-erasure-${crypto.randomUUID()}`
+    const { intake: afterErasure } = await createCopyrightEmailIntake({
+      sesMessageId: afterErasureSesId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${afterErasureSesId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 3),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await expect(
+      recordCopyrightEmailParse(afterErasure, {
+        status: 'succeeded',
+        fromEmail: 'claimant@example.test',
+        subject: 'Re: erased copyright notice',
+        bodyText: 'This is a new inbound reply.',
+        messageId: `<${crypto.randomUUID()}@example.test>`,
+        replyReferences: [`<${outboundMessageId}>`],
+        attachments: [],
+      }),
+    ).resolves.toBeNull()
+    await expect(getCopyrightStaffEmailIntake(afterErasure.id, promoter)).resolves.toMatchObject({
+      review_path: 'unresolved_thread',
+      linked_notice: null,
     })
   })
 })

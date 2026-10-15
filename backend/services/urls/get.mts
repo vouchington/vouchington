@@ -3,6 +3,8 @@ import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
 import createHttpError from 'http-errors'
+import { caches } from '@services/entity-cache/caches'
+import { getUrlHostnameByAny } from '@services/urls-hostnames/get'
 
 export const getUrlById = async (
   id: string,
@@ -75,4 +77,25 @@ export const getUrlByAny = async (
     options,
   )
   return rows[0] || null
+}
+
+const getCachedUrl = caches.urls.cacheGetByAny(getUrlByAny)
+const getCachedHostname = caches.url_hostnames.cacheGetByAny(getUrlHostnameByAny)
+
+/** Keep URL identity cached while reading mutable hostname policy from its own cache. */
+export async function getUrlByAnyCached(id: string): Promise<ViewUrl | null> {
+  const url = await getCachedUrl(id)
+  if (!url) return null
+  const hostname = await getCachedHostname(url.hostname.id)
+  if (!hostname) return null
+  return {
+    ...url,
+    hostname: {
+      ...url.hostname,
+      is_blocked: hostname.is_blocked,
+      is_crawlable: hostname.is_crawlable,
+      should_skip_web_risk: hostname.should_skip_web_risk,
+      should_follow_link_rel: hostname.should_follow_link_rel,
+    },
+  }
 }

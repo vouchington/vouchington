@@ -482,7 +482,8 @@
 ## `copyright_notice_email_thread_reference_kinds`
 
 - `message_id`
-- `reply_reference`
+- `in_reply_to`
+- `references`
 
 ## `copyright_notice_form_screening_attempt_states`
 
@@ -540,6 +541,7 @@
 - `agent_correspondence_approved`
 - `email_correspondence_admitted`
 - `email_correspondence_rejected`
+- `email_intake_manually_associated`
 - `provisional_restriction_imposed`
 - `mandatory_human_review_completed`
 - `restriction_lifted_by_administrator`
@@ -1565,6 +1567,8 @@
 - `admin`
 - `google_web_risk`
 - `parent_hostname`
+- `url_blocklist`
+- `email_blocklist`
 
 ## `user_deletion_external_work_kinds`
 

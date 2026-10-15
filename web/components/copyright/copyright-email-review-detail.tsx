@@ -15,11 +15,13 @@ import { CopyrightEmailSesVerdicts } from './copyright-email-ses-verdicts'
 import { availableOriginalUrl } from './copyright-email-ses-verdicts-model'
 import { isValidCopyrightEmailInformationMessage } from './copyright-email-information-request-model'
 import { CopyrightEmailReplyAddressField } from './copyright-email-reply-address-field'
-import { CopyrightEmailCorrespondenceFields } from './copyright-email-correspondence-fields'
+import { CopyrightEmailNoticeAssociation } from './copyright-email-notice-association'
+import { CopyrightEmailCorrespondenceActions } from './copyright-email-correspondence-actions'
+import type { CopyrightEmailCorrespondenceDraft } from './copyright-email-correspondence-model'
 import {
-  isCompleteCopyrightEmailCorrespondenceDraft,
-  type CopyrightEmailCorrespondenceDraft,
-} from './copyright-email-correspondence-model'
+  copyrightEmailManualReviewNote,
+  isSeparateCopyrightEmailCase,
+} from './copyright-email-review-path'
 
 export function CopyrightEmailReviewDetail({
   detail,
@@ -39,6 +41,7 @@ export function CopyrightEmailReviewDetail({
   onRequestInformation,
   onAdmitCorrespondence,
   onRejectCorrespondence,
+  onAssociateWithNotice,
 }: {
   detail: CopyrightEmailIntake
   draft: CopyrightEmailApprovalDraft | null
@@ -57,10 +60,13 @@ export function CopyrightEmailReviewDetail({
   onRequestInformation: (message: string) => void
   onAdmitCorrespondence: () => void
   onRejectCorrespondence: () => void
+  onAssociateWithNotice: (noticeId: string) => void
 }) {
   // Only an information request uses this message, so it lives here: the parent remounts this
   // component for each intake, which clears it, and a failed request keeps what staff typed.
   const [informationMessage, setInformationMessage] = useState('')
+  const separateCase = isSeparateCopyrightEmailCase(detail.review_path)
+  const manualReviewNote = copyrightEmailManualReviewNote(detail.review_path)
   const requiresFallback = !detail.recommendation && !manualFallbackReason.trim()
   return (
     <section className='space-y-3'>
@@ -82,7 +88,8 @@ export function CopyrightEmailReviewDetail({
         }
       />
       <CopyrightEmailRecommendation recommendation={detail.recommendation} />
-      {detail.review_path === 'initial' && draft && (
+      {manualReviewNote && <p className='text-sm text-muted-foreground'>{manualReviewNote}</p>}
+      {separateCase && draft && (
         <CopyrightEmailApprovalFields
           draft={draft}
           onChange={onChangeDraft}
@@ -102,20 +109,20 @@ export function CopyrightEmailReviewDetail({
           value={manualFallbackReason}
         />
       )}
-      {detail.review_path === 'initial' && (
+      {separateCase && (
         <CopyrightEmailInformationRequestField
           onChange={setInformationMessage}
           value={informationMessage}
         />
       )}
-      {detail.review_path === 'initial' && !detail.parsed_email && (
+      {separateCase && !detail.parsed_email && (
         <CopyrightEmailReplyAddressField
           onChange={onChangeReplyEmail}
           value={replyEmail}
         />
       )}
       <div className='flex flex-wrap gap-2'>
-        {detail.review_path === 'initial' ? (
+        {separateCase ? (
           <>
             <Button
               disabled={
@@ -150,31 +157,16 @@ export function CopyrightEmailReviewDetail({
             </Button>
           </>
         ) : detail.review_path === 'matched_thread' ? (
-          <>
-            <CopyrightEmailCorrespondenceFields
-              detail={detail}
-              draft={correspondenceDraft}
-              onChange={onChangeCorrespondenceDraft}
-            />
-            <Button
-              disabled={
-                loading ||
-                !rationale.trim() ||
-                !isCompleteCopyrightEmailCorrespondenceDraft(correspondenceDraft) ||
-                requiresFallback
-              }
-              onClick={onAdmitCorrespondence}
-            >
-              Admit correspondence
-            </Button>
-            <Button
-              disabled={loading || !rationale.trim() || requiresFallback}
-              onClick={onRejectCorrespondence}
-              variant='destructive'
-            >
-              Reject correspondence
-            </Button>
-          </>
+          <CopyrightEmailCorrespondenceActions
+            detail={detail}
+            draft={correspondenceDraft}
+            loading={loading}
+            onAdmit={onAdmitCorrespondence}
+            onChange={onChangeCorrespondenceDraft}
+            onReject={onRejectCorrespondence}
+            rationale={rationale}
+            requiresFallback={requiresFallback}
+          />
         ) : (
           <p className='text-sm text-muted-foreground'>
             This is a reply whose root email has not yet been admitted. It cannot be handled as a
@@ -182,6 +174,15 @@ export function CopyrightEmailReviewDetail({
           </p>
         )}
       </div>
+      {detail.linked_notice === null &&
+        (detail.review_path === 'unresolved_thread' ||
+          detail.review_path === 'duplicate_message_id' ||
+          detail.review_path === 'ancestor_notice_conflict') && (
+          <CopyrightEmailNoticeAssociation
+            loading={loading}
+            onAssociateWithNotice={onAssociateWithNotice}
+          />
+        )}
     </section>
   )
 }

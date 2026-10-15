@@ -2,15 +2,23 @@ import { randomUUID } from 'node:crypto'
 import type { GlideString } from '@valkey/valkey-glide'
 import { bloomValkeyClient } from '@data-stores/valkey/clients'
 import { unlinkIfValueMatches } from '@data-stores/valkey/conditional'
+import { BLACKLISTS, getDomainBlacklistSourceTypeVersion } from './sources-constants.mts'
+import type { DomainBlacklistType } from '@voucha/types/entities/domain-blacklist-source'
 
 export function newBloomReadyMarkerValue(): string {
   return `ready:${randomUUID()}`
 }
 
-/**
- * Removes a ready marker only when it still holds the value observed by the caller.
- * A concurrent refresh writes a new marker, and this compare-and-unlink leaves that marker in place.
- */
+/** A source-type change must make previously completed filters unreadable before any rebuild. */
+export function blocklistBloomReadyKey(
+  filter: 'url-blocklist' | 'email-blocklist',
+  sources: ReadonlyArray<{ name: string; type: DomainBlacklistType }> = BLACKLISTS,
+): string {
+  const version = getDomainBlacklistSourceTypeVersion(sources)
+  return `bloom-filter:${filter}:ready:${version}`
+}
+
+/** A concurrent refresh writes a new marker, which this compare-and-unlink preserves. */
 export async function unlinkReadyMarkerIfValue(
   key: string,
   expectedValue: GlideString,

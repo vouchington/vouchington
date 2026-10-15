@@ -14,6 +14,7 @@ import {
 import { getRssFeedById } from '@services/rss-feeds/get'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
+import { resolveEmailDomainHostnameId } from '../services/email-address-validator/email-domain-context.mts'
 
 describe('get_domain_ratings tool — real DB', () => {
   let user: PrivateUser
@@ -45,6 +46,16 @@ describe('get_domain_ratings tool — real DB', () => {
       votes_count_down: 2,
     })
     expect(result).not.toHaveProperty('source_topic')
+  })
+
+  it('does not reveal an email-only hostname through a ratings lookup', async () => {
+    const domain = `private-ratings-${randomUUID()}.example.com`
+    const hostnameId = await resolveEmailDomainHostnameId(`owner@${domain}`)
+    expect(hostnameId).toBeTruthy()
+    const requester = await createTestUser()
+
+    const result = await getDomainRatingsTool.function(requester)({ hostname: domain })
+    expect(result).toEqual({ success: false, error: 'Hostname not found.' })
   })
 
   it('returns domain trust plus source topic metrics for an article URL', async () => {

@@ -28,6 +28,7 @@
     "@modules/on-error": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2"

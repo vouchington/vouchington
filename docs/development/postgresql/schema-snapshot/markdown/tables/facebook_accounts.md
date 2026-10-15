@@ -11,6 +11,7 @@ Not partitioned — growth: unbounded.
 | `user_id`                     | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet.         |
 | `facebook_user_id`            | `text`                     | no       |                     |          |           |           | Facebook's unique user ID (primary key).                                    |
 | `facebook_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Facebook profile.                                    |
+| `email_domain_hostname_id`    | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.          |
 | `facebook_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Facebook's /api/me endpoint.                    |
 | `access_token_ciphertext`     | `text`                     | yes      |                     |          |           |           | Encrypted long-lived Facebook access token ciphertext for API calls.        |
 | `access_token_expires_at`     | `timestamp with time zone` | yes      |                     |          |           |           | When the long-lived access token expires.                                   |
@@ -29,10 +30,12 @@ _none_
 **Foreign keys:**
 
 - `facebook_accounts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_facebook_accounts__email_domain_hostname`: `FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `facebook_accounts_pkey`: `CREATE UNIQUE INDEX facebook_accounts_pkey ON public.facebook_accounts USING btree (facebook_user_id)`
+- `idx_facebook_accounts__email_domain_hostname_id`: `CREATE INDEX idx_facebook_accounts__email_domain_hostname_id ON public.facebook_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_facebook_accounts__facebook_user_email_address`: `CREATE INDEX idx_facebook_accounts__facebook_user_email_address ON public.facebook_accounts USING btree (facebook_user_email_address) WHERE (facebook_user_email_address IS NOT NULL)`
 - `idx_facebook_accounts__friends_synced_at`: `CREATE INDEX idx_facebook_accounts__friends_synced_at ON public.facebook_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
 - `idx_facebook_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_facebook_accounts__orphan_retention_cleanup ON public.facebook_accounts USING btree (created_at, facebook_user_id) WHERE (user_id IS NULL)`

@@ -99,7 +99,8 @@ describe('domain-validation', () => {
 
     const cacheWrite = Promise.withResolvers<void>()
     const onCacheWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
-      if (cacheName === 'email-domain-validation' && keys.includes(domain)) cacheWrite.resolve()
+      if (cacheName.startsWith('email-domain-validation:') && keys.includes(domain))
+        cacheWrite.resolve()
     }
     valkeyEvents.on('cache:set', onCacheWrite)
     try {

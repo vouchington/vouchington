@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeAll } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { validateEmailDomain } from '../domain-validation.mts'
 import { EmailDomainInvalidError } from '../errors.mts'
 import {
@@ -7,7 +7,6 @@ import {
   addDomainsToEmailBloomFilter,
 } from '@services/urls-domains-blacklist'
 import {
-  invalidateEmailDomainCaches,
   insertUrlHostname,
   createTestBlacklistSource,
   insertTestDomainBlacklist,
@@ -57,10 +56,6 @@ describe('invalid domain validation', () => {
 
 // Tests for database emailable flag - needs fresh cache
 describe('database emailable flag', () => {
-  beforeAll(async () => {
-    await invalidateEmailDomainCaches()
-  })
-
   it('fails for domain marked as not emailable', async () => {
     const hostname = `test-not-emailable-${Date.now()}.com`
     await insertUrlHostname(hostname, { is_emailable: false })
@@ -83,10 +78,6 @@ describe('database emailable flag', () => {
 
 // Tests for blacklist functionality - needs fresh cache
 describe('blacklist validation', () => {
-  beforeAll(async () => {
-    await invalidateEmailDomainCaches()
-  })
-
   it('fails for domain in email blacklist', async () => {
     await createTestBlacklistSource({
       type: 'email',
@@ -110,7 +101,6 @@ describe('blacklist validation', () => {
 
     // Use gmail.com - URL blacklist shouldn't affect email validation
     await insertTestDomainBlacklist('gmail.com', 'test-url-blacklist')
-    await invalidateEmailDomainCaches()
 
     await expect(validateEmailDomain('gmail.com')).resolves.toBeUndefined()
   })
@@ -166,10 +156,6 @@ describe('blacklist validation', () => {
 
 // Tests that disposable email domains throw with reason='disposable'
 describe('disposable email blocking', () => {
-  beforeAll(async () => {
-    await invalidateEmailDomainCaches()
-  })
-
   it('throws EmailDomainInvalidError with reason=disposable for blacklisted domain', async () => {
     await createTestBlacklistSource({
       type: 'email',
@@ -190,12 +176,7 @@ describe('disposable email blocking', () => {
 
 // Tests for bloom filter integration in domain validation
 describe('bloom filter integration', () => {
-  beforeAll(async () => {
-    await invalidateEmailDomainCaches()
-  })
-
   afterAll(async () => {
-    await invalidateEmailDomainCaches()
     await deleteEmailBloomFilter()
   })
 
@@ -209,7 +190,6 @@ describe('bloom filter integration', () => {
     const testDomain = `bloom-blacklisted-${Date.now()}.com`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
     await rebuildEmailBloomFilter()
-    await invalidateEmailDomainCaches()
 
     await expect(validateEmailDomain(testDomain)).rejects.toThrow(EmailDomainInvalidError)
   })
@@ -231,7 +211,6 @@ describe('bloom filter integration', () => {
 
     const testDomain = `bloom-bypass-${Date.now()}.test`
     await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
-    await invalidateEmailDomainCaches()
 
     // Bloom filter returns false → fast path skips the blacklist EXISTS subquery.
     // The domain is in the DB blacklist but not the filter; it reaches MX validation

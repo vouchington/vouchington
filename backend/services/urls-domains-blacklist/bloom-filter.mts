@@ -3,7 +3,7 @@ import { ValkeyBloomFilter, bloomValkeyClient } from '@data-stores/valkey'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueRebuildBloomFilter } from '@queues/bloom-filters/enqueues'
-import { newBloomReadyMarkerValue } from './ready-marker.mts'
+import { blocklistBloomReadyKey, newBloomReadyMarkerValue } from './ready-marker.mts'
 import {
   addDomainsToBlocklistBloomFilter,
   blocklistBloomAddTarget,
@@ -31,7 +31,7 @@ function getBloomFilter() {
 
 // Marker key set after each successful rebuild — used by warmup as a reliable
 // readiness check instead of a bloom membership probe (which can false-positive).
-const BLOOM_READY_KEY = 'bloom-filter:url-blocklist:ready'
+const BLOOM_READY_KEY = blocklistBloomReadyKey('url-blocklist')
 
 export async function invalidateUrlBlocklistReadyMarker(): Promise<number> {
   return bloomValkeyClient.unlink([BLOOM_READY_KEY])

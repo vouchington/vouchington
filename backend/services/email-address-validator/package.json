@@ -25,9 +25,10 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
-    "@data-stores/valkey": "workspace:^",
     "@services/bloom-filter-config": "workspace:^",
+    "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "sql-template-strings": "^2.2.2",
     "validator": "^13.15.35"

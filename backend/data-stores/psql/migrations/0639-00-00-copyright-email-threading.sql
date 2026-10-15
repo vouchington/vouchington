@@ -1,6 +1,6 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
--- Threading uses only keyed digests.  Plain RFC headers remain encrypted in the
--- immutable MIME parse and are never used as a public lookup key.
+-- Threading uses keyed digests in a private UUID identity table. Plain RFC headers remain
+-- encrypted in the immutable MIME parse and are never used as a public lookup key.
 
 ALTER TABLE copyright_notice_correspondence_messages
   ADD CONSTRAINT fk_copyright_correspondence__email_intake
@@ -10,15 +10,53 @@ ALTER TABLE copyright_notice_correspondence_messages
   VALIDATE CONSTRAINT fk_copyright_correspondence__email_intake;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE copyright_notice_email_thread_tokens (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  lookup_digest text NOT NULL CONSTRAINT uq_copyright_notice_email_thread_tokens__lookup_digest UNIQUE
+    CONSTRAINT chk_copyright_notice_email_thread_tokens__lookup_digest CHECK (lookup_digest ~ '^[0-9A-Fa-f]{64}$'),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_thread_references (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_thread_references__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
-  lookup_token text NOT NULL CHECK (char_length(lookup_token) = 64),
-  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('message_id', 'reply_reference')),
+  token_id uuid CONSTRAINT fk_copyright_notice_email_thread_references__token REFERENCES copyright_notice_email_thread_tokens(id) ON DELETE RESTRICT,
+  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('message_id', 'in_reply_to', 'references')),
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  CONSTRAINT uq_cop_not_ema_thr_ref__intake_id__lookup_token__reference_kind UNIQUE (copyright_notice_email_intake_id, lookup_token, reference_kind)
+  CONSTRAINT uq_cop_not_ema_thr_ref__intake_id__token_id__reference_kind UNIQUE (copyright_notice_email_intake_id, token_id, reference_kind)
 );
+
+-- A message's intake row is immutable. Each edge is recorded once, when one token resolves.
+CREATE TABLE copyright_notice_email_message_ancestors (
+  reply_message_intake_id uuid NOT NULL,
+  ancestor_message_intake_id uuid NOT NULL,
+  reference_kind copyright_notice_email_thread_reference_kinds NOT NULL CHECK (reference_kind IN ('in_reply_to', 'references')),
+  PRIMARY KEY (reply_message_intake_id, ancestor_message_intake_id),
+  CONSTRAINT chk_copyright_email_message_ancestors__distinct CHECK (reply_message_intake_id <> ancestor_message_intake_id)
+);
+ALTER TABLE copyright_notice_email_message_ancestors
+  ADD CONSTRAINT fk_copyright_notice_email_message_ancestors__reply
+  FOREIGN KEY (reply_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_email_message_ancestors
+  VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__reply;
+ALTER TABLE copyright_notice_email_message_ancestors
+  ADD CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor
+  FOREIGN KEY (ancestor_message_intake_id) REFERENCES copyright_notice_email_intakes(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE copyright_notice_email_message_ancestors
+  VALIDATE CONSTRAINT fk_copyright_notice_email_message_ancestors__ancestor;
+CREATE INDEX idx_copyright_notice_email_message_ancestors__ancestor_reply
+  ON copyright_notice_email_message_ancestors (ancestor_message_intake_id, reply_message_intake_id);
+CREATE TRIGGER trigger_copyright_email_message_ancestors_immutable
+  BEFORE UPDATE OR DELETE ON copyright_notice_email_message_ancestors
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+COMMENT ON TABLE copyright_notice_email_message_ancestors IS 'Immutable resolved ancestor edges between inbound email intakes. One reply may record every unambiguous In-Reply-To or References token, including an ancestor that arrives later.';
+COMMENT ON COLUMN copyright_notice_email_message_ancestors.reply_message_intake_id IS 'Inbound reply intake that named the ancestor.';
+COMMENT ON COLUMN copyright_notice_email_message_ancestors.ancestor_message_intake_id IS 'Inbound ancestor intake resolved from one unambiguous keyed RFC Message-ID.';
+COMMENT ON COLUMN copyright_notice_email_message_ancestors.reference_kind IS 'Whether In-Reply-To or References resolved this ancestor. An existing edge is never rewritten when the other header names the same intake.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_email_intake_notice_links (
@@ -27,7 +65,7 @@ CREATE TABLE copyright_notice_email_intake_notice_links (
   copyright_notice_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_notice_links__notice REFERENCES copyright_notices(id) ON DELETE RESTRICT,
   copyright_notice_email_intake_recommendation_id uuid CONSTRAINT fk_copyright_notice_email_intake_notice_links__recommendation REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT,
   link_kind copyright_notice_email_intake_link_kinds NOT NULL CHECK (link_kind IN ('initial', 'thread')),
-  matched_reference_lookup text CONSTRAINT chk_copy_noti_email_intak_notic_links__matched_reference_lookup CHECK (matched_reference_lookup IS NULL OR char_length(matched_reference_lookup) = 64),
+  matched_token_id uuid CONSTRAINT fk_copyright_notice_email_intake_notice_links__matched_token REFERENCES copyright_notice_email_thread_tokens(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT uq_copyr_notice_email_intake_notice_links__notice_id__intake_id UNIQUE (copyright_notice_id, copyright_notice_email_intake_id)
@@ -70,8 +108,12 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX idx_copyright_notice_email_thread_references__lookup
-  ON copyright_notice_email_thread_references(lookup_token, id);
+CREATE INDEX idx_copyright_notice_email_thread_references__token
+  ON copyright_notice_email_thread_references(token_id, id)
+  WHERE token_id IS NOT NULL;
+CREATE INDEX idx_copyright_notice_email_intake_notice_links__matched_token
+  ON copyright_notice_email_intake_notice_links(matched_token_id)
+  WHERE matched_token_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_correspondence_messages__email_intake
   ON copyright_notice_correspondence_messages(copyright_notice_email_intake_id)
@@ -103,6 +145,22 @@ CREATE INDEX idx_copyright_notice_email_corresponden_reviews__recommendation
 CREATE TRIGGER trigger_copyright_email_thread_references_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_thread_references
   FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+CREATE FUNCTION fn_reject_copyright_email_thread_reference_without_token()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.token_id IS NULL AND
+    (TG_OP = 'INSERT' OR current_setting('app.copyright_retention_erasure', true) IS DISTINCT FROM 'on') THEN
+    RAISE EXCEPTION 'Copyright email thread reference token may be cleared only by retention erasure';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_copyright_email_thread_references_require_token
+  BEFORE INSERT OR UPDATE ON copyright_notice_email_thread_references
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_thread_reference_without_token();
+CREATE TRIGGER trigger_copyright_email_thread_tokens_immutable
+  BEFORE UPDATE OR DELETE ON copyright_notice_email_thread_tokens
+  FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_copyright_email_thread_links_immutable
   BEFORE UPDATE OR DELETE ON copyright_notice_email_intake_notice_links
@@ -117,16 +175,18 @@ CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor
   FOR EACH ROW WHEN (NEW.action <> 'pending')
   EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id');
 
-COMMENT ON TABLE copyright_notice_email_thread_references IS 'Keyed RFC Message-ID and In-Reply-To/References values used only for private case correlation.';
+COMMENT ON TABLE copyright_notice_email_thread_tokens IS 'Private UUID identities for keyed RFC message-reference digests; the digest survives while any live case or reply uses it.';
+COMMENT ON COLUMN copyright_notice_email_thread_tokens.lookup_digest IS 'Keyed hex64 digest of a normalized RFC message reference; retention erasure overwrites it only when no live reference remains.';
+COMMENT ON TABLE copyright_notice_email_thread_references IS 'Private UUID references to keyed RFC Message-ID and In-Reply-To/References tokens.';
 COMMENT ON COLUMN copyright_notice_email_thread_references.copyright_notice_email_intake_id IS 'Inbound email whose private thread token was recorded.';
-COMMENT ON COLUMN copyright_notice_email_thread_references.lookup_token IS 'Keyed digest of a normalized RFC message reference.';
-COMMENT ON COLUMN copyright_notice_email_thread_references.reference_kind IS 'Whether the token names this message or a referenced parent.';
+COMMENT ON COLUMN copyright_notice_email_thread_references.token_id IS 'Private token identity; NULL only after the owning case is erased under the retention-erasure flag.';
+COMMENT ON COLUMN copyright_notice_email_thread_references.reference_kind IS 'Whether the token is this message''s Message-ID, an In-Reply-To token, or a References token.';
 COMMENT ON TABLE copyright_notice_email_intake_notice_links IS 'Immutable private association between an email intake and its admitted or matched copyright case.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.copyright_notice_email_intake_id IS 'Inbound email associated with the case.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.copyright_notice_id IS 'Copyright case associated with the inbound email.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.copyright_notice_email_intake_recommendation_id IS 'Agent recommendation retained as provenance for the link.';
 COMMENT ON COLUMN copyright_notice_email_intake_notice_links.link_kind IS 'Whether the email opened the case or matched its thread.';
-COMMENT ON COLUMN copyright_notice_email_intake_notice_links.matched_reference_lookup IS 'Keyed digest that caused thread correlation.';
+COMMENT ON COLUMN copyright_notice_email_intake_notice_links.matched_token_id IS 'Private token identity that caused thread correlation; cleared when the case is erased.';
 COMMENT ON TABLE copyright_notice_email_correspondence_reviews IS 'Append-only pending and moderator decisions for matched inbound copyright email; no decision is automatic.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.copyright_notice_email_intake_id IS 'Matched inbound email reviewed by staff.';
 COMMENT ON COLUMN copyright_notice_email_correspondence_reviews.copyright_notice_id IS 'Copyright case to which the email was matched.';

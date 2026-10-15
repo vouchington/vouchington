@@ -163,10 +163,10 @@ export async function toolsSearchRssFeedItemIds(
         AND rfict.votes_score_net > 0
     )`)
     whereClauses.push(sql`NOT EXISTS (
-      SELECT 1
-      FROM urls
-      WHERE urls.id = rss_feed_items.url_id
-        AND urls.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids)
+      SELECT 1 FROM urls
+      JOIN url_hostnames blocked_hostname ON blocked_hostname.id = urls.hostname_id
+      WHERE urls.id = rss_feed_items.url_id AND
+        (urls.hostname_id IN (SELECT hostname_id FROM excluded_hostname_ids) OR blocked_hostname.is_blocked)
     )`)
   }
 

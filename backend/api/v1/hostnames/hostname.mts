@@ -10,6 +10,7 @@ import { getCrawlersForHostname } from '@services/crawlers'
 import { attachRssFeedProvenance, attachTopicProvenance } from '@services/content-provenance'
 import {
   currentUserCanFilterHostnameModeration,
+  currentUserCanViewHostname,
   stripHostnameElectionFields,
   toPublicViewHostname,
   updateUrlHostname,
@@ -75,7 +76,10 @@ app.route('/api/v1/hostnames/:id').get(async ctx => {
   const canSeeModeration = currentUserCanFilterHostnameModeration(currentUser)
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
-  if (!hostname || (hostname.is_blocked && !canSeeModeration)) {
+  if (
+    !hostname ||
+    ((!hostname.publicly_introduced_at || hostname.is_blocked) && !canSeeModeration)
+  ) {
     ctx.setStatus(404)
     return ctx.json({ error: 'Hostname not found' })
   }
@@ -162,7 +166,7 @@ app.route('/api/v1/hostnames/:id').patch(async (ctx: Context) => {
     return
   }
 
-  await updateUrlHostname(ctx.params.id!, changes)
+  await updateUrlHostname(ctx.params.id!, changes, { introducePublicly: true })
   ctx.setStatus(204)
 })
 
@@ -185,7 +189,7 @@ app.route('/api/v1/hostnames/:id/votes').get(async (ctx: Context) => {
 
   const hostname = await getUrlHostnameByAnyCached(ctx.params.id!)
   ctx.assert(hostname, 404, 'Hostname not found')
-
+  ctx.assert(currentUserCanViewHostname(currentUser, hostname), 404, 'Hostname not found')
   const collection = isAdminUser(currentUser)
     ? await getHostnameElectionVotesByElectionId(ctx.params.id!, { limit, after })
     : await getHostnameElectionVotesByUserForEntity(currentUser.id, ctx.params.id!, {

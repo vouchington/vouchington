@@ -160,11 +160,11 @@ function singleCases(surface: Surface, mergedNames: ReadonlySet<string>): Operat
 export function currentOperationCases(): OperationCase[] {
   const user = [...mergedUserCases(), ...singleCases('mcp', userMergedNames)]
   const admin = [...mergedAdminCases(), ...singleCases('admin_mcp', adminMergedNames)]
-  if (user.length !== 120 || admin.length !== 105)
+  if (user.length !== 120 || admin.length !== 106)
     throw new Error(`case count: ${user.length}/${admin.length}`)
   if (
     new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 115 ||
-    new Set(admin.map(row => `${row.name}.${row.option ?? ''}`)).size !== 105
+    new Set(admin.map(row => `${row.name}.${row.option ?? ''}`)).size !== 106
   )
     throw new Error('distinct operation inventory drift')
   for (const [surface, rows] of [

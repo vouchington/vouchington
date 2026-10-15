@@ -50,8 +50,32 @@ describe('SES inbound MIME parsing', () => {
       emailMessageId: '<tests+incoming@voucha.ai>',
       recipientEmails: ['support@voucha.ai'],
       attachments: [],
-      replyRefs: ['<tests+reply@voucha.ai>', '<tests+first@voucha.ai>'],
+      inReplyTo: ['<tests+reply@voucha.ai>'],
+      references: ['<tests+first@voucha.ai>', '<tests+reply@voucha.ai>'],
     })
+  })
+
+  it('preserves quoted message IDs across commas, folds, and multiple headers', async () => {
+    const raw = Buffer.from(
+      [
+        'From: sender@example.test',
+        'In-Reply-To: <"claim,part"@example.test> <next@example.test>',
+        'References: <root@example.test>',
+        ' <"quoted part,one"@example.test>',
+        'References: <"claim,part"@example.test>',
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'Reply',
+      ].join('\r\n'),
+    )
+
+    const result = await parseSesInboundMime(Readable.from([raw]))
+    expect(result.inReplyTo).toEqual(['<"claim,part"@example.test>', '<next@example.test>'])
+    expect(result.references).toEqual([
+      '<root@example.test>',
+      '<"quoted part,one"@example.test>',
+      '<"claim,part"@example.test>',
+    ])
   })
 
   it('rejects MIME without a sender address', async () => {
@@ -103,7 +127,8 @@ describe('SES inbound MIME parsing', () => {
           sha256: expect.any(Buffer),
         },
       ],
-      replyRefs: [],
+      inReplyTo: [],
+      references: [],
     })
   })
 

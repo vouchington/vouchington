@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 export type DomainBlacklistType = 'url' | 'email'
 
 export type DomainBlacklistSource = {
@@ -47,3 +49,12 @@ export const BLACKLISTS: DomainBlacklistSource[] = [
     url: `https://raw.githubusercontent.com/blocklistproject/Lists/main/alt-version/${name}-nl.txt`,
   })),
 ]
+/** Shared Valkey namespace version for source-type-dependent Bloom and validation results. */
+export function getDomainBlacklistSourceTypeVersion(
+  sources: ReadonlyArray<Pick<DomainBlacklistSource, 'name' | 'type'>> = BLACKLISTS,
+): string {
+  const identities = sources
+    .map(({ name, type }) => ({ name, type }))
+    .toSorted((left, right) => left.name.localeCompare(right.name))
+  return createHash('sha256').update(JSON.stringify(identities)).digest('hex').slice(0, 16)
+}

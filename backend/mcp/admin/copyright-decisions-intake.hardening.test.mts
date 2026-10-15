@@ -4,6 +4,7 @@ import { validateToolArguments } from '../../services/mcp-tools/validate-tool-ar
 
 const names = [
   'assess_copyright_legal_hold',
+  'associate_copyright_email_intake_with_notice',
   'record_copyright_repeat_infringer_disposition',
   'record_copyright_repeat_infringer_outcome',
   'reinstate_copyright_repeat_infringer',
@@ -20,7 +21,7 @@ const names = [
 ]
 
 describe('copyright admin decision tool contracts', () => {
-  it('registers the decision writes with closed rationale-bearing schemas and both exact scopes', () => {
+  it('registers decision writes with closed schemas and both exact scopes', () => {
     const tools = ALL_TOOLS.filter(tool => tool.meta?.switch === 'copyright.mcpDecisionTools')
     expect(tools.map(tool => tool.schema.name).toSorted()).toEqual(names)
     for (const tool of tools) {
@@ -28,7 +29,9 @@ describe('copyright admin decision tool contracts', () => {
         'copyright-notices:read',
         'copyright-notices:write',
       ])
-      expect(tool.meta?.auditRationale).toBe(true)
+      expect(tool.meta?.auditRationale).toBe(
+        tool.schema.name === 'associate_copyright_email_intake_with_notice' ? undefined : true,
+      )
       expect(tool.meta?.annotations).toMatchObject({
         readOnlyHint: false,
         idempotentHint: expect.any(Boolean),
@@ -40,6 +43,14 @@ describe('copyright admin decision tool contracts', () => {
 
   it('rejects missing rationale for each registered decision contract', () => {
     const id = crypto.randomUUID()
+    const association = getRegisteredToolByName('associate_copyright_email_intake_with_notice')!
+    expect(association.meta?.auditRationale).toBeUndefined()
+    expect(
+      validateToolArguments(association.schema.parameters, {
+        intake_id: id,
+        copyright_notice_id: id,
+      }),
+    ).toBeNull()
     const rows: Array<{ name: string; option?: string; args: Record<string, unknown> }> = [
       { name: 'review_copyright_form_intake', args: { id, is_accepted: true } },
       {
@@ -106,7 +117,7 @@ describe('copyright admin decision tool contracts', () => {
         .map(row => row.name)
         .filter((name, index, all) => all.indexOf(name) === index)
         .toSorted(),
-    ).toEqual(names)
+    ).toEqual(names.filter(name => name !== 'associate_copyright_email_intake_with_notice'))
     for (const row of rows) {
       const tool = getRegisteredToolByName(row.name)!
       const input = (args: Record<string, unknown>) =>

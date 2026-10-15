@@ -6,17 +6,19 @@ Individual blacklisted domains from external sources.
 
 Not partitioned — growth: unbounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                     |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------- |
-| `source_id`  | `bigint`                   | no       |                     |          |           |           | The blacklist source this domain came from. |
-| `domain`     | `text`                     | no       |                     |          |           |           | The blacklisted domain name (lowercase).    |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                             |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                             |
+| Column            | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                           |
+| ----------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
+| `source_id`       | `bigint`                   | no       |                     |          |           |           | The blacklist source this domain came from.                       |
+| `domain`          | `text`                     | no       |                     |          |           |           | The blacklisted domain name (lowercase).                          |
+| `url_hostname_id` | `uuid`                     | no       |                     |          |           |           | Resolved hostname identity used by block projections and readers. |
+| `created_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                   |
+| `updated_at`      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                   |
 
 **Primary key:** `PRIMARY KEY (domain, source_id)`
 
 **Unique constraints:**
-_none_
+
+- `uq_blocklisted_domains__hostname_source`: `UNIQUE (url_hostname_id, source_id)`
 
 **Check constraints:**
 
@@ -26,13 +28,17 @@ _none_
 **Foreign keys:**
 
 - `blocklisted_domains_source_id_fkey`: `FOREIGN KEY (source_id) REFERENCES domain_blocklist_sources(id) ON DELETE CASCADE`
+- `blocklisted_domains_url_hostname_id_fkey`: `FOREIGN KEY (url_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `blocklisted_domains_pkey`: `CREATE UNIQUE INDEX blocklisted_domains_pkey ON public.blocklisted_domains USING btree (domain, source_id)`
 - `idx_blocklisted_domains__source_id__domain`: `CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain)`
 - `idx_blocklisted_domains__updated_at_domain_source_id`: `CREATE INDEX idx_blocklisted_domains__updated_at_domain_source_id ON public.blocklisted_domains USING btree (updated_at, domain, ((source_id)::text))`
+- `uq_blocklisted_domains__hostname_source`: `CREATE UNIQUE INDEX uq_blocklisted_domains__hostname_source ON public.blocklisted_domains USING btree (url_hostname_id, source_id)`
 
 **Triggers:**
 
 - `trigger_blocklisted_domains_updated_at`: `CREATE TRIGGER trigger_blocklisted_domains_updated_at BEFORE UPDATE ON public.blocklisted_domains FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_create_domain_blocklist_hostname_blocks`: `CREATE TRIGGER trigger_create_domain_blocklist_hostname_blocks AFTER INSERT ON public.blocklisted_domains REFERENCING NEW TABLE AS inserted_domains FOR EACH STATEMENT EXECUTE FUNCTION fn_create_domain_blocklist_hostname_blocks()`
+- `trigger_project_domain_blocklist_hostname_block_lifts`: `CREATE TRIGGER trigger_project_domain_blocklist_hostname_block_lifts AFTER DELETE ON public.blocklisted_domains REFERENCING OLD TABLE AS deleted_domains FOR EACH STATEMENT EXECUTE FUNCTION fn_project_domain_blocklist_hostname_block_lifts()`

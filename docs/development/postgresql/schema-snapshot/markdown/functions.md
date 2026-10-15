@@ -52,6 +52,14 @@ CREATE OR REPLACE FUNCTION public.fn_create_copyright_delivery_attempt()
  LANGUAGE plpgsql
 ```
 
+## `fn_create_domain_blocklist_hostname_blocks`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_domain_blocklist_hostname_blocks()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_google_play_acknowledgment_work`
 
 ```sql
@@ -299,6 +307,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_domain_blocklist_hostname_block_lifts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_domain_blocklist_hostname_block_lifts()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_handoff_deleted_user_image_surfaces`
 
 ```sql
@@ -463,14 +479,6 @@ CREATE OR REPLACE FUNCTION public.fn_project_topic_image_placements()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_transparency_rollup()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_url_hostname_blocked`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_url_hostname_blocked()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -667,6 +675,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_email_thread_reference_without_token`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_thread_reference_without_token()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_human_actor`
 
 ```sql
@@ -687,6 +703,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_immutable_with_actor_erasu
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_copyright_missing_storage_object`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_missing_storage_object()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1189,6 +1213,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_copyright_delivery_work()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_domain_blocklist_hostname_block_source`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_domain_blocklist_hostname_block_source()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_media_delivery_change_authority`
 
 ```sql
@@ -1281,6 +1313,30 @@ CREATE OR REPLACE FUNCTION public.fn_update_transparency_scope()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_updated_at()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_url_hostname_blocked_after_delete`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_delete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_url_hostname_blocked_after_insert`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_insert()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_url_hostname_blocked_after_update`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_blocked_after_update()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

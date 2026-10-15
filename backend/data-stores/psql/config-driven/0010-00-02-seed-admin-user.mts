@@ -7,8 +7,16 @@ export default function generateSeedAdminUserSQL(): string {
   parts.push(buildSystemUserUpsertSQL('jong', 'official'))
 
   parts.push(`
-INSERT INTO user_email_addresses (user_id, email_address, is_primary)
-SELECT u.id, 'jong@voucha.ai', TRUE FROM users u WHERE u.username = 'jong' AND u.platform_account_kind = 'official'
+INSERT INTO url_hostnames (hostname, publicly_introduced_at) VALUES ('voucha.ai', CURRENT_TIMESTAMP)
+ON CONFLICT (hostname) DO NOTHING;
+UPDATE url_hostnames SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
+WHERE hostname = 'voucha.ai' AND publicly_introduced_at IS NULL;
+
+INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary)
+SELECT u.id, 'jong@voucha.ai', email_domain.id, TRUE
+FROM users u CROSS JOIN url_hostnames email_domain
+WHERE u.username = 'jong' AND u.platform_account_kind = 'official'
+  AND email_domain.hostname = 'voucha.ai'
   AND NOT EXISTS (
     SELECT 1 FROM user_email_addresses
     WHERE email_address = 'jong@voucha.ai' AND is_primary = TRUE

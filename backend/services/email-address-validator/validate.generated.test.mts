@@ -1,11 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { validateEmailAddress } from './validate.mts'
 import { EmailFormatInvalidError, EmailDomainInvalidError } from './errors.mts'
-import {
-  invalidateEmailDomainCaches,
-  insertEmailAddressLoginToken,
-  insertUrlHostname,
-} from '@voucha/test-helpers'
+import { insertEmailAddressLoginToken, insertUrlHostname } from '@voucha/test-helpers'
 
 // Tests for format validation - no DNS, no cache needed
 describe('format validation', () => {
@@ -126,10 +122,6 @@ describe('domain validation', () => {
 
 // Tests requiring database setup - isolated with fresh cache
 describe('database integration', () => {
-  beforeAll(async () => {
-    await invalidateEmailDomainCaches()
-  })
-
   it('skips domain validation for previously logged-in email', async () => {
     const email = `test-logged-in-${Date.now()}@invalid-but-logged-in.test`
     const token = `TEST123-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`

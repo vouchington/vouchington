@@ -18,6 +18,7 @@ import * as clientCopyrightEmailIntakes from '../../../lib/api/client/copyright-
 import * as clientCopyrightEuDisputeSettlements from '../../../lib/api/client/copyright-eu-dispute-settlements'
 import * as clientCopyrightGuest from '../../../lib/api/client/copyright-guest'
 import * as clientCopyrightNotices from '../../../lib/api/client/copyright-notices'
+import * as clientCopyrightNoticeAssociationTarget from '../../../lib/api/client/copyright-notice-association-target'
 import * as clientDynamicConfig from '../../../lib/api/client/dynamic-config'
 import * as clientEntityRelations from '../../../lib/api/client/entity-relations'
 import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
@@ -96,6 +97,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     copyrightEuDisputeSettlements: clientCopyrightEuDisputeSettlements,
     copyrightGuest: clientCopyrightGuest,
     copyrightNotices: clientCopyrightNotices,
+    copyrightNoticeAssociationTarget: clientCopyrightNoticeAssociationTarget,
     dynamicConfig: clientDynamicConfig,
     entityRelations: clientEntityRelations,
     featureFlags: clientFeatureFlags,

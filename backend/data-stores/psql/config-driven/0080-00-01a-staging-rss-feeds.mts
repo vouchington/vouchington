@@ -116,10 +116,12 @@ ON CONFLICT DO NOTHING;`
 
   return [
     `
-INSERT INTO url_hostnames (id, hostname, is_crawlable)
-SELECT ${lit(ids.hostname)}, ${lit(feed.hostname)}, TRUE
+INSERT INTO url_hostnames (id, hostname, is_crawlable, publicly_introduced_at)
+SELECT ${lit(ids.hostname)}, ${lit(feed.hostname)}, TRUE, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM url_hostnames WHERE hostname = ${lit(feed.hostname)})
-ON CONFLICT DO NOTHING;`,
+ON CONFLICT DO NOTHING;
+UPDATE url_hostnames SET publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)
+WHERE hostname = ${lit(feed.hostname)} AND publicly_introduced_at IS NULL;`,
     `
 INSERT INTO urls (id, url, hostname_id, pathname, search_params, media_type_id)
 SELECT ${lit(ids.url)}, ${lit(feed.url)}, h.id, ${lit(feed.pathname)}, '{}'::jsonb, ct.id

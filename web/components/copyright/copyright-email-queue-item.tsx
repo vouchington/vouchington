@@ -7,12 +7,7 @@ import type {
   CopyrightEmailIntakeQueuePage,
 } from '@/types/copyright-notices'
 import { CopyrightEmailReplyRetry } from './copyright-email-reply-retry'
-
-const reviewPathLabels = {
-  initial: 'Initial intake',
-  matched_thread: 'Matched correspondence',
-  unresolved_thread: 'Unresolved reply',
-} as const
+import { copyrightEmailReviewPathLabels } from './copyright-email-review-path'
 
 /**
  * One row of the staff email review queue: the intake to open, why it still waits, and the retry for
@@ -40,7 +35,7 @@ export function CopyrightEmailQueueItem({
         onClick={() => onSelect(item.id)}
         variant='link'
       >
-        {reviewPathLabels[item.review_path]} {item.id}
+        {copyrightEmailReviewPathLabels[item.review_path]} {item.id}
       </Button>
       <p className='text-xs text-muted-foreground'>
         Received <TimeAgo date={item.received_at} />

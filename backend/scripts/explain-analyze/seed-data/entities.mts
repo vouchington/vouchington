@@ -44,7 +44,10 @@ export async function seedHostnames(count = HOSTNAME_COUNT): Promise<void> {
       rows.push(`($${base}, $${base + 1})`)
     }
     await query(
-      `/* seedExplainData */ INSERT INTO url_hostnames (id, hostname) VALUES ${rows.join(', ')} ON CONFLICT DO NOTHING`,
+      `/* seedExplainData */ INSERT INTO url_hostnames (id, hostname, publicly_introduced_at)
+       SELECT input.id::uuid, input.hostname, CURRENT_TIMESTAMP
+       FROM (VALUES ${rows.join(', ')}) AS input(id, hostname)
+       WHERE TRUE ON CONFLICT DO NOTHING`,
       values,
     )
 

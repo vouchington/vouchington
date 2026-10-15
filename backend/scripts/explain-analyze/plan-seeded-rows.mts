@@ -5,6 +5,7 @@ import { FOLLOWER_DISTRIBUTION_SEED_COUNT } from './seed-data/common.mts'
 const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
+  url_hostname_cache_invalidation_work_items: 20_000,
   users: 20_000,
   follower_distributions: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,

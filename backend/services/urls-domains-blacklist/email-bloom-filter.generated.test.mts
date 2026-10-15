@@ -6,6 +6,7 @@ import {
   deleteEmailBloomFilter,
   warmUpEmailBlocklistBloomFilter,
 } from './email-bloom-filter.mts'
+import { blocklistBloomReadyKey } from './ready-marker.mts'
 import { enqueueRebuildBloomFilterBestEffortWithEnqueue } from './rebuild-enqueue.mts'
 import * as rebuildEnqueue from './rebuild-enqueue.mts'
 import { checkBloomFilterRead, normalizeValkeyKeyTypeForRepair } from './read-repair.mts'
@@ -199,7 +200,7 @@ describe('email-bloom-filter.generated', () => {
     })
 
     await insertTestDomainBlacklist(`warmup-email-ready-missing-${suffix}.com`, TEST_SOURCE_NAME)
-    await bloomValkeyClient.set('bloom-filter:email-blocklist:ready', '1')
+    await bloomValkeyClient.set(blocklistBloomReadyKey('email-blocklist'), '1')
 
     await expect(warmUpEmailBlocklistBloomFilter()).resolves.toBeUndefined()
   })
@@ -222,7 +223,7 @@ describe('email-bloom-filter.generated', () => {
 
   it('addDomainsToEmailBloomFilter swallows error and unlinks ready marker when bloom key is corrupted', async () => {
     // Corrupt the live Valkey key (bloom-filter:<name>) with a string — BF.MADD throws WRONGTYPE
-    await bloomValkeyClient.set('bloom-filter:email-blocklist:ready', 'stale')
+    await bloomValkeyClient.set(blocklistBloomReadyKey('email-blocklist'), 'stale')
     await bloomValkeyClient.set('bloom-filter:email-blocklist', 'corrupted')
     // Should resolve without throwing — error recovery is internal
     await expect(addDomainsToEmailBloomFilter(['blocked.com'])).resolves.toBeUndefined()

@@ -322,7 +322,8 @@ but cannot create a restriction, correspondence, or legal case. A moderator must
 and agent output, then explicitly accept or reject it before a valid email submission can enter the
 case lifecycle, even when the recommendation is `potentially_valid`.
 
-On the staff email review page a moderator decides an initial intake with **Approve structured
+On the staff email review page a moderator decides an initial intake, a duplicated Message-ID, or a
+thread whose ancestors reach more than one case with **Approve structured
 intake**, **Request information**, **Reject email intake**, or **Record as legal process**. A request for information carries a
 required message (not blank, at most 10,000 characters) that follows the fixed reply text, and like
 a rejection it closes the intake without opening a case. The owner approves the reply wording.
@@ -349,7 +350,8 @@ reviewer, with no case, because the reply to a declined intake belongs to the in
 `reply_bounced` reply stays terminal. See the [API](../api/v1/copyright-notices/README.md) for the
 contract.
 
-An initial intake that is legal process, such as a §512(h) subpoena, is closed with **Record as
+An initial intake, a duplicated Message-ID, or a thread whose ancestors reach more than one case,
+when it is legal process such as a §512(h) subpoena, is closed with **Record as
 legal process** (`POST /api/v1/copyright-email-intakes/:id/legal-process`), because a rejection
 always replies to a known sender. It needs a short reason (not blank, at most 1,000 characters),
 which may name a legal matter, so it is encrypted like the review rationale and never logged or
@@ -360,18 +362,48 @@ restriction, or claimant-visible event. The intake leaves the email review page 
 [review-target sweep](#review-target-page), which count only undecided intakes. The decision is
 final: a second decision of any kind on the intake, repeated or different, is a `409`, and so is
 recording legal process on an intake that was already approved or rejected. The action is for
-initial intakes only. A reply to an existing case thread, or one waiting for its root case, is not
-offered it; those are classified as correspondence. The same staff roles as approve and reject may
+separate-case intakes: an initial email, a duplicated Message-ID (`duplicate_message_id`), or
+ancestors that reach more than one case (`ancestor_notice_conflict`). A reply already linked to a
+case, or one still waiting for its root case (`unresolved_thread`), is not offered it. The same
+staff roles as approve and reject may
 use it.
 
 Email extraction includes the claimant, contact, work, hosted URLs, signature, and both statutory
 declarations, with short source excerpts for moderator verification. Missing declarations remain
 null; the agent cannot infer them. RFC `Message-ID`, `In-Reply-To`, and `References` values are
-encrypted and retained for case-scoped correspondence threading using keyed digests only. A matched reply keeps
+stored apart, encrypted, and retained for case-scoped correspondence threading using keyed digests only.
+An intake whose Message-ID is claimed by another intake, or whose ancestor edges reach more than one
+case, stays unlinked for staff review (`duplicate_message_id` or `ancestor_notice_conflict`). A matched reply keeps
 its original MIME evidence, still receives the same advisory structured extraction and recommendation, and waits
 for moderator classification; it cannot trigger a restriction or outbound message automatically. An approval normally names
 the recommendation reviewed. If the agent is unavailable or fails, staff must instead record an
 explicit manual-fallback reason while reviewing the preserved original.
+Staff promotion reads the descendant intake and immutable ancestor-edge graph within the configured
+total-row budget, locks its reference tokens in digest order before locking the intakes in ID order,
+then reads the graph and token set again. Receipt-time threading takes the same token locks before
+writing an edge. A changed intake, edge, or token set returns a retryable-by-staff
+`copyright_email_thread_changed` conflict before recording a notice, review, link, or delivery
+intent. The service does not retry automatically. If the graph or its reference-token set exceeds
+the bounded lock budget, approval still creates the initial
+notice and leaves every reply unlinked for the existing staff email queue; it records the notice ID
+and observed row count in the operational log, without storing a new thread status. No subset of
+replies is linked automatically.
+Receipt-time ancestor matching uses the same budget and leaves an over-budget reply unlinked in
+the staff queue instead of traversing the full historical thread.
+Staff review also caps the per-intake ancestor walk; an over-budget conflict is shown as an
+unresolved thread for manual association rather than scanning the full graph.
+For any unlinked intake in `unresolved_thread` (including one waiting for an unknown parent or
+left unlinked by the graph cap), `duplicate_message_id`, or `ancestor_notice_conflict`, a copyright
+reviewer can enter an existing notice ID and associate that intake alone. The staff picker resolves
+the reference and displays the case before selection,
+including an existing case that has not yet been accepted. This records an immutable staff-actor
+lifecycle event and opens the existing
+pending correspondence review; it does not create ancestor edges or link other replies. A case
+link or review committed while staff makes the choice returns `copyright_email_thread_changed`
+before the association or event is written. The reviewer then uses the normal correspondence
+classification. An ordinary initial email must use statutory case approval, and a case already
+marked for retention erasure cannot receive a new association. Both conditions are checked under
+the row locks. The event is staff-only in the case timeline.
 For email approvals, staff resolve each recommended hosted URL to live image placements and select
 verified targets. If a URL cannot be resolved, the review surface explains the failure and allows
 manual target identification; approval still validates the chosen target against the live placement.
@@ -1023,8 +1055,9 @@ period.
     recommendations. These are personal data and statements.
   - Object versions deleted and the key overwritten with `erased:<row id>`: evidence artifact and
     raw `.eml` storage keys. This is the evidence itself.
-  - Overwritten with a per-row digest: email thread lookup tokens and matched-reference lookups,
-    which identify the sender's mail thread.
+  - Email-thread references and matched links clear their token UUIDs. A private token's keyed
+    digest is overwritten with a per-row digest only when no other live case or reply uses it;
+    shared tokens keep their digest and continue threading for their remaining owner.
   - Kept: the notice, targets, submissions, dates, kinds, states, hashes, MIME types, and sizes
     (the minimal record for the repeat-infringer count and the limitation period); restrictions,
     deadlines, and hold and review outcomes (restoration records); repeat-infringer incidents,

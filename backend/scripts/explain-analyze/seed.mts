@@ -70,7 +70,10 @@ import { seedPostFeedShares } from './seed-data/post-feed-shares.mts'
 import { seedAdminEmails } from './seed-data/admin-emails.mts'
 import { seedSemanticPosts } from './seed-data/semantic-posts.mts'
 import { seedHostnameCrawlSweeps } from './seed-data/hostname-crawl-sweeps.mts'
-import { seedHostnameFlags } from './seed-data/hostname-flags.mts'
+import {
+  seedHostnameFlags,
+  seedHostnameCacheInvalidationWork,
+} from './seed-data/hostname-flags.mts'
 import {
   seedBlocklistedDomains,
   seedCopyrightStaffEvidence,
@@ -97,6 +100,7 @@ async function main() {
   await seedHostnameFlags()
   await seedHostnameCrawlSweeps()
   await seedBlocklistedDomains()
+  await seedHostnameCacheInvalidationWork()
   await seedUserAgentStrings()
   await seedCopyrightStaffEvidence()
   await seedRemoteFollowers()

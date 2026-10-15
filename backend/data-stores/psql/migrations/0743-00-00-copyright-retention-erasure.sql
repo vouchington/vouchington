@@ -27,12 +27,13 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
     WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']
     WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']
     WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']
-    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_key']
-    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_key']
+    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']
+    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']
     WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']
     WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']
-    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['lookup_token']
-    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_reference_lookup']
+    WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']
+    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']
+    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']
     WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']
     WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']
     WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']
@@ -60,7 +61,7 @@ $$;
 COMMENT ON TABLE copyright_notice_retention_erasures IS 'Append-only record that a case''s personal data and stored evidence were erased after the retention period. Its presence ends every reader and sweep touch of the case''s erased columns; the case keeps its legal skeleton and repeat-infringer facts.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.copyright_notice_id IS 'The erased case; one row per case, so the sweep is idempotent.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.retention_days IS 'Owner-approved retention period, in days, that was in force when the case was erased.';
-COMMENT ON COLUMN copyright_notice_retention_erasures.erased_object_count IS 'Count of stored evidence object keys the case referenced; every version of each was removed from the evidence bucket before this row was written.';
+COMMENT ON COLUMN copyright_notice_retention_erasures.erased_object_count IS 'Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.created_at IS 'Time the case was erased, derived from the UUIDv7 id; the row is append-only.';
 COMMENT ON FUNCTION fn_copyright_retention_erasable_columns(text) IS 'Columns, per table, that a retention-erasure transaction may overwrite in place; NULL for any table that is never erased. The TypeScript erasure spec must list exactly these columns.';
 COMMENT ON FUNCTION fn_copyright_retention_erasure_permitted(text, jsonb, jsonb) IS 'True only inside a transaction that set app.copyright_retention_erasure to on and only when the update changes nothing outside the table''s erasable columns; legal-record guards call it before rejecting an update.';

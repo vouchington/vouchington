@@ -1,5 +1,6 @@
 import { MailParser, type AddressObject, type HeaderValue } from 'mailparser'
 import { Readable, Transform } from 'node:stream'
+import { parseMessageIds } from './message-id-header.mts'
 import { streamMailParts, type ParsedMimeAttachment } from './streamed-mail-parts.mts'
 
 export const MAX_MIME_HEADER_BYTES = 1024 * 1024
@@ -10,7 +11,8 @@ export type ParsedSesInboundEmail = {
   subject: string
   bodyText: string
   emailMessageId: string | null
-  replyRefs: string[]
+  inReplyTo: string[]
+  references: string[]
   attachments?: ParsedMimeAttachment[]
   recipientEmails?: string[]
 }
@@ -29,8 +31,8 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
   let sender: AddressObject | undefined
   let subject = ''
   let messageId: string | null = null
-  let references = ''
-  let inReplyTo = ''
+  let references: string[] = []
+  let inReplyTo: string[] = []
   let recipientEmails: string[] = []
   const parts = streamMailParts(parser)
   const headerLimiter = createMimeHeaderLimitStream()
@@ -40,8 +42,6 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
       sender = asAddress(headers.get('from'))
       subject = String(headers.get('subject') ?? '')
       messageId = String(headers.get('message-id') ?? '').trim() || null
-      references = String(headers.get('references') ?? '')
-      inReplyTo = String(headers.get('in-reply-to') ?? '')
       recipientEmails = [
         ...new Set(
           ['to', 'delivered-to', 'x-original-to'].flatMap(header =>
@@ -49,6 +49,15 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
           ),
         ),
       ]
+    })
+    parser.once('headerLines', lines => {
+      for (const header of lines as Array<{ key: string; line: string }>) {
+        if (header.key === 'references') {
+          references.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+        } else if (header.key === 'in-reply-to') {
+          inReplyTo.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+        }
+      }
     })
     parser.once('error', error => {
       rawMime.destroy()
@@ -79,7 +88,8 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     subject: normalizedSubject,
     bodyText: parts.getBodyText() || normalizedSubject,
     emailMessageId: messageId,
-    replyRefs: normalizeReplyReferences(inReplyTo, references),
+    inReplyTo: [...new Set(inReplyTo)],
+    references: [...new Set(references)],
     attachments: parts.getAttachments(),
     recipientEmails,
   }
@@ -121,15 +131,4 @@ function asAddress(value: HeaderValue | undefined): AddressObject | undefined {
 function getHeaderAddresses(value: HeaderValue | undefined): string[] {
   const address = asAddress(value)
   return address?.value.flatMap(item => (item.address?.trim() ? [item.address.trim()] : [])) ?? []
-}
-
-function normalizeReplyReferences(inReplyTo: string, references: string): string[] {
-  return [
-    ...new Set(
-      [inReplyTo, ...references.split(/[\s,]+/)].flatMap(value => {
-        const normalized = value.trim()
-        return normalized ? [normalized] : []
-      }),
-    ),
-  ]
 }

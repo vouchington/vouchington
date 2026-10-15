@@ -2529,6 +2529,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Drain durable hostname-policy cache invalidations",
+        "id": "hostnameCacheInvalidationSweep",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "urls-domains-blacklist",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "hostnameCacheInvalidationSweep",
+    "template": {
+      "data": {},
+      "name": "drainHostnameCacheInvalidationWork",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "cache-invalidation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Dispatch URL/domain blacklist syncing (weekly)",
         "id": "blacklistDispatcher",
         "kind": "scheduled-jobs",
@@ -2922,6 +2959,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "urls-domains-blacklist",
     "schedule": "0 2 * * 0",
     "triggerName": "enqueueBlacklistDispatcher",
+  },
+  {
+    "description": "Drain durable hostname-policy cache invalidations",
+    "id": "hostnameCacheInvalidationSweep",
+    "job_name": "drainHostnameCacheInvalidationWork",
+    "queue_name": "urls-domains-blacklist",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueHostnameCacheInvalidationSweep",
   },
   {
     "description": "Drain durable RSS category-mapping transitions for hashtag aliases",

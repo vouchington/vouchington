@@ -1,5 +1,7 @@
-import { write } from '@data-stores/psql'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { beginTransaction } from '@data-stores/psql'
+import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import onError from '@modules/on-error'
 
 type UpdateUrlHostnameOptions = {
   is_crawlable?: boolean
@@ -12,6 +14,7 @@ type UpdateUrlHostnameOptions = {
 export const updateUrlHostname = async (
   id: string,
   changes: UpdateUrlHostnameOptions,
+  options: { introducePublicly?: boolean } = {},
 ): Promise<string | null> => {
   const sets: string[] = []
   const values: unknown[] = [id]
@@ -32,9 +35,14 @@ export const updateUrlHostname = async (
     }
   }
 
+  if (options.introducePublicly) {
+    sets.push('publicly_introduced_at = COALESCE(publicly_introduced_at, CURRENT_TIMESTAMP)')
+  }
+
   if (sets.length === 0) return null
 
-  const { rows } = await write(
+  await using transaction = await beginTransaction()
+  const { rows } = await transaction(
     `/* updateUrlHostname */
     UPDATE url_hostnames
     SET ${sets.join(', ')}
@@ -44,8 +52,9 @@ export const updateUrlHostname = async (
     values,
   )
   const updatedHostname = rows[0] as { id: string; hostname: string } | undefined
-  if (updatedHostname) {
-    await invalidate.url_hostnames(updatedHostname)
-  }
+  if (updatedHostname) await enqueueHostnameCacheInvalidation(transaction, [updatedHostname.id])
+  await transaction.commit()
+  if (updatedHostname)
+    await drainHostnameCacheInvalidationWork({ hostnameIds: [updatedHostname.id] }).catch(onError)
   return updatedHostname?.id || null
 }

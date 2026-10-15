@@ -8,6 +8,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
 import { copyrightEmailIntakePurpose } from './email-intakes.mts'
 import { createCopyrightEmailIntakeResponseInTransaction } from './email-intake-reply.mts'
+import { assertCopyrightEmailUnresolvedReply } from './email-thread-review-path.mts'
 
 /**
  * Records a staff rejection or needs-information decision and queues the sender's reply.
@@ -138,26 +139,8 @@ export async function assertNoInitialIntakeThreadBarrier(
   transaction: TransactionQuery,
   intakeId: string,
 ): Promise<void> {
-  await assertNotUnresolvedThreadReply(transaction, intakeId)
+  await assertCopyrightEmailUnresolvedReply(transaction, intakeId)
   await assertNoThreadCorrespondenceDecision(transaction, intakeId)
-}
-
-async function assertNotUnresolvedThreadReply(
-  transaction: TransactionQuery,
-  intakeId: string,
-): Promise<void> {
-  const { rows } = await transaction(sql`/* rejectCopyrightEmailIntake:unresolvedReply */
-    SELECT 1 FROM copyright_notice_email_thread_references reference
-    WHERE reference.copyright_notice_email_intake_id = ${intakeId}
-      AND reference.reference_kind = 'reply_reference'
-      AND NOT EXISTS (
-        SELECT 1 FROM copyright_notice_email_intake_notice_links link
-        WHERE link.copyright_notice_email_intake_id = ${intakeId}
-          AND link.link_kind = 'thread'
-      )
-    LIMIT 1
-  `)
-  assert(!rows[0], 409, 'Unresolved reply email must wait for its root case')
 }
 
 async function assertNoThreadCorrespondenceDecision(

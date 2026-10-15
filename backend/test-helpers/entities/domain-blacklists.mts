@@ -3,8 +3,9 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
  * Domain blacklists entity test helpers
  */
 
-import { read, write, type QueryOptions } from '@data-stores/psql'
+import { beginTransaction, read, write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { upsertTestHostnameId } from './email-domain-hostname.mts'
 import type {
   DomainBlacklistSource,
   DomainBlacklistSourceId,
@@ -42,10 +43,11 @@ export async function insertTestDomainBlacklist(
     sourceId = insertResult.rows[0].id
   }
 
+  const hostnameId = await upsertTestHostnameId(domain, options)
   await write(
     allowUnannotatedQuery(sql`
-    INSERT INTO blocklisted_domains (source_id, domain)
-    VALUES (${sourceId}, ${domain})
+    INSERT INTO blocklisted_domains (source_id, domain, url_hostname_id)
+    VALUES (${sourceId}, ${domain}, ${hostnameId})
     ON CONFLICT (domain, source_id) DO NOTHING
   `),
     options,
@@ -88,11 +90,19 @@ export async function countBlacklistEntriesBySource(
   return result.rows[0].count
 }
 
-/** Delete only an owned source; its foreign key cascades to that source's entries. */
+/** Delete only an owned test source and its projected block history. */
 export async function deleteTestBlacklistSource(sourceId: DomainBlacklistSourceId): Promise<void> {
-  await write(sql`/* deleteTestBlacklistSource */
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* deleteTestBlacklistSource */
+    DELETE FROM blocklisted_domains WHERE source_id = ${sourceId}
+  `)
+  await transaction(sql`/* deleteTestBlacklistSource */
+    DELETE FROM url_hostname_blocks WHERE domain_blocklist_source_id = ${sourceId}
+  `)
+  await transaction(sql`/* deleteTestBlacklistSource */
     DELETE FROM domain_blocklist_sources WHERE id = ${sourceId}
   `)
+  await transaction.commit()
 }
 
 /**

@@ -7,6 +7,7 @@ import { updateUrlHostname } from '@services/urls-hostnames/update'
 import {
   createTestBlacklistSource,
   deleteTestBlacklistSource,
+  getTestHostnameRow,
   insertTestDomainBlacklist,
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
@@ -101,13 +102,13 @@ describe('hostname policy reads', () => {
     await expect(pending).resolves.toMatchObject({ is_blocked: false })
   })
 
-  it('confirms a Bloom maybe against blocklisted_domains', async () => {
+  it('reads a projected URL domain block locally even when Bloom says maybe', async () => {
     const domain = `maybe-${randomUUID()}.test`
     await ownBlocklistedDomain(domain)
     bloomAnswers(candidates => candidates.map(() => true))
 
     await expect(isBlocked(`sub.${domain}`)).resolves.toBe(true)
-    expect(domainSpy).toHaveBeenCalledTimes(1)
+    expect(domainSpy).not.toHaveBeenCalled()
   })
 
   it('treats a Bloom false positive as not blocked after the database read', async () => {
@@ -118,13 +119,13 @@ describe('hostname policy reads', () => {
     expect(domainSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('never short-circuits the database when the filter is not ready', async () => {
+  it('reads a projected URL domain block locally when the filter is not ready', async () => {
     const domain = `not-ready-${randomUUID()}.test`
     await ownBlocklistedDomain(domain)
     bloomAnswers(candidates => candidates.map(() => null))
 
     await expect(isBlocked(domain)).resolves.toBe(true)
-    expect(domainSpy).toHaveBeenCalledTimes(1)
+    expect(domainSpy).not.toHaveBeenCalled()
   })
 
   it('skips blocklisted_domains when url_hostnames already blocks a suffix', async () => {
@@ -150,7 +151,7 @@ describe('hostname policy reads', () => {
     expect(localSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('reads many hostnames in one local query and one domain query', async () => {
+  it('reads projected domain blocks for many hostnames in one local query', async () => {
     const blockedDomain = `batch-blocked-${randomUUID()}.test`
     const cleanHost = `batch-clean-${randomUUID()}.test`
     await ownBlocklistedDomain(blockedDomain)
@@ -166,9 +167,90 @@ describe('hostname policy reads', () => {
     expect(result.get(cleanHost)?.is_blocked).toBe(false)
     expect(result.size).toBe(2)
     expect(localSpy).toHaveBeenCalledTimes(1)
-    expect(domainSpy).toHaveBeenCalledTimes(1)
-    expect(domainSpy.mock.calls[0]![0].map(group => group.key)).toEqual([blockedDomain])
+    expect(domainSpy).not.toHaveBeenCalled()
   })
+
+  it('projects a URL blacklist insert and delete into crawl policy immediately', async () => {
+    const domain = `url-transition-${randomUUID()}.test`
+    const sourceName = `url-transition-${sourceNameSuffix()}`
+    const hostnameId = (await upsertUrlHostnames(null, [domain])).get(domain)!
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: sourceName,
+      url: 'https://example.com/url-transition.txt',
+    })
+    try {
+      expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
+      await insertTestDomainBlacklist(domain, sourceName)
+      expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
+      await expect(isBlocked(domain)).resolves.toBe(true)
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
+    await expect(isBlocked(domain)).resolves.toBe(false)
+  })
+
+  it('keeps an email-only domain block out of URL crawl policy', async () => {
+    const domain = `email-transition-${randomUUID()}.test`
+    const sourceName = `email-transition-${sourceNameSuffix()}`
+    const hostnameId = (await upsertUrlHostnames(null, [domain])).get(domain)!
+    const sourceId = await createTestBlacklistSource({
+      type: 'email',
+      name: sourceName,
+      url: 'https://example.com/email-transition.txt',
+    })
+    try {
+      await insertTestDomainBlacklist(domain, sourceName)
+      expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
+      await expect(isBlocked(domain)).resolves.toBe(false)
+    } finally {
+      await deleteTestBlacklistSource(sourceId)
+    }
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
+  })
+
+  it('reclassifies an existing projected block when its source type changes', async () => {
+    const domain = `source-type-${randomUUID()}.test`
+    const sourceName = `source-type-${sourceNameSuffix()}`
+    const source = { name: sourceName, url: 'https://example.com/source-type.txt' }
+    const hostnameId = (await upsertUrlHostnames(null, [domain])).get(domain)!
+    sourceIds.push(await createTestBlacklistSource({ ...source, type: 'url' }))
+    await insertTestDomainBlacklist(domain, sourceName)
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
+
+    await createTestBlacklistSource({ ...source, type: 'email' })
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
+
+    await createTestBlacklistSource({ ...source, type: 'url' })
+    expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(true)
+  })
+
+  it.each(['url', 'email'] as const)(
+    'keeps an inherited parent block when a %s feed is removed',
+    async sourceType => {
+      const parent = `feed-parent-${randomUUID()}.test`
+      const child = `sub.${parent}`
+      const sourceName = `feed-parent-${sourceNameSuffix()}`
+      const parentId = (await upsertUrlHostnames(null, [parent])).get(parent)!
+      await updateUrlHostnameBlocked(parentId, true)
+      const sourceId = await createTestBlacklistSource({
+        type: sourceType,
+        name: sourceName,
+        url: 'https://example.com/parent-feed.txt',
+      })
+      let childId: string
+      try {
+        await insertTestDomainBlacklist(parent, sourceName)
+        childId = (await upsertUrlHostnames(null, [child])).get(child)!
+        expect((await getTestHostnameRow(childId))?.is_blocked).toBe(true)
+      } finally {
+        await deleteTestBlacklistSource(sourceId)
+      }
+      expect((await getTestHostnameRow(childId!))?.is_blocked).toBe(true)
+      await expect(isBlocked(child)).resolves.toBe(true)
+    },
+  )
 
   it('uses one full query and no Bloom read when the feature flag is disabled', async () => {
     const domain = `flag-off-${randomUUID()}.test`

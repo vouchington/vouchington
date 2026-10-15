@@ -34,6 +34,7 @@
     "@ts-shared/cache": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
+    "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "undici": "^8.11.2",

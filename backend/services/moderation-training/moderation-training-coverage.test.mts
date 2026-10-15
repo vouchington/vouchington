@@ -23,6 +23,7 @@ describe('moderation-training feedback coverage', () => {
       post_id: '00000000-0000-0000-0000-000000000001',
       community_id: '00000000-0000-0000-0000-000000000002',
       agent_moderation_id: null,
+      input_sha256: Buffer.alloc(32, 7),
       moderator_slug: null,
       title: 'Title',
       authored_title: 'Title',
@@ -41,7 +42,9 @@ describe('moderation-training feedback coverage', () => {
       feedback_label: null,
     } satisfies RawRecentAutomodAction
 
-    expect(normalizeRecentAction(raw)).toMatchObject({
+    const action = normalizeRecentAction(raw)
+    expect(action).not.toHaveProperty('input_sha256')
+    expect(action).toMatchObject({
       confidence_score: null,
       categories: ['spam', 'abuse'],
     })

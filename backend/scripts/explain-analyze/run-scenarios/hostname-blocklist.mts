@@ -1,6 +1,12 @@
 import { urlBlocklistBatchesFromDb } from '@services/urls-domains-blacklist/bloom-filter-batches'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { BLOOM_REPAIR_SEED_ROW_COUNT } from '../seed-data/bloom-reconciliation.mts'
+import {
+  HOSTNAME_FLAG_SEED_ROW_COUNT,
+  seedHostnameCacheInvalidationWork,
+} from '../seed-data/hostname-flags.mts'
+import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 
 export async function runHostnameBlocklistScenario(): Promise<void> {
   await runAndCapture(
@@ -15,15 +21,48 @@ export async function runHostnameBlocklistScenario(): Promise<void> {
     undefined,
     'urlBlocklistBatchesFromDb:hostnames',
   )
+  await runAndCapture(
+    'hostname-cache-invalidation-claim',
+    async () => {
+      // Capture the production claim over 20k work rows without doing real cache work.
+      const claimed = await drainHostnameCacheInvalidationWork({ evict: async () => {} })
+      if (claimed !== 500)
+        throw new Error(`Expected one full cache-invalidation page; got ${claimed}`)
+    },
+    undefined,
+    'drainHostnameCacheInvalidationWork:claimAvailable',
+    { afterCapture: seedHostnameCacheInvalidationWork },
+  )
 }
 
 registerScenarioContract('url-blocklist-hostnames', {
   expectations: [
     {
       kind: 'usesIndexes',
-      indexes: ['idx_url_hostnames__blocked', 'idx_url_hostnames__not_crawlable'],
+      indexes: ['idx_url_hostname_blocks__active_nonfeed'],
     },
-    // Eleven results plus the one overlapping row scanned and filtered by the second branch.
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 15 },
+    // URL-source domains are already streamed from blocklisted_domains. The hostname branch
+    // visits independent block history and non-crawlable hosts, not the projected URL-feed rows.
+    {
+      kind: 'maxProcessedRows',
+      relation: 'url_hostnames',
+      max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
+    },
+    {
+      kind: 'maxProcessedRows',
+      relation: 'url_hostname_blocks',
+      max: BLOOM_REPAIR_SEED_ROW_COUNT + HOSTNAME_FLAG_SEED_ROW_COUNT + 1,
+    },
   ],
+})
+
+registerScenarioContract('hostname-cache-invalidation-claim', {
+  expectations: [
+    { kind: 'usesIndexes', indexes: ['idx_url_hostname_cache_invalidation_work_items__available'] },
+    { kind: 'usesIndexes', indexes: ['url_hostname_cache_invalidation_work_items_pkey'] },
+    // A 500-row claim visits the updated rows, the due-page index, and up to 500 PK probes.
+    { kind: 'maxProcessedRows', relation: 'url_hostname_cache_invalidation_work_items', max: 1500 },
+    { kind: 'queryBinds', token: 'LIMIT' },
+  ],
+  seededRows: { url_hostname_cache_invalidation_work_items: 20_000 },
 })

@@ -7,7 +7,7 @@ export type HostnameDispatchCandidate = {
   id: string
   range: 0 | 1
   crawl_swept_at: Date | null
-  is_domain_blocklisted: boolean
+  has_url: boolean
 }
 
 /** Seek one distinct leading index value rather than scan all hosts to enumerate thresholds. */
@@ -25,7 +25,8 @@ export async function getCrawlHostnameCandidates(
   remaining: number,
 ) {
   const never = sql`
-    SELECT id, 0 AS range, crawl_swept_at, hostname
+    SELECT id, 0 AS range, crawl_swept_at,
+      EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id) AS has_url
     FROM url_hostnames uh
     WHERE uh.is_crawlable AND NOT uh.is_blocked
       AND uh.age_threshold_days = ${cursor.bucketDays}
@@ -33,7 +34,8 @@ export async function getCrawlHostnameCandidates(
       AND uh.id < ${getMinUUIDv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
   `
   const overdue = sql`
-    SELECT id, 1 AS range, crawl_swept_at, hostname
+    SELECT id, 1 AS range, crawl_swept_at,
+      EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id) AS has_url
     FROM url_hostnames uh
     WHERE uh.is_crawlable AND NOT uh.is_blocked
       AND uh.age_threshold_days = ${cursor.bucketDays}
@@ -51,13 +53,8 @@ export async function getCrawlHostnameCandidates(
     LIMIT ${cursor.rangeLimit}`)
   // Each input range stops in index order. This final ordering touches only the two capped pages.
   const statement = sql`/* dispatchCrawlHostnames */
-    SELECT due.*, COALESCE(blocked.is_domain_blocklisted, FALSE) AS is_domain_blocklisted FROM (`
+    SELECT due.* FROM (`
   statement.append('(').append(never).append(') UNION ALL (').append(overdue).append(')')
-  statement.append(sql`) due LEFT JOIN LATERAL (
-    SELECT TRUE AS is_domain_blocklisted FROM blocklisted_domains db
-    JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
-    WHERE db.domain = due.hostname AND dbs.type = 'url'::domain_blocklist_types
-    LIMIT 1
-  ) blocked ON TRUE ORDER BY crawl_swept_at NULLS FIRST, id LIMIT ${remaining}`)
+  statement.append(sql`) due ORDER BY crawl_swept_at NULLS FIRST, id LIMIT ${remaining}`)
   return (await read<HostnameDispatchCandidate>(statement)).rows
 }

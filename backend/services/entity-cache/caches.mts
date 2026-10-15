@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { getDomainBlacklistSourceTypeVersion } from '@voucha/types/entities/domain-blacklist-source'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { CACHE_TTLS_SECONDS } from './config.mts'
 import {
@@ -96,8 +97,14 @@ export const caches = {
     keySerializer: (key: string) => createHash('sha256').update(key.trim()).digest('hex'),
   }),
   url_hostnames: new ValkeyCache({
-    prefix: 'url_hostnames',
+    // Config-driven source-type changes can replay before runtime invalidation is available.
+    // A new source classification must not reuse the prior hostname policy cache namespace.
+    prefix: `url_hostnames:${getDomainBlacklistSourceTypeVersion()}`,
     ttlSeconds: CACHE_TTLS_SECONDS.url_hostnames,
+  }),
+  email_domain_validation: new ValkeyCache({
+    prefix: `email-domain-validation:${getDomainBlacklistSourceTypeVersion()}`,
+    ttlSeconds: CACHE_TTLS_SECONDS.email_domain_validation,
   }),
   hostname_elections: new ValkeyCache({
     prefix: 'hostname_elections',
