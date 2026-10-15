@@ -536,8 +536,8 @@ Each selected area coverage job consumes only its own full-LCOV artifacts and ru
 `ci/coverage-artifacts.sh area-check`; a missing full LCOV is a producer failure, not an optional
 fan-in probe. `github-actions-step-timeouts` requires a bounded deadline on every authored
 workflow step; [Step Timeouts](../../ci/workflows/reference-step-timeouts.md) owns the budgets.
-Generic missing/over-cap job timeouts and step-exceeds-job checks live in
-`github-actions-job-timeouts`. Workflow tests must not restate `timeout-minutes` literals; that is
+Generic missing/over-cap job timeouts, step-exceeds-job checks, and job-at-or-above-step-sum
+checks (`rejectJobAtOrAboveStepSum`) live in `github-actions-job-timeouts`. Workflow tests must not restate `timeout-minutes` literals; that is
 `github-actions-test-timeout-literals`.
 
 The workflow graph policy is the `workflow-topology-policy` rule (`GitHub Actions workflow topology

@@ -16,7 +16,8 @@ additive exception: every job's `timeout-minutes` is strictly less than the sum 
 `timeout-minutes` and at least its largest step. Never size a job as the step sum plus headroom,
 and never raise a job cap because a step was added. The `github-actions-job-timeouts` no-mistakes
 rule enforces this with `rejectJobAtOrAboveStepSum` and `rejectStepExceedingJob` in
-[.no-mistakes.yml](../../.no-mistakes.yml).
+[.no-mistakes.yml](../../.no-mistakes.yml). The step-sum check needs at least two bounded steps, so
+jobs with zero or one bounded step are exempt from it.
 
 ### GitHub-hosted re-derivation
 
@@ -54,8 +55,8 @@ downloads it in the same run. Job timeout ceilings are enforced generically by t
 `github-actions-job-timeouts` `no-mistakes` rule rather than a dedicated structural guard.
 
 Workflow tests assert the exact job and critical-step ceilings where a job's budget matters; the
-`rejectJobAtOrAboveStepSum` option of that rule asserts the universal relationship across every
-workflow.
+`rejectJobAtOrAboveStepSum` option of that rule asserts the relationship for every job with two or
+more bounded steps.
 
 The `static-web` job adopts the fail-fast relationship. It produces the shared web build that every
 Web suite waits on, and healthy runs finish in under four minutes, so its cap stays at the
