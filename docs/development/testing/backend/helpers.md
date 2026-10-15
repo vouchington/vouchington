@@ -109,6 +109,28 @@ Agent and manual community unpublish lock-order cases share
 [`expectUnpublishHoldsPublicationLockWhileWaitingOnReview`](../../../../backend/test-helpers/entities/community-post-review-publication-lock.mts).
 Each case keeps its title, slug prefix, review-lock SQL comment, member setup, unpublish call, and result assertion.
 
+## Owned Story projection lifetimes
+
+[`createStoryProjectionLifetime`](../../../../backend/test-helpers/story-projection-lifetime.mts)
+owns a test's committed projection post IDs and exact returned claims. Register
+`onTestFinished(() => lifetime.finish())` before starting fixtures, then await `lifetime.run(action)`.
+Inside that action, call `ownPost(postId)` immediately after the producer returns a committed ID,
+before awaiting finalization. Wrap assertions on each returned owned claim in `withClaim(work, action)`;
+it releases that exact claim even when the action fails. Register separately created exclusion
+witnesses too; unknown identities are rejected before release or drain.
+
+`finish()` joins the root action before sealing ownership, releases each recorded claim once, and
+attempts every owned post's drain. Repeated calls return the same completion promise. A stopped
+reconciler is not proof of cleanup: use
+[`readStoryProjectionWorkForTest`](../../../../backend/test-helpers/entities/story-projection-work.mts)
+to verify primary-read absence for the exact owned IDs.
+
+`run()` preserves the raw primary rejection. If cleanup also fails, `finish()` throws an
+`AggregateError` with the raw primary as `cause` and primary-first, operation-ordered errors.
+Distinct failed operations retain undefined or identical reasons; only the exact release operation
+already reported as the primary is omitted from the secondary ledger. Successful cleanup does not
+rethrow the root failure from `finish()`; the caller must await `run()`.
+
 ## Owned entity-listener completion
 
 [`withEntityListenerCompletion`](../../../../backend/test-helpers/entity-listener-completion.mts)
