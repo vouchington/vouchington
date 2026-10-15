@@ -10,12 +10,12 @@ import {
   OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB,
   OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB,
 } from '@queues/background/enqueues/openai-moderation-jobs'
-import { background } from '@queues/background/queues'
+import { openAiModerationQueue } from './queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('enqueueCreatePostModeration', () => {
   beforeEach(async () => {
-    await background.obliterate({ force: true })
+    await openAiModerationQueue.obliterate({ force: true })
   })
 
   it('enqueues one attempt with the replacement key in the moderation deduplication id', async () => {
@@ -24,7 +24,7 @@ describe('enqueueCreatePostModeration', () => {
 
     await enqueueCreatePostModeration(postId, { deduplicationKey })
 
-    const waiting = await readAllQueueJobs(background)
+    const waiting = await readAllQueueJobs(openAiModerationQueue)
     const job = waiting.find(
       item =>
         item.name === OPENAI_MODERATION_POST_JOB.name &&
@@ -49,13 +49,13 @@ describe('enqueueCreatePostModeration', () => {
 
 describe('enqueueReconcileImageQuarantines', () => {
   beforeEach(async () => {
-    await background.obliterate({ force: true })
+    await openAiModerationQueue.obliterate({ force: true })
   })
 
   it('uses a one-attempt, throttled reconciliation job', async () => {
     await enqueueReconcileImageQuarantines()
 
-    const [job] = await readAllQueueJobs(background)
+    const [job] = await readAllQueueJobs(openAiModerationQueue)
     expect(job).toMatchObject({
       name: OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name,
       opts: {
@@ -72,13 +72,13 @@ describe('enqueueReconcileImageQuarantines', () => {
 
 describe('enqueueReconcilePostModeration', () => {
   beforeEach(async () => {
-    await background.obliterate({ force: true })
+    await openAiModerationQueue.obliterate({ force: true })
   })
 
   it('uses a one-attempt, throttled reconciliation job', async () => {
     await enqueueReconcilePostModeration()
 
-    const [job] = await readAllQueueJobs(background)
+    const [job] = await readAllQueueJobs(openAiModerationQueue)
     expect(job).toMatchObject({
       name: OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name,
       opts: {
