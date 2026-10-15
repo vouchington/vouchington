@@ -54,6 +54,10 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Opaque worker fencing token, not a durable relation.',
   ],
   [
+    'url_hostname_cache_invalidation_work_items.lease_token',
+    'R4 decision 16 opaque worker ownership fence, not a joined entity or durable relation.',
+  ],
+  [
     'copyright_notice_form_screening_attempts.execution_token',
     'Opaque worker fencing token, not a durable relation.',
   ],

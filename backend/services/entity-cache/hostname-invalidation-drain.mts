@@ -26,14 +26,7 @@ export async function drainHostnameCacheInvalidationWork(
   await entityCacheWorkConfig.waitForInitialization()
   const limit = getEntityCacheWorkLimit('delete_keys_per_batch')
   const hostnameIds = options.hostnameIds
-  await pruneExpiredHostnameCacheInvalidationWork(limit, hostnameIds)
-  const expired = await claimHostnameCacheInvalidations('expired', limit, hostnameIds)
-  const available = await claimHostnameCacheInvalidations(
-    'available',
-    limit - expired.length,
-    hostnameIds,
-  )
-  const claimed = [...expired, ...available]
+  const claimed = await pruneAndClaimHostnameCacheInvalidations(limit, hostnameIds)
   let firstFailure: Error | undefined
   const succeeded: ClaimedHostname[] = []
   const failed: ClaimedHostname[] = []
@@ -51,6 +44,27 @@ export async function drainHostnameCacheInvalidationWork(
   if (failed.length > 0) await deferHostnameCacheInvalidations(failed)
   if (firstFailure) throw firstFailure
   return claimed.length
+}
+
+async function pruneAndClaimHostnameCacheInvalidations(
+  limit: number,
+  hostnameIds?: readonly string[],
+): Promise<ClaimedHostname[]> {
+  await pruneExpiredHostnameCacheInvalidationWork(limit, hostnameIds)
+  return claimExpiredThenAvailableHostnameCacheInvalidations(limit, hostnameIds)
+}
+
+async function claimExpiredThenAvailableHostnameCacheInvalidations(
+  limit: number,
+  hostnameIds?: readonly string[],
+): Promise<ClaimedHostname[]> {
+  const expired = await claimHostnameCacheInvalidations('expired', limit, hostnameIds)
+  const available = await claimHostnameCacheInvalidations(
+    'available',
+    limit - expired.length,
+    hostnameIds,
+  )
+  return [...expired, ...available]
 }
 
 async function acknowledgeHostnameCacheInvalidations(items: ClaimedHostname[]): Promise<void> {
