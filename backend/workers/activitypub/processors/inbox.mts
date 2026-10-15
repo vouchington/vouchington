@@ -97,6 +97,7 @@ export async function rearmFailedDeliveries(
   const deliveries = await dependencies.rearmFailed(afterId)
   if (deliveries.length === 0) return { enqueued: 0, hasMore: false }
   await dependencies.enqueueBulk(deliveries)
+  // ast-grep-ignore: pagination-no-exact-limit-has-next -- the page is re-armed (updated) as it is read, so it cannot over-fetch one row; at an exact boundary the continuation re-arms nothing and ends
   const hasMore = deliveries.length >= dependencies.pageSize()
   if (hasMore) {
     const lastId = deliveries.map(delivery => delivery.deliveryId).reduce((a, b) => (a > b ? a : b))
