@@ -16,10 +16,33 @@ Those pure checks do not claim FK, rollback or catalog execution proof. The real
 pass before the existing pruning plans, and strict all-settled pool cleanup precedes sibling-database
 deletion. The existing workflow also archives native V8 execution data under `output/pruning-v8`.
 Published `c8` converts that data with its normal source-map handling into LCOV, JSON and summary
-files in `output/retirement-coverage`, archived by the existing EXPLAIN artifact step. These are
-not the blocking area's uploaded LCOV input. R12 still requires the actual measured before/after
+files in `output/retirement-coverage`, archived by the existing EXPLAIN artifact step. When the
+backend workflow requests coverage, the same report is published through the normal full-LCOV
+artifact action for its required coverage gate and informational Codecov upload. R12 still requires
+the actual measured before/after
 line and branch comparison, including both the pure module and these real server controls;
 raw capture or a configured converter alone is not a preservation result.
+
+## Migration runner server controls
+
+Before the existing lifecycle and plan controls, `pruning/run.mts` runs the original package
+migration wrapper and concurrent fixed/generated/view runner duties in two separate owned sibling
+databases. The first calls the application wrapper with its canonical platform; the second retains
+two real concurrent migration sessions, one ledger entry and actual generated relation checks.
+The Vitest replacements check public platform forwarding, awaited phase order and the same client;
+they do not claim server locking or ledger coverage. The other seven migration tests are retained.
+
+Each native control has one thirty-second budget from reservation/setup through client closure,
+plain database drop and absence verification. Every command consumes the remaining budget and
+reserves termination/cleanup time. Timeout, live process-group members, missing client end or
+nonzero server clients fail the control and retain its registered sibling for diagnosis; forced drop
+is not a passing cleanup mechanism. The existing required EXPLAIN workflow invokes this canonical
+runner and archives its partial evidence. R12 preservation still requires measured before/after
+coverage of the actual wrapper/default branches and moved native duties. The converter includes
+the application migration producer and its native controls; invocation alone is not a measured
+coverage or full issue-closure claim. SQL initialization has separate public dependency-failure tests for joining
+started initializers, ordered failures and original rejection identity. They call the real forced-view
+entry under normal backend mock-project setup and reject before view SQL can execute.
 
 ## Usage
 

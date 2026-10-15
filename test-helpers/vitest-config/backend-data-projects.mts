@@ -29,6 +29,43 @@ const backendDataStoreTestDefaults = {
   hookTimeout: 30_000,
 }
 
+const backendMocksProject = {
+  extends: true,
+  test: {
+    pool: 'forks',
+    isolate: true,
+    name: 'backend-mocks',
+    runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
+    include: [
+      'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
+    ],
+    exclude: [
+      '**/node_modules/**',
+      '**/.git/**',
+      '**/*.no-data.mock.test.mts',
+      '**/*.real-glide.mock.test.mts',
+      'backend/data-stores/psql/migrate.mock.test.mts',
+      // Real S3 presigner. Collected by the credentialed backend-aws project.
+      'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts',
+    ],
+    globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+    setupFiles: [
+      // Must run before glide-mq-workers: that setup preloads workers that transitively
+      // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
+      // first or the real SDK singleton gets bound during preload and tests can't intercept it.
+      './backend/test-helpers/vitest.setup.sentry-mock.mts',
+      './test-helpers/vitest.setup.shared-db-scope-guard.mts',
+      './test-helpers/vitest.setup.dynamic-config-isolation.mts',
+      './test-helpers/vitest.setup.glide-mq-workers.mts',
+      './backend/test-helpers/vitest.setup.aws-mocks.mts',
+      './backend/test-helpers/vitest.setup.server-error-responses.mts',
+      './backend/test-helpers/vitest.setup.request-query-profile.mts',
+    ],
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
+  },
+} satisfies TestProjectConfiguration
+
 export const backendDataProjects: TestProjectConfiguration[] = [
   {
     extends: true,
@@ -124,39 +161,19 @@ export const backendDataProjects: TestProjectConfiguration[] = [
       hookTimeout: 30_000,
     },
   },
+  backendMocksProject,
   {
-    extends: true,
+    ...backendMocksProject,
     test: {
-      pool: 'forks',
-      isolate: true,
-      name: 'backend-mocks',
-      runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
-      include: [
-        'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',
-      ],
-      exclude: [
-        '**/node_modules/**',
-        '**/.git/**',
-        '**/*.no-data.mock.test.mts',
-        '**/*.real-glide.mock.test.mts',
-        // Real S3 presigner. Collected by the credentialed backend-aws project.
-        'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts',
-      ],
-      globalSetup: './test-helpers/vitest.setup.data-stores.mts',
+      ...backendMocksProject.test,
+      name: 'backend-migration-initializers',
+      sequence: { setupFiles: 'list' },
+      include: ['backend/data-stores/psql/migrate.mock.test.mts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
       setupFiles: [
-        // Must run before glide-mq-workers: that setup preloads workers that transitively
-        // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
-        // first or the real SDK singleton gets bound during preload and tests can't intercept it.
-        './backend/test-helpers/vitest.setup.sentry-mock.mts',
-        './test-helpers/vitest.setup.shared-db-scope-guard.mts',
-        './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-        './test-helpers/vitest.setup.glide-mq-workers.mts',
-        './backend/test-helpers/vitest.setup.aws-mocks.mts',
-        './backend/test-helpers/vitest.setup.server-error-responses.mts',
-        './backend/test-helpers/vitest.setup.request-query-profile.mts',
+        './backend/test-helpers/vitest.setup.migration-initializers.mts',
+        ...backendMocksProject.test.setupFiles,
       ],
-      testTimeout: 15_000,
-      hookTimeout: 15_000,
     },
   },
 ]

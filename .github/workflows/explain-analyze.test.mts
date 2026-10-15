@@ -7,10 +7,13 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 type Step = {
+  id?: string
+  if?: string
+  uses?: string
   env?: Record<string, string>
   name?: string
   run?: string
-  with?: { path?: string }
+  with?: { path?: string; suite?: string; 'name-suffix'?: string }
 }
 
 type Workflow = {
@@ -122,5 +125,38 @@ describe('native pruning coverage artifacts', () => {
     expect(steps.find(step => step.name === 'Upload EXPLAIN ANALYZE results')?.with?.path).toBe(
       'backend/scripts/explain-analyze/output/',
     )
+  })
+})
+
+describe('native migration coverage fan-in', () => {
+  it('publishes the real native producer LCOV before the required backend coverage check', () => {
+    const { steps } = explainAnalyzeJob()
+    const conversion = stepIndexRunning(steps, 'node node_modules/c8/bin/c8.js report')
+    const preserve = stepIndexRunning(
+      steps,
+      'cp backend/scripts/explain-analyze/output/retirement-coverage/lcov.info',
+    )
+    expect(preserve).toBeGreaterThan(conversion)
+    expect(steps[conversion]?.run).toContain("--include 'backend/data-stores/psql/migrate.mts'")
+    const uploads = steps.filter(step => step.uses === './.github/actions/upload-full-lcov')
+    expect(uploads.map(step => step.with)).toEqual([
+      { suite: 'backend-native-migrations' },
+      { suite: 'backend-native-migrations', 'name-suffix': '-retry' },
+    ])
+    expect(steps.indexOf(uploads[0]!)).toBeGreaterThan(preserve)
+    const backend = load(readFileSync('.github/workflows/backend.yml', 'utf8')) as {
+      jobs: Record<
+        string,
+        { needs?: string[]; with?: { publish_coverage?: boolean; uploads?: string } }
+      >
+    }
+    expect(backend.jobs['test-explain-analyze']?.with?.publish_coverage).toBe(true)
+    expect(backend.jobs.coverage?.needs).toContain('test-explain-analyze')
+    expect(backend.jobs.codecov?.needs).toContain('test-explain-analyze')
+    const uploadPolicies: unknown = JSON.parse(backend.jobs.codecov?.with?.uploads ?? '[]')
+    expect(uploadPolicies).toContainEqual({
+      flag: 'backend-native-migrations',
+      pattern: 'lcov-full-backend-native-migrations*',
+    })
   })
 })

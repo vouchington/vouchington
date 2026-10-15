@@ -1,4 +1,5 @@
 import path from 'node:path'
+import type { Psql } from '@vouchington/postgres'
 import onError, { flushSentry } from '@modules/on-error'
 import {
   cleanupPartitions,
@@ -25,12 +26,15 @@ export {
   type RunViewsOptions,
 }
 
-export async function runMigrations() {
-  await psql.runMigrations(path.resolve(__dirname, 'migrations'), { logger: console })
+export type MigrationPlatform = Pick<Psql, 'runMigrations' | 'withMigrationSession' | 'write'>
+
+export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql) {
+  const selectedPlatform = platform
+  await selectedPlatform.runMigrations(path.resolve(__dirname, 'migrations'), { logger: console })
 }
 
 export async function runViews(options: RunViewsOptions = {}) {
-  if (options.forced) await Promise.all([loadSqlParserModule(), initSqlAst()])
+  if (options.forced) await initializeMigrationSql()
   await runViewsFromFolder(__dirname, { logger: console, ...options })
 }
 
@@ -44,31 +48,48 @@ export async function applyAllMigrations(
   options: {
     forced?: boolean
     logger?: Pick<Console, 'error' | 'log'>
+    platform?: MigrationPlatform
   } = {},
 ): Promise<void> {
   const logger = options.logger ?? console
-  await applyMigrationsInSession(rootDir, options.forced, logger)
+  const platform = options.platform ?? psql
+  const forced = options.forced
+  await applyMigrationsInSession(rootDir, forced, logger, platform)
 }
 
 async function applyMigrationsInSession(
   rootDir: string,
   forced: boolean | undefined,
   logger: Pick<Console, 'error' | 'log'>,
+  platform: MigrationPlatform,
 ): Promise<void> {
-  await Promise.all([loadSqlParserModule(), initSqlAst()])
-  await psql.withMigrationSession(async client => {
+  await initializeMigrationSql()
+  await platform.withMigrationSession(async client => {
     const writer: NonNullable<RunConfigDrivenOptions['writer']> = (input, values) =>
-      psql.write(input, values, { client })
-    await psql.runMigrations(path.resolve(rootDir, 'migrations'), {
+      platform.write(input, values, { client })
+    await platform.runMigrations(path.resolve(rootDir, 'migrations'), {
       client,
       logger,
     })
     if (path.resolve(rootDir) === path.resolve(__dirname)) {
-      await dropRssFeedCrawlsDefaultPartition()
+      await dropRssFeedCrawlsDefaultPartition(writer)
     }
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
     await runViewsFromFolder(rootDir, { forced, logger, writer })
   })
+}
+
+async function initializeMigrationSql(): Promise<void> {
+  const settled = await Promise.allSettled([
+    Promise.resolve().then(() => loadSqlParserModule()),
+    Promise.resolve().then(() => initSqlAst()),
+  ])
+  const failures = settled.flatMap(result => (result.status === 'rejected' ? [result.reason] : []))
+  if (failures.length === 1) throw failures[0]
+  if (failures.length > 1) {
+    const cause = failures[0]
+    throw new AggregateError(failures, 'Migration SQL initialization failed', { cause })
+  }
 }
 
 export type VerifySchemaAfterMigration = () => Promise<void>
