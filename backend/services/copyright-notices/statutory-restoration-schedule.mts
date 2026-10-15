@@ -24,12 +24,8 @@ export function searchDueStatutoryCopyrightRestorationDeadlineIds(
   options: CopyrightSweepPageOptions & { now: Date },
 ): Promise<DueRestorationPage> {
   const query = sql`/* searchDueStatutoryCopyrightRestorationDeadlineIds */
-    SELECT DISTINCT ON (deadline.id) deadline.id,
-      jsonb_agg(jsonb_build_object(
-        'notice_id', notice.id, 'target_id', target.id,
-        'restriction_id', restriction.id, 'deadline_id', deadline.id,
-        'placement_revision', target.placement_revision
-      )) OVER (PARTITION BY deadline.id) AS candidates`
+    WITH page AS MATERIALIZED (
+      SELECT DISTINCT deadline.id`
   appendDueStatutoryRestorationSource(query, options.now)
   let candidateRows: Array<{ id: string; candidates: RestoreCandidate[] }> = []
   return queryCopyrightSweepIdPage(
@@ -39,6 +35,21 @@ export function searchDueStatutoryCopyrightRestorationDeadlineIds(
     'restorationDeadline',
     query,
     async statement => {
+      statement.append(sql`
+      )
+      SELECT page.id, candidate_set.candidates
+      FROM page
+      CROSS JOIN LATERAL (
+        SELECT COALESCE(jsonb_agg(jsonb_build_object(
+          'notice_id', notice.id, 'target_id', target.id,
+          'restriction_id', restriction.id, 'deadline_id', deadline.id,
+          'placement_revision', target.placement_revision
+        )), '[]'::jsonb) AS candidates`)
+      appendDueStatutoryRestorationSource(statement, options.now)
+      statement.append(sql`
+          AND deadline.id = page.id
+      ) candidate_set
+      ORDER BY page.id`)
       // Eligibility gained after this page read waits for the next scheduled sweep;
       // each selected target still takes its locks and revalidates before an intent is created.
       const result = await read<{ id: string; candidates: RestoreCandidate[] }>(statement)
