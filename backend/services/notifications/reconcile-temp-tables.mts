@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { PoolClient } from '@data-stores/psql'
-import type { CreatedNotification } from './reconcile-batches.mts'
+
+export type CreatedNotification = { user_id: string; id: string }
 
 type OnCreatedNotifications = (createdNotifications: CreatedNotification[]) => Promise<void> | void
 

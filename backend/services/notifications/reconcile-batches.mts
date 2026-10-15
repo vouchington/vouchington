@@ -2,13 +2,14 @@ import { getNotificationsWorkLimit } from './work-limits.mts'
 import { writePool, type PoolClient } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import {
+  type CreatedNotification,
   createTempTableName,
   createTempTables,
   dispatchCreatedNotificationBatches,
   dropTempTables,
 } from './reconcile-temp-tables.mts'
 
-export type CreatedNotification = { user_id: string; id: string }
+export type { CreatedNotification } from './reconcile-temp-tables.mts'
 
 export type ReconcileNotificationsOptions = {
   batchSize?: number
