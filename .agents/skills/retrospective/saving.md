@@ -99,7 +99,8 @@ If you proactively made a GitHub issue already as a follow-up task, link it in t
 
 Call the `retrospective_save` tool of the `vouchington-tooling` MCP server with the SessionStart
 `sessionId`, `parentSessionId` (`null` for a root session; a spawned child passes the ID it
-received), `agent` (the harness name, for example `claude`), `version` (the harness version, or
+received), `agent` (the session's stored agent label, for example `claude-code`; reuse the label the session
+was created with, or the save fails with `identity-conflict`), `version` (the harness version, or
 `unknown`), `mode` (`interactive` or `autonomous`), `workOutcome`, `feedbackCoverage` (`status`,
 `sources`, `droppedCount`; pass `{status: "not-assessed"}` when coverage was not assessed — there is
 no default), and exactly one of `markdown` (a finished document) or `compose` (the composer input).

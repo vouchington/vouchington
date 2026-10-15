@@ -29,6 +29,8 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
   // Null prototype so a hand-written `__proto__` key stays an own property.
   const parsed: Record<string, unknown> = Object.create(null)
   for (const line of lines.slice(1, endIndex)) {
+    // The tooling composer separates fields with blank lines, and its parser skips them.
+    if (line.trim() === '') continue
     const match = /^([a-z_]+): (.*)$/.exec(line)
     if (!match)
       throw new Error(`retrospective doc front matter line is not "key: <JSON value>": ${line}`)

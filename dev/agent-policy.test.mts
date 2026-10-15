@@ -81,6 +81,15 @@ describe('validateRetrospective', () => {
     expect(errors).toEqual([expect.stringContaining('is not "key: <JSON value>"')])
   })
 
+  it('accepts the blank lines the tooling composer writes between front matter fields', () => {
+    const markdown = doc().replace(
+      /^(---\n)([\s\S]*?)(\n---\n)/,
+      (_, open, fields, close) => `${open}${fields.split('\n').join('\n\n')}${close}`,
+    )
+    expect(markdown).toContain('date: "2026-10-12"\n\nissues: []')
+    expect(validateRetrospective(input(markdown))).toEqual({ errors: [] })
+  })
+
   it('accepts CRLF front matter', () => {
     expect(validateRetrospective(input(doc().replace(/\n/g, '\r\n')))).toEqual({ errors: [] })
   })

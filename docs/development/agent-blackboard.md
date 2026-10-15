@@ -247,29 +247,9 @@ fallback.
 
 ### Root Codex sessions
 
-The `retrospective_check` and `retrospective_save` tools take the explicit `sessionId` the
-SessionStart check printed, so retrospectives need no root-Codex flags. The remaining
-`dev/agent-session-id/resolve.mts` resolver still accepts `--root-codex`; an interactive root Codex
-process uses it to identify itself. Once at the beginning of a new root session with no
-`CODEX_THREAD_ID`, it also passes `--new-root-codex-session`, which ignores any old fallback and
-persists a fresh URL-safe `codex-<UUID>` at the ignored `.local/codex-session-id`. Later root
-invocations reuse that value with only `--root-codex`. A real `CODEX_THREAD_ID` always wins; on a
-root-aware invocation it replaces the generated value. An explicit `--session-id` and
-`--root-codex` are mutually exclusive.
-Root-aware commands locate the enclosing worktree root, then refresh and read back its persistence
-file before contacting the server.
-The flags are deliberately explicit: runtime hints, transcript paths, hooks,
-detached processes, and children never generate a Codex id, and Codex never reads Cursor or Grok
-persistence files. Root authority is self-attested rather than detectable; a child that violates
-the workflow and passes either root flag inherits the root identity. Automatic hooks keep using
-their explicit payload id and never write the root
-file because hook metadata cannot distinguish a root from a spawned Codex child.
-Children continue to stop when they lack their own identity. `./dev/reset-worktree` preserves the
-file so a reset within the same root session does not rotate identity; the next absent-thread root
-session explicitly rotates it once with `--new-root-codex-session`.
-Without a runtime thread ID, this exactly-once boundary is necessarily caller-declared: omitting the
-flag at a new session reuses stale identity, while passing it again mid-session fragments the
-session. The root workflow must therefore perform one rotation before any other root-aware call.
+The MCP tools take the explicit `sessionId` the SessionStart check printed, so a root Codex
+session needs no `--root-codex` or `--new-root-codex-session` flags and no
+`.local/codex-session-id` rotation.
 
 ## Agent-written journal entries
 
@@ -320,8 +300,8 @@ The shared retrospective composer emits validated `work_outcome` and `feedback_c
 matter. `retrospective_save` takes `mode`, `workOutcome`, and `feedbackCoverage` as arguments and
 rejects front matter that contradicts them. See the
 [save contract](../../.agents/skills/retrospective/saving.md) for the tool arguments, including a
-hand-written `markdown` document. The `compose` argument builds `repositories` front matter; the
-tool preserves the list and rejects a conflicting `repositories` argument.
+hand-written `markdown` document. The composed document carries no `repositories` front matter,
+so saving a `dryRun` preview repeats the preview's `repositories` argument.
 The `compose` argument accepts serializable facts and transcript options, then
 constructs its own journal collector from the same session's hosted journal and builds
 `## CI Failures` and `## Sandbox & Permission Audit` from the journal entries alone. A session
