@@ -34,7 +34,8 @@ Pool configuration includes:
   configured write-pool maximum, and an explicit override may not exceed that write-pool ceiling
 - connection acquisition and establishment timeout via `PG_CONNECTION_TIMEOUT_MS`
 - test pools keep the same default size as production (`PG_TEST_POOL_MAX`, default 20) but evict
-  idle clients after 100ms
+  idle clients after 100ms. Eviction calls `client.end()` and does not emit `error`. pg-pool
+  schedules that timer only while the pool is above its minimum size.
 
 All three pools participate in PostgreSQL graceful shutdown. Pool maxima are capacity ceilings, not
 eager reservations: connections open lazily. The per-process worst-case connection budget is

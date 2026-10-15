@@ -108,35 +108,50 @@ describe('applyAllMigrations', () => {
     const { rows } = await client.query<{ pid: number }>(
       '/* findIdleVerificationConnection */ SELECT pg_backend_pid() AS pid',
     )
-    client.release()
     const pid = rows[0]?.pid
-    if (pid === undefined) throw new Error('Expected a PostgreSQL backend PID')
-    const poolCountBeforeTermination = readPool.totalCount
-    const disconnected = new Promise<void>(resolve => {
-      client.once('error', () => {
-        resolve()
+    if (pid === undefined) {
+      client.release()
+      throw new Error('Expected a PostgreSQL backend PID')
+    }
+    // Test pools evict idle clients after 100ms with client.end(), which does not
+    // emit 'error'. pg-pool schedules that timer only while the pool is above its
+    // minimum, so hold the floor until terminate delivers the idle-client error.
+    const previousMin = readPool.options.min
+    readPool.options.min = readPool.totalCount
+    let released = false
+    try {
+      client.release()
+      released = true
+      const poolCountBeforeTermination = readPool.totalCount
+      const disconnected = new Promise<void>(resolve => {
+        client.once('error', () => {
+          resolve()
+        })
       })
-    })
-    const verifySchema = vi.fn<VerifySchemaAfterMigration>(async () => {
-      const terminated = await write<{ terminated: boolean }>(
-        '/* terminateIdleVerificationConnection */ SELECT pg_terminate_backend($1) AS terminated',
-        [pid],
-      )
-      expect(terminated.rows[0]?.terminated).toBe(true)
-      await disconnected
-      expect(readPool.totalCount).toBeLessThan(poolCountBeforeTermination)
-      const schemaRead = await read<{ migration_table: string | null }>(
-        "/* verifyReadAfterIdleTermination */ SELECT to_regclass('migrations')::text AS migration_table",
-      )
-      expect(schemaRead.rows).toEqual([{ migration_table: 'migrations' }])
-    })
+      const verifySchema = vi.fn<VerifySchemaAfterMigration>(async () => {
+        const terminated = await write<{ terminated: boolean }>(
+          '/* terminateIdleVerificationConnection */ SELECT pg_terminate_backend($1) AS terminated',
+          [pid],
+        )
+        expect(terminated.rows[0]?.terminated).toBe(true)
+        await disconnected
+        expect(readPool.totalCount).toBeLessThan(poolCountBeforeTermination)
+        const schemaRead = await read<{ migration_table: string | null }>(
+          "/* verifyReadAfterIdleTermination */ SELECT to_regclass('migrations')::text AS migration_table",
+        )
+        expect(schemaRead.rows).toEqual([{ migration_table: 'migrations' }])
+      })
 
-    await runAllMigrations({ apply, exit, logger, verifySchema })
+      await runAllMigrations({ apply, exit, logger, verifySchema })
 
-    expect(verifySchema).toHaveBeenCalledTimes(1)
-    expect(logger.error).not.toHaveBeenCalled()
-    expect(logger.log).toHaveBeenCalledWith('Migrations complete!')
-    expect(exit).toHaveBeenCalledExactlyOnceWith(0)
+      expect(verifySchema).toHaveBeenCalledTimes(1)
+      expect(logger.error).not.toHaveBeenCalled()
+      expect(logger.log).toHaveBeenCalledWith('Migrations complete!')
+      expect(exit).toHaveBeenCalledExactlyOnceWith(0)
+    } finally {
+      readPool.options.min = previousMin
+      if (!released) client.release()
+    }
   })
 
   it('applies package SQL migrations through the platform runner', async () => {
