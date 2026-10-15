@@ -126,7 +126,7 @@ export async function runAnalyze(): Promise<void> {
   // first capture, rather than letting autovacuum timing choose the measured plan. PostgreSQL
   // includes each partition's default child when vacuuming its parent.
   await write(
-    '/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic", "rss_feeds", "rss_feed_item_categories", "topics", "post_review_topic_ratings"',
+    '/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic", "rss_feeds", "rss_feed_item_categories", "topics", "post_review_topic_ratings", "post_data_point_topics"',
   )
   const relationNames = [
     'relation__post__category__topic',
@@ -136,6 +136,8 @@ export async function runAnalyze(): Promise<void> {
     'topics',
     'post_review_topic_ratings',
     'post_review_topic_ratings__default',
+    'post_data_point_topics',
+    'post_data_point_topics__default',
   ]
   const relationStats = await write(
     `/* seedExplainData */ SELECT c.relname, c.relpages, c.reltuples,
@@ -172,7 +174,11 @@ export async function runAnalyze(): Promise<void> {
     UNION ALL SELECT 'post_review_topic_ratings', count(*),
       md5(COALESCE(string_agg(post_id::text || ':' || topic_id::text,
         ',' ORDER BY post_id, topic_id), ''))
-    FROM post_review_topic_ratings`,
+    FROM post_review_topic_ratings
+    UNION ALL SELECT 'post_data_point_topics', count(*),
+      md5(COALESCE(string_agg(post_id::text || ':' || topic_id::text,
+        ',' ORDER BY post_id, topic_id), ''))
+    FROM post_data_point_topics`,
   )
   console.log(
     'EXPLAIN seed plan diagnostics:',
