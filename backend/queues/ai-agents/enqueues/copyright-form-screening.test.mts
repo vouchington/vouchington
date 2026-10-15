@@ -3,30 +3,38 @@ import {
   enqueueCopyrightFormScreeningAndWait,
   enqueueOrRetryCopyrightFormScreening,
 } from './copyright-form-screening.mts'
+import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 import {
   completedCopyrightAgentEnqueueRecovery,
   failedCopyrightAgentEnqueueRecovery,
-  restoreCopyrightAgentEnqueueSpies,
-  spyOnCopyrightAgentEnqueue,
 } from '../../../test-helpers/copyright-agent-enqueue-recovery-tests.mts'
 
 describe('copyright form screening enqueue recovery', () => {
-  restoreCopyrightAgentEnqueueSpies()
-
-  it('creates an ordered, deduplicated anti-spam screening job', async () => {
+  it('persists an ordered, deduplicated anti-spam screening job', async () => {
     const submissionId = crypto.randomUUID()
-    const add = spyOnCopyrightAgentEnqueue(ai_agents)
-    await enqueueCopyrightFormScreeningAndWait(submissionId)
-    expect(add).toHaveBeenCalledWith(
-      'copyright-form-screening',
-      { submission_id: submissionId },
-      expect.objectContaining({
-        jobId: `copyright_form_screening_${submissionId}`,
-        deduplication: { id: `copyright_form_screening_${submissionId}`, mode: 'simple' },
-        ordering: { key: `copyright_form_screening_${submissionId}`, concurrency: 1 },
-      }),
-    )
+    const jobId = `copyright_form_screening_${submissionId}`
+    try {
+      await enqueueCopyrightFormScreeningAndWait(submissionId)
+      // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
+      // Valkey deduplication or ordering. Real coalescing stays in the real-glide file.
+      await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
+        id: jobId,
+        name: 'copyright-form-screening',
+        data: { submission_id: submissionId },
+        opts: {
+          attempts: AI_AGENTS_DEFAULTS.attempts,
+          backoff: AI_AGENTS_DEFAULTS.backoff,
+          priority: AGENT_PRIORITY['copyright-form-screening'],
+          removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
+          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+          deduplication: { id: jobId, mode: 'simple' },
+          ordering: { key: jobId, concurrency: 1 },
+        },
+      })
+    } finally {
+      await (await ai_agents.getJob(jobId))?.remove()
+    }
   })
 
   it('removes a completed job before recovering its missing result', async () => {

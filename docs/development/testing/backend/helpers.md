@@ -70,9 +70,11 @@ Each suite keeps its filter name, check, and add functions. The registrar owns t
 missing-filter, corrupted-filter, and add-recovery cases. The helper owns a private Valkey filter,
 ready marker, and that filter's read target so a parallel fork or the in-process rebuild worker
 cannot replace those keys during the assertion.
-Copyright email-intake and form-screening enqueue tests share
+Copyright email-intake and form-screening enqueue recovery tests share
 [`copyright-agent-enqueue-recovery-tests.mts`](../../../../backend/test-helpers/copyright-agent-enqueue-recovery-tests.mts).
-Each file keeps its queue name, payload, and expected job options.
+Each file asserts the job its enqueue persisted, including production queue options, and keeps
+failed and completed recovery on an injected retained job. Shim limits are in
+[GlideMQ testing](glide-mq-testing.md).
 Post and topic revision diffs share
 [`revision-change-detection-tests.mts`](../../../../backend/test-helpers/revision-change-detection-tests.mts).
 The post and topic field tables stay separate.

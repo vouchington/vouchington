@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   enqueueCopyrightSubmissionGuidanceAndWait,
   enqueueOrRetryCopyrightSubmissionGuidance,
@@ -7,9 +7,15 @@ import {
   enqueueCopyrightAppealRecommendationAndWait,
   enqueueOrRetryCopyrightAppealRecommendation,
 } from './copyright-appeal-recommendation.mts'
+import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, type AIAgentJobName } from '../config.mts'
 import { ai_agents } from '../queues.mts'
 
-const enqueues = [
+const enqueues: Array<{
+  name: Extract<AIAgentJobName, 'copyright-submission-guidance' | 'copyright-appeal-recommendation'>
+  prefix: string
+  enqueueAndWait: (submissionId: string) => Promise<void>
+  recover: typeof enqueueOrRetryCopyrightSubmissionGuidance
+}> = [
   {
     name: 'copyright-submission-guidance',
     prefix: 'copyright_submission_guidance_',
@@ -25,23 +31,31 @@ const enqueues = [
 ]
 
 describe.each(enqueues)('$name enqueue recovery', ({ name, prefix, enqueueAndWait, recover }) => {
-  afterEach(() => vi.restoreAllMocks())
-
-  it('creates an ordered, deduplicated guidance job', async () => {
+  it('persists an ordered, deduplicated guidance job', async () => {
     const submissionId = crypto.randomUUID()
-    const add = vi.spyOn(ai_agents, 'add').mockResolvedValue({} as never)
+    const jobId = `${prefix}${submissionId}`
+    try {
+      await enqueueAndWait(submissionId)
 
-    await enqueueAndWait(submissionId)
-
-    expect(add).toHaveBeenCalledWith(
-      name,
-      { submission_id: submissionId },
-      expect.objectContaining({
-        jobId: `${prefix}${submissionId}`,
-        deduplication: { id: `${prefix}${submissionId}`, mode: 'simple' },
-        ordering: { key: `${prefix}${submissionId}`, concurrency: 1 },
-      }),
-    )
+      // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
+      // Valkey deduplication or ordering.
+      await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({
+        id: jobId,
+        name,
+        data: { submission_id: submissionId },
+        opts: {
+          attempts: AI_AGENTS_DEFAULTS.attempts,
+          backoff: AI_AGENTS_DEFAULTS.backoff,
+          priority: AGENT_PRIORITY[name],
+          removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
+          removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
+          deduplication: { id: jobId, mode: 'simple' },
+          ordering: { key: jobId, concurrency: 1 },
+        },
+      })
+    } finally {
+      await (await ai_agents.getJob(jobId))?.remove()
+    }
   })
 
   it('removes a completed job before recovering its missing advisory result', async () => {
