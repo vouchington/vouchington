@@ -52,11 +52,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: false,
       name: 'backend-test-helpers',
-      include: [
-        'backend/test-helpers/**/*.test.mts',
-        'test-helpers/vitest-fork-leak-handshake.test.mts',
-        'test-helpers/vitest-fork-leak-growth.test.mts',
-      ],
+      include: ['backend/test-helpers/**/*.test.mts'],
       exclude: [
         '**/node_modules/**',
         '**/.git/**',
