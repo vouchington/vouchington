@@ -41,12 +41,9 @@ ignores:
   - 'backend/test-helpers/entities/membership-refund-reconciliation-schema.mts'
   - 'backend/test-helpers/entities/topics/core.mts'
   # Frozen baseline of executed SQL. Cleanup PRs do not edit it. #2145 deletes it.
-  # #2116
-  - 'backend/test-helpers/entities/api-keys.mts'
   # #2136 pg_sleep
   - 'backend/scripts/explain-analyze/seed-data/post-diagnostics.test.mts'
   - 'backend/test-helpers/entities/contribution-admission-claims.mts'
-  - 'backend/test-helpers/entities/notification-push-intents.mts'
   # #2143
   - 'backend/data-stores/psql/__tests__/schema-content-provenance.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-uuidv7-range-pruning.test.mts'
@@ -59,7 +56,6 @@ ignores:
   - 'backend/test-helpers/data-stores/psql/forced-views.mts'
   - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
   - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'
-  - 'backend/test-helpers/injected-failures.mts'
 rule:
   any:
     - kind: string
@@ -123,3 +119,130 @@ examples:
       await write(`ALTER TABLE api_keys ADD CONSTRAINT c CHECK (false)`)
     isValid: true
     file: 'static-code-analysis/example-sql-text.test.mts'
+  - code: |
+      import { write } from '@data-stores/psql'
+      import sql from 'sql-template-strings'
+
+      export async function setTestApiKeyPermissions(
+        apiKeyId: string,
+        permissions: readonly string[],
+      ): Promise<void> {
+        await write(sql`/* setTestApiKeyPermissions */
+          UPDATE api_keys
+          SET scopes = ${permissions}::api_scopes[]
+          WHERE id = ${apiKeyId}::uuid
+        `)
+      }
+
+      export async function setTestApiKeyExpiry(apiKeyId: string, expiresAt: Date | null): Promise<void> {
+        await write(sql`/* setTestApiKeyExpiry */ UPDATE api_keys SET expires_at = ${expiresAt}
+          WHERE id = ${apiKeyId}::uuid`)
+      }
+
+      export async function getTestApiKeyLifecycle(apiKeyId: string) {
+        const { rows } = await write(sql`/* getTestApiKeyLifecycle */
+          SELECT expires_at, replaced_by_api_key_id, expiry_reminder_sent_at, last_used_at,
+            EXTRACT(EPOCH FROM (expires_at - created_at)) AS lifetime_seconds
+          FROM api_keys WHERE id = ${apiKeyId}::uuid`)
+        return rows[0]
+      }
+
+      export async function countTestApiKeysForUser(userId: string): Promise<number> {
+        const { rows } = await write(sql`/* countTestApiKeysForUser */
+          SELECT COUNT(*)::integer AS count FROM api_keys WHERE user_id = ${userId}::uuid`)
+        return rows[0]!.count as number
+      }
+
+      export async function insertTestApiKeysDueForReminder(
+        userId: string,
+        count: number,
+      ): Promise<string[]> {
+        const { rows } = await write<{ id: string }>(sql`/* insertTestApiKeysDueForReminder */
+          INSERT INTO api_keys (user_id, prefix, key_hash, type, label, scopes, expires_at)
+          SELECT ${userId}::uuid, 'voucha_rss_test', sha256(uuid_send(uuidv7())), 'rss',
+            'Reminder boundary ' || ordinal, ARRAY['rss:read']::api_scopes[], NOW() + INTERVAL '6 days'
+          FROM generate_series(1, ${count}::integer) AS ordinal
+          RETURNING id
+        `)
+        return rows.map(row => row.id)
+      }
+    isValid: true
+    file: 'backend/test-helpers/entities/api-keys.mts'
+  - code: |
+      await query(`ALTER TABLE api_keys ADD CONSTRAINT forbidden CHECK (false)`)
+    isValid: false
+    file: 'backend/test-helpers/entities/api-keys.mts'
+  - code: |
+      await query(`SELECT pg_sleep(1)`)
+    isValid: false
+    file: 'backend/test-helpers/entities/api-keys.mts'
+  - code: |
+      await query(`SET LOCAL session_replication_role = replica`)
+    isValid: false
+    file: 'backend/test-helpers/entities/api-keys.mts'
+  - code: |
+      import { read } from '@data-stores/psql'
+      import sql from 'sql-template-strings'
+
+      export async function getTestNotificationPushIntentLeaseExpiry(
+        userId: string,
+        notificationId: string,
+      ): Promise<number> {
+        const { rows } = await read<{
+          lease_expires_at: Date
+        }>(sql`/* getTestNotificationPushIntentLeaseExpiry */
+          SELECT lease_expires_at
+          FROM notification_push_intents
+          WHERE user_id = ${userId} AND notification_id = ${notificationId}
+        `)
+        const leaseExpiry = rows[0]?.lease_expires_at
+        if (!leaseExpiry) throw new Error('Expected notification push intent lease expiry')
+        return leaseExpiry.getTime()
+      }
+    isValid: true
+    file: 'backend/test-helpers/entities/notification-push-intents.mts'
+  - code: |
+      await query(`ALTER TABLE api_keys ADD CONSTRAINT forbidden CHECK (false)`)
+    isValid: false
+    file: 'backend/test-helpers/entities/notification-push-intents.mts'
+  - code: |
+      await query(`SELECT pg_sleep(1)`)
+    isValid: false
+    file: 'backend/test-helpers/entities/notification-push-intents.mts'
+  - code: |
+      await query(`SET LOCAL session_replication_role = replica`)
+    isValid: false
+    file: 'backend/test-helpers/entities/notification-push-intents.mts'
+  - code: |
+      import type { QueryExecutor } from '@data-stores/psql'
+
+      /** Reject one write made through a caller-owned executor while preserving its transaction. */
+      export function rejectQuery<Query extends QueryExecutor>(
+        query: Query,
+        matches: (statement: string, values: readonly unknown[]) => boolean,
+        message: string,
+      ): Query {
+        return new Proxy(query, {
+          apply(target, thisArgument, argumentsList: Parameters<QueryExecutor>) {
+            const [input, parameters] = argumentsList
+            const statement = typeof input === 'string' ? input : input.text
+            const values = typeof input === 'string' ? (parameters ?? []) : input.values
+            if (matches(statement, values)) throw new Error(message)
+            return Reflect.apply(target, thisArgument, argumentsList)
+          },
+        })
+      }
+    isValid: true
+    file: 'backend/test-helpers/injected-failures.mts'
+  - code: |
+      await query(`ALTER TABLE api_keys ADD CONSTRAINT forbidden CHECK (false)`)
+    isValid: false
+    file: 'backend/test-helpers/injected-failures.mts'
+  - code: |
+      await query(`SELECT pg_sleep(1)`)
+    isValid: false
+    file: 'backend/test-helpers/injected-failures.mts'
+  - code: |
+      await query(`SET LOCAL session_replication_role = replica`)
+    isValid: false
+    file: 'backend/test-helpers/injected-failures.mts'
