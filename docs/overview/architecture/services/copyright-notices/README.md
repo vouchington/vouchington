@@ -60,6 +60,9 @@ new edges from a token with multiple Message-ID claimants wait for manual review
 join only UUIDs. Staff review paths are computed at read time, with an existing thread match taking
 precedence over a duplicate or conflicting-ancestor reason. A matched inbound reply receives an
 immutable pending-review record and remains attached to the original case and MIME evidence. It
+can be linked automatically only when every bounded ancestor path agrees on the case and its own
+Message-ID remains unambiguous. The promotion token-lock budget covers the combined unique set
+from references and matched links; an over-budget graph leaves replies for staff review. It
 still receives the advisory extraction and recommendation. An unlinked intake can instead be
 associated to one existing notice by
 staff; the intake row is locked before the notice, the decision is reread under those locks, and

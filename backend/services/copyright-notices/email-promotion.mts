@@ -170,6 +170,7 @@ async function admitCopyrightEmailIntake(
           initialIntakeId: intake.id,
           noticeId: prior.promoted_copyright_notice_id,
           descendantIntakeIds: graph.descendantIntakeIds.filter(id => id !== intake.id),
+          graphIntakeIds: graph.intakeIds,
         },
         transaction,
       )
@@ -331,6 +332,7 @@ async function recordEmailPromotion(
         initialIntakeId: intake.id,
         noticeId,
         descendantIntakeIds: graph.descendantIntakeIds.filter(id => id !== intake.id),
+        graphIntakeIds: graph.intakeIds,
       },
       transaction,
     )

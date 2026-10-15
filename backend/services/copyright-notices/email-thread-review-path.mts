@@ -114,6 +114,22 @@ export function copyrightEmailReferencedTokenIsAmbiguousSql(intakeId: SQLStateme
   return query
 }
 
+/** A pending reply with its own duplicated Message-ID cannot gain a new automatic case link. */
+export function copyrightEmailOwnMessageIdIsAmbiguousSql(intakeId: SQLStatement): SQLStatement {
+  const query = sql`EXISTS (
+    SELECT 1
+    FROM copyright_notice_email_thread_references own_reference
+    JOIN copyright_notice_email_thread_references other_claimant
+      ON other_claimant.token_id = own_reference.token_id
+     AND other_claimant.reference_kind = 'message_id'
+     AND other_claimant.copyright_notice_email_intake_id <> own_reference.copyright_notice_email_intake_id
+    WHERE own_reference.reference_kind = 'message_id'
+      AND own_reference.copyright_notice_email_intake_id = `
+  query.append(intakeId)
+  query.append(sql`)`)
+  return query
+}
+
 /** A reply still waiting for one root case. Duplicate and conflicting intakes are reviewable. */
 export async function assertCopyrightEmailUnresolvedReply(
   transaction: TransactionQuery,

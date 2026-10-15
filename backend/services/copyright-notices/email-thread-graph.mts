@@ -44,10 +44,8 @@ export async function readCopyrightEmailGraphTokens(
     ORDER BY link.copyright_notice_email_intake_id
     LIMIT ${maxRows + 1}
   `)
-  return {
-    digests: [...new Set([...references, ...matches].map(row => row.lookup_digest))].toSorted(),
-    overflow: matches.length > maxRows,
-  }
+  const digests = [...new Set([...references, ...matches].map(row => row.lookup_digest))].toSorted()
+  return { digests, overflow: matches.length > maxRows || digests.length > maxRows }
 }
 
 /** Read at most maxRows + 1 edge identities, then count distinct intakes and edges. */
@@ -76,7 +74,7 @@ export async function readCopyrightEmailThreadGraph(
         LIMIT ${maxRows + 1}
       ) edge ON true
     )
-    SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 2}
+    SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 1}
   `)
   for (const row of outgoing) {
     if (row.reply_id === rootId && row.ancestor_id === rootId) continue
@@ -87,18 +85,30 @@ export async function readCopyrightEmailThreadGraph(
     if (intakeIds.size + edges.size > maxRows) return snapshot(true)
   }
 
-  // A descendant may name an ancestor outside the root's descendant closure. The backfill checks
-  // those parents for other notices, so count and lock them too before making any link decision.
+  // Follow every external ancestor, not just the first one. A parent's parent can belong to a
+  // different notice even when the immediate parent belongs to this one.
   const { rows: incoming } = await transaction<{ reply_id: string; ancestor_id: string }>(sql`
     /* readCopyrightEmailThreadGraph:incoming */
-    SELECT reply_message_intake_id AS reply_id, ancestor_message_intake_id AS ancestor_id
-    FROM copyright_notice_email_message_ancestors
-    WHERE reply_message_intake_id = ANY(${[...descendants]}::uuid[])
-    ORDER BY reply_message_intake_id, ancestor_message_intake_id
-    LIMIT ${maxRows + 1}
+    WITH RECURSIVE reached(reply_id, ancestor_id) AS (
+      SELECT descendant.id, descendant.id
+      FROM unnest(${[...descendants]}::uuid[]) descendant(id)
+      UNION
+      SELECT edge.reply_message_intake_id, edge.ancestor_message_intake_id
+      FROM reached child
+      JOIN LATERAL (
+        SELECT reply_message_intake_id, ancestor_message_intake_id
+        FROM copyright_notice_email_message_ancestors
+        WHERE reply_message_intake_id = child.ancestor_id
+        ORDER BY ancestor_message_intake_id
+        LIMIT ${maxRows + 1}
+      ) edge ON true
+    )
+    SELECT reply_id, ancestor_id FROM reached LIMIT ${maxRows + 1}
   `)
   for (const row of incoming) {
+    if (row.reply_id === row.ancestor_id && descendants.has(row.reply_id)) continue
     edges.add(`${row.reply_id}:${row.ancestor_id}`)
+    intakeIds.add(row.reply_id)
     intakeIds.add(row.ancestor_id)
     if (intakeIds.size + edges.size > maxRows) return snapshot(true)
   }
