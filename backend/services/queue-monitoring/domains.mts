@@ -20,7 +20,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users'
 import { currentUserCanAccessQueueStats } from './authorization.mts'
-import { countDomainJobs, readActiveJobNames, type DomainStateCounts } from './domain-stats.mts'
+import { countDomainJobs, readSharedStates, type DomainStateCounts } from './domain-stats.mts'
 
 /** Failed jobs one retry request replays, the same bound as a whole-queue retry. */
 const RETRY_FAILED_LIMIT = 100
@@ -48,7 +48,7 @@ export function queueHasDomains(queueName: string): boolean {
 export async function listManagedQueueDomains(queueName: string) {
   requireDomainQueue(queueName)
   const cap = getDomainStatsScanCap()
-  const activeJobNames = await readActiveJobNames(background)
+  const shared = await readSharedStates(background, cap)
   const controls = new Map(
     (await listQueueDomainControls()).map(control => [control.domain, control]),
   )
@@ -56,7 +56,7 @@ export async function listManagedQueueDomains(queueName: string) {
     BACKGROUND_DOMAINS,
     async (domain): Promise<ManagedQueueDomain> => ({
       ...toManagedControl(controls.get(domain) ?? runningQueueDomainControl(domain)),
-      ...(await countDomainJobs(background, domain, cap, activeJobNames)),
+      ...(await countDomainJobs(background, domain, cap, shared)),
     }),
     { concurrency: DOMAIN_SCAN_CONCURRENCY },
   )

@@ -33,7 +33,7 @@ No owned database tables. Reads live queue state directly from GlideMQ (Valkey-b
   `delayed` is the scheduled set: unpromoted priority jobs, future delays and backoff retries.
 - `oldestWaitingAgeMs` reads one oldest waiting job without loading the backlog.
 - Paused state is tracked per-queue in the queue's Valkey key space. A domain's pause state lives in `queue_domain_controls`, owned by [`@services/queue-domain-controls`](../queue-domain-controls/README.md).
-- Per-domain counts are partial by design: a name-filtered scan capped by the `domain_stats_scan_cap` field, with `complete: false` when it stopped at the cap. Active jobs are bucketed from one `getJobs('active')` read because GlideMQ's name search cannot see an active priority job.
+- Per-domain counts are partial by design, capped by the `domain_stats_scan_cap` field with `complete: false` when a scan stopped at the cap. Waiting, active, and delayed bucket one capped `getJobs` read per state by job name (GlideMQ's name search is unbounded for waiting and misses active priority jobs); failed and completed search the domain's names.
 
 The worker-cpu registers one five-minute publisher through the universal `heartbeat` queue. It
 writes only `GlideMQWaiting` and `GlideMQOldestWaitingAge`, each with one `QueueClass` dimension

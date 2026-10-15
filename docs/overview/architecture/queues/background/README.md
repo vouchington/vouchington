@@ -69,11 +69,14 @@ Operators read and control domains through
 and the matching MCP options. Whole-queue pause and whole-queue retry are rejected for `background`.
 Retrying failed jobs filters by the domain's job names.
 
-Per-domain counts are not exact. Each state is a name-filtered scan of one domain, capped at the
-`domain_stats_scan_cap` field, and each count is `{ count, complete }`: `complete: false` means the
-scan stopped at the cap, so the count is a lower bound and clients show `count+`. Nothing is
-counted ahead of time and nothing is cached, so every request reads the queue. Failed and completed
-records are bounded by retention, so they usually come out exact. The queue-wide totals on
+Per-domain counts are not exact. Each count is `{ count, complete }`: `complete: false` means the
+scan stopped at the cap (`domain_stats_scan_cap`), so the count is a lower bound and clients show
+`count+`. Waiting, active, and delayed read the first cap jobs of the queue once per request and
+bucket them by the domain's job names, because GlideMQ's name search lists every waiting id before
+it filters and never sees an active priority job; when that read fills the cap, every domain's
+count for that state is partial. Failed and completed search the domain's own names and are bounded
+by retention, so they usually come out exact. Nothing is counted ahead of time or cached, so every
+request reads the queue. The queue-wide totals on
 `GET /api/v1/mq/queues` stay exact `getJobCounts()` reads.
 
 ## Configuration

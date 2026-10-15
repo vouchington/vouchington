@@ -12,53 +12,71 @@ export type DomainStatsState = (typeof DOMAIN_STATS_STATES)[number]
 export type DomainStateCount = { count: number; complete: boolean }
 export type DomainStateCounts = Record<DomainStatsState, DomainStateCount>
 
-type SearchQueue = Pick<Queue, 'searchJobs' | 'getJobs'>
+type StatsQueue = Pick<Queue, 'searchJobs' | 'getJobs'>
+
+/** Job names in the queue-wide read of a state, and whether that read reached its end. */
+export type SharedStateRead = { names: readonly string[]; complete: boolean }
+export type SharedStateReads = Record<'waiting' | 'active' | 'delayed', SharedStateRead>
+
+const SHARED_STATES = ['waiting', 'active', 'delayed'] as const
 
 /**
- * The names of the queue's active jobs. GlideMQ's name search never sees an active priority job,
- * which has no stream entry, so active counts bucket this list instead. Active jobs are bounded by
- * the workers' combined concurrency, so one read serves every domain of a request.
+ * Reads the first `cap` jobs of the waiting, active and delayed states once, for every domain of
+ * a request. GlideMQ's name search cannot bound these: it lists every waiting id before it
+ * filters, and it never sees an active priority job. A read that fills the cap is partial for
+ * every domain, because jobs of any domain may lie beyond it.
  */
-export async function readActiveJobNames(queue: Pick<Queue, 'getJobs'>): Promise<string[]> {
-  const jobs = await queue.getJobs('active', 0, -1, { excludeData: true })
-  return jobs.map(job => job.name)
+export async function readSharedStates(queue: StatsQueue, cap: number): Promise<SharedStateReads> {
+  const reads = await Promise.all(
+    SHARED_STATES.map(async state => {
+      const jobs = await queue.getJobs(state, 0, cap - 1, { excludeData: true })
+      return [state, { names: jobs.map(job => job.name), complete: jobs.length < cap }] as const
+    }),
+  )
+  return Object.fromEntries(reads) as SharedStateReads
 }
 
 /**
- * Counts a domain's jobs in each state from a scan capped at `cap` jobs per domain and state.
- * Only the domain's own job names are searched, so another domain's jobs are never counted. Reads
- * the queue on every call and keeps no counters. `failed` and `completed` are bounded by
- * retention, so they usually reach the end of the scan and come out exact.
+ * Counts a domain's jobs in each state from a scan capped at `cap` jobs. Waiting, active and
+ * delayed counts bucket the shared reads by the domain's own job names, so another domain's jobs
+ * are never counted. `completed` and `failed` search the domain's names, which retention bounds,
+ * so they usually reach the end of the scan and come out exact. Nothing is counted ahead of time
+ * or cached.
  */
 export async function countDomainJobs(
-  queue: SearchQueue,
+  queue: StatsQueue,
   domain: BackgroundDomain,
   cap: number,
-  activeJobNames?: readonly string[],
+  shared?: SharedStateReads,
 ): Promise<DomainStateCounts> {
   const names = getBackgroundJobNames(domain)
-  const active = activeJobNames ?? (await readActiveJobNames(queue))
+  const reads = shared ?? (await readSharedStates(queue, cap))
   const entries = await Promise.all(
     DOMAIN_STATS_STATES.map(
       async state =>
         [
           state,
-          state === 'active'
-            ? capCount(active.filter(name => names.includes(name)).length, cap)
-            : await countState(queue, state, names, cap),
+          state === 'completed' || state === 'failed'
+            ? await countByNameSearch(queue, state, names, cap)
+            : countShared(reads[state], names, cap),
         ] as const,
     ),
   )
   return Object.fromEntries(entries) as DomainStateCounts
 }
 
-function capCount(matches: number, cap: number): DomainStateCount {
-  return matches >= cap ? { count: cap, complete: false } : { count: matches, complete: true }
+function countShared(
+  read: SharedStateRead,
+  names: readonly string[],
+  cap: number,
+): DomainStateCount {
+  const matches = read.names.filter(name => names.includes(name)).length
+  return { count: Math.min(matches, cap), complete: read.complete && matches < cap }
 }
 
-async function countState(
-  queue: SearchQueue,
-  state: DomainStatsState,
+async function countByNameSearch(
+  queue: StatsQueue,
+  state: 'completed' | 'failed',
   names: readonly string[],
   cap: number,
 ): Promise<DomainStateCount> {
@@ -70,5 +88,5 @@ async function countState(
     count += jobs.length
     if (count >= cap) break
   }
-  return capCount(count, cap)
+  return { count: Math.min(count, cap), complete: count < cap }
 }

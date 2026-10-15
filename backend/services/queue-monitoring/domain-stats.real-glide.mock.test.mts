@@ -87,6 +87,11 @@ describe('capped per-domain job counts through real GlideMQ', () => {
       expect(capped.failed).toEqual({ count: 1, complete: true })
       expect(capped.active).toEqual({ count: 1, complete: true })
 
+      // Another domain's backlog can fill the shared read: this domain's job lies beyond it, so
+      // its count is partial rather than exact.
+      const crowdedOut = await countDomainJobs(harness.queue, 'openai-moderation', 2)
+      expect(crowdedOut.delayed).toEqual({ count: 0, complete: false })
+
       // The other domain sees only its own job, though the queue holds both.
       const other = await countDomainJobs(harness.queue, 'openai-moderation', 100)
       expect(other.delayed).toEqual({ count: 1, complete: true })

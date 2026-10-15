@@ -29,7 +29,7 @@ export function createBackgroundWorker(options: BackgroundWorkerOptions) {
     dedicatedCommandClient: true,
     ...(options.prefix ? { prefix: options.prefix } : {}),
     concurrency:
-      options.concurrency ?? getWorkerConcurrency('background', { baseline, max: baseline * 2 }),
+      options.concurrency ?? getWorkerConcurrency('background', { baseline, max: baseline * 4 }),
   })
   closePauseWatcherWithWorker(worker)
   return worker

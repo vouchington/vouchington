@@ -14,7 +14,7 @@ with exact totals.
 Response: `{ domains: Array<{ domain, paused, paused_at, paused_by, reason, waiting, active, delayed, completed, failed }> }`
 where each state is `{ count: number, complete: boolean }`.
 
-Counts come from a capped, per-request scan of the domain's own job names (the
+Counts come from a capped, per-request scan (one shared read of the first jobs per state for waiting, active, and delayed, a name search for completed and failed; the
 `domain_stats_scan_cap` field of the `background-queue-config` DynamicConfig namespace) and are
 read fresh each time. `complete: false` means the scan stopped at the cap, so `count` is a lower
 bound and clients show `count+`. A state under the cap is exact. Domains with no control row report
