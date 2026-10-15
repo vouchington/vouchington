@@ -1,2 +1,2 @@
-// The domain runs in the shared `background` queue; its limits live in the registry.
-export {}
+// The `background` queue domain these jobs belong to; its registry entry holds the limits.
+export const VOTE_AGGREGATION_DOMAIN = 'vote-aggregation' as const
