@@ -136,6 +136,24 @@ Those downstream queues own their retry policy. The operator shadow audit compar
 primary eligibility fingerprints to receipts; dry runs accept an explicit cursor and never alter
 the saved checkpoint, while repairs advance and reset that checkpoint at EOF.
 
+An internal operator may supply a finite `postIdentityIds` selection. Both indexed sources apply
+that selection before their page limits and union; omission retains the global operator audit consumed by the worker.
+Selection uses the canonical shadow-audit source ceiling. Finite repairs resume from the explicit
+cursor returned by the prior page and never read, advance, or reset the singleton checkpoint.
+Unselected repairs retain the global durable checkpoint and serialize through the shared shadow-audit
+transaction lock before locking that row. The service joins a supplied canonical transaction, allowing
+an operator to coordinate several pages on the same client; default worker calls own and commit each
+page. Dry runs remain read-only. Global checkpoint tests hold that production lock before a stable
+source snapshot on the same client. Terminal-page witnesses are real posts inserted privately in
+that transaction after observing its actual maximum source identity; their natural UUIDv7 values must
+follow that maximum. The unselected repair still advances and resets the global durable checkpoint,
+then rolls back its witnesses and writes before unlock. Bounded executor diagnostics record query
+annotations, SQLSTATE, backend/transaction identity, snapshot and exact lock ownership after the
+session fence, plus the fork's actually attached test-worker queues, without query values or row payloads;
+no test-only advisory key or save/restore write fences an external worker. The proof owner registers
+finish cleanup before acquiring its client, fences late admission and drains acquired/callback work
+before transaction disposal, unlock, awaited connection close, and final pool release.
+
 Before projection effects, the worker asks the posts service to converge review succession for the
 selected post page. Any automatic archive or restore records fresh `post_archived` dirty work with
 the affected current and archive-time topics. The worker then enqueues a continuation and leaves the

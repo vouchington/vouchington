@@ -1,62 +1,91 @@
 import { readFileSync } from 'node:fs'
 import {
-  createTestUser,
-  getTestPostPublicationShadowAuditCheckpoint,
-  insertTestPost,
-  setTestPostPublicationShadowAuditCheckpoint,
-  withTestPostPublicationShadowAuditLock,
-} from '@voucha/test-helpers'
-import { randomUUID } from 'node:crypto'
+  createTestShadowAuditFixtures,
+  insertAuditPost,
+  withTestShadowAuditCheckpoint,
+} from '@voucha/test-helpers/post-publication-shadow-audit-fixtures'
 import { describe, expect, it } from 'vitest'
-import { runPostPublicationShadowAudit } from './shadow-audit.mts'
 
 const shadowAuditSource = readFileSync(new URL('./shadow-audit.mts', import.meta.url), 'utf8')
 
 describe('post publication shadow audit checkpoints', () => {
   it('bounds both indexed audit sources before union materialization', () => {
     expect(shadowAuditSource).toContain(
-      'SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids',
+      'SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${postIdentityIds}::uuid[] IS NULL OR id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids',
     )
     expect(shadowAuditSource).toContain(
-      'SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id',
+      'SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${postIdentityIds}::uuid[] IS NULL OR post_identity_id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id',
     )
   })
 
   it('resets the durable checkpoint after the final partial repair page', async () => {
-    const user = await createTestUser()
-    if (!user) throw new Error('Expected final-page checkpoint user fixture')
-    const suffix = randomUUID().replaceAll('-', '').slice(0, 11)
-    const idPrefix = `ffffffff-ffff-7fff-bfff-${suffix}`
-    const cursor = `${idPrefix}0`
-    const firstPostId = `${idPrefix}1`
-    const secondPostId = `${idPrefix}2`
-
-    await insertTestPost({
-      title: `Final partial audit foreign ${suffix}`,
-      slug: `final-partial-audit-${suffix}-foreign`,
-      markdown: 'Eligible post behind the terminal audit cursor.',
-      createdById: user.id,
-    })
-    await insertTestPost({
-      id: firstPostId,
-      title: `Final partial audit page ${suffix} first`,
-      slug: `final-partial-audit-${suffix}-first`,
-      markdown: 'First row on a terminal audit page.',
-      createdById: user.id,
-    })
-    await insertTestPost({
-      id: secondPostId,
-      title: `Final partial audit page ${suffix} second`,
-      slug: `final-partial-audit-${suffix}-second`,
-      markdown: 'Second row on a terminal audit page.',
-      createdById: user.id,
-    })
-    await withTestPostPublicationShadowAuditLock(async () => {
-      await setTestPostPublicationShadowAuditCheckpoint(cursor)
-      const result = await runPostPublicationShadowAudit({ dryRun: false, limit: 100 })
+    const { user, postIds } = await createTestShadowAuditFixtures(2)
+    for (const id of postIds) {
+      await insertAuditPost(
+        user.id,
+        id,
+        `shadow-partial-${id}`,
+        'Final partial audit page',
+        'Owned terminal-page row.',
+      )
+    }
+    await withTestShadowAuditCheckpoint(async context => {
+      const terminal = await context.terminalPage(user.id)
+      await context.setCheckpoint(terminal.before)
+      // Omitted selection exercises the actual singleton-backed global repair branch.
+      const result = await context.audit({ dryRun: false, limit: 100 })
       expect(result).toMatchObject({ hasMore: false })
       expect(result.scannedByScope.post).toBeGreaterThanOrEqual(2)
-      await expect(getTestPostPublicationShadowAuditCheckpoint()).resolves.toBeNull()
+      expect(result.scannedByScope.post).toBe(2)
+      expect(result.checkpoint).toBe(terminal.ids[1])
+      await expect(context.getCheckpoint()).resolves.toBeNull()
+    })
+  })
+
+  it('keeps the global dry-run cursor compatible with a reserved finite repair selection', async () => {
+    const { user, postIds, ids } = await createTestShadowAuditFixtures(2)
+    const firstPostId = postIds[0]!
+    const secondPostId = postIds[1]!
+    for (const id of postIds) {
+      await insertAuditPost(
+        user.id,
+        id,
+        `shadow-global-${id}`,
+        'Global cursor candidate',
+        'Real indexed row for cursor interaction.',
+      )
+    }
+    await withTestShadowAuditCheckpoint(async context => {
+      const terminal = await context.terminalPage(user.id)
+      await context.setCheckpoint(terminal.ids[1])
+      const first = await context.audit({ dryRun: false, limit: 1, postIdentityIds: postIds })
+      expect(first.checkpoint).toBe(firstPostId)
+      await expect(context.hasRepair(firstPostId)).resolves.toBe(true)
+      await expect(context.hasRepair(ids.foreignPostId)).resolves.toBe(false)
+      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[1])
+      const global = await context.audit({ dryRun: true, cursor: firstPostId, limit: 1 })
+      expect(global.scannedByScope.post).toBe(1)
+      if (!global.checkpoint) throw new Error('Expected global successor cursor')
+      const advanced = global.checkpoint > firstPostId
+      const boundedByKnownSuccessor = global.checkpoint <= secondPostId
+      expect(advanced).toBe(true)
+      expect(boundedByKnownSuccessor).toBe(true)
+      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[1])
+      const second = await context.audit({
+        dryRun: false,
+        limit: 1,
+        cursor: first.checkpoint,
+        postIdentityIds: postIds,
+      })
+      expect(second.checkpoint).toBe(secondPostId)
+      const eof = await context.audit({
+        dryRun: false,
+        limit: 1,
+        cursor: second.checkpoint,
+        postIdentityIds: postIds,
+      })
+      expect(eof.scannedByScope.post).toBe(0)
+      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[1])
     })
   })
 })

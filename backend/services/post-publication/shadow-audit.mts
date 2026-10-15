@@ -1,5 +1,11 @@
-import { getPostPublicationWorkLimit } from './work-limits.mts'
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
+import { getPostPublicationWorkLimit, postPublicationWorkMaxValues } from './work-limits.mts'
+import {
+  beginTransaction,
+  write,
+  withTransactionOptions,
+  type QueryOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { publicationEligibilityFingerprintSql } from './fingerprint.mts'
 import { publicationSnapshotMismatchSql } from './identity-source.mts'
@@ -11,47 +17,81 @@ export type { PostPublicationShadowAuditResult } from './shadow-audit-result.mts
 import { recordPostPublicationShadowRepair } from './record-shadow-repair.mts'
 import type { ShadowAuditCandidate } from './shadow-audit-types.mts'
 
+export const postPublicationShadowAuditLockKey = 'post-publication:shadow-audit'
+
 /** Bounded operator audit: dry runs are read-only; repairs record post transitions before advancing the checkpoint. */
-export async function runPostPublicationShadowAudit(options: {
-  dryRun: boolean
-  limit?: number
-  /** Read-only streaming cursor. Dry runs never read or mutate the durable checkpoint. */
-  cursor?: string | null
-}): Promise<PostPublicationShadowAuditResult> {
+export async function runPostPublicationShadowAudit(
+  options: {
+    dryRun: boolean
+    limit?: number
+    /** Streaming cursor for dry runs and finite repairs; global repairs use the durable checkpoint. */
+    cursor?: string | null
+    /** Finite operator selection, applied before either indexed source page. Omission audits globally. */
+    postIdentityIds?: readonly string[]
+  },
+  queryOptions: QueryOptions = {},
+): Promise<PostPublicationShadowAuditResult> {
   const POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE =
     getPostPublicationWorkLimit('shadow_audit_page_size')
   const limit = options.limit ?? POST_PUBLICATION_SHADOW_AUDIT_PAGE_SIZE
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Post publication shadow audit limit must be positive')
-  if (options.dryRun) return inspectPostPublicationShadowAudit(limit, options.cursor ?? null)
+  const postIdentityIds = options.postIdentityIds ?? null
+  if (
+    postIdentityIds &&
+    postIdentityIds.length > postPublicationWorkMaxValues.shadow_audit_page_size
+  )
+    throw new TypeError(
+      'Post publication shadow audit selection exceeds its bounded source ceiling',
+    )
+  const cursor = options.cursor ?? null
+  if (queryOptions.query || queryOptions.client)
+    return withTransactionOptions(queryOptions, query =>
+      options.dryRun
+        ? inspectPostPublicationShadowAudit(limit, cursor, postIdentityIds, query)
+        : repairPostPublicationShadowAudit(query, limit, postIdentityIds, cursor),
+    )
+  if (options.dryRun) return inspectPostPublicationShadowAudit(limit, cursor, postIdentityIds)
   await using query = await beginTransaction()
-  const result = await repairPostPublicationShadowAudit(query, limit)
+  const result = await repairPostPublicationShadowAudit(query, limit, postIdentityIds, cursor)
   await query.commit()
   return result
 }
 async function inspectPostPublicationShadowAudit(
   limit: number,
   cursor: string | null,
+  postIdentityIds: readonly string[] | null,
+  query?: TransactionQuery,
 ): Promise<PostPublicationShadowAuditResult> {
-  const candidates = await listShadowAuditCandidates(undefined, cursor, limit)
+  const candidates = await listShadowAuditCandidates(query, cursor, limit, postIdentityIds)
   return makeShadowAuditResult(true, candidates, limit)
 }
 
 async function repairPostPublicationShadowAudit(
   query: TransactionQuery,
   limit: number,
+  postIdentityIds: readonly string[] | null,
+  cursor: string | null,
 ): Promise<PostPublicationShadowAuditResult> {
   // ast-grep-ignore: no-three-sequential-awaits -- the checkpoint lock must precede reads, repairs, and checkpoint advancement in this transaction
-  const checkpoint = await getShadowAuditCheckpoint(query)
-  const candidates = await listShadowAuditCandidates(query, checkpoint, limit)
+  if (postIdentityIds === null)
+    await query(
+      '/* lockPostPublicationShadowAudit */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+      [postPublicationShadowAuditLockKey],
+    )
+  const checkpoint = postIdentityIds === null ? await getShadowAuditCheckpoint(query) : cursor
+  const candidates = await listShadowAuditCandidates(query, checkpoint, limit, postIdentityIds)
   await candidates
     .filter(candidate => candidate.is_discrepant)
     .reduce(
       (pending, candidate) => pending.then(() => retainShadowAuditCandidate(query, candidate)),
       Promise.resolve(),
     )
-  if (candidates.length === limit) await advanceShadowAuditCheckpoint(query, candidates.at(-1)!.id)
-  else if (candidates.length > 0 || checkpoint) await resetShadowAuditCheckpoint(query)
+  if (postIdentityIds === null) {
+    if (candidates.length === limit)
+      await advanceShadowAuditCheckpoint(query, candidates.at(-1)!.id)
+    else if (candidates.length > 0 || checkpoint) await resetShadowAuditCheckpoint(query)
+  }
   return makeShadowAuditResult(false, candidates, limit)
 }
 
@@ -86,13 +126,14 @@ async function listShadowAuditCandidates(
   query: TransactionQuery | undefined,
   checkpoint: string | null,
   limit: number,
+  postIdentityIds: readonly string[] | null,
 ): Promise<ShadowAuditCandidate[]> {
   const executor = query ?? write
   const compare = sql`/* listPostPublicationShadowAuditCandidates */
     WITH source_ids AS MATERIALIZED (
-      SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids
+      SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${postIdentityIds}::uuid[] IS NULL OR id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids
       UNION
-      SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id
+      SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${postIdentityIds}::uuid[] IS NULL OR post_identity_id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id
     ), source_page AS MATERIALIZED (
       SELECT id, post_id FROM source_ids
       ORDER BY id LIMIT ${limit}

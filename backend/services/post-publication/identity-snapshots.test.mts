@@ -8,8 +8,6 @@ import {
   scrubTestUserUsernameInTransaction,
   expireTestPostPublicationDirtyWorkLease,
   hardDeleteTestPost,
-  setTestPostPublicationShadowAuditCheckpoint,
-  withTestPostPublicationShadowAuditLock,
 } from '@voucha/test-helpers'
 import {
   insertTestPublicationTopicSlugFanout,
@@ -250,24 +248,21 @@ describe('bounded publication identity snapshots', () => {
         leaseToken: work.lease_token,
       }),
     ).toBe(true)
-    const cursor = uuidBefore(candidate.id)
-    const clean = await runPostPublicationShadowAudit({ dryRun: true, cursor, limit: 1 })
+    const selection = { postIdentityIds: [candidate.id], limit: 1 }
+    const clean = await runPostPublicationShadowAudit({ dryRun: true, ...selection })
     expect(clean.discrepanciesByScope.post).toBe(0)
     await using mutation = await beginTransaction()
     await scrubTestUserUsernameInTransaction(mutation, user.id)
     await mutation.commit()
     expect(
-      (await runPostPublicationShadowAudit({ dryRun: true, cursor, limit: 1 })).discrepanciesByScope
+      (await runPostPublicationShadowAudit({ dryRun: true, ...selection })).discrepanciesByScope
         .post,
     ).toBe(1)
 
-    await withTestPostPublicationShadowAuditLock(async () => {
-      await setTestPostPublicationShadowAuditCheckpoint(cursor)
-      expect(
-        (await runPostPublicationShadowAudit({ dryRun: false, limit: 1 })).discrepanciesByScope
-          .post,
-      ).toBe(1)
-    })
+    expect(
+      (await runPostPublicationShadowAudit({ dryRun: false, ...selection })).discrepanciesByScope
+        .post,
+    ).toBe(1)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: snapshot.snapshotId,
       fingerprint: candidate.eligibility_fingerprint,
@@ -290,9 +285,4 @@ async function createSnapshotWork() {
   const [candidate] = await listPublicationCandidates(work, 1, [post.id])
   if (!candidate) throw new Error('Expected snapshot candidate')
   return { work, candidate, user }
-}
-
-function uuidBefore(id: string): string {
-  const hex = (BigInt(`0x${id.replaceAll('-', '')}`) - 1n).toString(16).padStart(32, '0')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
