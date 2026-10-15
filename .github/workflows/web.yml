@@ -173,12 +173,16 @@ jobs:
       actions: read
       contents: read
 
-  # Informational; the `web` gate does not wait on it.
+  # Informational; the `web` gate does not wait on it. Compare each producer:
+  # contains(needs.*.result, 'success') is true when every producer was skipped.
   codecov:
     needs: [test-web, test-web-api, test-web-integration, storybook]
     if: >-
       !cancelled() &&
-      contains(needs.*.result, 'success') &&
+      (needs.test-web.result == 'success' ||
+      needs.test-web-api.result == 'success' ||
+      needs.test-web-integration.result == 'success' ||
+      needs.storybook.result == 'success') &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     uses: ./.github/workflows/ci-upload-codecov.yml
