@@ -21,7 +21,7 @@ import { manualTagLimitConfig } from '@services/tag-limits'
 import { createUnlinkedTopicAlias } from '@services/topics'
 import { lockPostPublication } from '@services/post-publication'
 import type { PrivateUser } from '@services/users/types'
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 import { addPostHashtag } from '../add-hashtag.mts'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
@@ -79,14 +79,17 @@ describe('addPostHashtag', () => {
     const tag = `existing-${suffix}`
     const alias = await createUnlinkedTopicAlias(`#${tag}`)
     const post = await createPost(creator, WEB_PROVENANCE, { title: `Existing hashtag ${suffix}` })
-    const updated = onceEntityListenerCompleted('processPostUpdated', post.id)
-
-    const first = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
-    expect((await getPostByAny(post.id, { readOnly: false }))?.post_hashtags).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: alias.id, key: tag })]),
+    const { first, second } = await withEntityListenerCompletion(
+      [{ jobName: 'processPostUpdated', entityId: post.id }],
+      async () => {
+        const first = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
+        expect((await getPostByAny(post.id, { readOnly: false }))?.post_hashtags).toEqual(
+          expect.arrayContaining([expect.objectContaining({ id: alias.id, key: tag })]),
+        )
+        const second = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
+        return { first, second }
+      },
     )
-    const second = await addPostHashtag(creator, post.id, `#${tag}`, firstParty)
-    await updated
 
     expect(first).toEqual({ post_id: post.id, tag, topic_alias_id: alias.id })
     expect(second).toEqual(first)

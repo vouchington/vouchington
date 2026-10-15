@@ -1,4 +1,4 @@
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -80,13 +80,16 @@ describe('PATCH /api/v1/my/identity - use_display_name_from', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    const response = await request
-      .patch('/api/v1/my/identity')
-      .send({ use_display_name_from: 'facebook' })
-      .expect(200)
+    const response = await withEntityListenerCompletion(
+      [{ jobName: 'processUserUpdated', entityId: user.id }],
+      async () =>
+        request
+          .patch('/api/v1/my/identity')
+          .send({ use_display_name_from: 'facebook' })
+          .expect(200),
+    )
 
     expect(response.body.identity.use_display_name_from).toBe('facebook')
-    await onceEntityListenerCompleted('processUserUpdated', user.id)
   })
 
   it('updates use_display_name_from to username', async () => {

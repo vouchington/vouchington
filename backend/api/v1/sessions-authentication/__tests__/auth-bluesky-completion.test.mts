@@ -11,7 +11,7 @@ import {
 } from '@voucha/test-helpers/entities/bluesky-linked-accounts'
 import { createNativeBlueskyLinkCompletion } from '@voucha/test-helpers/bluesky-native-completion-fixtures'
 import { finalizeNativeBlueskyAccountLink } from '@services/bluesky-accounts'
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 import { v7 as uuidv7 } from 'uuid'
 
 describe('POST /api/v1/auth/bluesky/link-completions', () => {
@@ -113,15 +113,14 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
   it('enqueues the user update only after the completion transaction commits', async () => {
     const user = await createTestUser()
     const completion = await createCompletion(user.id)
-    const listenerCompleted = onceEntityListenerCompleted('processUserUpdated', user.id)
-
-    await finalizeNativeBlueskyAccountLink(
-      user.id,
-      completion.flowId,
-      completion.token,
-      completion.verifier,
+    await withEntityListenerCompletion([{ jobName: 'processUserUpdated', entityId: user.id }], () =>
+      finalizeNativeBlueskyAccountLink(
+        user.id,
+        completion.flowId,
+        completion.token,
+        completion.verifier,
+      ),
     )
-    await listenerCompleted
 
     expect(await testBlueskyLinkCompletionExists(completion.flowId)).toBe(false)
   })

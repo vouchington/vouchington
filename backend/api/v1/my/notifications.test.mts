@@ -1,11 +1,10 @@
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, assertValidIsoDateString } from '@voucha/test-helpers'
 // Real, service-calling fixture (not the raw `@voucha/test-helpers` one) — this file waits on
-// `processPostCreated` via `onceEntityListenerCompleted`, which only fires for posts created
+// the exact original `processPostCreated` admission and terminal event for posts created
 // through the actual `createPost` write path.
-import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
+import { createPostWithEntityListenerCompletion as createTestPost } from '@voucha/test-helpers/entity-listener-posts'
 import { deleteNotification } from '@services/notifications/mutations'
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 
@@ -74,7 +73,6 @@ describe('GET /api/v1/my/notifications', () => {
     if (!author || !replier) throw new Error('Failed to create users')
 
     const root = await createTestPost({ user: author, title: 'Root post' })
-    await onceEntityListenerCompleted('processPostCreated', root.id)
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
@@ -97,7 +95,6 @@ describe('GET /api/v1/my/notifications', () => {
     const replier = await createTestUser()
 
     const root = await createTestPost({ user: author, title: 'Date test root' })
-    await onceEntityListenerCompleted('processPostCreated', root.id)
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
@@ -125,7 +122,6 @@ describe('GET /api/v1/my/notifications', () => {
     if (!author || !replier) throw new Error('Failed to create users')
 
     const root = await createTestPost({ user: author, title: 'Root post' })
-    await onceEntityListenerCompleted('processPostCreated', root.id)
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
@@ -152,7 +148,6 @@ describe('GET /api/v1/my/notifications', () => {
     if (!author || !replier) throw new Error('Failed to create users')
 
     const root = await createTestPost({ user: author, title: 'Root post' })
-    await onceEntityListenerCompleted('processPostCreated', root.id)
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',
@@ -183,7 +178,6 @@ describe('GET /api/v1/my/notifications', () => {
     if (!author || !replier) throw new Error('Failed to create users')
 
     const root = await createTestPost({ user: author, title: 'Root post' })
-    await onceEntityListenerCompleted('processPostCreated', root.id)
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',

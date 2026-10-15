@@ -1,16 +1,10 @@
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 import { describe, it, expect, beforeAll } from 'vitest'
 
 import type { PrivateUser } from '@services/users/types'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  insertTestPost,
-  createTestUser,
-  createTestUserWithAge,
-  followUser,
-  CONTRIBUTING_USER_AGE_MS,
-} from '@voucha/test-helpers'
+import { insertTestPost, createTestUser, followUser } from '@voucha/test-helpers'
 import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 
@@ -246,8 +240,12 @@ describe('post', () => {
         const request = createRequest()
         await request.authenticateAs(creator)
 
-        await request.delete(`/api/v1/posts/${postId}`).expect(204)
-        await onceEntityListenerCompleted('processPostDeleted', postId)
+        await withEntityListenerCompletion(
+          [{ jobName: 'processPostDeleted', entityId: postId }],
+          async () => {
+            await request.delete(`/api/v1/posts/${postId}`).expect(204)
+          },
+        )
 
         // Verify it's deleted
         await request.get(`/api/v1/posts/${postId}`).expect(404)
@@ -292,7 +290,4 @@ describe('post', () => {
       })
     })
   })
-  // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof createTestUserWithAge)
-  void (0 as unknown as typeof CONTRIBUTING_USER_AGE_MS)
 })

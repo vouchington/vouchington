@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
+import { createPostWithEntityListenerCompletion as createTestPost } from '@voucha/test-helpers/entity-listener-posts'
 import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test-helpers'
 import { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
 
@@ -16,7 +15,6 @@ describe('suspended notification redirect lookup', () => {
     const recipient = await createTestUser()
     const replier = await createTestUser()
     const root = await createTestPost({ user: recipient, title: `Root ${crypto.randomUUID()}` })
-    await onceEntityListenerCompleted('processPostCreated', root.id)
     const reply = await createTestPost({
       user: replier,
       post_type: 'comment',

@@ -11,7 +11,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
+import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 
 const VALID_REVIEW_MARKDOWN =
   'This review gives detailed context from repeated personal use, including the strongest benefits, the weakest tradeoffs, and how the product performed over time. It explains why the rating is justified with concrete observations that another consumer could compare against their own needs. I would use these details to make the same decision again.'
@@ -82,10 +82,9 @@ describe('post-ratings', () => {
     })
 
     const before = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
-    const updateCompleted = onceEntityListenerCompleted('processPostUpdated', post.id)
-
-    await updatePostRating(user, post, topicIds[0]!, { order_index: 2 })
-    await updateCompleted
+    await withEntityListenerCompletion([{ jobName: 'processPostUpdated', entityId: post.id }], () =>
+      updatePostRating(user, post, topicIds[0]!, { order_index: 2 }),
+    )
 
     const updated = await getPostByAny(post.id)
     expect(updated!.review_topic_ratings?.map(rating => rating.topic_id)).toEqual([

@@ -1,5 +1,4 @@
-import { onceEntityListenerCompleted } from '@voucha/test-helpers/workers/entity-listeners/test-support'
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -10,16 +9,14 @@ import {
   CONTRIBUTING_USER_AGE_MS,
 } from '@voucha/test-helpers'
 // Real, service-calling fixture (not the raw `@voucha/test-helpers` one) — this file waits on
-// `processPostCreated` via `onceEntityListenerCompleted`, which only fires for posts created
+// the exact original `processPostCreated` admission and terminal event for posts created
 // through the actual `createPost` write path.
-import { createTestPost } from '@voucha/test-helpers/services/posts/test-support'
+import { createPostWithEntityListenerCompletion as createTestPost } from '@voucha/test-helpers/entity-listener-posts'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { invalidate } from '@services/entity-cache'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('topic', () => {
-  afterAll(async () => {}, 30000) // Increased timeout for cleanup when Playwright test data exists
-
   describe('Topic Individual Routes', () => {
     describe('GET /api/v1/topics/:idOrSlug', () => {
       it('should return a topic by ID', async () => {
@@ -78,28 +75,26 @@ describe('topic', () => {
         const viewer = await createTestUser()
         const topic = await createTestTopic({
           user: creator!,
-          name: `Topic Counts ${Date.now()}`,
+          name: `Topic Counts ${crypto.randomUUID()}`,
           topic_type: 'topic',
         })
 
         const publicDiscussion = await createTestPost({
           user: creator!,
-          title: `Public Discussion ${Date.now()}`,
+          title: `Public Discussion ${crypto.randomUUID()}`,
           markdown: 'public discussion',
           post_type: 'discussion',
         })
-        await onceEntityListenerCompleted('processPostCreated', publicDiscussion!.id)
         await relatePostToTopic(creator!, publicDiscussion!, topic)
 
         const privateDiscussion = await createTestPost({
           user: creator!,
-          title: `Private Discussion ${Date.now()}`,
+          title: `Private Discussion ${crypto.randomUUID()}`,
           markdown: 'private discussion',
           post_type: 'discussion',
           broadcast: 'users',
           privacy: 'private',
         })
-        await onceEntityListenerCompleted('processPostCreated', privateDiscussion!.id)
         await relatePostToTopic(creator!, privateDiscussion!, topic)
         await invalidate.topic_metrics(topic.id)
 
