@@ -173,6 +173,13 @@ The canonical workflow contract is [Auto Harness automation](ci/workflows/refere
 with accepted residuals and the operator-authenticated incident-response drain control in the
 [security boundary](ci/workflows/reference-harness-automation-accepted-risk.md).
 
+PR shepherding enables every bundled [bot-comment classifier](https://github.com/jonathanong/pr-shepherd/blob/main/docs/configuration.md#classifystandard--default-)
+through [`.pr-shepherdrc.yml`](../../.pr-shepherdrc.yml), with automatic minimization for rules
+that request it. Vendor notice formats determine suppression; an author's identity alone does not
+make substantive feedback disposable. Codecov report comments can arrive before all coverage
+uploads finish, so coverage checks determine actionable failures. General notice rules and their
+counterexamples belong in pr-shepherd rather than repository-local classifiers.
+
 Automation Fix Main accepts push failures from the publisher workflows and schedule/manual failures
 only from the exact same-repository `Nightly` workflow on `main`. It revalidates the same completed
 source attempt before prompt transfer and

@@ -13,6 +13,15 @@ ignoreChecks:
   # not wait on them either. See docs/development/tests.md#live-provider-smoke-checks.
   - 'test-playwright-credentialed / playwright-credentialed-tests'
 
+# Use vendor-specific bundled rules instead of local author-wide suppression. Coverage reports
+# are informational comments; coverage checks still gate readiness.
+classify:
+  standard:
+    all: true
+
+actions:
+  autoMinimizeSuppressed: true
+
 # Single source of the WAIT-tick cadence: checked-in guidance omits `--interval` so this applies.
 # GraphQL quota-warning bands scale from it (2x/5x/10x → 6/15/30 minutes).
 poll:
