@@ -63,6 +63,32 @@ describe('statutory copyright restoration schedule', () => {
     await expect(readDueDeadlineIds(deadline.id, due)).resolves.toEqual([deadline.id])
   })
 
+  it('returns candidates only for the selected deadline page', async () => {
+    const first = await createCounterNoticedRestriction()
+    const second = await createCounterNoticedRestriction()
+    const [selected, later] = [first, second].toSorted((a, b) =>
+      a.deadline.id.localeCompare(b.deadline.id),
+    )
+    const now = new Date(
+      Math.max(
+        selected!.deadline.earliest_restoration_at.getTime(),
+        later!.deadline.earliest_restoration_at.getTime(),
+      ),
+    )
+    const page = await searchDueStatutoryCopyrightRestorationDeadlineIds({
+      now,
+      after: encodeUuidCursorBefore(selected!.deadline.id),
+      limit: 1,
+    })
+
+    expect(page.results).toEqual([selected!.deadline.id])
+    expect(page.page_info.has_next_page).toBe(true)
+    expect(Object.keys(page.candidates)).toEqual([selected!.deadline.id])
+    expect(page.candidates[selected!.deadline.id]).toMatchObject([
+      { notice_id: selected!.notice.id, target_id: selected!.target.id },
+    ])
+  })
+
   it('materializes a due restore intent and stops listing its deadline', async () => {
     const { deadline } = await createCounterNoticedRestriction()
     const now = new Date(deadline.earliest_restoration_at.getTime() + 60_000)
