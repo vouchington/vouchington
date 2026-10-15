@@ -31,8 +31,8 @@ Every group ends in one of these outcomes, never in a list of options. When the 
 than one outcome, or several fixes remain, choose the outcome and fix the evidence best supports and
 carry it out. A nondeterministic failure that the change under test did not cause is a flaky test
 even when its cause is unproven, and a test failure that recurs is a transient only when it matches
-a catalogued transient. In the fix PR's `## Root cause`, separate what the evidence proves from what
-it only suggests, and put the alternatives in `## Options considered`. When the logs cannot tell the
+a catalogued transient. In the fix PR's `### Root cause`, separate what the evidence proves from what
+it only suggests, and put the alternatives in `### Options considered`. When the logs cannot tell the
 candidate causes apart, for example a statement timeout with no wait event or plan, the fix PR also
 captures the evidence the next occurrence needs, but diagnostics alone are not a fix.
 
@@ -64,10 +64,12 @@ Every flaky test and every defect in this repository gets one fix PR per group:
 5. **Implement and validate** the smallest complete change. When the fix adds or tightens an
    assertion, first show that the assertion fails for the expected reason against the pre-fix
    source, per [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s
-   regression-test rule, and record that evidence under `## Implementation choice`.
+   regression-test rule, and record that evidence under `### Implementation choice`.
 6. **Publish.** Create one draft PR with the
-   `pr_create` tool of the `vouchington-tooling` MCP server. The body needs
-   `## Root cause`, `## Implementation choice`, `## Options considered` with pros and cons,
+   `pr_create` tool of the `vouchington-tooling` MCP server. Supply `### Root cause`,
+   `### Implementation choice`, and `### Options considered` as `details` entries: `pr_create`
+   renders `details` under `## Details`; use only `###` headings there, never `##`. The body needs those three
+   sections (options with pros and cons),
    implementation details, the failing runs, validation evidence, `## Related issues` with the
    closing reference, remaining follow-ups, and the `Workspace setup:` line named above. Apply both
    the `automation` and `automation:auto-fix` labels, then re-fetch the PR and require both labels.
@@ -80,8 +82,8 @@ resolution rule.
 For any PR body this session is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary` and
 `## Impact` visible, including the concrete outcome, affected audience, and material risks. Keep
-the required `## Root cause`, `## Implementation choice`, and `## Options considered` headings and
-long supporting evidence inside a collapsed `<details>` section. Use before/after tables and
+the required `### Root cause`, `### Implementation choice`, and `### Options considered` headings
+in `details`, with long supporting evidence inside a collapsed `<details>` element there. Use before/after tables and
 Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the approved
 description helper and retain established gaps after green checks. Do not add routine successful
 local-check lists. This standard does not expand this session's mutation authority.

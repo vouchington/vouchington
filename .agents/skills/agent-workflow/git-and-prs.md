@@ -20,12 +20,12 @@
   layers merge.
   Put ready layers at the bottom and append later work on top. Never ask whether to stack, or for
   an exception to stacking. Ask the human only when no option above resolves the conflict.
-- The PR helper flags about 5,000 added or 20,000 deleted lines for a split decision. Split only
+- `pr_create` flags about 5,000 added or 20,000 deleted lines (against `origin/<base>`) for a split decision. Split only
   along independently reviewable boundaries; dependencies and conflicts determine whether to stack.
   Disclose the 150-file automated-review limit for larger atomic changes. Verified CI-generated
   schema snapshots stay with their source when the handwritten diff fits those budgets; verify
   publisher provenance and schema intent, report generated versus total scope, and use
-  `--acknowledge-large-diff` without another size approval. Other generated output remains counted.
+  a `### Large diff` entry in `details` (the stated split decision) without another size approval. Other generated output remains counted.
 - Use conventional commit and PR titles; follow the [commit checklist](../../../docs/checklists/commit.md).
   Do not amend, bypass hooks, create merge commits, or use raw force pushes.
 - Before rebasing, inspect `git diff --name-only origin/main...HEAD`; for a stack also inspect the

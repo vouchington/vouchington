@@ -71,6 +71,13 @@ describe('exceedsLargeDiffThreshold', () => {
     ).toBe(true)
   })
 
+  it('honours injected thresholds', () => {
+    const thresholds = { added: 2, deleted: 3 }
+    expect(exceedsLargeDiffThreshold({ added: 2, deleted: 3 }, thresholds)).toBe(false)
+    expect(exceedsLargeDiffThreshold({ added: 3, deleted: 0 }, thresholds)).toBe(true)
+    expect(exceedsLargeDiffThreshold({ added: 0, deleted: 4 }, thresholds)).toBe(true)
+  })
+
   it('allows a larger deletion-only retirement before requiring acknowledgement', () => {
     expect(
       exceedsLargeDiffThreshold({ added: 0, deleted: LARGE_DIFF_DELETED_LINE_THRESHOLD }),
@@ -82,16 +89,16 @@ describe('exceedsLargeDiffThreshold', () => {
 })
 
 describe('formatLargeDiffRefusal', () => {
-  it('names the changed-line count, the threshold, and the override flag', () => {
-    const message = formatLargeDiffRefusal({ added: 6000, deleted: 10 })
+  it('names the changed-line count, the threshold, and the acknowledgement section', () => {
+    const message = formatLargeDiffRefusal({ added: 6000, deleted: 10 }, 'main')
     expect(message).toContain('6000')
     expect(message).toContain(String(LARGE_DIFF_ADDED_LINE_THRESHOLD))
     expect(message).toContain(String(LARGE_DIFF_DELETED_LINE_THRESHOLD))
-    expect(message).toContain('--acknowledge-large-diff')
+    expect(message).toContain('### Large diff')
   })
 
   it('points at the split-vs-stack decision and the stacked-prs skill', () => {
-    const message = formatLargeDiffRefusal({ added: 5001, deleted: 0 })
+    const message = formatLargeDiffRefusal({ added: 5001, deleted: 0 }, 'main')
     expect(message).toContain('.agents/skills/agent-workflow/git-and-prs.md')
     expect(message).toContain('.agents/skills/stacked-prs/SKILL.md')
   })

@@ -2,6 +2,7 @@ import { processDiffCommand, runGh } from 'vouchington-tooling/gh-cli'
 import { fetchIssueProjectMemberships } from 'vouchington-tooling/github-projects'
 
 import { findHandRolledStackBaseBlock } from '../codex-hooks/policy/github-configured-base.mts'
+import { checkLargeDiff, type LargeDiffOptions } from './large-diff.mts'
 import { parseGitHubIssueApiResponse } from '../pr-description/closing-refs.mts'
 import { formatReferencedIssueSummary } from '../pr-description/referenced-issue-summary.mts'
 import { createMilestoneAuditor } from '../pr-description/milestone-audit.mts'
@@ -51,7 +52,10 @@ type PolicyResult = { errors: string[]; warnings?: string[] }
 // Create (`pr` unset) matches the CLI `create`: the stack-base rule, the body content policy, and
 // closing-ref resolution. Update (`pr` set) matches `validate <pr>`: it adds the milestone and
 // project completion audits, closure provenance, and the supersession audit, which need a real PR.
-export async function validatePullRequest(input: PullRequestPolicyInput): Promise<PolicyResult> {
+export async function validatePullRequest(
+  input: PullRequestPolicyInput,
+  largeDiff: LargeDiffOptions = {},
+): Promise<PolicyResult> {
   const automationContext = input.mode === 'autonomous'
   const stackBase =
     input.pr === undefined
@@ -63,6 +67,12 @@ export async function validatePullRequest(input: PullRequestPolicyInput): Promis
   if (!content.ok) return { errors: [...content.errors, ...baseErrors] }
   const warnings: string[] = []
   const options: IssueReferenceValidationOptions = { automationContext }
+  const sizeErrors: string[] = []
+  if (input.pr === undefined) {
+    const size = await checkLargeDiff(input.base, input.body, largeDiff)
+    sizeErrors.push(...size.errors)
+    warnings.push(...size.warnings)
+  }
   if (input.pr !== undefined) {
     const repo = await currentRepo(runGh)
     options.milestoneAuditor = createMilestoneAuditor(runGh, repo)
@@ -103,7 +113,7 @@ export async function validatePullRequest(input: PullRequestPolicyInput): Promis
   const summary = formatReferencedIssueSummary(result.referencedIssues).trim()
   if (summary) warnings.push(summary)
   warnings.push(...result.advisories)
-  const errors = [...result.errors, ...baseErrors]
+  const errors = [...result.errors, ...baseErrors, ...sizeErrors]
   return warnings.length > 0 ? { errors, warnings } : { errors }
 }
 
@@ -121,7 +131,7 @@ export async function pullRequestDefaults(
   try {
     const repo = await currentRepo(runGh)
     const [owner, name] = repo.split('/') as [string, string]
-    const found = await Promise.all(
+    const settled = await Promise.allSettled(
       ordered.map(async ({ number }) => {
         const json = await runGh(['api', `repos/${repo}/issues/${number}`])
         const memberships = await fetchIssueProjectMemberships(runGh, owner, name, number)
@@ -134,6 +144,8 @@ export async function pullRequestDefaults(
         }
       }),
     )
+    // One inaccessible issue must not discard what the others resolved.
+    const found = settled.flatMap(result => (result.status === 'fulfilled' ? [result.value] : []))
     const milestone = found.find(item => item.milestone !== undefined)?.milestone
     const project = found.find(item => item.project !== undefined)?.project
     if (milestone !== undefined) defaults.milestone = milestone

@@ -23,7 +23,7 @@ module.exports = {
       comment: 'repo tooling should stay acyclic so entrypoints remain easy to reason about.',
       severity: 'error',
       from: {
-        path: '^(ci|dev/agent-issue-labels|dev/pr-description|playwright/tests|static-code-analysis)/',
+        path: '^(ci|dev/agent-issue-labels|dev/agent-policy|dev/pr-description|playwright/tests|static-code-analysis)/|^dev/agent-policy\\.mts$',
       },
       to: {
         circular: true,
@@ -34,7 +34,7 @@ module.exports = {
       comment: 'runtime tooling source files must not import vitest. Use plain Node.js instead.',
       severity: 'error',
       from: {
-        path: '^(ci|dev/agent-issue-labels|static-code-analysis)/(?!.*\\.test\\.mts$)|^dev/pr-description/(?!.*\\.test\\.mts$)',
+        path: '^(ci|dev/agent-issue-labels|static-code-analysis)/(?!.*\\.test\\.mts$)|^dev/(?:pr-description|agent-policy)/(?!.*\\.test\\.mts$)|^dev/agent-policy\\.mts$',
       },
       to: {
         path: '^vitest($|/)',

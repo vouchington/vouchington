@@ -25,6 +25,8 @@ describe('tooling dependency-cruiser runner', () => {
     expect(TOOLING_DEPENDENCY_CRUISER_ROOTS).toEqual([
       'ci',
       'dev/agent-issue-labels',
+      'dev/agent-policy',
+      'dev/agent-policy.mts',
       'dev/pr-description',
       'static-code-analysis',
     ])
@@ -77,6 +79,8 @@ describe('tooling dependency-cruiser runner', () => {
     const representativePaths = [
       'ci/example.mts',
       'dev/agent-issue-labels/example.mts',
+      'dev/agent-policy/example.mts',
+      'dev/agent-policy.mts',
       'dev/pr-description/example.mts',
       'static-code-analysis/example.mts',
     ]

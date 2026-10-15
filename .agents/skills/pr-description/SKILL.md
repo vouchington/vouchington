@@ -14,8 +14,11 @@ Claude Code and Codex load `vouchington-workflow:pr-description`; Grok, Cursor, 
 Use the `pr_create`, `pr_update`, and `pr_validate` tools of the `vouchington-tooling` MCP server
 rather than raw `gh pr create` or `gh pr edit --body*`, which the Codex hook blocks. The tools take
 the structured `title`, `summary`, `impact`, `relatedIssues`, `details`, `agent`, `mode`, and
-`workspaceSetup` input and render the H2 body themselves, so put no headings or provenance lines in
-those fields. `pr_create` adds the milestone and project of the related issues. The checkout policy
+`workspaceSetup` input and render the H2 body themselves, so put no `##` headings or provenance
+lines in those fields. `details` entries may use `###` headings where a workflow names required
+sections (for example `### Root cause`, `### Implementation choice`, `### Options considered`).
+When the branch diff exceeds the split thresholds, `pr_create` fails unless `details` has a
+`### Large diff` entry explaining why the change stays whole. `pr_create` adds the milestone and project of the related issues. The checkout policy
 ([`dev/agent-policy.mts`](../../../dev/agent-policy.mts)) enforces exactly one visible `## Summary` and `## Impact`, `## Related issues`, `Workspace setup:`, and tool-injected `Agent:`,
 `Device:`, and `Worktree:` provenance lines. It performs issue-supersession, milestone-completion, and project-completion audits. Include a
 Mermaid diagram when it helps reviewers understand the change; that is description guidance.

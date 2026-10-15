@@ -86,7 +86,8 @@ describe('validatePullRequest', () => {
     const result = await validatePullRequest(base)
     expect(result.errors).toEqual([])
     expect(result.warnings).toEqual([expect.stringContaining('#123 OPEN issue: Issue 123')])
-    expect(gh.processDiffCommand).not.toHaveBeenCalled()
+    // Create measures only the local branch diff; the PR diff reads need an existing PR.
+    expect(gh.processDiffCommand).toHaveBeenCalledOnce()
     const calls = gh.runGh.mock.calls.map(([args]) => `${args[0]} ${args[1]}`)
     expect(calls).not.toContain('pr view')
     expect(calls).not.toContain('api graphql')
@@ -224,6 +225,24 @@ describe('pullRequestDefaults', () => {
     expect(defaults).toEqual({ repositories: [REPO] })
     const urls = gh.runGh.mock.calls.map(([args]) => args[1]).filter(a => a?.startsWith('repos/'))
     expect(urls).toEqual([`repos/${REPO}/issues/2`, `repos/${REPO}/issues/1`])
+  })
+
+  it('keeps metadata from other issues when one lookup fails', async () => {
+    install({ milestone: 'M', projects: [PROJECT] })
+    const inner = gh.runGh.getMockImplementation()!
+    gh.runGh.mockImplementation(async args => {
+      if (args[1] === `repos/${REPO}/issues/9`) throw new Error('deleted')
+      return inner(args)
+    })
+    const relatedIssues = [
+      { number: 9, relation: 'closes' as const, reason: 'r' },
+      { number: 5, relation: 'refs' as const, reason: 'r' },
+    ]
+    expect(await pullRequestDefaults({ title: 't', base: 'main', relatedIssues })).toEqual({
+      milestone: 'M',
+      project: 'Roadmap',
+      repositories: [REPO],
+    })
   })
 
   it('omits metadata when GitHub lookups fail', async () => {
