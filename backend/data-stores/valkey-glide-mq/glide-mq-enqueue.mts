@@ -1,4 +1,5 @@
 import onError from '@modules/on-error'
+import { publishEnqueueAdmission } from './glide-mq-admission.mts'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
 import type { JobOptions, Queue } from 'glide-mq'
 import { retryTransientEnqueue } from './glide-mq-retry.mts'
@@ -81,6 +82,13 @@ export function createEnqueueFunction<TData, TName extends string, TCallContext 
         ? retryTransientEnqueue(() => options.queue.add(options.jobName, data, merged))
         : options.queue.add(options.jobName, data, merged)
     reportRejectedEnqueue(job, options, 1, callContext)
+    publishEnqueueAdmission({
+      queue: options.queue,
+      queueName: options.queueName,
+      jobName: options.jobName,
+      inputs: [data],
+      completion: job,
+    })
     const trackJobEnqueueFn = options.trackJobEnqueue ?? trackJobEnqueue
     trackJobEnqueueFn(options.queueName, options.jobName)
     return job as ReturnType<AddQueue['add']>
@@ -119,6 +127,13 @@ export function createBulkEnqueueFunction<
         ? retryTransientEnqueue(() => options.queue.addBulk(jobs))
         : options.queue.addBulk(jobs)
     reportRejectedEnqueue(promise, options, inputs.length, callContext)
+    publishEnqueueAdmission({
+      queue: options.queue,
+      queueName: options.queueName,
+      jobName: options.jobName,
+      inputs: jobs.map(job => job.data),
+      completion: promise,
+    })
     const trackJobEnqueueFn = options.trackJobEnqueue ?? trackJobEnqueue
     trackJobEnqueueFn(options.queueName, options.jobName, inputs.length)
     return promise as ReturnType<AddBulkQueue['addBulk']>
