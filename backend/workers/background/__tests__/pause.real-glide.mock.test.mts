@@ -11,11 +11,8 @@ import { createBackgroundProcessor } from '../processors.mts'
 import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { backgroundQueueConfig } from '@queues/background/config'
-import {
-  invalidateQueueDomainPause,
-  pauseQueueDomain,
-  resumeQueueDomain,
-} from '@services/queue-domain-controls'
+import { pauseQueueDomain, resumeQueueDomain } from '@services/queue-domain-controls'
+import { invalidateQueueDomainPause } from '@services/queue-domain-controls/pause-cache'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 

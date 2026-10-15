@@ -5,8 +5,4 @@ export {
   runningQueueDomainControl,
 } from './read.mts'
 export { pauseQueueDomain, resumeQueueDomain } from './write.mts'
-export {
-  invalidateQueueDomainPause,
-  isQueueDomainPaused,
-  watchQueueDomainControls,
-} from './pause-cache.mts'
+export { isQueueDomainPaused, watchQueueDomainControls } from './pause-cache.mts'

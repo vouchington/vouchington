@@ -10,13 +10,13 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { backgroundQueueConfig } from '@queues/background/config'
 import {
   getQueueDomainControl,
-  invalidateQueueDomainPause,
   isQueueDomainPaused,
   listQueueDomainControls,
   pauseQueueDomain,
   resumeQueueDomain,
   watchQueueDomainControls,
 } from './index.mts'
+import { invalidateQueueDomainPause } from './pause-cache.mts'
 
 // Synthetic domain ids keep these rows apart from the registered domains other tests run workers for.
 const createdDomains: string[] = []
