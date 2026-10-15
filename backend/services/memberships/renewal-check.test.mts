@@ -1,3 +1,9 @@
+import {
+  createPlusSku,
+  createObservedRenewingMembership,
+  readOwnedRenewalCandidates,
+} from '@voucha/test-helpers/renewal-notification-fixtures'
+import { RenewalBusinessTime } from './renewal-business-time.mts'
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import {
@@ -15,49 +21,10 @@ import {
 } from './renewal-notification-delivery.mts'
 import { createMembership } from './create.mts'
 
-function createPlusSku(
-  priceMinorUnits: number,
-  options: {
-    currency_code?: string
-    provider_application_id: string
-    stripe_price_id?: string
-  },
-) {
-  return createTestSku({
-    plan: 'plus',
-    price_minor_units: priceMinorUnits,
-    interval: 'monthly',
-    ...options,
-  })
-}
-
-async function createObservedRenewingMembership(
-  userId: string,
-  currentSku: { id: string; membership_provider_product_id: string },
-  renewalSku: { membership_provider_product_id: string },
-  providerApplicationId: string,
-  renewalEffectiveAt: Date,
-) {
-  const membership = await createMembership({
-    userId,
-    plan: 'plus',
-    skuId: currentSku.id,
-    expiresAt: renewalEffectiveAt,
-    stripeSubscriptionId: `sub_renewal_${randomUUID()}`,
-    providerEnvironment: 'production',
-    providerApplicationId,
-  })
-  const observation = await attachTestStripeProductionProviderObservation({
-    membership_id: membership.id,
-    membership_provider_product_id: currentSku.membership_provider_product_id,
-    renewal_membership_provider_product_id: renewalSku.membership_provider_product_id,
-    renewal_effective_at: renewalEffectiveAt,
-  })
-  return { membership, ...observation }
-}
+const businessTime = new RenewalBusinessTime(new Date('2030-01-31T23:59:59.999Z'))
 
 function renewalEffectiveAt(daysFromNow = 15): Date {
-  return new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000)
+  return new Date(Date.parse(businessTime.iso) + daysFromNow * 24 * 60 * 60 * 1000)
 }
 
 describe('renewal-check', () => {
@@ -158,7 +125,7 @@ describe('renewal-check', () => {
         effectiveAt,
       )
 
-      const results = await getUsersApproachingRenewalWithPriceIncrease()
+      const results = await readOwnedRenewalCandidates(firstRenewal.membership.id, businessTime)
       const found = results.find(r => r.user_id === renewalUser.id)
       expect(found).toBeDefined()
       expect(found!.current_price).toEqual({ amount: 500, currency: 'usd' })
@@ -169,6 +136,7 @@ describe('renewal-check', () => {
         firstRenewal.membership.id,
         renewalUser.id,
         found!.membership_provider_observation_id,
+        businessTime,
       )
       expect(firstClaimToken).toMatchObject({
         leaseToken: expect.any(String),
@@ -179,6 +147,7 @@ describe('renewal-check', () => {
           firstRenewal.membership.id,
           renewalUser.id,
           found!.membership_provider_observation_id,
+          businessTime,
         ),
       ).resolves.toBeNull()
       const secondRenewal = await attachTestStripeProductionProviderObservation({
@@ -187,10 +156,16 @@ describe('renewal-check', () => {
         renewal_membership_provider_product_id: newSku.membership_provider_product_id,
         renewal_effective_at: effectiveAt,
       })
-      const claimedResults = await getUsersApproachingRenewalWithPriceIncrease()
+      const claimedResults = await readOwnedRenewalCandidates(
+        firstRenewal.membership.id,
+        businessTime,
+      )
       expect(claimedResults.some(r => r.user_id === renewalUser.id)).toBe(false)
       await ageTestMembershipRenewalPriceIncreaseClaim(firstRenewal.membership.id)
-      const staleClaimResults = await getUsersApproachingRenewalWithPriceIncrease()
+      const staleClaimResults = await readOwnedRenewalCandidates(
+        firstRenewal.membership.id,
+        businessTime,
+      )
       expect(
         staleClaimResults.find(r => r.user_id === renewalUser.id)
           ?.membership_provider_observation_id,
@@ -199,6 +174,7 @@ describe('renewal-check', () => {
         firstRenewal.membership.id,
         renewalUser.id,
         secondRenewal.membership_provider_observation_id,
+        businessTime,
       )
       expect(secondClaimToken).toMatchObject({
         leaseToken: expect.any(String),
@@ -210,10 +186,14 @@ describe('renewal-check', () => {
           renewalUser.id,
           secondRenewal.membership_provider_observation_id,
           secondClaimToken!,
+          businessTime,
         ),
       ).resolves.toBe(true)
       await ageTestMembershipRenewalPriceIncreaseClaim(firstRenewal.membership.id)
-      const attemptedResults = await getUsersApproachingRenewalWithPriceIncrease()
+      const attemptedResults = await readOwnedRenewalCandidates(
+        firstRenewal.membership.id,
+        businessTime,
+      )
       expect(attemptedResults.some(r => r.user_id === renewalUser.id)).toBe(false)
       await expect(
         markRenewalPriceIncreaseNotificationDelivered(
@@ -223,7 +203,10 @@ describe('renewal-check', () => {
           secondClaimToken!,
         ),
       ).resolves.toBe(false)
-      const deliveredResults = await getUsersApproachingRenewalWithPriceIncrease()
+      const deliveredResults = await readOwnedRenewalCandidates(
+        firstRenewal.membership.id,
+        businessTime,
+      )
       expect(deliveredResults.some(r => r.user_id === renewalUser.id)).toBe(false)
     })
 
@@ -237,7 +220,7 @@ describe('renewal-check', () => {
         provider_application_id: providerApplicationId,
       })
       const user = await createTestUser()
-      await createObservedRenewingMembership(
+      const renewal = await createObservedRenewingMembership(
         user.id,
         usdSku,
         eurSku,
@@ -245,7 +228,7 @@ describe('renewal-check', () => {
         renewalEffectiveAt(),
       )
 
-      const results = await getUsersApproachingRenewalWithPriceIncrease()
+      const results = await readOwnedRenewalCandidates(renewal.membership.id, businessTime)
       expect(results.some(result => result.user_id === user.id)).toBe(false)
     })
   })

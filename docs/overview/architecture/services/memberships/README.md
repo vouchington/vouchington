@@ -111,6 +111,13 @@ marker prevents a duplicate after an ambiguous external result. Direct-source fa
 transfers the complete work row atomically, preserving its generation, lease deadline and outcome;
 the membership projection itself carries no notification state.
 
+Renewal discovery, preparation, claim, and the final pre-send check may share one internally captured
+`RenewalBusinessTime`. It copies and validates the supplied business instant once, then applies the
+same exclusive lower and inclusive 30-day upper eligibility bounds throughout that operation.
+Omitting it preserves PostgreSQL `CURRENT_TIMESTAMP` eligibility. Operational lease expiry,
+retry availability, delivery timestamps, audit records, and UUID generation remain database-owned;
+this business-time input is not a worker payload or REST/MCP parameter.
+
 Refund requests must match exactly one refundable invoice payment. When both a Stripe charge ID and
 payment-intent ID are supplied, both identifiers must belong to the same refundable payment record;
 otherwise the service rejects the request before calling Stripe.

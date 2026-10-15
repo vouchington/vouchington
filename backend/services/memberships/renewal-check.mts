@@ -1,3 +1,4 @@
+import type { RenewalBusinessTime } from './renewal-business-time.mts'
 import { getMembershipWorkLimit, getMembershipWorkLimits } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -9,7 +10,9 @@ import {
 export async function getUsersApproachingRenewalWithPriceIncrease(
   afterId?: string,
   batchSize = getMembershipWorkLimits().batchSize,
+  time?: RenewalBusinessTime,
 ): Promise<RenewalPriceIncreaseUser[]> {
+  const observedAt = time?.iso ?? null
   const { rows } = await read(sql`/* getUsersApproachingRenewalWithPriceIncrease */
     SELECT m.user_id, m.id AS membership_id,
       observation.id AS membership_provider_observation_id,
@@ -41,17 +44,17 @@ export async function getUsersApproachingRenewalWithPriceIncrease(
     WHERE (${afterId ?? null}::uuid IS NULL OR m.id > ${afterId ?? null}::uuid)
       AND m.projection_ended_at IS NULL
       AND state.should_auto_renew = true AND state.cancelled_at IS NULL
-      AND state.past_due_at IS NULL AND state.expires_at > CURRENT_TIMESTAMP
+      AND state.past_due_at IS NULL AND state.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
       AND observation.cancelled_at IS NULL AND observation.past_due_at IS NULL
-      AND observation.expires_at > CURRENT_TIMESTAMP
+      AND observation.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
       AND m.cancelled_at IS NULL
       AND m.expired_at IS NULL
       AND m.past_due_at IS NULL
       AND m.paused_at IS NULL
       AND m.should_cancel_at_period_end = false
-      AND m.expires_at > CURRENT_TIMESTAMP
-      AND observation.renewal_effective_at > CURRENT_TIMESTAMP
-      AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
+      AND m.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
+      AND observation.renewal_effective_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
+      AND observation.renewal_effective_at <= COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP) + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
       AND (
@@ -84,7 +87,9 @@ export async function claimRenewalPriceIncreaseNotification(
   userId: string,
   membershipProviderObservationId: string,
   generation: string,
+  time?: RenewalBusinessTime,
 ): Promise<RenewalPriceIncreaseNotificationClaim | null> {
+  const observedAt = time?.iso ?? null
   const leaseHours = getMembershipWorkLimit('renewal_claim_hours')
   const { rows } =
     await write<RenewalPriceIncreaseNotificationClaim>(sql`/* claimRenewalPriceIncreaseNotification */
@@ -113,15 +118,15 @@ export async function claimRenewalPriceIncreaseNotification(
       AND state.membership_product_id = m.membership_product_id
       AND state.source_kind = 'direct' AND state.should_auto_renew = true
       AND state.cancelled_at IS NULL AND state.past_due_at IS NULL
-      AND state.expires_at > CURRENT_TIMESTAMP
+      AND state.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
       AND observation.cancelled_at IS NULL AND observation.past_due_at IS NULL
-      AND observation.expires_at > CURRENT_TIMESTAMP
+      AND observation.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
       AND m.projection_ended_at IS NULL AND m.cancelled_at IS NULL
       AND m.expired_at IS NULL AND m.past_due_at IS NULL AND m.paused_at IS NULL
       AND m.should_cancel_at_period_end = false
-      AND m.expires_at > CURRENT_TIMESTAMP
-      AND observation.renewal_effective_at > CURRENT_TIMESTAMP
-      AND observation.renewal_effective_at <= CURRENT_TIMESTAMP + INTERVAL '30 days'
+      AND m.expires_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
+      AND observation.renewal_effective_at > COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP)
+      AND observation.renewal_effective_at <= COALESCE(${observedAt}::timestamptz, CURRENT_TIMESTAMP) + INTERVAL '30 days'
       AND observation.renewal_price_currency_code = observation.observed_price_currency_code
       AND observation.renewal_price_minor_units > observation.observed_price_minor_units
         AND work.generation = ${generation}::bigint
