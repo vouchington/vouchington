@@ -130,7 +130,22 @@ jobs:
         run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"
       - name: Prove pruning on migrated explicit partitions
         timeout-minutes: 3
+        env:
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
         run: node backend/scripts/explain-analyze/pruning/run.mts
+      - name: Convert native pruning coverage with published c8
+        timeout-minutes: 1
+        # Use c8's declared public CLI entrypoint: Knip treats the bare c8 binary as a
+        # child-command wrapper and otherwise mistakes its report subcommand for a binary.
+        run: >-
+          node node_modules/c8/bin/c8.js report
+          --temp-directory backend/scripts/explain-analyze/output/pruning-v8
+          --reports-dir backend/scripts/explain-analyze/output/retirement-coverage
+          --reporter json --reporter json-summary --reporter lcovonly
+          --extension .mts --all --src backend
+          --include 'backend/data-stores/psql/migration-runner/retire-monthly-partitions.mts'
+          --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction}.mts'
       - name: Upload EXPLAIN ANALYZE results
         if: always()
         continue-on-error: true

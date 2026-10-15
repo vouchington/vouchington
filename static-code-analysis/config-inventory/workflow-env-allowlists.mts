@@ -61,6 +61,9 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'HARNESS_REQUIRED_LABELS',
   'HARNESS_RESUME_SESSION_ID',
   'HARNESS_TIMEOUT',
+  // Node.js consumes this before application code to disable its compile cache for precise V8
+  // coverage in the native EXPLAIN preflight; it is not a repository TypeScript environment read.
+  'NODE_DISABLE_COMPILE_CACHE',
   'NODE_V8_COVERAGE',
   // Standard env var (https://no-color.org) read by wrangler itself, not repo TypeScript code; keeps
   // the deploy step's Current Version ID scrape free of ANSI escape codes.

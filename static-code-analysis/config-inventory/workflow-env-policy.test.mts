@@ -37,6 +37,8 @@ describe('workflow env policy', () => {
         '          USED_BY_SHELL: value',
         '          POSTGRES_DB: postgres',
         '          VITEST_REPORT_EXPECTATIONS: context',
+        '          NODE_DISABLE_COMPILE_CACHE: "1"',
+        '          NODE_DISABLE_COMPILE_CACHE_CUSTOM: stale',
         '        run: echo "$USED_BY_SHELL $PORT_NUMBER"',
       ].join('\n'),
       'backend/service.mts': 'process.env.CODE_ENV\n',
@@ -66,6 +68,7 @@ describe('workflow env policy', () => {
       'KEEP_MIN',
       'PROTECTED_TAG_CONTAINS',
       'PROTECTED_TAG_PREFIX',
+      'NODE_DISABLE_COMPILE_CACHE_CUSTOM',
     ]) {
       expect(errors).toContain(
         `workflow env ${name} in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
@@ -81,6 +84,7 @@ describe('workflow env policy', () => {
       'USED_BY_SHELL',
       'POSTGRES_DB',
       'VITEST_REPORT_EXPECTATIONS',
+      'NODE_DISABLE_COMPILE_CACHE',
     ]) {
       expect(errors).not.toEqual(
         expect.arrayContaining([
