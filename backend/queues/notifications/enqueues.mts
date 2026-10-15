@@ -29,6 +29,7 @@ export { enqueueCheckCopyrightReviewTarget } from './enqueues/copyright-review-t
 export { enqueueSweepCopyrightEvidenceRetention } from './enqueues/copyright-evidence-retention.mts'
 export {
   enqueueSubmitDsaStatementOfReasons,
+  enqueueBulkSubmitDsaStatementOfReasons,
   enqueueReconcileDsaStatementSubmissions,
 } from './enqueues/copyright-dsa-submission.mts'
 const enqueueBulkFollowNotificationJobs = createBulkEnqueueFunction<

@@ -1,4 +1,4 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import { PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
 import { notifications } from '../queues.mts'
@@ -8,6 +8,23 @@ const enqueueSubmit = createEnqueueFunction<
   { submissionId: string },
   'processSubmitDsaStatementOfReasons'
 >({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processSubmitDsaStatementOfReasons' })
+const submitOptions = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
+  removeOnComplete: 100,
+  removeOnFail: 100,
+  priority: PRIORITY_DEFAULT,
+}
+export const enqueueBulkSubmitDsaStatementOfReasons = createBulkEnqueueFunction<
+  string,
+  { submissionId: string },
+  'processSubmitDsaStatementOfReasons'
+>({
+  queue: notifications,
+  queueName: QUEUE_NAME,
+  jobName: 'processSubmitDsaStatementOfReasons',
+  buildJob: submissionId => ({ data: { submissionId }, opts: submitOptions }),
+})
 const enqueueReconcile = createEnqueueFunction<
   Record<string, never>,
   'processReconcileDsaStatementSubmissions'
@@ -19,16 +36,7 @@ const enqueueReconcile = createEnqueueFunction<
 
 /** The durable item lease and ledger fence duplicate jobs; replay must enqueue immediately. */
 export function enqueueSubmitDsaStatementOfReasons(submissionId: string): EnqueueReturnType {
-  return enqueueSubmit(
-    { submissionId },
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
-    },
-  )
+  return enqueueSubmit({ submissionId }, submitOptions)
 }
 
 export function enqueueReconcileDsaStatementSubmissions(): EnqueueReturnType {

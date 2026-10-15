@@ -32,9 +32,9 @@ export async function runCopyrightSweepStage(
 }
 
 /** Settles each page before advancing past it; returns the item errors. */
-export async function walkCopyrightSweep(
-  searchPage: (page: CopyrightSweepPageRequest) => Promise<CopyrightSweepIdPage>,
-  settlePage: (ids: readonly string[]) => Promise<unknown[]>,
+export async function walkCopyrightSweep<TPage extends CopyrightSweepIdPage>(
+  searchPage: (page: CopyrightSweepPageRequest) => Promise<TPage>,
+  settlePage: (ids: readonly string[], page: TPage) => Promise<unknown[]>,
   options: CopyrightSweepWalkOptions = {},
 ): Promise<unknown[]> {
   const errors: unknown[] = []
@@ -42,7 +42,7 @@ export async function walkCopyrightSweep(
   let cursor = options.after
   while (budget.remainingPages > 0) {
     budget.remainingPages--
-    let page: CopyrightSweepIdPage
+    let page: TPage
     try {
       // oxlint-disable-next-line no-await-in-loop -- one selected stage consumes one shared page allowance.
       page = await searchPage({ ...(cursor ? { after: cursor } : {}), limit: budget.batchSize })
@@ -52,7 +52,7 @@ export async function walkCopyrightSweep(
       throw err
     }
     // oxlint-disable-next-line no-await-in-loop -- preserves at-least-once handling before cursor advance.
-    errors.push(...(await settlePage(page.results)))
+    errors.push(...(await settlePage(page.results, page)))
     cursor = page.page_info.has_next_page ? (page.page_info.end_cursor ?? undefined) : undefined
     if (!cursor) return errors
     if (options.singlePage) break

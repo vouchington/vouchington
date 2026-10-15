@@ -82,6 +82,8 @@ due submissions. `processSubmitDsaStatementOfReasons` receives only `{ submissio
 work item for 15 minutes, rechecks the date against its restriction, and sends its immutable payload
 to the Commission's single-statement endpoint. Both jobs return without enqueueing or HTTP while
 the switch is off or the date is unset. Blank credentials leave items pending and write no attempt.
+The reconciliation worker awaits one bulk queue add for each bounded due-submission page; every job
+keeps the same retry, priority, and retention options as a direct submission enqueue.
 
 A restriction whose payload build throws an `HttpError` (the only error class the sweep absorbs) is
 recorded as a payload-less terminal work item (`failed_at`, `http_<status>` `failure_code`) with one
@@ -172,6 +174,8 @@ rechecks the global owner registry under the intent lease before recording a rec
 404/410 cleanup; a stale provider result is ignored.
 
 Copyright reconciliation caps pages per stage through `copyright-notices-work-config`. Continuations carry only unfinished stage cursors and the action sweep evaluation time. They advance the tail even when an individual item fails; retrying the original job and the periodic root sweep retain failed work.
+
+The due statutory restoration page reads candidate targets with its bounded deadline IDs in one PostgreSQL call. The worker settles deadlines in ID order after that read; each candidate still takes its placement advisory lock, notice and target row locks, and current-state revalidation before committing an intent. A failed page read retains the same retry boundary.
 
 The digest dispatch enqueue accepts an internal queue resource option. It defaults to the normal
 notifications queue and preserves the dispatch payload, retry, priority, and deduplication policy.

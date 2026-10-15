@@ -7,44 +7,61 @@ import {
   type CopyrightSweepPageOptions,
 } from './sweep-id-pages.mts'
 
+type RestoreCandidate = {
+  notice_id: string
+  target_id: string
+  restriction_id: string
+  deadline_id: string
+  placement_revision: number
+}
+
+export type DueRestorationPage = CopyrightSweepIdPage & {
+  candidates: Record<string, RestoreCandidate[]>
+}
+
 /** Pages the deadlines whose day-ten US-DMCA restoration is due at `now` and not yet materialized. */
 export function searchDueStatutoryCopyrightRestorationDeadlineIds(
   options: CopyrightSweepPageOptions & { now: Date },
-): Promise<CopyrightSweepIdPage> {
+): Promise<DueRestorationPage> {
   const query = sql`/* searchDueStatutoryCopyrightRestorationDeadlineIds */
-    SELECT DISTINCT deadline.id`
+    SELECT DISTINCT ON (deadline.id) deadline.id,
+      jsonb_agg(jsonb_build_object(
+        'notice_id', notice.id, 'target_id', target.id,
+        'restriction_id', restriction.id, 'deadline_id', deadline.id,
+        'placement_revision', target.placement_revision
+      )) OVER (PARTITION BY deadline.id) AS candidates`
   appendDueStatutoryRestorationSource(query, options.now)
+  let candidateRows: Array<{ id: string; candidates: RestoreCandidate[] }> = []
   return queryCopyrightSweepIdPage(
     options,
     'Invalid copyright restoration deadline cursor',
     'searchDueStatutoryCopyrightRestorationDeadlineIds',
     'restorationDeadline',
     query,
-    statement => read(statement),
-  )
+    async statement => {
+      // Eligibility gained after this page read waits for the next scheduled sweep;
+      // each selected target still takes its locks and revalidates before an intent is created.
+      const result = await read<{ id: string; candidates: RestoreCandidate[] }>(statement)
+      candidateRows = result.rows
+      return result
+    },
+  ).then(page => ({
+    ...page,
+    candidates: Object.fromEntries(
+      candidateRows.slice(0, page.results.length).map(row => [row.id, row.candidates]),
+    ),
+  }))
 }
 
 /** Materializes one deadline's day-ten US-DMCA restoration intents from durable deadline state.
  * This is the primary statutory dispatcher; queue reconciliation only recovers an already-created
  * intent. */
 export async function createDueStatutoryCopyrightRestoreIntentsForDeadline(
-  deadlineId: string,
+  candidates: readonly RestoreCandidate[],
   now: Date,
 ): Promise<number> {
-  const query = sql`/* createDueStatutoryCopyrightRestoreIntentsForDeadline */
-    SELECT notice.id AS notice_id, target.id AS target_id, restriction.id AS restriction_id,
-      deadline.id AS deadline_id, target.placement_revision`
-  appendDueStatutoryRestorationSource(query, now)
-  query.append(sql`\n      AND deadline.id = ${deadlineId}`)
-  const { rows } = await read<{
-    notice_id: string
-    target_id: string
-    restriction_id: string
-    deadline_id: string
-    placement_revision: number
-  }>(query)
   const outcomes = await Promise.allSettled(
-    rows.map(row =>
+    candidates.map(row =>
       createEligibleCopyrightRestoreIntent({
         noticeId: row.notice_id,
         targetId: row.target_id,

@@ -16,7 +16,10 @@ import {
 } from '@voucha/test-helpers/dsa-statement-submission-fixtures'
 import { useDsaStatementSubmissions } from '@voucha/test-helpers/dsa-switches'
 import { copyrightConfig } from '@services/copyright-notices/config'
-import { enqueueSubmitDsaStatementOfReasons } from '@queues/notifications/enqueues'
+import {
+  enqueueBulkSubmitDsaStatementOfReasons,
+  enqueueSubmitDsaStatementOfReasons,
+} from '@queues/notifications/enqueues'
 import { notifications } from '@queues/notifications/queues'
 import { processDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission'
 import { replayDsaStatementSubmission } from '@services/copyright-notices/dsa-statement-submission-replay'
@@ -155,11 +158,11 @@ describe('DSA statement reconciliation notification processor', () => {
       toCopyrightSweepIdPage([{ id: firstId }, { id: secondId }], 100),
     )
     const enqueuedJobs: unknown[] = []
-    const enqueue = async (id: string) => {
-      const jobId = await enqueueSubmitDsaStatementOfReasons(id)
-      enqueuedJobs.push(await readEnqueuedJob(notifications, jobId))
-      return jobId
-    }
+    const enqueue = vi.fn<typeof enqueueBulkSubmitDsaStatementOfReasons>(async ids => {
+      const jobs = await enqueueBulkSubmitDsaStatementOfReasons(ids)
+      for (const job of jobs) enqueuedJobs.push(await readEnqueuedJob(notifications, job))
+      return jobs
+    })
 
     await expect(
       processReconcileDsaStatementSubmissions({
@@ -169,11 +172,49 @@ describe('DSA statement reconciliation notification processor', () => {
       }),
     ).resolves.toEqual({ enqueued: 2 })
     expect(search).toHaveBeenCalledExactlyOnceWith({ from, limit: 100 })
+    expect(enqueue).toHaveBeenCalledExactlyOnceWith([firstId, secondId])
     expect(enqueuedJobs).toMatchObject([
-      { name: 'processSubmitDsaStatementOfReasons', data: { submissionId: firstId } },
-      { name: 'processSubmitDsaStatementOfReasons', data: { submissionId: secondId } },
+      {
+        name: 'processSubmitDsaStatementOfReasons',
+        data: { submissionId: firstId },
+        opts: {
+          attempts: 3,
+          priority: 10,
+          backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+          removeOnComplete: 100,
+          removeOnFail: 100,
+        },
+      },
+      {
+        name: 'processSubmitDsaStatementOfReasons',
+        data: { submissionId: secondId },
+        opts: {
+          attempts: 3,
+          priority: 10,
+          backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
+          removeOnComplete: 100,
+          removeOnFail: 100,
+        },
+      },
     ])
     expect(await readTestDsaAttempts(firstId)).toEqual([])
     expect(await readTestDsaAttempts(secondId)).toEqual([])
+  })
+
+  it('fails the reconciliation job if bulk page admission fails', async () => {
+    const submissionId = await createTestDsaSubmission()
+    const failure = new Error('bulk enqueue failed')
+    const enqueue = vi.fn<typeof enqueueBulkSubmitDsaStatementOfReasons>(async () => {
+      throw failure
+    })
+    await expect(
+      processReconcileDsaStatementSubmissions({
+        prepare: async () => new Date('2020-01-01T00:00:00.000Z'),
+        search: async () => toCopyrightSweepIdPage([{ id: submissionId }], 100),
+        enqueue,
+      }),
+    ).rejects.toBe(failure)
+    expect(enqueue).toHaveBeenCalledExactlyOnceWith([submissionId])
+    expect(await readTestDsaAttempts(submissionId)).toEqual([])
   })
 })

@@ -144,9 +144,9 @@ export async function processReconcileCopyrightActionIntents(
       runCopyrightSweepStage(tally, () =>
         walkCopyrightSweep(
           page => deps.searchDueRestorations({ now: evaluatedAt, ...page }),
-          ids =>
+          (ids, page) =>
             settleCopyrightSweepSequentially(ids, id =>
-              deps.createDueRestoreIntents(id, evaluatedAt),
+              deps.createDueRestoreIntents(page.candidates[id]!, evaluatedAt),
             ),
           options('restorations'),
         ),

@@ -23,7 +23,11 @@ import {
 } from './index.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
-import { createDueStatutoryCopyrightRestoreIntentsForDeadline } from './statutory-restoration-schedule.mts'
+import {
+  createDueStatutoryCopyrightRestoreIntentsForDeadline,
+  searchDueStatutoryCopyrightRestorationDeadlineIds,
+} from './statutory-restoration-schedule.mts'
+import { encodeUuidCursorBefore } from '../../test-helpers/modules/pagination/uuid-cursors.mts'
 
 describe('deleted community image setters and copyright response flows', () => {
   it('keeps a community restriction withheld when its setter is deleted without a counter-notice', async () => {
@@ -201,8 +205,17 @@ describe('deleted community image setters and copyright response flows', () => {
       const deadline = reviewed?.deadlines.find(row => row.id === review.deadlineId)
       expect(deadline).toMatchObject(window)
       const dueAt = new Date(window.earliest_restoration_at.getTime() + 60_000)
+      const duePage = await searchDueStatutoryCopyrightRestorationDeadlineIds({
+        now: dueAt,
+        after: encodeUuidCursorBefore(review.deadlineId),
+        limit: 1,
+      })
+      expect(duePage.results).toEqual([review.deadlineId])
       await expect(
-        createDueStatutoryCopyrightRestoreIntentsForDeadline(review.deadlineId, dueAt),
+        createDueStatutoryCopyrightRestoreIntentsForDeadline(
+          duePage.candidates[review.deadlineId] ?? [],
+          dueAt,
+        ),
       ).resolves.toBe(1)
       const due = await getCopyrightNoticePrivateAggregate(restricted.noticeId)
       const restore = due?.actionIntents.find(
