@@ -24,6 +24,8 @@ rule:
               - pattern: 'export const $NAME = new Queue<$T>($$$)'
               - pattern: 'export const $NAME = createQueue($$$)'
               - pattern: 'export const $NAME = createQueue<$T>($$$)'
+              # A domain of the shared `background` queue names that one queue for its own code.
+              - pattern: 'export const $NAME = background'
 examples:
   - code: 'export function createWorker() {}'
     isValid: false
@@ -35,5 +37,8 @@ examples:
     isValid: true
     file: 'backend/queues/email/queues.mts'
   - code: "const emailQueue = createQueue('email')"
+    isValid: true
+    file: 'backend/queues/email/queues.mts'
+  - code: 'export const emailQueue = background'
     isValid: true
     file: 'backend/queues/email/queues.mts'

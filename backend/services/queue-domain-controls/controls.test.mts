@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import sql from 'sql-template-strings'
 import { afterAll, describe, expect, it } from 'vitest'
-import { write } from '@data-stores/psql'
 import { queueDomainControlsPubSub } from '@data-stores/valkey-pubsub'
 import { createTestUser } from '@voucha/test-helpers'
+import {
+  insertPausedQueueDomainControlForTest,
+  removeQueueDomainControlsForTest,
+} from '../../test-helpers/queue-domain-controls.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { backgroundQueueConfig } from '@queues/background/config'
 import {
@@ -26,9 +28,7 @@ function newDomain(): string {
 
 describe('queue domain controls', () => {
   afterAll(async () => {
-    await write(
-      sql`/* removeTestQueueDomainControls */ DELETE FROM queue_domain_controls WHERE domain = ANY(${createdDomains})`,
-    )
+    await removeQueueDomainControlsForTest(createdDomains)
     await queueDomainControlsPubSub.closeSubscriber()
   })
 
@@ -85,10 +85,7 @@ describe('queue domain controls', () => {
       await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
 
       // A pause written without publishing: this process still trusts the entry it cached.
-      await write(
-        sql`/* pauseTestQueueDomainWithoutPublishing */
-          INSERT INTO queue_domain_controls (domain, paused_at) VALUES (${domain}, clock_timestamp())`,
-      )
+      await insertPausedQueueDomainControlForTest(domain)
       await expect(isQueueDomainPaused(domain)).resolves.toBe(false)
 
       // The published change clears the entry on its own, without waiting out the cache lifetime.

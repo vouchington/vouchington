@@ -4,6 +4,10 @@ severity: error
 message: 'worker leaf files may only export createWorker instances'
 files:
   - 'backend/workers/*/workers/*.mts'
+ignores:
+  # The shared background worker's factory: one worker serves every domain, so its leaf exports the
+  # factory (and its options type) rather than a single createWorker instance.
+  - 'backend/workers/background/workers/create-worker.mts'
 rule:
   any:
     - pattern: 'export default $EXP'
