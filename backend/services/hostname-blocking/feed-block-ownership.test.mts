@@ -1,7 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { beginTransaction } from '@data-stores/psql'
-import { upsertUrlHostnamesForBlocking } from '@services/urls-hostnames/upsert'
-import { lockTestHostnameNowait } from '@voucha/test-helpers/entities/hostname-feed-concurrency'
+import { stageTestHostnameBeforeBlocking } from '@voucha/test-helpers/entities/hostname-feed-concurrency'
 import { v7 as uuidv7 } from 'uuid'
 import {
   createTestBlacklistSource,
@@ -31,12 +29,7 @@ describe('feed-owned hostname blocks', () => {
     await insertTestUrlHostname({ id: childId, hostname: `child.${hostname}` })
     await insertTestUrlHostname({ id: rootId, hostname })
 
-    await using stage = await beginTransaction()
-    await upsertUrlHostnamesForBlocking(moderator.id, [hostname], stage)
-    await using probe = await beginTransaction()
-    await lockTestHostnameNowait(rootId, probe)
-    await probe.commit()
-    await stage.commit()
+    await stageTestHostnameBeforeBlocking(moderator.id, hostname, rootId)
     expect((await getTestHostnameRow(rootId))?.publicly_introduced_at).toBeNull()
 
     const result = await upsertAndBlockHostname(moderator.id, hostname)

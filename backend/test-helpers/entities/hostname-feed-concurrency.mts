@@ -1,6 +1,7 @@
-import type { TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import type { DomainBlacklistSourceId } from '@voucha/types/entities/domain-blacklist-source'
 import sql from 'sql-template-strings'
+import { upsertUrlHostnamesForBlocking } from '../../services/urls-hostnames/upsert.mts'
 
 /** Simulate a replica missing this test's already-committed hostname row. */
 export function hideTestHostnameFromReplicaRead(
@@ -46,4 +47,18 @@ export async function lockTestHostnameNowait(
   await query(sql`/* lockTestHostnameNowait */
     SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE NOWAIT
   `)
+}
+
+/** Stage a private root, then prove another connection can lock it before the staff block. */
+export async function stageTestHostnameBeforeBlocking(
+  userId: string,
+  hostname: string,
+  rootId: string,
+): Promise<void> {
+  await using stage = await beginTransaction()
+  await upsertUrlHostnamesForBlocking(userId, [hostname], stage)
+  await using probe = await beginTransaction()
+  await lockTestHostnameNowait(rootId, probe)
+  await probe.commit()
+  await stage.commit()
 }
