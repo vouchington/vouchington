@@ -58,6 +58,17 @@ utils:
           stopBy: end
 rule:
   any:
+    - pattern: await import($FIXTURE_MODULE)
+    - pattern: require($FIXTURE_MODULE)
+    - pattern: $BINDING = import($FIXTURE_MODULE)
+    - pattern: await Promise.all([import($FIXTURE_MODULE)])
+    - pattern: await Promise.all([import($FIXTURE_MODULE), $$$AFTER])
+    - pattern: await Promise.all([$$$BEFORE, import($FIXTURE_MODULE)])
+    - pattern: await Promise.all([$$$BEFORE, import($FIXTURE_MODULE), $$$AFTER])
+    - pattern: import($FIXTURE_MODULE).then
+    - pattern: const $BINDING = import($FIXTURE_MODULE)
+    - pattern: let $BINDING = import($FIXTURE_MODULE)
+    - pattern: var $BINDING = import($FIXTURE_MODULE)
     - all:
         - any:
             - pattern: test.beforeAll
@@ -130,7 +141,52 @@ rule:
             kind: identifier
             stopBy: neighbor
         - *id001
+constraints:
+  FIXTURE_MODULE:
+    regex: ^['\"](?:\.\./)+helpers/(?:test|tag-voting-helpers)\.mts['\"]$
 examples:
+  - code: const [fixture] = await Promise.all([import('../../helpers/test.mts')]); fixture.test.beforeAll(async () => {});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: let fixture; fixture = import('../../helpers/test.mts'); (await fixture).test.afterAll(async () => {});
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: const fixtures = await Promise.all([seed(), import('../../helpers/test.mts'), loadData()])
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "const { test: other } = await import('../../helpers/test.mts'); other.beforeAll(async () => { await seed(); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: const fixture = require('../../helpers/test.mts'); fixture.test.afterAll(async () => { await cleanup(); });
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: const fixture = import('../../helpers/test.mts'); fixture.then(({ test }) => test.beforeAll(async () => {}))
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: let page = import('../../helpers/test.mts')
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: let page; import('../../helpers/test.mts').then(value => { page = value; })
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: const fixture = await import('../../helpers/tag-voting-helpers.mts')
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "let page: import('../../helpers/test.mts').Page"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: function owned<T extends import('../../helpers/test.mts').Page>() {}
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: const value = owned<import('../../helpers/test.mts').Page>()
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: type Page = import('../../helpers/test.mts').Page
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: const data = await import('./owned-data.mts')
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
   - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts';
 
       test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); await seed(); });"

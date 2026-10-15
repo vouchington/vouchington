@@ -36,7 +36,11 @@ This protects the public `TestInfo` before callback work and preserves native ti
 at the original spec declaration. Each hook keeps its own timeout slot. The same rule applies
 inside describes using the native `test` object imported from the supported shared fixture barrel.
 Spec-level aliased, default, namespace and locally extended registration flows are rejected by the
-source rule; use the shared barrel and keep the guard first in the original inline callback. The ordinary automatic test fixture remains
+source rule. For fixture barrels, it also rejects direct `await import` and `require`, deferred
+import bindings and assignments, `.then` access, and imports in a directly awaited `Promise.all`
+array. Type-only imports remain allowed. Computed and transitive
+import flows are not a complete static provenance boundary. Use static named imports from the
+shared barrel and keep the guard first in the original inline callback. The ordinary automatic test fixture remains
 idempotent with this guard. Server readiness and external protocol deadlines are unchanged.
 Browser-free native CLI controls retain setter/slow negatives in both phases, named worker
 fixtures and legal budgets, and exercise the actual timeout location in both all-hook phases.
