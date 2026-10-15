@@ -8,7 +8,7 @@ CREATE TABLE queue_domain_controls (
   paused_at timestamptz,
   paused_by_user_id uuid,
   reason text CHECK (reason IS NULL OR char_length(reason) BETWEEN 1 AND 500),
-  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   CHECK (paused_at IS NOT NULL OR (paused_by_user_id IS NULL AND reason IS NULL))
 );
