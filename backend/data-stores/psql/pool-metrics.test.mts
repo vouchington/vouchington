@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createServer, connect } from 'node:net'
+import { Pool, type PoolClient } from 'pg'
 import { advisoryLockPool, readPool, writePool } from './setup.mts'
+import { registerPsqlPoolMetricsForTestEnvironment, type PsqlPoolMetrics } from './pool-metrics.mts'
+import { waitForForkLeakHandshakeSettle } from '../../../test-helpers/vitest-fork-leak-handshake.mts'
 
 type PsqlPoolSocketHandles = { active: ReadonlySet<object>; owned: ReadonlySet<object> }
 
@@ -51,7 +54,101 @@ describe('PostgreSQL pool metrics', () => {
       await new Promise<void>(resolve => server.close(() => resolve()))
     }
   })
+
+  it('coalesces a real initialized PostgreSQL pool connection after its handshake completes', async () => {
+    const pool = new Pool({ ...writePool.options, max: 2, idleTimeoutMillis: 0 })
+    const target = globalThis as typeof globalThis & Record<symbol, unknown>
+    const metricsKey = Symbol.for('vitest-fork-leak-psql-pool-metrics')
+    const handlesKey = Symbol.for('vitest-fork-leak-psql-pool-socket-handles')
+    const previousMetricsProvider = target[metricsKey]
+    const previousHandlesProvider = target[handlesKey]
+    let client: PoolClient | undefined
+    let secondClient: PoolClient | undefined
+    let secondConnection: Promise<PoolClient> | undefined
+
+    registerPsqlPoolMetricsForTestEnvironment(
+      { write: pool, read: readPool, advisoryLock: advisoryLockPool },
+      'test',
+    )
+
+    try {
+      const readResources = () => process.getActiveResourcesInfo()
+      const readPsqlPoolMetrics = () => {
+        const provider = target[metricsKey]
+        return typeof provider === 'function' ? (provider as () => PsqlPoolMetrics)() : null
+      }
+      const readPsqlPoolSocketHandles = () => {
+        const provider = target[handlesKey]
+        return typeof provider === 'function'
+          ? (
+              provider as () => {
+                active: ReadonlySet<object>
+                owned: ReadonlySet<object>
+              }
+            )()
+          : null
+      }
+      const firstConnection = pool.connect()
+      const waitForTurn = (globalThis as typeof globalThis & Record<symbol, unknown>)[
+        Symbol.for('vitest-fork-leak-resource-close-callback-wait')
+      ]
+      if (typeof waitForTurn !== 'function') {
+        throw new Error('The fork leak setup did not register its callback wait')
+      }
+      const settlement = waitForForkLeakHandshakeSettle({
+        readResources,
+        readPsqlPoolMetrics,
+        readPsqlPoolSocketHandles,
+        waitForTurn: async () => {
+          if (!secondConnection) secondConnection = pool.connect()
+          await (waitForTurn as () => Promise<void>)()
+        },
+      })
+      const firstClient = await firstConnection
+      client = firstClient
+      const result = await settlement
+      if (!secondConnection) throw new Error('The second PostgreSQL connection was not started')
+      const completedSecondClient = await secondConnection
+      secondClient = completedSecondClient
+      const poolHandles = [firstClient, completedSecondClient].map(
+        connectionClient =>
+          Reflect.get(Reflect.get(connectionClient, 'connection').stream, '_handle') as object,
+      )
+      const currentHandles = readPsqlPoolSocketHandles()
+      const baselineHandles = result.observations[0]?.tcpSocketHandles
+      const growthHandles = [...result.snapshot.tcpSocketHandles].filter(
+        handle => !baselineHandles?.has(handle),
+      )
+      expect(result.coalesced).toBe(true)
+      expect(growthHandles).toContain(poolHandles[1])
+      expect(growthHandles.every(handle => currentHandles?.owned.has(handle))).toBe(true)
+      for (const poolHandle of poolHandles) {
+        expect(result.snapshot.tcpSocketHandles.has(poolHandle)).toBe(true)
+      }
+    } finally {
+      client?.release()
+      secondClient?.release()
+      if (!secondClient && secondConnection) {
+        await secondConnection.then(
+          pendingClient => pendingClient.release(),
+          () => undefined,
+        )
+      }
+      await pool.end()
+      restoreGlobalProvider(target, metricsKey, previousMetricsProvider)
+      restoreGlobalProvider(target, handlesKey, previousHandlesProvider)
+    }
+  })
 })
+
+function restoreGlobalProvider(
+  target: typeof globalThis & Record<symbol, unknown>,
+  key: symbol,
+  previous: unknown,
+): void {
+  if (previous === undefined) delete target[key]
+  else target[key] = previous
+}
 
 function expectedPoolMetrics(pool: import('pg').Pool) {
   return {

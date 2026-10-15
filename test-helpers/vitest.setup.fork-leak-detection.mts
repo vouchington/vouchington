@@ -9,12 +9,18 @@ import {
   getRegisteredPsqlPoolSocketHandles,
 } from './vitest-fork-leak-diagnostics.mts'
 import { getForkLeakDetector } from './vitest-fork-leak-detection.mts'
-import { waitForForkLeakHandshakeSettle } from './vitest-fork-leak-handshake.mts'
+import {
+  recordForkLeakCheckpoint,
+  waitForForkLeakHandshakeSettle,
+} from './vitest-fork-leak-handshake.mts'
 import { countResourcesByType } from './vitest-process-resources.mts'
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
 const detector = getForkLeakDetector()
+;(globalThis as typeof globalThis & Record<symbol, unknown>)[
+  Symbol.for('vitest-fork-leak-resource-close-callback-wait')
+] = waitForResourceCloseCallbacks
 
 afterEach(async context => {
   if (detectionDisabled) return
@@ -30,20 +36,36 @@ afterEach(async context => {
     readResources: () => process.getActiveResourcesInfo(),
     readPsqlPoolMetrics: getRegisteredPsqlPoolMetrics,
     readPsqlPoolSocketHandles: getRegisteredPsqlPoolSocketHandles,
+    waitForTurn: waitForResourceCloseCallbacks,
   })
 
-  const snapshots = settlement.coalesced ? [settlement.snapshot] : settlement.observations
-  const findings = snapshots.flatMap(snapshot => {
-    const counts = countResourcesByType(snapshot.resources)
-    return detector
-      .record(counts, context.task.file.filepath)
-      .map(verdict => ({ verdict, counts, psqlPoolMetrics: snapshot.psqlPoolMetrics }))
-  })
+  // The detector's evidence windows are test checkpoints. Handshake turns are
+  // diagnostic history within this test and must not advance those windows.
+  const counts = countResourcesByType(
+    (settlement.coalesced ? settlement.snapshot : settlement.detectorSnapshot).resources,
+  )
+  const findings = recordForkLeakCheckpoint(
+    (counts, testFile) => detector.record(counts, testFile),
+    settlement,
+    context.task.file.filepath,
+  ).map(verdict => ({
+    verdict,
+    counts,
+    psqlPoolMetrics: (settlement.coalesced ? settlement.snapshot : settlement.detectorSnapshot)
+      .psqlPoolMetrics,
+    observations: settlement.observations,
+  }))
   if (findings.length > 0) {
     throw new Error(
       findings
-        .map(({ verdict, counts, psqlPoolMetrics }) =>
-          formatForkLeakDiagnostics(verdict, counts, psqlPoolMetrics),
+        .map(
+          ({ verdict, counts, psqlPoolMetrics, observations }) =>
+            `${formatForkLeakDiagnostics(verdict, counts, psqlPoolMetrics)}\nTCP handshake observations: ${observations
+              .map(
+                ({ connectWraps, tcpSockets }) =>
+                  `ConnectWrap=${connectWraps}/TCPSocketWrap=${tcpSockets}`,
+              )
+              .join(' -> ')}`,
         )
         .join('\n\n'),
     )

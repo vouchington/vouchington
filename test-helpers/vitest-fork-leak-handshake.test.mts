@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { createForkLeakDetector } from 'vouchington-tooling/vitest-diagnostics'
 import type { PsqlPoolMetrics, PsqlPoolSocketHandles } from '@data-stores/psql/pool-metrics'
-import { waitForForkLeakHandshakeSettle } from './vitest-fork-leak-handshake.mts'
+import {
+  recordForkLeakCheckpoint,
+  waitForForkLeakHandshakeSettle,
+  type ForkLeakHandshakeSnapshot,
+  type ForkLeakHandshakeSettlement,
+} from './vitest-fork-leak-handshake.mts'
 
 function poolMetrics(total: number, idle = total): PsqlPoolMetrics {
   const metric = { total, idle, nonIdleOrConnecting: total - idle, waiting: 0 }
@@ -75,31 +80,8 @@ describe('fork-leak handshake settlement', () => {
     })
 
     expect(result.coalesced).toBe(false)
-    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([4, 5, 5, 5])
-  })
-
-  it('preserves growth while a pool socket is still pending and unidentifiable', async () => {
-    let tcpSockets = 4
-    let poolTotal = 4
-    const tcpHandles = Array.from({ length: tcpSockets }, () => ({}))
-    const result = await waitForForkLeakHandshakeSettle({
-      readResources: () => [
-        ...Array.from({ length: tcpSockets }, () => 'TCPSocketWrap'),
-        'ConnectWrap',
-      ],
-      readPsqlPoolMetrics: () => poolMetrics(poolTotal, 3),
-      readPsqlPoolSocketHandles: () => socketHandles(tcpHandles, []),
-      waitForTurn: async () => {
-        if (tcpSockets === 4) {
-          tcpSockets += 1
-          poolTotal += 1
-          tcpHandles.push({})
-        }
-      },
-    })
-
-    expect(result.coalesced).toBe(false)
-    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([4, 5, 5, 5])
+    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([4, 4, 5, 5, 5])
+    expect(result.detectorSnapshot.tcpSockets).toBe(5)
   })
 
   it('preserves TCP growth when the transport handle cannot be identified', async () => {
@@ -117,7 +99,7 @@ describe('fork-leak handshake settlement', () => {
     })
 
     expect(result.coalesced).toBe(false)
-    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([1, 2, 2, 2])
+    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([1, 1, 2, 2, 2])
   })
 
   it('preserves an unrelated socket alongside a completed pool connection', async () => {
@@ -147,10 +129,49 @@ describe('fork-leak handshake settlement', () => {
     })
 
     expect(result.coalesced).toBe(false)
-    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([4, 6, 6, 6])
+    expect(result.observations.map(observation => observation.tcpSockets)).toEqual([4, 4, 6, 6, 6])
   })
 
-  it('stops after stable observations even if ConnectWrap remains stuck', async () => {
+  it('records the first checkpoint containing later unowned growth after owned pool growth', async () => {
+    let tcpSockets = 4
+    let poolTotal = 4
+    let poolIdle = 3
+    let turns = 0
+    const tcpHandles = Array.from({ length: tcpSockets }, () => ({}))
+    const ownedHandles = [...tcpHandles]
+    const result = await waitForForkLeakHandshakeSettle({
+      readResources: () => [
+        ...Array.from({ length: tcpSockets }, () => 'TCPSocketWrap'),
+        ...(turns < 3 ? ['ConnectWrap'] : []),
+      ],
+      readPsqlPoolMetrics: () => poolMetrics(poolTotal, poolIdle),
+      readPsqlPoolSocketHandles: () => socketHandles(tcpHandles, ownedHandles),
+      waitForTurn: async () => {
+        turns += 1
+        if (turns === 1) {
+          tcpSockets += 1
+          poolTotal += 1
+          poolIdle += 1
+          const poolSocket = {}
+          tcpHandles.push(poolSocket)
+          ownedHandles.push(poolSocket)
+        } else if (turns === 2) {
+          tcpSockets += 1
+          tcpHandles.push({})
+        }
+      },
+    })
+
+    expect(result.coalesced).toBe(false)
+    const recorded = recordForkLeakCheckpoint(
+      counts => [counts.get('TCPSocketWrap')],
+      result,
+      'growth.test.mts',
+    )
+    expect(recorded).toEqual([6])
+  })
+
+  it('preserves a stable but nonzero ConnectWrap instead of coalescing it', async () => {
     let turns = 0
     const tcpSocket = {}
     const result = await waitForForkLeakHandshakeSettle({
@@ -165,7 +186,54 @@ describe('fork-leak handshake settlement', () => {
     })
 
     expect(turns).toBe(2)
+    expect(result.coalesced).toBe(false)
     expect(result.snapshot).toMatchObject({ connectWraps: 1, tcpSockets: 1 })
+    expect(result.observations).toHaveLength(4)
+  })
+
+  it('records one actual resource snapshot for a completed test', () => {
+    const makeSnapshot = (
+      tcpSockets: number,
+      extraResources: readonly string[] = [],
+    ): ForkLeakHandshakeSnapshot => ({
+      connectWraps: 0,
+      tcpSockets,
+      resources: [...Array.from({ length: tcpSockets }, () => 'TCPSocketWrap'), ...extraResources],
+      tcpSocketHandles: new Set(),
+      psqlPoolMetrics: null,
+    })
+    const settlement: ForkLeakHandshakeSettlement = {
+      snapshot: makeSnapshot(8),
+      detectorSnapshot: makeSnapshot(4),
+      observations: [makeSnapshot(2, ['PipeWrap', 'PipeWrap']), makeSnapshot(4), makeSnapshot(8)],
+      coalesced: false,
+    }
+    let recordCalls = 0
+
+    const result = recordForkLeakCheckpoint(
+      (counts, testFile) => {
+        recordCalls += 1
+        return [{ counts, testFile }]
+      },
+      settlement,
+      'one.test.mts',
+    )
+
+    expect(recordCalls).toBe(1)
+    expect(result).toEqual([{ counts: new Map([['TCPSocketWrap', 4]]), testFile: 'one.test.mts' }])
+
+    const settledResult = recordForkLeakCheckpoint(
+      (counts, testFile) => {
+        recordCalls += 1
+        return [{ counts, testFile }]
+      },
+      { ...settlement, coalesced: true },
+      'settled.test.mts',
+    )
+    expect(recordCalls).toBe(2)
+    expect(settledResult).toEqual([
+      { counts: new Map([['TCPSocketWrap', 8]]), testFile: 'settled.test.mts' },
+    ])
   })
 
   it('returns the latest raw checkpoint when a pool transition reaches the turn cap', async () => {
@@ -192,7 +260,10 @@ describe('fork-leak handshake settlement', () => {
 
     expect(result.coalesced).toBe(false)
     expect(result.snapshot.tcpSockets).toBe(4)
-    expect(result.observations).toHaveLength(4)
+    expect(
+      recordForkLeakCheckpoint(counts => [counts.get('TCPSocketWrap')], result, 'cap.test.mts'),
+    ).toEqual([4])
+    expect(result.observations).toHaveLength(5)
   })
 
   it('flags the unsmoothed merge-queue ramp and absorbs the same sockets as one settled jump', () => {
