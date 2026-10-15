@@ -11,17 +11,6 @@ export type OpenAIUsage = Pick<ResponseUsage, 'input_tokens' | 'output_tokens'> 
   cost?: number
 }
 
-export class OpenAIResponseStreamError extends Error {
-  readonly code: string | null
-  readonly param: string | null
-
-  constructor(error: { code: string | null; message: string; param: string | null }) {
-    super(`OpenAI response error (${error.code ?? 'unknown'}): ${error.message}`)
-    this.code = error.code
-    this.param = error.param
-  }
-}
-
 /**
  * Thrown by validateCompletedResponse for a terminal-but-not-completed response (failed,
  * incomplete, or another nonterminal status). OpenAI still bills tokens for these — e.g. hitting
@@ -153,7 +142,7 @@ export function isOpenAIFlexCapacityFailedResponseError(error: unknown): boolean
 
 /**
  * True when a physical attempt may have been billed but left no authoritative usage.
- * `previous_response_not_found` is a deterministic unbilled 400 that chat recovers from, and a
+ * `previous_response_not_found` is a deterministic unbilled rejection that chat recovers from, and a
  * flex capacity failure is positively unbilled. A terminal failed/incomplete/cancelled response
  * only needs the latch when usage is absent — otherwise `recordAgentResponseUsage` writes the
  * ledger row from the error.
@@ -175,16 +164,9 @@ export function isExplicitClientCancelError(error: unknown): boolean {
 
 export function isOpenAIMissingPreviousResponseError(error: unknown): boolean {
   return walkErrorChain(error, current => {
-    if (
-      current instanceof OpenAIResponseStreamError &&
-      current.code === 'previous_response_not_found' &&
-      current.param === 'previous_response_id'
-    ) {
-      return true
-    }
     return (
       current instanceof APIError &&
-      current.status === 400 &&
+      (current.status === 400 || current.status === undefined) &&
       current.code === 'previous_response_not_found' &&
       current.param === 'previous_response_id'
     )

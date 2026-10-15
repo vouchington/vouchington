@@ -25,24 +25,6 @@ describe('OpenAI moderation integration boundary', () => {
     openAIMocks.create.mockReset()
   })
 
-  it('passes the idempotency key as an OpenAI SDK request option', async () => {
-    const input = [{ type: 'text' as const, text: 'moderate this' }]
-    openAIMocks.create.mockResolvedValueOnce({
-      id: 'mod_test',
-      model: 'omni-moderation-latest',
-      results: [],
-    })
-
-    await requestOpenAIModeration(input, 'omni-moderation-latest', {
-      idempotencyKey: 'moderation-key',
-    })
-
-    expect(openAIMocks.create).toHaveBeenCalledWith(
-      { input, model: 'omni-moderation-latest' },
-      { idempotencyKey: 'moderation-key' },
-    )
-  })
-
   it('bounds the complete moderation request and each provider attempt', async () => {
     const input = [{ type: 'text' as const, text: 'bounded moderation' }]
     const overallSignal = new AbortController().signal

@@ -7,7 +7,6 @@ import { createOpenAIModeration } from '@services/openai-moderation/request'
 const createApiTextModeration: CreateTextModeration = async texts => {
   return createOpenAIModeration(texts, undefined, {
     apiSafetyCheck: true,
-    idempotencyKey: crypto.randomUUID(),
   })
 }
 

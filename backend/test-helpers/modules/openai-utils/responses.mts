@@ -1,8 +1,4 @@
-import type {
-  Response,
-  ResponseErrorEvent,
-  ResponseStreamEvent,
-} from 'openai/resources/responses/responses'
+import type { Response, ResponseStreamEvent } from 'openai/resources/responses/responses'
 
 type ResponseOverrides = Partial<Response> & Pick<Response, 'status'>
 
@@ -56,17 +52,6 @@ export function makeSdkTextResponse(text: string, overrides: Partial<Response> =
 
 export function makeStreamEvent(event: ResponseStreamEvent): ResponseStreamEvent {
   return event
-}
-
-export function makeErrorEvent(overrides: Partial<ResponseErrorEvent> = {}): ResponseErrorEvent {
-  return {
-    type: 'error',
-    code: 'rate_limit',
-    message: 'try later',
-    param: null,
-    sequence_number: 1,
-    ...overrides,
-  }
 }
 
 export function makeResponseStream(

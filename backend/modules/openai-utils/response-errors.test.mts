@@ -1,43 +1,15 @@
 import { APIConnectionError, APIError, APIUserAbortError } from 'openai'
 import { describe, expect, it } from 'vitest'
-import { streamOpenAIResponseEvents } from './create-response.mts'
 import {
   describeOpenAIUpstreamFailure,
   isOpenAIMissingPreviousResponseError,
   OpenAIResponseNotCompletedError,
-  OpenAIResponseStreamError,
   OpenAIResponseStreamIterationError,
   shouldLatchUnknownBilledOpenAIAttempt,
 } from './response-errors.mts'
-import {
-  makeErrorEvent,
-  makeResponseStream,
-  makeSdkResponse,
-} from '../../test-helpers/modules/openai-utils/responses.mts'
+import { makeSdkResponse } from '../../test-helpers/modules/openai-utils/responses.mts'
 
 describe('OpenAI response errors', () => {
-  it('preserves structured OpenAI stream error metadata', async () => {
-    const gen = streamOpenAIResponseEvents(
-      makeResponseStream([
-        makeErrorEvent({
-          code: 'previous_response_not_found',
-          message: 'The previous response expired',
-          param: 'previous_response_id',
-        }),
-      ]),
-    )
-
-    const next = gen.next()
-
-    await expect(next).rejects.toBeInstanceOf(OpenAIResponseStreamError)
-    await expect(next).rejects.toMatchObject({
-      name: 'Error',
-      message: 'OpenAI response error (previous_response_not_found): The previous response expired',
-      code: 'previous_response_not_found',
-      param: 'previous_response_id',
-    })
-  })
-
   it('classifies direct and cause-wrapped missing previous response API errors', () => {
     const apiError = makeMissingPreviousResponseAPIError()
 
@@ -47,16 +19,6 @@ describe('OpenAI response errors', () => {
         new Error('stream creation failed', { cause: apiError }),
       ),
     ).toBe(true)
-  })
-
-  it('classifies typed missing previous response stream errors', () => {
-    const error = new OpenAIResponseStreamError({
-      code: 'previous_response_not_found',
-      message: 'expired',
-      param: 'previous_response_id',
-    })
-
-    expect(isOpenAIMissingPreviousResponseError(error)).toBe(true)
   })
 
   it('rejects mismatched and message-only missing previous response errors', () => {
@@ -79,11 +41,12 @@ describe('OpenAI response errors', () => {
         undefined,
         new Headers(),
       ),
-      new OpenAIResponseStreamError({
-        code: 'invalid_request_error',
-        message: 'previous_response_not_found for previous_response_id',
-        param: 'previous_response_id',
-      }),
+      new APIError(
+        undefined,
+        { code: 'invalid_request_error', param: 'previous_response_id' },
+        undefined,
+        new Headers(),
+      ),
       new Error('400 previous_response_not_found previous_response_id'),
     ]
 
@@ -123,12 +86,12 @@ describe('OpenAI response errors', () => {
   })
 
   it('does not latch recoverable missing previous-response errors', () => {
-    const streamError = new OpenAIResponseStreamError({
-      code: 'previous_response_not_found',
-      message: 'expired',
-      param: 'previous_response_id',
-    })
-
+    const streamError = new APIError(
+      undefined,
+      { code: 'previous_response_not_found', param: 'previous_response_id' },
+      undefined,
+      new Headers(),
+    )
     expect(shouldLatchUnknownBilledOpenAIAttempt(streamError)).toBe(false)
     expect(shouldLatchUnknownBilledOpenAIAttempt(makeMissingPreviousResponseAPIError())).toBe(false)
   })

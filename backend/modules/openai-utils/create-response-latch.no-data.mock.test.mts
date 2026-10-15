@@ -3,7 +3,6 @@ import { createOpenAIResponse } from './create-response.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import { OpenAIResponseNotCompletedError } from './response-errors.mts'
 import {
-  makeErrorEvent,
   makeResponseStream,
   makeSdkResponse,
   makeStreamEvent,
@@ -75,33 +74,6 @@ describe('OpenAI response stream latch decisions', () => {
         async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
       ),
     ).rejects.toBeInstanceOf(OpenAIResponseNotCompletedError)
-
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
-  })
-
-  it('does not latch a recoverable previous_response_not_found stream error', async () => {
-    openAIMocks.create.mockResolvedValueOnce(
-      makeResponseStream([
-        makeErrorEvent({
-          code: 'previous_response_not_found',
-          message: 'The previous response expired',
-          param: 'previous_response_id',
-        }),
-      ]),
-    )
-    const onUnknownBilledAttempt = vi.fn<
-      (value: { requestStartedAt: Date; error: unknown }) => Promise<void>
-    >(() => Promise.resolve())
-
-    await expect(
-      runWithOpenAIResponseAttemptHooks(
-        { beforeAttempt: () => Promise.resolve(), onUnknownBilledAttempt },
-        async () => createOpenAIResponse({ model: 'gpt-4.1-mini', input: 'hello' }),
-      ),
-    ).rejects.toMatchObject({
-      code: 'previous_response_not_found',
-      param: 'previous_response_id',
-    })
 
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })

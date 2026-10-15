@@ -145,4 +145,31 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
       replay.assertDrained()
     },
   )
+
+  it('does not latch a missing previous response delivered as an SSE error', async () => {
+    replay.respondWith(
+      loadRecordedResponse('openrouter/responses-stream-error-previous-response.http'),
+    )
+    const hooks = makeHooks()
+
+    const error: unknown = await runWithOpenAIResponseAttemptHooks(hooks, () =>
+      createOpenRouterResponse({
+        model: 'openai/gpt-6-luna',
+        input: INPUT,
+        previous_response_id: 'resp_expired',
+      }),
+    ).catch((err: unknown) => err)
+
+    expect(error).toBeInstanceOf(OpenAIResponseStreamIterationError)
+    expect(error).toMatchObject({
+      cause: {
+        status: undefined,
+        code: 'previous_response_not_found',
+        param: 'previous_response_id',
+      },
+    })
+    expect(hooks.onUnknownBilledAttempt).not.toHaveBeenCalled()
+    expect(replay.requests).toHaveLength(1)
+    replay.assertDrained()
+  })
 })

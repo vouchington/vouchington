@@ -5,7 +5,6 @@ import {
   type ResponseStreamEvent,
 } from './create-response.mts'
 import {
-  makeErrorEvent,
   makeResponseStream,
   makeSdkResponse,
   makeSdkTextResponse,
@@ -197,12 +196,6 @@ describe('streamOpenAIResponseEvents', () => {
     expect(notCompleted.status).toBe('incomplete')
     expect(notCompleted.usage).toEqual(response.usage)
     expect(notCompleted.service_tier).toBe('default')
-  })
-
-  it('throws raw OpenAI stream error events', async () => {
-    const gen = streamOpenAIResponseEvents(makeResponseStream([makeErrorEvent()]))
-
-    await expect(gen.next()).rejects.toThrow('OpenAI response error (rate_limit): try later')
   })
 
   it('fails when the stream ends without a terminal event', async () => {

@@ -42,7 +42,8 @@ record them; `openAIUsageToModelUsage` converts it to the neutral usage shape.
   accounting hooks around physical Responses API attempts. The boundary disables SDK retries and
   retries only unbilled flex `resource_unavailable` errors. Ambiguous create or pre-terminal stream
   failures, and terminal failed/incomplete events that omit usage, notify `onUnknownBilledAttempt`
-  so callers can fail closed. Recoverable `previous_response_not_found` errors, explicit client
+  so callers can fail closed. Recoverable `previous_response_not_found` errors, including statusless
+  SDK errors from SSE frames with `param: previous_response_id`, explicit client
   cancellation (`AbortError` / `APIUserAbortError`), create-level deterministic 4xx, and terminal
   responses that carry usage do not latch. Other stream errors without usage still latch because
   the stream event has no HTTP status. Flex retry delays from `retry-after-ms` / `Retry-After`

@@ -116,4 +116,29 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
     // third response was queued because a replay of the request would have had none to receive.
     replay.assertDrained()
   })
+
+  it('does not latch a missing previous response delivered as an SSE error', async () => {
+    replay.respondWith(loadRecordedResponse('openai/responses-stream-error-previous-response.http'))
+    const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
+
+    const error: unknown = await withLatchHook(onUnknownBilledAttempt, () =>
+      createOpenAIResponse({
+        model: 'gpt-6-luna',
+        input: INPUT,
+        previous_response_id: 'resp_expired',
+      }),
+    ).catch((err: unknown) => err)
+
+    expect(error).toBeInstanceOf(OpenAIResponseStreamIterationError)
+    expect(error).toMatchObject({
+      cause: {
+        status: undefined,
+        code: 'previous_response_not_found',
+        param: 'previous_response_id',
+      },
+    })
+    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
+    expect(replay.requests).toHaveLength(1)
+    replay.assertDrained()
+  })
 })

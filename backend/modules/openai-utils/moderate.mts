@@ -6,9 +6,7 @@ const MODERATION_ATTEMPT_TIMEOUT_MS = 5_000
 const MODERATION_OVERALL_TIMEOUT_MS = 10_000
 const MODERATION_MAX_RETRIES = 1
 
-export type OpenAIModerationRequestOptions = Pick<OpenAI.RequestOptions, 'idempotencyKey'> & {
-  apiSafetyCheck?: true
-}
+export type OpenAIModerationRequestOptions = { apiSafetyCheck?: true }
 
 function getModerationClient(): OpenAI {
   if (!moderationClient) {
@@ -29,16 +27,15 @@ export async function requestOpenAIModeration(
   options?: OpenAIModerationRequestOptions,
 ) {
   const openai = getModerationClient()
-  const { apiSafetyCheck, ...requestOptions } = options ?? {}
+  const { apiSafetyCheck } = options ?? {}
   return openai.moderations.create(
     { input, model },
     apiSafetyCheck
       ? {
-          ...requestOptions,
           maxRetries: MODERATION_MAX_RETRIES,
           timeout: MODERATION_ATTEMPT_TIMEOUT_MS,
           signal: AbortSignal.timeout(MODERATION_OVERALL_TIMEOUT_MS),
         }
-      : requestOptions,
+      : {},
   )
 }

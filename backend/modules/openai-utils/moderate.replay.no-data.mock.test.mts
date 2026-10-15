@@ -41,6 +41,7 @@ describe('requestOpenAIModeration against recorded OpenAI responses', () => {
       headers: { authorization: 'Bearer test-key' },
     })
     expect(replay.requests[0]?.json()).toEqual({ model: 'omni-moderation-latest', input: INPUT })
+    expect(replay.requests[0]?.headers).not.toHaveProperty('idempotency-key')
     expect(response.results).toHaveLength(1)
     expect(response.results[0]).toMatchObject({
       flagged: false,
