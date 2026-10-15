@@ -35,14 +35,15 @@ child identity flags exist. An existing retrospective covers only its source eve
 task deltas with a new explicit `sourceEventId`. For the same already-reported event, collect only
 the delta since its timestamp or report `no delta since <timestamp>`. Otherwise call
 `retrospective_save` with `compose` (and `dryRun: true` first to preview the document; then save
-the exact `markdown` the preview returned, not a second `compose`) to generate
+the exact `markdown` the preview returned with the same `repositories`, not a second `compose`) to generate
 routine facts, markers, coverage, tool assessments, and architectural assessments through the shared
 composer. Its `compose` argument supplies the concise `narrative`, `date`, `issues`, `prs`,
 `description`, `facts`, `transcript`, `tools`, and `architecture`; the server adds the session,
 repositories, outcome, and coverage from the call's own `workOutcome`, `feedbackCoverage`, and
 `repositories` arguments. Unavailable evidence stays explicit. Use an explicit `mode` as described
-in [saving.md](saving.md). Pass the SessionStart `sessionId` as the call's `sessionId` (a spawned child also passes the
-`parentSessionId` it received to `retrospective_save`, never to `retrospective_check`); pass
+in [saving.md](saving.md). Pass the SessionStart `sessionId` as the call's `sessionId`, plus the required `parentSessionId`
+(`null` for a root session, the received ID for a spawned child), `agent`, and `version` to
+`retrospective_save`, never `parentSessionId` to `retrospective_check`; pass
 `compose.transcript.harnessSessionId` (the harness session UUID) whenever it differs from that
 `sessionId`, even when the `sessionId` is UUID-shaped. The composer collects routine repository facts and transcript facts, and
 builds `## CI Failures` and `## Sandbox & Permission Audit` from the session's hosted journal
