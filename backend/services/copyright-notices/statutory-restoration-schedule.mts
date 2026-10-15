@@ -39,6 +39,8 @@ export function searchDueStatutoryCopyrightRestorationDeadlineIds(
     'restorationDeadline',
     query,
     async statement => {
+      // Eligibility gained after this page read waits for the next scheduled sweep;
+      // each selected target still takes its locks and revalidates before an intent is created.
       const result = await read<{ id: string; candidates: RestoreCandidate[] }>(statement)
       candidateRows = result.rows
       return result
