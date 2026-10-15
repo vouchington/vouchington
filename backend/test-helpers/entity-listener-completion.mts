@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { onTestFinished } from 'vitest'
 import {
   onEnqueueAdmission,
   type EnqueueAdmission,
@@ -12,6 +11,12 @@ import { entitiesListeners } from '../queues/entity-listeners/queues.mts'
 import { QUEUE_NAME } from '../queues/entity-listeners/config.mts'
 import { entitiesListeners as entityWorker } from '../workers/entity-listeners/workers.mts'
 import onError from '@modules/on-error'
+import {
+  createEntityListenerLifetime,
+  createEntityListenerErrorLedger,
+  observeEntityListenerWork,
+  waitForEntityListenerTerminal,
+} from './entity-listener-terminal-wait.mts'
 
 import {
   entityListenerInputId,
@@ -33,16 +38,12 @@ export async function withEntityListenerCompletion<T>(
 ): Promise<T> {
   const context = new AsyncLocalStorage<symbol>()
   const token = Symbol('entity-listener-action')
+  const lifetime = createEntityListenerLifetime()
+  const deadline = lifetime.signal
   const expected = targets.map(target => ({ ...target }))
   const admissions: { event: EnqueueAdmission; direct: boolean }[] = []
   const posts: PostCommitCompletion[] = []
-  const errors: unknown[] = []
-  let cleanupReported = false
-  const takeCleanupErrors = () => {
-    if (cleanupReported) return []
-    cleanupReported = true
-    return [...errors]
-  }
+  const { errors, takeCleanupErrors, attempt } = createEntityListenerErrorLedger()
   const physical = new Set<string>()
   const observed = new Set<string>()
   const receipts = new Set<string>()
@@ -62,25 +63,21 @@ export async function withEntityListenerCompletion<T>(
         target.entityId &&
         event.inputs.some(input => entityListenerInputId(input) === target.entityId),
     )
-  const attempt = async (operation: () => unknown) => {
-    try {
-      await operation()
-    } catch (err) {
-      errors.push(err)
-    }
-  }
   const finish = () =>
     (cleanup ??= (async () => {
       closed = true
       await attempt(() => options.release?.())
-      if (prepared) await Promise.allSettled([prepared])
-      if (actionSettlement) await actionSettlement
+      if (prepared) await attempt(() => observeEntityListenerWork(prepared!, deadline))
+      if (actionSettlement)
+        await attempt(() => observeEntityListenerWork(actionSettlement!, deadline))
       let postCursor = 0
       const consumed = new Set<EnqueueAdmission>()
       for (;;) {
         while (postCursor < posts.length) {
           const post = posts[postCursor++]!
-          const [outcome] = await Promise.allSettled([post.completion])
+          const [outcome] = await Promise.allSettled([
+            observeEntityListenerWork(post.completion, deadline),
+          ])
           if (outcome!.status === 'rejected') errors.push(outcome!.reason)
           else
             errors.push(
@@ -96,7 +93,9 @@ export async function withEntityListenerCompletion<T>(
         )
         for (const { event } of batch) {
           consumed.add(event)
-          const [outcome] = await Promise.allSettled([event.completion])
+          const [outcome] = await Promise.allSettled([
+            observeEntityListenerWork(event.completion, deadline),
+          ])
           if (outcome!.status === 'rejected') errors.push(outcome!.reason)
           else if (event.queue === entitiesListeners && event.queueName === QUEUE_NAME)
             retainEntityListenerJobs(event, outcome!.value, physical, observed, receipts, errors)
@@ -105,7 +104,9 @@ export async function withEntityListenerCompletion<T>(
         const ids = [...physical].filter(id => !waited.has(id))
         for (const id of ids) waited.add(id)
         const terminalObserver = observer
-        const terminals = await Promise.allSettled(ids.map(id => terminalObserver!.wait(id)))
+        const terminals = await Promise.allSettled(
+          ids.map(id => waitForEntityListenerTerminal(terminalObserver!, id, deadline)),
+        )
         for (const terminal of terminals) {
           if (terminal.status === 'rejected') errors.push(terminal.reason)
           else if (terminal.value.failed)
@@ -130,7 +131,7 @@ export async function withEntityListenerCompletion<T>(
       await attempt(offPost)
       await attempt(() => observer?.close())
     })())
-  onTestFinished(async () => {
+  lifetime.register(async () => {
     await finish()
     const unreported = takeCleanupErrors()
     if (unreported.length)
@@ -167,7 +168,7 @@ export async function withEntityListenerCompletion<T>(
       return undefined
     })
     prepared = observer.ready()
-    await prepared
+    await observeEntityListenerWork(prepared, deadline)
     if (closed) throw new Error('Entity listener owner closed before action')
     const operation = context.run(token, () =>
       Promise.resolve().then(() => {
@@ -176,7 +177,7 @@ export async function withEntityListenerCompletion<T>(
       }),
     )
     actionSettlement = Promise.allSettled([operation])
-    result = await operation
+    result = await observeEntityListenerWork(operation, deadline)
   } catch (err) {
     failed = true
     primary = err

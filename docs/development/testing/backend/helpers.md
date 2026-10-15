@@ -114,7 +114,10 @@ registers the canonical admission observer and terminal source before the mutati
 original enqueue promises and exact returned job IDs, then joins growing owned post-commit,
 admission, and terminal work before detaching. A drained worker or an unrelated retained completion
 is not evidence that the action admitted its required job. Creation fixtures bind a fresh owned
-slug to the producer's real post ID through the existing post-commit event.
+slug to the producer's real post ID through the existing post-commit event. One shared 15-second
+deadline bounds these observations; test-finished teardown aborts pending observation before joining
+cleanup. An expired observation reports incomplete work as failure, not producer cancellation or a
+successful drain, and the owner still releases its held dispatch and closes its observer.
 
 The category-ordering scenario uses
 [`withEntityListenerAdmissionRead`](../../../../backend/test-helpers/entity-listener-admission-read.mts)
