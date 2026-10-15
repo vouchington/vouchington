@@ -156,11 +156,10 @@ export function checkRouteAdminSurfaceGuard(
   repoRoot: string,
   trackedFileSet: ReadonlySet<string>,
   errors: string[],
+  remaining?: () => number,
 ): void {
-  const isVouchaRepo =
-    trackedFileSet.has('pnpm-lock.yaml') && trackedFileSet.has('web/package.json')
   const shouldEnforceAdminSurfaceFiles =
-    isVouchaRepo ||
+    (trackedFileSet.has('pnpm-lock.yaml') && trackedFileSet.has('web/package.json')) ||
     ENTITY_ADMIN_SURFACE_REQUIREMENTS.some(policy => trackedFileSet.has(policy.file))
 
   for (const policy of ENTITY_ADMIN_SURFACE_REQUIREMENTS) {
@@ -181,7 +180,7 @@ export function checkRouteAdminSurfaceGuard(
     }
     let facts: RouteAdminSurfaceFacts
     try {
-      facts = collectRouteAdminSurfaceFacts(readFileSync(fullPath, 'utf8'), policy.file)
+      facts = collectRouteAdminSurfaceFacts(readFileSync(fullPath, 'utf8'), policy.file, remaining)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       errors.push(

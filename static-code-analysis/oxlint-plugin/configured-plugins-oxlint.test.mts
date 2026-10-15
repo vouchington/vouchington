@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 
 import ts from 'typescript'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
 
 interface Config {
   extends?: string[]
@@ -18,6 +19,8 @@ const oxlint = resolve('node_modules/.bin/oxlint')
 let childDeadline = 0n
 const tracked = spawnSync('git', ['ls-files', '-z', '.oxlintrc*.json', '**/.oxlintrc*.json'], {
   encoding: 'utf8',
+  timeout: createFixtureDeadline()(),
+  killSignal: 'SIGKILL',
 })
 if (tracked.status !== 0) throw new Error(`${tracked.error?.message ?? ''}\n${tracked.stderr}`)
 const configPaths = tracked.stdout

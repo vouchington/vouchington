@@ -23,6 +23,7 @@ export function createAnalyzerFixtureBudget() {
             cli,
             '--invocation-timeout-ms',
             String(milliseconds),
+            '--verbose-timings',
             'check',
             '--root',
             root,
@@ -32,8 +33,10 @@ export function createAnalyzerFixtureBudget() {
           { cwd: root, encoding: 'utf8' },
           (err, stdout, stderr) => {
             if (!err) resolve({ status: 0, stdout, stderr })
-            else if (typeof err.code === 'number') resolve({ status: err.code, stdout, stderr })
-            else
+            else if (typeof err.code === 'number') {
+              if (err.code !== 1) console.error(`Analyzer fixture exited ${err.code}: ${stderr}`)
+              resolve({ status: err.code, stdout, stderr })
+            } else
               reject(
                 err instanceof Error
                   ? err

@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
 
 const RULE = 'no-mistakes/postgres-no-manual-transaction'
 const CONFIG_DRIVEN_STATEMENTS =
@@ -33,9 +34,11 @@ interface OxlintConfig {
   overrides?: Array<{ rules?: Record<string, unknown> }>
 }
 
-function trackedOxlintConfigs(): string[] {
+function trackedOxlintConfigs(remaining: () => number): string[] {
   const tracked = spawnSync('git', ['ls-files', '-z', '.oxlintrc*.json', '**/.oxlintrc*.json'], {
     encoding: 'utf8',
+    timeout: remaining(),
+    killSignal: 'SIGKILL',
   })
   expect(tracked.status).toBe(0)
   return tracked.stdout
@@ -69,7 +72,7 @@ function readConfig(path: string): OxlintConfig {
 describe('postgres-no-manual-transaction owners', () => {
   it('lists the config-driven statement helper on every copied owner allowlist', () => {
     const declared = new Map<string, string[][]>()
-    for (const path of trackedOxlintConfigs()) {
+    for (const path of trackedOxlintConfigs(createFixtureDeadline())) {
       const lists = ownerLists(readConfig(path))
       if (lists.length > 0) declared.set(path, lists)
     }
