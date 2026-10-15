@@ -86,6 +86,23 @@ A Valkey Bloom filter (keyed by hex `content_sha256`) gates negative lookups: be
 
 `nova-2-multimodal-embeddings-v1` requests are sent with `truncationMode: "END"`. RSS feed item embedding content is stripped down to semantic text before hashing so `content_sha256` matches the requested Bedrock input. Image batch rows use a resized image variant and skip images whose encoded payload would make the JSONL record too large.
 
+Single requests and batch JSONL records share the inline text cap in
+[`config.mts`](../../../../../backend/services/bedrock-embeddings/config.mts). Over-limit input keeps
+the existing whitespace and surrogate-safe truncation behavior. The cap follows the
+[Nova inline schema](https://docs.aws.amazon.com/nova/latest/userguide/embeddings-schema.html).
+
+The documented Nova response contains no input token count. Successful single calls therefore
+record an approximate token count from the text actually sent, rounded up using the named
+characters-per-token ratio in `config.mts`. This is an accounting estimate, not provider-reported
+usage. It is emitted only to spend analytics: the returned provider count and stored
+`input_token_count` remain unknown unless a reported count is already known for that same input.
+Both single and batch writes clear a previous input's count when replacing an embedding without
+provider usage, while preserving a known count for an unchanged input hash. A later reported count
+can populate the cache and entity.
+SDK wire replays use a documentation-derived response; neither an undocumented token header
+nor a live call is required to pass CI.
+Reliable provider counts remain tracked by [#2874](https://github.com/vouchington/vouchington/issues/2874).
+
 ## Credentials and Infrastructure
 
 ECS uses IAM roles managed by `vouchington/vouchington-infra`, not Bedrock access keys. The backend and worker task roles can invoke `Amazon Nova 2 Multimodal Embeddings V1`; the worker can create and poll batch jobs and pass the dedicated Bedrock batch role. The batch role lets Bedrock read `bedrock-embeddings-input/*` and write `bedrock-embeddings-output/*` in a dedicated `voucha-bedrock-batch-{env}` bucket. See [environment variables](../../../infrastructure/environment-variables.md).

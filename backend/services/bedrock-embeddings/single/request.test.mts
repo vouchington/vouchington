@@ -11,9 +11,7 @@ describe('createBedrockEmbedding', () => {
   it('sends the Nova multimodal single text embedding request', async () => {
     const embedding = new Array(1024).fill(0.25)
     const send = vi.fn<VitestLooseMock>().mockResolvedValueOnce({
-      body: new TextEncoder().encode(
-        JSON.stringify({ embeddings: [{ embedding }], inputTokenCount: 7 }),
-      ),
+      body: new TextEncoder().encode(JSON.stringify({ embeddings: [{ embedding }] })),
     })
     Object.defineProperty(BedrockEmbeddingsClient, 'send', {
       value: send,
@@ -23,7 +21,7 @@ describe('createBedrockEmbedding', () => {
     const result = await createBedrockEmbedding('hello world', { entityType: 'post' })
 
     expect(result.embedding).toEqual(embedding)
-    expect(result.tokens).toBe(7)
+    expect(result.tokens).toBeNull()
     expect(send).toHaveBeenCalledOnce()
 
     const command = send.mock.calls[0][0] as { input: { modelId: string; body: string } }
@@ -60,9 +58,7 @@ describe('createBedrockEmbedding', () => {
   it('truncates over-limit text before sending to Bedrock', async () => {
     const embedding = new Array(1024).fill(0.1)
     const send = vi.fn<VitestLooseMock>().mockResolvedValueOnce({
-      body: new TextEncoder().encode(
-        JSON.stringify({ embeddings: [{ embedding }], inputTokenCount: 3 }),
-      ),
+      body: new TextEncoder().encode(JSON.stringify({ embeddings: [{ embedding }] })),
     })
     Object.defineProperty(BedrockEmbeddingsClient, 'send', {
       value: send,

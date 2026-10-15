@@ -5,6 +5,7 @@ import {
   BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
   BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
   EMBEDDING_DIMENSION,
+  NOVA_EMBEDDING_CHARACTERS_PER_TOKEN,
   truncateEmbeddingText,
 } from '../config.mts'
 import { shouldSkipUnavailableBedrockIntegration } from '../test-availability.mts'
@@ -17,7 +18,6 @@ type CreateBedrockEmbeddingOptions = {
 type BedrockEmbeddingResponse = {
   embedding?: number[]
   embeddings?: Array<{ embedding: number[] } | number[]>
-  inputTokenCount?: number
 }
 
 type BedrockEmbeddingResult = {
@@ -28,20 +28,21 @@ type BedrockEmbeddingResult = {
 export const createBedrockEmbedding = async (
   text: string,
   options?: CreateBedrockEmbeddingOptions,
-) => {
+): Promise<BedrockEmbeddingResult> => {
   const start = Date.now()
   try {
     const result = await requestBedrockEmbedding(text, options?.abortSignal)
     trackAIEmbeddingCall({
       service: 'bedrock',
       model: BEDROCK_NOVA_MULTIMODAL_MODEL_NAME,
-      tokens: result.tokens ?? 0,
+      tokens: result.estimatedTokens,
       durationMs: Date.now() - start,
       success: true,
       entityType: options?.entityType || 'unknown',
       invocation: 'single',
     })
-    return result
+    // Stored token counts represent provider usage; the estimate is analytics-only.
+    return { embedding: result.embedding, tokens: null }
   } catch (err: unknown) {
     if (
       err instanceof Error &&
@@ -69,7 +70,8 @@ export const createBedrockEmbedding = async (
 async function requestBedrockEmbedding(
   text: string,
   abortSignal?: AbortSignal,
-): Promise<BedrockEmbeddingResult> {
+): Promise<{ embedding: number[]; estimatedTokens: number }> {
+  const inputText = truncateEmbeddingText(text)
   const command = new InvokeModelCommand({
     modelId: BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
     contentType: 'application/json',
@@ -81,7 +83,7 @@ async function requestBedrockEmbedding(
         embeddingDimension: EMBEDDING_DIMENSION,
         text: {
           truncationMode: 'END',
-          value: truncateEmbeddingText(text),
+          value: inputText,
         },
       },
     }),
@@ -103,7 +105,7 @@ async function requestBedrockEmbedding(
 
   return {
     embedding,
-    tokens: Number.isFinite(parsed.inputTokenCount) ? parsed.inputTokenCount! : null,
+    estimatedTokens: Math.ceil(inputText.length / NOVA_EMBEDDING_CHARACTERS_PER_TOKEN),
   }
 }
 

@@ -11,6 +11,7 @@ export async function getTopicEmbeddingData(topicId: string): Promise<unknown | 
       bedrock_nova_multimodal_v1_content_sha256,
       bedrock_nova_multimodal_v1_input_sha256,
       bedrock_nova_multimodal_v1_embedding,
+      bedrock_nova_multimodal_v1_input_token_count,
       bedrock_nova_multimodal_v1_embedding_created_at
     FROM topics
     WHERE id = ${topicId}
@@ -35,6 +36,7 @@ export async function updateTopicEmbeddingData(data: {
     UPDATE topics
     SET bedrock_nova_multimodal_v1_input_sha256 = ${data.inputSha256},
       bedrock_nova_multimodal_v1_embedding = ${pgvector.toSql(data.embedding)},
+      bedrock_nova_multimodal_v1_input_token_count = ${data.tokens},
       bedrock_nova_multimodal_v1_embedding_created_at = ${createdAt}
     WHERE id = ${data.topicId}
   `),
