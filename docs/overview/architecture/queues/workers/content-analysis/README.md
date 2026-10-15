@@ -22,7 +22,7 @@ The processor accepts an optional owned entity-ID set when called directly. The 
 factory also accepts a finite invocation scope: copied entity IDs for all six backfills, copied
 image IDs for every cleanup stage, and one copied cleanup clock. Empty ID sets select no rows.
 Production omits this scope and retains the normal repository-wide sweeps and cleanup cutoffs;
-job payloads are unchanged. Importing `workers/create-content-analysis-worker.mts` does not start the production singleton
+job payloads are unchanged. Importing `processors/create-content-analysis-worker.mts` does not start the production singleton
 in `workers.mts`, so a scoped worker does not also start an unscoped worker during collection.
 Scoped dispatch preserves each stream's eligibility predicates and the same detector, guarded
 writes, and entity-cache invalidation. The real GlideMQ dispatch test covers all registered job

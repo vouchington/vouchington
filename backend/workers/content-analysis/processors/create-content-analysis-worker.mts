@@ -11,7 +11,7 @@ import {
   cleanupAbandonedUploads,
   type AbandonedUploadScope,
 } from '@services/images/cleanup-abandoned-uploads'
-import { processStaydownHash, type ProcessStaydownHashDeps } from '../processors/staydown-hash.mts'
+import { processStaydownHash, type ProcessStaydownHashDeps } from './staydown-hash.mts'
 
 type ContentAnalysisJobData = { id?: string }
 

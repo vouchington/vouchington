@@ -14,7 +14,7 @@ import {
   readContentAnalysisUserLanguage,
   readOwnedContentAnalysisJob,
 } from '@voucha/test-helpers/content-analysis-cleanup-fixtures'
-import { createContentAnalysisWorker } from './workers/create-content-analysis-worker.mts'
+import { createContentAnalysisWorker } from './processors/create-content-analysis-worker.mts'
 
 // Exercise native queue admission and worker dispatch for every registered job name.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())

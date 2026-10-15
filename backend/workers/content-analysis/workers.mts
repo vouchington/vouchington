@@ -1,3 +1,3 @@
-import { createContentAnalysisWorker } from './workers/create-content-analysis-worker.mts'
+import { createContentAnalysisWorker } from './processors/create-content-analysis-worker.mts'
 
 export const contentAnalysis = createContentAnalysisWorker()

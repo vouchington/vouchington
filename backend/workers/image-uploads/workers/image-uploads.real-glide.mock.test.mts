@@ -14,7 +14,7 @@ import {
   setImageHashAndProcessing,
 } from '@voucha/test-helpers/entities/images'
 import { enableStaydownMatchingForTest } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import { createContentAnalysisWorker } from '../../content-analysis/workers/create-content-analysis-worker.mts'
+import { createContentAnalysisWorker } from '../../content-analysis/processors/create-content-analysis-worker.mts'
 import { createImageUploadsWorker } from '../processors/create-image-uploads-worker.mts'
 
 // Use native GlideMQ for both queues and the worker in this regression.
