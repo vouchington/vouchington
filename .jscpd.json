@@ -15,6 +15,7 @@
     ],
     "minConfidence": 70,
     "entry": [
+      ".pr-shepherd/classification/auto-harness-session.mts",
       "backend/data-stores/psql/config-driven/*.mts",
       "backend/entrypoints/api/verify-ipv6-egress.mts",
       "backend/entrypoints/worker-cpu/serve.mts",
