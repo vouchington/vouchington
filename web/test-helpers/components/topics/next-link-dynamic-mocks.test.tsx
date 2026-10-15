@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createNextDynamicMock,
   flushPendingDynamicImports,
+  trackDynamicImport,
   trackDynamicLoader,
 } from './next-link-dynamic-mocks'
 
@@ -20,6 +21,28 @@ function deferredModule(): {
 }
 
 describe('next/dynamic loader lifetime', () => {
+  it('reports a loader rejection that settled before the flush and clears it afterward', async () => {
+    const error = new Error('dynamic module evaluation failed')
+    trackDynamicImport(Promise.reject(error))
+    await Promise.resolve()
+
+    await expect(flushPendingDynamicImports()).rejects.toMatchObject({ errors: [error] })
+    await expect(flushPendingDynamicImports()).resolves.toBeUndefined()
+  })
+
+  it('waits for other loaders before reporting a synchronous loader failure', async () => {
+    const error = new Error('dynamic loader threw')
+    const pending = deferredModule()
+    trackDynamicLoader(() => {
+      throw error
+    })
+    trackDynamicLoader(pending.loader)
+    const flush = flushPendingDynamicImports().catch((err: unknown) => err)
+    await Promise.resolve()
+    pending.finish()
+    await expect(flush).resolves.toMatchObject({ errors: [error] })
+  })
+
   it('flush waits for the loader createNextDynamicMock started', async () => {
     const pending = deferredModule()
     try {

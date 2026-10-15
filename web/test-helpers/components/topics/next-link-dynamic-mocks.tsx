@@ -25,12 +25,15 @@ export function createNextLinkMock(): typeof import('next/link') {
 // test so an import() cannot still be evaluating when jsdom tears the environment down
 // (EnvironmentTeardownError). A source-level ban cannot see which promise outlives the test.
 const pendingDynamicImports = new Set<Promise<void>>()
+const dynamicImportErrors: unknown[] = []
 
 /** Remember a next/dynamic loader promise until flush or until it settles. */
 export function trackDynamicImport(promise: Promise<unknown>): void {
   const settled = promise.then(
     () => undefined,
-    () => undefined,
+    err => {
+      dynamicImportErrors.push(err)
+    },
   )
   pendingDynamicImports.add(settled)
   void settled.finally(() => {
@@ -50,6 +53,8 @@ export async function flushPendingDynamicImports(): Promise<void> {
     pendingDynamicImports.clear()
     await Promise.all(current)
   }
+  const errors = dynamicImportErrors.splice(0)
+  if (errors.length > 0) throw new AggregateError(errors, 'Dynamic module loaders failed')
 }
 
 // Call the loader when dynamic() runs, not on mount. Add-tag tests read the child without
