@@ -20,6 +20,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/background": "workspace:^",
     "@voucha/types": "workspace:^"
   },
   "devDependencies": {}

@@ -2,4 +2,4 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-The `voteAggregation` worker dispatches the `vote-aggregation` queue by job name. It rejects unknown names and retains the elections payload-ordering-key check. Domain processors call the same services as the former workers, with a shared baseline concurrency of 10 and a dedicated command client.
+`@workers/vote-aggregation` no longer owns a Worker. It exports `voteAggregationHandlers`, one `backgroundHandler` per job of the `vote-aggregation` domain, and the shared [background worker](../background/README.md) runs them by namespaced job name (`vote-aggregation.<name>`). Domain processors call the same services as the former worker; the shared worker's pause check, rate-limit conversion, and dedicated command client apply. The election handler checks that the job's ordering key is its lane's `vote-aggregation:<lane>` key.

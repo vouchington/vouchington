@@ -6,7 +6,7 @@ Worker package for entity-created, updated, deleted, and related listener jobs.
 
 ## Exports
 
-- `entitiesListeners` - worker instance for the `entity-listeners` queue. Dispatch checks the job name against that job's enqueue payload before calling the processor.
+- `entityListenersHandlers` - the handlers of the `entity-listeners` domain, run by the shared [`background` worker](../background/README.md) (baseline concurrency 5). Each handler checks the payload against that job's schema before calling the processor. There is no per-queue worker.
 - `reconcileEntities` streams the durable checkpoint window and processes candidates before
   advancing it; `reconcileEntity` re-derives current state.
 - Post-created recovery awaits community-moderation and story-agent queue delivery, so a failed

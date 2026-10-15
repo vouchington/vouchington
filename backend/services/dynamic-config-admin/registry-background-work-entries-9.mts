@@ -59,7 +59,10 @@ export const backgroundWorkRegistryEntries9 = {
     config: voteWeightWorkConfig,
     label: 'Vote weight dispatch',
     maxValues: voteWeightWorkMaxValues,
-    descriptions: { dispatch_batch_size: 'Users per vote weight dispatcher page.' },
+    descriptions: {
+      dispatch_batch_size: 'Users per vote weight dispatcher page.',
+      election_fan_out_page_size: 'Votes per user election fan-out page after a weight change.',
+    },
   }),
   'crawl-boilerplate-removal-work-config': defineBoundedWorkNamespace({
     namespace: 'crawl-boilerplate-removal-work-config',

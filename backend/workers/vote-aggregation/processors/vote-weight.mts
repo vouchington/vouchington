@@ -16,6 +16,7 @@ export async function processRecalculateUserVoteWeight(
 ): Promise<void> {
   const { userId, forceRecalculate } = data
   const { changed } = await recalculateUserVoteWeight(userId, { forceRecalculate })
+  // The first page of the user's votes runs here; a longer history continues in fan-out jobs.
   if (changed) {
     await enqueueElectionUpdatesForUser(userId)
   }

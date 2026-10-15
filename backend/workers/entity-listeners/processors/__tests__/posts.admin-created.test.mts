@@ -15,7 +15,8 @@ import {
 import { crawlUrls } from '@queues/crawler/queues'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { postMentions } from '@queues/post-mentions/queues'
+import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'
+import { postMentionsQueue } from '@queues/post-mentions/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
 import '@services/referral-program-link-validations'
 import { createPostModerationContent } from '@services/posts/content'
@@ -54,10 +55,14 @@ describe('post entity listener creation dispatch', () => {
     })
     const recoveryError = new Error('recovery unavailable')
     const recoverPostCreatedEffects = vi.fn<(post: { id: string }) => Promise<void>>(async () => {
-      const mentionJobs = await readAllQueueJobs(postMentions)
-      expect(mentionJobs.some(job => (job.data as { postId?: string }).postId === postId)).toBe(
-        true,
-      )
+      const mentionJobs = await readAllQueueJobs(postMentionsQueue)
+      expect(
+        mentionJobs.some(
+          job =>
+            job.name === POST_MENTIONS_PROCESS_JOB.name &&
+            (job.data as { postId?: string }).postId === postId,
+        ),
+      ).toBe(true)
       throw recoveryError
     })
 

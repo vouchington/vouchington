@@ -3,6 +3,7 @@ import { throwVoteRouteFailures } from './settle-vote-route-operations.mts'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job, Queue, Worker } from 'glide-mq'
 import { vi } from 'vitest'
+import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 export async function observeOwnedVoteRouteAdmissions(
   owns: (data: unknown) => boolean,
   observeWorkers = true,
@@ -147,10 +148,7 @@ export async function observeOwnedVoteRouteAdmissions(
   }
   try {
     if (observeWorkers) {
-      listen(
-        'vote-aggregation',
-        (await import('../workers/vote-aggregation/workers.mts')).voteAggregation,
-      )
+      listen('vote-aggregation', getSharedBackgroundWorker())
     }
     const real = retry.retryTransientEnqueue
     const spy = vi.spyOn(retry, 'retryTransientEnqueue')
@@ -183,14 +181,15 @@ export function observeOwnedPenaltyAdmissions(ownedUserIds: Set<string>) {
 
 function voteAdmissionKind(name: string): string {
   switch (name) {
-    case 'processUpdateElectionVoteStats':
+    case 'vote-aggregation.processUpdateElectionVoteStats':
       return 'elections'
-    case 'processUpdateTopicRatingStats':
+    case 'vote-aggregation.processUpdateTopicRatingStats':
       return 'topic-ratings'
-    case 'processVoteIntegrityCheck':
+    case 'vote-aggregation.processVoteIntegrityCheck':
       return 'vote-integrity'
-    case 'processRecalculateUserVoteWeight':
-    case 'processRecalculateVoteWeightDispatcher':
+    case 'vote-aggregation.processRecalculateUserVoteWeight':
+    case 'vote-aggregation.processRecalculateVoteWeightDispatcher':
+    case 'vote-aggregation.enqueueUserElectionUpdates':
       return 'vote-weight'
     default:
       return 'vote-aggregation'

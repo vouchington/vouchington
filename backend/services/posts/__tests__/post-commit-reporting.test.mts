@@ -1,4 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import {
+  ENTITY_LISTENERS_POST_CREATED_JOB,
+  ENTITY_LISTENERS_POST_UPDATED_JOB,
+} from '@queues/background/enqueues/entity-listeners-jobs'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { ValkeyCache } from '@data-stores/valkey/cache'
@@ -25,7 +29,7 @@ describe('post-commit failure reporting ownership', () => {
         restore(() => spy.mockRestore())
         spy.mockImplementation((name, data, options) => {
           if (
-            name === 'processPostCreated' &&
+            name === ENTITY_LISTENERS_POST_CREATED_JOB.name &&
             data &&
             typeof data === 'object' &&
             'id' in data &&
@@ -114,7 +118,7 @@ describe('post-commit failure reporting ownership', () => {
         restore(() => spy.mockRestore())
         spy.mockImplementation((name, data, options) => {
           if (
-            name === 'processPostUpdated' &&
+            name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
             data &&
             typeof data === 'object' &&
             'id' in data &&
@@ -141,7 +145,7 @@ describe('post-commit failure reporting ownership', () => {
         expect(result).toBe(post)
         expect(admittedCalls).toEqual([
           {
-            name: 'processPostUpdated',
+            name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
             data: { id: post.id, contentChanged: false },
           },
         ])

@@ -158,7 +158,7 @@ await onceElectionVoteStatsCompleted({ electionId: postId, orderingKey: 'post' }
 
 This service's own test files (e.g. `post/votes-upsert.generated.test.mts`,
 `topic/votes-upsert.generated.test.mts`, `agent-moderation/votes-upsert.generated.test.mts`,
-`user-vouch/votes-upsert.test.mts`) cannot import `onceElectionVoteStatsCompleted` — its helper imports `@workers/vote-aggregation`, which
+`user-vouch/votes-upsert.test.mts`) cannot import `onceElectionVoteStatsCompleted` — its helper imports the shared background worker, whose handlers import `@workers/vote-aggregation`, which
 already depends on `@services/elections-votes` (`processors/elections.mts` `processElection` calls the
 per-entity-type update functions directly), and `pnpm-workspace.yaml` sets
 `disallowWorkspaceCycles: true`, so the reverse import would be a forbidden cycle. Those files keep

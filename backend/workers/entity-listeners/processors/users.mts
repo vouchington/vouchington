@@ -23,10 +23,6 @@ export const processUserLoggedIn = async ({ id }: { id: string }) => {
   void enqueueRecalculateUserVoteWeight(id)
 }
 
-export const processUserDeleted = async ({ id }: { id: string }) => {
-  await invalidate.users(id)
-}
-
 export const processAutoFollowReferrer = async ({
   newUserId,
   referrerId,

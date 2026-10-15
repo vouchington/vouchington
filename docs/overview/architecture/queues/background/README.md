@@ -45,6 +45,10 @@ registry does not know.
 - **Fan-out is paged.** A dispatcher or backfill enqueues one bounded page and continues through a
   cursor, because ranked priority orders only the jobs promoted together.
 
+Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
+`story-post-related-url-projections`, `post-publication`, `vote-aggregation`, and
+`entity-listeners`.
+
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses
 to start when a job has no handler, a handler has no job, or a job has two handlers.
 

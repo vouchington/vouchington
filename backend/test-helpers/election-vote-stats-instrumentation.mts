@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job, Queue } from 'glide-mq'
 import { vi } from 'vitest'
+import { ENTITY_LISTENERS_POST_CREATED_JOB } from '../queues/background/enqueues/entity-listeners-jobs.mts'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import type * as Retry from '../data-stores/valkey-glide-mq/glide-mq-retry.mts'
 
 export type ElectionAdmission = {
@@ -39,7 +41,7 @@ export function createElectionInstrumentation(
         )
         started.push(job)
         void job.catch(retainRejection)
-        if (name === 'processPostCreated')
+        if (name === ENTITY_LISTENERS_POST_CREATED_JOB.name)
           entityJobs.push({ entityId: (data as { id: string }).id, job })
         return job
       })
@@ -61,7 +63,7 @@ export function createElectionInstrumentation(
       const bulkSpy = vi.spyOn(statsQueue, 'addBulk').mockImplementation(jobs => {
         assertOpen()
         const item = context.getStore()
-        const stats = jobs.filter(job => job.name === 'processUpdateElectionVoteStats')
+        const stats = jobs.filter(job => job.name === VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name)
         if (item && stats.length && !admissions.includes(item)) {
           item.ids = stats.map(job => (job.data as { electionId: string }).electionId)
           admissions.push(item)

@@ -59,15 +59,12 @@
     "@workers/cache-purge": "workspace:^",
     "@workers/crawl-embeds": "workspace:^",
     "@workers/emails": "workspace:^",
-    "@workers/entity-listeners": "workspace:^",
     "@workers/find-your-friends": "workspace:^",
     "@workers/follower-distributions": "workspace:^",
     "@workers/kagi-smallweb": "workspace:^",
     "@workers/memberships": "workspace:^",
     "@workers/notifications": "workspace:^",
     "@workers/oauth-authorization-exchange": "workspace:^",
-    "@workers/post-mentions": "workspace:^",
-    "@workers/post-publication": "workspace:^",
     "@workers/psql": "workspace:^",
     "@workers/rss-feed-maintenance": "workspace:^",
     "@workers/rss-feeds": "workspace:^",
@@ -75,10 +72,8 @@
     "@workers/ses-inbound-sqs": "workspace:^",
     "@workers/sitemaps": "workspace:^",
     "@workers/spam-detection": "workspace:^",
-    "@workers/story-post-related-url-projections": "workspace:^",
     "@workers/stripe-events-sqs": "workspace:^",
     "@workers/urls-domains-blacklist": "workspace:^",
-    "@workers/user-rss-feed-imports": "workspace:^",
-    "@workers/vote-aggregation": "workspace:^"
+    "@workers/user-rss-feed-imports": "workspace:^"
   }
 }

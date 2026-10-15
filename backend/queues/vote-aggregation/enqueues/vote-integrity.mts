@@ -1,24 +1,9 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
-import {
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  VOTE_INTEGRITY_DEDUPLICATION_TTL_MS,
-} from './config-vote-integrity.mts'
-import { voteAggregation } from '../queues.mts'
-import type { ProcessVoteIntegrityCheckData, VoteIntegrityJobs } from './types-vote-integrity.mts'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import { VOTE_AGGREGATION_VOTE_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
+import { VOTE_INTEGRITY_DEDUPLICATION_TTL_MS } from './config-vote-integrity.mts'
 
-const JOB_NAME: VoteIntegrityJobs = 'processVoteIntegrityCheck'
-
-const enqueueVoteIntegrityCheckJob = createEnqueueFunction<
-  ProcessVoteIntegrityCheckData,
-  VoteIntegrityJobs
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-})
+const enqueueVoteIntegrityCheckJob = createBackgroundEnqueue(VOTE_AGGREGATION_VOTE_INTEGRITY_JOB)
 
 export function enqueueVoteIntegrityCheck(
   entityType: string,
@@ -27,12 +12,14 @@ export function enqueueVoteIntegrityCheck(
   ipAddress: string | null,
   score: number,
 ): EnqueueReturnType {
-  return enqueueVoteIntegrityCheckJob({ entityType, entityId, userId, ipAddress, score }, {
-    priority: PRIORITY_DEFAULT,
-    deduplication: {
-      id: `processVoteIntegrityCheck__${entityType}__${entityId}`,
-      mode: 'debounce',
-      ttl: VOTE_INTEGRITY_DEDUPLICATION_TTL_MS,
+  return enqueueVoteIntegrityCheckJob(
+    { entityType, entityId, userId, ipAddress, score },
+    {
+      deduplication: {
+        id: `processVoteIntegrityCheck__${entityType}__${entityId}`,
+        mode: 'debounce',
+        ttl: VOTE_INTEGRITY_DEDUPLICATION_TTL_MS,
+      },
     },
-  } satisfies Partial<JobOptions>)
+  )
 }

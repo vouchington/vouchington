@@ -27,13 +27,13 @@ and unblock writers enqueue changed hostname IDs in PostgreSQL.
 
 [`background`](background/README.md) is the shared IO queue for background domains of the same
 shape, served by one [worker](workers/background/README.md) that dispatches by `<domain>.<name>`
-through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-inbound` and
-`openai-moderation`; the remaining io queues follow under
+through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-inbound`,
+`openai-moderation`, `post-mentions`, `story-post-related-url-projections`, `post-publication`, `vote-aggregation`, and `entity-listeners`; the remaining io queues follow under
 [#2855](https://github.com/vouchington/vouchington/issues/2855).
 
 ## Vote aggregation
 
-[`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity in one ranked-priority IO queue. The single worker dispatches by the unchanged job names and retains election ordering lanes.
+[`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity as a domain of the shared [`background`](background/README.md) queue (`vote-aggregation.<name>` jobs). Election tallies keep per-lane ordering keys; the user election fan-out and the report-integrity backfill enqueue one bounded page and continue through a cursor.
 
 ## Contents
 
@@ -46,21 +46,21 @@ through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-i
 
 ## Post publication reconciliation
 
-[`post-publication`](post-publication/README.md) is an IO worker queue with one global
-reconciliation ordering key. Its five-minute scheduler and operator backfill drain
+[`post-publication`](post-publication/README.md) is a domain of the shared `background` queue with one
+domain-wide serial group. Its five-minute scheduler and operator backfill drain
 `post_publication_dirty_work`; the processor applies only replay-safe cache, topic-rating, and
 sitemap projections, including landing-pages family refreshes for review targets, before its
 generation-fenced acknowledgement. See the
 [worker contract](workers/post-publication/README.md) for lease and retry semantics.
 The dispatcher uses an expiring throttle without a stable terminal job ID, keeping later operator
 and backfill triggers replayable even while completed job history is retained.
-Its operator-triggered shadow audit chains bounded pages with the same ordering key: repairs use a
+Its operator-triggered shadow audit chains bounded pages in the same group: repairs use a
 durable checkpoint, while dry runs pass their read-only UUID cursor in the continuation payload.
 
 ## Story post related URL projection
 
-[`story-post-related-url-projections`](story-post-related-url-projections/README.md) is an IO worker
-queue that converges a story post to the complete active set of eligible story-member URLs. Story
+[`story-post-related-url-projections`](story-post-related-url-projections/README.md) is a `background`
+domain that converges a story post to the complete active set of eligible story-member URLs. Story
 mutations persist generation-fenced work in PostgreSQL before enqueueing; each job scans or prunes
 one bounded page, and the five-minute scheduler recovers missed or terminal enqueues.
 

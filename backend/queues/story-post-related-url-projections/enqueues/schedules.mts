@@ -1,30 +1,24 @@
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import {
-  PRIORITY_RECOVERY,
-  QUEUE_NAME,
-  STORY_POST_RELATED_URL_PROJECTION_ORDERING,
-} from '../config.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB } from '@queues/background/enqueues/story-post-related-url-projections-jobs'
 import { enqueueReconcileStoryPostRelatedUrlProjections } from '../enqueues.mts'
-import { storyPostRelatedUrlProjections } from '../queues.mts'
-import type { StoryPostRelatedUrlProjectionJobs } from '../types.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'reconcileStoryPostRelatedUrlProjections',
     registration: 'sequential',
     repeat: { every: 300_000 },
     template: {
-      name: 'processReconcileStoryPostRelatedUrlProjections' as StoryPostRelatedUrlProjectionJobs,
+      name: STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name,
       data: {},
-      opts: {
+      opts: toSchedulerTemplateOptions({
         ...ENQUEUE_BASE_DEFAULTS,
-        priority: PRIORITY_RECOVERY,
-        ordering: STORY_POST_RELATED_URL_PROJECTION_ORDERING.reconciliation,
-      },
+        ...STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.options,
+      }),
     },
     operatorSurfaces: [
       {
@@ -37,7 +31,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(storyPostRelatedUrlProjections, scheduledJobManifest)
-}

@@ -1,22 +1,11 @@
-import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { activitypub } from '@queues/activitypub/queues'
-import { enqueueReconcilePostPublication } from '@queues/post-publication/enqueues'
-import { postPublication as postPublicationQueue } from '@queues/post-publication/queues'
 import { cachePurge } from '@workers/cache-purge/workers'
 import { crawlEmbeds } from '@workers/crawl-embeds/workers'
-import { postPublication } from '@workers/post-publication/workers'
-import { storyPostRelatedUrlProjections } from '@workers/story-post-related-url-projections/workers'
-import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
 import { WORKER_DEFINITIONS } from './worker-definitions.mts'
 
 async function closeIdentityLoadedWorkers() {
-  await Promise.all([
-    cachePurge.close(),
-    crawlEmbeds.close(),
-    postPublication.close(),
-    storyPostRelatedUrlProjections.close(),
-  ])
+  await Promise.all([cachePurge.close(), crawlEmbeds.close()])
 }
 
 function expectLazyImport(
@@ -37,21 +26,12 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
       ['background', 'background', 'createBackgroundWorker'],
-      [
-        'story-post-related-url-projections',
-        'story-post-related-url-projections',
-        'storyPostRelatedUrlProjections',
-      ],
-      ['post-publication', 'post-publication', 'postPublication'],
-      ['vote-aggregation', 'vote-aggregation', 'voteAggregation'],
       ['cache-purge', 'cache-purge', 'cachePurge'],
-      ['entity-listeners', 'entity-listeners', 'entitiesListeners'],
       ['emails', 'emails', 'emails'],
       ['urls-domains-blacklist', 'urls-domains-blacklist', 'urlsDomainsBlacklist'],
       ['rss-feeds', 'rss-feeds', 'rss_feeds'],
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
-      ['post-mentions', 'post-mentions', 'postMentions'],
       ['psql', 'psql', 'psql'],
       ['account-lifecycle', 'account-lifecycle', 'accountLifecycle'],
       [
@@ -109,35 +89,10 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     }
   })
 
-  it('post-publication definition load resolves to the reconciliation worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'post-publication')!
-    const worker = await definition.load()
-    try {
-      expect(worker).toBe(postPublication)
-    } finally {
-      await worker.close()
-    }
-  })
-
-  it('story URL projection definition load resolves to its reconciliation worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(
-      d => d.queueName === 'story-post-related-url-projections',
-    )!
-    const worker = await definition.load()
-    expect(worker).toBe(storyPostRelatedUrlProjections)
-  })
-
-  it('persists a unique post-publication dispatcher after definition identity loads', async () => {
-    const deduplicationId = `post-publication-definition-${randomUUID()}`
-    const dispatch = await readEnqueuedJob(
-      postPublicationQueue,
-      await enqueueReconcilePostPublication({ deduplicationId }),
-    )
-    expect(dispatch).toMatchObject({
-      name: 'processReconcilePostPublication',
-      data: {},
-      opts: { deduplication: { id: deduplicationId, mode: 'throttle', ttl: 60_000 } },
-    })
+  it('serves post-publication and story URL projections only through the background definition', () => {
+    const queueNames = WORKER_DEFINITIONS.map(definition => definition.queueName)
+    expect(queueNames).not.toContain('post-publication')
+    expect(queueNames).not.toContain('story-post-related-url-projections')
   })
 
   it('crawl-embeds definition load resolves to the crawlEmbeds worker', async () => {

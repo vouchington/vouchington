@@ -189,7 +189,7 @@ async function hasEntityRelationVoteStatsJob(relationId: string): Promise<boolea
   // state filter entirely when it is omitted (glide-mq testing.js searchJobs), so this still narrows
   // by name + data and just stops caring which state the match is in.
   const jobs = await voteAggregation.searchJobs({
-    name: 'processUpdateElectionVoteStats',
+    name: 'vote-aggregation.processUpdateElectionVoteStats',
     data: {
       electionId: relationId,
       relationTable: 'relation__post__category__topic',

@@ -1,12 +1,18 @@
 import { createReportIntegrityFlag } from '@services/report-integrity/create-flag'
 import { detectMassReportCampaign } from '@services/report-integrity/detect'
 import {
-  streamEntitiesWithPendingReportsBatches,
+  listPendingReportEntityPage,
   type PendingReportEntity,
 } from '@services/report-integrity/backfill'
-import { enqueueReportIntegrityCheckBatch } from '@queues/vote-aggregation/enqueues/report-integrity'
+import {
+  enqueueContinueBackfillReportIntegrity,
+  enqueueReportIntegrityCheckBatch,
+} from '@queues/vote-aggregation/enqueues/report-integrity'
 import onError from '@modules/on-error'
-import type { ProcessReportIntegrityCheckData } from '@queues/vote-aggregation/enqueues/types-report-integrity'
+import type {
+  BackfillReportIntegrityData,
+  ProcessReportIntegrityCheckData,
+} from '@queues/vote-aggregation/enqueues/types-report-integrity'
 
 export async function processReportIntegrityCheck(
   data: ProcessReportIntegrityCheckData,
@@ -32,13 +38,13 @@ export async function processReportIntegrityCheck(
   }
 }
 
+/** Enqueues one bounded page of integrity checks, then continues from the page's last entity id. */
 export async function processBackfillReportIntegrity(
+  data: BackfillReportIntegrityData = {},
   target?: PendingReportEntity,
 ): Promise<{ enqueued: number }> {
-  let enqueued = 0
-  for await (const batch of streamEntitiesWithPendingReportsBatches(target)) {
-    await enqueueReportIntegrityCheckBatch(batch)
-    enqueued += batch.length
-  }
-  return { enqueued }
+  const { entities, nextCursor } = await listPendingReportEntityPage(data.afterId, target)
+  if (entities.length > 0) await enqueueReportIntegrityCheckBatch(entities)
+  if (nextCursor) await enqueueContinueBackfillReportIntegrity(nextCursor)
+  return { enqueued: entities.length }
 }

@@ -1,39 +1,40 @@
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
+import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import {
-  DEDUPLICATION_TTL_MS,
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-} from './config-entity-metrics-cache-refresh.mts'
-import { voteAggregation } from '../queues.mts'
-import type { EntityMetricsCacheRefreshJobs } from './types-entity-metrics-cache-refresh.mts'
+  VOTE_AGGREGATION_REFRESH_POST_METRICS_JOB,
+  VOTE_AGGREGATION_REFRESH_TOPIC_METRICS_JOB,
+  VOTE_AGGREGATION_REFRESH_USER_METRICS_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
+import { DEDUPLICATION_TTL_MS } from './config-entity-metrics-cache-refresh.mts'
 
-function makeEnqueueBulkRefresh(processorName: EntityMetricsCacheRefreshJobs) {
-  const enqueue = createBulkEnqueueFunction<string, { id: string }, EntityMetricsCacheRefreshJobs>({
-    queue: voteAggregation,
-    queueName: QUEUE_NAME,
-    jobName: processorName,
-    buildJob: id => ({
-      data: { id },
-      opts: {
-        deduplication: {
-          id: `${processorName}__${id}`,
-          mode: 'debounce' as const,
-          ttl: DEDUPLICATION_TTL_MS,
-        },
+function makeEnqueueBulkRefresh(
+  job: typeof VOTE_AGGREGATION_REFRESH_TOPIC_METRICS_JOB,
+  deduplicationPrefix: string,
+) {
+  const enqueue = createBackgroundBulkEnqueue(job, (id: string) => ({
+    data: { id },
+    opts: {
+      deduplication: {
+        id: `${deduplicationPrefix}__${id}`,
+        mode: 'debounce' as const,
+        ttl: DEDUPLICATION_TTL_MS,
       },
-    }),
-  })
+    },
+  }))
 
   return (ids: string[], priority?: number): EnqueueReturnType =>
-    enqueue(ids, {
-      priority: priority ?? PRIORITY_DEFAULT,
-    } satisfies Partial<JobOptions>)
+    enqueue(ids, priority === undefined ? {} : { priority })
 }
 
 export const enqueueBulkRefreshTopicMetricsById = makeEnqueueBulkRefresh(
+  VOTE_AGGREGATION_REFRESH_TOPIC_METRICS_JOB,
   'processRefreshTopicMetrics',
 )
-export const enqueueBulkRefreshPostMetricsById = makeEnqueueBulkRefresh('processRefreshPostMetrics')
-export const enqueueBulkRefreshUserMetricsById = makeEnqueueBulkRefresh('processRefreshUserMetrics')
+export const enqueueBulkRefreshPostMetricsById = makeEnqueueBulkRefresh(
+  VOTE_AGGREGATION_REFRESH_POST_METRICS_JOB,
+  'processRefreshPostMetrics',
+)
+export const enqueueBulkRefreshUserMetricsById = makeEnqueueBulkRefresh(
+  VOTE_AGGREGATION_REFRESH_USER_METRICS_JOB,
+  'processRefreshUserMetrics',
+)

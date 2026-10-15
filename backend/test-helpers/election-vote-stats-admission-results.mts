@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import type { createElectionInstrumentation } from './election-vote-stats-instrumentation.mts'
 import type { ElectionTerminal } from './election-vote-stats-events.mts'
 
@@ -68,7 +69,7 @@ export async function completeOwnedElectionAdmissions(
   for (const item of [...creation, ...votes]) {
     const jobs = await item.jobs
     for (const job of Array.isArray(jobs) ? (jobs as Job<{ electionId: string }>[]) : []) {
-      if (job.name !== 'processUpdateElectionVoteStats') continue
+      if (job.name !== VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name) continue
       const id = job.data.electionId
       const target = targets.get(id)
       if (target) owned.get(target)!.set(job.id, id)

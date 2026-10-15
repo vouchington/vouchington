@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
+import { VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { processRecalculateVoteWeightDispatcher } from './vote-weight.mts'
 
@@ -19,7 +20,7 @@ describe('vote weight dispatcher processor', () => {
     expect(
       waiting.some(
         job =>
-          job.name === 'processRecalculateUserVoteWeight' &&
+          job.name === VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name &&
           (job.data as { userId?: string }).userId === user!.id,
       ),
     ).toBe(true)

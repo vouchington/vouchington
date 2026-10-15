@@ -1,17 +1,15 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-  VOTE_WEIGHT_DEDUPLICATION_TTL_MS,
-} from './config-vote-weight.mts'
-import { voteAggregation } from '../queues.mts'
-import type { ProcessRecalculateUserVoteWeightData, VoteWeightJobs } from './types-vote-weight.mts'
+  VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
+  VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
+  VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
+  type UserElectionFanOutCursor,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
+import { VOTE_WEIGHT_DEDUPLICATION_TTL_MS } from './config-vote-weight.mts'
+import type { ProcessRecalculateUserVoteWeightData } from './types-vote-weight.mts'
 
-const RECALCULATE_JOB_NAME: VoteWeightJobs = 'processRecalculateUserVoteWeight'
-const DISPATCHER_JOB_NAME: VoteWeightJobs = 'processRecalculateVoteWeightDispatcher'
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 type DispatcherOptions = {
   deduplicationId?: string
@@ -22,7 +20,6 @@ function buildRecalculateUserVoteWeightOptions(
   forceRecalculate?: boolean,
 ): Partial<JobOptions> {
   return {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processRecalculateUserVoteWeight__${userId}${forceRecalculate ? '__force' : ''}`,
       mode: 'debounce',
@@ -31,37 +28,25 @@ function buildRecalculateUserVoteWeightOptions(
   }
 }
 
-const enqueueRecalculateUserVoteWeightJob = createEnqueueFunction<
-  ProcessRecalculateUserVoteWeightData,
-  VoteWeightJobs
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: RECALCULATE_JOB_NAME,
-})
+const enqueueRecalculateUserVoteWeightJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
+)
 
-const enqueueBulkRecalculateUserVoteWeightJobs = createBulkEnqueueFunction<
-  ProcessRecalculateUserVoteWeightData,
-  ProcessRecalculateUserVoteWeightData,
-  VoteWeightJobs
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: RECALCULATE_JOB_NAME,
-  buildJob: data => ({
+const enqueueBulkRecalculateUserVoteWeightJobs = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
+  (data: ProcessRecalculateUserVoteWeightData) => ({
     data,
     opts: buildRecalculateUserVoteWeightOptions(data.userId, data.forceRecalculate),
   }),
-})
+)
 
-const enqueueRecalculateVoteWeightDispatcherJob = createEnqueueFunction<
-  { afterId?: string | null },
-  VoteWeightJobs
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: DISPATCHER_JOB_NAME,
-})
+const enqueueRecalculateVoteWeightDispatcherJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
+)
+
+const enqueueUserElectionFanOutJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
+)
 
 export function enqueueRecalculateUserVoteWeight(
   userId: string,
@@ -88,15 +73,31 @@ export function enqueueRecalculateVoteWeightDispatcher(
 ): EnqueueReturnType {
   return enqueueRecalculateVoteWeightDispatcherJob(
     { afterId },
-    {
-      priority: PRIORITY_DISPATCHER,
-      ...(options?.deduplicationId && {
-        deduplication: {
-          id: options.deduplicationId,
-          mode: 'throttle' as const,
-          ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-        },
-      }),
-    },
+    options?.deduplicationId
+      ? {
+          deduplication: {
+            id: options.deduplicationId,
+            mode: 'throttle' as const,
+            ttl: BACKFILL_DEDUPLICATION_TTL_MS,
+          },
+        }
+      : undefined,
+  )
+}
+
+/**
+ * Starts (cursor null) or continues one user's election fan-out. A start carries no job id, so a
+ * second weight change after the first run began still gets its own full pass. A continuation's id
+ * is its cursor: two runs that reach the same cursor read the same remaining votes once.
+ */
+export function enqueueUserElectionFanOut(
+  userId: string,
+  cursor: UserElectionFanOutCursor | null = null,
+): EnqueueReturnType {
+  return enqueueUserElectionFanOutJob(
+    { userId, cursor },
+    cursor
+      ? { jobId: `userElectionFanOut__${userId}__${cursor.lane}__${cursor.afterId}` }
+      : undefined,
   )
 }

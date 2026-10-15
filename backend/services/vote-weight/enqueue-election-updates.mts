@@ -9,10 +9,13 @@ import {
   enqueueBulkUpdateAgentModerationElectionVoteStats,
   enqueueBulkUpdateUserVouchElectionVoteStats,
 } from '@queues/vote-aggregation/enqueues/elections'
+import { enqueueUserElectionFanOut } from '@queues/vote-aggregation/enqueues/vote-weight'
+import type { UserElectionFanOutCursor } from '@queues/vote-aggregation/enqueues/types-vote-weight'
 import {
   createEntityRelationElectionTarget,
   entityRelationElectionTables,
 } from '@services/elections-votes/entity-relation'
+import { getVoteWeightElectionFanOutPageSize } from './work-limits.mts'
 
 type EntityRow = {
   entity_type: string
@@ -20,53 +23,101 @@ type EntityRow = {
   entity_relation: string | null
 }
 
-export async function enqueueElectionUpdatesForUser(userId: string): Promise<string[]> {
-  const { rows } = await read<EntityRow>(sql`/* enqueueElectionUpdatesForUser */
-    SELECT 'post' AS entity_type, post_id AS entity_id, NULL::text AS entity_relation
-    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
-    FROM post_votes
-    WHERE user_id = ${userId}
+type PageRow = EntityRow & { lane: number }
 
-    UNION ALL
+export type ElectionUpdatePage = {
+  /** Ids of the election jobs this page admitted. */
+  jobIds: string[]
+  /** Where the next page resumes, or null when this page reached the end of the user's votes. */
+  nextCursor: UserElectionFanOutCursor | null
+}
 
-    SELECT 'topic', topic_id, NULL
-    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
-    FROM topic_votes
-    WHERE user_id = ${userId}
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 
-    UNION ALL
+/**
+ * Queues the recompute of the elections the user has voted in, from `cursor` (the start by
+ * default). It reads and enqueues one bounded page; a full page queues a fan-out job that
+ * continues from its last row, so a user with a very large vote history never loads or enqueues
+ * all of it at once and the caller (a request, a webhook, a job) stays bounded.
+ */
+export async function enqueueElectionUpdatesForUser(
+  userId: string,
+  cursor: UserElectionFanOutCursor | null = null,
+): Promise<ElectionUpdatePage> {
+  const page = await enqueueElectionUpdatePageForUser(userId, cursor)
+  if (page.nextCursor) await enqueueUserElectionFanOut(userId, page.nextCursor)
+  return page
+}
 
-    SELECT 'hostname', hostname_id, NULL
-    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
-    FROM hostname_votes
-    WHERE user_id = ${userId}
+/**
+ * Reads one page of the user's votes ordered by (lane, id) after `cursor`, and enqueues the
+ * election recompute for each. Each lane is one vote table; a page that is not full is the last.
+ */
+export async function enqueueElectionUpdatePageForUser(
+  userId: string,
+  cursor: UserElectionFanOutCursor | null,
+  limit = getVoteWeightElectionFanOutPageSize(),
+): Promise<ElectionUpdatePage> {
+  const lane = cursor?.lane ?? 0
+  const afterId = cursor?.afterId ?? START_OF_IDS
+  const { rows } = await read<PageRow>(sql`/* enqueueElectionUpdatesForUser */
+    SELECT lane, entity_type, entity_id, entity_relation FROM (
+      (SELECT 1 AS lane, 'post' AS entity_type, post_id AS entity_id, NULL::text AS entity_relation
+      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
+      FROM post_votes
+      WHERE user_id = ${userId} AND (1 > ${lane}::int OR (1 = ${lane}::int AND post_id > ${afterId}::uuid))
+      ORDER BY post_id LIMIT ${limit})
 
-    UNION ALL
+      UNION ALL
 
-    SELECT 'rss_feed_item', rss_feed_item_id, NULL
-    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
-    FROM rss_feed_item_votes
-    WHERE user_id = ${userId}
+      (SELECT 2, 'topic', topic_id, NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
+      FROM topic_votes
+      WHERE user_id = ${userId} AND (2 > ${lane}::int OR (2 = ${lane}::int AND topic_id > ${afterId}::uuid))
+      ORDER BY topic_id LIMIT ${limit})
 
-    UNION ALL
+      UNION ALL
 
-    SELECT 'entity_relation', entity_relation_id, entity_relation::text
-    FROM view_entity_relation_votes
-    WHERE user_id = ${userId}
+      (SELECT 3, 'hostname', hostname_id, NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
+      FROM hostname_votes
+      WHERE user_id = ${userId} AND (3 > ${lane}::int OR (3 = ${lane}::int AND hostname_id > ${afterId}::uuid))
+      ORDER BY hostname_id LIMIT ${limit})
 
-    UNION ALL
+      UNION ALL
 
-    SELECT 'agent_moderation', agent_moderation_id, NULL
-    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
-    FROM agent_moderation_votes
-    WHERE user_id = ${userId}
+      (SELECT 4, 'rss_feed_item', rss_feed_item_id, NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
+      FROM rss_feed_item_votes
+      WHERE user_id = ${userId} AND (4 > ${lane}::int OR (4 = ${lane}::int AND rss_feed_item_id > ${afterId}::uuid))
+      ORDER BY rss_feed_item_id LIMIT ${limit})
 
-    UNION ALL
+      UNION ALL
 
-    SELECT 'user_vouch', target_user_id, NULL
-    -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
-    FROM user_vouch_votes
-    WHERE user_id = ${userId}
+      (SELECT 5, 'entity_relation', entity_relation_id, entity_relation::text
+      FROM view_entity_relation_votes
+      WHERE user_id = ${userId} AND (5 > ${lane}::int OR (5 = ${lane}::int AND entity_relation_id > ${afterId}::uuid))
+      ORDER BY entity_relation_id LIMIT ${limit})
+
+      UNION ALL
+
+      (SELECT 6, 'agent_moderation', agent_moderation_id, NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
+      FROM agent_moderation_votes
+      WHERE user_id = ${userId} AND (6 > ${lane}::int OR (6 = ${lane}::int AND agent_moderation_id > ${afterId}::uuid))
+      ORDER BY agent_moderation_id LIMIT ${limit})
+
+      UNION ALL
+
+      (SELECT 7, 'user_vouch', target_user_id, NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: a user-wide vote lookup spans target-ID partitions for every vote table
+      FROM user_vouch_votes
+      WHERE user_id = ${userId} AND (7 > ${lane}::int OR (7 = ${lane}::int AND target_user_id > ${afterId}::uuid))
+      ORDER BY target_user_id LIMIT ${limit})
+    ) page
+    ORDER BY lane, entity_id
+    LIMIT ${limit}
   `)
 
   const byType = new Map<string, string[]>()
@@ -92,7 +143,11 @@ export async function enqueueElectionUpdatesForUser(userId: string): Promise<str
     enqueueBulkUpdateAgentModerationElectionVoteStats(byType.get('agent_moderation') ?? []),
     enqueueBulkUpdateUserVouchElectionVoteStats(byType.get('user_vouch') ?? []),
   ])
-  return enqueueResults.flatMap(getBulkEnqueuedJobIds)
+  const last = rows.at(-1)
+  return {
+    jobIds: enqueueResults.flatMap(getBulkEnqueuedJobIds),
+    nextCursor: last && rows.length === limit ? { lane: last.lane, afterId: last.entity_id } : null,
+  }
 }
 
 export function getBulkEnqueuedJobIds(result: unknown): string[] {

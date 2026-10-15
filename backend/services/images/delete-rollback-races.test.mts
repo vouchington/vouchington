@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { setPostClearanceStatus } from '@services/post-clearance'
 import { createPostModerationContent } from '@services/posts/content'
@@ -23,10 +23,6 @@ import { completeLocalTestImagePlacementDeliveryRecord } from '../../test-helper
 import { deleteImageById } from './delete.mts'
 
 describe('deleteImageById rollback races', () => {
-  beforeEach(async () => {
-    await entitiesListeners.obliterate({ force: true })
-  })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })

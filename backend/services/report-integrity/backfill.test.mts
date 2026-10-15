@@ -6,20 +6,24 @@ import {
 } from '@voucha/test-helpers'
 import crypto from 'node:crypto'
 import type { PrivateUser } from '@services/users/types'
-import { type PendingReportEntity, streamEntitiesWithPendingReportsBatches } from './backfill.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { type PendingReportEntity, listPendingReportEntityPage } from './backfill.mts'
 import { MASS_REPORT_THRESHOLD } from './config.mts'
+import { reportIntegrityWorkConfig } from './work-limits.mts'
 
-async function collectAll(
-  gen: AsyncGenerator<PendingReportEntity[], void, unknown>,
-): Promise<PendingReportEntity[]> {
+async function collectAll(): Promise<PendingReportEntity[]> {
   const results: PendingReportEntity[] = []
-  for await (const batch of gen) {
-    results.push(...batch)
-  }
+  let cursor: string | undefined
+  do {
+    const page = await listPendingReportEntityPage(cursor)
+    results.push(...page.entities)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor)
   return results
 }
 
-describe('streamEntitiesWithPendingReportsBatches', () => {
+describe('listPendingReportEntityPage', () => {
   let author: PrivateUser
 
   beforeAll(async () => {
@@ -42,7 +46,7 @@ describe('streamEntitiesWithPendingReportsBatches', () => {
       entityId: postId,
     })
 
-    const results = await collectAll(streamEntitiesWithPendingReportsBatches())
+    const results = await collectAll()
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeDefined()
     expect(found!.entityType).toBe('post')
@@ -64,7 +68,7 @@ describe('streamEntitiesWithPendingReportsBatches', () => {
       entityId: postId,
     })
 
-    const results = await collectAll(streamEntitiesWithPendingReportsBatches())
+    const results = await collectAll()
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeUndefined()
   })
@@ -87,7 +91,7 @@ describe('streamEntitiesWithPendingReportsBatches', () => {
     })
     expect(reportIds.length).toBe(MASS_REPORT_THRESHOLD)
 
-    const results = await collectAll(streamEntitiesWithPendingReportsBatches())
+    const results = await collectAll()
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeUndefined()
   })
@@ -117,9 +121,74 @@ describe('streamEntitiesWithPendingReportsBatches', () => {
       entityId: commentId,
     })
 
-    const results = await collectAll(streamEntitiesWithPendingReportsBatches())
+    const results = await collectAll()
     const found = results.find(r => r.entityId === commentId)
     expect(found).toBeDefined()
     expect(found!.entityType).toBe('comment')
+  })
+
+  it('pages in id order: a page never exceeds the size, a full page names its last id, each entity appears once', async () => {
+    const pageSize = 2
+    const reporters = await Promise.all(
+      Array.from({ length: MASS_REPORT_THRESHOLD }, () => createTestUser().then(u => u!.id)),
+    )
+    const targets = await Promise.all(
+      Array.from({ length: 3 }, () => createTestUser().then(u => u!.id)),
+    )
+    for (const entityId of targets) {
+      await insertTestModerationReportsForTarget({
+        reporterUserIds: reporters,
+        entityType: 'user',
+        entityId,
+      })
+    }
+    const mine = new Set(targets)
+    const restore = overrideDynamicConfigFieldsForTest(reportIntegrityWorkConfig, {
+      backfill_batch_size: pageSize,
+    })
+    try {
+      const seen = new Map<string, number>()
+      let cursor: string | undefined = uuidBefore(targets.toSorted()[0]!)
+      const walked: string[] = []
+      while (cursor) {
+        const page = await listPendingReportEntityPage(cursor)
+        const ids = page.entities.map(entity => entity.entityId)
+        expect(ids.length).toBeLessThanOrEqual(pageSize)
+        expect(page.nextCursor).toBe(ids.length === pageSize ? (ids.at(-1) ?? null) : null)
+        walked.push(...ids)
+        for (const id of ids) if (mine.has(id)) seen.set(id, (seen.get(id) ?? 0) + 1)
+        cursor = page.nextCursor ?? undefined
+      }
+      // Pages arrive in strictly ascending id order, so no id repeats across a cursor boundary.
+      expect(walked).toEqual([...new Set(walked)].toSorted())
+      expect([...seen.keys()].toSorted()).toEqual(targets.toSorted())
+      expect([...seen.values()].every(count => count === 1)).toBe(true)
+    } finally {
+      restore()
+    }
+  })
+
+  it('narrows a page to the known entity', async () => {
+    const reporters = await Promise.all(
+      Array.from({ length: MASS_REPORT_THRESHOLD }, () => createTestUser().then(u => u!.id)),
+    )
+    const [target, other] = await Promise.all([createTestUser(), createTestUser()])
+    for (const entityId of [target!.id, other!.id]) {
+      await insertTestModerationReportsForTarget({
+        reporterUserIds: reporters,
+        entityType: 'user',
+        entityId,
+      })
+    }
+
+    const page = await listPendingReportEntityPage(undefined, {
+      entityType: 'user',
+      entityId: target!.id,
+    })
+
+    expect(page).toEqual({
+      entities: [{ entityType: 'user', entityId: target!.id }],
+      nextCursor: null,
+    })
   })
 })

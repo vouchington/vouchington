@@ -1,5 +1,5 @@
-import { voteAggregation as electionsWorker } from '../workers/vote-aggregation/workers.mts'
-import type { ElectionsJobData } from '../queues/vote-aggregation/enqueues/types-elections.mts'
+import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
+import type { ElectionJobInput } from '../queues/vote-aggregation/enqueues/types-elections.mts'
 import onError from '../modules/on-error/index.mts'
 import {
   type ElectionJob,
@@ -12,6 +12,7 @@ import {
 // context never goes through the worker bootstrap that normally does this (mirrors
 // backend/test-helpers/workers/entity-listeners/test-support.mts:10). Guarded so importing this module from many
 // test files doesn't accumulate one listener per import.
+const electionsWorker = getSharedBackgroundWorker()
 if (electionsWorker.listenerCount('error') === 0) electionsWorker.on('error', onError)
 
 // Consumed job ids persist across separate calls, not just within one: without this, a second
@@ -19,7 +20,7 @@ if (electionsWorker.listenerCount('error') === 0) electionsWorker.on('error', on
 // job an earlier call already consumed, instead of waiting for the new vote's own recompute.
 const consumedJobIds = new Map<string, Set<string>>()
 
-function consumedJobIdsFor(target: ElectionsJobData['data']): Set<string> {
+function consumedJobIdsFor(target: ElectionJobInput): Set<string> {
   const key = `${target.orderingKey}\0${target.relationTable ?? ''}\0${target.electionId}`
   let ids = consumedJobIds.get(key)
   if (ids === undefined) {
@@ -75,7 +76,7 @@ type WorkerLike = {
  * ```
  */
 export async function onceElectionVoteStatsCompleted(
-  target: ElectionsJobData['data'],
+  target: ElectionJobInput,
   count = 1,
   timeoutMs = 15_000,
 ): Promise<void> {

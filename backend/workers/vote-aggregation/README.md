@@ -1,5 +1,5 @@
 # Vote aggregation worker
 
-The single IO worker dispatches the `vote-aggregation` queue by job name. Domain processors remain in `processors/`; business effects live in services. Baseline concurrency is 10, shared across the former six IO queues, and the worker keeps a dedicated command client.
+`vote-aggregation` handlers (`workers.mts` exports `voteAggregationHandlers`) run inside the shared `background` worker, which dispatches by the namespaced job name. Domain processors remain in `processors/`; business effects live in services. The domain adds baseline concurrency 10 to the shared worker.
 
 See [the active worker reference](../../../docs/overview/architecture/queues/reference-active-workers.md).

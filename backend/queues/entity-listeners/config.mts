@@ -1,6 +1,3 @@
-export const QUEUE_NAME = 'entity-listeners'
-export const PRIORITY_DEFAULT = 10
-export const PRIORITY_DISPATCHER = 100
 export const DEFAULT_RECONCILIATION_INTERVAL_SECONDS = 3600
 export function getEntityListenerReconciliationIntervalSeconds(): number {
   const raw = process.env.ENTITY_LISTENER_RECONCILIATION_INTERVAL_SECONDS

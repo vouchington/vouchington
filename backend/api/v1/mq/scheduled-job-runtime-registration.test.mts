@@ -40,7 +40,9 @@ import {
 } from '@queues/background/enqueues/schedules'
 import { background } from '@queues/background/queues'
 import { scheduledJobManifest as openAiModerationManifest } from '@queues/openai-moderation/enqueues/schedules'
+import { scheduledJobManifest as postPublicationManifest } from '@queues/post-publication/enqueues/schedules'
 import { scheduledJobManifest as sesInboundManifest } from '@queues/ses-inbound/enqueues/schedules'
+import { scheduledJobManifest as storyProjectionManifest } from '@queues/story-post-related-url-projections/enqueues/schedules'
 import {
   scheduledJobManifest as kagiManifest,
   upsertSchedules as registerKagi,
@@ -61,13 +63,15 @@ import {
   upsertSchedules as registerBlacklist,
 } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
-import {
-  scheduledJobManifest as voteWeightManifest,
-  upsertSchedules as registerVoteWeight,
-} from '@queues/vote-aggregation/enqueues/schedules'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { scheduledJobManifest as voteWeightManifest } from '@queues/vote-aggregation/enqueues/schedules'
 
-const BACKGROUND_MANIFESTS = [sesInboundManifest, openAiModerationManifest]
+const BACKGROUND_MANIFESTS = [
+  sesInboundManifest,
+  openAiModerationManifest,
+  storyProjectionManifest,
+  postPublicationManifest,
+  voteWeightManifest,
+]
 const registerBackground = () => upsertBackgroundSchedules(BACKGROUND_MANIFESTS)
 
 const REGISTRATIONS = [
@@ -83,7 +87,6 @@ const REGISTRATIONS = [
   [registerSitemaps, sitemaps, sitemapsManifest],
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],
   [registerBlacklist, urlsDomainsBlacklist, blacklistManifest],
-  [registerVoteWeight, voteAggregation, voteWeightManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {

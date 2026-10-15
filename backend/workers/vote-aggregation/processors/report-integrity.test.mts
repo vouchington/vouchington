@@ -12,6 +12,7 @@ import {
 import { processReportIntegrityCheck, processBackfillReportIntegrity } from './report-integrity.mts'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
 import type { PrivateUser } from '@services/users/types'
+import { VOTE_AGGREGATION_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import type { ProcessReportIntegrityCheckData } from '@queues/vote-aggregation/enqueues/types-report-integrity'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -114,7 +115,7 @@ describe('processBackfillReportIntegrity', () => {
       if (
         jobs.some(
           job =>
-            job.name === 'processReportIntegrityCheck' &&
+            job.name === VOTE_AGGREGATION_REPORT_INTEGRITY_JOB.name &&
             (job.data as ProcessReportIntegrityCheckData).entityId === postId,
         )
       ) {
@@ -123,10 +124,13 @@ describe('processBackfillReportIntegrity', () => {
       return admission
     })
 
-    const result = await processBackfillReportIntegrity({
-      entityType: 'post',
-      entityId: postId,
-    })
+    const result = await processBackfillReportIntegrity(
+      {},
+      {
+        entityType: 'post',
+        entityId: postId,
+      },
+    )
     expect(result.enqueued).toBeGreaterThanOrEqual(1)
 
     const jobs = (await Promise.all(admissions)).flat()
@@ -135,23 +139,11 @@ describe('processBackfillReportIntegrity', () => {
     )
     const found = waiting.find(
       j =>
-        j.name === 'processReportIntegrityCheck' &&
+        j.name === VOTE_AGGREGATION_REPORT_INTEGRITY_JOB.name &&
         (j.data as ProcessReportIntegrityCheckData).entityId === postId,
     )
     expect(found).toBeDefined()
     expect((found!.data as ProcessReportIntegrityCheckData).entityType).toBe('post')
-  })
-})
-
-describe('workers.mts module', () => {
-  it('exports a reportIntegrity Worker instance', async () => {
-    const { voteAggregation: reportIntegrity } = await import('../workers.mts')
-    let closing: Promise<void> | undefined
-    const close = () => (closing ??= reportIntegrity.close())
-    onTestFinished(close, 30_000)
-    expect(reportIntegrity).toBeDefined()
-    // Register cleanup before assertions, and await the same actual close promise.
-    await close()
   })
 })
 

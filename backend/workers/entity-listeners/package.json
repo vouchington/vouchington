@@ -20,8 +20,8 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/ban-evasion": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/content-analysis": "workspace:^",

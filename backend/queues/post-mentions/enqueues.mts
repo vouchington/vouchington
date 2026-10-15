@@ -1,14 +1,9 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
-import { PRIORITY_DEFAULT, QUEUE_NAME } from './config.mts'
-import { postMentions } from './queues.mts'
-import type { PostMentionsJobs } from './types.mts'
+import { PRIORITY_DEFAULT } from './config.mts'
 
-const enqueuePostMentionsJob = createEnqueueFunction<{ postId: string }, PostMentionsJobs>({
-  queue: postMentions,
-  queueName: QUEUE_NAME,
-  jobName: 'processPostMentions',
-})
+const enqueuePostMentionsJob = createBackgroundEnqueue(POST_MENTIONS_PROCESS_JOB)
 
 /**
  * Enqueue a job to process mentions in a post

@@ -44,7 +44,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'emails/dispatchApiKeyExpiryReminders',
   'emails/dispatchCommunityModerationSummaryEmails',
   'emails/dispatchEngagementEmails',
-  'entity-listeners/entityListenerReconciliation',
+  'background/entityListenerReconciliation',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
   'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
@@ -74,7 +74,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/reconcile-image-quarantines',
   'background/reconcile-post-moderation',
   'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
-  'post-publication/reconcile-post-publication',
+  'background/reconcile-post-publication',
   'psql/cleanup-partitions-daily',
   'psql/create-partitions-monthly',
   'psql/data-retention-cleanup-daily',
@@ -88,19 +88,19 @@ const EXPECTED_SCHEDULED_JOBS = [
   'sitemaps/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
   'sitemaps/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
   'sitemaps/sitemaps-backfill-processWeeklyBackfillMonthDispatcher',
-  'story-post-related-url-projections/reconcileStoryPostRelatedUrlProjections',
+  'background/reconcileStoryPostRelatedUrlProjections',
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
   'urls-domains-blacklist/hostnameCacheInvalidationSweep',
   'account-lifecycle/userDeletionRecovery',
-  'vote-aggregation/dailyVoteWeightRecalculation',
+  'background/dailyVoteWeightRecalculation',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 26 manifests and 76 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(26)
+  it('imports the exact 22 manifests and 75 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(22)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

@@ -9,7 +9,7 @@ connections). See `predecessor-issue#4717`.
 | `posts` processor → `invalidate.posts(id)` (create/update/delete)           | cache  | invokeScript (Lua) | 1                  |
 | `posts` processor → `invalidate.posts(id)` per archived duplicate (fan-out) | cache  | invokeScript (Lua) | 1 × archived count |
 | `topics` processor → `invalidate.topics(id)`                                | cache  | invokeScript (Lua) | 1                  |
-| `users` processor → `invalidate.users(id)` (×4 call sites)                  | cache  | invokeScript (Lua) | 1                  |
+| `users` processor → `invalidate.users(id)` (×3 call sites)                  | cache  | invokeScript (Lua) | 1                  |
 
 **Total per job:** 1 fixed op (cache) for the primary entity; plus 1 × archived_count fan-out ops for posts with archived duplicates
 

@@ -78,7 +78,7 @@ describe('onVerificationSessionVerified', () => {
       )
       return createTransactionResource(query as never)
     })
-    mockEnqueueElectionUpdates.mockResolvedValue([])
+    mockEnqueueElectionUpdates.mockResolvedValue({ jobIds: [], nextCursor: null })
 
     await onVerificationSessionVerifiedForTest('evt_2', {
       id: 'vs_test',

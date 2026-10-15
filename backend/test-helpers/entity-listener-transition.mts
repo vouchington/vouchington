@@ -1,18 +1,23 @@
 import { onTestFinished, vi } from 'vitest'
 import * as userEnqueues from '@queues/entity-listeners/enqueues/users'
+import { ENTITY_LISTENERS_DOMAIN } from '@queues/background/enqueues/entity-listeners-jobs'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 // Register the real processor and its test-context error handler once per module.
 import './entity-listener-completion.mts'
 
 type QueueAdd = ReturnType<typeof entitiesListeners.add>
 
-/** Observe new owned work; the backend test queue resolves add after that job finishes. */
+/**
+ * Observe new owned work; the backend test queue resolves add after that job finishes. `localName`
+ * is the listener's local job name (`processUserUpdated`); the queue-wide name is namespaced.
+ */
 export async function withTestEntityListenerCompletion<T>(
-  jobName: string,
+  localName: string,
   entityId: string,
   action: () => Promise<T>,
   admission?: { beforeAdd: () => Promise<void>; release: () => void },
 ): Promise<T> {
+  const jobName = `${ENTITY_LISTENERS_DOMAIN.domain}.${localName}`
   const originalAdd = entitiesListeners.add
   const add = (...args: Parameters<typeof originalAdd>): QueueAdd =>
     originalAdd.call(entitiesListeners, ...args)
@@ -48,7 +53,7 @@ export async function withTestEntityListenerCompletion<T>(
       .spyOn(userEnqueues, 'enqueueOnUserUpdated')
       .mockImplementation((...args: Parameters<typeof enqueueUser>) => {
         const enqueued = enqueueUser(...args)
-        if (jobName === 'processUserUpdated' && args[0] === entityId)
+        if (localName === 'processUserUpdated' && args[0] === entityId)
           matchingEnqueues.push(enqueued)
         return enqueued
       })

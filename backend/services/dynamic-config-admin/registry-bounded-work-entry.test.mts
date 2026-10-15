@@ -65,7 +65,10 @@ const additionalOwners = [
   {
     config: votes.voteWeightWorkConfig,
     maxima: votes.voteWeightWorkMaxValues,
-    read: () => votes.getVoteWeightDispatchBatchSize(),
+    read: (field: string) =>
+      field === 'dispatch_batch_size'
+        ? votes.getVoteWeightDispatchBatchSize()
+        : votes.getVoteWeightElectionFanOutPageSize(),
   },
   {
     config: membership.membershipWorkConfig,

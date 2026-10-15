@@ -18,7 +18,7 @@ baselines to the helper's resolution behavior.
 knob (`psql`, `account-lifecycle`, `kagi-smallweb` — they serialize themselves or hit an
 upstream rate-limited API).
 
-`vote-aggregation` shares one baseline-10 IO worker across election tallies, vote weights, vote integrity, topic ratings, metric refresh, and report integrity. The former six baseline-5 workers could run 30 jobs concurrently; the shared cap of 10 bounds concurrent database work without throughput measurements. Jobs from one domain can delay another under sustained load. Election ordering lanes retain their per-key concurrency and are further bounded by the shared worker.
+`vote-aggregation` is a domain of the shared `background` worker with baseline 10 (it adds 10 to the worker's summed baseline): election tallies, vote weights, vote integrity, topic ratings, metric refresh, and report integrity. The former six baseline-5 workers could run 30 jobs concurrently; the domain has no domain-wide cap of its own and shares the background worker's concurrency with every other domain, so one domain can delay another under sustained load. Election ordering lanes (`vote-aggregation:<lane>`) retain their per-key concurrency of 100. `WORKER_CONCURRENCY_VOTE_AGGREGATION` no longer exists; use `WORKER_CONCURRENCY_BACKGROUND`.
 
 `activitypub` shares one baseline-10 IO worker across outbound distribution/delivery and inbound durable inbox processing. The prior two baseline-5 workers also allowed ten jobs in total; the shared pool keeps that aggregate limit while allowing either direction to use idle slots. Bursts in either direction can delay the other, and each outbound distribution activity retains its own concurrency-one ordering lane.
 

@@ -50,7 +50,8 @@ function trackEnqueues() {
     settle: () => Promise.all(pending),
     voteWeightEnqueuesFor: (userId: string) =>
       (voteWeightAdd.mock.calls as unknown as VoteWeightAddArgs[]).filter(
-        ([name, data]) => name === 'processRecalculateUserVoteWeight' && data.userId === userId,
+        ([name, data]) =>
+          name === 'vote-aggregation.processRecalculateUserVoteWeight' && data.userId === userId,
       ).length,
     resetVoteWeightCalls: () => voteWeightAdd.mockClear(),
   }
@@ -104,7 +105,7 @@ async function reconcileUsers(
 
 async function hasVoteWeightJob(userId: string): Promise<boolean> {
   const jobs = await voteAggregation.searchJobs({
-    name: 'processRecalculateUserVoteWeight',
+    name: 'vote-aggregation.processRecalculateUserVoteWeight',
     data: { userId },
   })
   return jobs.length > 0

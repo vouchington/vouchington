@@ -6,6 +6,7 @@ import {
   type OwnedVoteJobEnd,
 } from '../test-helpers/owned-vote-route-job-completion.mts'
 import { observeOwnedVoteRouteAdmissions } from '../test-helpers/owned-vote-route-admissions.mts'
+import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import { createTestUserDirect } from '../test-helpers/entities/users-direct.mts'
 import { insertTestTopic } from '../test-helpers/entities/topics.mts'
 import { getEnqueuedJobId, readEnqueuedJob } from '../test-helpers/queue-jobs.mts'
@@ -41,8 +42,10 @@ describe('owned vote-route admission settlement', () => {
         const result = await retry.retryTransientEnqueue<unknown>(() => {
           if (closing) throw new Error('Owned dedup control is closing')
           return mode === 'single'
-            ? queue.add('processRecalculateUserVoteWeight', data, opts)
-            : queue.addBulk([{ name: 'processRecalculateUserVoteWeight', data, opts }])
+            ? queue.add('vote-aggregation.processRecalculateUserVoteWeight', data, opts)
+            : queue.addBulk([
+                { name: 'vote-aggregation.processRecalculateUserVoteWeight', data, opts },
+              ])
         })
         for (const job of Array.isArray(result) ? result : [result])
           if (job !== null) admittedIds.add(getEnqueuedJobId(job))
@@ -65,7 +68,7 @@ describe('owned vote-route admission settlement', () => {
         for (const id of admittedIds) {
           try {
             const job = await queue.getJob(id)
-            if (!job || !('userId' in job.data) || job.data.userId !== user.id)
+            if (!job || (job.data as { userId?: string }).userId !== user.id)
               throw new Error(`Cannot resolve owned dedup fixture ${id}`)
             const state = await job.getState()
             if (!['delayed', 'waiting', 'prioritized', 'completed', 'failed'].includes(state))
@@ -193,7 +196,7 @@ describe('owned vote-route admission settlement', () => {
       (('electionId' in data && data.electionId === topicId) ||
         ('topicId' in data && data.topicId === topicId))
     const finish = await observeOwnedVoteRouteAdmissions(owns)
-    const { voteAggregation: worker } = await import('../workers/vote-aggregation/workers.mts')
+    const worker = getSharedBackgroundWorker()
     const { voteAggregation: queue } = await import('../queues/vote-aggregation/queues.mts')
     const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
     let followUp: Promise<unknown> | undefined
@@ -211,15 +214,15 @@ describe('owned vote-route admission settlement', () => {
     })
     const admission = retry.retryTransientEnqueue(() =>
       queue.add(
-        'processUpdateElectionVoteStats',
+        'vote-aggregation.processUpdateElectionVoteStats',
         { electionId: topicId, orderingKey: 'topic' },
-        { ordering: { key: 'topic' }, attempts: 1 },
+        { ordering: { key: 'vote-aggregation:topic' }, attempts: 1 },
       ),
     )
     const settlement = finish()
     void settlement.catch(() => {})
     await admission
-    await expect(settlement).rejects.toThrow('Unknown job name: unexpected-owned-review-job')
+    await expect(settlement).rejects.toThrow('Unknown background job: unexpected-owned-review-job')
     expect(followUp).toBeDefined()
   })
 })

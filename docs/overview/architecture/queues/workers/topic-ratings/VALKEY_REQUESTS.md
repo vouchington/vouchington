@@ -12,4 +12,4 @@ connections). See `predecessor-issue#4717`.
 
 ## Notes
 
-- `updateTopicRatingStats` upserts changed rating stats to PSQL and then enqueues a `processRefreshTopicMetrics` job on the shared `vote-aggregation` queue. The `voteAggregation` worker runs that refresh in a separate job; the rating-stats job itself makes no application-level Valkey calls on the shared singleton clients.
+- `updateTopicRatingStats` upserts changed rating stats to PSQL and then enqueues a `processRefreshTopicMetrics` job in the `vote-aggregation` domain of the shared `background` queue. The shared background worker runs that refresh in a separate job; the rating-stats job itself makes no application-level Valkey calls on the shared singleton clients.

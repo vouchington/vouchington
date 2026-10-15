@@ -1,18 +1,36 @@
 import { BACKGROUND_DOMAINS, type BackgroundDomain } from '../config.mts'
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
+import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
 import { OPENAI_MODERATION_DOMAIN, OPENAI_MODERATION_JOBS } from './openai-moderation-jobs.mts'
+import { POST_MENTIONS_DOMAIN, POST_MENTIONS_JOBS } from './post-mentions-jobs.mts'
+import { POST_PUBLICATION_DOMAIN, POST_PUBLICATION_JOBS } from './post-publication-jobs.mts'
 import { assertRegistryInvariants } from './registry-invariants.mts'
 import { SES_INBOUND_DOMAIN, SES_INBOUND_JOBS } from './ses-inbound-jobs.mts'
+import {
+  STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN,
+  STORY_POST_RELATED_URL_PROJECTIONS_JOBS,
+} from './story-post-related-url-projections-jobs.mts'
+import { VOTE_AGGREGATION_DOMAIN, VOTE_AGGREGATION_JOBS } from './vote-aggregation-jobs.mts'
 
 /** The single source of truth for what the `background` queue runs: domains and their jobs. */
 export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[] = [
   SES_INBOUND_DOMAIN,
   OPENAI_MODERATION_DOMAIN,
+  POST_MENTIONS_DOMAIN,
+  STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN,
+  POST_PUBLICATION_DOMAIN,
+  VOTE_AGGREGATION_DOMAIN,
+  ENTITY_LISTENERS_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...SES_INBOUND_JOBS,
   ...OPENAI_MODERATION_JOBS,
+  ...POST_MENTIONS_JOBS,
+  ...STORY_POST_RELATED_URL_PROJECTIONS_JOBS,
+  ...POST_PUBLICATION_JOBS,
+  ...VOTE_AGGREGATION_JOBS,
+  ...ENTITY_LISTENERS_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))

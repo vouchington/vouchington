@@ -12,7 +12,15 @@ export const PRIORITY_DISPATCH = 100
  * retry, and read stats for, and it namespaces its job names, ordering keys, deduplication ids,
  * job ids, and scheduler ids. Add a domain here and register it in `enqueues/registry.mts`.
  */
-export const BACKGROUND_DOMAINS = ['ses-inbound', 'openai-moderation'] as const
+export const BACKGROUND_DOMAINS = [
+  'ses-inbound',
+  'openai-moderation',
+  'post-mentions',
+  'story-post-related-url-projections',
+  'post-publication',
+  'vote-aggregation',
+  'entity-listeners',
+] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]
 

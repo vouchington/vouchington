@@ -29,8 +29,8 @@ describe('CORE_BACKFILLS', () => {
     const backfill = CORE_BACKFILLS.find(entry => entry.id === 'post-publication-shadow-dry-run')
 
     expect(backfill).toMatchObject({
-      queue_name: 'post-publication',
-      job_name: 'processShadowAuditPostPublication',
+      queue_name: 'background',
+      job_name: 'post-publication.shadow-audit',
       description: expect.stringContaining('dry run'),
       source_table: 'posts,post_publication_reconciliation_audit_cursors',
     })
@@ -47,8 +47,8 @@ describe('CORE_BACKFILLS', () => {
     const backfill = CORE_BACKFILLS.find(entry => entry.id === 'review-succession-history-dry-run')
 
     expect(backfill).toMatchObject({
-      queue_name: 'post-publication',
-      job_name: 'processAuditReviewSuccessionHistory',
+      queue_name: 'background',
+      job_name: 'post-publication.audit-review-succession-history',
       source_table: 'posts,post_review_topic_ratings,review_successions',
     })
     expect(typeof backfill?.trigger).toBe('function')

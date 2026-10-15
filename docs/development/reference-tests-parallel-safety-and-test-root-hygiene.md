@@ -145,7 +145,11 @@ any assertion runs (#10984, Main CI backend run 34008968250; #11013). Look jobs 
 `searchJobs`.
 
 `test-helpers/vitest.setup.glide-mq-workers.mts` is the allowlist of workers that may
-stay live for side effects. Definition identity tests that import any other worker
+stay live for side effects. Its one `background` worker (`test-helpers/shared-background-worker.mts`,
+serving the `vote-aggregation` and `entity-listeners` domains, so entity-listener side effects run
+without a per-queue singleton) parks every other domain's jobs and takes jobs only while no other worker is attached to
+`background`, so a file that builds its own `createBackgroundWorker` for its domain still owns
+its jobs until it closes that worker (the attachment guard checks that close). Definition identity tests that import any other worker
 module must close it before the file finishes, matching the OAuth and
 activitypub `load()` tests in that file — closing the worker remains mandatory
 regardless of how enqueue tests assert. `TestWorker` drains jobs already waiting on
@@ -173,7 +177,7 @@ the job back by the id the enqueue call returned, independent of its current sta
 `name`/`data`/`opts` on a specifically identified job, and asserts `null` for a deduplicated add
 directly rather than inferring dedup from filter survivors. See
 `backend/queues/post-publication/enqueues.test.mts` for the pattern, including a regression test that
-attaches a no-op stub worker and proves the id-scoped read survives a live consumer draining the job.
+(now `backend/workers/background/__tests__/post-publication.test.mts`, with a `createBackgroundWorker` limited to the `post-publication` domain) attaches stub handlers and proves the id-scoped read survives a live consumer draining the job.
 Timing waits and polling remain forbidden.
 
 **A queue is exposed** if any file inside the same Vitest _project_ attaches a worker to it —

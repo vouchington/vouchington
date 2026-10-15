@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ENTITY_LISTENERS_USER_UPDATED_JOB } from '../queues/background/enqueues/entity-listeners-jobs.mts'
 import { enqueueOnUserUpdated } from '../queues/entity-listeners/enqueues/users.mts'
 import { entitiesListeners } from '../queues/entity-listeners/queues.mts'
 import { createTestUserDirect } from '../test-helpers/entities/users-direct.mts'
@@ -23,7 +24,10 @@ describe('owned entity-listener logical admission', () => {
     )
     expect(attempts).toBe(2)
     const persisted = await readEnqueuedJob(entitiesListeners, job)
-    expect(persisted).toMatchObject({ name: 'processUserUpdated', data: { id: user.id } })
+    expect(persisted).toMatchObject({
+      name: ENTITY_LISTENERS_USER_UPDATED_JOB.name,
+      data: { id: user.id },
+    })
     expect(await persisted.getState()).toBe('completed')
   })
 

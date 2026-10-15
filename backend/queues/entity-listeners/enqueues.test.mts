@@ -1,13 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  ENTITY_LISTENERS_POST_UPDATED_JOB,
+  ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
+  ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,
+  ENTITY_LISTENERS_TOPIC_DELETED_JOB,
+  ENTITY_LISTENERS_URL_CREATED_JOB,
+} from '@queues/background/enqueues/entity-listeners-jobs'
+import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
+import {
   enqueueBulkOnPostUpdated,
+  enqueueBulkOnUrlCreated,
   enqueueBulkReconcileEntities,
+  enqueueOnPostCreated,
   enqueueOnTopicDeleted,
 } from './enqueues.mts'
+import { entityReconciliationRootOptions } from './enqueues/reconciliation.mts'
 import { entitiesListeners } from './queues.mts'
-
-const QUEUE_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
 
 describe('entity listener enqueues', () => {
   it('enqueues each post update with the requested priority', async () => {
@@ -16,27 +25,39 @@ describe('entity listener enqueues', () => {
 
     await enqueueBulkOnPostUpdated([{ id: postA, contentChanged: true }, { id: postB }], 37)
 
-    const postIds = new Set<string>([postA, postB])
-    const jobs = (await getAllEntityListenerJobs()).filter(
-      job =>
-        job.name === 'processPostUpdated' && postIds.has((job.data as { id?: string })?.id ?? ''),
-    )
+    const jobs = (
+      await Promise.all(
+        [postA, postB].map(id =>
+          entitiesListeners.searchJobs({
+            name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
+            data: { id },
+          }),
+        ),
+      )
+    ).flat()
 
     expect(jobs).toHaveLength(2)
     expect(jobs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          name: 'processPostUpdated',
+          name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
           data: { id: postA, contentChanged: true },
           opts: expect.objectContaining({ priority: 37 }),
         }),
         expect.objectContaining({
-          name: 'processPostUpdated',
+          name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
           data: { id: postB },
           opts: expect.objectContaining({ priority: 37 }),
         }),
       ]),
     )
+  })
+
+  it('takes the task priority from the job definition when the caller gives none', async () => {
+    const postId = randomUUID()
+    const job = await readEnqueuedJob(entitiesListeners, await enqueueOnPostCreated(postId))
+    expect(job.name).toBe('entity-listeners.processPostCreated')
+    expect(job.opts.priority).toBe(10)
   })
 
   it('enqueues a topic deletion with its updates and requested priority', async () => {
@@ -45,15 +66,30 @@ describe('entity listener enqueues', () => {
 
     await enqueueOnTopicDeleted(topicId, updates, 41)
 
-    const jobs = (await getAllEntityListenerJobs()).filter(
-      candidate =>
-        candidate.name === 'processTopicDeleted' &&
-        (candidate.data as { id?: string })?.id === topicId,
-    )
+    const jobs = await entitiesListeners.searchJobs({
+      name: ENTITY_LISTENERS_TOPIC_DELETED_JOB.name,
+      data: { id: topicId },
+    })
 
     expect(jobs).toHaveLength(1)
     expect(jobs[0]!.data).toEqual({ id: topicId, updates })
     expect(jobs[0]!.opts).toMatchObject({ priority: 41 })
+  })
+
+  it('debounces a created url per id and defaults to the task priority', async () => {
+    const urlId = randomUUID()
+    await enqueueBulkOnUrlCreated([urlId])
+    const [job] = await entitiesListeners.searchJobs({
+      name: ENTITY_LISTENERS_URL_CREATED_JOB.name,
+      data: { id: urlId },
+    })
+    expect(job).toMatchObject({
+      data: { id: urlId },
+      opts: {
+        priority: 10,
+        deduplication: { id: `processUrlCreated__${urlId}`, mode: 'debounce', ttl: 60_000 },
+      },
+    })
   })
 
   it('uses the database-derived logical id for reconciliation job and dedup ids', async () => {
@@ -61,10 +97,10 @@ describe('entity listener enqueues', () => {
     const changedAtEpochUs = '1784304000123456'
     const jobId = `entity-reconcile__user__${entityId}__${changedAtEpochUs}`
     await enqueueBulkReconcileEntities([{ entityType: 'user', entityId, changedAtEpochUs }])
-    const job = (await getAllEntityListenerJobs()).find(candidate => candidate.id === jobId)
+    const job = await entitiesListeners.getJob(jobId)
     expect(job).toMatchObject({
       id: jobId,
-      name: 'reconcileEntity',
+      name: ENTITY_LISTENERS_RECONCILE_ENTITY_JOB.name,
       data: { entityType: 'user', entityId, changedAtEpochUs },
       opts: { priority: 10, deduplication: { id: jobId, mode: 'simple' } },
     })
@@ -82,12 +118,21 @@ describe('entity listener enqueues', () => {
     }
     const jobId = `entity-reconcile__post_updated__${entityId}__${changeId}`
     await enqueueBulkReconcileEntities([data])
-    expect(
-      (await getAllEntityListenerJobs()).find(candidate => candidate.id === jobId),
-    ).toMatchObject({
+    expect(await entitiesListeners.getJob(jobId)).toMatchObject({
       id: jobId,
       data,
       opts: { deduplication: { id: jobId, mode: 'simple' } },
+    })
+  })
+
+  it('gives every reconciliation root a unique id under one shared deduplication id', () => {
+    const [first, second] = [entityReconciliationRootOptions(), entityReconciliationRootOptions()]
+    expect(first.jobId).toMatch(/^entity-reconciliation-dispatcher__/)
+    expect(first.jobId).not.toBe(second.jobId)
+    expect(first.deduplication).toEqual({ id: 'entity-reconciliation-dispatcher', mode: 'simple' })
+    expect(ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.options).toMatchObject({
+      priority: 100,
+      attempts: 3,
     })
   })
 })
@@ -106,7 +151,3 @@ describe('enqueueBulkOnPostUpdated (fault injection)', () => {
     ).rejects.toThrow(enqueueError)
   })
 })
-
-async function getAllEntityListenerJobs() {
-  return (await Promise.all(QUEUE_STATES.map(state => entitiesListeners.getJobs(state)))).flat()
-}

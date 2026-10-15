@@ -1,5 +1,5 @@
 import { getReportIntegrityWorkLimit } from './work-limits.mts'
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { MASS_REPORT_THRESHOLD, MASS_REPORT_WINDOW_MINUTES } from './config.mts'
@@ -9,20 +9,30 @@ export type PendingReportEntity = {
   entityId: string
 }
 
+export type PendingReportEntityPage = {
+  entities: PendingReportEntity[]
+  /** The last entity id of a full page, or null when this page reached the end. */
+  nextCursor: string | null
+}
+
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
 /**
- * Streams batches of entities that currently have >= MASS_REPORT_THRESHOLD distinct
- * reporters within the MASS_REPORT_WINDOW_MINUTES window. Used by the backfill
- * dispatcher to re-enqueue integrity checks that may have been lost.
+ * One page, in entity id order after `afterId`, of entities that currently have
+ * >= MASS_REPORT_THRESHOLD distinct reporters within the MASS_REPORT_WINDOW_MINUTES window. Used by
+ * the backfill dispatcher to re-enqueue integrity checks that may have been lost; a full page
+ * returns the cursor to continue from.
  *
  * Only pending reports within the time window are considered; out-of-window or
  * resolved reports are excluded. For posts, JOINs to `posts` to distinguish
  * post vs comment (same FK column).
  */
-export async function* streamEntitiesWithPendingReportsBatches(
+export async function listPendingReportEntityPage(
+  afterId?: string,
   target?: PendingReportEntity,
-): AsyncGenerator<PendingReportEntity[], void, unknown> {
-  const BACKFILL_BATCH_SIZE = getReportIntegrityWorkLimit('backfill_batch_size')
-  let batch: PendingReportEntity[] = []
+): Promise<PendingReportEntityPage> {
+  const limit = getReportIntegrityWorkLimit('backfill_batch_size')
   const windowStartId = getMinUUIDv7ForDate(
     new Date(Date.now() - MASS_REPORT_WINDOW_MINUTES * 60 * 1000),
   )
@@ -40,7 +50,7 @@ export async function* streamEntitiesWithPendingReportsBatches(
   const rssFilter = target
     ? sql`AND mr.rss_feed_item_id = ${target.entityId}::uuid AND ${target.entityType}::text = 'rss_feed_item'`
     : sql``
-  const query = sql`/* streamEntitiesWithPendingReportsBatches */
+  const query = sql`/* listPendingReportEntityPage */
     SELECT entity_type, entity_id FROM (
       SELECT
         CASE WHEN p.post_type = 'comment' THEN 'comment' ELSE 'post' END AS entity_type,
@@ -97,21 +107,12 @@ export async function* streamEntitiesWithPendingReportsBatches(
     .append(rssFilter).append(sql`
       GROUP BY mr.rss_feed_item_id
       HAVING COUNT(DISTINCT mr.reporter_user_id) >= ${MASS_REPORT_THRESHOLD}
-    ) sub `)
-  if (target) query.append(sql`LIMIT 1`)
-  for await (const row of createAsyncGeneratorFromCursor<{
-    entity_type: string
-    entity_id: string
-  }>(query, { batchSize: BACKFILL_BATCH_SIZE })) {
-    batch.push({ entityType: row.entity_type, entityId: row.entity_id })
-    if (batch.length >= BACKFILL_BATCH_SIZE) {
-      /* v8 ignore start -- batch-full flush; requires seeding 500+ entities */
-      yield batch
-      batch = []
-      /* v8 ignore stop */
-    }
-  }
-  if (batch.length > 0) {
-    yield batch
-  }
+    ) sub
+    WHERE entity_id::uuid > ${afterId ?? START_OF_IDS}::uuid
+    ORDER BY entity_id::uuid
+    LIMIT ${limit}`)
+  const { rows } = await read<{ entity_type: string; entity_id: string }>(query)
+  const entities = rows.map(row => ({ entityType: row.entity_type, entityId: row.entity_id }))
+  const last = entities.at(-1)
+  return { entities, nextCursor: last && entities.length === limit ? last.entityId : null }
 }

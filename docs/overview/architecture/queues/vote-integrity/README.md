@@ -6,9 +6,9 @@ Job queue for detecting and flagging suspicious voting patterns such as velocity
 
 ## Processors
 
-| Processor                 | Type   | Priority | Description                                                                         |
-| ------------------------- | ------ | -------- | ----------------------------------------------------------------------------------- |
-| processVoteIntegrityCheck | worker | 10       | Checks for velocity spike and IP correlation; creates flags when thresholds are met |
+| Job                                        | Type   | Priority | Description                                                                         |
+| ------------------------------------------ | ------ | -------- | ----------------------------------------------------------------------------------- |
+| vote-aggregation.processVoteIntegrityCheck | worker | 10       | Checks for velocity spike and IP correlation; creates flags when thresholds are met |
 
 ## Deduplication
 

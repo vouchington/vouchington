@@ -2,11 +2,11 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Shared `vote-aggregation` worker handles user vote-weight recalculation and dispatcher jobs.
+The shared `background` worker runs user vote-weight recalculation, dispatcher, and election fan-out jobs as the `vote-aggregation` domain.
 
 ## Exports
 
-- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
+- `voteAggregationHandlers` - the domain's handlers, registered in the shared background worker.
 
 ## Related
 

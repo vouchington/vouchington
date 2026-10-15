@@ -1,24 +1,12 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import { STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB } from '@queues/background/enqueues/story-post-related-url-projections-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import onError from '@modules/on-error'
-import {
-  PRIORITY_RECOVERY,
-  QUEUE_NAME,
-  RECOVERY_DEDUPLICATION_ID,
-  RECOVERY_DEDUPLICATION_TTL_MS,
-  STORY_POST_RELATED_URL_PROJECTION_ORDERING,
-} from './config.mts'
-import { storyPostRelatedUrlProjections } from './queues.mts'
-import type { StoryPostRelatedUrlProjectionJobs } from './types.mts'
+import { RECOVERY_DEDUPLICATION_ID, RECOVERY_DEDUPLICATION_TTL_MS } from './config.mts'
 
-const enqueueReconciliationJob = createEnqueueFunction<
-  Record<string, never>,
-  StoryPostRelatedUrlProjectionJobs
->({
-  queue: storyPostRelatedUrlProjections,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileStoryPostRelatedUrlProjections',
-})
+const enqueueReconciliationJob = createBackgroundEnqueue(
+  STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB,
+)
 
 export function enqueueReconcileStoryPostRelatedUrlProjections(
   options: { deduplicationId?: string } = {},
@@ -26,8 +14,6 @@ export function enqueueReconcileStoryPostRelatedUrlProjections(
   return enqueueReconciliationJob(
     {},
     {
-      priority: PRIORITY_RECOVERY,
-      ordering: STORY_POST_RELATED_URL_PROJECTION_ORDERING.reconciliation,
       deduplication: {
         id: options.deduplicationId ?? RECOVERY_DEDUPLICATION_ID,
         mode: 'throttle',
@@ -47,11 +33,5 @@ export function enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort(
 }
 
 export function enqueueContinueStoryPostRelatedUrlProjectionReconciliation(): EnqueueReturnType {
-  return enqueueReconciliationJob(
-    {},
-    {
-      priority: PRIORITY_RECOVERY,
-      ordering: STORY_POST_RELATED_URL_PROJECTION_ORDERING.reconciliation,
-    },
-  )
+  return enqueueReconciliationJob({})
 }

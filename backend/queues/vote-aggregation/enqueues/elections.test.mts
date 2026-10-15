@@ -3,7 +3,12 @@ import {
   buildElectionJobOptions,
   enqueueBulkUpdateEntityRelationElectionVoteStats,
 } from './elections.mts'
-import { ELECTIONS_DEFAULTS, ELECTIONS_ORDERING } from './config-elections.mts'
+import { ELECTIONS_DEFAULTS } from './config-elections.mts'
+import {
+  ELECTION_LANE_ORDERING,
+  ELECTION_LANES,
+  VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '../queues.mts'
 import type { EntityRelationElectionTable } from './types-elections.mts'
 
@@ -30,14 +35,12 @@ describe('buildElectionJobOptions', () => {
     })
   })
 
-  it.each(Object.keys(ELECTIONS_ORDERING) as Array<keyof typeof ELECTIONS_ORDERING>)(
-    'passes through the %s ordering config',
-    orderingKey => {
-      const opts = buildElectionJobOptions('election-1', orderingKey)
+  it.each(ELECTION_LANES)('orders the %s lane under its namespaced key', orderingKey => {
+    const opts = buildElectionJobOptions('election-1', orderingKey)
 
-      expect(opts.ordering).toEqual(ELECTIONS_ORDERING[orderingKey])
-    },
-  )
+    expect(opts.ordering).toEqual({ key: `vote-aggregation:${orderingKey}`, concurrency: 100 })
+    expect(opts.ordering).toBe(ELECTION_LANE_ORDERING[orderingKey])
+  })
 
   it('includes the relation table in entity-relation deduplication identity', () => {
     const first = buildElectionJobOptions(
@@ -71,13 +74,18 @@ describe('buildElectionJobOptions', () => {
     await enqueueBulkUpdateEntityRelationElectionVoteStats([target])
 
     const jobs = await voteAggregation.searchJobs({
-      name: 'processUpdateElectionVoteStats',
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId: target.entityRelationId },
     })
     expect(jobs.map(job => job.data)).toContainEqual({
       electionId: target.entityRelationId,
       orderingKey: 'entity_relation',
       relationTable: target.relationTable,
+    })
+    expect(jobs[0]?.opts).toMatchObject({
+      priority: 10,
+      attempts: 3,
+      ordering: { key: 'vote-aggregation:entity_relation', concurrency: 100 },
     })
   })
 })

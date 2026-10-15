@@ -4,7 +4,8 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
-import { postPublication } from '@queues/post-publication/queues'
+import { POST_PUBLICATION_SHADOW_AUDIT_JOB } from '@queues/background/enqueues/post-publication-jobs'
+import { background } from '@queues/background/queues'
 
 describe('backfills', () => {
   let admin: PrivateUser
@@ -135,14 +136,18 @@ describe('backfills', () => {
         const jobs = (
           await Promise.all(
             (['waiting', 'active', 'delayed', 'completed', 'failed'] as const).map(state =>
-              postPublication.getJobs(state),
+              background.searchJobs({
+                state,
+                name: POST_PUBLICATION_SHADOW_AUDIT_JOB.name,
+                limit: 1_000,
+              }),
             ),
           )
         ).flat()
         expect(jobs).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              name: 'processShadowAuditPostPublication',
+              name: POST_PUBLICATION_SHADOW_AUDIT_JOB.name,
               data: { dryRun: true, cursor: null },
             }),
           ]),

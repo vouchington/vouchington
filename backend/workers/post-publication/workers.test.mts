@@ -3,7 +3,6 @@ import {
   createQueue,
   createWorker,
 } from '@data-stores/valkey-glide-mq'
-import { QUEUE_NAME } from '@queues/post-publication/config'
 import {
   getTestPostPublicationDirtyWorkForScope,
   hasTestPostPublicationProjectionReceipt,
@@ -28,7 +27,7 @@ describe('post publication worker integration', () => {
     const captured = await getRequiredWork(postId)
     const enqueueContinuation = vi.fn<() => Promise<unknown>>().mockResolvedValue(undefined)
     const completion = Promise.withResolvers<{ reconciled: number }>()
-    const queueName = `${QUEUE_NAME}-test-${randomUUID()}`
+    const queueName = `post-publication-processor-test-${randomUUID()}`
     const queue = createQueue(queueName, { priorityKind: 'ranked' })
     instances.push(
       queue,
@@ -43,7 +42,7 @@ describe('post publication worker integration', () => {
       }),
     )
 
-    await queue.add('processReconcilePostPublication', {})
+    await queue.add('reconcile', {})
 
     await expect(completion.promise).resolves.toEqual({ reconciled: 1 })
     await expect(

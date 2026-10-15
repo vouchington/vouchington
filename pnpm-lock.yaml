@@ -840,6 +840,9 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../queues/sitemaps
+      '@queues/story-post-related-url-projections':
+        specifier: workspace:^
+        version: link:../queues/story-post-related-url-projections
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../queues/unfurl-referral-links
@@ -1844,9 +1847,6 @@ importers:
       '@workers/emails':
         specifier: workspace:^
         version: link:../../workers/emails
-      '@workers/entity-listeners':
-        specifier: workspace:^
-        version: link:../../workers/entity-listeners
       '@workers/find-your-friends':
         specifier: workspace:^
         version: link:../../workers/find-your-friends
@@ -1865,12 +1865,6 @@ importers:
       '@workers/oauth-authorization-exchange':
         specifier: workspace:^
         version: link:../../workers/oauth-authorization-exchange
-      '@workers/post-mentions':
-        specifier: workspace:^
-        version: link:../../workers/post-mentions
-      '@workers/post-publication':
-        specifier: workspace:^
-        version: link:../../workers/post-publication
       '@workers/psql':
         specifier: workspace:^
         version: link:../../workers/psql
@@ -1892,9 +1886,6 @@ importers:
       '@workers/spam-detection':
         specifier: workspace:^
         version: link:../../workers/spam-detection
-      '@workers/story-post-related-url-projections':
-        specifier: workspace:^
-        version: link:../../workers/story-post-related-url-projections
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
@@ -1904,9 +1895,6 @@ importers:
       '@workers/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../workers/user-rss-feed-imports
-      '@workers/vote-aggregation':
-        specifier: workspace:^
-        version: link:../../workers/vote-aggregation
 
   backend/mcp:
     dependencies:
@@ -2984,12 +2972,12 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/find-your-friends:
     dependencies:
@@ -3131,9 +3119,9 @@ importers:
 
   backend/queues/post-mentions:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3146,6 +3134,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3257,6 +3248,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3314,6 +3308,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -6746,6 +6743,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
@@ -8927,9 +8927,6 @@ importers:
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../../queues/openai-moderation
-      '@queues/post-mentions':
-        specifier: workspace:^
-        version: link:../../queues/post-mentions
       '@queues/post-publication':
         specifier: workspace:^
         version: link:../../queues/post-publication
@@ -11892,22 +11889,49 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/post-mentions':
+        specifier: workspace:^
+        version: link:../../queues/post-mentions
+      '@queues/post-publication':
+        specifier: workspace:^
+        version: link:../../queues/post-publication
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
+      '@queues/story-post-related-url-projections':
+        specifier: workspace:^
+        version: link:../../queues/story-post-related-url-projections
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
+      '@workers/entity-listeners':
+        specifier: workspace:^
+        version: link:../entity-listeners
       '@workers/openai-moderation':
         specifier: workspace:^
         version: link:../openai-moderation
+      '@workers/post-mentions':
+        specifier: workspace:^
+        version: link:../post-mentions
+      '@workers/post-publication':
+        specifier: workspace:^
+        version: link:../post-publication
       '@workers/ses-inbound':
         specifier: workspace:^
         version: link:../ses-inbound
+      '@workers/story-post-related-url-projections':
+        specifier: workspace:^
+        version: link:../story-post-related-url-projections
+      '@workers/vote-aggregation':
+        specifier: workspace:^
+        version: link:../vote-aggregation
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../../services/entity-relations
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12435,12 +12459,12 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/ban-evasion':
         specifier: workspace:^
         version: link:../../queues/ban-evasion
@@ -12863,30 +12887,21 @@ importers:
 
   backend/workers/post-mentions:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/post-mentions':
-        specifier: workspace:^
-        version: link:../../queues/post-mentions
+        version: link:../../queues/background
       '@services/post-mentions':
         specifier: workspace:^
         version: link:../../services/post-mentions
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/post-publication:
     dependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -13167,21 +13182,15 @@ importers:
 
   backend/workers/story-post-related-url-projections:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
       '@services/stories':
         specifier: workspace:^
         version: link:../../services/stories
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/stripe-events-sqs:
     dependencies:
@@ -13284,9 +13293,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation

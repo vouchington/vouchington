@@ -418,6 +418,144 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "backfillId": "entity-listener-reconciliation",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": "[runtime repeat]",
+    "schedulerId": "entityListenerReconciliation",
+    "template": {
+      "data": {},
+      "name": "entity-listeners.enqueueReconcileEntities",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable story post related URL projections",
+        "id": "reconcileStoryPostRelatedUrlProjections",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcileStoryPostRelatedUrlProjections",
+    "template": {
+      "data": {},
+      "name": "story-post-related-url-projections.reconcile",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "story-post-related-url-projections",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable post publication reconciliation work",
+        "id": "reconcile-post-publication",
+        "kind": "scheduled-jobs",
+        "schedule": "every 5m",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "sequential",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "reconcile-post-publication",
+    "template": {
+      "data": {},
+      "name": "post-publication.reconcile",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "post-publication",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recalculate vote weights",
+        "id": "dailyVoteWeightRecalculation",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "vote-weight-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "dailyVoteWeightRecalculation",
+    "template": {
+      "name": "vote-aggregation.processRecalculateVoteWeightDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Copy reusable topic embeddings from the centralized table",
         "id": "reconcile_existing_topics",
         "kind": "scheduled-jobs",
@@ -1057,34 +1195,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "attempts": 3,
         "backoff": {
           "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "entity-listener-reconciliation",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "entity-listeners",
-    "registration": "parallel",
-    "repeat": "[runtime repeat]",
-    "schedulerId": "entityListenerReconciliation",
-    "template": {
-      "data": {},
-      "name": "enqueueReconcileEntities",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -2003,43 +2113,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Drain durable post publication reconciliation work",
-        "id": "reconcile-post-publication",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "post-publication",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcile-post-publication",
-    "template": {
-      "data": {},
-      "name": "processReconcilePostPublication",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "publication-reconciliation",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "jobType": "createPartitions",
         "kind": "psql",
       },
@@ -2475,43 +2548,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Drain durable story post related URL projections",
-        "id": "reconcileStoryPostRelatedUrlProjections",
-        "kind": "scheduled-jobs",
-        "schedule": "every 5m",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "story-post-related-url-projections",
-    "registration": "sequential",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "reconcileStoryPostRelatedUrlProjections",
-    "template": {
-      "data": {},
-      "name": "processReconcileStoryPostRelatedUrlProjections",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "story-post-related-url-projections",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
         "id": "unfurl_referral_links_dispatcher",
         "kind": "scheduled-jobs",
@@ -2608,42 +2644,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 1,
           "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Recalculate vote weights",
-        "id": "dailyVoteWeightRecalculation",
-        "kind": "scheduled-jobs",
-        "schedule": "0 4 * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "vote-weight-dispatch",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "vote-aggregation",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 4 * * *",
-    },
-    "schedulerId": "dailyVoteWeightRecalculation",
-    "template": {
-      "name": "processRecalculateVoteWeightDispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2827,8 +2827,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Recalculate vote weights",
     "id": "dailyVoteWeightRecalculation",
-    "job_name": "processRecalculateVoteWeightDispatcher",
-    "queue_name": "vote-aggregation",
+    "job_name": "vote-aggregation.processRecalculateVoteWeightDispatcher",
+    "queue_name": "background",
     "schedule": "0 4 * * *",
     "triggerName": "enqueueRecalculateVoteWeightDispatcher",
   },
@@ -3003,16 +3003,16 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Drain durable post publication reconciliation work",
     "id": "reconcile-post-publication",
-    "job_name": "processReconcilePostPublication",
-    "queue_name": "post-publication",
+    "job_name": "post-publication.reconcile",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcilePostPublication",
   },
   {
     "description": "Drain durable story post related URL projections",
     "id": "reconcileStoryPostRelatedUrlProjections",
-    "job_name": "processReconcileStoryPostRelatedUrlProjections",
-    "queue_name": "story-post-related-url-projections",
+    "job_name": "story-post-related-url-projections.reconcile",
+    "queue_name": "background",
     "schedule": "every 5m",
     "triggerName": "enqueueReconcileStoryPostRelatedUrlProjections",
   },

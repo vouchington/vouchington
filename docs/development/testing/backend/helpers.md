@@ -261,8 +261,8 @@ a queue in the fork, the in-memory shim blocks `add()` until the job reaches a t
 
 ```ts
 const enqueued = await enqueueReconcilePostPublication({ deduplicationId })
-const job = await readEnqueuedJob(postPublication, enqueued) // resolves by id, any state
-expect(job).toMatchObject({ name: 'processReconcilePostPublication', data: {} })
+const job = await readEnqueuedJob(postPublicationQueue, enqueued) // resolves by id, any state
+expect(job).toMatchObject({ name: 'post-publication.reconcile', data: {} })
 ```
 
 - `readEnqueuedJob(queue, enqueued)` — resolves the persisted job for an `await enqueueX()` result.

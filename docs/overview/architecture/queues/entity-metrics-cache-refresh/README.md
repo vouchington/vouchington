@@ -6,7 +6,7 @@ Refreshes cached metrics for topics, posts, and users using debounce deduplicati
 
 ## Queue Configuration
 
-### `vote-aggregation` (concurrency: 10)
+### `background` queue, `vote-aggregation` domain (jobs carry the `vote-aggregation.` prefix)
 
 - `processRefreshTopicMetrics` — recalculates and caches metrics for a topic (follower count, post count, etc.)
 - `processRefreshPostMetrics` — recalculates and caches metrics for a post (vote score, comment count, etc.)

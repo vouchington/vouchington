@@ -45,26 +45,27 @@ The mentions are **exact** - if a user removes a mention from their post, the en
 
 ## Job Queue
 
-### Queue Name
+### Queue and Domain
 
-`post-mentions`
+The `post-mentions` domain of the shared [`background` queue](../background/README.md). The old
+`post-mentions` queue and its `WORKER_CONCURRENCY_POST_MENTIONS` override are gone. The domain has
+no group: its jobs are limited only by the shared worker's concurrency (baseline 5 for this domain),
+and operators can pause, retry, and read stats for it by domain.
 
 ### Job Types
 
-- **`processPostMentions`** - Process all mentions in a post
+- **`post-mentions.process`** - Process all mentions in a post
   - Data: `{ postId: string }`
+  - Priority 10 (task tier); `enqueuePostMentions(postId, priority?)` may override it
   - Triggered: On post creation and update
 
 ### Enqueue Functions
 
 ```typescript
-import { enqueuePostMentions, enqueueBulkPostMentions } from '@queues/post-mentions/enqueues'
+import { enqueuePostMentions } from '@queues/post-mentions/enqueues'
 
 // Process mentions for a single post
 enqueuePostMentions(postId)
-
-// Process mentions for multiple posts
-enqueueBulkPostMentions([postId1, postId2, postId3])
 ```
 
 ## Database Schema
@@ -145,8 +146,7 @@ const { rows } = await read(
 
 ## Performance Considerations
 
-- **Concurrency**: 10 concurrent workers by default
-- **Batching**: Use `enqueueBulkPostMentions()` for processing multiple posts
+- **Concurrency**: the shared `background` worker; this domain contributes 5 to its baseline
 - **Caching**: Uses cached entity lookups (`getUserPublicByAnyCached`, `getTopicByAnyCached`, `getPostByAnyCached`)
 - **Indexes**: Automatic indexes on `(subject_id, object_id)` and `(object_id, subject_id)`
 

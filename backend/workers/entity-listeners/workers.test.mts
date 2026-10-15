@@ -1,29 +1,36 @@
-import { afterAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
+import {
+  ENTITY_LISTENERS_JOBS,
+  ENTITY_LISTENERS_POST_CREATED_JOB,
+  ENTITY_LISTENERS_TOPIC_CREATED_JOB,
+  ENTITY_LISTENERS_TOPIC_UPDATED_JOB,
+} from '@queues/background/enqueues/entity-listeners-jobs'
 import { JobPayloadError, parseEntityJob } from '@queues/entity-listeners/payload/job-payload'
-import { dispatchEntityListenerJob, entitiesListeners } from './workers.mts'
+import { entityListenersHandlers } from './workers.mts'
 
-describe('entity listener dispatch', () => {
-  afterAll(async () => {
-    await entitiesListeners.close()
+async function run(job: { name: string }, data: unknown) {
+  const handler = entityListenersHandlers.find(candidate => candidate.job.name === job.name)
+  if (!handler) throw new Error(`no handler for ${job.name}`)
+  return handler.handle({ name: job.name, data } as Job)
+}
+
+describe('entity listener handlers', () => {
+  it('serves every job of the domain exactly once', () => {
+    expect(entityListenersHandlers.map(handler => handler.job.name).toSorted()).toEqual(
+      ENTITY_LISTENERS_JOBS.map(job => job.name).toSorted(),
+    )
   })
 
-  it('runs an empty image-updated job', async () => {
-    await expect(
-      dispatchEntityListenerJob({ name: 'processImageUpdated', data: {} } as Job),
-    ).resolves.toBeUndefined()
-  })
-
-  it('rejects a post id on the image-updated job before the processor returns', async () => {
-    await expect(
-      dispatchEntityListenerJob({ name: 'processImageUpdated', data: { id: 'post-1' } } as Job),
-    ).rejects.toBeInstanceOf(JobPayloadError)
-  })
-
-  it('rejects an unknown job name', async () => {
-    await expect(
-      dispatchEntityListenerJob({ name: 'processSendWelcomeEmail', data: {} } as Job),
-    ).rejects.toBeInstanceOf(JobPayloadError)
+  it('rejects a follow payload on post creation before the processor runs', async () => {
+    const follow = { newUserId: 'user-a', referrerId: 'user-b' }
+    expect(parseEntityJob('processAutoFollowReferrer', follow)).toEqual({
+      name: 'processAutoFollowReferrer',
+      data: follow,
+    })
+    await expect(run(ENTITY_LISTENERS_POST_CREATED_JOB, follow)).rejects.toBeInstanceOf(
+      JobPayloadError,
+    )
   })
 
   it('accepts nullable topic ids and rejects that payload on topic update', async () => {
@@ -32,19 +39,13 @@ describe('entity listener dispatch', () => {
       updates: { name: 'Travel', slug: 'travel', homepage_url_id: null, hostname: null },
     }
     expect(parseEntityJob('processTopicCreated', created).data).toEqual(created)
-    await expect(
-      dispatchEntityListenerJob({ name: 'processTopicUpdated', data: created } as Job),
-    ).rejects.toBeInstanceOf(JobPayloadError)
+    expect(ENTITY_LISTENERS_TOPIC_CREATED_JOB.name).toBe('entity-listeners.processTopicCreated')
+    await expect(run(ENTITY_LISTENERS_TOPIC_UPDATED_JOB, created)).rejects.toBeInstanceOf(
+      JobPayloadError,
+    )
   })
 
-  it('accepts a follow payload and rejects the same object on post creation', async () => {
-    const follow = { newUserId: 'user-a', referrerId: 'user-b' }
-    expect(parseEntityJob('processAutoFollowReferrer', follow)).toEqual({
-      name: 'processAutoFollowReferrer',
-      data: follow,
-    })
-    await expect(
-      dispatchEntityListenerJob({ name: 'processPostCreated', data: follow } as Job),
-    ).rejects.toBeInstanceOf(JobPayloadError)
+  it('rejects an unknown local job name', () => {
+    expect(() => parseEntityJob('processSendWelcomeEmail', {})).toThrow(JobPayloadError)
   })
 })

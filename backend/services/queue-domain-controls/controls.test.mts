@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it } from 'vitest'
-import { queueDomainControlsPubSub } from '@data-stores/valkey-pubsub'
 import { createTestUser } from '@voucha/test-helpers'
 import {
   insertPausedQueueDomainControlForTest,
@@ -29,7 +28,6 @@ function newDomain(): string {
 describe('queue domain controls', () => {
   afterAll(async () => {
     await removeQueueDomainControlsForTest(createdDomains)
-    await queueDomainControlsPubSub.closeSubscriber()
   })
 
   it('reports an unknown domain as running, alone or among the domains it is listed with', async () => {
