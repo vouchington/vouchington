@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { glob, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -9,6 +8,7 @@ import {
   type BaselineRow,
   type FindingIdentity,
 } from './dead-code-baseline.mts'
+import { runChildCommand } from '../child-command.mts'
 import { copyTrackedWorkingTree } from './tracked-snapshot.mts'
 
 const repoRoot = resolve(import.meta.dirname, '../..')
@@ -49,8 +49,9 @@ export async function scanDeadCode(
   snapshotRoot: string,
   reportRoot: string,
   binary: string,
+  remaining?: () => number,
 ): Promise<BaselineRow[]> {
-  execFileSync(
+  await runChildCommand(
     binary,
     [
       '--dead-code',
@@ -65,7 +66,8 @@ export async function scanDeadCode(
       '0',
       '.',
     ],
-    { cwd: snapshotRoot, stdio: 'pipe', maxBuffer: 8 * 1024 * 1024 },
+    snapshotRoot,
+    remaining,
   )
   const report = JSON.parse(
     await readFile(join(reportRoot, 'basta-report.json'), 'utf8'),

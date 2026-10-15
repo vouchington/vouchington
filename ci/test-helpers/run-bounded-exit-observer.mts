@@ -59,6 +59,7 @@ export function observeFixtureExit(path: string) {
         server.once('error', reject)
         server.listen(path, resolve)
       }),
+    releaseConnection: () => socket?.destroy(),
     closeListener: () =>
       new Promise<void>((resolve, reject) => {
         if (!server.listening) return resolve()

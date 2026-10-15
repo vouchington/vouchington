@@ -1,10 +1,13 @@
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
 import { checkBoundedWorkTunables } from './bounded-work-tunables.mts'
 import { setupRepoFilePolicyTest } from '../test-helpers/repo-file-policy-fixtures.mts'
 import type { WorkTunableAllowEntry } from './bounded-work-tunables-allowlist.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
 
 function inspect(
   sources: Record<string, string>,
@@ -17,7 +20,7 @@ function inspect(
       mkdirSync(dirname(join(root, file)), { recursive: true })
       writeFileSync(join(root, file), source)
     }
-    return checkBoundedWorkTunables(root, tracked, allowlist)
+    return checkBoundedWorkTunables(root, tracked, allowlist, remaining)
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
@@ -26,6 +29,9 @@ function inspect(
 const file = 'backend/workers/example/processor.mts'
 
 describe('bounded work tunables policy', () => {
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
   const { makeRepo, run, track } = setupRepoFilePolicyTest()
 
   it('enforces the same scanner through the owning aggregate', async () => {

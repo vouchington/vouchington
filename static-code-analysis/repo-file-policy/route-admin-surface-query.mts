@@ -47,6 +47,7 @@ const queryText = queryFiles
 export function collectRouteAdminSurfaceFacts(
   content: string,
   file: string,
+  remaining?: () => number,
 ): RouteAdminSurfaceFacts {
   const scan = spawnSync(
     astGrepExecutable,
@@ -55,6 +56,8 @@ export function collectRouteAdminSurfaceFacts(
       cwd: process.cwd(),
       encoding: 'utf8',
       input: content,
+      timeout: remaining?.(),
+      killSignal: 'SIGKILL',
       maxBuffer: 32 * 1024 * 1024,
     },
   )

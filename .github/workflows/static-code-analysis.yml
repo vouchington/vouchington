@@ -138,6 +138,9 @@ jobs:
         with:
           cache: false
         timeout-minutes: 3
+      - name: Check finite analyzer fixture deadlines
+        run: ./ci/run-with-timeout.sh 20 5 node ci/check-analyzer-fixture-budget.mts
+        timeout-minutes: 1
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
         timeout-minutes: 4

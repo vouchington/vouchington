@@ -5,7 +5,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import ts from 'typescript'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { beforeEach, afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
 import { additionalInvalid, additionalValid } from './typescript-program-additional-fixtures.mts'
 import { requireInvalid, requireValid } from './typescript-program-create-require-fixtures.mts'
 import { invocationInvalid, invocationValid } from './typescript-program-invocation-fixtures.mts'
@@ -229,6 +232,10 @@ describe('configured vouchington/typescript-program-location', () => {
     )
   })
 
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
+
   afterAll(() => {
     rmSync(root, { force: true, recursive: true })
   })
@@ -237,6 +244,8 @@ describe('configured vouchington/typescript-program-location', () => {
     const result = spawnSync(OXLINT, ['-c', '.oxlintrc.json', '--format', 'json', '.'], {
       cwd: root,
       encoding: 'utf8',
+      timeout: remaining(),
+      killSignal: 'SIGKILL',
     })
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(1)

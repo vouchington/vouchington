@@ -4,13 +4,20 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 import ts from 'typescript'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
 
 const oxlint = resolve('node_modules/.bin/oxlint')
 const config = resolve('.oxlintrc.json')
 const rule = 'node(no-path-concat)'
 
 describe('node/no-path-concat Oxlint policy', () => {
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
+
   it('enables the rule at error severity in the root config', () => {
     const parsed = ts.readConfigFile(config, ts.sys.readFile)
     expect(parsed.error).toBeUndefined()
@@ -34,6 +41,8 @@ describe('node/no-path-concat Oxlint policy', () => {
 
       const result = spawnSync(oxlint, ['--config', config, '--format', 'json', bad, good], {
         encoding: 'utf8',
+        timeout: remaining(),
+        killSignal: 'SIGKILL',
       })
       expect(result.error).toBeUndefined()
       expect(result.status).toBe(1)

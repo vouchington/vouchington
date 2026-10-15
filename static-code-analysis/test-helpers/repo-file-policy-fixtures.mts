@@ -9,7 +9,8 @@ import {
   topicRouteConfigSource,
   topicTypesSource,
 } from '../repo-file-policy/repo-file-policy-test-sources.mts'
-import { afterEach } from 'vitest'
+import { afterEach, beforeEach } from 'vitest'
+import { createFixtureDeadline } from './fixture-deadline.mts'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
@@ -34,6 +35,10 @@ export { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
 export { SYNCED_MODERATION_POLICY_MATRIX_DOC } from '../repo-file-policy/repo-file-policy-test-sources.mts'
 
 export function setupRepoFilePolicyTest() {
+  let remaining: ReturnType<typeof createFixtureDeadline>
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
   const testDirs: string[] = []
   const trackedFilesByRepo = new Map<string, Set<string>>()
   const snapshotTablesByRepo = new Map<string, Record<string, unknown>>()
@@ -143,7 +148,10 @@ export function setupRepoFilePolicyTest() {
     }
   }
 
-  async function run(repoRoot: string): Promise<{ stdout: string }> {
+  async function run(
+    repoRoot: string,
+    options: { formKeyboardDeadline?: bigint } = {},
+  ): Promise<{ stdout: string }> {
     const trackedFiles = [...(trackedFilesByRepo.get(repoRoot) ?? [])]
     const ctx: SharedContext = {
       repoRoot,
@@ -153,6 +161,8 @@ export function setupRepoFilePolicyTest() {
     }
     const result = await checkRepoFilePolicy(ctx, {
       schemaSnapshot: emptySchemaSnapshot(snapshotTablesByRepo.get(repoRoot) ?? {}),
+      formKeyboardDeadline: options.formKeyboardDeadline,
+      remaining,
     })
     if (result.errors.length > 0) {
       const stdout = result.errors.join('\n')

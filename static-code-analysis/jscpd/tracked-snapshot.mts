@@ -7,10 +7,12 @@ function within(root: string, path: string): boolean {
   return difference !== '..' && !difference.startsWith(`..${sep}`) && !isAbsolute(difference)
 }
 
-export function trackedPaths(repoRoot: string): string[] {
+export function trackedPaths(repoRoot: string, remaining?: () => number): string[] {
   const output = execFileSync('git', ['ls-files', '--cached', '-z'], {
     cwd: repoRoot,
     maxBuffer: 20 * 1024 * 1024,
+    timeout: remaining?.(),
+    killSignal: 'SIGKILL',
   })
   return [...new Set(output.toString('utf8').split('\0').filter(Boolean))]
 }
@@ -18,9 +20,10 @@ export function trackedPaths(repoRoot: string): string[] {
 export async function copyTrackedWorkingTree(
   repoRoot: string,
   snapshotRoot: string,
+  remaining?: () => number,
 ): Promise<number> {
   const root = await realpath(repoRoot)
-  const paths = trackedPaths(root)
+  const paths = trackedPaths(root, remaining)
   let copied = 0
   for (let index = 0; index < paths.length; index += 64) {
     const batch = await Promise.all(

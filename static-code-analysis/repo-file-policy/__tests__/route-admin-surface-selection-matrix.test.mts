@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../../test-helpers/fixture-deadline.mts'
 
 import { factoryReturnsPageThatCalls } from '../route-admin-surface-facts.mts'
-import { collectRouteAdminSurfaceFacts } from '../route-admin-surface-query.mts'
+import { collectRouteAdminSurfaceFacts as collectFacts } from '../route-admin-surface-query.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
+
+function collectRouteAdminSurfaceFacts(content: string, file: string) {
+  return collectFacts(content, file, remaining)
+}
 
 // Frozen inputs and verdicts from the legacy TypeScript selection matrix.
 const selectionCases = [
@@ -162,6 +169,9 @@ const selectionCases = [
 ] as const
 
 describe('route-admin-surface factory-selection AST-grep parity', () => {
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
   it.each(selectionCases)('$id preserves factory and page selection', ({ source, expected }) => {
     const facts = collectRouteAdminSurfaceFacts(source, 'synthetic-factory.tsx')
     expect(factoryReturnsPageThatCalls('factory', 'page', 'secure')(facts)).toBe(expected)

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../../test-helpers/fixture-deadline.mts'
 
 import {
   callsRequireAdmin,
@@ -6,7 +7,13 @@ import {
   rejectsNonReferralProgramTopics,
   rendersPageWithAside,
 } from '../route-admin-surface-facts.mts'
-import { collectRouteAdminSurfaceFacts } from '../route-admin-surface-query.mts'
+import { collectRouteAdminSurfaceFacts as collectFacts } from '../route-admin-surface-query.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
+
+function collectRouteAdminSurfaceFacts(content: string, file: string) {
+  return collectFacts(content, file, remaining)
+}
 
 const factorySelectionEdges = [
   {
@@ -65,6 +72,9 @@ const factorySelectionEdges = [
 ] as const
 
 describe('route-admin-surface AST-grep facts', () => {
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
   it('combines the protected policy facts and ignores nested page decoys', () => {
     const source = [
       'function requireAdmin() {}',

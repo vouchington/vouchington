@@ -14,6 +14,7 @@ export function checkBoundedWorkTunables(
   repoRoot: string,
   trackedFiles: readonly string[],
   allowlist: readonly WorkTunableAllowEntry[],
+  remaining?: () => number,
 ): string[] {
   const errors: string[] = []
   const allowed = new Map<string, WorkTunableAllowEntry>()
@@ -43,6 +44,7 @@ export function checkBoundedWorkTunables(
           repoRoot,
           rule,
           files.slice(offset, offset + scannerFileChunk),
+          remaining,
         )) {
           const key = findingKey(finding)
           observed.add(key)
@@ -72,7 +74,12 @@ function findingKey(entry: WorkTunableAllowEntry): string {
   return JSON.stringify([entry.file, entry.ruleId, entry.identifier, entry.value])
 }
 
-function scan(repoRoot: string, rule: (typeof rules)[number], files: string[]): Finding[] {
+function scan(
+  repoRoot: string,
+  rule: (typeof rules)[number],
+  files: string[],
+  remaining?: () => number,
+): Finding[] {
   const result = spawnSync(
     join(toolRoot, 'node_modules/.bin/ast-grep'),
     [
@@ -85,7 +92,13 @@ function scan(repoRoot: string, rule: (typeof rules)[number], files: string[]): 
       '--include-metadata',
       ...files,
     ],
-    { cwd: repoRoot, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 },
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: remaining?.(),
+      killSignal: 'SIGKILL',
+    },
   )
   if (result.error) throw result.error
   if (result.status !== 0 && result.status !== 1) {

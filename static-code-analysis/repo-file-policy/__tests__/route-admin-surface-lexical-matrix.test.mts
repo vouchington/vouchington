@@ -1,11 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../../test-helpers/fixture-deadline.mts'
 
 import {
   callsRequireAdmin,
   rejectsNonReferralProgramTopics,
   rendersPageWithAside,
 } from '../route-admin-surface-facts.mts'
-import { collectRouteAdminSurfaceFacts } from '../route-admin-surface-query.mts'
+import { collectRouteAdminSurfaceFacts as collectFacts } from '../route-admin-surface-query.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
+
+function collectRouteAdminSurfaceFacts(content: string, file: string) {
+  return collectFacts(content, file, remaining)
+}
 
 // Frozen inputs and verdicts from the legacy TypeScript predicate matrices.
 const lexicalCases = [
@@ -255,6 +262,9 @@ const lexicalCases = [
 ] as const
 
 describe('route-admin-surface lexical AST-grep parity', () => {
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
   it.each(lexicalCases)('$id preserves lexical matching', ({ kind, source, expected }) => {
     const facts = collectRouteAdminSurfaceFacts(source, 'synthetic-route.tsx')
     const actual =

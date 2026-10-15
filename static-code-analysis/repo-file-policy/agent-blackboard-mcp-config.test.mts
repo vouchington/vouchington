@@ -3,10 +3,13 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import { parse } from 'smol-toml'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
 
 // vouchington-machines registers the `vouchington-tooling` MCP server, plugins, and marketplaces
 // per machine in every harness and pre-approves its tools. No tracked repository file does.
+
+let remaining: ReturnType<typeof createFixtureDeadline>
 
 const ROOT = resolve(import.meta.dirname, '../..')
 
@@ -28,7 +31,12 @@ const RETIRED_TOOL_APPROVALS =
 
 // Tracked Git state, so an ignored or untracked file neither fails nor satisfies this guard.
 function tracked(...paths: string[]): string[] {
-  return execFileSync('git', ['ls-files', '-z', '--', ...paths], { cwd: ROOT, encoding: 'utf8' })
+  return execFileSync('git', ['ls-files', '-z', '--', ...paths], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    timeout: remaining(),
+    killSignal: 'SIGKILL',
+  })
     .split('\0')
     .filter(Boolean)
 }
@@ -48,6 +56,9 @@ function registrationKeys(config: unknown): string[] {
 }
 
 describe('no repository registers an MCP server', () => {
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
   it('tracks no MCP server file', () => {
     expect(tracked('.mcp.json', '.cursor/mcp.json')).toEqual([])
   })

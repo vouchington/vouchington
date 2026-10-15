@@ -1,17 +1,22 @@
-import { spawnSync } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createAnalyzerFixtureBudget } from '../test-helpers/analyzer-fixture-budget.mts'
 import { parse, stringify } from 'yaml'
+
+let budget: ReturnType<typeof createAnalyzerFixtureBudget>
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')
 const directories: string[] = []
 
 describe('configured redirect destination rule', () => {
+  beforeEach(() => {
+    budget = createAnalyzerFixtureBudget()
+  })
   afterEach(async () => {
     await Promise.all(directories.splice(0).map(root => rm(root, { force: true, recursive: true })))
   })
@@ -26,9 +31,9 @@ describe('configured redirect destination rule', () => {
   `)
     await write(root, 'web/app/(my)/my/saved/page.tsx', 'export default function Page() {}')
     // An on-disk page must not satisfy the configured tracked route inventory.
-    expect(check(root).status).toBe(1)
-    expect(spawnSync('git', ['-C', root, 'add', 'web/app']).status).toBe(0)
-    expect(check(root).status).toBe(0)
+    expect((await check(root)).status).toBe(1)
+    expect(budget.git(['-C', root, 'add', 'web/app']).status).toBe(0)
+    expect((await check(root)).status).toBe(0)
   })
 
   it('rejects incomplete redirect construction through the configured rule', async () => {
@@ -36,7 +41,7 @@ describe('configured redirect destination rule', () => {
     const ownerPrivatePaths = generatePaths()
     return ownerPrivatePaths.map(([src, dst]) => ({source: src, destination: dst, permanent: false}))
   } }`)
-    const result = check(root)
+    const result = await check(root)
     expect(result.status).toBe(1)
     const report = JSON.parse(result.stdout) as { rules: { rule: string; file: string }[] }
     expect(
@@ -58,8 +63,8 @@ async function fixture(config: string): Promise<string> {
   expect(rules).toHaveLength(1)
   await write(root, '.no-mistakes.yml', stringify({ rules }))
   await write(root, 'web/next.config.ts', config)
-  expect(spawnSync('git', ['init', '-q', root]).status).toBe(0)
-  expect(spawnSync('git', ['-C', root, 'add', '.']).status).toBe(0)
+  expect(budget.git(['init', '-q', root]).status).toBe(0)
+  expect(budget.git(['-C', root, 'add', '.']).status).toBe(0)
   return root
 }
 
@@ -69,7 +74,5 @@ async function write(root: string, path: string, contents: string): Promise<void
 }
 
 function check(root: string) {
-  return spawnSync(process.execPath, [cli, 'check', '--root', root, '--format', 'json'], {
-    encoding: 'utf8',
-  })
+  return budget.check(cli, root)
 }

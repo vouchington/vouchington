@@ -1,6 +1,3 @@
-/** Stay inside the i18n-extract-codemod 30s testTimeout (#11686). Production --check has no cap. */
-export const I18N_ANALYSIS_BUDGET_MS = 25_000
-
 export type AnalysisBudgetClock = {
   delay: (ms: number) => Promise<never>
 }

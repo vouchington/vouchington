@@ -3,7 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { beforeEach, afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
+
+let remaining: ReturnType<typeof createFixtureDeadline>
 
 type Fixture = {
   file: string
@@ -260,6 +263,10 @@ describe('vouchington/banned-member-read rate-limiter configuration', () => {
     )
   })
 
+  beforeEach(() => {
+    remaining = createFixtureDeadline()
+  })
+
   afterAll(() => {
     rmSync(root, { force: true, recursive: true })
   })
@@ -268,6 +275,8 @@ describe('vouchington/banned-member-read rate-limiter configuration', () => {
     const result = spawnSync(OXLINT_BIN, ['-c', '.oxlintrc.json', '--format', 'json', '.'], {
       cwd: root,
       encoding: 'utf8',
+      timeout: remaining(),
+      killSignal: 'SIGKILL',
     })
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(1)

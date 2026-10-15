@@ -34,6 +34,8 @@ import { checkPlaywrightVisibilityFallback } from './playwright-visibility-fallb
 
 type RepoFilePolicyOptions = {
   schemaSnapshot?: unknown
+  formKeyboardDeadline?: bigint
+  remaining?: () => number
 }
 
 export async function checkRepoFilePolicy(
@@ -63,6 +65,7 @@ export async function checkRepoFilePolicy(
       ctx.repoRoot,
       trackedFiles,
       trackedFileSet.has(workTunableAllowlistFile) ? workTunableAllowlist : [],
+      options.remaining,
     ),
   )
 
@@ -78,7 +81,7 @@ export async function checkRepoFilePolicy(
     trackedFileSet.has('docs/requirements/navigation/reference-components-patterns.md')
   ) {
     try {
-      checkFormKeyboardReference(ctx.repoRoot)
+      checkFormKeyboardReference(ctx.repoRoot, options.formKeyboardDeadline)
     } catch (err) {
       errors.push(`::error::${err instanceof Error ? err.message : String(err)}`)
     }
@@ -86,7 +89,7 @@ export async function checkRepoFilePolicy(
   await checkUuidv7CreatedAtDdl(ctx.repoRoot, trackedFiles, errors)
   await checkModerationHistoryGuard(ctx.repoRoot, trackedFiles, errors)
   checkStaleSchemaAllowlistEntries(ctx.repoRoot, trackedFiles, schema, errors)
-  checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors)
+  checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors, options.remaining)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
   checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, schema, errors, ctx.readTrackedFile)
   checkClientParityMatrixGuard(ctx.repoRoot, trackedFiles, errors)
