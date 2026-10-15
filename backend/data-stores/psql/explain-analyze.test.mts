@@ -10,16 +10,20 @@ import {
 } from './explain-analyze.mts'
 
 describe('buildExplainAnalyzeText', () => {
-  it('excludes setup-time function calls from the captured query count', () => {
+  it('excludes setup-time calls and orders equal-call functions by name', () => {
     expect(
       functionCallsSince(
         [{ funcid: '1', funcname: 'fn_before', calls: '2', total_time: 3, self_time: 2 }],
         [
           { funcid: '1', funcname: 'fn_before', calls: '2', total_time: 3, self_time: 2 },
           { funcid: '2', funcname: 'fn_target', calls: '3', total_time: 4, self_time: 3 },
+          { funcid: '3', funcname: 'fn_alpha', calls: '3', total_time: 5, self_time: 4 },
         ],
       ),
-    ).toEqual([{ funcname: 'fn_target', calls: 3, total_time: 4, self_time: 3 }])
+    ).toEqual([
+      { funcname: 'fn_alpha', calls: 3, total_time: 5, self_time: 4 },
+      { funcname: 'fn_target', calls: 3, total_time: 4, self_time: 3 },
+    ])
   })
 
   it('captures calls made by the explained statement and none from the next capture', async () => {
