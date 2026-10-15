@@ -33,6 +33,11 @@ individual overrides within the suite cap and reports unresolved admitted timeou
 The resolved-project contract is checked in `ci/vitest-timeout-policy.test.mts`; this scoped
 rollout does not change other projects or establish a global runtime deadline.
 
+The `cloudflare-worker`, `cloudflare-worker-portability`, and `cloudflare-worker-mocks`
+projects use five-second test and hook defaults. Their declarations are checked in
+`ci/vitest-cloudflare-project-defaults.test.mts`; existing mock isolation and file routing
+are unchanged. Other projects and global timeout enforcement remain separate duties.
+
 The same headroom rule applies one layer down: a test that spawns a child process with its own
 timeout must keep that timeout strictly below its project's `testTimeout`, and must report the
 child's signal/timeout state on the result instead of coercing a kill into a generic failure code —
