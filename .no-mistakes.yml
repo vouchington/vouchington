@@ -7,6 +7,7 @@ effects:
       - { module: '@data-stores/psql', export: read }
       - { module: '@data-stores/psql', export: write }
       - { module: '@data-stores/psql', export: query }
+      - { module: '@data-stores/psql/clients', export: query }
       - { module: '@data-stores/psql', export: createAsyncGeneratorFromCursor }
       - { module: '@data-stores/psql/cursors', export: createAsyncGeneratorFromCursor }
     returnedExecutors:
@@ -26,8 +27,22 @@ effects:
       - { module: './index.mts', export: beginBoundedTransaction }
       - { module: './transactions.mts', export: beginTransaction }
       - { module: './transactions.mts', export: beginBoundedTransaction }
-    # Probes still require these spellings for injected transaction parameters.
-    transactionFunctions: [query, transaction, txQuery]
+    typedExecutors:
+      - { module: '@vouchington/postgres', export: TransactionQuery }
+      - { module: '@vouchington/postgres', export: QueryExecutor }
+    returnedMembers:
+      - { module: '@data-stores/psql', export: writePool.connect, member: query }
+      - { module: '@data-stores/psql', export: advisoryLockPool.connect, member: query }
+      - { module: '@data-stores/psql', export: readPool.connect, member: query }
+      - { module: '@data-stores/psql/setup', export: advisoryLockPool.connect, member: query }
+      - { module: './setup.mts', export: writePool.connect, member: query }
+      - { module: './setup.mts', export: advisoryLockPool.connect, member: query }
+      - { module: './setup.mts', export: readPool.connect, member: query }
+      - { module: '../setup.mts', export: writePool.connect, member: query }
+      - { module: './index.mts', export: readPool.connect, member: query }
+      - { module: '@vouchington/postgres', export: connectWithRetry, member: query }
+    # Structural/indexed query types, callbacks, and option fallbacks still need this spelling.
+    transactionFunctions: [query]
     batchFunctions: [pipelineBatch]
   valkey:
     targets:
@@ -550,6 +565,7 @@ rules:
             file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
             callee: 'hasRssFeedItemSourcesMissingPublication',
           }
+        - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
         - {
             file: backend/scripts/explain-analyze/pruning/capture.mts,
             callee: 'getPartitionLeaves',
@@ -557,8 +573,16 @@ rules:
         - { file: backend/scripts/explain-analyze/pruning/partitions.mts, callee: 'query' }
         - { file: backend/scripts/explain-analyze/pruning/seed.mts, callee: 'write' }
         - {
+            file: backend/scripts/explain-analyze/run-scenarios/follower-distributions.mts,
+            callee: 'runAndCapture',
+          }
+        - {
             file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
             callee: 'read',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/materialized-view-refreshes.mts,
+            callee: 'runAndCapture',
           }
         - {
             file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
@@ -573,8 +597,16 @@ rules:
             callee: 'countOwnedReplayAuditEvents',
           }
         - {
+            file: backend/scripts/explain-analyze/run-scenarios/media-delivery-replay.mts,
+            callee: 'runAndCapture',
+          }
+        - {
             file: backend/scripts/explain-analyze/run-scenarios/notification-block-set.mts,
             callee: 'getUserIdsBlockedOrMutedEitherWay',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
+            callee: 'runAndCapture',
           }
         - {
             file: backend/scripts/explain-analyze/run-scenarios/post-feed-shares.mts,
@@ -592,6 +624,19 @@ rules:
             file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
             callee: 'recordSemanticPostFailure',
           }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/semantic-post-search.mts,
+            callee: 'runAndCapture',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
+            callee: 'captureHydration',
+          }
+        - {
+            file: backend/scripts/explain-analyze/run-scenarios/story-member-pages.mts,
+            callee: 'capturePage',
+          }
+        - { file: backend/scripts/explain-analyze/run-support.mts, callee: 'explainAnalyze' }
         - {
             file: backend/scripts/explain-analyze/seed-data/admin-emails.mts,
             callee: 'transaction',
@@ -846,10 +891,6 @@ rules:
             callee: 'cleanupSoftDeletedUser',
           }
         - {
-            file: backend/services/data-retention/cleanup-oauth-authorization-server.mts,
-            callee: 'deleteExpiredOAuthAuthorizationServerArtifactsBatch',
-          }
-        - {
             file: backend/services/data-retention/cleanup-retained-identities.mts,
             callee: 'cleanupRetainedIdentityFamily',
           }
@@ -1010,6 +1051,14 @@ rules:
             callee: 'selectReportContextRows',
           }
         - { file: backend/services/moderation-reports/resolve.mts, callee: 'maybeResolveCase' }
+        - {
+            file: backend/services/notifications/reconcile-batches.mts,
+            callee: 'createNextRecipientNotificationBatch',
+          }
+        - {
+            file: backend/services/notifications/reconcile-batches.mts,
+            callee: 'dispatchNextCreatedNotificationBatch',
+          }
         - { file: backend/services/oauth-authorization-server/active-users.mts, callee: 'query' }
         - {
             file: backend/services/oauth-authorization-server/retention.mts,
@@ -1172,6 +1221,7 @@ rules:
             file: backend/services/post-publication/identity-source-paging.mts,
             callee: 'listSourceRows',
           }
+        - { file: backend/services/post-publication/lock.mts, callee: 'client.query' }
         - {
             file: backend/services/post-publication/orphan-identities.mts,
             callee: 'getOrCreateSnapshot',
@@ -1375,7 +1425,6 @@ rules:
             file: playwright/tests/tags/tag-voting-helpers.mts,
             callee: 'softDeleteScoredPostTopicCategoryRelation',
           }
-
   - name: GitHub Actions uses pins
     rule: github-actions-pinned-hash
     scope: repository

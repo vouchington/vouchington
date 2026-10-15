@@ -331,7 +331,12 @@ in [`.no-mistakes.yml`](../../../../.no-mistakes.yml). Its existing-call baselin
 without line pins; remove entries as the owning area's set-based follow-up lands. Batch helpers
 are declared separately in each family's `batchFunctions`. PostgreSQL transaction factories use binding-aware
 `returnedExecutors` selectors, and both public cursor modules have explicit effect targets.
-Only probe-verified injected transaction parameter spellings remain in `transactionFunctions`.
+Imported `TransactionQuery` and `QueryExecutor` annotations use `typedExecutors` selectors for
+their canonical `@vouchington/postgres` exports. `returnedMembers` selects `query` on clients
+returned by the configured pool factories and `connectWithRetry`, excluding unrelated local
+objects with a `query` method. Only the probe-verified `query` spelling fallback remains for
+structural/indexed query types, contextually typed callbacks, and `options.query ?? write` paths;
+`transaction` and `txQuery` are not configured.
 
 The local `valkey-no-consecutive-unbatched-reads` AST-grep rule flags consecutive unbatched Valkey reads that can share one batch.
 
