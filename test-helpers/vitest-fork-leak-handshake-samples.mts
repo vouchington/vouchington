@@ -49,10 +49,7 @@ export function pendingPoolSocketEpisode(options: {
   const initialUnowned = [...options.initial.tcpSocketHandles].filter(
     handle => !options.ownedHandlesObserved.has(handle),
   )
-  const initialPending =
-    (options.initial.connectWraps > 0 || options.probe.connectWraps > 0) &&
-    options.currentPool.nonIdleOrConnecting > 0 &&
-    initialUnowned.length === 1
+  const initialPending = options.currentPool.nonIdleOrConnecting > 0 && initialUnowned.length > 0
   const newPending = options.currentPool.nonIdleOrConnecting > 0 && newlyOwned < capacity
   const candidates = newPending
     ? growthHandles

@@ -61,19 +61,23 @@ describe('fork-leak handshake settlement', () => {
 
   it('returns every checkpoint when a TCP handle remains unowned', async () => {
     let tcpSockets = 4
+    let poolTotal = 4
     let turns = 0
     const tcpHandles = Array.from({ length: tcpSockets }, () => ({}))
+    const ownedHandles = [...tcpHandles]
     const result = await waitForForkLeakHandshakeSettle({
       readResources: () => [
         ...Array.from({ length: tcpSockets }, () => 'TCPSocketWrap'),
         'ConnectWrap',
       ],
-      readPsqlPoolMetrics: () => poolMetrics(4, 3),
-      readPsqlPoolSocketHandles: () => socketHandles(tcpHandles, []),
+      readPsqlPoolMetrics: () => poolMetrics(poolTotal, 3),
+      readPsqlPoolSocketHandles: () => socketHandles(tcpHandles, ownedHandles),
+      maxTurns: 3,
       waitForTurn: async () => {
         turns += 1
         if (turns === 1) {
           tcpSockets += 1
+          poolTotal += 1
           tcpHandles.push({})
         }
       },

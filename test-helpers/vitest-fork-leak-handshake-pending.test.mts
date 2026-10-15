@@ -125,6 +125,55 @@ describe('pending PostgreSQL socket handshake', () => {
     expect(result.snapshot.tcpSocketHandles.has(pendingHandle)).toBe(true)
   })
 
+  it('waits for an initially unowned handle after ConnectWrap has already disappeared', async () => {
+    const pendingHandle = {}
+    const ownedHandles: object[] = []
+    let turns = 0
+    const result = await waitForForkLeakHandshakeSettle({
+      readResources: () => ['TCPSocketWrap'],
+      readPsqlPoolMetrics: () => poolMetrics(1, 0),
+      readPsqlPoolSocketHandles: () => socketHandles([pendingHandle], ownedHandles),
+      maxTurns: 12,
+      waitForTurn: async () => {
+        turns += 1
+        if (turns === 4) ownedHandles.push(pendingHandle)
+      },
+    })
+
+    expect(turns).toBe(4)
+    expect(result.coalesced).toBe(true)
+    expect(result.snapshot.tcpSocketHandles.has(pendingHandle)).toBe(true)
+  })
+
+  it('waits for multiple initially pending pool handles to become owned', async () => {
+    const pendingHandles = [{}, {}]
+    const ownedHandles: object[] = []
+    let turns = 0
+    let connectWraps = 2
+    const result = await waitForForkLeakHandshakeSettle({
+      readResources: () => [
+        'TCPSocketWrap',
+        'TCPSocketWrap',
+        ...Array.from({ length: connectWraps }, () => 'ConnectWrap'),
+      ],
+      readPsqlPoolMetrics: () => poolMetrics(2, 0),
+      readPsqlPoolSocketHandles: () => socketHandles(pendingHandles, ownedHandles),
+      maxTurns: 12,
+      waitForTurn: async () => {
+        turns += 1
+        if (turns === 1) ownedHandles.push(pendingHandles[0]!)
+        if (turns === 2) {
+          ownedHandles.push(pendingHandles[1]!)
+          connectWraps = 0
+        }
+      },
+    })
+
+    expect(turns).toBe(4)
+    expect(result.coalesced).toBe(true)
+    expect(pendingHandles.every(handle => result.snapshot.tcpSocketHandles.has(handle))).toBe(true)
+  })
+
   for (const providerLost of [false, true]) {
     it(`records earlier unowned growth when it vanishes${providerLost ? ' with provider loss' : ''}`, async () => {
       let turns = 0
