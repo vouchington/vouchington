@@ -447,7 +447,13 @@ source .env && node backend/scripts/explain-analyze/pruning/run.mts
 ```
 
 The EXPLAIN workflow runs this proof after the ordinary plan gates and uploads its artifact on
-failure. It does not change production partition creation or the normal seed.
+failure. Before migration, three native lifecycle controls verify existing-name refusal,
+owned-sibling cleanup after a fixture failure, and cleanup after a CREATE succeeds but its
+transport reports failure. Each control records its original case name in the pruning artifact
+separately from the twenty plan results. Vitest checks the generated commands and ownership
+callback ordering through the public CommandRunner boundary without creating a database.
+The native controls retain the actual PostgreSQL existence checks; the pure tests do not claim
+server-state coverage. This does not change production partition creation or the normal seed.
 
 ## CI
 
