@@ -1,4 +1,8 @@
-import type { PsqlPoolMetric, PsqlPoolMetrics } from '@data-stores/psql/pool-metrics'
+import type {
+  PsqlPoolMetric,
+  PsqlPoolMetrics,
+  PsqlPoolSocketHandles,
+} from '@data-stores/psql/pool-metrics'
 import type { ForkLeakVerdict } from 'vouchington-tooling/vitest-diagnostics'
 
 type ForkLeakGrowthStep = NonNullable<ForkLeakVerdict['suspectedGrowth']>
@@ -10,6 +14,13 @@ export function getRegisteredPsqlPoolMetrics(): PsqlPoolMetrics | null {
   const provider = (
     globalThis as typeof globalThis & Record<symbol, PsqlPoolMetricsProvider | undefined>
   )[Symbol.for('vitest-fork-leak-psql-pool-metrics')]
+  return provider?.() ?? null
+}
+
+export function getRegisteredPsqlPoolSocketHandles(): PsqlPoolSocketHandles | null {
+  const provider = (
+    globalThis as typeof globalThis & Record<symbol, (() => PsqlPoolSocketHandles) | undefined>
+  )[Symbol.for('vitest-fork-leak-psql-pool-socket-handles')]
   return provider?.() ?? null
 }
 

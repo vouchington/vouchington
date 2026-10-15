@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { registerPsqlPoolMetricsForTestEnvironment } from '@data-stores/psql/pool-metrics'
+import { EventEmitter } from 'node:events'
+import {
+  registerPsqlPoolMetricsForTestEnvironment,
+  type PsqlPoolMetrics,
+  type PsqlPoolSocketHandles,
+} from '@data-stores/psql/pool-metrics'
 import { createForkLeakDetector } from 'vouchington-tooling/vitest-diagnostics'
 import {
   formatForkLeakDiagnostics,
@@ -17,7 +22,11 @@ function fakePsqlPool(
   idleCount: number,
   waitingCount: number,
 ): import('pg').Pool {
-  return { totalCount, idleCount, waitingCount } as import('pg').Pool
+  return Object.assign(new EventEmitter(), {
+    totalCount,
+    idleCount,
+    waitingCount,
+  }) as import('pg').Pool
 }
 
 describe('fork leak growth checkpoint detection', () => {
@@ -150,22 +159,46 @@ describe('fork leak growth checkpoint detection', () => {
   })
 
   it('reads existing PostgreSQL pool metrics without creating a pool', () => {
-    expect(
-      registerPsqlPoolMetricsForTestEnvironment(
-        {
-          write: fakePsqlPool(20, 17, 2),
-          read: fakePsqlPool(8, 8, 0),
-          advisoryLock: fakePsqlPool(4, 1, 3),
-        },
-        'test',
-      ),
-    ).toBe(true)
+    const target = globalThis as typeof globalThis & Record<symbol, unknown>
+    const metricsKey = Symbol.for('vitest-fork-leak-psql-pool-metrics')
+    const handlesKey = Symbol.for('vitest-fork-leak-psql-pool-socket-handles')
+    const previousMetrics = target[metricsKey]
+    const previousHandles = target[handlesKey]
+    const write = fakePsqlPool(20, 17, 2)
+    const read = fakePsqlPool(8, 8, 0)
+    const advisoryLock = fakePsqlPool(4, 1, 3)
+    try {
+      expect(registerPsqlPoolMetricsForTestEnvironment({ write, read, advisoryLock }, 'test')).toBe(
+        true,
+      )
+      write.emit('connect')
 
-    expect(getRegisteredPsqlPoolMetrics()).toEqual({
-      write: { total: 20, idle: 17, nonIdleOrConnecting: 3, waiting: 2 },
-      read: { total: 8, idle: 8, nonIdleOrConnecting: 0, waiting: 0 },
-      advisoryLock: { total: 4, idle: 1, nonIdleOrConnecting: 3, waiting: 3 },
-    })
+      expect(getRegisteredPsqlPoolMetrics()).toEqual({
+        write: {
+          total: 20,
+          idle: 17,
+          nonIdleOrConnecting: 3,
+          waiting: 2,
+        },
+        read: {
+          total: 8,
+          idle: 8,
+          nonIdleOrConnecting: 0,
+          waiting: 0,
+        },
+        advisoryLock: {
+          total: 4,
+          idle: 1,
+          nonIdleOrConnecting: 3,
+          waiting: 3,
+        },
+      })
+    } finally {
+      if (previousMetrics === undefined) delete target[metricsKey]
+      else target[metricsKey] = previousMetrics as () => PsqlPoolMetrics
+      if (previousHandles === undefined) delete target[handlesKey]
+      else target[handlesKey] = previousHandles as () => PsqlPoolSocketHandles
+    }
   })
 
   it('does not install or replace PostgreSQL metrics outside the test environment', () => {

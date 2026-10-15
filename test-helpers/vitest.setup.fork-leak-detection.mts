@@ -6,6 +6,7 @@ import { waitForResourceCloseCallbacks } from 'vouchington-tooling/vitest-diagno
 import {
   formatForkLeakDiagnostics,
   getRegisteredPsqlPoolMetrics,
+  getRegisteredPsqlPoolSocketHandles,
 } from './vitest-fork-leak-diagnostics.mts'
 import { getForkLeakDetector } from './vitest-fork-leak-detection.mts'
 import { waitForForkLeakHandshakeSettle } from './vitest-fork-leak-handshake.mts'
@@ -23,19 +24,27 @@ afterEach(async context => {
   // runs before close callbacks (close-callbacks phase) in the same loop iteration; setTimeout
   // schedules into the next iteration, after this iteration's close callbacks have all run.
   await waitForResourceCloseCallbacks()
-  // Collapse a serial pool handshake into the checkpoint that observes it.
-  // Continued growth after the sockets settle still fails this test.
-  await waitForForkLeakHandshakeSettle({
+  // Collapse only registered PostgreSQL pool handshakes into the checkpoint
+  // that observes them. Unmatched socket growth remains visible to the detector.
+  const settlement = await waitForForkLeakHandshakeSettle({
     readResources: () => process.getActiveResourcesInfo(),
+    readPsqlPoolMetrics: getRegisteredPsqlPoolMetrics,
+    readPsqlPoolSocketHandles: getRegisteredPsqlPoolSocketHandles,
   })
 
-  const resources = process.getActiveResourcesInfo()
-  const counts = countResourcesByType(resources)
-  const verdicts = detector.record(counts, context.task.file.filepath)
-  if (verdicts.length > 0) {
+  const snapshots = settlement.coalesced ? [settlement.snapshot] : settlement.observations
+  const findings = snapshots.flatMap(snapshot => {
+    const counts = countResourcesByType(snapshot.resources)
+    return detector
+      .record(counts, context.task.file.filepath)
+      .map(verdict => ({ verdict, counts, psqlPoolMetrics: snapshot.psqlPoolMetrics }))
+  })
+  if (findings.length > 0) {
     throw new Error(
-      verdicts
-        .map(verdict => formatForkLeakDiagnostics(verdict, counts, getRegisteredPsqlPoolMetrics()))
+      findings
+        .map(({ verdict, counts, psqlPoolMetrics }) =>
+          formatForkLeakDiagnostics(verdict, counts, psqlPoolMetrics),
+        )
         .join('\n\n'),
     )
   }
