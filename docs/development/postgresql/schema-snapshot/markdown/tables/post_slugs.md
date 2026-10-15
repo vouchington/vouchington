@@ -6,17 +6,19 @@ URL slugs for posts. The most recently created slug is canonical; older slugs re
 
 Not partitioned — growth: unbounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                         |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------- |
-| `post_id`    | `uuid`                     | no       |                     |          |           |           | The post this slug belongs to.                                  |
-| `slug`       | `text`                     | no       |                     |          |           |           | URL-safe lowercase slug (primary key). Unique across all posts. |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                 |
-| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                 |
+| Column       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                           |
+| ------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------- |
+| `id`         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                   |
+| `post_id`    | `uuid`                     | no       |                              |          |           |           | The post this slug belongs to.                    |
+| `slug`       | `text`                     | no       |                              |          |           |           | URL-safe lowercase slug, unique across all posts. |
+| `created_at` | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                   |
+| `updated_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                   |
 
-**Primary key:** `PRIMARY KEY (slug)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `post_slugs_slug_key`: `UNIQUE (slug)`
 
 **Check constraints:**
 
@@ -30,10 +32,11 @@ _none_
 
 **Indexes:**
 
-- `idx_post_slugs__post_id__created_at_desc`: `CREATE INDEX idx_post_slugs__post_id__created_at_desc ON public.post_slugs USING btree (post_id, created_at DESC) INCLUDE (slug)`
+- `idx_post_slugs__post_id__id_desc`: `CREATE INDEX idx_post_slugs__post_id__id_desc ON public.post_slugs USING btree (post_id, id DESC) INCLUDE (slug)`
 - `idx_post_slugs__post_id_slug`: `CREATE INDEX idx_post_slugs__post_id_slug ON public.post_slugs USING btree (post_id, slug)`
 - `idx_post_slugs__updated_at_post_id_slug`: `CREATE INDEX idx_post_slugs__updated_at_post_id_slug ON public.post_slugs USING btree (updated_at, ((post_id)::text), slug)`
-- `post_slugs_pkey`: `CREATE UNIQUE INDEX post_slugs_pkey ON public.post_slugs USING btree (slug)`
+- `post_slugs_pkey`: `CREATE UNIQUE INDEX post_slugs_pkey ON public.post_slugs USING btree (id)`
+- `post_slugs_slug_key`: `CREATE UNIQUE INDEX post_slugs_slug_key ON public.post_slugs USING btree (slug)`
 
 **Triggers:**
 

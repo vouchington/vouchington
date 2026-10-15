@@ -61,7 +61,7 @@ const DISPUTE_JOINS = sql`
     SELECT ps.slug
     FROM post_slugs ps
     WHERE ps.post_id = rd.post_id
-    ORDER BY ps.created_at DESC
+    ORDER BY ps.id DESC
     LIMIT 1
   ) post_slug ON true
 `

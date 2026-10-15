@@ -62,12 +62,12 @@ async function runHostnamePolicies(): Promise<void> {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['blocklisted_domains_pkey'],
+        indexes: ['blocklisted_domains_domain_source_id_key'],
         queryContains: 'getFullHostnamePolicies',
       },
       {
         kind: 'usesIndexes',
-        indexes: ['blocklisted_domains_pkey'],
+        indexes: ['blocklisted_domains_domain_source_id_key'],
         queryContains: 'getBlocklistedDomainKeys',
       },
       { kind: 'maxProcessedRows', relation: 'blocklisted_domains', max: 500 },

@@ -56,6 +56,7 @@ export async function createEmailVerificationToken(
       VALUES (${normalized}, ${token}, ${userId})
       ON CONFLICT (user_id, email_address) WHERE user_id IS NOT NULL
       DO UPDATE SET
+        id = uuidv7(),
         token = ${token},
         logged_in_at = NULL
     `)
@@ -94,7 +95,7 @@ async function verifyTokenAndPrimeEmailCache(
         AND email_address = ${normalizedEmailAddress}
         AND token = ${normalizedToken}
         AND logged_in_at IS NULL
-        AND created_at > NOW() - INTERVAL '30 minutes'
+        AND id >= fn_min_uuidv7(NOW() - INTERVAL '30 minutes' + INTERVAL '1 millisecond')
     `)
   assert(rowCount === 1, 400, 'Invalid or expired verification code')
 

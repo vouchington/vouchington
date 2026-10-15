@@ -12,6 +12,10 @@ import { v7 } from 'uuid'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import {
+  setTestEmailAddressLoginTokenId,
+  setTestPhoneNumberLoginTokenId,
+} from '@voucha/test-helpers/entities/login-tokens'
+import {
   createEmailAddressLoginToken,
   createPhoneNumberLoginToken,
   verifyEmailAddressLoginToken,
@@ -93,6 +97,19 @@ describe('create.generated', () => {
     expect(tokenHash).not.toBe(bareSha256)
   })
 
+  it('rejects an email login token whose UUIDv7 is past its lifetime', async () => {
+    const emailAddress = createRandomEmailAddress()
+    const { token } = await createEmailAddressLoginToken(emailAddress)
+    const rowCount = await setTestEmailAddressLoginTokenId(
+      emailAddress,
+      v7({ msecs: Date.now() - 16 * 60_000 }),
+    )
+    expect(rowCount).toBe(1)
+    await expect(verifyEmailAddressLoginToken(emailAddress, token)).resolves.toMatchObject({
+      success: false,
+    })
+  })
+
   it('Sign up with Phone Number', async () => {
     const phone_number = createRandomPhoneNumber()
     const { phoneNumber, token } = await createPhoneNumberLoginToken(phone_number)
@@ -121,5 +138,19 @@ describe('create.generated', () => {
     const user3 = await getPrivateUserByAny(phoneNumber)
     expect(user3).not.toBeNull()
     expect(user3!.phone_number).toEqual(phoneNumber)
+  })
+
+  it('rejects a phone login token whose UUIDv7 is past its lifetime', async () => {
+    const phoneNumber = createRandomPhoneNumber()
+    const { token, phoneNumber: normalizedPhoneNumber } =
+      await createPhoneNumberLoginToken(phoneNumber)
+    const rowCount = await setTestPhoneNumberLoginTokenId(
+      normalizedPhoneNumber,
+      v7({ msecs: Date.now() - 16 * 60_000 }),
+    )
+    expect(rowCount).toBe(1)
+    await expect(verifyPhoneNumberLoginToken(phoneNumber, token)).resolves.toMatchObject({
+      success: false,
+    })
   })
 })

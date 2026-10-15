@@ -92,7 +92,7 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
     LEFT JOIN LATERAL (
       SELECT slug FROM post_slugs
       WHERE post_id = rp.id
-      ORDER BY created_at DESC
+      ORDER BY id DESC
       LIMIT 1
     ) ps ON true
   `)

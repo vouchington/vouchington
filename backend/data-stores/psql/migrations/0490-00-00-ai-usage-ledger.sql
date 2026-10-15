@@ -59,7 +59,9 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
 -- key. This non-partitioned map is the durable idempotency gate for provider-reported usage.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
-  response_id TEXT PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  response_id TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   ai_usage_record_id UUID NOT NULL UNIQUE
     REFERENCES ai_usage_records (id) ON DELETE CASCADE
     DEFERRABLE INITIALLY DEFERRED,
@@ -109,7 +111,7 @@ COMMENT ON COLUMN ai_usage_records.latency_milliseconds IS 'Milliseconds from th
 COMMENT ON COLUMN ai_usage_records.pricing_status IS 'Whether pricing was known when this usage record was written.';
 COMMENT ON COLUMN ai_usage_records.cost_microunits IS 'Estimated cost in millionths of the major currency unit; NULL when unpriced.';
 COMMENT ON COLUMN ai_usage_records.currency_code IS 'Currency of the estimated cost; NULL when unpriced.';
-COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Provider response or decision id; the primary key prevents duplicate ledger rows across UUIDv7 ledger partitions.';
+COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Unique provider response or decision id; it prevents duplicate ledger rows across UUIDv7 ledger partitions.';
 COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

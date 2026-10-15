@@ -78,6 +78,17 @@ export async function insertTestPost(data: {
   )
   return postId
 }
+
+export async function insertTestPostSlugsInOneMillisecond(postId: string): Promise<string> {
+  const msecs = Date.now()
+  const [olderId, newerId] = [uuidv7({ msecs }), uuidv7({ msecs })].toSorted()
+  const olderSlug = `copyright-older-${uuidv7()}`
+  const newerSlug = `copyright-newer-${uuidv7()}`
+  await write(sql`/* insertTestPostSlugsInOneMillisecond */
+    INSERT INTO post_slugs (id, post_id, slug)
+    VALUES (${olderId}, ${postId}, ${olderSlug}), (${newerId}, ${postId}, ${newerSlug})`)
+  return newerSlug
+}
 export async function setPostDeclaredLanguage(postId: string, lang: string | null): Promise<void> {
   await write(
     allowUnannotatedQuery(sql`UPDATE posts SET declared_language = ${lang} WHERE id = ${postId}`),

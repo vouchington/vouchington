@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest'
+import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import {
   addVerifiedEmailForUser,
   addDisposableEmailForUser,
   addDisposableDomain,
+  setTestUserEmailAddressId,
   setPrimaryEmailForUser,
 } from '@voucha/test-helpers/entities/email-addresses'
 import {
@@ -50,6 +52,24 @@ describe('hasVerifiedNonDisposableEmail', () => {
     await insertTestOAuthAccount('x', `x-only-${suffix}`, `tests+x-only-${suffix}@voucha.ai`)
     await connectTestOAuthAccount('x', xOnlyUser.id, `x-only-${suffix}`)
     await expect(getVerifiedEmailAddress(xOnlyUser.id)).resolves.toBeNull()
+  })
+
+  it('uses UUID order when non-primary addresses share their generated timestamp', async () => {
+    const user = await createTestUserDirect()
+    const suffix = crypto.randomUUID()
+    const laterName = `z-${suffix}@voucha.ai`
+    const earlierName = `a-${suffix}@voucha.ai`
+    await addVerifiedEmailForUser(user.id, laterName)
+    await addVerifiedEmailForUser(user.id, earlierName)
+    const sameMillisecond = Date.now()
+    const [earlierId, laterId] = [
+      uuidv7({ msecs: sameMillisecond }),
+      uuidv7({ msecs: sameMillisecond }),
+    ].toSorted()
+    await setTestUserEmailAddressId(user.id, laterName, earlierId!)
+    await setTestUserEmailAddressId(user.id, earlierName, laterId!)
+
+    await expect(getVerifiedEmailAddress(user.id)).resolves.toBe(laterName)
   })
 
   it('batch resolves users with and without verified addresses', async () => {

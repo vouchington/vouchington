@@ -52,7 +52,7 @@ async function getReviewsByIds(
         SELECT slug
         FROM post_slugs
         WHERE post_id = p.id
-        ORDER BY created_at DESC
+        ORDER BY id DESC
         LIMIT 1
       ) AS slug,
       p.markdown,

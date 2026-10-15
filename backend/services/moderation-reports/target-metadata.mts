@@ -38,7 +38,7 @@ export function reportTargetJoinsSql() {
       SELECT slug
       FROM post_slugs
       WHERE post_id = target_post.id
-      ORDER BY created_at DESC
+      ORDER BY id DESC
       LIMIT 1
     ) target_post_slug ON true
     LEFT JOIN posts root_post ON r.post_id IS NOT NULL AND target_post.post_type = 'comment' AND root_post.id = target_post.root_post_id
@@ -46,7 +46,7 @@ export function reportTargetJoinsSql() {
       SELECT slug
       FROM post_slugs
       WHERE post_id = root_post.id
-      ORDER BY created_at DESC
+      ORDER BY id DESC
       LIMIT 1
     ) root_post_slug ON true
     LEFT JOIN url_hostnames target_hostname

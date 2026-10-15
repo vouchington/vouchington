@@ -103,7 +103,7 @@ user_reviews AS (
   SELECT DISTINCT ON (p.created_by_id)
     p.created_by_id AS user_id,
     p.id AS review_post_id,
-    (SELECT ps.slug FROM post_slugs ps WHERE ps.post_id = p.id ORDER BY ps.created_at DESC LIMIT 1) AS review_post_slug,
+    (SELECT ps.slug FROM post_slugs ps WHERE ps.post_id = p.id ORDER BY ps.id DESC LIMIT 1) AS review_post_slug,
     (
       SELECT ROUND(AVG(prt.rating)::numeric, 1)
       FROM post_review_topic_ratings prt

@@ -109,7 +109,7 @@ export async function getViewPostsHydrationContract(
       {
         kind: 'usesIndexes',
         indexes: [
-          'idx_post_slugs__post_id__created_at_desc',
+          'idx_post_slugs__post_id__id_desc',
           'idx_post_images__post_id__order_index',
           'post_topic_alias_sources_post_id_topic_alias_id_source_key',
           ...rows.map(row => row.index_name),

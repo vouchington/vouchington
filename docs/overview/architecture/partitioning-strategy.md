@@ -231,7 +231,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   90 days in locked batches using their terminal timestamp, and generation receipts cascade with
   the parent intent; this bounds retained terminal delivery evidence without touching pending work.
 - Global idempotency keys: `ai_usage_provider_response_keys`. Partitioning cannot preserve the
-  response-ID primary key's global uniqueness; reconsider only if the replacement enforces that
+  response-ID unique constraint's global uniqueness; reconsider only if the replacement enforces that
   invariant across every ledger partition.
 - Work queue (drains to empty): `activitypub_inbox_delivery_work_items`. Rows are deleted on success and rejection.
   Unverified envelopes expire after one hour; operational failures expire seven days after their

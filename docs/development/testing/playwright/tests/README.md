@@ -69,7 +69,7 @@ scope preserved. Call [`randomSuffix()`](../../../../../playwright/helpers/rando
 `protectPlaywrightHookTimeouts(test.info())` guard, still _inside_ the hook, not at module or
 `describe` scope: a suffix hoisted above the hook keeps the same value
 across a re-entry and seeds the same slug/name twice, which throws on any globally unique DB column
-(e.g. `post_slugs_pkey`).
+(e.g. the unique `post_slugs.slug` constraint).
 
 ### External Credentials (Dependabot PRs)
 

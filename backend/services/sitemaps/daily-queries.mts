@@ -53,7 +53,7 @@ function buildLatestPostSlugJoinSql() {
       SELECT ps.slug
       FROM post_slugs ps
       WHERE ps.post_id = p.id
-      ORDER BY ps.created_at DESC
+      ORDER BY ps.id DESC
       LIMIT 1
     ) AS latest_slug ON true
   `

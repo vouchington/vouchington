@@ -13,11 +13,8 @@ import {
 } from '@services/my/email-address-verification'
 import { enqueueSendEmailVerificationToken } from '@queues/emails/enqueues'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import {
-  createPaginationParser,
-  decodeScopedTierPreciseNameCursor,
-  encodeScopedTierPreciseNameCursor,
-} from '@modules/pagination'
+import { createPaginationParser, decodeScopedTierCursor, encodeCursor } from '@modules/pagination'
+import { isUUID } from '@modules/utils'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import createHttpError from 'http-errors'
@@ -27,30 +24,23 @@ type VerifyEmailAddressRequest = { token: string }
 type SetPrimaryEmailAddressRequest = { is_primary: true }
 
 const emailAddressesParser = createPaginationParser({
-  cursor: { type: 'precise_timestamp' },
+  cursor: { type: 'tier' },
   limit: { min: 1, max: 100, default: 25 },
 })
 
 const EMAIL_ADDRESS_PAGE_LIMIT = 25
 
 async function emailAddressPage(userId: string, limit: number, after?: string) {
-  const scope = `email-addresses:${userId}:primary-desc-created-asc-email-asc`
-  const cursor = after
-    ? decodeScopedTierPreciseNameCursor(after, scope, 'Invalid cursor format')
-    : undefined
-  if (cursor && cursor.tier !== 0 && cursor.tier !== 1) {
+  const scope = `email-addresses:${userId}:primary-desc-id-asc`
+  const cursor = after ? decodeScopedTierCursor(after, scope, 'Invalid cursor format') : undefined
+  if (cursor && ((cursor.tier !== 0 && cursor.tier !== 1) || !isUUID(cursor.id))) {
     throw createHttpError(400, 'Invalid cursor format')
   }
   const { results, hasNextPage } = await listEmailAddressesPage(userId, { limit, after: cursor })
   const cursorFor = (email: (typeof results)[number]) =>
-    encodeScopedTierPreciseNameCursor(
-      email.is_primary ? 1 : 0,
-      email.cursor_timestamp,
-      email.email_address,
-      scope,
-    )
+    encodeCursor({ tier: email.is_primary ? 1 : 0, id: email.id, scope })
   return {
-    results: results.map(({ cursor_timestamp: _cursorTimestamp, ...email }) => email),
+    results: results.map(({ id: _id, ...email }) => email),
     page_info: {
       has_next_page: hasNextPage,
       start_cursor: results[0] ? cursorFor(results[0]) : null,

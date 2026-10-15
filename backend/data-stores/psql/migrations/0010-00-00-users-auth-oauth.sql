@@ -354,12 +354,14 @@ COMMENT ON COLUMN user_engagement_email_sends.sent_at IS 'When the email process
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_moderation_email_sends (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   send_key TEXT NOT NULL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   claimed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   sent_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id, send_key)
+  UNIQUE (user_id, send_key)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -380,25 +382,25 @@ COMMENT ON COLUMN user_moderation_email_sends.sent_at IS 'When the email process
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_email_addresses (
-  user_id UUID REFERENCES users ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   email_address TEXT NOT NULL,
   email_domain_hostname_id UUID NOT NULL,
   CHECK (char_length(email_address) <= 255),
   CHECK (email_address = LOWER(email_address)),
   CHECK (email_address = TRIM(email_address)),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_primary BOOLEAN DEFAULT TRUE,
-  PRIMARY KEY (user_id, email_address)
+  UNIQUE (user_id, email_address)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_created_email
+CREATE INDEX IF NOT EXISTS idx_user_email_addresses__user_primary_id
   ON user_email_addresses (
     user_id,
     (is_primary::int) DESC,
-    created_at ASC,
-    email_address ASC
+    id ASC
   );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -417,13 +419,14 @@ BEFORE UPDATE ON user_email_addresses
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE user_email_addresses IS 'Email addresses associated with user accounts. Composite PK on (user_id, email_address).';
+COMMENT ON TABLE user_email_addresses IS 'Email addresses associated with user accounts. Each user and email address pair is unique.';
 COMMENT ON COLUMN user_email_addresses.user_id IS 'The user who owns this email address.';
 COMMENT ON COLUMN user_email_addresses.email_address IS 'Normalized (lowercase, trimmed) email address.';
 COMMENT ON COLUMN user_email_addresses.is_primary IS 'Whether this is the user''s primary email address.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS email_address_login_tokens (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   email_address TEXT NOT NULL,
   CHECK (char_length(email_address) <= 255),
   CHECK (email_address = LOWER(email_address)),
@@ -433,12 +436,12 @@ CREATE TABLE IF NOT EXISTS email_address_login_tokens (
   CHECK (token = UPPER(token)),
   CHECK (token = TRIM(token)),
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   logged_in_at TIMESTAMPTZ,
   -- NULL = login token; non-NULL = email address verification token
   user_id UUID REFERENCES users ON DELETE CASCADE,
-  PRIMARY KEY (email_address, token)
+  UNIQUE (email_address, token)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -465,11 +468,6 @@ CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__logged_in
   ON email_address_login_tokens (email_address)
   WHERE logged_in_at IS NOT NULL;
 
--- index for cleanup by created_at
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__created_at
-  ON email_address_login_tokens (created_at);
-
 -- index for user lookup by email
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_email_addresses__email
@@ -487,15 +485,16 @@ COMMENT ON COLUMN email_address_login_tokens.user_id IS 'Non-NULL for email veri
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_phone_numbers (
-  user_id UUID REFERENCES users ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   phone_number TEXT NOT NULL,
   CHECK (char_length(phone_number) <= 255),
   CHECK (phone_number = LOWER(phone_number)),
   CHECK (phone_number = TRIM(phone_number)),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   is_primary BOOLEAN DEFAULT TRUE,
-  PRIMARY KEY (user_id, phone_number)
+  UNIQUE (user_id, phone_number)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -514,13 +513,14 @@ BEFORE UPDATE ON user_phone_numbers
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE user_phone_numbers IS 'Phone numbers associated with user accounts. Composite PK on (user_id, phone_number).';
+COMMENT ON TABLE user_phone_numbers IS 'Phone numbers associated with user accounts. Each user and phone number pair is unique.';
 COMMENT ON COLUMN user_phone_numbers.user_id IS 'The user who owns this phone number.';
 COMMENT ON COLUMN user_phone_numbers.phone_number IS 'Normalized (lowercase, trimmed) phone number.';
 COMMENT ON COLUMN user_phone_numbers.is_primary IS 'Whether this is the user''s primary phone number.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS phone_number_login_tokens (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   phone_number TEXT NOT NULL,
   CHECK (char_length(phone_number) <= 255),
   CHECK (phone_number = LOWER(phone_number)),
@@ -530,10 +530,10 @@ CREATE TABLE IF NOT EXISTS phone_number_login_tokens (
   CHECK (token = UPPER(token)),
   CHECK (token = TRIM(token)),
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   logged_in_at TIMESTAMPTZ,
-  PRIMARY KEY (phone_number, token)
+  UNIQUE (phone_number, token)
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -546,11 +546,6 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE UNIQUE INDEX IF NOT EXISTS idx_phone_number_login_tokens__active
   ON phone_number_login_tokens (phone_number, token)
   WHERE logged_in_at IS NULL;
-
--- index for cleanup by created_at
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_phone_number_login_tokens__created_at
-ON phone_number_login_tokens (created_at);
 
 -- index for user lookup by phone
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

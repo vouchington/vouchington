@@ -4,6 +4,7 @@ import {
   resolveTestCopyrightPostImagePlacements,
 } from '@voucha/test-helpers/copyright-placement-batches'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { insertTestPostSlugsInOneMillisecond } from '@voucha/test-helpers/entities/posts'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
 import {
@@ -52,6 +53,16 @@ describe('copyright image placement resolution', () => {
     const fixture = await createTestCopyrightImageFixture('post-image', { postType: 'story' })
     const resolved = await resolveCopyrightImagePlacement(fixture.selector)
     expect(new URL(resolved.hostedUseUrl).pathname).toMatch(/^\/story\//)
+  })
+
+  it('uses the newest UUID slug when two post slugs share a millisecond', async () => {
+    const fixture = await createTestCopyrightImageFixture('post-image')
+    if (fixture.selector.surfaceKind !== 'post-image') throw new Error('Expected post image')
+    const newestSlug = await insertTestPostSlugsInOneMillisecond(fixture.selector.postId)
+    const [batch] = await resolveTestCopyrightPostImagePlacements([fixture.selector])
+    const single = await resolveCopyrightImagePlacement(fixture.selector)
+    expect(new URL(batch.hostedUseUrl).pathname).toBe(`/discussion/${newestSlug}`)
+    expect(single.hostedUseUrl).toBe(batch.hostedUseUrl)
   })
 
   it.each(TEST_COPYRIGHT_IMAGE_KINDS)(

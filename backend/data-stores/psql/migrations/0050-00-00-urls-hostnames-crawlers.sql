@@ -389,14 +389,15 @@ COMMENT ON COLUMN domain_blocklist_sources.last_fetched_at IS 'When this source 
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS blocklisted_domains (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   source_id BIGINT NOT NULL REFERENCES domain_blocklist_sources ON DELETE CASCADE,
   domain TEXT NOT NULL,
   url_hostname_id UUID NOT NULL REFERENCES url_hostnames(id) ON DELETE RESTRICT,
   CHECK (domain = LOWER(domain)),
   CHECK (domain = TRIM(domain)),
-  PRIMARY KEY (domain, source_id),
+  UNIQUE (domain, source_id),
   CONSTRAINT uq_blocklisted_domains__hostname_source UNIQUE (url_hostname_id, source_id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

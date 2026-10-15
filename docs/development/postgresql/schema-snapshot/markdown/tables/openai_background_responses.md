@@ -6,20 +6,22 @@ Fenced ownership registry for background OpenAI responses not yet finalized; exa
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                                                                                                   |
-| ------------------ | -------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `response_id`      | `text`                     | no       |                                              |          |           |           | OpenAI response id from response.created; the primary key identifies one current lease while ai_usage_provider_response_keys separately gates accounting. |
-| `agent_slug`       | `text`                     | no       |                                              |          |           |           | The slug of the agent that created this background response, carried through to the eventual ai_usage_records row.                                        |
-| `community_id`     | `uuid`                     | yes      |                                              |          |           |           | The community the call is scoped to, if any; NULL for agents that run outside a community.                                                                |
-| `post_id`          | `uuid`                     | yes      |                                              |          |           |           | The post the call is scoped to, if any; nullable if the post has been deleted or the call was not post-scoped.                                            |
-| `lease_token`      | `uuid`                     | no       | `uuidv7()`                                   |          |           |           | Stable owner token; recovery atomically rotates it before any provider teardown so stale owners cannot renew or finalize.                                 |
-| `lease_expires_at` | `timestamp with time zone` | no       | `(CURRENT_TIMESTAMP + '00:03:00'::interval)` |          |           |           | PostgreSQL-time ownership expiry; active drains renew it and the sweeper may claim only after it passes.                                                  |
-| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                          |          |           |           | When this response was first registered; retained for audit, not liveness.                                                                                |
+| Column             | Type                       | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                                                                                          |
+| ------------------ | -------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`               | `uuid`                     | no       | `uuidv7()`                                   |          |           |           |                                                                                                                                                  |
+| `response_id`      | `text`                     | no       |                                              |          |           |           | Unique OpenAI response id from response.created; identifies one current lease while ai_usage_provider_response_keys separately gates accounting. |
+| `agent_slug`       | `text`                     | no       |                                              |          |           |           | The slug of the agent that created this background response, carried through to the eventual ai_usage_records row.                               |
+| `community_id`     | `uuid`                     | yes      |                                              |          |           |           | The community the call is scoped to, if any; NULL for agents that run outside a community.                                                       |
+| `post_id`          | `uuid`                     | yes      |                                              |          |           |           | The post the call is scoped to, if any; nullable if the post has been deleted or the call was not post-scoped.                                   |
+| `lease_token`      | `uuid`                     | no       | `uuidv7()`                                   |          |           |           | Stable owner token; recovery atomically rotates it before any provider teardown so stale owners cannot renew or finalize.                        |
+| `lease_expires_at` | `timestamp with time zone` | no       | `(CURRENT_TIMESTAMP + '00:03:00'::interval)` |          |           |           | PostgreSQL-time ownership expiry; active drains renew it and the sweeper may claim only after it passes.                                         |
+| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                 |          | virtual   |           | When this response was first registered; retained for audit, not liveness.                                                                       |
 
-**Primary key:** `PRIMARY KEY (response_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `openai_background_responses_response_id_key`: `UNIQUE (response_id)`
 
 **Check constraints:**
 
@@ -35,7 +37,8 @@ _none_
 - `idx_openai_background_responses__community_id`: `CREATE INDEX idx_openai_background_responses__community_id ON public.openai_background_responses USING btree (community_id) WHERE (community_id IS NOT NULL)`
 - `idx_openai_background_responses__lease_expires_at_response_id`: `CREATE INDEX idx_openai_background_responses__lease_expires_at_response_id ON public.openai_background_responses USING btree (lease_expires_at, response_id)`
 - `idx_openai_background_responses__post_id`: `CREATE INDEX idx_openai_background_responses__post_id ON public.openai_background_responses USING btree (post_id) WHERE (post_id IS NOT NULL)`
-- `openai_background_responses_pkey`: `CREATE UNIQUE INDEX openai_background_responses_pkey ON public.openai_background_responses USING btree (response_id)`
+- `openai_background_responses_pkey`: `CREATE UNIQUE INDEX openai_background_responses_pkey ON public.openai_background_responses USING btree (id)`
+- `openai_background_responses_response_id_key`: `CREATE UNIQUE INDEX openai_background_responses_response_id_key ON public.openai_background_responses USING btree (response_id)`
 
 **Triggers:**
 _none_

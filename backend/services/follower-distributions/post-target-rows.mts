@@ -142,7 +142,7 @@ async function getDistributionPost(
         SELECT slug
         FROM post_slugs
         WHERE post_id = posts.id
-        ORDER BY post_slugs.created_at DESC
+        ORDER BY post_slugs.id DESC
         LIMIT 1
       ) AS slug,
       title,

@@ -6,19 +6,21 @@ Short-lived tokens for email-based login and email verification flows.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                          |
-| --------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `email_address` | `text`                     | no       |                     |          |           |           | The email address this token was sent to.                                                        |
-| `token`         | `text`                     | no       |                     |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification/login token sent to the user. |
-| `created_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                  |
-| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                  |
-| `logged_in_at`  | `timestamp with time zone` | yes      |                     |          |           |           | When the token was used to log in. NULL means the token is still pending.                        |
-| `user_id`       | `uuid`                     | yes      |                     |          |           |           | Non-NULL for email verification tokens; NULL for login tokens.                                   |
+| Column          | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                          |
+| --------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `id`            | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                  |
+| `email_address` | `text`                     | no       |                              |          |           |           | The email address this token was sent to.                                                        |
+| `token`         | `text`                     | no       |                              |          |           |           | Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification/login token sent to the user. |
+| `created_at`    | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                  |
+| `updated_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                  |
+| `logged_in_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When the token was used to log in. NULL means the token is still pending.                        |
+| `user_id`       | `uuid`                     | yes      |                              |          |           |           | Non-NULL for email verification tokens; NULL for login tokens.                                   |
 
-**Primary key:** `PRIMARY KEY (email_address, token)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
+- `email_address_login_tokens_email_address_token_key`: `UNIQUE (email_address, token)`
 - `email_address_login_tokens_token_key`: `UNIQUE (token)`
 
 **Check constraints:**
@@ -36,10 +38,10 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `email_address_login_tokens_pkey`: `CREATE UNIQUE INDEX email_address_login_tokens_pkey ON public.email_address_login_tokens USING btree (email_address, token)`
+- `email_address_login_tokens_email_address_token_key`: `CREATE UNIQUE INDEX email_address_login_tokens_email_address_token_key ON public.email_address_login_tokens USING btree (email_address, token)`
+- `email_address_login_tokens_pkey`: `CREATE UNIQUE INDEX email_address_login_tokens_pkey ON public.email_address_login_tokens USING btree (id)`
 - `email_address_login_tokens_token_key`: `CREATE UNIQUE INDEX email_address_login_tokens_token_key ON public.email_address_login_tokens USING btree (token)`
 - `idx_email_address_login_tokens__active`: `CREATE UNIQUE INDEX idx_email_address_login_tokens__active ON public.email_address_login_tokens USING btree (email_address, token) WHERE (logged_in_at IS NULL)`
-- `idx_email_address_login_tokens__created_at`: `CREATE INDEX idx_email_address_login_tokens__created_at ON public.email_address_login_tokens USING btree (created_at)`
 - `idx_email_address_login_tokens__logged_in`: `CREATE INDEX idx_email_address_login_tokens__logged_in ON public.email_address_login_tokens USING btree (email_address) WHERE (logged_in_at IS NOT NULL)`
 - `idx_email_address_login_tokens__user_email_verify`: `CREATE UNIQUE INDEX idx_email_address_login_tokens__user_email_verify ON public.email_address_login_tokens USING btree (user_id, email_address) WHERE (user_id IS NOT NULL)`
 
