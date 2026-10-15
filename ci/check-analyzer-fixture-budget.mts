@@ -7,7 +7,11 @@ import { createAnalyzerFixtureBudget } from '../static-code-analysis/test-helper
 
 // Deliberately holds NoMist's machine-wide lock: run once before other analyzers, not in Vitest.
 async function main(): Promise<void> {
-  const budget = createAnalyzerFixtureBudget()
+  for (const invalid of [0, 4_001, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
+    assert.throws(() => createAnalyzerFixtureBudget(invalid), RangeError)
+  }
+  // Let the deliberately hung holder expire before the normal contender's deadline.
+  const budget = createAnalyzerFixtureBudget(2_000)
   let root: string | undefined
   let observer: ReturnType<typeof observeFixtureExit> | undefined
   let work: ReturnType<typeof budget.check> | undefined

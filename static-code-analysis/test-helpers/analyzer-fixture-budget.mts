@@ -1,8 +1,11 @@
 import { execFile, spawnSync } from 'node:child_process'
 
 // Only finite analyzer unit fixtures use this budget; normal CLI defaults stay unchanged.
-export function createAnalyzerFixtureBudget() {
-  const deadline = process.hrtime.bigint() + 4_000_000_000n
+export function createAnalyzerFixtureBudget(milliseconds = 4_000) {
+  if (!Number.isSafeInteger(milliseconds) || milliseconds <= 0 || milliseconds > 4_000) {
+    throw new RangeError('Analyzer fixture budget must be an integer from 1 to 4000 milliseconds')
+  }
+  const deadline = process.hrtime.bigint() + BigInt(milliseconds) * 1_000_000n
   const remaining = () => {
     const milliseconds = Number((deadline - process.hrtime.bigint()) / 1_000_000n)
     if (milliseconds <= 0) throw new Error('Analyzer fixture case deadline exhausted')
