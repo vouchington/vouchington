@@ -15,7 +15,10 @@ import {
   enqueueOnPostCreated,
   enqueueOnTopicDeleted,
 } from './enqueues.mts'
-import { entityReconciliationRootOptions } from './enqueues/reconciliation.mts'
+import {
+  enqueueReconcileEntities,
+  entityReconciliationRootOptions,
+} from './enqueues/reconciliation.mts'
 import { entitiesListeners } from './queues.mts'
 
 describe('entity listener enqueues', () => {
@@ -90,6 +93,33 @@ describe('entity listener enqueues', () => {
         deduplication: { id: `processUrlCreated__${urlId}`, mode: 'debounce', ttl: 60_000 },
       },
     })
+  })
+
+  it('enqueues a created url at the requested priority', async () => {
+    const urlId = randomUUID()
+    await enqueueBulkOnUrlCreated([urlId], 41)
+    const [job] = await entitiesListeners.searchJobs({
+      name: ENTITY_LISTENERS_URL_CREATED_JOB.name,
+      data: { id: urlId },
+    })
+    expect(job!.opts).toMatchObject({ priority: 41 })
+  })
+
+  it('admits one deduplicated reconciliation root for the sweep', async () => {
+    const add = vi.spyOn(entitiesListeners, 'add').mockResolvedValueOnce({ id: 'root' } as never)
+    try {
+      await enqueueReconcileEntities()
+      expect(add).toHaveBeenCalledExactlyOnceWith(
+        ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
+        {},
+        expect.objectContaining({
+          jobId: expect.stringMatching(/^entity-reconciliation-dispatcher__/),
+          deduplication: { id: 'entity-reconciliation-dispatcher', mode: 'simple' },
+        }),
+      )
+    } finally {
+      add.mockRestore()
+    }
   })
 
   it('uses the database-derived logical id for reconciliation job and dedup ids', async () => {

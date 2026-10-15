@@ -1,7 +1,11 @@
-import { it, expect, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { it, expect, describe, afterEach, vi } from 'vitest'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   buildElectionJobOptions,
   enqueueBulkUpdateEntityRelationElectionVoteStats,
+  enqueueBulkUpdatePostElectionVoteStats,
+  enqueueBulkUpdateTopicElectionVoteStats,
 } from './elections.mts'
 import { ELECTIONS_DEFAULTS } from './config-elections.mts'
 import {
@@ -86,6 +90,45 @@ describe('buildElectionJobOptions', () => {
       priority: 10,
       attempts: 3,
       ordering: { key: 'vote-aggregation:entity_relation', concurrency: 100 },
+    })
+  })
+})
+
+describe('election enqueue call options', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('recomputes a post election at the requested priority', async () => {
+    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
+    const electionId = randomUUID()
+
+    await enqueueBulkUpdatePostElectionVoteStats([electionId], 41)
+
+    expect(addBulk).toHaveBeenCalledExactlyOnceWith([
+      expect.objectContaining({
+        name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+        data: { electionId, orderingKey: 'post' },
+        opts: expect.objectContaining({ priority: 41 }),
+      }),
+    ])
+  })
+
+  it('tags a rejected admission as critical with the election context', async () => {
+    const failure = new Error('election admission rejected')
+    vi.spyOn(voteAggregation, 'addBulk').mockRejectedValueOnce(failure)
+
+    await expect(
+      enqueueBulkUpdateTopicElectionVoteStats([randomUUID(), randomUUID()]),
+    ).rejects.toBe(failure)
+
+    expect(failure).toMatchObject({
+      extra: {
+        queue: BACKGROUND_QUEUE_NAME,
+        operation: 'enqueueBulkUpdateTopicElectionVoteStats',
+        electionCount: 2,
+      },
+      tags: { critical: true },
     })
   })
 })

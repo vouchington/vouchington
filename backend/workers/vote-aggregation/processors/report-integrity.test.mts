@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll, onTestFinished, vi } from 'vitest'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { reportIntegrityWorkConfig } from '@services/report-integrity/work-limits'
 import {
   createTestUserDirect,
   insertTestModerationReport,
@@ -12,7 +14,10 @@ import {
 import { processReportIntegrityCheck, processBackfillReportIntegrity } from './report-integrity.mts'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
 import type { PrivateUser } from '@services/users/types'
-import { VOTE_AGGREGATION_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
+import {
+  VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
+  VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import type { ProcessReportIntegrityCheckData } from '@queues/vote-aggregation/enqueues/types-report-integrity'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -144,6 +149,66 @@ describe('processBackfillReportIntegrity', () => {
     )
     expect(found).toBeDefined()
     expect((found!.data as ProcessReportIntegrityCheckData).entityType).toBe('post')
+  })
+})
+
+describe('processBackfillReportIntegrity pages', () => {
+  it('admits nothing and ends the backfill when no entity has pending reports', async () => {
+    const addBulk = vi.spyOn(voteAggregation, 'addBulk')
+    const add = vi.spyOn(voteAggregation, 'add')
+    onTestFinished(() => {
+      addBulk.mockRestore()
+      add.mockRestore()
+    })
+
+    const result = await processBackfillReportIntegrity(
+      {},
+      { entityType: 'post', entityId: randomUUID() },
+    )
+
+    expect(result).toEqual({ enqueued: 0 })
+    expect(addBulk).not.toHaveBeenCalled()
+    expect(add).not.toHaveBeenCalled()
+  })
+
+  it('continues from the last entity of a full page', async () => {
+    const author = await createTestUser()
+    const postId = await insertTestPost({
+      createdById: author.id,
+      slug: `proc-backfill-ri-page-${randomBytes(4).toString('hex')}`,
+      title: `Proc Backfill RI Page ${randomBytes(4).toString('hex')}`,
+      markdown: 'body',
+    })
+    const reporterIds = await Promise.all(
+      Array.from({ length: MASS_REPORT_THRESHOLD }, () => createTestUser().then(u => u!.id)),
+    )
+    await insertTestModerationReportsForTarget({
+      reporterUserIds: reporterIds,
+      entityType: 'post',
+      entityId: postId,
+    })
+    const restoreLimit = overrideDynamicConfigFieldsForTest(reportIntegrityWorkConfig, {
+      backfill_batch_size: 1,
+    })
+    onTestFinished(restoreLimit)
+    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
+    const add = vi.spyOn(voteAggregation, 'add').mockResolvedValueOnce({ id: 'continued' } as never)
+    onTestFinished(() => {
+      addBulk.mockRestore()
+      add.mockRestore()
+    })
+
+    const result = await processBackfillReportIntegrity(
+      {},
+      { entityType: 'post', entityId: postId },
+    )
+
+    expect(result).toEqual({ enqueued: 1 })
+    expect(add).toHaveBeenCalledExactlyOnceWith(
+      VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB.name,
+      { afterId: postId },
+      expect.objectContaining({ jobId: `backfill_report_integrity__${postId}` }),
+    )
   })
 })
 

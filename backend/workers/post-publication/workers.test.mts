@@ -12,7 +12,13 @@ import {
 } from '@voucha/test-helpers'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Job } from 'glide-mq'
+import {
+  POST_PUBLICATION_JOBS,
+  POST_PUBLICATION_SHADOW_AUDIT_JOB,
+} from '@queues/background/enqueues/post-publication-jobs'
 import { processReconcilePostPublication } from './processors.mts'
+import { postPublicationHandlers } from './workers.mts'
 import { randomUUID } from 'node:crypto'
 
 describe('post publication worker integration', () => {
@@ -85,6 +91,28 @@ describe('post publication worker integration', () => {
       getTestPostPublicationDirtyWorkForScope({ type: 'post', id: postId }),
     ).resolves.toBeUndefined()
     await expect(hasTestPostPublicationProjectionReceipt(postId)).resolves.toBe(true)
+  })
+})
+
+describe('post publication handlers', () => {
+  it('serves every job of the domain exactly once', () => {
+    expect(postPublicationHandlers.map(handler => handler.job.name).toSorted()).toEqual(
+      POST_PUBLICATION_JOBS.map(job => job.name).toSorted(),
+    )
+  })
+
+  it('runs the processor on the job payload and returns its result', async () => {
+    const handler = postPublicationHandlers.find(
+      candidate => candidate.job.name === POST_PUBLICATION_SHADOW_AUDIT_JOB.name,
+    )
+
+    // A dry run only reads one bounded page of the shadow audit.
+    const result = await handler!.handle({
+      name: POST_PUBLICATION_SHADOW_AUDIT_JOB.name,
+      data: { dryRun: true, cursor: null },
+    } as Job)
+
+    expect(result).toMatchObject({ hasMore: expect.any(Boolean) })
   })
 })
 
