@@ -1504,6 +1504,9 @@
     "fn_reject_copyright_lifecycle_event_source_notice": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_notice()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n\n  -- A NULL notice pairs only with an email-intake reply, which is the one intent with no notice.\n  IF NEW.copyright_notice_delivery_work_item_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM copyright_notice_delivery_work_items source\n    WHERE source.id = NEW.copyright_notice_delivery_work_item_id\n      AND source.copyright_notice_id IS NOT DISTINCT FROM NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle delivery intent belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n\n  IF NEW.media_delivery_registry_record_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM media_delivery_registry_records source\n    JOIN copyright_notice_targets target ON target.placement_id = source.placement_id\n    WHERE source.id = NEW.media_delivery_registry_record_id\n      AND target.copyright_notice_id = NEW.copyright_notice_id\n  ) THEN RAISE EXCEPTION 'lifecycle media delivery record belongs to another notice' USING ERRCODE = 'check_violation'; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_reject_copyright_missing_storage_object": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_missing_storage_object()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NOT NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND to_jsonb(OLD) ->> TG_ARGV[0] IS NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright evidence requires a stored object before retention erasure' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
     "fn_reject_copyright_notice_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -29626,7 +29629,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_email_intakes_immutable": "CREATE TRIGGER trigger_copyright_email_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()"
+        "trigger_copyright_email_intakes_immutable": "CREATE TRIGGER trigger_copyright_email_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()",
+        "trigger_copyright_email_intakes_require_storage_object": "CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')"
       },
       "uniqueConstraints": {
         "copyright_notice_email_intakes_amazon_ses_message_id_key": {
@@ -30301,6 +30305,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_copyright_notice_evidence_immutable": "CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()",
+        "trigger_copyright_notice_evidence_requires_storage_object": "CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id')",
         "trigger_update_copyright_artifacts_scope": "CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')"
       },
       "uniqueConstraints": {

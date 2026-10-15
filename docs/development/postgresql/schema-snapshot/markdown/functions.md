@@ -707,6 +707,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_lifecycle_event_source_not
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_missing_storage_object`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_missing_storage_object()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_notice_identity`
 
 ```sql

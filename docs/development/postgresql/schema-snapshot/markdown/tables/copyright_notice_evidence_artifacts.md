@@ -46,4 +46,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_notice_evidence_immutable`: `CREATE TRIGGER trigger_copyright_notice_evidence_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_copyright_notice_evidence_requires_storage_object`: `CREATE TRIGGER trigger_copyright_notice_evidence_requires_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('storage_object_id')`
 - `trigger_update_copyright_artifacts_scope`: `CREATE TRIGGER trigger_update_copyright_artifacts_scope BEFORE INSERT ON public.copyright_notice_evidence_artifacts FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

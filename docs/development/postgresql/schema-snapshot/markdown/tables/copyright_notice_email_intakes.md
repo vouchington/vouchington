@@ -55,3 +55,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_email_intakes_immutable`: `CREATE TRIGGER trigger_copyright_email_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_copyright_email_intakes_require_storage_object`: `CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')`
