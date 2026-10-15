@@ -16,8 +16,10 @@ const { noBuildInsertQueryOutsideEntityRelations } =
 
 const fixtureRoot = 'backend/dependency-cruiser-rules/__tests__/fixtures/build-insert-query'
 
-async function violationsFor(...entrypoints: string[]) {
-  const result = await cruise(entrypoints, {
+async function violationsFor(entrypoint: string, maxDepth = 2) {
+  const result = await cruise([entrypoint], {
+    // Include the intermediate re-export's edge without cruising the application below it.
+    maxDepth,
     moduleSystems: ['es6', 'cjs'],
     ruleSet: { forbidden: [noBuildInsertQueryOutsideEntityRelations] },
     tsConfig: { fileName: 'backend/tsconfig.json' },
@@ -49,6 +51,7 @@ describe('no-build-insert-query-outside-entity-relations', () => {
   )
 
   it('rejects a prohibited re-export reached through an intermediate module', async () => {
+    await expect(violationsFor(`${fixtureRoot}/transitive-consumer.cts`, 1)).resolves.toEqual([])
     const violations = await violationsFor(`${fixtureRoot}/transitive-consumer.cts`)
 
     expect(violations).toEqual([

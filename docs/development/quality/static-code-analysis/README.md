@@ -16,7 +16,10 @@ in [AGENTS.md](../../../../static-code-analysis/AGENTS.md).
 ## Tooling Vitest timeout overrides
 
 The released `no-mistakes/vitest-timeout-cap` Oxlint rule checks Vitest calls in `ci/`,
-`dev/`, `static-code-analysis/`, and `.husky/`, including aliased registrars, same-file expressions,
+`dev/`, `static-code-analysis/`, `.husky/`, `.pr-shepherd/`, `.agents/catalog/`,
+`.github/actions/`, `.github/workflows/`, `backend/dependency-cruiser-rules/`,
+and root `test-helpers/*.test.mts`,
+including aliased registrars, same-file expressions,
 individual tests, hooks, and runtime timeout updates. Unresolved admitted timeout carriers
 fail rather than silently escaping the cap. The normal Oxlint gate owns enforcement;
 `ci/vitest-timeout-policy.test.mts` exercises finite accepted and rejected inputs.
@@ -24,6 +27,8 @@ fail rather than silently escaping the cap. The normal Oxlint gate owns enforcem
 The `git-hooks` project declares five-second test and hook defaults. Longer individual
 tests or hooks require explicit overrides within the thirty-second ceiling.
 `ci/vitest-tooling-project-defaults.test.mts` checks the resolved project contract.
+The `dev-tools`, `ci-tools`, `github-actions`, and `docker-deploy` projects also declare
+five-second test and hook defaults, checked by `ci/vitest-operations-project-defaults.test.mts`.
 Other project defaults, global runtime enforcement, and the frozen ast-grep baseline outside
 this scope remain separate rollout work.
 
