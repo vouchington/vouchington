@@ -32,12 +32,25 @@ describe('post publication shadow audit checkpoints', () => {
     await withTestShadowAuditCheckpoint(async context => {
       const terminal = await context.terminalPage(user.id)
       await context.setCheckpoint(terminal.before)
-      // Omitted selection exercises the actual singleton-backed global repair branch.
-      const result = await context.audit({ dryRun: false, limit: 100 })
+      // The observed predecessor makes the next global row owned, without owning the global tail.
+      const global = await context.audit({ dryRun: false, limit: 1 })
+      expect(global.scannedByScope.post).toBe(1)
+      expect(global.checkpoint).toBe(terminal.ids[0])
+      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[0])
+      const result = await context.audit({
+        dryRun: false,
+        limit: 100,
+        postIdentityIds: terminal.ids,
+      })
       expect(result).toMatchObject({ hasMore: false })
       expect(result.scannedByScope.post).toBeGreaterThanOrEqual(2)
       expect(result.scannedByScope.post).toBe(2)
       expect(result.checkpoint).toBe(terminal.ids[1])
+      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[0])
+      // Nonempty partial-page evidence is finite; global reset is proven at the real EOF.
+      await context.setCheckpoint(terminal.maximum)
+      const eof = await context.audit({ dryRun: false, limit: 100 })
+      expect(eof).toMatchObject({ checkpoint: null, scannedByScope: { post: 0 } })
       await expect(context.getCheckpoint()).resolves.toBeNull()
     })
   })

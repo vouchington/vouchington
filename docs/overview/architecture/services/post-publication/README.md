@@ -144,10 +144,12 @@ Unselected repairs retain the global durable checkpoint and serialize through th
 transaction lock before locking that row. The service joins a supplied canonical transaction, allowing
 an operator to coordinate several pages on the same client; default worker calls own and commit each
 page. Dry runs remain read-only. Global checkpoint tests hold that production lock before a stable
-source snapshot on the same client. Terminal-page witnesses are real posts inserted privately in
-that transaction after observing its actual maximum source identity; their natural UUIDv7 values must
-follow that maximum. The unselected repair still advances and resets the global durable checkpoint,
-then rolls back its witnesses and writes before unlock. Bounded executor diagnostics record query
+source snapshot on the same client. Witnesses are real posts inserted privately in that transaction.
+An indexed predecessor read makes the next global repair row owned; a separate maximum read supplies
+the real global EOF boundary, including legitimate foreign future-dated UUIDs. The unselected repair
+advances and resets the global durable checkpoint, then rolls back its witnesses and writes before
+unlock. Nonempty partial-page assertions use a finite owned selection: they do not prove a nonempty
+global terminal page or cross-transaction committed visibility. Bounded executor diagnostics record query
 annotations, SQLSTATE, backend/transaction identity, snapshot and exact lock ownership after the
 session fence, plus the fork's actually attached test-worker queues, without query values or row payloads;
 no test-only advisory key or save/restore write fences an external worker. The proof owner registers

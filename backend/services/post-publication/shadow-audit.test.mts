@@ -149,10 +149,17 @@ describe('post publication shadow audit', () => {
       expect(first.scannedByScope.post).toBe(1)
       expect(first.checkpoint).toBe(terminal.ids[0])
       await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[0])
-      const second = await context.audit({ dryRun: false, limit: 1 })
+      const second = await context.audit({
+        dryRun: false,
+        limit: 1,
+        cursor: terminal.ids[0],
+        postIdentityIds: terminal.ids,
+      })
       expect(second.scannedByScope.post).toBe(1)
       expect(second.checkpoint).toBe(terminal.ids[1])
-      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[1])
+      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[0])
+      // Global exhaustion uses the actual maximum, even when a foreign UUID is future-dated.
+      await context.setCheckpoint(terminal.maximum)
       const eof = await context.audit({ dryRun: false, limit: 1 })
       expect(eof).toMatchObject({ dryRun: false, checkpoint: null, scannedByScope: { post: 0 } })
       await expect(context.getCheckpoint()).resolves.toBeNull()

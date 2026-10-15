@@ -1,19 +1,9 @@
 import type { QueryExecutor } from '@data-stores/psql'
 
-/** Inserts real terminal witnesses privately in the caller's fenced snapshot and rollback. */
+/** Inserts owned witnesses and observes real global boundaries in the caller's fenced snapshot. */
 export async function insertShadowAuditTerminalWitnesses(query: QueryExecutor, userId: string) {
-  const { rows: previous } = await query<{
-    id: string
-  }>(`/* readShadowAuditSnapshotMaximum */
-          WITH source_ids AS MATERIALIZED (
-(SELECT id FROM posts ORDER BY id DESC LIMIT 1)
-UNION
-(SELECT post_identity_id AS id FROM post_publication_projection_receipts ORDER BY post_identity_id DESC LIMIT 1)
-          ) SELECT id FROM source_ids ORDER BY id DESC LIMIT 1`)
-  const before = previous[0]?.id
-  if (!before) throw new Error('Expected an actual source predecessor for terminal proof')
   // New rows remain private to this already-fenced RR transaction, including rollback.
-  // Natural server UUIDv7 values must follow the snapshot; never manufacture a future ID.
+  // Foreign rows may legitimately have future UUIDv7 timestamps; no clock dominance is assumed.
   const { rows } = await query<{ id: string }>(
     `/* insertShadowAuditOwnedTerminalPosts */
   INSERT INTO posts (id, post_type, title, markdown, created_by_id, created_via,
@@ -26,7 +16,35 @@ UNION
     [userId, Buffer.alloc(32)],
   )
   const ids = rows.map(row => row.id).toSorted()
-  if (ids.length !== 2 || new Set(ids).size !== 2 || ids.some(id => id <= before))
-    throw new Error('Natural owned source identities must follow the actual snapshot maximum')
-  return { before, ids }
+  if (ids.length !== 2 || new Set(ids).size !== 2)
+    throw new Error('Expected two distinct owned shadow audit witnesses')
+  const { rows: boundaries } = await query<{ before: string | null; maximum: string }>(
+    `/* readShadowAuditWitnessBoundaries */
+    WITH predecessors AS MATERIALIZED (
+      (SELECT id FROM posts WHERE id < $1::uuid ORDER BY id DESC LIMIT 1)
+      UNION
+      (SELECT post_identity_id AS id FROM post_publication_projection_receipts
+        WHERE post_identity_id < $1::uuid ORDER BY post_identity_id DESC LIMIT 1)
+    ), maxima AS MATERIALIZED (
+      (SELECT id FROM posts ORDER BY id DESC LIMIT 1)
+      UNION
+      (SELECT post_identity_id AS id FROM post_publication_projection_receipts
+        ORDER BY post_identity_id DESC LIMIT 1)
+    )
+    SELECT (SELECT id FROM predecessors ORDER BY id DESC LIMIT 1) AS before,
+      (SELECT id FROM maxima ORDER BY id DESC LIMIT 1) AS maximum`,
+    [ids[0]],
+  )
+  const boundary = boundaries[0]
+  if (
+    ids.length !== 2 ||
+    !ids[0] ||
+    !ids[1] ||
+    ids[0] >= ids[1] ||
+    !boundary ||
+    boundary.maximum < ids[1] ||
+    (boundary.before !== null && boundary.before >= ids[0])
+  )
+    throw new Error('Expected observed global boundaries around the owned witnesses')
+  return { ids, before: boundary.before, maximum: boundary.maximum }
 }

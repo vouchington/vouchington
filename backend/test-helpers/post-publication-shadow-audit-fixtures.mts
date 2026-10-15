@@ -68,7 +68,9 @@ export async function withTestShadowAuditCheckpoint<Result>(
     ) => ReturnType<typeof runPostPublicationShadowAudit>
     setCheckpoint: (id: string | null) => Promise<void>
     getCheckpoint: () => Promise<string | null>
-    terminalPage: (userId: string) => Promise<{ before: string; ids: string[] }>
+    terminalPage: (
+      userId: string,
+    ) => Promise<{ before: string | null; ids: string[]; maximum: string }>
     hasRepair: (id: string) => Promise<boolean>
   }) => Promise<Result>,
 ): Promise<Result> {
