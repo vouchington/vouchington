@@ -56,3 +56,32 @@ export function getSharedBackgroundWorker(): SharedBackgroundWorker {
   }
   return sharedWorker
 }
+
+type JobProcessor = (job: { name: string }) => Promise<unknown>
+
+const domainGates = new Map<string, Promise<void>>()
+let gatingInstalled = false
+
+/**
+ * Hold one domain's jobs: they still become active on the shared worker, but their handler does not
+ * start until the returned release runs. Pausing the worker instead would stall every other
+ * domain's job too, including jobs a producer awaits before it reaches the held domain's job.
+ */
+export function holdBackgroundDomain(domain: BackgroundDomain): () => void {
+  const worker = getSharedBackgroundWorker()
+  if (!gatingInstalled) {
+    const internals = worker as unknown as { processor: JobProcessor }
+    const processor = internals.processor
+    internals.processor = job => {
+      const gate = domainGates.get(job.name.slice(0, job.name.indexOf('.')))
+      return gate ? gate.then(() => processor(job)) : processor(job)
+    }
+    gatingInstalled = true
+  }
+  const gate = Promise.withResolvers<void>()
+  domainGates.set(domain, gate.promise)
+  return () => {
+    if (domainGates.get(domain) === gate.promise) domainGates.delete(domain)
+    gate.resolve()
+  }
+}
