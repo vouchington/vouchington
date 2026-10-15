@@ -1,3 +1,4 @@
+import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { randomUUID } from 'node:crypto'
 import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -120,6 +121,18 @@ describe('activitypub through the production background processor', () => {
     return harness
   }
 
+  /**
+   * The worker applies a job's deferral after its processor returns, and this worker runs one job at
+   * a time, so a job added afterwards that has completed proves the deferral was already applied.
+   */
+  async function afterDeferralApplied(started: BackgroundHarness): Promise<void> {
+    const sentinel = await started.add(SES_INBOUND_PROCESS_JOB, {
+      sesMessageId: `sentinel-${randomUUID()}`,
+      objectKey: 'copyright-incoming/sentinel',
+    })
+    await expect(started.settled(sentinel)).resolves.toBe('completed')
+  }
+
   it('distributes a page and delivers a signed activity through the external socket boundary', async () => {
     const source = await createFederatedUser()
     const target = await createFederatedUser()
@@ -191,6 +204,7 @@ describe('activitypub through the production background processor', () => {
       )
       await started.activated(job, 1)
       await processed.promise
+      await afterDeferralApplied(started)
       const delayed = await started.queue.getJob(job.id)
       expect(await delayed?.getState()).toBe('delayed')
       expect(delayed?.attemptsMade).toBe(0)
@@ -220,6 +234,7 @@ describe('activitypub through the production background processor', () => {
     )
     await started.activated(job, 1)
     await processed.promise
+    await afterDeferralApplied(started)
     const delayed = await started.queue.getJob(job.id)
     expect(await delayed?.getState()).toBe('delayed')
     expect(delayed?.attemptsMade).toBe(0)
