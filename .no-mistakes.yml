@@ -1056,7 +1056,7 @@ rules:
             callee: 'createNextRecipientNotificationBatch',
           }
         - {
-            file: backend/services/notifications/reconcile-batches.mts,
+            file: backend/services/notifications/reconcile-temp-tables.mts,
             callee: 'dispatchNextCreatedNotificationBatch',
           }
         - { file: backend/services/oauth-authorization-server/active-users.mts, callee: 'query' }
