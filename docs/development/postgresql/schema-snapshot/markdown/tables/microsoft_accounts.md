@@ -12,7 +12,7 @@ Not partitioned — growth: unbounded.
 | `user_id`                      | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.      |
 | `microsoft_user_id`            | `text`                     | no       |                              |          |           |           | Microsoft's unique external user identifier.                             |
 | `microsoft_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Microsoft profile.                                |
-| `email_domain_hostname_id`     | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.   |
+| `email_domain_hostname_id`     | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.       |
 | `microsoft_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Microsoft OAuth.                             |
 | `access_token_ciphertext`      | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for Microsoft API calls.     |
 | `refresh_token_ciphertext`     | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.        |
