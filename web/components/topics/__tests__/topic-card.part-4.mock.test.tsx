@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 
 import { render, screen } from '@testing-library/react'
 
+import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { TopicCard } from '../topic-card'
 
 import type { Topic } from '@/types/topics'
@@ -32,31 +33,7 @@ vi.mock('next/link', () => ({
   ),
 }))
 
-// Resolve next/dynamic synchronously so dynamic imports work in jsdom
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-
-vi.mock('next/dynamic', () => nextDynamicMock)
+vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
 vi.mock('@/components/votes/score-vote', () => ({
   ScoreVote: () => <div data-testid='topic-score-vote' />,

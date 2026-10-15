@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 
 configure({ testIdAttribute: 'data-pw' })
 
+import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { Navbar as NavbarComponent } from '@/components/navbar'
 import { toClientAuthUser, toProfileMenuUser } from '@/lib/auth/client-auth-user'
 import type { User } from '@/types/user'
@@ -56,31 +57,7 @@ vi.mock(
     }) as unknown as typeof import('next/navigation'),
 )
 
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      // oxlint-disable-next-line react/only-export-components -- next/dynamic test double, never fast-refreshed
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
+vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
 vi.mock(import('@/components/keyboard-shortcuts-dialog'), () => ({
   KeyboardShortcutsDialog: () => <div data-pw='keyboard-shortcuts-dialog' />,

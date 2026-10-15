@@ -88,6 +88,11 @@ requests. A test of an uncached load must provide its own response fixture. The 
 wrapper suite removes that setup mock and replaces only its HTTP transport, so the real wrapper
 remains covered. Mock a lazy child explicitly when its behavior is outside the test contract; a
 broad `next/dynamic` double alone does not declare which imported module the test replaces.
+Doubles that invoke the loader use `trackDynamicImport()` from
+`web/test-helpers/components/topics/next-link-dynamic-mocks.tsx` (or `createNextDynamicMock()`,
+which registers for them). Web unit setup flushes those promises after each test so the import
+cannot still be evaluating when jsdom tears down. Loader failures are retained until the flush
+finishes waiting for every loader, then reported as an aggregate teardown error.
 
 ### Direct Server Component tests and request-scoped Next.js APIs
 

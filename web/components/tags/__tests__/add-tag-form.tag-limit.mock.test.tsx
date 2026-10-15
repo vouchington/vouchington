@@ -3,10 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createEntityRelation } from '@/lib/api/client/entity-relations'
 import onError from '@/lib/on-error'
 import { ApiError } from '@/lib/api/error'
+import { createEagerDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { AddTagForm } from '../add-tag-form'
 
 type NavigationModule = typeof import('next/navigation')
-type DynamicModule = typeof import('next/dynamic')
 
 vi.mock(
   import('next/navigation'),
@@ -15,23 +15,7 @@ vi.mock(
       useRouter: () => ({ refresh: vi.fn<VitestLooseMock>() }),
     }) as unknown as NavigationModule,
 )
-vi.mock(
-  import('next/dynamic'),
-  () =>
-    ({
-      default: (loader: () => Promise<{ default: unknown }>) => {
-        // Immediately execute the dynamic import and return a wrapper
-        let Component: React.ComponentType<Record<string, unknown>> | null = null
-        void loader().then(m => {
-          Component = (m as { default: React.ComponentType<Record<string, unknown>> }).default
-        })
-        return function DynamicComponent(props: Record<string, unknown>) {
-          if (!Component) return null
-          return <Component {...props} />
-        }
-      },
-    }) as unknown as DynamicModule,
-)
+vi.mock(import('next/dynamic'), () => createEagerDynamicMock())
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),
 }))

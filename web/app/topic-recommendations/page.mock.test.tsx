@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeTopHashtagsResponse } from '@/test-helpers/api-responses'
+import { trackDynamicLoader } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 
 const {
   mockGetCurrentUser,
@@ -79,8 +80,8 @@ vi.mock(
   () =>
     ({
       default: (fn: () => Promise<unknown>) => {
-        // Resolve the module lazily but return a stub component immediately
-        void fn()
+        // Resolve the module lazily but return a stub component immediately.
+        trackDynamicLoader(fn)
         return () => <div>table</div>
       },
     }) as unknown as typeof import('next/dynamic'),

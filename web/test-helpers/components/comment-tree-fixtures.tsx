@@ -2,6 +2,7 @@
 import { render } from '@testing-library/react'
 import type { MouseEventHandler, ReactNode } from 'react'
 import { vi } from 'vitest'
+import { trackDynamicLoader } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import { toClientAuthUser } from '@/lib/auth/client-auth-user'
 import type { PostsResponseBody } from '@/types/api-responses'
@@ -49,7 +50,7 @@ vi.mock(
   () =>
     ({
       default: (fn: () => Promise<{ default: () => null }>) => {
-        void fn()
+        trackDynamicLoader(fn)
         return () => null
       },
     }) as unknown as typeof import('next/dynamic'),

@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultTranslator } from '@ts-shared/ui-messages/default-translator'
 import type { MessageKey } from '@ts-shared/ui-messages'
+import { trackDynamicLoader } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import DomainDetailPage from './page'
 
 const mockGetCurrentUser = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -18,13 +19,14 @@ vi.mock(
     }) as unknown as typeof import('next/navigation'),
 )
 
-// Invoke the factory fn so the arrow-function body on L25-27 is covered by V8
+// Invoke the factory so its arrow-function body stays covered, and keep that import on
+// the teardown flush list.
 vi.mock(
   import('next/dynamic'),
   () =>
     ({
       default: (fn: () => Promise<{ default: unknown }>) => {
-        void fn()
+        trackDynamicLoader(fn)
         return function DynamicStub() {
           return null
         }

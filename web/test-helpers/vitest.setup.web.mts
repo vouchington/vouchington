@@ -4,6 +4,7 @@ import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { loadJsonMessages } from '@/lib/i18n/load-json-messages'
 import { seedMessages } from '@/lib/i18n/use-translations'
+import { flushPendingDynamicImports } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 
 // Pre-seeds the client-side translation cache before any mock test mounts a component, so
 // `useTranslations()` resolves synchronously instead of suspending on the first render. Without
@@ -183,8 +184,11 @@ if (typeof window !== 'undefined') {
   })
 }
 
-// Clean up DOM after each test to prevent test pollution
-afterEach(() => {
+// Clean up DOM after each test to prevent test pollution. Flush dynamic imports after
+// unmount so a next/dynamic loader cannot still be evaluating login-url or another module
+// when Vitest tears jsdom down.
+afterEach(async () => {
   localStorage.clear()
   cleanup()
+  await flushPendingDynamicImports()
 })

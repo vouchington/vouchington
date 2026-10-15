@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { SourceListItem } from '../source-list-item'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import type { User } from '@/types/user'
@@ -39,29 +40,7 @@ vi.mock(
     }) as unknown as typeof import('next/link'),
 )
 
-const nextDynamicMock = vi.hoisted(() => {
-  const React = require('react')
-  return {
-    default: (loader: () => Promise<unknown>) =>
-      function MockDynamic(props: Record<string, unknown>) {
-        const [dynamicComponent, setDynamicComponent] = React.useState(null)
-        React.useEffect(() => {
-          let active = true
-          void loader().then((mod: unknown) => {
-            if (active)
-              setDynamicComponent(() =>
-                typeof mod === 'function' ? mod : (mod as Record<string, unknown>).default,
-              )
-          })
-          return () => {
-            active = false
-          }
-        }, [])
-        return dynamicComponent ? React.createElement(dynamicComponent, props) : null
-      },
-  }
-})
-vi.mock(import('next/dynamic'), () => nextDynamicMock as unknown as typeof import('next/dynamic'))
+vi.mock(import('next/dynamic'), () => createNextDynamicMock())
 
 vi.mock(import('@/components/shared/follow-button'), () => ({
   FollowButton: ({
