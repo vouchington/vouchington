@@ -101,6 +101,24 @@ describe('validatePullRequest large-diff gate', () => {
     gh.processDiffCommand.mockRejectedValue(new Error('no origin/main'))
     const result = await validatePullRequest(base, { thresholds })
     expect(result.errors).toEqual([])
-    expect(result.warnings?.join('\n')).toContain('large-diff gate skipped: no origin/main')
+    expect(result.warnings?.join('\n')).toContain('diff checks skipped: no origin/main')
+  })
+
+  it('returns injected supersession hints as warnings and survives a failed search', async () => {
+    diff(1)
+    const hinted = await validatePullRequest(base, {
+      thresholds,
+      supersessionHints: async summary => `hint for ${summary.lineChanges.added} added`,
+    })
+    expect(hinted.errors).toEqual([])
+    expect(hinted.warnings).toContain('hint for 1 added')
+    const failed = await validatePullRequest(base, {
+      thresholds,
+      supersessionHints: async () => {
+        throw new Error('search down')
+      },
+    })
+    expect(failed.errors).toEqual([])
+    expect(failed.warnings?.join('\n')).toContain('Supersession search failed: search down')
   })
 })

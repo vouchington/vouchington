@@ -1,15 +1,34 @@
-import { processDiffCommand } from 'vouchington-tooling/gh-cli'
+import { processDiffCommand, runGh, runGit } from 'vouchington-tooling/gh-cli'
 
 import {
-  countDiffLineChanges,
   DEFAULT_LARGE_DIFF_THRESHOLDS,
   exceedsLargeDiffThreshold,
   formatLargeDiffRefusal,
-  type DiffLineChanges,
   type LargeDiffThresholds,
 } from '../pr-description/diff-size.mts'
+import {
+  createDiffSummary,
+  reduceDiffBlock,
+  type DiffSummary,
+} from '../pr-description/diff-summary.mts'
+import { createLocalPackageJsonReader } from '../pr-description/package-json-source.mts'
+import { currentRepo } from '../pr-description/related-issues.mts'
+import { runAdvisorySupersessionSearch } from '../pr-description/supersession.mts'
 
-export type LargeDiffOptions = { thresholds?: LargeDiffThresholds }
+export type LargeDiffOptions = {
+  thresholds?: LargeDiffThresholds
+  /** Returns advisory supersession hints for the branch diff; injectable for tests. */
+  supersessionHints?: (summary: DiffSummary) => Promise<string>
+}
+
+async function localSupersessionHints(summary: DiffSummary): Promise<string> {
+  return runAdvisorySupersessionSearch(
+    runGh,
+    await currentRepo(runGh),
+    summary,
+    createLocalPackageJsonReader(runGit),
+  )
+}
 
 const ACKNOWLEDGEMENT_HEADING = /^###[ \t]+Large diff[ \t]*$/i
 const SECTION_END = /^(?:#{1,6}[ \t]|Workspace setup:)/
@@ -26,43 +45,50 @@ export function hasLargeDiffAcknowledgement(body: string): boolean {
   return false
 }
 
-async function branchLineChanges(base: string): Promise<DiffLineChanges> {
-  const changes: DiffLineChanges = { added: 0, deleted: 0 }
-  await processDiffCommand(
-    { executable: 'git', args: ['diff', `origin/${base}...HEAD`] },
-    block => {
-      const counted = countDiffLineChanges(block)
-      changes.added += counted.added
-      changes.deleted += counted.deleted
-    },
+async function branchDiffSummary(base: string): Promise<DiffSummary> {
+  const summary = createDiffSummary()
+  await processDiffCommand({ executable: 'git', args: ['diff', `origin/${base}...HEAD`] }, block =>
+    reduceDiffBlock(summary, block),
   )
-  return changes
+  return summary
 }
 
 /**
- * The split-decision gate for `pr_create`: the branch diff against `origin/<base>` (the policy
- * child runs in the worktree) must fit the thresholds unless the body carries a `### Large diff`
- * details section. An unreadable diff warns rather than blocks.
+ * Create-time checks on the branch diff against `origin/<base>` (the policy child runs in the
+ * worktree). The split-decision gate fails unless the body carries a `### Large diff` details
+ * section; supersession hints are advisory warnings. An unreadable diff or failed search warns
+ * rather than blocks.
  */
 export async function checkLargeDiff(
   base: string,
   body: string,
   options: LargeDiffOptions = {},
 ): Promise<{ errors: string[]; warnings: string[] }> {
-  let changes: DiffLineChanges
+  let summary: DiffSummary
   try {
-    changes = await branchLineChanges(base)
+    summary = await branchDiffSummary(base)
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)
     return {
       errors: [],
       warnings: [
-        `Could not measure the diff against origin/${base}; large-diff gate skipped: ${reason}`,
+        `Could not measure the diff against origin/${base}; diff checks skipped: ${reason}`,
       ],
     }
   }
   const thresholds = options.thresholds ?? DEFAULT_LARGE_DIFF_THRESHOLDS
-  if (!exceedsLargeDiffThreshold(changes, thresholds) || hasLargeDiffAcknowledgement(body))
-    return { errors: [], warnings: [] }
-  return { errors: [formatLargeDiffRefusal(changes, base, thresholds).trimEnd()], warnings: [] }
+  const errors: string[] = []
+  if (
+    exceedsLargeDiffThreshold(summary.lineChanges, thresholds) &&
+    !hasLargeDiffAcknowledgement(body)
+  )
+    errors.push(formatLargeDiffRefusal(summary.lineChanges, base, thresholds).trimEnd())
+  const warnings: string[] = []
+  try {
+    const hints = (await (options.supersessionHints ?? localSupersessionHints)(summary)).trim()
+    if (hints !== '') warnings.push(hints)
+  } catch (err) {
+    warnings.push(`Supersession search failed: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  return { errors, warnings }
 }
