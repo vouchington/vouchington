@@ -11,31 +11,14 @@ export async function unblockHostname(
   options: QueryOptions = {},
 ): Promise<void> {
   const run = async (query: TransactionQuery) => {
-    await query(sql`/* unblockHostname:lock */
-      SELECT pg_advisory_xact_lock(hashtextextended(${hostnameId}, 0))
-    `)
-    // Match the block flow's hostname-before-block-row order.
-    await query(sql`/* unblockHostname:lockHostname */
-      SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE
-    `)
+    await lockHostnameForUnblock(query, hostnameId)
     const { rows: introducedRows } = await query(sql`/* unblockHostname:introduce */
       UPDATE url_hostnames
       SET publicly_introduced_at = CURRENT_TIMESTAMP
       WHERE id = ${hostnameId} AND publicly_introduced_at IS NULL
       RETURNING id
     `)
-    const { rows: updateRows } = await query(sql`/* unblockHostname */
-      UPDATE url_hostname_blocks
-      SET lifted_at = CURRENT_TIMESTAMP,
-          lifted_by_id = ${adminUserId}
-      WHERE url_hostname_id = ${hostnameId}
-        AND lifted_at IS NULL
-        AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
-      RETURNING url_hostname_id
-    `)
-    const changed = introducedRows.length > 0 || updateRows.length > 0
-    if (changed) await enqueueHostnameCacheInvalidation(query, [hostnameId])
-    return changed
+    return liftStaffBlocksAndEnqueue(query, adminUserId, hostnameId, introducedRows.length > 0)
   }
   const changed =
     options.query || options.client
@@ -44,6 +27,36 @@ export async function unblockHostname(
 
   if (changed && !options.query && !options.client)
     await drainHostnameCacheInvalidationWork({ hostnameIds: [hostnameId] }).catch(onError)
+}
+
+async function lockHostnameForUnblock(query: TransactionQuery, hostnameId: string): Promise<void> {
+  await query(sql`/* unblockHostname:lock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${hostnameId}, 0))
+  `)
+  // Match the block flow's hostname-before-block-row order.
+  await query(sql`/* unblockHostname:lockHostname */
+    SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE
+  `)
+}
+
+async function liftStaffBlocksAndEnqueue(
+  query: TransactionQuery,
+  adminUserId: string,
+  hostnameId: string,
+  introduced: boolean,
+): Promise<boolean> {
+  const { rows: updateRows } = await query(sql`/* unblockHostname */
+    UPDATE url_hostname_blocks
+    SET lifted_at = CURRENT_TIMESTAMP,
+        lifted_by_id = ${adminUserId}
+    WHERE url_hostname_id = ${hostnameId}
+      AND lifted_at IS NULL
+      AND domain_blocklist_source_id IS NULL  -- feed-owned blocks lift only when their source row is removed
+    RETURNING url_hostname_id
+  `)
+  const changed = introduced || updateRows.length > 0
+  if (changed) await enqueueHostnameCacheInvalidation(query, [hostnameId])
+  return changed
 }
 
 async function unblockHostnameInOwnedTransaction(

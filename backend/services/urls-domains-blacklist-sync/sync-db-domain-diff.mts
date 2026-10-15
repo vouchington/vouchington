@@ -7,7 +7,8 @@ export async function persistDomainDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- hostname FK owners and inherited blocks must exist before feed rows; deletion follows insertion in one transaction.
+  // ast-grep-ignore: no-three-sequential-awaits -- existing parent policy must be locked before child creation, then inheritance and feed rows follow in one transaction.
+  await lockExistingAffectedHostnames(query)
   await query(
     `/* syncDomainsWithDatabase */
       INSERT INTO url_hostnames (hostname, publicly_introduced_at)
@@ -41,6 +42,33 @@ export async function persistDomainDiff(
     `,
     [sourceId],
   )
+}
+
+async function lockExistingAffectedHostnames(query: TransactionQuery): Promise<void> {
+  // Staff blocks lock these same hostname rows in UUID order. Lock both existing
+  // children and their existing ancestors before inserting any missing child;
+  // the subsequent inheritance query gets a fresh snapshot after any wait.
+  await query(`/* syncDomainsWithDatabase:lockAffectedHostnames */
+    WITH RECURSIVE parent_candidates(child_hostname, parent_hostname) AS (
+      SELECT domain, domain FROM ${ADDED_DOMAINS_TABLE}
+      UNION ALL
+      SELECT child_hostname, substring(parent_hostname FROM position('.' IN parent_hostname) + 1)
+      FROM parent_candidates
+      WHERE position('.' IN parent_hostname) > 0
+    ), affected_names AS MATERIALIZED (
+      SELECT child_hostname AS hostname FROM parent_candidates
+      UNION
+      SELECT parent_hostname AS hostname FROM parent_candidates
+    ), affected_ids AS MATERIALIZED (
+      SELECT DISTINCT hostname.id
+      FROM affected_names names
+      JOIN url_hostnames hostname ON hostname.hostname = names.hostname
+    )
+    SELECT hostname.id
+    FROM affected_ids affected
+    JOIN url_hostnames hostname ON hostname.id = affected.id
+    ORDER BY hostname.id FOR KEY SHARE OF hostname
+  `)
 }
 
 async function persistInheritedParentBlocks(query: TransactionQuery): Promise<void> {
