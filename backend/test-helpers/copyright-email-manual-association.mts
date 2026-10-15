@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
@@ -73,4 +73,11 @@ export async function markTestCopyrightNoticeErased(
     INSERT INTO copyright_notice_retention_erasures
       (copyright_notice_id, retention_days, erased_object_count)
     VALUES (${noticeId}, 1, 0)`)
+}
+
+/** Commit the retained erasure marker before a new inbound reply is parsed. */
+export async function markTestCopyrightNoticeErasedAndCommit(noticeId: string): Promise<void> {
+  await using transaction = await beginTransaction()
+  await markTestCopyrightNoticeErased(noticeId, transaction)
+  await transaction.commit()
 }

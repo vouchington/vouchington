@@ -104,12 +104,44 @@ async function insertCopyrightEmailIntakeNoticeLink(
     await lockCopyrightEmailThreadTokens(transaction, [digest])
     matchedTokenId = (await resolveCopyrightEmailThreadTokenIds(transaction, [digest])).get(digest)!
   }
-  // Fence a competing promotion before taking the link's unique key. Without this lock,
-  // a speculative thread insert can hold that key while its FK waits on the intake row
-  // already locked by promotion, and promotion's initial link then waits on the unique key.
-  await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
-    SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR KEY SHARE
-  `)
+  // A new thread link must serialize with retention on the notice. Locking its intake
+  // first also preserves promotion's order. If it was linked while we waited, replay
+  // the immutable link without requesting a notice lock: erasure may hold that notice
+  // while updating already-linked intakes.
+  if (input.linkKind === 'thread') {
+    await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockThreadIntake */
+      SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR UPDATE
+    `)
+    const { rows: retained } = await transaction<{
+      copyright_notice_id: string
+      link_kind: string
+    }>(sql`/* linkCopyrightEmailIntakeToNotice:existingThread */
+      SELECT copyright_notice_id, link_kind FROM copyright_notice_email_intake_notice_links
+      WHERE copyright_notice_email_intake_id = ${input.intakeId}
+    `)
+    if (retained[0])
+      return (
+        retained[0].copyright_notice_id === input.noticeId &&
+        retained[0].link_kind === input.linkKind
+      )
+    const { rows: notices } =
+      await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockNotice */
+      SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR KEY SHARE
+    `)
+    if (!notices[0]) return false
+    // A fresh READ COMMITTED statement sees a marker committed while the notice
+    // lock was pending. The lock then fences erasure through this transaction.
+    const { rows: erased } = await transaction(sql`/* linkCopyrightEmailIntakeToNotice:erasure */
+      SELECT 1 FROM copyright_notice_retention_erasures
+      WHERE copyright_notice_id = ${input.noticeId} LIMIT 1
+    `)
+    if (erased[0]) return false
+  } else {
+    // The initial link keeps its KEY SHARE fence against a competing promotion.
+    await transaction(sql`/* linkCopyrightEmailIntakeToNotice:lockIntake */
+      SELECT id FROM copyright_notice_email_intakes WHERE id = ${input.intakeId} FOR KEY SHARE
+    `)
+  }
   const { rows: inserted } = await transaction<{
     copyright_notice_id: string
     link_kind: string

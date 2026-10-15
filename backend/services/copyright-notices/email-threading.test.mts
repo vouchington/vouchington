@@ -17,6 +17,7 @@ import { createOutboundCopyrightCorrespondence } from './correspondence.mts'
 import { claimCopyrightDeliveryIntent, createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { promoteInitialCopyrightEmail } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
+import { markTestCopyrightNoticeErasedAndCommit } from '@voucha/test-helpers/copyright-email-manual-association'
 
 describe('copyright email threading', () => {
   it('links a reply to a sent outbound copyright email to its case for human review', async () => {
@@ -244,5 +245,32 @@ describe('copyright email threading', () => {
       linked_notice: null,
     })
     expect(promotedA.noticeId).not.toBe(notice.id)
+
+    await markTestCopyrightNoticeErasedAndCommit(notice.id)
+    const afterErasureSesId = `ses-after-erasure-${crypto.randomUUID()}`
+    const { intake: afterErasure } = await createCopyrightEmailIntake({
+      sesMessageId: afterErasureSesId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${afterErasureSesId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 3),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    await expect(
+      recordCopyrightEmailParse(afterErasure, {
+        status: 'succeeded',
+        fromEmail: 'claimant@example.test',
+        subject: 'Re: erased copyright notice',
+        bodyText: 'This is a new inbound reply.',
+        messageId: `<${crypto.randomUUID()}@example.test>`,
+        replyReferences: [`<${outboundMessageId}>`],
+        attachments: [],
+      }),
+    ).resolves.toBeNull()
+    await expect(getCopyrightStaffEmailIntake(afterErasure.id, promoter)).resolves.toMatchObject({
+      review_path: 'unresolved_thread',
+      linked_notice: null,
+    })
   })
 })

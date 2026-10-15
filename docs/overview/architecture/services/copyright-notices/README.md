@@ -62,8 +62,10 @@ precedence over a duplicate or conflicting-ancestor reason. A matched inbound re
 immutable pending-review record and remains attached to the original case and MIME evidence. It
 can be linked automatically only when every bounded ancestor path agrees on the case and its own
 Message-ID remains unambiguous. The promotion token-lock budget covers the combined unique set
-from references and matched links; an over-budget graph leaves replies for staff review. It
-still receives the advisory extraction and recommendation. An unlinked intake can instead be
+from references and matched links; an over-budget graph leaves replies for staff review while
+retaining the advisory extraction and recommendation. A new automatic link locks the intake and
+notice, then checks the erasure marker in a fresh statement; it cannot link to an erased notice.
+Already committed links remain immutable on replay. An unlinked intake can instead be
 associated to one existing notice by
 staff; the intake row is locked before the notice, the decision is reread under those locks, and
 the single link and staff-actor lifecycle event commit together. This opens the same pending
