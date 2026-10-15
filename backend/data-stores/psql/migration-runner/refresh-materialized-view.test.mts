@@ -21,12 +21,20 @@ describe('refreshMaterializedView', () => {
       await expect(refreshMaterializedView('mv_rss_feed_crawl_tiers')).rejects.toThrow(
         REFRESH_CONTENTION_MESSAGE,
       )
-      outcome = refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers').then(
+      const retryObserved = Promise.withResolvers<void>()
+      outcome = refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers', {
+        onRetryableContention: () => {
+          retryObserved.resolve()
+        },
+      }).then(
         () => 'fulfilled' as const,
         () => 'rejected' as const,
       )
-      const early = await Promise.race([outcome, scheduler.wait(80).then(() => 'pending' as const)])
-      expect(early).toBe('pending')
+      const early = await Promise.race([
+        outcome,
+        retryObserved.promise.then(() => 'retrying' as const),
+      ])
+      expect(early).toBe('retrying')
       await releaseRefreshLock(holder)
       expect(await outcome).toBe('fulfilled')
     } finally {
@@ -34,6 +42,30 @@ describe('refreshMaterializedView', () => {
         await releaseRefreshLock(holder)
       } finally {
         if (outcome) await outcome
+        holder.release()
+      }
+    }
+  })
+
+  it('propagates a synchronous contention observer failure without retrying', async () => {
+    const holder = await writePool.connect()
+    const observerFailure = new Error('contention observer failed')
+    let observed = 0
+    try {
+      await holdRefreshLock(holder)
+      await expect(
+        refreshMaterializedViewForTest('mv_rss_feed_crawl_tiers', {
+          onRetryableContention: () => {
+            observed += 1
+            throw observerFailure
+          },
+        }),
+      ).rejects.toBe(observerFailure)
+      expect(observed).toBe(1)
+    } finally {
+      try {
+        await releaseRefreshLock(holder)
+      } finally {
         holder.release()
       }
     }
