@@ -2776,9 +2776,6 @@ importers:
       '@ts-shared/ses-inbound-contract':
         specifier: workspace:^
         version: link:../../../ts-shared/ses-inbound-contract
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -11892,9 +11889,6 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
-      '@queues/openai-moderation':
-        specifier: workspace:^
-        version: link:../../queues/openai-moderation
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
@@ -13050,9 +13044,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
@@ -13077,9 +13068,6 @@ importers:
       '@ts-shared/ses-inbound-contract':
         specifier: workspace:^
         version: link:../../../ts-shared/ses-inbound-contract
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       mailparser:
         specifier: ^3.9.38
         version: 3.9.38

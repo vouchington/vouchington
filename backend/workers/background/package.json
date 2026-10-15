@@ -22,7 +22,6 @@
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@queues/background": "workspace:^",
-    "@queues/openai-moderation": "workspace:^",
     "@queues/ses-inbound": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
     "@workers/openai-moderation": "workspace:^",
