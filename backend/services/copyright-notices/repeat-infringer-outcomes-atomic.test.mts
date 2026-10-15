@@ -12,7 +12,9 @@ import {
 import {
   observeTestRepeatInfringerAuthorLock,
   raceTestRepeatInfringerAuthorLock,
-} from '@voucha/test-helpers/copyright-repeat-infringer'
+  runTestCopyrightReviewOutcome,
+  type TestCopyrightConnection,
+} from '@voucha/test-helpers/copyright-repeat-infringer-concurrency'
 import { readTestRepeatInfringerEnforcementState } from '@voucha/test-helpers/copyright-repeat-infringer-enforcement'
 import { getPrivateUserByAny } from '@services/users/get'
 import { unsuspendUser } from '@services/users/suspension'
@@ -91,14 +93,17 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     if (!reviewId) throw new Error('open review disappeared')
     const observed = await observeTestRepeatInfringerAuthorLock({
       accountId: poster.id,
-      operation: () =>
-        recordCopyrightRepeatInfringerReviewOutcome({
-          currentUser: admin,
-          reviewId,
-          outcome: 'restrict',
-          rationale: 'Two confirmed notices remain.',
-          recordedAt: new Date('2026-07-04T12:00:00.000Z'),
-        }),
+      operation: connection =>
+        runTestCopyrightReviewOutcome(
+          {
+            currentUser: admin,
+            reviewId,
+            outcome: 'restrict',
+            rationale: 'Two confirmed notices remain.',
+            recordedAt: new Date('2026-07-04T12:00:00.000Z'),
+          },
+          connection,
+        ),
       observe: () => readTestRepeatInfringerEnforcementState({ accountId: poster.id, reviewId }),
     })
     expect(observed.observation).toEqual({ outcome: null, suspended: false })
@@ -123,22 +128,28 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     const outcomes = await raceTestRepeatInfringerAuthorLock({
       accountId: poster.id,
       operations: [
-        () =>
-          recordCopyrightRepeatInfringerReviewOutcome({
-            currentUser: admin,
-            reviewId,
-            outcome: 'restrict',
-            rationale: 'Two confirmed notices remain.',
-            recordedAt: new Date('2026-07-04T12:00:00.000Z'),
-          }),
-        () =>
-          recordCopyrightRepeatInfringerReviewOutcome({
-            currentUser: admin,
-            reviewId,
-            outcome: 'terminate',
-            rationale: 'Two confirmed notices remain.',
-            recordedAt: new Date('2026-07-04T12:00:00.000Z'),
-          }),
+        connection =>
+          runTestCopyrightReviewOutcome(
+            {
+              currentUser: admin,
+              reviewId,
+              outcome: 'restrict',
+              rationale: 'Two confirmed notices remain.',
+              recordedAt: new Date('2026-07-04T12:00:00.000Z'),
+            },
+            connection,
+          ),
+        connection =>
+          runTestCopyrightReviewOutcome(
+            {
+              currentUser: admin,
+              reviewId,
+              outcome: 'terminate',
+              rationale: 'Two confirmed notices remain.',
+              recordedAt: new Date('2026-07-04T12:00:00.000Z'),
+            },
+            connection,
+          ),
       ],
     })
     expect(outcomes.filter(result => result.status === 'fulfilled')).toHaveLength(1)
@@ -178,14 +189,17 @@ describe('atomic copyright repeat-infringer outcomes', () => {
     const results = await raceTestRepeatInfringerAuthorLock({
       accountId: poster.id,
       operations: [
-        () => unsuspendUser(admin, poster.id),
-        () =>
-          recordCopyrightRepeatInfringerReinstatement({
-            currentUser: admin,
-            accountUserId: poster.id,
-            rationale: 'The account may return after review.',
-            recordedAt: new Date('2026-07-05T12:00:00.000Z'),
-          }),
+        connection => unsuspendUser(admin, poster.id, connection),
+        connection =>
+          recordCopyrightRepeatInfringerReinstatement(
+            {
+              currentUser: admin,
+              accountUserId: poster.id,
+              rationale: 'The account may return after review.',
+              recordedAt: new Date('2026-07-05T12:00:00.000Z'),
+            },
+            connection,
+          ),
       ],
     })
     expect(results[0]).toEqual(
@@ -211,7 +225,7 @@ describe('atomic copyright repeat-infringer outcomes', () => {
         createTestUser({ administrator: true }),
       ])
       const first = await createTestRepeatInfringerRestriction(poster.id, moderator)
-      const second = await createTestRepeatInfringerRestriction(poster.id, moderator)
+      await createTestRepeatInfringerRestriction(poster.id, moderator)
       const account = (
         await listCopyrightRepeatInfringerAccountsForNotice(moderator, first.noticeId)
       )[0]
@@ -221,36 +235,45 @@ describe('atomic copyright repeat-infringer outcomes', () => {
         reason: 'Please review.',
         targetIds: [first.targetId],
       })
-      const reverse = () =>
-        reviewCopyrightAppeal({
-          submissionId: appeal.submission.id,
-          currentUser: moderator,
-          recommendationId: null,
-          manualFallbackReason: 'Manual review.',
-          rationale: 'The evidence was reviewed.',
-          decisions: [{ restrictionId: first.restrictionId, action: 'reverse' }],
-        })
-      const enforce = () =>
-        recordCopyrightRepeatInfringerReviewOutcome({
-          currentUser: admin,
-          reviewId,
-          outcome: 'restrict',
-          rationale: 'Two confirmed notices remain.',
-          recordedAt: new Date(),
-        })
+      const reverse = (connection: TestCopyrightConnection) =>
+        reviewCopyrightAppeal(
+          {
+            submissionId: appeal.submission.id,
+            currentUser: moderator,
+            recommendationId: null,
+            manualFallbackReason: 'Manual review.',
+            rationale: 'The evidence was reviewed.',
+            decisions: [{ restrictionId: first.restrictionId, action: 'reverse' }],
+          },
+          connection,
+        )
+      const enforce = (connection: TestCopyrightConnection) =>
+        runTestCopyrightReviewOutcome(
+          {
+            currentUser: admin,
+            reviewId,
+            outcome: 'restrict',
+            rationale: 'Two confirmed notices remain.',
+            recordedAt: new Date(),
+          },
+          connection,
+        )
       const results = await raceTestRepeatInfringerAuthorLock({
         accountId: poster.id,
         operations: reversalFirst ? [reverse, enforce] : [enforce, reverse],
       })
-      const dispositions = results.map(result =>
-        result.status === 'rejected' ? (result.reason as { status?: number }).status : 'fulfilled',
-      )
+      const dispositions = results.map(result => {
+        if (result.status === 'fulfilled') return 'fulfilled'
+        const reason: unknown = result.reason
+        return reason && typeof reason === 'object' && 'status' in reason
+          ? reason.status
+          : undefined
+      })
       expect(dispositions).toEqual(reversalFirst ? ['fulfilled', 409] : ['fulfilled', 'fulfilled'])
       const current = await getPrivateUserByAny(poster.id)
       expect(current?.suspended_at === null ? 'not-suspended' : 'suspended').toBe(
         reversalFirst ? 'not-suspended' : 'suspended',
       )
-      void second
     }
   })
 })

@@ -133,6 +133,20 @@ recomputation, excludes deleted authors from desired incidents, and creates one 
 review through the existing partial unique index. Reversals preserve an open review for staff
 disposition; restrict and terminate recheck the operative threshold at decision time.
 
+The internal review, appeal, reinstatement, and unsuspend entrypoints may receive an idle caller-owned
+PostgreSQL connection. Each still owns its transaction and commits before its existing postcommit
+work; supplying a connection does not join an outer transaction or authorize an early enqueue.
+The review-outcome API's existing joined query option instead registers postcommit work with its
+actual transaction owner. Copyright contention fixtures reserve their own connections and observe
+PostgreSQL lock-wait notices for the exact backend and advisory key, then validate that blocker once.
+They release the holder before joining actions and restore session settings before returning clients.
+Local contention qualification needs a disposable PostgreSQL cluster whose test role can set
+`log_lock_waits` and `deadlock_timeout`. The ordinary Linux development role deliberately lacks
+these privileges. Use the private pinned-container pattern in
+[`initialize-smoke-test.yml`](../../../../../.github/workflows/initialize-smoke-test.yml) and its
+explicit owned `DATABASE_URL` before normal backend initialization; never grant these privileges
+on the shared local cluster. CI already uses its own PostgreSQL service role.
+
 EU and UK contracts live in migration `0737-00-00-copyright-eu-uk-contracts.sql`. They record
 receipt, routing, a staff decision (the EU statement of reasons under DSA Art. 17, or the UK
 review), redress, escalation, and EU reporting facts, and they fail closed for new intake until a

@@ -24,14 +24,17 @@ import {
 
 type AppealDecision = { restrictionId: string; action: CopyrightHumanReviewAction }
 
-export async function reviewCopyrightAppeal(input: {
-  submissionId: string
-  currentUser: PrivateUser
-  recommendationId: string | null
-  manualFallbackReason: string | null
-  rationale: string
-  decisions: AppealDecision[]
-}): Promise<{ noticeId: string; reviewIds: string[] }> {
+export async function reviewCopyrightAppeal(
+  input: {
+    submissionId: string
+    currentUser: PrivateUser
+    recommendationId: string | null
+    manualFallbackReason: string | null
+    rationale: string
+    decisions: AppealDecision[]
+  },
+  transactionOptions: Parameters<typeof beginTransaction>[0] = {},
+): Promise<{ noticeId: string; reviewIds: string[] }> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assertBoundedRationale(input.rationale)
   assert(
@@ -48,7 +51,7 @@ export async function reviewCopyrightAppeal(input: {
     'Restriction decisions must be unique',
   )
 
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction(transactionOptions)
   await transaction(sql`/* reviewCopyrightAppeal:lock */
     SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-appeal-review:${input.submissionId}`}, 0))
   `)

@@ -14,17 +14,20 @@ import {
   enqueueCopyrightStaydownHashes,
 } from './staydown-registration.mts'
 
-export async function completeCopyrightMandatoryHumanReview(input: {
-  currentUser: PrivateUser
-  noticeId: string
-  restrictionId: string
-  action: CopyrightHumanReviewAction
-  rationale: string
-  reviewedAt: Date
-}): Promise<CopyrightRestrictionRecord> {
+export async function completeCopyrightMandatoryHumanReview(
+  input: {
+    currentUser: PrivateUser
+    noticeId: string
+    restrictionId: string
+    action: CopyrightHumanReviewAction
+    rationale: string
+    reviewedAt: Date
+  },
+  transactionOptions: Parameters<typeof beginTransaction>[0] = {},
+): Promise<CopyrightRestrictionRecord> {
   assert(currentUserCanReviewCopyrightNotices(input.currentUser), 403, 'Forbidden')
   assert(input.rationale.trim() && input.rationale.length <= 10_000, 422, 'rationale is required')
-  await using transaction = await beginTransaction()
+  await using transaction = await beginTransaction(transactionOptions)
   const { rows: placementRows } = await transaction<{ placement_id: string }>(
     sql`/* completeCopyrightMandatoryHumanReview:findPlacement */
     SELECT target.placement_id
