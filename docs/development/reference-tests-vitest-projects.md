@@ -27,6 +27,12 @@ budgets for a new project or a per-test override. Existing project budgets are b
 the policy for new projects. An override belongs on the measured slow case and stays within the
 suite's cap, rather than raising the budget for every test in its project.
 
+The `static-analysis-ast-grep` project uses five-second test and hook defaults for its
+explicitly listed finite analyzer-fixture modules. Its existing native timeout guard keeps
+individual overrides within the suite cap and reports unresolved admitted timeout values.
+The resolved-project contract is checked in `ci/vitest-timeout-policy.test.mts`; this scoped
+rollout does not change other projects or establish a global runtime deadline.
+
 The same headroom rule applies one layer down: a test that spawns a child process with its own
 timeout must keep that timeout strictly below its project's `testTimeout`, and must report the
 child's signal/timeout state on the result instead of coercing a kill into a generic failure code —

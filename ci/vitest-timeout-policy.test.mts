@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import config from '../vitest.config.mts'
 
 const binary = resolve('node_modules/.bin/oxlint')
 const fixtures = [
@@ -82,6 +83,25 @@ const fixtures = [
 ] as const
 
 describe('native tooling Vitest timeout policy', () => {
+  it('resolves five-second defaults for the isolated static-analysis fixture project', () => {
+    const projects = (config.test?.projects ?? []).filter(
+      project =>
+        typeof project === 'object' &&
+        'test' in project &&
+        project.test?.name === 'static-analysis-ast-grep',
+    )
+    expect(projects).toHaveLength(1)
+    expect(projects[0]).toMatchObject({
+      extends: true,
+      test: {
+        testTimeout: 5_000,
+        hookTimeout: 5_000,
+        isolate: true,
+        setupFiles: ['./test-helpers/vitest.setup.tooling-isolated-env.mts'],
+      },
+    })
+  })
+
   it.each(['.oxlintrc.json', 'ci/.oxlintrc.json', 'static-code-analysis/.oxlintrc.json'])(
     '%s rejects unsafe framework carriers without rejecting bounded or unrelated calls',
     configPath => {
