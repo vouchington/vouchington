@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { interceptNextEntityListenerAdd } from '../../test-helpers/entity-listener-add-failure.mts'
 import {
   checkPostClearance,
   ensureCurrentPostModerationVersion,
@@ -79,9 +79,7 @@ describe('setPostImages clearance rollback', () => {
     await insertTestPostImage({ postId, imageId: originalImageId })
     const post = (await getPostByAny(postId, { readOnly: false })) as Post
     const enqueueError = new Error('enqueue failed')
-    const rejectedEnqueue = Promise.reject(enqueueError) as ReturnType<typeof entitiesListeners.add>
-    void rejectedEnqueue.catch(() => {})
-    vi.spyOn(entitiesListeners, 'add').mockReturnValueOnce(rejectedEnqueue)
+    interceptNextEntityListenerAdd(() => Promise.reject(enqueueError))
 
     await expect(
       setPostImages(creator, post, [{ image_id: replacementImageId, order_index: 0 }]),
@@ -118,7 +116,7 @@ describe('setPostImages clearance rollback', () => {
     await insertTestPostImage({ postId, imageId: originalImageId })
     const post = (await getPostByAny(postId, { readOnly: false })) as Post
     const enqueueError = new Error('enqueue failed')
-    vi.spyOn(entitiesListeners, 'add').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAdd(async () => {
       await markImageDeleted(originalImageId)
       throw enqueueError
     })
@@ -186,9 +184,7 @@ describe('setPostImages clearance rollback', () => {
       'openai_omni',
     ])
     const enqueueError = new Error('enqueue failed')
-    const rejectedEnqueue = Promise.reject(enqueueError) as ReturnType<typeof entitiesListeners.add>
-    void rejectedEnqueue.catch(() => {})
-    vi.spyOn(entitiesListeners, 'add').mockReturnValueOnce(rejectedEnqueue)
+    interceptNextEntityListenerAdd(() => Promise.reject(enqueueError))
 
     await expect(
       setPostImages(creator, rejectedPost, [{ image_id: replacementImageId, order_index: 0 }]),
