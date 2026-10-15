@@ -10,6 +10,8 @@ import {
   type OwnedPruningDatabase,
 } from './database-lifecycle.mts'
 
+import { assertPruningDatabaseLifecycleControls } from './database-lifecycle-controls.mts'
+
 const exec = promisify(execFile)
 const root = resolve(import.meta.dirname, '../../../..')
 const libpqOverrideKeys = ['PGHOST', 'PGHOSTADDR', 'PGSERVICE', 'PGSERVICEFILE', 'PGPORT']
@@ -46,7 +48,15 @@ async function runPruningProof(): Promise<void> {
   const name = createPruningDatabaseName()
   const results: ExplainResult[] = []
   const retirementControls: string[] = []
-  const evidence: Record<string, unknown> = { database: name, results, retirementControls }
+  const lifecycleControls: string[] = []
+  const lifecycleDatabases: string[] = []
+  const evidence: Record<string, unknown> = {
+    database: name,
+    results,
+    retirementControls,
+    lifecycleControls,
+    lifecycleDatabases,
+  }
   const outputDirectory = join(import.meta.dirname, '..', 'output')
   const outputPath = join(
     outputDirectory,
@@ -61,6 +71,16 @@ async function runPruningProof(): Promise<void> {
   let closePools: (() => Promise<void>) | undefined
   const errors: unknown[] = []
   try {
+    await assertPruningDatabaseLifecycleControls(
+      sourceUrl,
+      connectionEnvironment,
+      control => {
+        lifecycleControls.push(control)
+      },
+      name => lifecycleDatabases.push(name),
+    )
+    if (lifecycleControls.length !== 3)
+      throw new Error('Expected all three native lifecycle controls')
     owned = await createOwnedPruningDatabase(runPsql, sourceUrl, name, database => {
       owned = database
     })
