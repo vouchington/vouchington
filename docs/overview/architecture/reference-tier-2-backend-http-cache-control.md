@@ -8,7 +8,10 @@ Optional-auth routes that set public anonymous cache headers should also emit
 variants separate. Independently, the Worker gateway adds those tokens to every anonymous backend
 response so a missed route-level header cannot make a browser reuse anonymous JSON after sign-in.
 
-| Response type                                                                                                  | Header                | TTL                                      |
-| -------------------------------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------- |
-| Lists/search (`/api/v1/posts`, `/api/v1/topics`, `/api/v1/urls`, `/api/v1/hostnames`, etc.)                    | `public, max-age=60`  | `HTTP_CACHE_SHORT_MAX_AGE_SECONDS` (60s) |
-| Single entities (`/api/v1/posts/:id`, `/api/v1/topics/:id`, `/api/v1/urls/:id`, `/api/v1/hostnames/:id`, etc.) | `public, max-age=300` | `HTTP_CACHE_LONG_MAX_AGE_SECONDS` (300s) |
+| Response type                                                                              | Header                | TTL                                      |
+| ------------------------------------------------------------------------------------------ | --------------------- | ---------------------------------------- |
+| Lists/search (`/api/v1/posts`, `/api/v1/topics`, `/api/v1/hostnames`, etc.)                | `public, max-age=60`  | `HTTP_CACHE_SHORT_MAX_AGE_SECONDS` (60s) |
+| Single entities (`/api/v1/posts/:id`, `/api/v1/topics/:id`, `/api/v1/hostnames/:id`, etc.) | `public, max-age=300` | `HTTP_CACHE_LONG_MAX_AGE_SECONDS` (300s) |
+
+`GET /api/v1/urls` and `GET /api/v1/urls/:id` require authentication and do not set a public
+`Cache-Control` header. They are not anonymous list or entity HTTP caches.

@@ -21,35 +21,21 @@ import type { TrendingPostsOptions } from '@services/trending-posts/types'
 import { getTrendingCommunities } from '@services/trending-communities/get-trending-communities'
 import type { TrendingCommunityOptions } from '@services/trending-communities/types'
 import { getPlatformStats } from '@services/platform-stats/get-platform-stats'
-import { createSearchCache, invalidateSearchCache } from '@services/entity-cache/search-cache'
-
-const POST_IDS_ANON_CACHE = 'post_ids_anon'
-const TOPIC_IDS_ANON_CACHE = 'topic_ids_anon'
-const RSS_FEEDS_ANON_CACHE = 'rss_feeds_anon'
-const RSS_FEED_ITEMS_ANON_CACHE = 'rss_feed_items_anon'
-const COMMUNITIES_ANON_CACHE = 'communities_anon'
-const TRENDING_TOPICS_ANON_CACHE = 'trending_topics_anon'
-const URL_HOSTNAMES_ANON_CACHE = 'url_hostnames_anon_v2'
-const TOP_HOSTNAMES_ANON_CACHE = 'top_hostnames_anon'
-const TRENDING_RSS_FEEDS_ANON_CACHE = 'trending_rss_feeds_anon'
-const TRENDING_POSTS_ANON_CACHE = 'trending_posts_anon'
-const TRENDING_COMMUNITIES_ANON_CACHE = 'trending_communities_anon'
-const PLATFORM_STATS_ANON_CACHE = 'platform_stats_anon'
-
-const ANONYMOUS_SEARCH_CACHE_PREFIXES = [
-  POST_IDS_ANON_CACHE,
-  TOPIC_IDS_ANON_CACHE,
-  RSS_FEEDS_ANON_CACHE,
-  RSS_FEED_ITEMS_ANON_CACHE,
+import {
+  ANONYMOUS_SEARCH_CACHE_PREFIXES,
   COMMUNITIES_ANON_CACHE,
+  PLATFORM_STATS_ANON_CACHE,
+  POST_IDS_ANON_CACHE,
+  RSS_FEED_ITEMS_ANON_CACHE,
+  TOP_HOSTNAMES_ANON_CACHE,
+  TOPIC_IDS_ANON_CACHE,
+  TRENDING_COMMUNITIES_ANON_CACHE,
+  TRENDING_POSTS_ANON_CACHE,
+  TRENDING_RSS_FEEDS_ANON_CACHE,
   TRENDING_TOPICS_ANON_CACHE,
   URL_HOSTNAMES_ANON_CACHE,
-  TOP_HOSTNAMES_ANON_CACHE,
-  TRENDING_RSS_FEEDS_ANON_CACHE,
-  TRENDING_POSTS_ANON_CACHE,
-  TRENDING_COMMUNITIES_ANON_CACHE,
-  PLATFORM_STATS_ANON_CACHE,
-] as const
+} from '@services/entity-cache/anonymous-search-prefixes'
+import { createSearchCache, invalidateSearchCache } from '@services/entity-cache/search-cache'
 
 export const getPostIdsCached = createSearchCache(
   POST_IDS_ANON_CACHE,
