@@ -27,13 +27,13 @@ const SHARED_STATES = ['waiting', 'active', 'delayed'] as const
  * every domain, because jobs of any domain may lie beyond it.
  */
 export async function readSharedStates(queue: StatsQueue, cap: number): Promise<SharedStateReads> {
-  const reads = await Promise.all(
+  const [waiting, active, delayed] = await Promise.all(
     SHARED_STATES.map(async state => {
       const jobs = await queue.getJobs(state, 0, cap - 1, { excludeData: true })
-      return [state, { names: jobs.map(job => job.name), complete: jobs.length < cap }] as const
+      return { names: jobs.map(job => job.name), complete: jobs.length < cap }
     }),
   )
-  return Object.fromEntries(reads) as SharedStateReads
+  return { waiting: waiting!, active: active!, delayed: delayed! }
 }
 
 /**

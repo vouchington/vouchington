@@ -22,7 +22,7 @@ flowchart LR
 
 ## Registry
 
-[`registry.mts`](../../../../../backend/queues/background/registry.mts) is the single source of truth
+[`registry.mts`](../../../../../backend/queues/background/enqueues/registry.mts) is the single source of truth
 for what the queue runs. A domain definition names the domain's group and the baseline worker
 concurrency it had as its own queue; a job definition adds the priority, `lockDuration`, `timeout`,
 attempts, backoff, and retention. Every domain's jobs live in
@@ -90,7 +90,7 @@ long a worker trusts a domain's pause state before it reads PostgreSQL), and
 
 Registering a manifest removes every scheduler it does not list, so each domain exports its
 manifest and the worker-io entrypoint registers one combined manifest for the whole queue through
-[`upsertBackgroundSchedules`](../../../../../backend/queues/background/schedules.mts). Scheduler ids
+[`upsertBackgroundSchedules`](../../../../../backend/queues/background/enqueues/schedules.mts). Scheduler ids
 are unique across domains.
 
 ## Retention and observability

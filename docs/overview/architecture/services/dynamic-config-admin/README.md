@@ -109,7 +109,7 @@ canonical inventory:
 | `crawl-boilerplate-removal-work-config`   | [crawl boilerplate limits](../../../../../backend/queues/crawl-dispatch/config.mts)                               |
 | `vote-weight-work-config`                 | [vote-weight limits](../../../../../backend/services/vote-weight/work-limits.mts)                                 |
 | `ses-inbound-work-config`                 | [SES inbound limits](../../../../../backend/workers/ses-inbound/work-limits.mts)                                  |
-| `background-queue-config`                 | [background queue pause and stats limits](../../../../../backend/queues/background/work-limits.mts)               |
+| `background-queue-config`                 | [background queue pause and stats limits](../../../../../backend/queues/background/config.mts)               |
 | `post-clearance-work-config`              | [post-clearance limits](../../../../../backend/services/post-clearance/work-limits.mts)                           |
 | `users-work-config`                       | [users limits](../../../../../backend/services/users/work-limits.mts)                                             |
 
