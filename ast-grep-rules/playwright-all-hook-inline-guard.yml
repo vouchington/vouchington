@@ -58,6 +58,29 @@ utils:
           stopBy: end
 rule:
   any:
+    - all:
+        - pattern: import($FIXTURE_MODULE)
+        - nthChild: 1
+        - not:
+            inside:
+              kind: type_query
+              stopBy: end
+        - inside:
+            any:
+              - kind: await_expression
+              - kind: variable_declarator
+              - kind: assignment_expression
+              - kind: expression_statement
+              - kind: arguments
+              - kind: array
+              - pattern: $OBJECT.then($$$ARGS)
+            stopBy:
+              not:
+                any:
+                  - kind: parenthesized_expression
+                  - kind: as_expression
+                  - kind: satisfies_expression
+                  - pattern: $OBJECT.then
     - pattern: await import($FIXTURE_MODULE)
     - pattern: require($FIXTURE_MODULE)
     - pattern: $BINDING = import($FIXTURE_MODULE)
@@ -363,4 +386,71 @@ examples:
     file: playwright/tests/contracts/all-hook.spec.mts
   - code: 'fixture.afterAll(async () => { await cleanup(); });'
     isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (import('../../helpers/test.mts') as Promise<typeof import('../../helpers/test.mts')>); other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (import('../../helpers/test.mts') as Promise<typeof import('../../helpers/test.mts')>); other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (import('../../helpers/test.mts') satisfies Promise<typeof import('../../helpers/test.mts')>); other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (import('../../helpers/test.mts') satisfies Promise<typeof import('../../helpers/test.mts')>); other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (import('../../helpers/test.mts')); other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (import('../../helpers/test.mts')); other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (((import('./tag-voting-helpers.mts') as Promise<unknown>))); other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (((import('./tag-voting-helpers.mts') as Promise<unknown>))); other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const page = await (load() as import('../../helpers/test.mts').Page); test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const page = await (load() satisfies import('../../helpers/test.mts').Page); test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (((import('../../helpers/test.mts') as Promise<unknown>) satisfies Promise<unknown>)); other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const { test: other } = await (((import('../../helpers/test.mts') as Promise<unknown>) satisfies Promise<unknown>)); other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; (import('../../helpers/test.mts') as Promise<typeof import('../../helpers/test.mts')>).then(({ test: other }) => other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); }));"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; (import('../../helpers/test.mts') as Promise<typeof import('../../helpers/test.mts')>).then(({ test: other }) => other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); }));"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; (import('../../helpers/test.mts') satisfies Promise<typeof import('../../helpers/test.mts')>).then(({ test: other }) => other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); }));"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; (import('../../helpers/test.mts') satisfies Promise<typeof import('../../helpers/test.mts')>).then(({ test: other }) => other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); }));"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; (import('./tag-voting-helpers.mts')).then(({ test: other }) => other.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); }));"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; (import('./tag-voting-helpers.mts')).then(({ test: other }) => other.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); }));"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; type Fixture = typeof import('../../helpers/test.mts'); test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; type Fixture = typeof import('../../helpers/test.mts'); test.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: true
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; const continuation = (import('../../helpers/test.mts') as Promise<typeof import('../../helpers/test.mts')>).then; test.beforeAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
+    file: playwright/tests/contracts/all-hook.spec.mts
+  - code: "import { test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'; let continuation; continuation = (import('../../helpers/test.mts') satisfies Promise<typeof import('../../helpers/test.mts')>).then; test.afterAll(async () => { protectPlaywrightHookTimeouts(test.info()); });"
+    isValid: false
     file: playwright/tests/contracts/all-hook.spec.mts
