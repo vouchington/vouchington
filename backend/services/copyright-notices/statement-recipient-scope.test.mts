@@ -3,7 +3,10 @@ import { useAutomaticProvisionalWithholding } from '@voucha/test-helpers/service
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import { completeCopyrightMandatoryHumanReview } from './human-review.mts'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
+import { DELETED_USER_ID } from '@services/users/constants'
+import { createCopyrightStatementDeliveryInTransaction } from './statement-delivery.mts'
 import {
   createMultiOwnerStatementFixture,
   markStatementPosterDeleted,
@@ -27,6 +30,27 @@ import { getCopyrightParticipantNoticeDetail } from './read-models.mts'
 describe('statement recipient scope and lifecycle', () => {
   useCopyrightIntakeEnvironment()
   useAutomaticProvisionalWithholding()
+  it.each([null, DELETED_USER_ID])(
+    'does no database work for an absent poster identity: %s',
+    async recipientUserId => {
+      await using transaction = await beginTransaction()
+      const { queries } = await withCapturedTestQueries(() =>
+        createCopyrightStatementDeliveryInTransaction(
+          {
+            noticeId: crypto.randomUUID(),
+            recipientUserId,
+            recipientRole: 'poster',
+            deliveryKind: 'poster_review_notice',
+            correspondenceKind: 'decision_notice',
+            key: crypto.randomUUID(),
+            text: 'No active poster recipient.',
+          },
+          transaction,
+        ),
+      )
+      expect(queries).toEqual([])
+    },
+  )
   it('never leaks another owner target or a non-public URL into stored poster text', async () => {
     const { notice, targets } = await createMultiOwnerStatementFixture()
     const [publicTarget, privateTarget] = targets
