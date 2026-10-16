@@ -13,30 +13,18 @@ Claude Code and Codex load `vouchington-workflow:revisit-followups`; Grok, Curso
 
 ### Scope and collection
 
-Accept a duration (`1w`, `2d`, `1m`) or ISO date. If absent, ask the user, proposing a one-week
-default, then compute a date-only cutoff and fetch `origin`. Collect only explicit deferred-action
-signals from merged PR Shepherd Journals, tracked `AGENTS.md` files, and closed issue bodies; PR and
-issue comments are opt-in (`--include-pr-comments`, `--include-issue-comments`). Settled rejections,
-closure decisions, standing policy, and incidental TODO-like text are not follow-ups. Zero candidates
-is a correct outcome.
+Follow the canonical skill's "Scope and collection" for the lookback window, truncation splitting,
+scratch files, and body-first collection. Vouchington sources are merged PR Shepherd Journals,
+tracked `AGENTS.md` files, and closed issue bodies; PR and issue comments are opt-in
+(`--include-pr-comments`, `--include-issue-comments`).
 
-Use an OS-temp scratch directory with separate `candidates/` and `verdicts/` files. If delegating,
-each collector gets its own file; never concurrently append. Collectors may fetch PR bodies in
-parallel, but they return their body-file paths to the main agent without parsing them. The main
-agent runs each `pnpm exec pr-shepherd journal extract --body-file <path>` serially; workspace-write
-agents must not run concurrent `pnpm exec` processes. Keep collection/mechanical parsing separate
-from actionability triage. Consume each one-line typed JSON result: `ok: false` fails collection for
-that body, `journal: null` has no Journal candidate, and a journal supplies ordered entries. The
-published CLI owns Journal syntax and ignored-lookalike handling; do not reimplement or broaden its
-grammar. Do not print the fetched body outside its private scratch file; remove all scratch files
-after collection.
-
-For merged and closed searches use `--limit 500`. A full page is truncation, not exhaustion: split
-the date range at a midpoint, retaining both bounds for interior chunks; only the top-level final
-chunk may be open-ended. A same-day full result cannot shrink further, so report its truncation and
-stop splitting. Closed issue collection is body-first: unchecked boxes and partial numbered work
-lists are candidates; fetch issue comments only for body candidates unless comments were requested.
-Do not exclude a whole `Plan:` issue or rely on a fixed heading allowlist.
+Collectors may fetch PR bodies in parallel, but they return their body-file paths to the main agent
+without parsing them. The main agent runs each `pnpm exec pr-shepherd journal extract --body-file <path>`
+serially; workspace-write agents must not run concurrent `pnpm exec` processes. Keep
+collection/mechanical parsing separate from actionability triage. Consume each one-line typed JSON
+result: `ok: false` fails collection for that body, `journal: null` has no Journal candidate, and a
+journal supplies ordered entries. The published CLI owns Journal syntax and ignored-lookalike
+handling; do not reimplement or broaden its grammar.
 
 ### Triage and batch confirmation
 

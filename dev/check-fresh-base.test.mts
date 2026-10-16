@@ -92,29 +92,6 @@ describe('dev/check-fresh-base', () => {
     expect(context).toContain('For a new task in Plan Mode')
   })
 
-  it('classifies a clean branch that is ahead of origin/main', () => {
-    const cwd = makeRepo()
-    commit(cwd, 'feature.txt', 'new on feature\n')
-
-    const context = additionalContext(runCheck(cwd).stdout)
-
-    expect(context).toContain('branch `feature` is ahead of `origin/main`')
-    expect(context).toContain('1 ahead, 0 behind')
-    expect(context).toContain('For resumed work')
-  })
-
-  it('classifies a clean branch that has diverged from origin/main', () => {
-    const cwd = makeRepo()
-    commit(cwd, 'feature.txt', 'new on feature\n')
-    moveOriginMainAhead(cwd)
-
-    const context = additionalContext(runCheck(cwd).stdout)
-
-    expect(context).toContain('branch `feature` has diverged from `origin/main`')
-    expect(context).toContain('1 ahead, 1 behind')
-    expect(context).toContain('inspect relevant files from `origin/main`')
-  })
-
   it('reports dirty state without suggesting a forced reset', () => {
     const cwd = makeRepo()
     writeFileSync(join(cwd, 'untracked.txt'), 'dirty\n')

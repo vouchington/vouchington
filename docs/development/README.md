@@ -160,7 +160,7 @@ Agents should also follow [AGENTS.md](../../AGENTS.md) for initialization, valid
 
 ### Fresh-base planning
 
-The `./dev/check-fresh-base` session hook fetches `origin/main` and compares it with the current
+The `./dev/check-fresh-base` session hook (a wrapper over `vouchington fresh-base`) fetches `origin/main` and compares it with the current
 branch before an agent plans or implements work. It reports the branch relation (equal, ahead,
 behind, or diverged) and whether the worktree is clean. If the fetch fails or `origin/main` is
 missing, freshness is unknown and the agent must retry the fetch before trusting the checkout.
