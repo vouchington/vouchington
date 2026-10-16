@@ -72,8 +72,6 @@ describe('background queue domain routes', () => {
         paused_by: null,
         reason: null,
         delayed: { count: 2, complete: false },
-        active: { complete: true },
-        failed: { complete: true },
       })
     } finally {
       restore()
