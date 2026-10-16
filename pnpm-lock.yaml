@@ -5868,9 +5868,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      http-assert:
-        specifier: ^1.5.0
-        version: 1.5.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
