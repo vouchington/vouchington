@@ -7,7 +7,7 @@ import {
   enqueueBulkUpdatePostElectionVoteStats,
   enqueueBulkUpdateTopicElectionVoteStats,
 } from './elections.mts'
-import { ELECTIONS_DEFAULTS } from './config-elections.mts'
+import { ELECTIONS_DEFAULTS } from '../config.mts'
 import {
   ELECTION_LANES,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,

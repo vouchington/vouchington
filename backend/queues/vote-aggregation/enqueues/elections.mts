@@ -4,7 +4,7 @@ import {
   type ElectionJobData,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { ELECTIONS_DEFAULTS } from './config-elections.mts'
+import { ELECTIONS_DEFAULTS } from '../config.mts'
 import type {
   ElectionJobInput,
   ElectionOrderingKey,
