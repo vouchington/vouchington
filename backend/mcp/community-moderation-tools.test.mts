@@ -160,7 +160,12 @@ describe('community moderation MCP tools — real PostgreSQL and Valkey', () => 
       optionArgs('update_community_settings', args),
       WRITE_SCOPES,
     )
-    expect(result).toMatchObject({ community: { id: community.id, name } })
+    expect(result).toMatchObject({
+      community: { id: community.id, name: expect.stringContaining(name) },
+    })
+    expect((result['community'] as Record<string, unknown>)['name']).toEqual(
+      expect.stringContaining('<external-content'),
+    )
     await archiveTestCommunity({ communityId: community.id, archivedById: owner.id })
     expect(
       await errorOf(

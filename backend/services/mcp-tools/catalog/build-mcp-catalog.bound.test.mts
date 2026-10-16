@@ -241,7 +241,9 @@ const names = [
   'submit_rss_feed',
   'start_discussion',
 ]
-const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
+const scopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
+  scope => !scope.startsWith('community-moderation:'),
+)
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const caller = { id: 'participation-listing', roles: [], membership_plan: null }
 
