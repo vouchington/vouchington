@@ -58,13 +58,17 @@ jobs:
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
       - name: Run PostgreSQL schema tests
+        # The command keeps the previous 180s step budget. The extra minute lets
+        # run-bounded reap the process group and flush the log. GitHub's
+        # timeout-minutes did not: merge-group job 117056768718 stayed in this
+        # step until the 20-minute job cap and the log was dropped (run 38925407300).
+        timeout-minutes: 4
         env:
           VITEST_CI_REPORTERS: run
           VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
           VITEST_JUNIT_OUTPUT_FILE: postgres-schema-test-report.junit.xml
         run: |
-          VITEST_MAX_WORKERS=1 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity
-        timeout-minutes: 3
+          VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity
       - name: Check PostgreSQL schema snapshot is up to date
         if: ${{ !cancelled() }}
         working-directory: backend
