@@ -882,6 +882,46 @@
         "destructiveHint": true,
         "idempotentHint": true
       }
+    },
+    "F89": {
+      "scopes": ["votes:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F90": {
+      "scopes": ["rss-feed-items:read", "rss-feed-items:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    "F91": {
+      "scopes": ["rss-feed-items:read", "rss-feed-items:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F92": {
+      "scopes": ["rss-feeds:read", "rss-feeds:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
     }
   },
   "inputs": {
@@ -1271,7 +1311,14 @@
       ]
     ],
     "I125": [["ids"]],
-    "I126": [["copyright_notice_id", "intake_id"]]
+    "I126": [["copyright_notice_id", "intake_id"]],
+    "I127": [
+      ["audience", "recipient_user_ids", "rss_feed_item_id"],
+      ["audience", "rss_feed_item_id"]
+    ],
+    "I128": [["follow", "rss_feed_url"]],
+    "I129": [["idempotency_key", "rss_feed_item_id"]],
+    "I130": [["idempotency_key", "story_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4320,6 +4367,214 @@
             "option": null
           },
           "decision": true
+        }
+      ]
+    },
+    "PUT:/api/v1/posts/:id/vote": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F89",
+          "operation": {
+            "tool": "vote",
+            "option": "set_post"
+          },
+          "decision": false,
+          "inputFields": "I054",
+          "requestBodyFields": ["choice"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:id/vote": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F89",
+          "operation": {
+            "tool": "vote",
+            "option": "clear_post"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "PUT:/api/v1/topics/:id/vote": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F89",
+          "operation": {
+            "tool": "vote",
+            "option": "set_topic"
+          },
+          "decision": false,
+          "inputFields": "I054",
+          "requestBodyFields": ["choice"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/topics/:id/vote": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F89",
+          "operation": {
+            "tool": "vote",
+            "option": "clear_topic"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "PUT:/api/v1/rss-feed-items/:id/vote": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F89",
+          "operation": {
+            "tool": "vote",
+            "option": "set_rss_feed_item"
+          },
+          "decision": false,
+          "inputFields": "I054",
+          "requestBodyFields": ["choice"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/rss-feed-items/:id/vote": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F89",
+          "operation": {
+            "tool": "vote",
+            "option": "clear_rss_feed_item"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "PUT:/api/v1/rss-feed-items/:id/read": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F90",
+          "operation": {
+            "tool": "set_rss_feed_item_read",
+            "option": "read"
+          },
+          "decision": false,
+          "inputFields": "I086",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "DELETE:/api/v1/rss-feed-items/:id/read": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F90",
+          "operation": {
+            "tool": "set_rss_feed_item_read",
+            "option": "unread"
+          },
+          "decision": false,
+          "inputFields": "I086",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/shares": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F91",
+          "operation": {
+            "tool": "share_rss_feed_item",
+            "option": "share"
+          },
+          "decision": false,
+          "inputFields": "I086",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/rss-feed-items/:rssFeedItemId/sends": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F91",
+          "operation": {
+            "tool": "share_rss_feed_item",
+            "option": "send"
+          },
+          "decision": false,
+          "inputFields": "I127",
+          "requestBodyFields": ["audience", "recipient_user_ids"]
+        }
+      ]
+    },
+    "POST:/api/v1/rss-feeds": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F92",
+          "operation": {
+            "tool": "submit_rss_feed",
+            "option": "submit"
+          },
+          "decision": false,
+          "inputFields": "I128",
+          "requestBodyFields": ["follow", "rss_feed_url"]
+        }
+      ]
+    },
+    "POST:/api/v1/rss-feed-items/:id/discussions": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F80",
+          "operation": {
+            "tool": "start_discussion",
+            "option": "rss_feed_item"
+          },
+          "decision": false,
+          "inputFields": "I129",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/stories/:storyId/discussions": {
+      "pullRequest": 2966,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F80",
+          "operation": {
+            "tool": "start_discussion",
+            "option": "story"
+          },
+          "decision": false,
+          "inputFields": "I130",
+          "requestBodyFields": null
         }
       ]
     }
