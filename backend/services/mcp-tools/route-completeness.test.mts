@@ -51,17 +51,15 @@ const baselineData = JSON.parse(
     }
   >
 }
-const baseline = {
-  records: Object.entries(baselineData.routes).flatMap(([route, records]) =>
-    records.map(record => ({
-      ...record,
-      facts: baselineData.facts[record.facts]!,
-      inputFields: baselineData.inputs[record.inputFields]!,
-      method: route.slice(0, route.indexOf(':')),
-      path: route.slice(route.indexOf(':') + 1),
-    })),
-  ),
-}
+const baselineRecords = Object.entries(baselineData.routes).flatMap(([route, records]) =>
+  records.map(record => ({
+    ...record,
+    facts: baselineData.facts[record.facts]!,
+    inputFields: baselineData.inputs[record.inputFields]!,
+    method: route.slice(0, route.indexOf(':')),
+    path: route.slice(route.indexOf(':') + 1),
+  })),
+)
 const additions = Object.entries(baselineData.additions).flatMap(([route, addition]) =>
   addition.contracts.map(record => ({
     ...record,
@@ -71,7 +69,7 @@ const additions = Object.entries(baselineData.additions).flatMap(([route, additi
     path: route.slice(route.indexOf(':') + 1),
   })),
 )
-const expectedRecords = [...baseline.records, ...additions]
+const expectedRecords = [...baselineRecords, ...additions]
 const requestContracts = JSON.parse(
   readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
 ) as { operations: Record<string, { body?: unknown }>; components: Record<string, unknown> }
@@ -264,7 +262,7 @@ describe('MCP route completeness from baseline facts', () => {
 
   it('keeps pinned REST-twin body fields accepted by the current REST contract', () => {
     const current = currentRecords()
-    for (const expected of baseline.records.filter(record => record.requestBodyFields !== null)) {
+    for (const expected of baselineRecords.filter(record => record.requestBodyFields !== null)) {
       const actual = current.find(
         record =>
           record.surface === expected.surface &&
@@ -279,7 +277,7 @@ describe('MCP route completeness from baseline facts', () => {
 
   it('retains baseline GET query and selector fields', () => {
     const current = currentRecords()
-    for (const expected of baseline.records.filter(record => record.method === 'GET')) {
+    for (const expected of baselineRecords.filter(record => record.method === 'GET')) {
       const actual = current.find(candidate => sameContract(expected, candidate))!
       for (const fields of expected.inputFields) {
         expect(
