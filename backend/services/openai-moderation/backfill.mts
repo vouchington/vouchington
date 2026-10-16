@@ -1,34 +1,16 @@
 import { getOpenaiModerationWorkLimit } from './work-limits.mts'
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { POST_MODERATION_POLICY_REVISION } from '@services/post-clearance/moderation-ledger-types'
 
-// Number of IDs accumulated before a batch is yielded for bulk enqueue. The cursor
-// reads from PostgreSQL in pages of this size and we re-chunk yields to match, so
-// each yielded batch becomes a single glide-mq addBulk call.
+export type BackfillIdPage = { ids: string[]; hasMore: boolean }
 
-// Streams IDs from a source-of-truth query over a single pg-cursor connection,
-// yielding them in fixed-size batches. Memory stays O(batchSize)
-// regardless of table size, and consumers can bulk-enqueue one batch per yield.
-async function* streamIdBatches(
-  rows: AsyncIterable<{ id: string }>,
-  batchSize = getOpenaiModerationWorkLimit('backfill_batch_size'),
-): AsyncGenerator<string[], void, unknown> {
-  let batch: string[] = []
-  for await (const row of rows) {
-    batch.push(row.id)
-    if (batch.length >= batchSize) {
-      yield batch
-      batch = []
-    }
-  }
-  if (batch.length > 0) {
-    yield batch
-  }
-}
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 
 /**
- * Streams batches of post IDs that are missing OpenAI omni moderation results.
+ * One page of post IDs after `afterId` that are missing OpenAI omni moderation results, in id
+ * order. `hasMore` is true when the page is full, so the caller continues from its last id.
  *
  * Used by the backfill dispatcher to re-enqueue moderation for posts that were never
  * processed or whose jobs were lost (e.g. after a Valkey wipe).
@@ -51,52 +33,54 @@ async function* streamIdBatches(
  * but re-enqueuing them is idempotent and makes no OpenAI call (the worker re-marks them
  * no-content), and a backfill is a rare recovery operation — so over-inclusion is harmless.
  */
-export function streamUnmoderatedPostIdBatches(): AsyncGenerator<string[], void, unknown> {
-  const batchSize = getOpenaiModerationWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamUnmoderatedPostIdBatches */
-        SELECT post.id
-        FROM posts post
-        LEFT JOIN post_moderation_versions version
-          ON version.post_id = post.id
-         AND version.content_sha256 = post.llm_moderation_content_sha256
-         AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
-        WHERE post.deleted_at IS NULL
-          AND NOT EXISTS (
-            SELECT 1
-            FROM post_moderation_dispositions disposition
-            WHERE disposition.version_id = version.id
-              AND disposition.source = 'openai_omni'
-              AND disposition.disposition <> 'incomplete'
-          )
-        ORDER BY post.id
-      `,
-      { batchSize: batchSize },
-    ),
-    batchSize,
+export async function listUnmoderatedPostIdPage(afterId?: string): Promise<BackfillIdPage> {
+  const limit = getOpenaiModerationWorkLimit('backfill_batch_size')
+  const { rows } = await read<{ id: string }>(
+    sql`/* listUnmoderatedPostIdPage */
+      SELECT post.id
+      FROM posts post
+      LEFT JOIN post_moderation_versions version
+        ON version.post_id = post.id
+       AND version.content_sha256 = post.llm_moderation_content_sha256
+       AND version.policy_revision = ${POST_MODERATION_POLICY_REVISION}
+      WHERE post.deleted_at IS NULL
+        AND post.id > ${afterId ?? START_OF_IDS}::uuid
+        AND NOT EXISTS (
+          SELECT 1
+          FROM post_moderation_dispositions disposition
+          WHERE disposition.version_id = version.id
+            AND disposition.source = 'openai_omni'
+            AND disposition.disposition <> 'incomplete'
+        )
+      ORDER BY post.id
+      LIMIT ${limit}
+    `,
   )
+  return toPage(rows, limit)
 }
 
 /**
- * Streams batches of image IDs that are missing OpenAI omni moderation results.
+ * One page of image IDs after `afterId` that are missing OpenAI omni moderation results.
  *
  * Only includes images with completed uploads — pending or failed uploads do not have
  * a usable S3 object for the moderation API to inspect.
  */
-export function streamUnmoderatedImageIdBatches(): AsyncGenerator<string[], void, unknown> {
-  const batchSize = getOpenaiModerationWorkLimit('backfill_batch_size')
-  return streamIdBatches(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamUnmoderatedImageIdBatches */
-        SELECT id FROM images
-        WHERE openai_omni_moderation_created_at IS NULL
-          AND deleted_at IS NULL
-          AND upload_completed_at IS NOT NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
-    batchSize,
+export async function listUnmoderatedImageIdPage(afterId?: string): Promise<BackfillIdPage> {
+  const limit = getOpenaiModerationWorkLimit('backfill_batch_size')
+  const { rows } = await read<{ id: string }>(
+    sql`/* listUnmoderatedImageIdPage */
+      SELECT id FROM images
+      WHERE openai_omni_moderation_created_at IS NULL
+        AND deleted_at IS NULL
+        AND upload_completed_at IS NOT NULL
+        AND id > ${afterId ?? START_OF_IDS}::uuid
+      ORDER BY id
+      LIMIT ${limit}
+    `,
   )
+  return toPage(rows, limit)
+}
+
+function toPage(rows: { id: string }[], limit: number): BackfillIdPage {
+  return { ids: rows.map(row => row.id), hasMore: rows.length === limit }
 }

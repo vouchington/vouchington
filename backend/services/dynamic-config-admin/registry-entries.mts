@@ -86,6 +86,7 @@ const REGISTRY_ORDER = [
   'oauth-github-work-config',
   'oauth-x-work-config',
   'ses-inbound-work-config',
+  'background-queue-config',
   'crawl-dispatch-work-config',
   'referral-crawl-dispatch-work-config',
   'referral-unfurl-dispatch-work-config',

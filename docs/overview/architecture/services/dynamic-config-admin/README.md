@@ -56,14 +56,14 @@ Invalid runtime values fall back to the documented default; valid changes take e
 module reload. SQL binds these captured numbers rather than interpolating literal durations.
 
 Recovery dispatch/processing windows use minutes; renewal and engagement claims use hours.
-Selectors, claim updates and retry-state decisions share the same owner field. Engagement claims
-live under the users owner because engagement delivery already depends on that capability.
+Selectors, claim updates and retry-state decisions share one owner field; engagement claims live
+under the users owner.
 Provider lookup page budgets preserve their existing fail-closed behavior when completeness
 cannot be established within the cap. Stripe's documented 100-record page and S3's 1,000-key
 DeleteObjects maximum remain external protocol bounds.
 
-The namespace detail panel documents every field, current value, default and maximum. The
-owner modules below are the canonical field/default/ceiling inventory:
+The detail panel shows each field's value, default and maximum; the owner modules below are the
+canonical inventory:
 
 | Namespace                                 | Owning runtime configuration                                                                                      |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -109,6 +109,7 @@ owner modules below are the canonical field/default/ceiling inventory:
 | `crawl-boilerplate-removal-work-config`   | [crawl boilerplate limits](../../../../../backend/queues/crawl-dispatch/config.mts)                               |
 | `vote-weight-work-config`                 | [vote-weight limits](../../../../../backend/services/vote-weight/work-limits.mts)                                 |
 | `ses-inbound-work-config`                 | [SES inbound limits](../../../../../backend/workers/ses-inbound/work-limits.mts)                                  |
+| `background-queue-config`                 | [background queue pause and stats limits](../../../../../backend/queues/background/config.mts)                    |
 | `post-clearance-work-config`              | [post-clearance limits](../../../../../backend/services/post-clearance/work-limits.mts)                           |
 | `users-work-config`                       | [users limits](../../../../../backend/services/users/work-limits.mts)                                             |
 

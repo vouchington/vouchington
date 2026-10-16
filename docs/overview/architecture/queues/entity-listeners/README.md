@@ -76,7 +76,7 @@ Downstream systems triggered (all fire-and-forget):
   `@services/elections-votes/post` and bookmark through `@services/bookmarks/upsert`.
 - Always process @mentions through the `post-mentions` queue.
 - For `pending` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and
-  `openai_moderation_omni_single` (one attempt, like every other creation-moderation enqueue), and
+  `openai-moderation.post` in the `background` queue (one attempt, like every other creation-moderation enqueue), and
   run `spam_detection` before clearance. Approval writes the durable `classifier_run_requests` for
   the post classifier and the tagging classifier in the approval transaction.
 - For `approved` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and record the
@@ -109,7 +109,7 @@ Triggered by `enqueueOnPostUpdated(postId, { contentChanged })`.
 - On `contentChanged`, reset clearance through `@services/post-clearance` and rerun the
   `spam_detection` queue.
 - On `contentChanged` with an approved community review, rerun the `community_moderation` queue.
-- Always rerun the `openai_moderation_omni_single` queue and process @mentions through the
+- Always rerun the `openai-moderation` domain of the `background` queue and process @mentions through the
   `post-mentions` queue.
 - For comments, refresh ancestor metrics through the `vote-aggregation` queue.
 

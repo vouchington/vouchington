@@ -99,4 +99,33 @@ describe('provider rate limits with real GlideMQ', () => {
       },
     )
   })
+
+  // Domain pause parks jobs with `job.moveToDelayed`. A pause outlasting many rechecks must never
+  // spend the attempts that real failures need, so the count has to survive every reactivation.
+  it('keeps attemptsMade at zero across repeated moveToDelayed reactivations, unlike a failure', async () => {
+    const seen = new Map<string, number[]>()
+    const parkedDone = Promise.withResolvers<void>()
+    const failureRetried = Promise.withResolvers<void>()
+    const processor = async (job: Job): Promise<string> => {
+      const attempts = seen.get(job.name) ?? []
+      attempts.push(job.attemptsMade)
+      seen.set(job.name, attempts)
+      if (job.name === 'parked') {
+        if (attempts.length < 3) return job.moveToDelayed(Date.now() + 20)
+        parkedDone.resolve()
+        return 'done'
+      }
+      if (attempts.length < 2) throw new Error('expected failure')
+      failureRetried.resolve()
+      return 'retried'
+    }
+    await withQueue(processor, { promotionInterval: 50 }, async queue => {
+      await queue.add('parked', {}, { ...JOB_OPTIONS, backoff: undefined })
+      await queue.add('failing', {}, { ...JOB_OPTIONS, backoff: { type: 'fixed', delay: 10 } })
+      await Promise.all([parkedDone.promise, failureRetried.promise])
+
+      expect(seen.get('parked')).toEqual([0, 0, 0])
+      expect(seen.get('failing')).toEqual([0, 1])
+    })
+  })
 })

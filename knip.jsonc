@@ -149,6 +149,9 @@
     "backend/queues/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
+      // A domain of the shared `background` queue names that queue in queues.mts for its own tests
+      // and helpers; production code enqueues through the registry's enqueue functions.
+      "ignoreIssues": { "queues.mts": ["exports"] },
     },
     "backend/workers/*": {
       "entry": ["**/*.mts"],

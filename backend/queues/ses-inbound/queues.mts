@@ -1,11 +1,4 @@
-import { createQueue } from '@data-stores/valkey-glide-mq'
-import type {
-  SesInboundProcessJobData,
-  SesInboundReconcileJobData,
-} from '@ts-shared/ses-inbound-contract'
-import { SES_INBOUND_QUEUE_NAME } from './config.mts'
+import { background } from '@queues/background/queues'
 
-export const sesInboundQueue = createQueue<SesInboundProcessJobData | SesInboundReconcileJobData>(
-  SES_INBOUND_QUEUE_NAME,
-  { priorityKind: 'ranked' },
-)
+// The domain's queue is the shared `background` queue; this names it for the domain's own code.
+export const sesInboundQueue = background

@@ -4,10 +4,6 @@ import {
   createBackfillTrigger,
 } from './backfills-trigger-helpers.mts'
 import {
-  enqueueBackfillPostModeration,
-  enqueueBackfillImageModeration,
-} from '@queues/openai-moderation/enqueues'
-import {
   enqueueBackfillLanguageDetectionPosts,
   enqueueBackfillLanguageDetectionRssFeedItems,
   enqueueBackfillLanguageDetectionCrawls,
@@ -27,13 +23,13 @@ import { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues'
 import { enqueueRecoverExportRequests } from '@queues/account-lifecycle/enqueues/account-data-requests'
 import { enqueueRecoverUserDeletions } from '@queues/account-lifecycle/enqueues/user-deletions'
 import { enqueueRecoverStripeEvents } from '@queues/memberships/enqueues'
-import { enqueueSesInboundReconcile } from '@queues/ses-inbound/enqueues'
-import { SES_INBOUND_RECONCILE_JOB_NAME } from '@queues/ses-inbound/config'
 import { enqueueBackfillCrawlEmbeds } from '@queues/crawl-embeds/enqueues'
+import { BACKGROUND_BACKFILLS } from './backfills-background.mts'
 import { POST_PUBLICATION_BACKFILLS } from './backfills-post-publication.mts'
 
 export const CORE_BACKFILLS: BackfillEntry[] = [
   ...POST_PUBLICATION_BACKFILLS,
+  ...BACKGROUND_BACKFILLS,
   {
     id: 'classifier-runs',
     queue_name: 'ai_agents',
@@ -50,14 +46,6 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
     description: 'Re-enqueue crawls with a pending crawl-local oEmbed endpoint',
     source_table: 'crawls',
     trigger: createBackfillDispatcherTrigger('crawl-embeds-pending', enqueueBackfillCrawlEmbeds),
-  },
-  {
-    id: 'ses-inbound-reconciliation',
-    queue_name: 'ses_inbound',
-    job_name: SES_INBOUND_RECONCILE_JOB_NAME,
-    description: 'Re-enqueue raw inbound copyright emails still present in S3',
-    source_table: 'external:ses-inbound-s3',
-    trigger: createBackfillTrigger(enqueueSesInboundReconcile),
   },
   {
     id: 'entity-listener-reconciliation',
@@ -90,22 +78,6 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
     description: 'Recover persisted Stripe events that were not completed',
     source_table: 'stripe_events',
     trigger: createBackfillTrigger(enqueueRecoverStripeEvents),
-  },
-  {
-    id: 'openai-moderation-posts',
-    queue_name: 'openai_moderation_omni_single',
-    job_name: 'backfill_posts',
-    description: 'Backfill OpenAI moderation for posts missing results',
-    source_table: 'posts',
-    trigger: createBackfillTrigger(enqueueBackfillPostModeration),
-  },
-  {
-    id: 'openai-moderation-images',
-    queue_name: 'openai_moderation_omni_single',
-    job_name: 'backfill_images',
-    description: 'Backfill OpenAI moderation for images missing results',
-    source_table: 'images',
-    trigger: createBackfillTrigger(enqueueBackfillImageModeration),
   },
   {
     id: 'language-detection-posts',

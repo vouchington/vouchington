@@ -14,6 +14,7 @@
     "content-analysis"
   ],
   "ioCapableQueues": [
+    "background",
     "post-publication",
     "story-post-related-url-projections",
     "vote-aggregation",
@@ -24,7 +25,6 @@
     "rss-feeds",
     "rss-feed-maintenance",
     "crawl_embeds",
-    "openai_moderation_omni_single",
     "post-mentions",
     "psql",
     "account-lifecycle",
@@ -42,7 +42,6 @@
     "user-rss-feed-imports",
     "article-sync",
     "kagi-smallweb",
-    "ses_inbound",
     "bluesky-follow-propagation",
     "bedrock-batch-sqs",
     "ses-bounce-sqs",

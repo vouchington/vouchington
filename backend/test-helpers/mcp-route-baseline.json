@@ -1318,7 +1318,10 @@
     ],
     "I128": [["follow", "rss_feed_url"]],
     "I129": [["idempotency_key", "rss_feed_item_id"]],
-    "I130": [["idempotency_key", "story_id"]]
+    "I130": [["idempotency_key", "story_id"]],
+    "I131": [["domain", "name", "reason"]],
+    "I132": [["domain", "name"]],
+    "I133": [["domains_of"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -2511,7 +2514,7 @@
       {
         "surface": "admin_mcp",
         "facts": "F30",
-        "inputFields": "I050",
+        "inputFields": "I131",
         "requestBodyFields": null,
         "operation": {
           "tool": "pause_queue",
@@ -2524,7 +2527,7 @@
       {
         "surface": "admin_mcp",
         "facts": "F31",
-        "inputFields": "I050",
+        "inputFields": "I132",
         "requestBodyFields": null,
         "operation": {
           "tool": "resume_queue",
@@ -2537,7 +2540,7 @@
       {
         "surface": "admin_mcp",
         "facts": "F32",
-        "inputFields": "I050",
+        "inputFields": "I132",
         "requestBodyFields": null,
         "operation": {
           "tool": "retry_failed_queue_jobs",
@@ -4575,6 +4578,70 @@
           "decision": false,
           "inputFields": "I130",
           "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": {
+      "pullRequest": 2923,
+      "contracts": [
+        {
+          "surface": "admin_mcp",
+          "facts": "F30",
+          "inputFields": "I131",
+          "requestBodyFields": ["reason"],
+          "operation": {
+            "tool": "pause_queue",
+            "option": null
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": {
+      "pullRequest": 2923,
+      "contracts": [
+        {
+          "surface": "admin_mcp",
+          "facts": "F31",
+          "inputFields": "I132",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "resume_queue",
+            "option": null
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": {
+      "pullRequest": 2923,
+      "contracts": [
+        {
+          "surface": "admin_mcp",
+          "facts": "F32",
+          "inputFields": "I132",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "retry_failed_queue_jobs",
+            "option": null
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/mq/queues/:name/domains": {
+      "pullRequest": 2923,
+      "contracts": [
+        {
+          "surface": "admin_mcp",
+          "facts": "F13",
+          "inputFields": "I133",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_queue_catalog",
+            "option": "queues"
+          },
+          "decision": false
         }
       ]
     }

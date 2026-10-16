@@ -1,4 +1,8 @@
 import './backfills.mts'
+import './index-routes/mq-queues-by-name-domains-by-domain-pause-post.mts'
+import './index-routes/mq-queues-by-name-domains-by-domain-resume-post.mts'
+import './index-routes/mq-queues-by-name-domains-by-domain-retry-failed-post.mts'
+import './index-routes/mq-queues-by-name-domains-get.mts'
 import './index-routes/mq-queues-by-name-pause-post.mts'
 import './index-routes/mq-queues-by-name-resume-post.mts'
 import './index-routes/mq-queues-by-name-retry-failed-post.mts'

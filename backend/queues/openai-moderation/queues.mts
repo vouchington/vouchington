@@ -1,6 +1,4 @@
-import { createQueue } from '@data-stores/valkey-glide-mq'
-import { MODERATION_OMNI_SINGLE_QUEUE_NAME } from './config.mts'
+import { background } from '@queues/background/queues'
 
-export const openai_moderation_omni_single = createQueue(MODERATION_OMNI_SINGLE_QUEUE_NAME, {
-  priorityKind: 'ranked',
-})
+// The domain's queue is the shared `background` queue; this names it for the domain's own code.
+export const openAiModerationQueue = background

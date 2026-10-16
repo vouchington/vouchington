@@ -71,8 +71,8 @@ const EXPECTED_SCHEDULED_JOBS = [
   'notifications/copyright-evidence-retention',
   'notifications/copyright-review-target-page',
   'notifications/notification-push-intent-recovery',
-  'openai_moderation_omni_single/reconcile-image-quarantines',
-  'openai_moderation_omni_single/reconcile-post-moderation',
+  'background/reconcile-image-quarantines',
+  'background/reconcile-post-moderation',
   'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
   'post-publication/reconcile-post-publication',
   'psql/cleanup-partitions-daily',
@@ -84,7 +84,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'rss-feeds/dispatchRssFeeds',
   'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
   'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
-  'ses_inbound/ses-inbound-reconciliation',
+  'background/ses-inbound-reconciliation',
   'sitemaps/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
   'sitemaps/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
   'sitemaps/sitemaps-backfill-processWeeklyBackfillMonthDispatcher',
@@ -99,8 +99,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 27 manifests and 76 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(27)
+  it('imports the exact 26 manifests and 76 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(26)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

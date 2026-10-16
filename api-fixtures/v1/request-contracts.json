@@ -5702,6 +5702,19 @@
       "required": ["queues", "total"],
       "type": "object"
     },
+    "GET:/api/v1/mq/queues/:name/domains": {
+      "additionalProperties": false,
+      "properties": {
+        "domains": {
+          "items": {
+            "$ref": "#/components/schemas/ManagedQueueDomain"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["domains"],
+      "type": "object"
+    },
     "GET:/api/v1/mq/scheduled-jobs": {
       "additionalProperties": false,
       "properties": {
@@ -10719,6 +10732,39 @@
         }
       },
       "required": ["success"],
+      "type": "object"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": {
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        }
+      },
+      "required": ["success"],
+      "type": "object"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": {
+      "additionalProperties": false,
+      "properties": {
+        "success": {
+          "const": true
+        }
+      },
+      "required": ["success"],
+      "type": "object"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": {
+      "additionalProperties": false,
+      "properties": {
+        "retried": {
+          "type": "number"
+        },
+        "success": {
+          "const": true
+        }
+      },
+      "required": ["retried", "success"],
       "type": "object"
     },
     "POST:/api/v1/mq/queues/:name/pause": {
@@ -18818,6 +18864,19 @@
       "required": ["aside_key"],
       "type": "object"
     },
+    "DomainStateCount": {
+      "additionalProperties": false,
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "number"
+        }
+      },
+      "required": ["complete", "count"],
+      "type": "object"
+    },
     "DsaCopyrightComplaintBucket": {
       "additionalProperties": false,
       "properties": {
@@ -22304,6 +22363,75 @@
         }
       },
       "required": ["web_push_endpoint", "web_push_subscription_id"],
+      "type": "object"
+    },
+    "ManagedQueueDomain": {
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "$ref": "#/components/schemas/DomainStateCount"
+        },
+        "completed": {
+          "$ref": "#/components/schemas/DomainStateCount"
+        },
+        "delayed": {
+          "$ref": "#/components/schemas/DomainStateCount"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "failed": {
+          "$ref": "#/components/schemas/DomainStateCount"
+        },
+        "paused": {
+          "type": "boolean"
+        },
+        "paused_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "paused_by": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "waiting": {
+          "$ref": "#/components/schemas/DomainStateCount"
+        }
+      },
+      "required": [
+        "active",
+        "completed",
+        "delayed",
+        "domain",
+        "failed",
+        "paused",
+        "paused_at",
+        "paused_by",
+        "reason",
+        "waiting"
+      ],
       "type": "object"
     },
     "ManualCrawlTarget": {
@@ -27454,6 +27582,22 @@
         }
       },
       "required": ["challenge", "pubKeyCredParams", "rp", "user"],
+      "type": "object"
+    },
+    "PauseQueueDomainRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
       "type": "object"
     },
     "PendingRecommendation": {
@@ -41779,6 +41923,17 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/mq/queues/:name/domains": {
+      "path": {
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/api-keys": {
       "query": {
         "properties": {
@@ -43747,7 +43902,14 @@
             "type": "string"
           }
         },
-        "anyOf": [{ "required": ["q"] }, { "required": ["username"] }],
+        "anyOf": [
+          {
+            "required": ["q"]
+          },
+          {
+            "required": ["username"]
+          }
+        ],
         "type": "object"
       }
     },
@@ -47183,6 +47345,51 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": {
+      "body": {
+        "$ref": "#/components/schemas/PauseQueueDomainRequest"
+      },
+      "path": {
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["domain", "name"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": {
+      "path": {
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["domain", "name"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": {
+      "path": {
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["domain", "name"],
         "type": "object"
       }
     },

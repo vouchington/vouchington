@@ -18,8 +18,9 @@ import {
   updateImageStatus,
   updatePostModerationData,
 } from '@voucha/test-helpers'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { notifications } from '@queues/notifications/queues'
-import { openai_moderation_omni_single } from '@queues/openai-moderation/queues'
+import { background } from '@queues/background/queues'
 import { createPostModerationContent } from '@services/posts/content'
 import { ensureCurrentPostModerationVersion } from '@services/post-clearance'
 import { handleOpenAIModerationOmniSingleJob } from '../../processors/openai-moderation-omni-single.mts'
@@ -100,22 +101,29 @@ describe('openai moderation single worker', () => {
     const imageId = await insertPendingTestImage(creator!.id)
     await updateImageStatus(imageId, 'complete')
 
+    // The page starts just before these rows, so a database with older unmoderated rows still
+    // enqueues them on the first page.
     const postResult = (await handleOpenAIModerationOmniSingleJob(
-      makeJob('backfill_posts', randomUUID()),
+      makeBackfillJob('backfill_posts', uuidBefore(postId)),
     )) as { enqueued: number }
     const imageResult = (await handleOpenAIModerationOmniSingleJob(
-      makeJob('backfill_images', randomUUID()),
+      makeBackfillJob('backfill_images', uuidBefore(imageId)),
     )) as { enqueued: number }
 
     expect(postResult.enqueued).toBeGreaterThanOrEqual(1)
     expect(imageResult.enqueued).toBeGreaterThanOrEqual(1)
 
-    const waitingJobs = await readAllQueueJobs(openai_moderation_omni_single)
+    const waitingJobs = await readAllQueueJobs(background)
     expect(
-      waitingJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === postId),
+      waitingJobs.some(
+        job => job.name === 'openai-moderation.post' && (job.data as { id?: string }).id === postId,
+      ),
     ).toBe(true)
     expect(
-      waitingJobs.some(job => job.name === 'image' && (job.data as { id?: string }).id === imageId),
+      waitingJobs.some(
+        job =>
+          job.name === 'openai-moderation.image' && (job.data as { id?: string }).id === imageId,
+      ),
     ).toBe(true)
   })
 
@@ -159,13 +167,18 @@ describe('openai moderation single worker', () => {
     await expect(getPostClearanceStatus(expiredPostId)).resolves.toBe('in_review')
     await expect(getPostClearanceStatus(foreignPostId)).resolves.toBe('pending')
 
-    const openaiJobs = await readAllQueueJobs(openai_moderation_omni_single)
+    const openaiJobs = await readAllQueueJobs(background)
     expect(
-      openaiJobs.some(job => job.name === 'post' && (job.data as { id?: string }).id === duePostId),
+      openaiJobs.some(
+        job =>
+          job.name === 'openai-moderation.post' && (job.data as { id?: string }).id === duePostId,
+      ),
     ).toBe(true)
     expect(
       openaiJobs.some(
-        job => job.name === 'post' && (job.data as { id?: string }).id === foreignPostId,
+        job =>
+          job.name === 'openai-moderation.post' &&
+          (job.data as { id?: string }).id === foreignPostId,
       ),
     ).toBe(false)
   })
@@ -209,15 +222,21 @@ describe('openai moderation single worker', () => {
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
     await expect(
-      handleOpenAIModerationOmniSingleJob({ data: {}, name: 'image' } as Job<{ id: string }>),
+      handleOpenAIModerationOmniSingleJob({ data: {}, name: 'openai-moderation.image' } as Job<{
+        id: string
+      }>),
     ).rejects.toThrow('Image job requires id in job.data')
 
     await expect(
       handleOpenAIModerationOmniSingleJob(makeJob('unexpected', randomUUID())),
-    ).rejects.toThrow('Unknown job type: unexpected')
+    ).rejects.toThrow('Unknown job type: openai-moderation.unexpected')
   })
 })
 
+function makeBackfillJob(name: string, afterId: string): Job<{ afterId: string }> {
+  return { data: { afterId }, name: `openai-moderation.${name}` } as Job<{ afterId: string }>
+}
+
 function makeJob(name: string, id: string): Job<{ id: string }> {
-  return { data: { id }, name } as Job<{ id: string }>
+  return { data: { id }, name: `openai-moderation.${name}` } as Job<{ id: string }>
 }

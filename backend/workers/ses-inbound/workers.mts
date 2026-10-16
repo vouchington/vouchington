@@ -1,27 +1,15 @@
-import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { backgroundHandler } from '@queues/background/enqueues/define-handler'
 import {
-  SES_INBOUND_PROCESS_JOB_NAME,
-  SES_INBOUND_QUEUE_NAME,
-  SES_INBOUND_RECONCILE_JOB_NAME,
-  type SesInboundProcessJobData,
-  type SesInboundReconcileJobData,
-} from '@ts-shared/ses-inbound-contract'
-import type { Job } from 'glide-mq'
+  SES_INBOUND_PROCESS_JOB,
+  SES_INBOUND_RECONCILE_JOB,
+} from '@queues/background/enqueues/ses-inbound-jobs'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 
-export const sesInboundWorker = createWorker(
-  SES_INBOUND_QUEUE_NAME,
-  async (job: Job<SesInboundProcessJobData | SesInboundReconcileJobData>) => {
-    if (job.name === SES_INBOUND_PROCESS_JOB_NAME) {
-      await processSesInboundEmail(job.data as SesInboundProcessJobData)
-      return
-    }
-    if (job.name === SES_INBOUND_RECONCILE_JOB_NAME) {
-      await reconcileSesInboundEmails(job.data as SesInboundReconcileJobData)
-      return
-    }
-    throw new Error(`Unknown SES inbound job: ${job.name}`)
-  },
-  { concurrency: getWorkerConcurrency('sesInbound', { baseline: 1, ignoreScale: true }) },
-)
+export const sesInboundHandlers = [
+  backgroundHandler(SES_INBOUND_PROCESS_JOB, async job => {
+    await processSesInboundEmail(job.data)
+  }),
+  backgroundHandler(SES_INBOUND_RECONCILE_JOB, async job => {
+    await reconcileSesInboundEmails(job.data)
+  }),
+]

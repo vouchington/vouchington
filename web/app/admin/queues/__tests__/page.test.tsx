@@ -2,6 +2,7 @@ import {
   createBackfill,
   createScheduledJob,
   mockFetchBackfills,
+  mockFetchQueueDomains,
   mockFetchQueues,
   mockFetchScheduledJobs,
   mockTriggerBackfill,
@@ -19,6 +20,7 @@ describe('QueuesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockFetchBackfills.mockResolvedValue({ backfills: [] })
+    mockFetchQueueDomains.mockResolvedValue({ domains: [] })
     mockFetchQueues.mockResolvedValue({ queues: [], total: 0 })
     mockFetchScheduledJobs.mockResolvedValue({ jobs: [createScheduledJob()] })
     mockTriggerBackfill.mockResolvedValue({ success: true })

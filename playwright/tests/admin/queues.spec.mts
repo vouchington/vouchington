@@ -135,6 +135,26 @@ test.describe('Queue Dashboard', () => {
     const label = await toggle.textContent()
     expect(['Enable Kagi Smallweb', 'Disable Kagi Smallweb']).toContain(label?.trim())
   })
+
+  test('lists background domains with counts and round-trips pause and resume', async ({
+    page,
+  }) => {
+    await expect(page.getByTestId('queue-domains-section')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('queue-domains-table')).toBeVisible({ timeout: 10_000 })
+    const row = page.getByTestId('queue-domain-row').filter({ hasText: 'ses-inbound' })
+    await expect(row).toBeVisible({ timeout: 10_000 })
+    await expect(row.getByTestId('queue-domain-status')).toBeVisible()
+    await expect(row.getByTestId('queue-domain-waiting')).toBeVisible()
+    await expect(row.getByTestId('queue-domain-active')).toBeVisible()
+    await expect(row.getByTestId('queue-domain-delayed')).toBeVisible()
+    await expect(row.getByTestId('queue-domain-completed')).toBeVisible()
+    await expect(row.getByTestId('queue-domain-failed')).toBeVisible()
+    await expect(row.getByTestId('queue-domain-retry-failed')).toBeEnabled()
+    await row.getByTestId('queue-domain-pause').click()
+    // Always resume so the shared background queue is left running.
+    await row.getByTestId('queue-domain-resume').click()
+    await expect(row.getByTestId('queue-domain-pause')).toBeVisible({ timeout: 10_000 })
+  })
 })
 
 test.describe('Queue Dashboard — kill switch error states', () => {
@@ -154,5 +174,13 @@ test.describe('Queue Dashboard — kill switch error states', () => {
     await page.route('**/api/v1/mq/queues', route => route.abort('aborted'))
     await navigateTo(page, '/admin/queues')
     await expect(page.getByTestId('kagi-retry')).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('shows retry button for background domains when the domains endpoint fails', async ({
+    page,
+  }) => {
+    await page.route('**/api/v1/mq/queues/background/domains', route => route.abort('aborted'))
+    await navigateTo(page, '/admin/queues')
+    await expect(page.getByTestId('queue-domains-retry')).toBeVisible({ timeout: 10_000 })
   })
 })

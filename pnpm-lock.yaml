@@ -777,6 +777,9 @@ importers:
       '@queues/article-sync':
         specifier: workspace:^
         version: link:../queues/article-sync
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../queues/background
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../queues/bedrock-embeddings-batch
@@ -831,6 +834,9 @@ importers:
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../queues/rss-feeds
+      '@queues/ses-inbound':
+        specifier: workspace:^
+        version: link:../queues/ses-inbound
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../queues/sitemaps
@@ -1107,6 +1113,9 @@ importers:
       '@services/psql-admin':
         specifier: workspace:^
         version: link:../services/psql-admin
+      '@services/queue-domain-controls':
+        specifier: workspace:^
+        version: link:../services/queue-domain-controls
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../services/queue-monitoring
@@ -1742,6 +1751,9 @@ importers:
       '@queues/activitypub':
         specifier: workspace:^
         version: link:../../queues/activitypub
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
@@ -1808,6 +1820,9 @@ importers:
       '@workers/article-sync':
         specifier: workspace:^
         version: link:../../workers/article-sync
+      '@workers/background':
+        specifier: workspace:^
+        version: link:../../workers/background
       '@workers/ban-evasion':
         specifier: workspace:^
         version: link:../../workers/ban-evasion
@@ -1850,9 +1865,6 @@ importers:
       '@workers/oauth-authorization-exchange':
         specifier: workspace:^
         version: link:../../workers/oauth-authorization-exchange
-      '@workers/openai-moderation':
-        specifier: workspace:^
-        version: link:../../workers/openai-moderation
       '@workers/post-mentions':
         specifier: workspace:^
         version: link:../../workers/post-mentions
@@ -1871,9 +1883,6 @@ importers:
       '@workers/ses-bounce-sqs':
         specifier: workspace:^
         version: link:../../workers/ses-bounce-sqs
-      '@workers/ses-inbound':
-        specifier: workspace:^
-        version: link:../../workers/ses-inbound
       '@workers/ses-inbound-sqs':
         specifier: workspace:^
         version: link:../../workers/ses-inbound-sqs
@@ -2753,6 +2762,24 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/queues/background:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@ts-shared/ses-inbound-contract':
+        specifier: workspace:^
+        version: link:../../../ts-shared/ses-inbound-contract
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
   backend/queues/ban-evasion:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3092,12 +3119,12 @@ importers:
 
   backend/queues/openai-moderation:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3176,6 +3203,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@ts-shared/ses-inbound-contract':
         specifier: workspace:^
         version: link:../../../ts-shared/ses-inbound-contract
@@ -5551,6 +5581,9 @@ importers:
       '@queues/admin-imports':
         specifier: workspace:^
         version: link:../../queues/admin-imports
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../../queues/crawl-dispatch
@@ -7042,6 +7075,9 @@ importers:
       '@services/openai-agents':
         specifier: workspace:^
         version: link:../openai-agents
+      '@services/queue-domain-controls':
+        specifier: workspace:^
+        version: link:../queue-domain-controls
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -8585,6 +8621,9 @@ importers:
       '@queues/activitypub':
         specifier: workspace:^
         version: link:../../queues/activitypub
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -8765,6 +8804,28 @@ importers:
         specifier: workspace:^
         version: link:../users
 
+  backend/services/queue-domain-controls:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      '@data-stores/valkey-pubsub':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-pubsub
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/services/queue-monitoring:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -8794,6 +8855,9 @@ importers:
       '@queues/article-sync':
         specifier: workspace:^
         version: link:../../queues/article-sync
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/ban-evasion':
         specifier: workspace:^
         version: link:../../queues/ban-evasion
@@ -8905,6 +8969,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/queue-domain-controls':
+        specifier: workspace:^
+        version: link:../queue-domain-controls
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -8920,6 +8987,9 @@ importers:
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
+      p-map:
+        specifier: ^7.1.0
+        version: 7.1.0
 
   backend/services/read-states:
     dependencies:
@@ -11310,6 +11380,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../queues/background
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../queues/entity-listeners
@@ -11801,6 +11874,43 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
+  backend/workers/background:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/queue-config':
+        specifier: workspace:^
+        version: link:../../modules/queue-config
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
+      '@queues/ses-inbound':
+        specifier: workspace:^
+        version: link:../../queues/ses-inbound
+      '@services/queue-domain-controls':
+        specifier: workspace:^
+        version: link:../../services/queue-domain-controls
+      '@workers/openai-moderation':
+        specifier: workspace:^
+        version: link:../openai-moderation
+      '@workers/ses-inbound':
+        specifier: workspace:^
+        version: link:../ses-inbound
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/ban-evasion:
     dependencies:
@@ -12716,15 +12826,12 @@ importers:
 
   backend/workers/openai-moderation:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../../modules/openai-utils
-      '@modules/queue-config':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12940,24 +13047,21 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
@@ -12967,9 +13071,6 @@ importers:
       '@ts-shared/ses-inbound-contract':
         specifier: workspace:^
         version: link:../../../ts-shared/ses-inbound-contract
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       mailparser:
         specifier: ^3.9.38
         version: 3.9.38
@@ -12989,6 +13090,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound

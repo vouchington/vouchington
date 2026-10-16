@@ -5,6 +5,10 @@ export const STATIC_IDENTITY_EXCEPTIONS = new Map<string, string>([
   ['currencies', 'Small ISO currency lookup populated from a fixed reference set.'],
   ['domain_blocklist_sources', 'Small administrator-managed source lookup.'],
   ['media_types', 'Small validated MIME-type lookup shared by URLs, RSS and legal evidence.'],
+  [
+    'queue_domain_controls',
+    'One optional pause row per code-registered background-queue domain, keyed by its stable identifier.',
+  ],
   ['user_permission_types', 'Small static RBAC permission lookup.'],
   ['user_role_types', 'Small static RBAC role lookup.'],
 ])

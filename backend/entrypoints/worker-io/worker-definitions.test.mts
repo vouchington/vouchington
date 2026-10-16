@@ -36,6 +36,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
 
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
+      ['background', 'background', 'createBackgroundWorker'],
       [
         'story-post-related-url-projections',
         'story-post-related-url-projections',
@@ -50,7 +51,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['rss-feeds', 'rss-feeds', 'rss_feeds'],
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
-      ['openai_moderation_omni_single', 'openai-moderation', 'openai_moderation_omni_single'],
       ['post-mentions', 'post-mentions', 'postMentions'],
       ['psql', 'psql', 'psql'],
       ['account-lifecycle', 'account-lifecycle', 'accountLifecycle'],
@@ -72,7 +72,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
       ['article-sync', 'article-sync', 'articleSyncWorker'],
       ['kagi-smallweb', 'kagi-smallweb', 'kagiSmallWeb'],
-      ['ses_inbound', 'ses-inbound', 'sesInboundWorker'],
       [
         'bluesky-follow-propagation',
         'bluesky-follow-propagation',
@@ -87,6 +86,16 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     )
     for (const [queueName, workerDirectory, exportName] of expectedDefinitions) {
       expectLazyImport(byQueue(queueName).load.toString(), workerDirectory, exportName)
+    }
+  })
+
+  it('background definition load builds the shared worker over every domain handler', async () => {
+    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'background')!
+    const worker = await definition.load()
+    try {
+      expect(worker).toBeDefined()
+    } finally {
+      await worker.close()
     }
   })
 

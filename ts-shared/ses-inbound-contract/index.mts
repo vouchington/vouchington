@@ -1,8 +1,5 @@
 import { createHash } from 'node:crypto'
 
-export const SES_INBOUND_QUEUE_NAME = 'ses_inbound'
-export const SES_INBOUND_PROCESS_JOB_NAME = 'processInboundEmail'
-export const SES_INBOUND_RECONCILE_JOB_NAME = 'reconcileInboundEmail'
 export const SES_INBOUND_COPYRIGHT_PREFIX = 'copyright-incoming/'
 export const SES_INBOUND_FAILED_PREFIX = 'failed/'
 

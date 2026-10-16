@@ -4,19 +4,27 @@ Source entrypoint: [backend/queues/openai-moderation/README.md](../../../../../b
 
 Queue system for OpenAI omni moderation jobs.
 
-## Queue
+## Domain
 
-| Queue                           | Processor                     | Group Keys | Default Priority |
-| ------------------------------- | ----------------------------- | ---------- | ---------------- |
-| `openai_moderation_omni_single` | `post`                        | -          | 10               |
-| `openai_moderation_omni_single` | `image`                       | -          | 10               |
-| `openai_moderation_omni_single` | `reconcile_image_quarantines` | -          | 100              |
-| `openai_moderation_omni_single` | `reconcile_post_moderation`   | -          | 100              |
+| Queue        | Job                                                    | Group                                      | Default Priority |
+| ------------ | ------------------------------------------------------ | ------------------------------------------ | ---------------- |
+| `background` | `openai-moderation.post`                               | `openai-moderation` (10 starts per second) | 10               |
+| `background` | `openai-moderation.image`                              | `openai-moderation` (10 starts per second) | 10               |
+| `background` | `openai-moderation.backfill_posts` / `backfill_images` | `openai-moderation` (10 starts per second) | 100              |
+| `background` | `openai-moderation.reconcile_image_quarantines`        | `openai-moderation` (10 starts per second) | 100              |
+| `background` | `openai-moderation.reconcile_post_moderation`          | `openai-moderation` (10 starts per second) | 100              |
+
+These are the `openai-moderation` domain of the [background queue](../background/README.md). The
+domain group's `rateLimit` replaces the old queue-wide `limiter`, and the domain can be paused from
+the operator API.
 
 ## Responsibilities
 
 - run OpenAI moderation on posts and images
 - persist typed, provider-neutral dispositions in the immutable post moderation ledger
+- backfill missing results one bounded page at a time: `backfill_posts` and `backfill_images` enqueue a
+  page of ids (the `backfill_batch_size` field), then enqueue a continuation job carrying the page's
+  last id at dispatcher priority, so no more than one page of moderation jobs waits ahead of it
 - trigger follow-up clearance and notification reconciliation
 - every minute, retry the bounded PostgreSQL set of CSAM image quarantine transfers whose durable
   `quarantine_pending_at` marker blocks ordinary image lookup

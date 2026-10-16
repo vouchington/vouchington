@@ -35,10 +35,12 @@ import {
 } from '@queues/content-analysis/enqueues/schedules'
 import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import {
-  scheduledJobManifest as openAiModerationManifest,
-  upsertSchedules as registerOpenAiModeration,
-} from '@queues/openai-moderation/enqueues/schedules'
-import { openai_moderation_omni_single } from '@queues/openai-moderation/queues'
+  combineBackgroundManifests,
+  upsertBackgroundSchedules,
+} from '@queues/background/enqueues/schedules'
+import { background } from '@queues/background/queues'
+import { scheduledJobManifest as openAiModerationManifest } from '@queues/openai-moderation/enqueues/schedules'
+import { scheduledJobManifest as sesInboundManifest } from '@queues/ses-inbound/enqueues/schedules'
 import {
   scheduledJobManifest as kagiManifest,
   upsertSchedules as registerKagi,
@@ -65,6 +67,9 @@ import {
 } from '@queues/vote-aggregation/enqueues/schedules'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 
+const BACKGROUND_MANIFESTS = [sesInboundManifest, openAiModerationManifest]
+const registerBackground = () => upsertBackgroundSchedules(BACKGROUND_MANIFESTS)
+
 const REGISTRATIONS = [
   [registerAiAgents, ai_agents, aiAgentsManifest],
   [registerBedrock, bedrock_embeddings_batch, bedrockManifest],
@@ -73,7 +78,7 @@ const REGISTRATIONS = [
   [registerCrawlReferral, crawlReferralLinksQueue, crawlReferralManifest],
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
   [registerContentAnalysis, contentAnalysisQueue, contentAnalysisManifest],
-  [registerOpenAiModeration, openai_moderation_omni_single, openAiModerationManifest],
+  [registerBackground, background, combineBackgroundManifests(BACKGROUND_MANIFESTS)],
   [registerKagi, kagiSmallWeb, kagiManifest],
   [registerSitemaps, sitemaps, sitemapsManifest],
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],

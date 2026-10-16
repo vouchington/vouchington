@@ -1,22 +1,25 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { closeAndUnregisterGlideMQInstance } from '@data-stores/valkey-glide-mq'
 import {
-  SES_INBOUND_PROCESS_JOB_NAME,
-  SES_INBOUND_RECONCILE_JOB_NAME,
-} from '@ts-shared/ses-inbound-contract'
+  SES_INBOUND_PROCESS_JOB,
+  SES_INBOUND_RECONCILE_JOB,
+} from '@queues/background/enqueues/ses-inbound-jobs'
+import { background } from '@queues/background/queues'
 import { readRetainedFailedSesInboundProcessJobs } from '@queues/ses-inbound/enqueues'
-import { sesInboundQueue } from '@queues/ses-inbound/queues'
-import { sesInboundWorker } from './workers.mts'
+import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
+import { createBackgroundWorker } from '../workers/create-worker.mts'
 
-describe('SES inbound worker reconciliation payload', () => {
+const worker = createBackgroundWorker({ handlers: BACKGROUND_HANDLERS, domains: ['ses-inbound'] })
+
+describe('SES inbound background handlers', () => {
   afterAll(async () => {
-    await closeAndUnregisterGlideMQInstance(sesInboundWorker)
+    await closeAndUnregisterGlideMQInstance(worker)
   })
 
   it('passes the queued token to validation before any S3 listing', async () => {
     await expect(
-      sesInboundQueue.add(
-        SES_INBOUND_RECONCILE_JOB_NAME,
+      background.add(
+        SES_INBOUND_RECONCILE_JOB.name,
         { continuationToken: '' },
         { jobId: `ses-inbound-invalid-${crypto.randomUUID()}`, attempts: 1, removeOnFail: true },
       ),
@@ -27,8 +30,8 @@ describe('SES inbound worker reconciliation payload', () => {
     const jobId = `ses-inbound-failed-${crypto.randomUUID()}`
     try {
       await expect(
-        sesInboundQueue.add(
-          SES_INBOUND_PROCESS_JOB_NAME,
+        background.add(
+          SES_INBOUND_PROCESS_JOB.name,
           { sesMessageId: 'different', objectKey: 'copyright-incoming/message' },
           { jobId, attempts: 1, removeOnFail: 100 },
         ),
@@ -36,11 +39,17 @@ describe('SES inbound worker reconciliation payload', () => {
       const failedJobs = await readRetainedFailedSesInboundProcessJobs()
       expect(failedJobs).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ id: jobId, name: SES_INBOUND_PROCESS_JOB_NAME }),
+          expect.objectContaining({ id: jobId, name: SES_INBOUND_PROCESS_JOB.name }),
         ]),
       )
     } finally {
-      await (await sesInboundQueue.getJob(jobId))?.remove()
+      await (await background.getJob(jobId))?.remove()
     }
+  })
+
+  it('rejects an unknown job name before it reaches a worker', async () => {
+    await expect(
+      background.add('not-a-domain.job', {}, { attempts: 1, removeOnFail: true }),
+    ).rejects.toThrow('Unknown background job: not-a-domain.job')
   })
 })

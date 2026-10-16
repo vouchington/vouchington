@@ -8,16 +8,10 @@ import {
   getSesMessageIdFromObjectKey,
   SES_INBOUND_FAILED_PREFIX,
   SES_INBOUND_COPYRIGHT_PREFIX,
-  SES_INBOUND_PROCESS_JOB_NAME,
-  SES_INBOUND_QUEUE_NAME,
-  SES_INBOUND_RECONCILE_JOB_NAME,
 } from './index.mts'
 
 describe('SES inbound contract', () => {
-  it('exposes the stable queue and job names', () => {
-    expect(SES_INBOUND_QUEUE_NAME).toBe('ses_inbound')
-    expect(SES_INBOUND_PROCESS_JOB_NAME).toBe('processInboundEmail')
-    expect(SES_INBOUND_RECONCILE_JOB_NAME).toBe('reconcileInboundEmail')
+  it('exposes the stable S3 prefixes', () => {
     expect(SES_INBOUND_COPYRIGHT_PREFIX).toBe('copyright-incoming/')
     expect(SES_INBOUND_FAILED_PREFIX).toBe('failed/')
   })

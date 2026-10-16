@@ -32,6 +32,7 @@
     "@queues/admin-imports": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/article-sync": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/ban-evasion": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
@@ -69,10 +70,12 @@
     "@queues/user-rss-feed-imports": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/moderator-actions": "workspace:^",
+    "@services/queue-domain-controls": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.18.0",
-    "http-assert": "^1.5.0"
+    "http-assert": "^1.5.0",
+    "p-map": "^7.1.0"
   }
 }

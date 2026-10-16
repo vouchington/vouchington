@@ -17,9 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/openai-utils": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
     "@queues/spam-detection": "workspace:^",

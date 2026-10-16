@@ -1,3 +1,4 @@
+import { background } from '@queues/background/queues'
 import { emails } from '@queues/emails/queues'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
@@ -7,7 +8,6 @@ import {
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
 } from '@queues/bedrock-embeddings-batch/queues'
-import * as openaiModerationQueues from '@queues/openai-moderation/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { psql } from '@queues/psql/queues'
 import * as crawlerQueues from '@queues/crawler/queues'
@@ -39,11 +39,11 @@ import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
 import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
-import { sesInboundQueue } from '@queues/ses-inbound/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import type { Queue } from 'glide-mq'
 
 const allQueues = [
+  background,
   emails,
   entitiesListeners,
   urlsDomainsBlacklist,
@@ -57,7 +57,6 @@ const allQueues = [
   ...Object.values(bedrockEmbeddingsQueues),
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
-  ...Object.values(openaiModerationQueues),
   accountLifecycle,
   bloomFilters,
   adminImports,
@@ -84,7 +83,6 @@ const allQueues = [
   crawlEmbedsQueue,
   contentAnalysisQueue,
   oauthAuthorizationExchangeQueue,
-  sesInboundQueue,
   unfurlReferralLinksQueue,
 ]
   .flat(Infinity)

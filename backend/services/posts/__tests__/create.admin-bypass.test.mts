@@ -11,7 +11,8 @@ import { getClassifierRunRequestFacts } from '@voucha/test-helpers/data-stores/p
 import { TAGGING_CLASSIFIER_SLUG } from '@voucha/types/entities/tagging-classifier'
 import { withOwnedPostCommitCompletions } from '@voucha/test-helpers/post-commit-completion'
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
-import { openai_moderation_omni_single } from '@queues/openai-moderation/queues'
+import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
+import { background } from '@queues/background/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
 import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues/classifier-run.mts'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
@@ -65,9 +66,9 @@ describe('create.admin-bypass', () => {
     })
     expect(dispatcherJobs[0]!.data).toEqual(taggingData)
     expect(
-      (await readAllQueueJobs(openai_moderation_omni_single)).filter(
+      (await readAllQueueJobs(background)).filter(
         job =>
-          job.name === 'post' &&
+          job.name === OPENAI_MODERATION_POST_JOB.name &&
           job.data !== null &&
           typeof job.data === 'object' &&
           'id' in job.data &&

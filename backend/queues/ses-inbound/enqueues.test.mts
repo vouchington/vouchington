@@ -10,7 +10,11 @@ import {
   enqueueSesInboundReconcile,
   enqueueSesInboundReconcileContinuation,
 } from './enqueues.mts'
-import { sesInboundQueue } from './queues.mts'
+import {
+  SES_INBOUND_PROCESS_JOB,
+  SES_INBOUND_RECONCILE_JOB,
+} from '@queues/background/enqueues/ses-inbound-jobs'
+import { background } from '@queues/background/queues'
 
 describe('SES inbound enqueues', () => {
   it('uses the shared deterministic process job contract', async () => {
@@ -37,7 +41,7 @@ describe('SES inbound enqueues', () => {
         attempts: 3,
         backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
         priority: 100,
-        ordering: { key: 'ses-inbound-reconciliation', concurrency: 1 },
+        ordering: { key: 'ses-inbound', concurrency: 1 },
         removeOnComplete: 100,
         removeOnFail: 100,
         deduplication: { id: 'ses_inbound_reconcile', mode: 'throttle', ttl: 300_000 },
@@ -53,7 +57,7 @@ describe('SES inbound enqueues', () => {
       data: { continuationToken: token },
       opts: {
         jobId: `ses_inbound_reconcile_continuation__${createHash('sha256').update(token).digest('hex')}`,
-        ordering: { key: 'ses-inbound-reconciliation', concurrency: 1 },
+        ordering: { key: 'ses-inbound', concurrency: 1 },
         removeOnComplete: true,
         removeOnFail: true,
       },
@@ -76,9 +80,9 @@ describe('SES inbound enqueues', () => {
       enqueueOrRetryBulkSesInboundProcess([current], undefined, {
         enqueueBulk,
         getFailedJobs: async () => [
-          { id: currentId, name: 'processInboundEmail', retry: retryCurrent },
-          { id: 'other-process', name: 'processInboundEmail', retry: retryOther },
-          { id: currentId, name: 'reconcileInboundEmail', retry: retryOther },
+          { id: currentId, name: SES_INBOUND_PROCESS_JOB.name, retry: retryCurrent },
+          { id: 'other-process', name: SES_INBOUND_PROCESS_JOB.name, retry: retryOther },
+          { id: currentId, name: SES_INBOUND_RECONCILE_JOB.name, retry: retryOther },
         ],
       }),
     ).resolves.toBe(1)
@@ -96,9 +100,9 @@ describe('SES inbound enqueues', () => {
 
     await expect(enqueueOrRetryBulkSesInboundProcess([data])).resolves.toBe(0)
 
-    const job = await sesInboundQueue.getJob(getSesInboundProcessJobOptions(data).jobId)
+    const job = await background.getJob(getSesInboundProcessJobOptions(data).jobId)
     expect(job).toMatchObject({
-      name: 'processInboundEmail',
+      name: SES_INBOUND_PROCESS_JOB.name,
       data,
     })
   })

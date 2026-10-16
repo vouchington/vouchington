@@ -2,6 +2,17 @@ import type { ScheduleDefinition } from '@backend/worker-runtime'
 
 export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
+    queueName: 'background',
+    load: async () => {
+      const [{ upsertBackgroundSchedules }, ...domains] = await Promise.all([
+        import('@queues/background/enqueues/schedules'),
+        import('@queues/ses-inbound/enqueues/schedules'),
+        import('@queues/openai-moderation/enqueues/schedules'),
+      ])
+      return () => upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
+    },
+  },
+  {
     queueName: 'story-post-related-url-projections',
     load: () =>
       import('@queues/story-post-related-url-projections/enqueues/schedules').then(
@@ -68,11 +79,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       ),
   },
   {
-    queueName: 'openai_moderation_omni_single',
-    load: () =>
-      import('@queues/openai-moderation/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
     queueName: 'bloom-filters',
     load: () =>
       import('@queues/bloom-filters/enqueues/schedules').then(module => module.upsertSchedules),
@@ -101,10 +107,5 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     queueName: 'kagi-smallweb',
     load: () =>
       import('@queues/kagi-smallweb/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'ses_inbound',
-    load: () =>
-      import('@queues/ses-inbound/enqueues/schedules').then(module => module.upsertSchedules),
   },
 ]

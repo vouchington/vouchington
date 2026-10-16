@@ -86635,6 +86635,191 @@
       },
       "uniqueConstraints": {}
     },
+    "queue_domain_controls": {
+      "checkConstraints": {
+        "queue_domain_controls_check": {
+          "definition": "CHECK (((paused_at IS NOT NULL) OR ((paused_by_user_id IS NULL) AND (reason IS NULL))))",
+          "validated": true
+        },
+        "queue_domain_controls_domain_check": {
+          "definition": "CHECK ((domain ~ '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'::text))",
+          "validated": true
+        },
+        "queue_domain_controls_reason_check": {
+          "definition": "CHECK (((reason IS NULL) OR ((char_length(reason) >= 1) AND (char_length(reason) <= 500))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": "When the domain was first paused.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "domain": {
+          "comment": "Background-queue domain identifier from the application registry, lowercase words joined by hyphens.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": "Surrogate identifier; the domain is the natural key.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "paused_at": {
+          "comment": "When the operator paused the domain. Null while the domain runs.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "paused_by_user_id": {
+          "comment": "Staff user who paused the domain. Null while running, or after that user was deleted.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "reason": {
+          "comment": "Operator note explaining the pause. Null while running or when no note was given.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "updated_at": {
+          "comment": "Last pause or resume. Maintained by trigger.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "clock_timestamp()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        }
+      },
+      "comment": "Operator pause state of each background-queue domain. A missing row or a null paused_at means the domain runs.",
+      "foreignKeys": {
+        "fk_queue_domain_controls__paused_by_user_id": {
+          "columns": ["paused_by_user_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_queue_domain_controls__paused_by_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_queue_domain_controls__paused_by_user_id ON public.queue_domain_controls USING btree (paused_by_user_id) WHERE (paused_by_user_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "paused_by_user_id",
+              "descending": false,
+              "expression": "paused_by_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(paused_by_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "queue_domain_controls_domain_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX queue_domain_controls_domain_key ON public.queue_domain_controls USING btree (domain)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "domain",
+              "descending": false,
+              "expression": "domain",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "queue_domain_controls_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX queue_domain_controls_pkey ON public.queue_domain_controls USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_queue_domain_controls_updated_at": {
+          "definition": "CREATE TRIGGER trigger_queue_domain_controls_updated_at BEFORE UPDATE ON public.queue_domain_controls FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {
+        "queue_domain_controls_domain_key": {
+          "columns": ["domain"]
+        }
+      }
+    },
     "referral_program_link_validation_rule_sets": {
       "checkConstraints": {
         "referral_program_link_validation_rule_sets_slug_check": {
