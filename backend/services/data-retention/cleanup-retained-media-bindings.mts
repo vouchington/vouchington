@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
 
 export type RetainedMediaBindingCleanupPage = {
@@ -14,6 +14,7 @@ export async function cleanupRetainedMediaBindings(
   pageSize = 1_000,
   placementIds?: readonly string[],
   cursorPlacementIds?: readonly string[],
+  borrowedQuery?: TransactionQuery,
 ): Promise<RetainedMediaBindingCleanupPage> {
   if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 1_000) {
     throw new RangeError('Retained media binding cleanup page size must be between 1 and 1000')
@@ -27,8 +28,29 @@ export async function cleanupRetainedMediaBindings(
   }
   if (listedIds?.length === 0) return { scanned: 0, deleted: 0, hasMore: false }
   observeSharedDbScope('cleanupRetainedMediaBindings', sharedDbIdsScope(listedIds))
-  const trackCursor = placementIds === undefined
+  if (borrowedQuery)
+    return withTransactionOptions({ query: borrowedQuery }, query =>
+      cleanupRetainedMediaBindingsPage(query, pageSize, placementIds, cursorPlacementIds),
+    )
   await using query = await beginTransaction()
+  const result = await cleanupRetainedMediaBindingsPage(
+    query,
+    pageSize,
+    placementIds,
+    cursorPlacementIds,
+  )
+  await query.commit()
+  return result
+}
+
+async function cleanupRetainedMediaBindingsPage(
+  query: TransactionQuery,
+  pageSize: number,
+  placementIds?: readonly string[],
+  cursorPlacementIds?: readonly string[],
+): Promise<RetainedMediaBindingCleanupPage> {
+  const listedIds = cursorPlacementIds ?? placementIds
+  const trackCursor = placementIds === undefined
   if (trackCursor)
     await query(
       `/* ensureRetainedMediaBindingCleanupCursor */
@@ -102,6 +124,5 @@ export async function cleanupRetainedMediaBindings(
        WHERE is_singleton`,
       [hasMore ? page.at(-1)!.placement_id : null],
     )
-  await query.commit()
   return { scanned: page.length, deleted: rowCount ?? 0, hasMore }
 }

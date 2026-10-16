@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { acquireTestPostgresAdvisoryLock } from '@voucha/test-helpers/postgres-advisory-lock'
-import {
-  clearTestRetainedBindingCleanupCursor,
-  getTestRetainedBindingCleanupCursor,
-  setTestRetainedBindingCleanupCursor,
-} from '@voucha/test-helpers/entities/retained-binding-cleanup-cursor'
+import { getTestRetainedBindingCleanupCursor } from '@voucha/test-helpers/entities/retained-binding-cleanup-cursor'
+import { withTestRetainedBindingCleanupCursor } from '@voucha/test-helpers/retained-binding-cleanup-fixtures'
 import { v7 } from 'uuid'
 import {
   beginTransaction,
@@ -48,45 +44,37 @@ describe('retained media identity cleanup', () => {
   })
 
   it('initializes its own cursor and resumes deleted placement positions without advancing scoped calls', async () => {
-    const lock = await acquireTestPostgresAdvisoryLock({
-      namespace: 2_135_044,
-      key: 1,
-      timeout: '20s',
-    })
-    const previous = await getTestRetainedBindingCleanupCursor()
-    try {
-      await setTestRetainedBindingCleanupCursor(null)
+    await withTestRetainedBindingCleanupCursor(async query => {
+      expect(await getTestRetainedBindingCleanupCursor(query)).toBeUndefined()
       const placements = [v7({ msecs: 0 }), v7({ msecs: 0 })].toSorted()
       const foreignId = v7()
       for (const placementId of placements)
-        await seedTestRetainedMediaOrphan({ placementId, imageId: v7(), bindingFamily: 'post' })
-      await seedTestRetainedMediaOrphan({
-        placementId: foreignId,
-        imageId: v7(),
-        bindingFamily: 'post',
-      })
-      expect(await cleanupRetainedMediaBindings(1, undefined, placements)).toMatchObject({
+        await seedTestRetainedMediaOrphan(
+          { placementId, imageId: v7(), bindingFamily: 'post' },
+          query,
+        )
+      await seedTestRetainedMediaOrphan(
+        { placementId: foreignId, imageId: v7(), bindingFamily: 'post' },
+        query,
+      )
+      expect(await cleanupRetainedMediaBindings(1, undefined, placements, query)).toMatchObject({
         scanned: 1,
         deleted: 1,
         hasMore: true,
       })
-      expect(await getTestRetainedBindingCleanupCursor()).toBe(placements[0])
-      await cleanupRetainedMediaBindings(1, [placements[1]!])
-      expect(await getTestRetainedBindingCleanupCursor()).toBe(placements[0])
-      expect(await cleanupRetainedMediaBindings(1, undefined, placements)).toMatchObject({
+      expect(await getTestRetainedBindingCleanupCursor(query)).toBe(placements[0])
+      await cleanupRetainedMediaBindings(1, [placements[1]!], undefined, query)
+      expect(await getTestRetainedBindingCleanupCursor(query)).toBe(placements[0])
+      expect(await cleanupRetainedMediaBindings(1, undefined, placements, query)).toMatchObject({
         scanned: 0,
         deleted: 0,
         hasMore: false,
       })
-      expect(await getTestRetainedBindingCleanupCursor()).toBeNull()
-      expect(await hasTestRetainedMediaBinding(placements[0]!)).toBe(false)
-      expect(await hasTestRetainedMediaBinding(placements[1]!)).toBe(false)
-      expect(await hasTestRetainedMediaBinding(foreignId)).toBe(true)
-    } finally {
-      if (previous === undefined) await clearTestRetainedBindingCleanupCursor()
-      else await setTestRetainedBindingCleanupCursor(previous)
-      await lock.release()
-    }
+      expect(await getTestRetainedBindingCleanupCursor(query)).toBeNull()
+      expect(await hasTestRetainedMediaBinding(placements[0]!, query)).toBe(false)
+      expect(await hasTestRetainedMediaBinding(placements[1]!, query)).toBe(false)
+      expect(await hasTestRetainedMediaBinding(foreignId, query)).toBe(true)
+    })
   })
   it('preserves legal target placement and image identities without a live placement', async () => {
     const fixture = await createCopyrightNoticeSchemaFixture()
