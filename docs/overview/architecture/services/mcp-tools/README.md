@@ -303,6 +303,8 @@ See [staff actions](read-tools.md#administrative-actions).
 `read_community_moderation(read_moderator_stats)` pages moderator actors with optional `limit`
 and `after`, returning `page_info` alongside `window`, `stats`, and the page’s public users.
 Pages order by action total descending, then actor UUID descending for ties. The page size uses
-the runtime pagination limits (default 25, maximum 100). This bounded MCP read shares the
+the runtime pagination limits (default 25, maximum 100). Cursors bind the community, time window,
+and ordering; changing those rejects the continuation, while changing page size is allowed.
+This bounded MCP read shares the
 30/90-day aggregation predicate and community authorization with REST; the REST moderator-stats
 leaderboard and its clients retain their existing aggregate response contract.

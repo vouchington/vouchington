@@ -21,6 +21,7 @@ const NON_TOOL_FILES = new Set([
   'community-moderation-input-paths.mts',
   'community-moderation-list-writes.mts',
   'community-moderation-other-writes.mts',
+  'community-moderation-pending-post-text.mts',
   'community-moderation-output-parts.mts',
   'community-moderation-output-reads.mts',
   'community-moderation-output-schemas.mts',

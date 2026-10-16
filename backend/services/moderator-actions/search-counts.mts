@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
+import { buildPageInfo, decodeScopedScoreCursor } from '@modules/pagination'
 import { clampLimit } from '@services/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
@@ -18,8 +18,9 @@ export async function searchModeratorActionCounts(
   },
 ): Promise<{ stats: ModeratorActionCounts[]; page_info: PageInfo }> {
   const limit = Math.floor(clampLimit(options.limit, 25, 100))
+  const scope = `community:${options.communityId}:moderator-stats:${options.windowDays}:total-desc-actor-desc`
   const cursor = options.after
-    ? decodeUuidCursor(options.after, isScoreCursor, 'Invalid moderator statistics cursor')
+    ? decodeScopedScoreCursor(options.after, scope, 'Invalid moderator statistics cursor')
     : undefined
   if (cursor) {
     assert(Number.isSafeInteger(cursor.score) && cursor.score > 0, 400, 'Invalid statistics score')
@@ -44,7 +45,7 @@ export async function searchModeratorActionCounts(
     stats,
     page_info: buildPageInfo(stats, {
       hasNextPage: rows.length > limit,
-      getCursor: item => ({ id: item.actor_user_id, score: item.total }),
+      getCursor: item => ({ id: item.actor_user_id, score: item.total, scope }),
     }),
   }
 }

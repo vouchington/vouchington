@@ -1,5 +1,4 @@
 import assert from 'http-assert'
-import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { createPaginationParser } from '@modules/pagination'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import { indexById } from '@modules/utils'
@@ -10,7 +9,6 @@ import {
 } from '@services/moderation-claims'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
-import type { Post } from '@services/posts'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser, isModerationStaff } from '@services/users'
 import { buildReportPageInfo } from '@services/moderation-reports'
@@ -22,49 +20,12 @@ import {
 } from '@services/moderation-reports/community-helpers'
 import type { CommunityModerationHandler } from './community-moderation-contract.mts'
 import { staffOrModeratorCommunity } from './community-moderation-guards.mts'
+import { sanitizePendingPost } from './community-moderation-pending-post-text.mts'
 
 const reportParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 50 },
 })
-
-async function sanitizePendingPostText(value: string, contentType: string): Promise<string> {
-  return wrapExternalContent(await sanitizePromptInjection(value), {
-    source: 'post',
-    contentType,
-  })
-}
-
-async function sanitizePendingStructuredData(value: unknown): Promise<unknown> {
-  if (typeof value === 'string') return sanitizePendingPostText(value, 'structured_data')
-  if (Array.isArray(value)) return Promise.all(value.map(sanitizePendingStructuredData))
-  if (value === null || typeof value !== 'object') return value
-  return Object.fromEntries(
-    await Promise.all(
-      Object.entries(value).map(async ([key, child]) => [
-        key,
-        await sanitizePendingStructuredData(child),
-      ]),
-    ),
-  )
-}
-
-async function sanitizePendingPost(
-  post: Post | null | undefined,
-): Promise<Post | null | undefined> {
-  if (!post) return post
-  const safe = { ...post }
-  if ('structured_data' in post)
-    safe.structured_data = await sanitizePendingStructuredData(post.structured_data)
-  if (post.images)
-    safe.images = await Promise.all(
-      post.images.map(async image => ({
-        ...image,
-        caption: await sanitizePendingPostText(image.caption, 'image_caption'),
-      })),
-    )
-  return safe
-}
 
 export const communityModerationReadQueues: Record<string, CommunityModerationHandler> = {
   async list_pending_posts(user, args) {
@@ -166,7 +127,13 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
         }) => ({
           ...report,
           ...(staff
-            ? { reporter_user_id, reporter_username, note, judgement, community_ban_evasion }
+            ? {
+                reporter_user_id,
+                reporter_username,
+                note,
+                judgement,
+                community_ban_evasion,
+              }
             : {
                 judgement: null,
                 community_ban_evasion: community_ban_evasion
