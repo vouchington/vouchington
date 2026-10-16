@@ -34,6 +34,10 @@ deployed variables and encrypted bindings:
 | `RATE_LIMITER_MUTATING`              | Rate limiter binding for mutating requests                                                                                                                                                                                              |
 | `RATE_LIMITER_SERVER_ACTION`         | Nested limiter for web POST requests carrying `next-action`; staging allows 30 requests per 60 seconds in addition to the general mutating quota                                                                                        |
 
+Local `dev/initialize` and the Playwright workflows write a freshly generated random
+`CACHE_PLACEHOLDER_NONCE` into `cloudflare-worker/.dev.vars`, so end-to-end runs exercise the
+anonymous HTML cache path instead of bypassing it.
+
 Private infrastructure declares the three staging rate-limit bindings at 600 GET/HEAD, 60
 mutating, and 30 Server Action requests per 60 seconds. The deployment also requires
 `CF_WORKER_SECRET`, `CACHE_PLACEHOLDER_NONCE`, `VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64`, and
