@@ -36,6 +36,7 @@
     "@queues/vote-aggregation": "workspace:^",
     "@services/batch-lookup": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
+    "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",
@@ -55,7 +56,6 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
-    "@services/elections-votes": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@types/pg": "^8.23.1",
     "@voucha/test-helpers": "workspace:^"

@@ -19,7 +19,7 @@ import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
 import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
-import { rssFeedItemVoteOptions } from '../../election-vote-options/rss-feed-item.mts'
+import { rssFeedItemVoteOptions } from '@services/rss-feed-items/vote-handler-options'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,

@@ -13,7 +13,7 @@ import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { apiQuery } from '../../../response-contract.mts'
-import { getRouteAccessPost } from '../get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 
 const postVotesParser = createPaginationParser({
   cursor: { type: 'simple' },

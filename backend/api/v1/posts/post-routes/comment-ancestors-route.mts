@@ -1,6 +1,6 @@
 import app from '../../../app.mts'
 import { createVoteClearHandler, createVoteHandler } from '../../../election-vote-handler.mts'
-import { postVoteOptions } from '../../../election-vote-options/post.mts'
+import { postVoteOptions } from '@services/posts/vote-handler-options'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import {
   apiNoRequestBody,

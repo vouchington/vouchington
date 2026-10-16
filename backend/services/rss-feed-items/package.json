@@ -40,6 +40,7 @@
     "@queues/psql": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/story-post-related-url-projections": "workspace:^",
+    "@queues/vote-aggregation": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/classifier-runs": "workspace:^",
     "@services/crawls": "workspace:^",

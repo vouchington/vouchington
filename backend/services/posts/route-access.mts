@@ -1,6 +1,6 @@
-import { getPostByAnyCached } from '@services/entity-fetch'
-import type { Post } from '@services/posts'
-import { BLOCKED_POST_TYPES } from '@services/posts/check-privacy-access'
+import { getPostByAnyCached } from './get-cached.mts'
+import type { Post } from './types.mts'
+import { BLOCKED_POST_TYPES } from './blocked-post-types.mts'
 
 export function getRouteRootAccessPost(post: Post): Promise<Post | null> {
   if (BLOCKED_POST_TYPES.has(post.post_type)) {

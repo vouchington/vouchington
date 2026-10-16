@@ -5,7 +5,7 @@ import {
 } from '@services/elections-votes/shared'
 import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
-import { getTopicByAnyCached } from '@services/entity-fetch'
+import { getTopicByAnyCached } from './get-cached.mts'
 import type {
   CreateVoteHandlerOptions,
   VoteAccessContext,

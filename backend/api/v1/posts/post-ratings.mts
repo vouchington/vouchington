@@ -9,7 +9,7 @@ import {
 } from '@services/posts/authorization'
 import { assertNotSuspended } from '@services/users'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { getRouteAccessPost } from './get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 
 type CreatePostRatingBody = {

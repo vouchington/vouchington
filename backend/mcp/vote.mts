@@ -7,9 +7,9 @@ import type {
   CreateVoteHandlerOptions,
   VoteAccessContext,
 } from '@services/elections-votes/vote-handler-options'
-import { postVoteOptions } from '../api/election-vote-options/post.mts'
-import { topicVoteOptions } from '../api/election-vote-options/topic.mts'
-import { rssFeedItemVoteOptions } from '../api/election-vote-options/rss-feed-item.mts'
+import { postVoteOptions } from '@services/posts/vote-handler-options'
+import { topicVoteOptions } from '@services/topics/vote-handler-options'
+import { rssFeedItemVoteOptions } from '@services/rss-feed-items/vote-handler-options'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from './output-schema-shapes.mts'

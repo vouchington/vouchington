@@ -1,6 +1,6 @@
 import app from '../../../app.mts'
 import { createVoteClearHandler, createVoteHandler } from '../../../election-vote-handler.mts'
-import { topicVoteOptions } from '../../../election-vote-options/topic.mts'
+import { topicVoteOptions } from '@services/topics/vote-handler-options'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,

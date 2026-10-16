@@ -8588,6 +8588,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/activitypub':
+        specifier: workspace:^
+        version: link:../../queues/activitypub
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -8609,6 +8612,9 @@ importers:
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -9390,6 +9396,9 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -10185,6 +10194,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -10237,9 +10249,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../elections-votes
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

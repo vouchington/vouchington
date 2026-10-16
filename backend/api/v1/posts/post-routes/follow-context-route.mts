@@ -4,7 +4,7 @@ import { canViewPost } from '@services/posts'
 import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-import { getRouteAccessPost } from '../get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 
 app.route('/api/v1/posts/:idOrSlug/follow-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/posts/:idOrSlug/follow-context')

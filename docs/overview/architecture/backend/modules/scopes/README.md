@@ -90,6 +90,10 @@ The same coverage rule (`hasEveryScope`) decides whether an OAuth client's regis
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and
 `withScopePrerequisites` completes the scope set an MCP `insufficient_scope` challenge asks for.
 
+Scope definitions also generate the PostgreSQL `api_scopes` enum during fresh bootstrap. Adding
+or removing a scope is a schema snapshot input even when no SQL file changes; regenerate through
+the [PostgreSQL snapshot workflow](../../../../../development/postgresql/schema-snapshot/README.md#update-flow).
+
 ## Related
 
 - [API keys](../../../../../requirements/users/api-keys.md)

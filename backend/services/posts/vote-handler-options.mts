@@ -1,6 +1,7 @@
 import { getPostElectionVote, upsertPostElectionVotes } from '@services/elections-votes/post'
-import { getPostByAnyCached } from '@services/entity-fetch'
-import { canViewPost, type Post } from '@services/posts'
+import { getPostByAnyCached } from './get-cached.mts'
+import { canViewPost } from './check-privacy-access.mts'
+import type { Post } from './types.mts'
 import { enqueueDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import onError from '@modules/on-error'
 import {
@@ -8,7 +9,7 @@ import {
   type ElectionVoteMutationResult,
 } from '@services/elections-votes/shared'
 import { enqueueBulkUpdatePostElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
-import { getRouteAccessPost } from '../v1/posts/get-route-access-post.mts'
+import { getRouteAccessPost } from './route-access.mts'
 import type {
   CreateVoteHandlerOptions,
   VoteAccessContext,
