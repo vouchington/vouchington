@@ -128,6 +128,24 @@
     },
     {
       "action": "read",
+      "audience": "user",
+      "description_key": "community_moderation_read",
+      "requires": null,
+      "resource": "community-moderation",
+      "scope": "community-moderation:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": "community_moderation_write",
+      "requires": "community-moderation:read",
+      "resource": "community-moderation",
+      "scope": "community-moderation:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
       "audience": "admin",
       "description_key": null,
       "requires": null,
