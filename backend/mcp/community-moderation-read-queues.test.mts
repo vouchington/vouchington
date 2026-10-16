@@ -45,9 +45,14 @@ describe('community moderation MCP pending report reads — real PostgreSQL and 
     const caseId = await getTestModerationReportCaseId(reportId)
     const args = optionArgs('list_pending_reports', { community: community.id })
 
-    expect(await callRejectedMcpTool(member, 'read_community_moderation', args, scopes)).toContain(
-      'Forbidden',
-    )
+    expect(
+      await callRejectedMcpTool(
+        { ...member, membership_plan: null },
+        'read_community_moderation',
+        args,
+        scopes,
+      ),
+    ).toContain('Forbidden')
     const page = await callStructuredMcpTool(moderator, 'read_community_moderation', args, scopes)
     expect(page.reports).toEqual([expect.objectContaining({ id: reportId })])
     expect((page.reports as Array<Record<string, unknown>>)[0]).not.toHaveProperty('case_id')
