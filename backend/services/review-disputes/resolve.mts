@@ -27,7 +27,7 @@ export async function resolveReviewDisputeRemove(
   options: { query?: TransactionQuery } = {},
 ): Promise<ReviewDisputeResponse> {
   const now = new Date()
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     await assertReviewDisputeDelivered(disputeId, { query })
     const { rows } = await query(
       sql`/* resolveReviewDisputeRemove */
@@ -90,7 +90,7 @@ export async function resolveReviewDisputeAnnotate(
   const trimmedBody = bodyText.trim()
   const now = new Date()
 
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     await assertReviewDisputeDelivered(disputeId, { query })
     const { rows: disputeRows } = await query(
       sql`/* resolveReviewDisputeAnnotate:resolve */

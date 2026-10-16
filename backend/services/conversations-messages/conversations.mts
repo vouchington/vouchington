@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { Conversation } from './types.mts'
 
@@ -13,7 +13,10 @@ export async function getConversationByIdForMutation(id: string): Promise<Conver
   return fetchConversationById(write, id)
 }
 
-async function fetchConversationById(query: typeof read, id: string): Promise<Conversation | null> {
+async function fetchConversationById(
+  query: QueryExecutor,
+  id: string,
+): Promise<Conversation | null> {
   const { rows } = await query<Conversation>(sql`/* fetchConversationById */
     SELECT
       id,

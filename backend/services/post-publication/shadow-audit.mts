@@ -4,6 +4,7 @@ import {
   write,
   withTransactionOptions,
   type QueryOptions,
+  type QueryExecutor,
   type TransactionQuery,
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -129,8 +130,7 @@ async function listShadowAuditCandidates(
   postIdentityIds: readonly string[] | null,
 ): Promise<ShadowAuditCandidate[]> {
   const executor = query ?? write
-  const compare = sql`/* listPostPublicationShadowAuditCandidates */
-    WITH source_ids AS MATERIALIZED (
+  const compare = sql`source_ids AS MATERIALIZED (
       SELECT id, id AS post_id FROM (SELECT id FROM posts WHERE (${postIdentityIds}::uuid[] IS NULL OR id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR id > ${checkpoint}::uuid) ORDER BY id LIMIT ${limit}) post_ids
       UNION
       SELECT receipt_ids.id, identity.post_id FROM (SELECT post_identity_id AS id FROM post_publication_projection_receipts WHERE (${postIdentityIds}::uuid[] IS NULL OR post_identity_id = ANY(${postIdentityIds}::uuid[])) AND (${checkpoint}::uuid IS NULL OR post_identity_id > ${checkpoint}::uuid) ORDER BY post_identity_id LIMIT ${limit}) receipt_ids JOIN post_publication_post_identities identity ON identity.id = receipt_ids.id
@@ -168,7 +168,12 @@ async function listShadowAuditCandidates(
     LEFT JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id)
     LEFT JOIN post_publication_projection_receipts receipt ON receipt.post_identity_id = source_page.id
     ORDER BY source_page.id`)
-  const { rows } = await executor<ShadowAuditCandidate>(compare)
+  const select = (execute: QueryExecutor) =>
+    execute<ShadowAuditCandidate>(
+      `/* listPostPublicationShadowAuditCandidates */\n    WITH ${compare.text}`,
+      compare.values,
+    )
+  const { rows } = await select(executor)
   return rows
 }
 

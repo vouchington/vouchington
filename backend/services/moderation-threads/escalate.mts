@@ -24,7 +24,7 @@ export async function escalateModerationQueueItem(
     if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
   }
 
-  await runWithTransaction(options.query, async query => {
+  await runWithTransaction(options.query, async (query: TransactionQuery) => {
     if (reportId) {
       const { rowCount } = await query(sql`/* escalateModerationQueueItem */
         UPDATE moderation_reports
@@ -101,7 +101,7 @@ export async function deEscalateModerationQueueItem(
       if (!context) throw createError(404, 'Report not found')
       if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
     }
-    await runWithTransaction(options.query, async query => {
+    await runWithTransaction(options.query, async (query: TransactionQuery) => {
       const { rowCount } = await query(sql`/* deEscalateModerationQueueItem */
       UPDATE moderation_reports
       SET escalated_at = NULL, escalated_by_id = NULL
@@ -125,7 +125,7 @@ export async function deEscalateModerationQueueItem(
   }
 
   if (postId) {
-    await runWithTransaction(options.query, async query => {
+    await runWithTransaction(options.query, async (query: TransactionQuery) => {
       const { rowCount } = await query(sql`/* deEscalateModerationQueueItem */
       UPDATE community_post_reviews
       SET escalated_at = NULL, escalated_by_id = NULL

@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PostStory } from './types.mts'
 import type { BasicUser } from '@services/users/types'
@@ -13,15 +13,17 @@ export async function getPostStoryIdsByStoryIds(
   options: QueryOptions = {},
 ): Promise<Record<string, string>> {
   if (storyIds.length === 0) return {}
-  const runQuery = options.readOnly === false ? write : read
-  const { rows } = await runQuery(
-    sql`/* getPostStoryIdsByStoryIds */
+  const lookup = (runQuery: QueryExecutor) =>
+    runQuery(
+      sql`/* getPostStoryIdsByStoryIds */
     SELECT post_id, story_id
     FROM story_posts
     WHERE story_id = ANY(${storyIds}::uuid[])
   `,
-    options,
-  )
+    )
+  const query: QueryExecutor = (input, values) =>
+    (options.readOnly === false ? write : read)(input, values, options)
+  const { rows } = await lookup(query)
   const result: Record<string, string> = {}
   for (const row of rows) {
     result[row.story_id as string] = row.post_id as string
@@ -72,15 +74,17 @@ export async function getPostStoryByPostId(
   postId: string,
   options: QueryOptions = {},
 ): Promise<PostStory | null> {
-  const runQuery = options.readOnly === false ? write : read
-  const { rows } = await runQuery(
-    sql`/* getPostStoryByPostId */
+  const lookup = (runQuery: QueryExecutor) =>
+    runQuery(
+      sql`/* getPostStoryByPostId */
     SELECT post_id, story_id, initiated_by_id, created_at
     FROM story_posts
     WHERE post_id = ${postId}
     LIMIT 1
   `,
-    options,
-  )
+    )
+  const query: QueryExecutor = (input, values) =>
+    (options.readOnly === false ? write : read)(input, values, options)
+  const { rows } = await lookup(query)
   return (rows[0] as PostStory) ?? null
 }

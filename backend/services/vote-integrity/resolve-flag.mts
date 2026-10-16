@@ -12,7 +12,7 @@ export async function resolveVoteIntegrityFlag(
   resolution: VoteIntegrityResolution,
   options: { query?: TransactionQuery } = {},
 ): Promise<VoteIntegrityFlag> {
-  return runWithTransaction(options.query, async transaction => {
+  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const query = sql`/* resolveVoteIntegrityFlag */
     UPDATE vote_integrity_flags
     SET

@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightNoticeTargetInput } from './types.mts'
@@ -120,7 +120,7 @@ export async function resolveCopyrightImagePlacements(
 /** Resolves the current, server-owned post-image placement; callers never provide legal keys. */
 export async function resolveCopyrightImagePlacement(
   input: CopyrightImageSelector,
-  query: typeof write | Awaited<ReturnType<typeof beginTransaction>> = write,
+  query: QueryExecutor = write,
 ): Promise<CopyrightNoticeTargetInput> {
   if (input.surfaceKind !== 'post-image') {
     return resolveCopyrightSurfacePlacement(input, query)

@@ -15,12 +15,8 @@ export type TopicDataPointInsights = {
   credit_score_distribution: CreditScoreDistribution
 }
 
-export async function getTopicDataPointInsights(
-  topicId: string,
-  options?: { vertical?: string },
-): Promise<TopicDataPointInsights> {
-  const query = sql`/* getTopicDataPointInsights */
-    WITH base AS (
+function buildTopicDataPointInsightsQuery(topicId: string, options?: { vertical?: string }) {
+  const query = sql`WITH base AS (
       SELECT
         posts.structured_data->>'result' AS result,
         posts.structured_data->>'credit_score_range' AS credit_score_range,
@@ -75,8 +71,20 @@ export async function getTopicDataPointInsights(
         AS credit_score_distribution
     FROM base
   `)
+  return query
+}
 
-  const { rows } = await read(query)
+export async function getTopicDataPointInsights(
+  topicId: string,
+  options?: { vertical?: string },
+): Promise<TopicDataPointInsights> {
+  const query = buildTopicDataPointInsightsQuery(topicId, options)
+
+  if (!query.text.startsWith('WITH ')) throw new Error('Topic insights SQL must begin with WITH')
+  const { rows } = await read(
+    `/* getTopicDataPointInsights */\n    WITH ${query.text.slice('WITH '.length)}`,
+    query.values,
+  )
   const row = rows[0]
 
   const totalCount = Number(row?.total_count ?? 0)

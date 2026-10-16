@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { finished, pipeline } from 'node:stream/promises'
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
-import type { read } from '@data-stores/psql'
+import type { read, QueryExecutor } from '@data-stores/psql'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import type { BatchResultItem } from './shared.mts'
 
@@ -19,17 +19,10 @@ export const downloadBatchResults = async (
   batchId: string,
   deps: DownloadBatchResultsDeps = {},
 ): Promise<string> => {
-  const readBatch = deps.read ?? (await import('@data-stores/psql')).read
+  const readBatch: QueryExecutor = deps.read ?? (await import('@data-stores/psql')).read
   const listKeys = deps.listOutputObjectKeys ?? listOutputObjectKeys
   const getObject = deps.getOutputObject ?? getOutputObject
-  const { rows: batchRows } = await readBatch(
-    `/* downloadBatchResults */
-    SELECT data
-    FROM bedrock_embedding_batches
-    WHERE id = $1
-  `,
-    [batchId],
-  )
+  const batchRows = await readBedrockBatchData(readBatch, batchId)
 
   if (batchRows.length === 0) {
     throw new Error(`Batch not found: ${batchId}`)
@@ -66,6 +59,18 @@ export const downloadBatchResults = async (
   }
 
   return tempFilePath
+}
+
+async function readBedrockBatchData(query: QueryExecutor, batchId: string) {
+  const { rows } = await query<{ data: unknown }>(
+    `/* downloadBatchResults */
+    SELECT data
+    FROM bedrock_embedding_batches
+    WHERE id = $1
+  `,
+    [batchId],
+  )
+  return rows
 }
 
 function closeWriteStream(stream: ReturnType<typeof createWriteStream>): Promise<void> {

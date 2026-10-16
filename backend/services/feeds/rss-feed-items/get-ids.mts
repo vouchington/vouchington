@@ -54,11 +54,7 @@ export async function getRssFeedItemFeedIds(
     !!currentUserId && !communityId && (feed_type === 'follow_users' || feed_type === 'any')
   const { cutoffDate, itemCutoffId } = getCutoffDateForTimeRange(time_range)
 
-  const query = appendRelationCTEs(
-    sql`/* getRssFeedItemFeedIds */
-    WITH `,
-    { communityId, currentUserId },
-  )
+  const query = appendRelationCTEs(sql``, { communityId, currentUserId })
 
   appendEligibleRssFeedItemsCTE(query, {
     communityId,
@@ -100,7 +96,11 @@ export async function getRssFeedItemFeedIds(
   })
   appendFinalSelectCTE(query)
 
-  const { rows } = await read(query)
+  const { rows } = await read(
+    `/* getRssFeedItemFeedIds */
+    WITH ${query.text}`,
+    query.values,
+  )
   const hasNextPage = rows.some(row => row.has_next_page === true)
 
   const results = rows.map(row => ({

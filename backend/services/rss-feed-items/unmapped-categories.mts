@@ -112,7 +112,7 @@ export async function rejectRssFeedItemCategory(
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     const { rowCount } = await query(sql`/* rejectRssFeedItemCategory */
     INSERT INTO rss_feed_item_category_rejections (category_text, created_by_id)
     VALUES (${normalized}, ${currentUser.id})
@@ -138,7 +138,7 @@ export async function unrejectRssFeedItemCategory(
   assert(currentUserCanManageRssFeedCategories(currentUser), 403, 'Forbidden')
   const normalized = categoryText.trim().toLowerCase()
   assert(normalized, 422, 'category_text is required')
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     const { rowCount } = await query(sql`/* unrejectRssFeedItemCategory */
     DELETE FROM rss_feed_item_category_rejections
     WHERE category_text = ${normalized}

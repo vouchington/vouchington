@@ -684,8 +684,9 @@ Known gaps:
   relative path is not matched and is not scanned by any rule.
 - A destructured factory result (`const { query } = await beginTransaction()`) and a name shadowed
   inside the scope are not tracked. The repository has no such site today.
-- An optional executor expression such as `(options?.query ?? read)(sql)` is not tracked; the
-  existing `getCommunityMemberBatch` table-wide select is a repro for `postgres-explicit-columns`.
+- An optional executor expression such as `(options?.query ?? read)(sql)` is not tracked. Production
+  callers such as `getCommunityMemberBatch` pass the selected executor to a typed `QueryExecutor`
+  callback, whose SQL call the released extractor recognizes.
 - Cursor helpers such as `createAsyncGeneratorFromCursor` and
   `executeHandlerWithCursorInBatches` are not executor calls recognized by these rules. For example,
   `postKeysFromDb` and `rssFeedItemsKeysFromDb` scan partitioned tables by cursor without an `id`
@@ -765,6 +766,11 @@ events and literal EXECUTE payloads. Remaining runtime/generated-DDL consumers s
 Squawk still owns generic SQL safety where it has rules; `postgres-no-add-column` owns migration ADD
 COLUMN policy and its exact, stale-checked deployed-schema exceptions. New schema still belongs in
 its original pre-launch `CREATE TABLE`.
+
+`pnpm run explain:coverage` is a local-only, read-only report over completed EXPLAIN artifacts.
+Its `static-analysis-tools` fixture tests run in Tooling CI; the report itself is not a
+workflow gate because it needs a successful scenario artifact. The [EXPLAIN coverage guide](../../postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario)
+owns its invocation, scenario-manifest validation, and ambiguity policy.
 
 Tracked config-driven INSERT replay-safety, correlated `EXISTS` set-operation shapes,
 `NOT IN` subqueries, `COUNT` for existence, `uuidv7(...)` in predicates, and the

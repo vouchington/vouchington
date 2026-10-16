@@ -73,7 +73,7 @@ function main() {
   const filePath = join(OUTPUT_DIR, latest)
   console.error(`Reading: ${filePath}`)
 
-  const results = JSON.parse(readFileSync(filePath, 'utf8')) as ExplainResult[]
+  const { results } = JSON.parse(readFileSync(filePath, 'utf8')) as { results: ExplainResult[] }
   assertResultsPresent(results)
   assertNoDisallowedRegressions(results)
   console.error(`Loaded ${results.length} query results`)

@@ -35,7 +35,7 @@ async function claimByReport(
   reportId: string,
   providedQuery?: TransactionQuery,
 ): Promise<ClaimResult> {
-  return runWithTransaction(providedQuery, async query => {
+  return runWithTransaction(providedQuery, async (query: TransactionQuery) => {
     const { rows } = await query<ModerationQueueClaim>(sql`/* claimModerationQueueItem:report */
     INSERT INTO moderation_queue_claims (community_id, report_id, claimed_by_id, claimed_at)
     VALUES (${communityId}, ${reportId}, ${currentUserId}, now())

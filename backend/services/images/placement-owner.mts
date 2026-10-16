@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 
 export type CopyrightPlacementOwner =
@@ -14,12 +14,13 @@ export async function getImagePlacementCopyrightOwner(
   options: QueryOptions = {},
 ): Promise<CopyrightPlacementOwner | null> {
   const query = options.query ?? read
-  const { rows } = await query<{
-    post_id: string | null
-    user_id: string | null
-    topic_id: string | null
-    community_id: string | null
-  }>(sql`/* getImagePlacementCopyrightOwner */
+  const select = (execute: QueryExecutor) =>
+    execute<{
+      post_id: string | null
+      user_id: string | null
+      topic_id: string | null
+      community_id: string | null
+    }>(sql`/* getImagePlacementCopyrightOwner */
     SELECT post_binding.post_id, COALESCE(surface.user_id, link.user_id) AS user_id,
       surface.topic_id, surface.community_id
     FROM media_placements placement
@@ -28,6 +29,7 @@ export async function getImagePlacementCopyrightOwner(
     LEFT JOIN user_profile_links link ON link.id = surface.user_profile_link_id
     WHERE placement.id = ${placementId}
   `)
+  const { rows } = await select(query)
   const owner = rows[0]
   if (!owner) return null
   if (owner.post_id) return { kind: 'post', id: owner.post_id }

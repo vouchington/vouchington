@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read, write, type QueryExecutor } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -56,7 +56,7 @@ export async function getVoteWeightPenaltiesByFlagIdFromPrimary(
 
 async function getVoteWeightPenaltiesWithDatabaseRead(
   options: GetVoteWeightPenaltiesOptions,
-  databaseRead: typeof read,
+  databaseRead: QueryExecutor,
 ): Promise<GetVoteWeightPenaltiesResult> {
   const { status, source, userId, sourceFlagId, after, limit = 25 } = options
   const clampedLimit = Math.min(Math.max(1, limit), 100)
@@ -65,9 +65,7 @@ async function getVoteWeightPenaltiesWithDatabaseRead(
     ? decodeScopedUuidCursor(after, cursorScope, 'Invalid cursor format').id
     : undefined
 
-  const query = sql`/* getVoteWeightPenalties */
-    SELECT
-      id,
+  const query = sql`id,
       user_id,
       penalty_multiplier,
       reason,
@@ -104,7 +102,10 @@ async function getVoteWeightPenaltiesWithDatabaseRead(
 
   query.append(sql` ORDER BY id DESC LIMIT ${clampedLimit + 1}`)
 
-  const { rows } = await databaseRead(query)
+  const { rows } = await databaseRead(
+    `/* getVoteWeightPenalties */\n    SELECT\n      ${query.text}`,
+    query.values,
+  )
   const penalties = rows as VoteWeightPenalty[]
   const hasNextPage = penalties.length > clampedLimit
   const results = hasNextPage ? penalties.slice(0, clampedLimit) : penalties

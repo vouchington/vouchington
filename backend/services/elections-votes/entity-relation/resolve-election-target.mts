@@ -5,7 +5,10 @@ import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqu
 import { createEntityRelationElectionTarget, entityRelationElectionTables } from './target.mts'
 
 const relationTableSelects = [...entityRelationElectionTables].map(
-  table => `SELECT '${table}'::text AS entity_relation FROM "${table}"
+  (
+    table,
+    index,
+  ) => `${index === 0 ? '' : 'SELECT '}'${table}'::text AS entity_relation FROM "${table}"
       WHERE id = $1 AND deleted_at IS NULL`,
 )
 
@@ -23,7 +26,7 @@ export async function resolveEntityRelationElectionTargetById(
   }
   const { rows } = await read<{ entity_relation: string }>(
     `/* resolveEntityRelationElectionTargetById */
-    ${relationTableSelects.join('\n    UNION ALL\n    ')}
+    SELECT ${relationTableSelects.join('\n    UNION ALL\n    ')}
     LIMIT 2`,
     [entityRelationId],
   )

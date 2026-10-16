@@ -37,7 +37,7 @@ export const updateCrawler = async (
     return crawler
   }
 
-  return runWithTransaction(options.query, async transaction => {
+  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     await transaction(
       sql`/* updateCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
     )

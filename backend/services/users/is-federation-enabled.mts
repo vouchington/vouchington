@@ -1,4 +1,4 @@
-import { read, type QueryOptions } from '@data-stores/psql'
+import { read, type QueryExecutor, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 // Lightweight eligibility gate for inbound ActivityPub processing: whether a user id resolves to
@@ -9,15 +9,16 @@ export async function isFederationEnabledForUser(
   userId: string,
   options: QueryOptions = {},
 ): Promise<boolean> {
-  const run = options.query ?? read
-  const { rows } = await run<{
-    is_fediverse_federation_enabled: boolean
-  }>(sql`/* isFederationEnabledForUser */
+  const run = (execute: QueryExecutor) =>
+    execute<{
+      is_fediverse_federation_enabled: boolean
+    }>(sql`/* isFederationEnabledForUser */
     SELECT is_fediverse_federation_enabled
     FROM users
     WHERE id = ${userId}
       AND deleted_at IS NULL
       AND platform_account_kind IS NULL
   `)
+  const { rows } = await run(options.query ?? read)
   return rows[0]?.is_fediverse_federation_enabled ?? false
 }

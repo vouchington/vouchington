@@ -11,7 +11,9 @@ export type ReconcileNotificationsOptions = {
 }
 
 type ReconcileNotificationBatchConfig = {
-  batchQueryComment: string
+  batchQueryComment:
+    | 'selectRssFeedItemNotificationRecipientBatch'
+    | 'selectPostNotificationRecipientBatch'
   createRecipients: (client: PoolClient, recipientTable: string) => Promise<void>
   insertBatch: (
     client: PoolClient,
@@ -79,16 +81,23 @@ async function createNextRecipientNotificationBatch(
   lastUserId: string | null,
   batchSize: number,
 ): Promise<{ lastUserId: string; created: number } | null> {
-  const result = await client.query<{ user_id: string }>(
-    `/* ${config.batchQueryComment} */
-      SELECT user_id
+  const query = `user_id
       FROM ${recipientTable}
       WHERE ($1::uuid IS NULL OR user_id > $1)
       ORDER BY user_id
       LIMIT $2
-    `,
-    [lastUserId, batchSize],
-  )
+    `
+  const values = [lastUserId, batchSize]
+  const result =
+    config.batchQueryComment === 'selectRssFeedItemNotificationRecipientBatch'
+      ? await client.query<{ user_id: string }>(
+          `/* selectRssFeedItemNotificationRecipientBatch */\n      SELECT ${query}`,
+          values,
+        )
+      : await client.query<{ user_id: string }>(
+          `/* selectPostNotificationRecipientBatch */\n      SELECT ${query}`,
+          values,
+        )
   const rows: Array<{ user_id: string }> = result.rows
   if (rows.length === 0) return null
 

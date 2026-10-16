@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryExecutor } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from './constants.mts'
 import sql from 'sql-template-strings'
@@ -24,33 +24,14 @@ export const getLatestHtmlByUrlIds = async (
   if (urlIds.length === 0) return []
 
   const readRows = dependencies.read ?? read
+  const query: QueryExecutor = (input, values) => readRows(input, values, queryOptions)
   const downloadCrawlHtml = dependencies.downloadCrawlHtmlToTempFile ?? downloadCrawlHtmlToTempFile
   const reportError = dependencies.onError ?? onError
   const recentCutoffDate = new Date(
     Date.now() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
 
-  const { rows } = await readRows(
-    sql`/* getLatestHtmlByUrlIds */
-    SELECT DISTINCT ON (u.id)
-      c.id AS crawl_id,
-      encode(c.html_sha256, 'hex') AS html_sha256_hex,
-      c.html_snapshot_uploaded_at,
-      c.url_id,
-      h.hostname
-    FROM unnest(${urlIds}::UUID[]) AS u(id)
-    JOIN crawls c ON c.url_id = u.id
-    JOIN urls uu ON uu.id = u.id
-    JOIN url_hostnames h ON h.id = uu.hostname_id
-    WHERE c.response_status_code = 200
-      AND c.completed_at >= ${recentCutoffDate}
-      AND c.html_sha256 IS NOT NULL
-      AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
-    ORDER BY u.id, c.completed_at DESC, c.id DESC
-    `,
-    undefined,
-    queryOptions,
-  )
+  const { rows } = await readLatestHtmlRows(query, urlIds, recentCutoffDate)
 
   const results: CrawlHtmlTempFile[] = []
   for (const row of rows) {
@@ -64,4 +45,27 @@ export const getLatestHtmlByUrlIds = async (
     }
   }
   return results
+}
+
+async function readLatestHtmlRows(query: QueryExecutor, urlIds: string[], recentCutoffDate: Date) {
+  return query<{ html_sha256_hex: string | null; hostname: string; url_id: string }>(
+    sql`/* getLatestHtmlByUrlIds */
+    SELECT DISTINCT ON (u.id)
+      c.id AS crawl_id,
+      encode(c.html_sha256, 'hex') AS html_sha256_hex,
+      c.html_snapshot_uploaded_at,
+      c.url_id,
+      h.hostname
+    FROM unnest(${urlIds}::UUID[]) AS u(id)
+    -- no-mistakes-disable-next-line postgres-required-predicates: URL IDs and completed_at do not give a safe UUIDv7 crawl-ID partition bound; a crawl may finish long after it starts
+    JOIN crawls c ON c.url_id = u.id
+    JOIN urls uu ON uu.id = u.id
+    JOIN url_hostnames h ON h.id = uu.hostname_id
+    WHERE c.response_status_code = 200
+      AND c.completed_at >= ${recentCutoffDate}
+      AND c.html_sha256 IS NOT NULL
+      AND COALESCE(c.html_snapshot_uploaded_at, c.completed_at) >= ${recentCutoffDate}
+    ORDER BY u.id, c.completed_at DESC, c.id DESC
+    `,
+  )
 }

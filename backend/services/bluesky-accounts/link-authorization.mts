@@ -1,4 +1,5 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql/types'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
@@ -57,7 +58,7 @@ export async function getBlueskyLinkAuthorizationForCallbackFromPrimary(
   return assertUsableBlueskyLinkAuthorization(rows[0])
 }
 
-function readBlueskyLinkAuthorization(authorizationId: string, query: typeof read) {
+function readBlueskyLinkAuthorization(authorizationId: string, query: QueryExecutor) {
   return query<BlueskyLinkAuthorization>(sql`/* readBlueskyLinkAuthorization */
     SELECT id, user_id, handle, callback_mode, status, completion_proof_challenge,
            claimed_did, expires_at

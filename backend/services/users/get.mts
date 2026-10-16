@@ -1,6 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
-import type pg from 'pg'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import createError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -83,7 +82,9 @@ export const getPublicUserByAny = async (
 ): Promise<PublicUser | null> => {
   const [filters, values] = getUserByAnyArguments(string, { private: false, ...options })
   if (!filters || !values) return null
-  const query = `/* getPublicUserByAny */
+  const lookup = async (runQuery: QueryExecutor): Promise<PublicUser | null> => {
+    const { rows } = await runQuery<PublicUser>(
+      `/* getPublicUserByAny */
     WITH user_data AS (
       SELECT *
       FROM users
@@ -94,9 +95,14 @@ export const getPublicUserByAny = async (
     SELECT view_users_public.* FROM view_users_public
     JOIN user_data ON user_data.id = view_users_public.id
     LIMIT 1
-  `
-  const { rows } = await runUserLookupQuery<PublicUser>(query, values, options)
-  return rows[0] || null
+  `,
+      values,
+    )
+    return rows[0] || null
+  }
+  const query: QueryExecutor = (input, params) =>
+    (options.readOnly === false ? write : read)(input, params, options)
+  return lookup(query)
 }
 
 export const getPrivateUserByAny = async (
@@ -105,7 +111,9 @@ export const getPrivateUserByAny = async (
 ): Promise<PrivateUser | null> => {
   const [filters, values] = getUserByAnyArguments(string, { private: true, ...options })
   if (!filters || !values) return null
-  const query = `/* getPrivateUserByAny */
+  const lookup = async (runQuery: QueryExecutor): Promise<PrivateUser | null> => {
+    const { rows } = await runQuery<PrivateUser>(
+      `/* getPrivateUserByAny */
     WITH user_data AS (
       SELECT *
       FROM users
@@ -116,18 +124,14 @@ export const getPrivateUserByAny = async (
     SELECT view_users_private.* FROM view_users_private
     JOIN user_data ON user_data.id = view_users_private.id
     LIMIT 1
-  `
-  const { rows } = await runUserLookupQuery<PrivateUser>(query, values, options)
-  return rows[0] || null
-}
-
-function runUserLookupQuery<Row extends pg.QueryResultRow>(
-  query: string,
-  values: string[],
-  options: QueryOptions,
-) {
-  const runQuery = options.readOnly === false ? write : read
-  return runQuery<Row>(query, values, options)
+  `,
+      values,
+    )
+    return rows[0] || null
+  }
+  const query: QueryExecutor = (input, params) =>
+    (options.readOnly === false ? write : read)(input, params, options)
+  return lookup(query)
 }
 
 // Route handlers must use these wrappers when the input comes from a :idOrSlug

@@ -16,7 +16,7 @@ export async function adminSetVoteWeight(
     'Invalid weight value',
   )
   assert(isUUID(userId), 422, 'Invalid user ID')
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     const { rows } = await query<{
       vote_weight: number
       vote_weight_admin_set_at: Date | null
@@ -47,7 +47,7 @@ export async function adminClearVoteWeight(
   options: { query?: TransactionQuery } = {},
 ): Promise<void> {
   assert(isUUID(userId), 422, 'Invalid user ID')
-  return runWithTransaction(options.query, async query => {
+  return runWithTransaction(options.query, async (query: TransactionQuery) => {
     const { rows } = await query<{
       vote_weight: number
       vote_weight_admin_set_at: Date | null

@@ -12,7 +12,7 @@ export async function resolveReportIntegrityFlag(
   resolution: ReportIntegrityPatchResolution,
   options: { query?: TransactionQuery } = {},
 ): Promise<ReportIntegrityFlag> {
-  return runWithTransaction(options.query, async transaction => {
+  return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
     const query = sql`/* resolveReportIntegrityFlag */
     UPDATE report_integrity_flags
     SET

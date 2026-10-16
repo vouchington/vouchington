@@ -16,8 +16,7 @@ export async function listRemoteFollowerInboxPage(
   options: { query?: QueryExecutor } = {},
 ): Promise<RemoteFollowerInboxRow[]> {
   const query = options.query ?? read
-  const statement = sql`/* listRemoteFollowerInboxPage */
-    WITH candidate_followers AS MATERIALIZED (
+  const statement = sql`candidate_followers AS MATERIALIZED (
       SELECT rel.subject_id
       FROM relation__remote_actor__follow__user rel
       WHERE rel.object_id = ${userId}
@@ -51,9 +50,11 @@ export async function listRemoteFollowerInboxPage(
     ) blocked_instance ON true
     ORDER BY candidate.subject_id
   `)
-  const { rows } = await query<{
-    remote_actor_id: string
-    inbox_url: string | null
-  }>(statement)
+  const select = (execute: QueryExecutor) =>
+    execute<{
+      remote_actor_id: string
+      inbox_url: string | null
+    }>(`/* listRemoteFollowerInboxPage */\n    WITH ${statement.text}`, statement.values)
+  const { rows } = await select(query)
   return rows.map(row => ({ remoteActorId: row.remote_actor_id, inboxUrl: row.inbox_url }))
 }

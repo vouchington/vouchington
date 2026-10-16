@@ -51,8 +51,7 @@ export async function getTrendingPosts(
     cursorId = cursor.id
   }
 
-  const query = sql`/* getTrendingPosts */
-    WITH trending AS (
+  const query = sql`trending AS (
       SELECT
         p.id,
         `.append(buildHotScoreExpression('p')).append(sql` AS trending_score
@@ -107,7 +106,11 @@ export async function getTrendingPosts(
     LIMIT ${safeLimit + 1}
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read(
+    `/* getTrendingPosts */
+    WITH ${query.text}`,
+    query.values,
+  )
 
   const hasNextPage = rows.length > safeLimit
   const results = rows.slice(0, safeLimit) as TrendingPostsResult['results']

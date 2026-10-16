@@ -1,4 +1,4 @@
-import { read, write, type QueryOptions } from '@data-stores/psql'
+import { query as executeQuery, read, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { APPEAL_SLA_HOURS, type ModerationAppealStatus } from './config.mts'
@@ -15,7 +15,7 @@ function addIsOverdue(appeal: ModerationAppealResponse): ModerationAppealRespons
 export async function getModerationAppealById(
   id: string,
 ): Promise<ModerationAppealResponse | null> {
-  return queryModerationAppealById(id, read)
+  return queryModerationAppealById(id, undefined, true)
 }
 
 /** Reads from the primary, or through `options.query` to see the caller's own uncommitted rows. */
@@ -23,26 +23,27 @@ export async function getModerationAppealByIdFromPrimary(
   id: string,
   options?: QueryOptions,
 ): Promise<ModerationAppealResponse | null> {
-  return queryModerationAppealById(id, write, options)
+  return queryModerationAppealById(id, options, false)
 }
 
 async function queryModerationAppealById(
   id: string,
-  query: typeof read,
-  options?: QueryOptions,
+  options: QueryOptions | undefined,
+  defaultReadOnly: boolean,
 ): Promise<ModerationAppealResponse | null> {
-  const { rows } = await query<ModerationAppealResponse>(
-    sql`/* getModerationAppealById */
-    SELECT `
-      .append(APPEAL_SELECT)
-      .append(sql`
+  const statement = sql``
+    .append(APPEAL_SELECT)
+    .append(sql`
     FROM moderation_appeals ma
     `)
-      .append(APPEAL_JOINS).append(sql`
+    .append(APPEAL_JOINS).append(sql`
     WHERE ma.id = ${id}
     LIMIT 1
-  `),
-    options,
+  `)
+  const { rows } = await executeQuery<ModerationAppealResponse>(
+    `/* getModerationAppealById */\n    SELECT ${statement.text}`,
+    statement.values,
+    { ...options, readOnly: defaultReadOnly },
   )
   const row = rows[0]
   return row ? addIsOverdue(row) : null

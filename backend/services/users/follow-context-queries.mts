@@ -91,7 +91,7 @@ export async function getFollowedUsersByElectionVoteIds(
 
   // Vote tables are append-only — DISTINCT ON resolves each voter's latest vote
   // before bucketing by sign. Choice strength is deliberately not exposed here.
-  const currentVotesCte = `WITH current_votes AS (
+  const currentVotesCte = `current_votes AS (
       SELECT DISTINCT ON (user_id) id, user_id, score, created_at
       FROM ${voteTable}
       WHERE ${entityIdColumn} = $2
@@ -99,7 +99,7 @@ export async function getFollowedUsersByElectionVoteIds(
     )`
 
   const countQuery = `/* getFollowedUsersByElectionVote */
-    ${currentVotesCte}
+    WITH ${currentVotesCte}
     SELECT COUNT(*)::INT AS total
     FROM current_votes AS cv
     JOIN relation__user__follow__user AS follows
@@ -113,7 +113,7 @@ export async function getFollowedUsersByElectionVoteIds(
   `
 
   const limitedQuery = `/* getFollowedUsersByElectionVote */
-    ${currentVotesCte}
+    WITH ${currentVotesCte}
     SELECT cv.user_id, cv.created_at AS voted_at
     FROM current_votes AS cv
     JOIN relation__user__follow__user AS follows

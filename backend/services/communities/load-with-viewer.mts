@@ -63,14 +63,29 @@ async function queryCommunityWithViewer(
     join: sql` LEFT JOIN community_members cm
     ON cm.community_id = c.id AND cm.user_id = ${viewerId}::uuid AND cm.removed_at IS NULL`,
   }
-  const query = isUUID(idOrSlug)
+  const byId = isUUID(idOrSlug)
+  const query = byId
     ? selectCommunityWithOwner(sql`/* getCommunityWithViewerById */ SELECT `, extra).append(
         sql` WHERE c.id = ${idOrSlug} AND c.deleted_at IS NULL LIMIT 1`,
       )
     : selectCommunityWithOwner(sql`/* getCommunityWithViewerBySlug */ SELECT `, extra).append(
         sql` WHERE c.slug = ${idOrSlug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
       )
-  const { rows } = await read(query, options)
+  const prefix = byId
+    ? '/* getCommunityWithViewerById */ SELECT '
+    : '/* getCommunityWithViewerBySlug */ SELECT '
+  if (!query.text.startsWith(prefix)) throw new Error('Community viewer SQL prefix changed')
+  const { rows } = byId
+    ? await read(
+        `/* getCommunityWithViewerById */ SELECT ${query.text.slice(prefix.length)}`,
+        query.values,
+        options,
+      )
+    : await read(
+        `/* getCommunityWithViewerBySlug */ SELECT ${query.text.slice(prefix.length)}`,
+        query.values,
+        options,
+      )
   const row = rows[0] as ViewerRow | undefined
   if (!row) return null
   const {

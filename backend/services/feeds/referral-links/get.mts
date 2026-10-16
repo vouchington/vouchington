@@ -61,8 +61,7 @@ export async function getReferralLinksFeed(
     .append(buildCommunityListProxyMutedTopicsCTE(currentUser.id))
     .append(sql`)`)
 
-  const query = sql`/* getReferralLinksFeed */
-    WITH `
+  const query = sql``
     .append(followedCte)
     .append(sql`,
     `)
@@ -153,7 +152,11 @@ export async function getReferralLinksFeed(
     LIMIT ${limit + 1}
   `)
 
-  const { rows } = await read(query)
+  const { rows } = await read(
+    `/* getReferralLinksFeed */
+    WITH ${query.text}`,
+    query.values,
+  )
 
   const hasNextPage = rows.length > limit
   const slicedRows = rows.slice(0, limit)

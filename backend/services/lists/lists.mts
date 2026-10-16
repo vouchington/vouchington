@@ -1,4 +1,4 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, read, write, type QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -64,7 +64,7 @@ export async function getListForWrite(listId: string): Promise<List | null> {
   return fetchListById(write, listId)
 }
 
-async function fetchListById(query: typeof read, listId: string): Promise<List | null> {
+async function fetchListById(query: QueryExecutor, listId: string): Promise<List | null> {
   const { rows } = await query(
     `/* fetchListById */
     SELECT id, owner_user_id, name, description, visibility, created_at, updated_at, removed_at

@@ -149,7 +149,9 @@ Calls each service function, captures the SQL queries, and replays them with
 `EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON)`. Results are written to
 `backend/scripts/explain-analyze/output/results-<timestamp>.json`.
 The run fails if a scenario throws, captures no SQL, or cannot replay a captured query. Partial
-results are still written so CI artifacts retain the plans captured before the failure.
+results are still written so CI artifacts retain the plans captured before the failure. The JSON
+artifact contains both captured `results` and `completedScenarioIds`; a result from a failed plan
+mode does not mark its scenario complete.
 The runtime manifest requires the exact scenario identities in `scenario-manifest.mts`, so replacing
 a scenario cannot satisfy the ratchet merely by preserving its count. Required plan-shape gates also
 verify candidate-driven universal-topic search, projection-only RSS state reads, and index-ordered
@@ -283,7 +285,49 @@ Reads the latest result file and prints:
 pnpm run explain:analyze
 ```
 
-### 4. Dump results for analysis
+### 4. Find reads without a scenario
+
+`explain:coverage` compares annotated runtime SQL with captured query names and available exact
+query text. It reports annotated statements, reads, covered reads, confirmed uncovered reads, and
+ambiguous same-name reads, and unclassified SQL executions with the evaluator's reason, then
+groups entries by owning backend directory. Unclassified calls are not counted as proven reads;
+this category also shows callsites where an imported builder's annotation cannot be recovered and
+can contain writes whose full SQL was not recovered. A scenario
+suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
+`TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
+the annotated-statement total. Leading SQL comments after the annotation do not hide a read;
+the complete SQL text still has to match a capture exactly. The report rejects an artifact whose
+completed-scenario list or captured scenarios differ from the registered manifest, even when a
+failed final scenario already emitted one plan. Cursor helper calls from the root PostgreSQL
+package and its cursor subpath are included once when both extractors find the same call. Dynamic
+notification recipient queries use a literal annotation for each caller so both reads appear in
+the inventory. The report also retains raw `PoolClient.query` reads in its counts and uncovered
+list. The current capture hook observes PostgreSQL wrapper calls, while EXPLAIN replays on a
+different connection; a raw client read of a session-local temporary table cannot be captured or
+replayed by this harness. The scheduled prompt skips such entries when choosing a scenario and
+keeps their coverage gap visible. An annotated statement with an interpolated first
+SQL token remains in the annotated-statement total and appears as unclassified with its
+evaluator reason; its verb cannot be proven statically. Move a fixed leading read verb to the
+execution callsite when its SQL builder is dynamic, preserving the executed SQL and parameters.
+Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
+
+```bash
+pnpm run explain:coverage
+pnpm run explain:coverage -- /path/to/results.json
+```
+
+The report uses the released `no-mistakes` executed-SQL extraction API over tracked runtime
+sources, excluding SQL issued only by the EXPLAIN replay infrastructure. When an annotation names
+multiple source statements, including writes, it counts an exact complete SQL
+match as covered and displays any incomplete matches separately as ambiguous. Dynamic SQL
+remains ambiguous after a same-named capture because one source call can execute several shapes.
+Complete bounded
+cursor SQL also matches the cursor API's exact outer `SELECT`/`LIMIT` wrapper around that source.
+It never normalizes
+SQL literal whitespace or guessed placeholders. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)
+uses the largest user-facing gaps to choose one new scenario per run.
+
+### 5. Dump results for analysis
 
 Prints the full SQL queries and execution plans in a text format suitable for piping to an LLM:
 
@@ -321,19 +365,25 @@ passed to `runAndCapture()`.
 
 ## Output format
 
-Each result file is a JSON array of `ExplainResult` objects:
+Each result file is an object with captured `ExplainResult` entries and the IDs of scenarios that
+completed every required plan mode:
 
 ```json
-[
-  {
-    "name": "feeds/posts/get-ids",
-    "query_text": "/* feeds/posts/get-ids */ SELECT ...",
-    "plan": { ... },
-    "execution_time_ms": 12.3,
-    "planning_time_ms": 0.8,
-    "timestamp": "2026-03-13T00:00:00.000Z"
-  }
-]
+{
+  "results": [
+    {
+      "name": "feeds/posts/get-ids",
+      "query_text": "/* feeds/posts/get-ids */ SELECT ...",
+      "plan": { "Plan": { "Node Type": "Index Scan" } },
+      "execution_time_ms": 12.3,
+      "planning_time_ms": 0.8,
+      "timestamp": "2026-03-13T00:00:00.000Z",
+      "scenario_id": "posts-feed",
+      "capture_index": 0
+    }
+  ],
+  "completedScenarioIds": ["posts-feed"]
+}
 ```
 
 ## JIT compilation

@@ -26,9 +26,8 @@ export async function getPrioritizedReferralLinks(
   )
   const all = options?.all ?? false
 
-  const query = sql`/* getPrioritizedReferralLinks */
-WITH
-excluded_users AS (
+  const builtQuery = (() => {
+    const query = sql`excluded_users AS (
   SELECT object_id AS user_id FROM relation__user__mute__user
   WHERE subject_id = ${currentUserId}::uuid AND deleted_at IS NULL
   UNION ALL
@@ -60,16 +59,16 @@ active_links AS (
     AND al.deactivated_at IS NULL
     AND NOT EXISTS (SELECT 1 FROM official_links WHERE official_links.user_id = al.user_id)`
 
-  if (!all) {
-    query.append(sql`
+    if (!all) {
+      query.append(sql`
     AND (${currentUserId}::uuid IS NULL OR al.user_id != ${currentUserId}::uuid)`)
-  }
+    }
 
-  query.append(sql`
+    query.append(sql`
     AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = al.user_id)
     AND `)
-  query.append(childVisibilitySql('al.parent_link_id', 'al.user_id'))
-  query.append(sql`
+    query.append(childVisibilitySql('al.parent_link_id', 'al.user_id'))
+    query.append(sql`
 ),
 linked_topic_ids AS (
   SELECT id FROM topics
@@ -90,7 +89,7 @@ user_contributions AS (
     AND p.post_type IN ('data_point', 'review')
     AND p.created_by_id IN (SELECT user_id FROM active_links)
     AND `)
-  query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
+    query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
     AND (
       EXISTS (SELECT 1 FROM post_data_point_topics pdt
               WHERE pdt.post_id = p.id AND pdt.topic_id IN (SELECT id FROM linked_topic_ids))
@@ -119,7 +118,7 @@ user_reviews AS (
     AND p.approved_at IS NOT NULL
     AND p.created_by_id IN (SELECT user_id FROM active_links)
     AND `)
-  query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
+    query.append(buildPublicPostEligibilityFilter('p', 'root_post')).append(sql`
     AND EXISTS (
       SELECT 1 FROM post_review_topic_ratings prt
       WHERE prt.post_id = p.id AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
@@ -139,15 +138,19 @@ ranked AS (
   SELECT DISTINCT ON (al.user_id)
     al.id, al.user_id, al.referral_program_topic_id AS referral_program_id, al.url, al.label,`)
 
-  if (all) {
-    query.append(sql`
+    if (all) {
+      query.append(sql`
     5 AS priority_group,`)
-  } else {
-    const votedPostEligibility = buildViewerPostDiscoveryEligibilityFilter('p', 'voted_root_post', {
-      currentUserId: currentUserId!,
-      isAdministrator: false,
-    })
-    query.append(sql`
+    } else {
+      const votedPostEligibility = buildViewerPostDiscoveryEligibilityFilter(
+        'p',
+        'voted_root_post',
+        {
+          currentUserId: currentUserId!,
+          isAdministrator: false,
+        },
+      )
+      query.append(sql`
     CASE
       WHEN ${currentUserId}::uuid IS NOT NULL AND EXISTS (
         SELECT 1 FROM relation__user__follow__user f1
@@ -175,15 +178,23 @@ ranked AS (
         JOIN posts voted_root_post ON voted_root_post.id = COALESCE(p.root_post_id, p.id)
         WHERE p.created_by_id = al.user_id AND pv.score > 0
           AND `)
-    query.append(votedPostEligibility).append(sql`
+      query.append(votedPostEligibility).append(sql`
       ) THEN 4
       ELSE 5
     END AS priority_group,`)
-  }
+    }
 
-  appendPrioritizedRankingColumns(query)
-  appendPrioritizedLinksQuery(query, { all, limit })
+    appendPrioritizedRankingColumns(query)
+    appendPrioritizedLinksQuery(query, { all, limit })
 
-  const { rows } = await read(query)
+    return query
+  })()
+
+  const { rows } = await read(
+    `/* getPrioritizedReferralLinks */
+WITH
+${builtQuery.text}`,
+    builtQuery.values,
+  )
   return buildPrioritizedReferralLinksResult(rows as PrioritizedReferralLink[])
 }

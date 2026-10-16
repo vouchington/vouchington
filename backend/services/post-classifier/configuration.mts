@@ -129,10 +129,12 @@ export async function resolvePostClassifierConfiguration(
     remote,
   }
   const query = options.query ?? write
-  const { rows } = await query<{ configuration_json: string }>(sql`
+  const canonicalize = (execute: QueryExecutor) =>
+    execute<{ configuration_json: string }>(sql`
     /* canonicalizePostClassifierConfiguration */
     SELECT ${JSON.stringify(configuration)}::jsonb::text AS configuration_json
   `)
+  const { rows } = await canonicalize(query)
   const configurationJson = rows[0]!.configuration_json
   const configurationSha256 = createHash('sha256').update(configurationJson).digest()
   return { configuration, configurationJson, configurationSha256 }

@@ -8,8 +8,10 @@ function source(file: string): string {
 describe('moderation appeal primary-read routing', () => {
   it('keeps ordinary reads on replicas and mutation-critical reads on the primary', () => {
     const getSource = source('./get.mts')
-    expect(getSource).toContain('return queryModerationAppealById(id, read)')
-    expect(getSource).toContain('return queryModerationAppealById(id, write, options)')
+    expect(getSource).toContain('return queryModerationAppealById(id, undefined, true)')
+    expect(getSource).toContain('return queryModerationAppealById(id, options, false)')
+    // The selected route must override a caller's readOnly flag while retaining its transaction.
+    expect(getSource).toContain('{ ...options, readOnly: defaultReadOnly }')
     expect(getSource).toContain('await getModerationAppealByIdFromPrimary(id, options)')
   })
 

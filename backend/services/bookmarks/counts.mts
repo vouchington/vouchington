@@ -30,16 +30,15 @@ export const getUserBookmarkCounts = async (userId: string) => {
     rss_feed: 'rss_feeds',
   }
 
-  const selects = []
+  const selects: string[] = []
   const userRelations = entityRelationMetadatum.filter(
     r => r.subject_type === 'user' && r.is_bookmark,
   )
 
   for (const relationData of userRelations) {
     // Bookmarks: things this user bookmarked
-    selects.push(`
-      SELECT
-        COUNT(*)::INT AS count,
+    const selectPrefix = selects.length === 0 ? '' : '\n      SELECT\n'
+    selects.push(`${selectPrefix}        COUNT(*)::INT AS count,
         '${relationData.predicate}' AS bookmark_type,
         '${relationData.object_type}' AS entity_type,
         'bookmarks' AS direction
@@ -63,9 +62,10 @@ export const getUserBookmarkCounts = async (userId: string) => {
     }
   }
 
-  const { rows } = await read(`/* getUserBookmarkCounts */ ${selects.join(' UNION ALL ')}`, [
-    userId,
-  ])
+  const { rows } = await read(
+    `/* getUserBookmarkCounts */ \n      SELECT\n${selects.join(' UNION ALL ')}`,
+    [userId],
+  )
 
   for (const row of rows) {
     if (row.direction === 'bookmarks') {
@@ -89,9 +89,7 @@ const getEntityBookmarkCounts =
     assert(relations.length > 0, 500, `No relation found for ${entityType}`)
 
     const selects = relations.map(
-      relationData => `
-    SELECT
-      COUNT(*)::INT AS count,
+      (relationData, index) => `${index === 0 ? '' : '\n    SELECT\n'}      COUNT(*)::INT AS count,
       '${relationData.predicate}' AS bookmark_type
     FROM ${relationData.table_name}
     WHERE object_id = $1
@@ -99,9 +97,10 @@ const getEntityBookmarkCounts =
   `,
     )
 
-    const { rows } = await read(`/* getEntityBookmarkCounts */ ${selects.join(' UNION ALL ')}`, [
-      entityId,
-    ])
+    const { rows } = await read(
+      `/* getEntityBookmarkCounts */ \n    SELECT\n${selects.join(' UNION ALL ')}`,
+      [entityId],
+    )
 
     const output: Record<string, number> = {}
     for (const row of rows) {

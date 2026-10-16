@@ -47,8 +47,11 @@ export const getUserMetricsByAnyBatch = async (
   const idInputs = normalizedInputs.filter(input => input.type === 'id')
   const usernameInputs = normalizedInputs.filter(input => input.type === 'username')
 
+  const sqlPrefix = '\n    WITH '
+  if (!USER_METRICS_BATCH_SQL.startsWith(sqlPrefix))
+    throw new Error('User metrics SQL must begin with WITH')
   const { rows } = await read(
-    USER_METRICS_BATCH_SQL,
+    `/* getUserMetricsByAnyBatch */\n    WITH ${USER_METRICS_BATCH_SQL.slice(sqlPrefix.length)}`,
     [
       idInputs.map(input => input.value),
       idInputs.map(input => input.index),

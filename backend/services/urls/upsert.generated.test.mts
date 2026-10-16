@@ -2,6 +2,8 @@ import { it, expect, describe } from 'vitest'
 import crypto from 'node:crypto'
 import { addUrl, addUrls, extractInsertedUrlIds } from './upsert.mts'
 import { getUrlByAny } from './get.mts'
+import { beginTransaction } from '@voucha/test-helpers'
+import { getCrawlerForHostnameId } from '@services/crawlers'
 
 describe('upsert.generated', () => {
   it('addUrl creates a new URL', async () => {
@@ -83,6 +85,23 @@ describe('upsert.generated', () => {
     expect(urls[0].url).toBe(`https://${hostnameOne}/test1`)
     expect(urls[1].url).toBe(`https://${hostnameOne}/test2`)
     expect(urls[2].url).toBe(`https://${hostnameTwo}/test3`)
+  })
+
+  it('creates crawlers for newly inserted URLs within the same transaction', async () => {
+    const hostnameOne = `inline-${crypto.randomUUID()}.example.com`
+    const hostnameTwo = `inline-${crypto.randomUUID()}.example.com`
+
+    await using query = await beginTransaction()
+    const urls = await addUrls(null, [`https://${hostnameOne}/one`, `https://${hostnameTwo}/two`], {
+      query,
+    })
+
+    expect(urls).toHaveLength(2)
+    for (const url of urls) {
+      const crawler = await getCrawlerForHostnameId(url.hostname.id, { query })
+      expect(crawler?.hostname_id).toBe(url.hostname.id)
+    }
+    await query.commit()
   })
 
   it('addUrl updates existing URL on conflict', async () => {

@@ -1,4 +1,4 @@
-export const USER_METRICS_BATCH_SQL = `/* getUserMetricsByAnyBatch */
+export const USER_METRICS_BATCH_SQL = `
     WITH id_input AS (
       SELECT unnest($1::uuid[]) AS input_value,
              unnest($2::int[]) AS input_order

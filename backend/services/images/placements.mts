@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
 import {
@@ -75,9 +75,13 @@ export async function getImagePlacementsForCopyright(
 ): Promise<Map<string, CopyrightImagePlacement>> {
   if (placementIds.length === 0) return new Map()
   const query = options.query ?? read
-  const { rows } = await query<CopyrightImagePlacementRow>(
-    buildCopyrightPlacementReadSql([...placementIds]),
-  )
+  const statement = buildCopyrightPlacementReadSql([...placementIds])
+  const select = (execute: QueryExecutor) =>
+    execute<CopyrightImagePlacementRow>(
+      `/* getImagePlacementsForCopyright */\n    SELECT ${statement.text}`,
+      statement.values,
+    )
+  const { rows } = await select(query)
   // PostgreSQL returns canonical lowercase UUIDs, but a caller may spell the id in uppercase.
   const found = new Map(rows.map(row => [row.placement_id, toCopyrightImagePlacement(row)]))
   return new Map(
@@ -89,8 +93,7 @@ export async function getImagePlacementsForCopyright(
 }
 
 function buildCopyrightPlacementReadSql(placementIds: string[]): ReturnType<typeof sql> {
-  const statement = sql`/* getImagePlacementsForCopyright */
-    SELECT placement.id AS placement_id, placement.revision, binding.image_id,
+  const statement = sql`placement.id AS placement_id, placement.revision, binding.image_id,
       placement.retired_at, placement.copyright_withheld_at,
       image.deleted_at AS image_deleted_at,
       image.quarantine_pending_at AS image_quarantine_pending_at,
