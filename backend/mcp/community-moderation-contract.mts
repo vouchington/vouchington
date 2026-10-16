@@ -118,9 +118,12 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
   }
   const uuidField = option ? communityModerationUuidPaths[option] : undefined
   if (uuidField) {
+    // REST accepts the 36-character path form; AJV's UUID format also permits URNs.
     properties[uuidField] = {
       ...(properties[uuidField] as Record<string, unknown>),
       format: 'uuid',
+      minLength: 36,
+      maxLength: 36,
     }
   }
   if (option === 'list_saved_replies' || option === 'read_moderator_stats') {

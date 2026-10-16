@@ -16287,7 +16287,9 @@
                     },
                     "postId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "minLength": 36,
+                      "maxLength": 36
                     }
                   },
                   "required": ["community", "postId"],
@@ -16301,7 +16303,9 @@
                     },
                     "reportId": {
                       "type": "string",
-                      "format": "uuid"
+                      "format": "uuid",
+                      "minLength": 36,
+                      "maxLength": 36
                     }
                   },
                   "required": ["community", "reportId"],
@@ -16988,8 +16992,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reportId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S2"
                         },
                         "status": {
                           "enum": ["reviewed", "dismissed"]
@@ -17130,8 +17133,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "postId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["community", "postId"],
@@ -17154,8 +17156,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reportId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["community", "reportId"],
@@ -17171,6 +17172,12 @@
                   "type": "string",
                   "minLength": 1,
                   "description": "Community UUID or slug."
+                },
+                "S2": {
+                  "type": "string",
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
                 }
               }
             },
@@ -17897,7 +17904,7 @@
                       "enum": ["dismiss_ban_evasion"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -17910,7 +17917,7 @@
                       "enum": ["lift_ban"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -17923,7 +17930,7 @@
                       "enum": ["revoke_invite"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S6"
+                      "$ref": "#/$defs/S7"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18044,7 +18051,7 @@
                       "enum": ["release_post_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S6"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18057,7 +18064,7 @@
                       "enum": ["deescalate_post"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S6"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18070,7 +18077,7 @@
                       "enum": ["release_report_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18083,7 +18090,7 @@
                       "enum": ["deescalate_report"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18102,8 +18109,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["community", "id"],
@@ -18120,7 +18126,7 @@
                       "enum": ["delete_saved_reply"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S6"
+                      "$ref": "#/$defs/S7"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18147,18 +18153,10 @@
                   "additionalProperties": false
                 },
                 "S3": {
-                  "type": "object",
-                  "properties": {
-                    "community": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "reportId": {
-                      "type": "string",
-                      "format": "uuid"
-                    }
-                  },
-                  "required": ["community", "reportId"],
-                  "additionalProperties": false
+                  "type": "string",
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
                 },
                 "S4": {
                   "type": "object",
@@ -18166,12 +18164,11 @@
                     "community": {
                       "$ref": "#/$defs/S1"
                     },
-                    "userId": {
-                      "type": "string",
-                      "format": "uuid"
+                    "reportId": {
+                      "$ref": "#/$defs/S3"
                     }
                   },
-                  "required": ["community", "userId"],
+                  "required": ["community", "reportId"],
                   "additionalProperties": false
                 },
                 "S5": {
@@ -18180,15 +18177,27 @@
                     "community": {
                       "$ref": "#/$defs/S1"
                     },
+                    "userId": {
+                      "$ref": "#/$defs/S3"
+                    }
+                  },
+                  "required": ["community", "userId"],
+                  "additionalProperties": false
+                },
+                "S6": {
+                  "type": "object",
+                  "properties": {
+                    "community": {
+                      "$ref": "#/$defs/S1"
+                    },
                     "postId": {
-                      "type": "string",
-                      "format": "uuid"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["community", "postId"],
                   "additionalProperties": false
                 },
-                "S6": {
+                "S7": {
                   "type": "object",
                   "properties": {
                     "community": {

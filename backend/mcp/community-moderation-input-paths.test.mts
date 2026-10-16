@@ -27,17 +27,18 @@ describe('community moderation REST UUID path validation', () => {
     const group = communityModerationGroups.find(entry =>
       entry.options.some(candidate => candidate.option === option),
     )!
-    const error = await callRejectedMcpTool(
-      caller,
-      group.name,
-      optionArgs(option, {
-        community: crypto.randomUUID(),
-        [field]: 'not-a-uuid',
-        ...(option === 'resolve_report' ? { status: 'dismissed' } : {}),
-      }),
-      ['community-moderation:read', 'community-moderation:write'],
-    )
-    expect(error).toContain('Invalid tool arguments')
-    expect(error).toContain('uuid')
+    for (const invalidId of ['not-a-uuid', `urn:uuid:${crypto.randomUUID()}`]) {
+      const error = await callRejectedMcpTool(
+        caller,
+        group.name,
+        optionArgs(option, {
+          community: crypto.randomUUID(),
+          [field]: invalidId,
+          ...(option === 'resolve_report' ? { status: 'dismissed' } : {}),
+        }),
+        ['community-moderation:read', 'community-moderation:write'],
+      )
+      expect(error).toContain('Invalid tool arguments')
+    }
   })
 })
