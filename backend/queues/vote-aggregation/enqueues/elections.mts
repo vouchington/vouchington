@@ -1,7 +1,6 @@
 import type { EnqueueReturnType } from '@voucha/types'
 import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import {
-  ELECTION_LANE_ORDERING,
   type ElectionJobData,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
@@ -34,7 +33,6 @@ export function buildElectionJobOptions(
       mode: 'throttle' as const,
       ttl: ELECTIONS_DEFAULTS.deduplicationTtlMs,
     },
-    ordering: ELECTION_LANE_ORDERING[orderingKey],
     delay: ELECTIONS_DEFAULTS.recomputeDelayMs,
   }
 }

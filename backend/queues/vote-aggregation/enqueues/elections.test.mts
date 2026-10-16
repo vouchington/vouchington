@@ -9,7 +9,6 @@ import {
 } from './elections.mts'
 import { ELECTIONS_DEFAULTS } from './config-elections.mts'
 import {
-  ELECTION_LANE_ORDERING,
   ELECTION_LANES,
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
@@ -39,11 +38,8 @@ describe('buildElectionJobOptions', () => {
     })
   })
 
-  it.each(ELECTION_LANES)('orders the %s lane under its namespaced key', orderingKey => {
-    const opts = buildElectionJobOptions('election-1', orderingKey)
-
-    expect(opts.ordering).toEqual({ key: `vote-aggregation:${orderingKey}`, concurrency: 100 })
-    expect(opts.ordering).toBe(ELECTION_LANE_ORDERING[orderingKey])
+  it.each(ELECTION_LANES)('leaves the %s lane to the domain-wide group', orderingKey => {
+    expect(buildElectionJobOptions('election-1', orderingKey)).not.toHaveProperty('ordering')
   })
 
   it('includes the relation table in entity-relation deduplication identity', () => {
@@ -70,7 +66,7 @@ describe('buildElectionJobOptions', () => {
     ).toThrow('Unknown election entity-relation table')
   })
 
-  it('enqueues entity-relation jobs with the required ordering key and relation table', async () => {
+  it('enqueues entity-relation jobs with the relation table', async () => {
     const target = {
       entityRelationId: crypto.randomUUID(),
       relationTable: 'relation__post__related__url' as EntityRelationElectionTable,
@@ -89,7 +85,6 @@ describe('buildElectionJobOptions', () => {
     expect(jobs[0]?.opts).toMatchObject({
       priority: 10,
       attempts: 3,
-      ordering: { key: 'vote-aggregation:entity_relation', concurrency: 100 },
     })
   })
 })

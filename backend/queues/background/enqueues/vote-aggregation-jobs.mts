@@ -1,12 +1,12 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
-import { defineBackgroundDomain, defineBackgroundJob, entityOrderingKey } from './define-job.mts'
+import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// The old queue had no queue-wide cap: only election jobs were ordered, each by the lane it
-// recomputes (`topic`, `post`, ...) with up to 100 in flight per lane. The domain therefore keeps
-// per-lane keys (`entity`) namespaced as `vote-aggregation:<lane>`; no domain-wide cap exists.
+// The old queue's cap was its worker concurrency of 10. Election jobs also carried one ordering key
+// per lane they recompute, but each allowed 100 in flight, so the lanes were fairness and never
+// exclusivity. One domain-wide group of 10 keeps the cap and replaces the lane keys.
 export const VOTE_AGGREGATION_DOMAIN = defineBackgroundDomain({
   domain: 'vote-aggregation',
-  group: { kind: 'entity' },
+  group: { kind: 'domain', concurrency: 10 },
   workerConcurrency: 10,
 })
 
@@ -20,14 +20,6 @@ export const ELECTION_LANES = [
   'user_vouch',
 ] as const
 export type ElectionLane = (typeof ELECTION_LANES)[number]
-
-/** One ordering key per lane: elections of different lanes never wait on one another. */
-export const ELECTION_LANE_ORDERING = Object.fromEntries(
-  ELECTION_LANES.map(lane => [
-    lane,
-    { key: entityOrderingKey('vote-aggregation', lane), concurrency: 100 },
-  ]),
-) as Record<ElectionLane, { key: string; concurrency: number }>
 
 export type ElectionJobData =
   | {

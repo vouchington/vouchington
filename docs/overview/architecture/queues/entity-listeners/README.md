@@ -17,9 +17,9 @@ downstream chain.
 ## Queue
 
 Every processor is a job of the `entity-listeners` domain of the shared
-[`background`](../background/README.md) queue, named `entity-listeners.<name>`. The domain has no
-group (no domain-wide cap and no ordering keys), so its jobs run under the shared worker's
-concurrency, and pausing the domain from the operator API defers them without spending an attempt.
+[`background`](../background/README.md) queue, named `entity-listeners.<name>`. The domain has one
+domain-wide group of 5 (the old worker concurrency) and no per-entity ordering keys, so a backlog of
+listener jobs cannot take the shared worker's other slots, and pausing the domain from the operator API defers them without spending an attempt.
 The worker rejects a payload that does not match the named job before the processor runs. The
 entity processors and `reconcileEntity` use priority 10; the reconciliation jobs use priority 100:
 
@@ -27,7 +27,7 @@ entity processors and `reconcileEntity` use priority 10; the reconciliation jobs
 - Topic events use `processTopicCreated`, `processTopicUpdated`, and `processTopicDeleted`.
 - Post events use `processPostCreated`, `processPostUpdated`, and `processPostDeleted`.
 - Image and URL creation use `processImageCreated` and `processUrlCreated`.
-- `enqueueReconcileEntities` (the scheduler's trigger) and `reconcileEntities` have no group key.
+- `enqueueReconcileEntities` (the scheduler's trigger) and `reconcileEntities` share the domain's group like every other job.
 
 ## Durable recovery
 

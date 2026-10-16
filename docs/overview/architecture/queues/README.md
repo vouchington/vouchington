@@ -33,7 +33,7 @@ through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-i
 
 ## Vote aggregation
 
-[`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity as a domain of the shared [`background`](background/README.md) queue (`vote-aggregation.<name>` jobs). Election tallies keep per-lane ordering keys; the user election fan-out and the report-integrity backfill enqueue one bounded page and continue through a cursor.
+[`vote-aggregation`](vote-aggregation/README.md) combines election tallies, vote-weight and integrity work, topic ratings, entity-metric refreshes, and report integrity as a domain of the shared [`background`](background/README.md) queue (`vote-aggregation.<name>` jobs). Election tallies share the domain-wide group of 10; the user election fan-out and the report-integrity backfill enqueue one bounded page and continue through a cursor.
 
 ## Contents
 

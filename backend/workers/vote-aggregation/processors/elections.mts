@@ -1,5 +1,4 @@
 import type { Job } from 'glide-mq'
-import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 import type { ElectionJobData } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { updateTopicElectionVoteStats } from '@services/elections-votes/topic'
 import { updateHostnameElectionVoteStats } from '@services/elections-votes/hostname'
@@ -11,14 +10,9 @@ import {
 } from '@services/elections-votes/entity-relation'
 import { updateRssFeedItemElectionVoteStats } from '@services/elections-votes/rss-feed-item'
 import { updateUserVouchElectionVoteStats } from '@services/elections-votes/user-vouch'
-import { VOTE_AGGREGATION_DOMAIN } from '@queues/vote-aggregation/config'
 
 export async function processElection(job: Job<ElectionJobData>): Promise<void> {
   const { electionId, orderingKey } = job.data
-  // The payload names the lane; the job was ordered under that lane's namespaced key.
-  if (entityOrderingKey(VOTE_AGGREGATION_DOMAIN, orderingKey) !== job.opts.ordering?.key) {
-    throw new Error(`Election job ordering mismatch: ${orderingKey}`)
-  }
 
   switch (job.data.orderingKey) {
     case 'topic':

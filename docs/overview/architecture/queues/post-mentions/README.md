@@ -49,8 +49,8 @@ The mentions are **exact** - if a user removes a mention from their post, the en
 
 The `post-mentions` domain of the shared [`background` queue](../background/README.md). The old
 `post-mentions` queue and its `WORKER_CONCURRENCY_POST_MENTIONS` override are gone. The domain has
-no group: its jobs are limited only by the shared worker's concurrency (baseline 5 for this domain),
-and operators can pause, retry, and read stats for it by domain.
+one domain-wide group of 5 (the old worker concurrency), so a backlog of mention jobs cannot take
+the shared worker's other slots, and operators can pause, retry, and read stats for it by domain.
 
 ### Job Types
 

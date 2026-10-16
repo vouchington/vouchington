@@ -29,7 +29,6 @@ import { VELOCITY_SPIKE_THRESHOLD } from '@services/vote-integrity/config'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
-  ELECTION_LANE_ORDERING,
   VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
   VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
   VOTE_AGGREGATION_REFRESH_POST_METRICS_JOB,
@@ -105,11 +104,7 @@ describe('vote-aggregation domain through the production background worker', () 
     await insertPostElectionVote(user.id, post.id, 1, undefined, false, true)
 
     const jobs = [
-      job(
-        VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
-        { electionId: post.id, orderingKey: 'post' },
-        { ordering: ELECTION_LANE_ORDERING.post },
-      ),
+      job(VOTE_AGGREGATION_UPDATE_ELECTION_JOB, { electionId: post.id, orderingKey: 'post' }),
       job(VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB, { topicId: topic.id }),
       job(VOTE_AGGREGATION_REFRESH_TOPIC_METRICS_JOB, { id: topic.id }),
       job(VOTE_AGGREGATION_REFRESH_POST_METRICS_JOB, { id: post.id }),
@@ -124,26 +119,13 @@ describe('vote-aggregation domain through the production background worker', () 
     await expect(caches.user_metrics.get(user.id)).resolves.toMatchObject({ id: user.id })
   })
 
-  it('rejects an election whose ordering key is not its lane key', async () => {
-    const post = await createTestPost({ user: await createTestUser() })
-    await expect(
-      runJobs([
-        job(
-          VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
-          { electionId: post.id, orderingKey: 'post' },
-          { ordering: ELECTION_LANE_ORDERING.topic, attempts: 1 },
-        ),
-      ]),
-    ).rejects.toThrow('Election job ordering mismatch: post')
-  })
-
   it('rejects an election in a lane the worker does not know', async () => {
     await expect(
       runJobs([
         job(
           VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
           { electionId: randomUUID(), orderingKey: 'not_a_lane' },
-          { ordering: { key: 'vote-aggregation:not_a_lane', concurrency: 1 }, attempts: 1 },
+          { attempts: 1 },
         ),
       ]),
     ).rejects.toThrow('Unknown ordering key: not_a_lane')

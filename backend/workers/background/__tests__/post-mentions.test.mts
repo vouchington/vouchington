@@ -42,7 +42,7 @@ describe('post-mentions background handler', () => {
     const job = (await enqueuePostMentions(postId)) as Job
     expect(job.name).toBe(POST_MENTIONS_PROCESS_JOB.name)
     expect(job.opts.priority).toBe(POST_MENTIONS_PROCESS_JOB.options.priority)
-    expect(job.opts.ordering).toBeUndefined()
+    expect(job.opts.ordering).toEqual({ key: 'post-mentions', concurrency: 5 })
     await completed.promise
 
     const relation = entityRelationMetadatum.find(
