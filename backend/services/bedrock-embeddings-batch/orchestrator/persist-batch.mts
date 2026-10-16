@@ -45,7 +45,6 @@ export async function insertBatchAndLockRows(params: {
   jobType: BatchJobType
   entityCount: number
   entityIdsFilePath: string
-  createdAt: Date
   data: Record<string, unknown>
   urlId: string | null
   crawlId: string | null
@@ -55,9 +54,9 @@ export async function insertBatchAndLockRows(params: {
   await query(
     `/* createBatch:insertPreparing */
       INSERT INTO bedrock_embedding_batches (
-        id, job_arn, model_id, job_type, data, url_id, crawl_id, records, created_at
+        id, job_arn, model_id, job_type, data, url_id, crawl_id, records
       )
-      VALUES ($1, NULL, $2, $3, $4, $5, $6, $7, $8)`,
+      VALUES ($1, NULL, $2, $3, $4, $5, $6, $7)`,
     [
       params.batchId,
       BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
@@ -66,7 +65,6 @@ export async function insertBatchAndLockRows(params: {
       params.urlId,
       params.crawlId,
       params.entityCount,
-      params.createdAt,
     ],
   )
   await insertLockRowsWithQuery(query, params.batchId, params.jobType, params.entityIdsFilePath)

@@ -23,16 +23,6 @@ export const PROVIDER_LOOKUP_BOUNDS = new Map<string, string>(
   ]),
 )
 
-export const PROVIDER_LOOKUP_ID_POLICIES = new Map(
-  providerLookups.map(([table, vocabulary]) => [
-    table,
-    {
-      policy: 'natural-or-provider' as const,
-      rationale: `The provider owns this exact ${vocabulary} lookup key.`,
-    },
-  ]),
-)
-
 export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ...PROVIDER_LOOKUP_BOUNDS,
   ...STATIC_IDENTITY_EXCEPTIONS,

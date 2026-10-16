@@ -1,9 +1,8 @@
-import { randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import {
   cleanupTestEmbeddingsBatches,
-  cleanupTestEmbeddingsBatchesByPrefix,
   getTestBatchSummary,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
@@ -19,11 +18,10 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
   }),
 )
 
-const batchIdPrefix = `stale-cleanup-test-${randomUUID()}-`
 const createdBatchIds: string[] = []
 
 function batchId() {
-  const id = `${batchIdPrefix}${randomUUID()}`
+  const id = mintUUIDv7()
   createdBatchIds.push(id)
   return id
 }
@@ -35,7 +33,6 @@ describe('runStaleCleanup', () => {
 
   afterEach(async () => {
     await cleanupTestEmbeddingsBatches(createdBatchIds.splice(0))
-    await cleanupTestEmbeddingsBatchesByPrefix(batchIdPrefix)
   })
 
   it('returns empty result when no batches are stale', async () => {

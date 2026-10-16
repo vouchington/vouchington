@@ -986,16 +986,18 @@ CREATE TRIGGER trigger_mrefund_attempt_scans_updated_at BEFORE UPDATE ON members
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_event_types (
-  id TEXT PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  stripe_event_type TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE stripe_event_types IS 'Stripe event type names registered on first sight; the provider owns this open set and exact spelling.';
-COMMENT ON COLUMN stripe_event_types.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN stripe_event_types.id IS 'Stable identifier for this Stripe event type.';
+COMMENT ON COLUMN stripe_event_types.stripe_event_type IS 'Exact provider value; never normalized.';
 COMMENT ON COLUMN stripe_event_types.created_at IS 'When this provider value was first observed.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS stripe_events (
-  id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, stripe_event_type_id TEXT NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, is_live_mode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
+  id UUID PRIMARY KEY DEFAULT uuidv7(), stripe_event_id TEXT NOT NULL, stripe_event_type_id UUID NOT NULL REFERENCES stripe_event_types(id) ON DELETE RESTRICT, is_live_mode BOOLEAN NOT NULL DEFAULT false, api_version TEXT,
   occurred_at TIMESTAMPTZ NOT NULL, customer_id TEXT, subscription_id TEXT, invoice_id TEXT, checkout_session_id TEXT,
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, payload JSONB NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
@@ -1280,7 +1282,7 @@ COMMENT ON COLUMN membership_refund_operation_attempt_metadata_scans.completed_a
 
 COMMENT ON TABLE stripe_events IS 'Ingested Stripe events with explicit processing lifecycle timestamps.';
 COMMENT ON COLUMN stripe_events.stripe_event_id IS 'Unique Stripe event identity used for deduplication.';
-COMMENT ON COLUMN stripe_events.stripe_event_type_id IS 'Stripe event type.';
+COMMENT ON COLUMN stripe_events.stripe_event_type_id IS 'Identifier of the Stripe event type.';
 COMMENT ON COLUMN stripe_events.is_live_mode IS 'Whether Stripe issued the event in live mode.';
 COMMENT ON COLUMN stripe_events.api_version IS 'Stripe API version that generated the event.';
 COMMENT ON COLUMN stripe_events.occurred_at IS 'When Stripe created the event.';

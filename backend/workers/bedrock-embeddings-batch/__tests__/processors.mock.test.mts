@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import {
@@ -29,7 +29,7 @@ describe('processBatchPolling', () => {
   })
 
   function batchId() {
-    const id = `poll-processor-${randomUUID()}`
+    const id = mintUUIDv7()
     createdBatchIds.push(id)
     return id
   }

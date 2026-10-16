@@ -40,13 +40,11 @@ export const createBatch = async (
     if (entityCount === 0) {
       throw new Error('Cannot create batch with no entities')
     }
-    const createdAt = new Date()
     await insertBatchAndLockRows({
       batchId,
       jobType,
       entityCount,
       entityIdsFilePath,
-      createdAt,
       data: batchDocument('Preparing', inputS3Uri, outputS3Uri, batchMetadata),
       urlId: source.urlId ?? null,
       crawlId: source.crawlId ?? null,

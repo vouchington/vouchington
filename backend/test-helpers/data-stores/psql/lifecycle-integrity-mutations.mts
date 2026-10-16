@@ -2,6 +2,7 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 import { randomBytes, randomUUID } from 'node:crypto'
 
 import { write } from '@data-stores/psql'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
 export async function insertContradictoryImageLifecycle(userId: string): Promise<void> {
@@ -26,7 +27,7 @@ export async function insertContradictoryBedrockBatchLifecycle(): Promise<void> 
     INSERT INTO bedrock_embedding_batches (
       id, model_id, job_type, completed_at, failed_at
     ) VALUES (
-      ${`lifecycle-${randomUUID()}`}, 'test-model', 'topics',
+      ${mintUUIDv7()}, 'test-model', 'topics',
       CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
     )`)
 }
@@ -99,7 +100,7 @@ export async function rewriteTerminalDataRequest(): Promise<void> {
 }
 
 export async function rewriteTerminalBedrockBatch(): Promise<void> {
-  const id = `lifecycle-${randomUUID()}`
+  const id = mintUUIDv7()
   await write(
     allowUnannotatedQuery(sql`
     INSERT INTO bedrock_embedding_batches (

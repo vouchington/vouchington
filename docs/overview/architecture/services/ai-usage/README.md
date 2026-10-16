@@ -20,8 +20,9 @@ statement of what this ledger does and doesn't cover live in the private
 outside any community or post. `agent_slug` identifies any agent workload, not only a moderator.
 `model_provider` (`anthropic`, `openai`, or `typesafe` for the jev classifiers) and
 `provider_transport` (`direct`, `openrouter`, `typesafe`) say who served the call and how it
-arrived. `model` and `service_tier_id` (a first-sight `ai_service_tiers` lookup) record what the
-provider **actually served** (`response.model`, the reported service tier), not the requested alias/tier — see the cost-model doc's "Verified: flex
+arrived. `model` and `service_tier_id` (a UUID reference to a first-sight `ai_service_tiers`
+lookup with the provider's exact tier string) record what the provider **actually served**
+(`response.model`, the reported service tier), not the requested alias/tier — see the cost-model doc's "Verified: flex
 tier is honored" section for why that distinction matters.
 
 `ai_usage_provider_response_keys` maps each provider response or decision `response_id` to exactly one

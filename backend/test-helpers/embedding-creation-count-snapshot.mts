@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { expect } from 'vitest'
 import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
@@ -16,7 +16,7 @@ export async function createEmbeddingCountSnapshot(
   let transaction: OwnedTransaction | undefined
   let closing: Promise<void> | undefined
   const operations: Promise<unknown>[] = []
-  const id = `embedding-count-${randomUUID()}`
+  const id = mintUUIDv7()
   const start = <T,>(action: () => Promise<T>): Promise<T> => {
     quota.assertOpen()
     if (closing) throw new Error('Embedding count snapshot is closing')

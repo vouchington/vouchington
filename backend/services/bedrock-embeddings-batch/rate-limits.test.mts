@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { mintUUIDv7 } from '@modules/utils/ids'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   cleanupTestEmbeddingsBatches,
-  cleanupTestEmbeddingsBatchesByPrefix,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
 import {
@@ -16,16 +15,11 @@ import {
 import { getBatchCreationLimits } from './rate-limits.mts'
 
 const createdBatchIds: string[] = []
-const batchIdPrefix = 'rate-limit-test-'
 
 describe('getBatchCreationLimits', () => {
   beforeAll(async () => {
     await bedrockEmbeddingsBatchConfig.waitForInitialization()
     bedrockEmbeddingsBatchConfig.unsubscribe()
-  })
-
-  beforeEach(async () => {
-    await cleanupTestEmbeddingsBatchesByPrefix(batchIdPrefix)
   })
 
   afterEach(async () => {
@@ -132,7 +126,7 @@ async function insertBatch(options: {
   records?: number
   inputSizeMB?: number
 }): Promise<void> {
-  const id = `${batchIdPrefix}${randomUUID()}`
+  const id = mintUUIDv7()
   createdBatchIds.push(id)
   await insertTestEmbeddingsBatch({
     id,

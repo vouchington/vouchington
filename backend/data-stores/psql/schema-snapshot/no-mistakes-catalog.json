@@ -5294,22 +5294,32 @@
         "created_at": {
           "comment": "When this provider value was first observed.",
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": "Stable identifier for this model provider service tier.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 1
         },
-        "id": {
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
+        "service_tier": {
+          "comment": "Exact provider value; never normalized.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 2
         }
       },
       "comment": "Model provider service tier names (OpenAI flex/default, Anthropic standard/priority/batch) registered on first sight; each provider owns this open set and exact spelling.",
@@ -5322,10 +5332,33 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "id",
               "descending": false,
               "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_service_tiers_service_tier_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_service_tiers_service_tier_key ON public.ai_service_tiers USING btree (service_tier)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "service_tier",
+              "descending": false,
+              "expression": "service_tier",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
@@ -5333,7 +5366,7 @@
           ],
           "live": true,
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -5345,7 +5378,11 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "ai_service_tiers_service_tier_key": {
+          "columns": ["service_tier"]
+        }
+      }
     },
     "ai_usage_provider_response_keys": {
       "checkConstraints": {
@@ -5736,8 +5773,8 @@
           "ordinalPosition": 15
         },
         "service_tier_id": {
-          "comment": "The service tier actually served, from the response (e.g. flex, default, standard) — not necessarily the requested tier.",
-          "dataType": "text",
+          "comment": "Identifier of the service tier actually served (e.g. flex, default, standard), not necessarily the requested tier.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5921,12 +5958,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "service_tier_id",
               "descending": false,
               "expression": "service_tier_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -5950,10 +5987,6 @@
     },
     "amazon_ses_bounce_events": {
       "checkConstraints": {
-        "amazon_ses_bounce_events_amazon_ses_bounce_subtype_id_check": {
-          "definition": "CHECK (((amazon_ses_bounce_subtype_id IS NULL) OR ((char_length(amazon_ses_bounce_subtype_id) <= 255) AND (TRIM(BOTH FROM amazon_ses_bounce_subtype_id) = amazon_ses_bounce_subtype_id))))",
-          "validated": true
-        },
         "amazon_ses_bounce_events_amazon_ses_feedback_id_check": {
           "definition": "CHECK (((amazon_ses_feedback_id IS NULL) OR ((char_length(amazon_ses_feedback_id) <= 1024) AND (TRIM(BOTH FROM amazon_ses_feedback_id) = amazon_ses_feedback_id))))",
           "validated": true
@@ -5977,8 +6010,8 @@
       },
       "columns": {
         "amazon_ses_bounce_subtype_id": {
-          "comment": "Detailed bounce sub-type from SES (e.g. General, NoEmail).",
-          "dataType": "text",
+          "comment": "Identifier of the detailed SES bounce subtype (e.g. General, NoEmail).",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -6149,12 +6182,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "amazon_ses_bounce_subtype_id",
               "descending": false,
               "expression": "amazon_ses_bounce_subtype_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -6280,22 +6313,37 @@
       "uniqueConstraints": {}
     },
     "amazon_ses_bounce_subtypes": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_check": {
+          "definition": "CHECK (((char_length(amazon_ses_bounce_subtype) <= 255) AND (TRIM(BOTH FROM amazon_ses_bounce_subtype) = amazon_ses_bounce_subtype)))",
+          "validated": true
+        }
+      },
       "columns": {
-        "created_at": {
-          "comment": "When this provider value was first observed.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+        "amazon_ses_bounce_subtype": {
+          "comment": "Exact provider value; never normalized.",
+          "dataType": "text",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
         },
-        "id": {
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
-          "dataType": "text",
+        "created_at": {
+          "comment": "When this provider value was first observed.",
+          "dataType": "timestamp with time zone",
           "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": "Stable identifier for this SES bounce subtype.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -6306,6 +6354,29 @@
       "comment": "SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.",
       "foreignKeys": {},
       "indexes": {
+        "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key ON public.amazon_ses_bounce_subtypes USING btree (amazon_ses_bounce_subtype)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "amazon_ses_bounce_subtype",
+              "descending": false,
+              "expression": "amazon_ses_bounce_subtype",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "amazon_ses_bounce_subtypes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -6313,12 +6384,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "id",
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -6336,7 +6407,11 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key": {
+          "columns": ["amazon_ses_bounce_subtype"]
+        }
+      }
     },
     "api_keys": {
       "checkConstraints": {
@@ -7254,7 +7329,7 @@
       "columns": {
         "batch_id": {
           "comment": "The batch job processing this entity.",
-          "dataType": "text",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -7412,12 +7487,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "batch_id",
               "descending": false,
               "expression": "batch_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -7627,11 +7702,11 @@
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 9
         },
         "data": {
@@ -7655,9 +7730,9 @@
           "ordinalPosition": 14
         },
         "id": {
-          "comment": null,
-          "dataType": "text",
-          "defaultExpression": null,
+          "comment": "UUIDv7 identifier of this Bedrock embedding batch.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -7772,12 +7847,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "id",
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -7791,16 +7866,16 @@
         "idx_bedrock_embedding_batches__active": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (created_at) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
+          "definition": "CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "created_at",
+              "column": "id",
               "descending": false,
-              "expression": "created_at",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -7829,29 +7904,6 @@
           ],
           "live": true,
           "predicate": "(crawl_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_bedrock_embedding_batches__created_at": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bedrock_embedding_batches__created_at ON public.bedrock_embedding_batches USING btree (created_at)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "created_at",
-              "descending": false,
-              "expression": "created_at",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -47392,27 +47444,60 @@
         "created_at": {
           "comment": "When this provider value was first observed.",
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": "Stable identifier for this identity document type.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 1
         },
-        "id": {
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
+        "identity_document_type": {
+          "comment": "Exact provider value; never normalized.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 2
         }
       },
       "comment": "Identity provider document type names registered on first sight; the provider owns this open set and exact spelling.",
       "foreignKeys": {},
       "indexes": {
+        "identity_document_types_identity_document_type_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX identity_document_types_identity_document_type_key ON public.identity_document_types USING btree (identity_document_type)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "identity_document_type",
+              "descending": false,
+              "expression": "identity_document_type",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "identity_document_types_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -47420,12 +47505,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "id",
               "descending": false,
               "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -47443,7 +47528,11 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "identity_document_types_identity_document_type_key": {
+          "columns": ["identity_document_type"]
+        }
+      }
     },
     "identity_verification_attempts": {
       "checkConstraints": {
@@ -121197,22 +121286,32 @@
         "created_at": {
           "comment": "When this provider value was first observed.",
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "id": {
+          "comment": "Stable identifier for this Stripe event type.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 1
         },
-        "id": {
-          "comment": "Exact provider value used as the natural lookup key; never normalized.",
+        "stripe_event_type": {
+          "comment": "Exact provider value; never normalized.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 2
         }
       },
       "comment": "Stripe event type names registered on first sight; the provider owns this open set and exact spelling.",
@@ -121225,10 +121324,33 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "id",
               "descending": false,
               "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "stripe_event_types_stripe_event_type_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX stripe_event_types_stripe_event_type_key ON public.stripe_event_types USING btree (stripe_event_type)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "stripe_event_type",
+              "descending": false,
+              "expression": "stripe_event_type",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
               "orderingSupported": true
@@ -121236,7 +121358,7 @@
           ],
           "live": true,
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -121248,7 +121370,11 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "stripe_event_types_stripe_event_type_key": {
+          "columns": ["stripe_event_type"]
+        }
+      }
     },
     "stripe_events": {
       "checkConstraints": {},
@@ -121364,8 +121490,8 @@
           "ordinalPosition": 2
         },
         "stripe_event_type_id": {
-          "comment": "Stripe event type.",
-          "dataType": "text",
+          "comment": "Identifier of the Stripe event type.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -121435,12 +121561,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "stripe_event_type_id",
               "descending": false,
               "expression": "stripe_event_type_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
             {
@@ -138478,8 +138604,8 @@
           "ordinalPosition": 1
         },
         "identity_document_type_id": {
-          "comment": "Document type (passport, id_card, driving_license, etc.).",
-          "dataType": "text",
+          "comment": "Identifier of the document type (passport, id_card, driving_license, etc.).",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -138613,12 +138739,12 @@
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": null,
               "column": "identity_document_type_id",
               "descending": false,
               "expression": "identity_document_type_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],

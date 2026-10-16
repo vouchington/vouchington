@@ -6,24 +6,28 @@ SES bounce subtype names registered on first sight; the provider owns this open 
 
 Not partitioned — growth: bounded.
 
-| Column       | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                |
-| ------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`         | `text`                     | no       |                     |          |           |           | Exact provider value used as the natural lookup key; never normalized. |
-| `created_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When this provider value was first observed.                           |
+| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                        |
+| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------- |
+| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Stable identifier for this SES bounce subtype. |
+| `amazon_ses_bounce_subtype` | `text`                     | no       |                              |          |           |           | Exact provider value; never normalized.        |
+| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | When this provider value was first observed.   |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key`: `UNIQUE (amazon_ses_bounce_subtype)`
 
 **Check constraints:**
-_none_
+
+- `amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_check`: `CHECK (((char_length(amazon_ses_bounce_subtype) <= 255) AND (TRIM(BOTH FROM amazon_ses_bounce_subtype) = amazon_ses_bounce_subtype)))`
 
 **Foreign keys:**
 _none_
 
 **Indexes:**
 
+- `amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key`: `CREATE UNIQUE INDEX amazon_ses_bounce_subtypes_amazon_ses_bounce_subtype_key ON public.amazon_ses_bounce_subtypes USING btree (amazon_ses_bounce_subtype)`
 - `amazon_ses_bounce_subtypes_pkey`: `CREATE UNIQUE INDEX amazon_ses_bounce_subtypes_pkey ON public.amazon_ses_bounce_subtypes USING btree (id)`
 
 **Triggers:**

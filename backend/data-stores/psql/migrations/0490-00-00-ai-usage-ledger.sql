@@ -2,11 +2,13 @@
 -- edited-in-place: pre-launch, never deployed to production
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS ai_service_tiers (
-  id TEXT PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  service_tier TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE ai_service_tiers IS 'Model provider service tier names (OpenAI flex/default, Anthropic standard/priority/batch) registered on first sight; each provider owns this open set and exact spelling.';
-COMMENT ON COLUMN ai_service_tiers.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN ai_service_tiers.id IS 'Stable identifier for this model provider service tier.';
+COMMENT ON COLUMN ai_service_tiers.service_tier IS 'Exact provider value; never normalized.';
 COMMENT ON COLUMN ai_service_tiers.created_at IS 'When this provider value was first observed.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -25,7 +27,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
   model_provider ai_model_providers NOT NULL,
   provider_transport ai_provider_transports NOT NULL,
   model TEXT NOT NULL,
-  service_tier_id TEXT NOT NULL REFERENCES ai_service_tiers(id) ON DELETE RESTRICT,
+  service_tier_id UUID NOT NULL REFERENCES ai_service_tiers(id) ON DELETE RESTRICT,
   input_tokens INTEGER NOT NULL CHECK (input_tokens >= 0),
   cached_input_tokens INTEGER NOT NULL DEFAULT 0 CHECK (cached_input_tokens >= 0),
   cache_write_5m_input_tokens INTEGER NOT NULL DEFAULT 0 CHECK (cache_write_5m_input_tokens >= 0),
@@ -100,7 +102,7 @@ COMMENT ON COLUMN ai_usage_records.agent_slug IS 'The slug of the agent that mad
 COMMENT ON COLUMN ai_usage_records.model_provider IS 'The model provider that served the call.';
 COMMENT ON COLUMN ai_usage_records.provider_transport IS 'How the call reached the provider: direct API, OpenRouter, or the typesafe jev transport.';
 COMMENT ON COLUMN ai_usage_records.model IS 'The model actually served, from the response (e.g. gpt-6-luna-2026-10-01) — not necessarily the requested alias.';
-COMMENT ON COLUMN ai_usage_records.service_tier_id IS 'The service tier actually served, from the response (e.g. flex, default, standard) — not necessarily the requested tier.';
+COMMENT ON COLUMN ai_usage_records.service_tier_id IS 'Identifier of the service tier actually served (e.g. flex, default, standard), not necessarily the requested tier.';
 COMMENT ON COLUMN ai_usage_records.input_tokens IS 'Number of input tokens billed for this call: every prompt token, including cached_input_tokens and the cache-write tokens.';
 COMMENT ON COLUMN ai_usage_records.cached_input_tokens IS 'Of input_tokens, the number read from the prompt cache at the discounted cache-read rate.';
 COMMENT ON COLUMN ai_usage_records.cache_write_5m_input_tokens IS 'Of input_tokens, the number written to the prompt cache at the default (5-minute) retention, billed at the cache-write rate.';

@@ -580,11 +580,14 @@ END $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS amazon_ses_bounce_subtypes (
-  id TEXT PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  amazon_ses_bounce_subtype TEXT NOT NULL UNIQUE,
+  CHECK (char_length(amazon_ses_bounce_subtype) <= 255 AND TRIM(amazon_ses_bounce_subtype) = amazon_ses_bounce_subtype),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 COMMENT ON TABLE amazon_ses_bounce_subtypes IS 'SES bounce subtype names registered on first sight; the provider owns this open set and exact spelling.';
-COMMENT ON COLUMN amazon_ses_bounce_subtypes.id IS 'Exact provider value used as the natural lookup key; never normalized.';
+COMMENT ON COLUMN amazon_ses_bounce_subtypes.id IS 'Stable identifier for this SES bounce subtype.';
+COMMENT ON COLUMN amazon_ses_bounce_subtypes.amazon_ses_bounce_subtype IS 'Exact provider value; never normalized.';
 COMMENT ON COLUMN amazon_ses_bounce_subtypes.created_at IS 'When this provider value was first observed.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -593,8 +596,7 @@ CREATE TABLE IF NOT EXISTS amazon_ses_bounce_events (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   notification_type amazon_ses_notification_types NOT NULL,
   bounce_type amazon_ses_bounce_types,
-  amazon_ses_bounce_subtype_id TEXT REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT,
-  CHECK (amazon_ses_bounce_subtype_id IS NULL OR (char_length(amazon_ses_bounce_subtype_id) <= 255 AND TRIM(amazon_ses_bounce_subtype_id) = amazon_ses_bounce_subtype_id)),
+  amazon_ses_bounce_subtype_id UUID REFERENCES amazon_ses_bounce_subtypes(id) ON DELETE RESTRICT,
   recipients JSONB NOT NULL DEFAULT '[]'::jsonb,
   amazon_ses_message_id TEXT,
   CHECK (amazon_ses_message_id IS NULL OR (char_length(amazon_ses_message_id) <= 1024 AND TRIM(amazon_ses_message_id) = amazon_ses_message_id)),
@@ -641,7 +643,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 COMMENT ON TABLE amazon_ses_bounce_events IS 'Records email bounce, complaint, and delivery notifications received from AWS SES.';
 COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
 COMMENT ON COLUMN amazon_ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
-COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_bounce_subtype_id IS 'Detailed bounce sub-type from SES (e.g. General, NoEmail).';
+COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_bounce_subtype_id IS 'Identifier of the detailed SES bounce subtype (e.g. General, NoEmail).';
 COMMENT ON COLUMN amazon_ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_message_id IS 'SES message ID for correlating with sent emails.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_feedback_id IS 'SES feedback ID for the notification.';

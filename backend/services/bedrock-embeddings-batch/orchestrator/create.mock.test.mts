@@ -7,7 +7,7 @@ import { StopModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { S3BedrockBatchBucket, S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
-import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils/ids'
 import { createCrawlChunkEntityId } from '@services/bedrock-embeddings-batch/entities/crawl-chunk-entity-id'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
@@ -207,7 +207,7 @@ describe('createBatch', () => {
     const entityId = await createLockedEntityId('topics', user.id)
     const jobArn = `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`
     await insertTestEmbeddingsBatch({
-      id: `create-stop-fail-${randomUUID()}`,
+      id: mintUUIDv7(),
       bedrockStatus: 'Submitted',
       jobArn,
     })

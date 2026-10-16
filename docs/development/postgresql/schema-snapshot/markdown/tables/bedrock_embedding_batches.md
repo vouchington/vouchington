@@ -6,23 +6,23 @@ Tracks Amazon Bedrock batch embedding jobs and their lifecycle.
 
 Not partitioned — growth: unbounded.
 
-| Column           | Type                                | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                            |
-| ---------------- | ----------------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
-| `id`             | `text`                              | no       |                     |          |           |           |                                                                                                    |
-| `job_arn`        | `text`                              | yes      |                     |          |           |           | The Bedrock model invocation job ARN.                                                              |
-| `model_id`       | `text`                              | no       |                     |          |           |           | The Amazon Bedrock model id used for embeddings.                                                   |
-| `job_type`       | `bedrock_embedding_batch_job_types` | no       |                     |          |           |           | Which entity type this batch processes.                                                            |
-| `data`           | `jsonb`                             | no       | `'{}'::jsonb`       |          |           |           | JSONB batch document: status, model id, job ARN, S3 URIs, input size, and submission metadata.     |
-| `url_id`         | `uuid`                              | yes      |                     |          |           |           | Optional URL this batch was created for.                                                           |
-| `crawl_id`       | `uuid`                              | yes      |                     |          |           |           | Optional crawl this batch was created for. Cleared before that crawl partition is dropped.         |
-| `records`        | `integer`                           | no       | `0`                 |          |           |           | Number of records in this batch.                                                                   |
-| `created_at`     | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                    |
-| `updated_at`     | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                    |
-| `submitted_at`   | `timestamp with time zone`          | yes      |                     |          |           |           | When the Bedrock job was successfully submitted (Submitted/Validating/Scheduled).                  |
-| `in_progress_at` | `timestamp with time zone`          | yes      |                     |          |           |           | When the Bedrock job first reported InProgress or Stopping.                                        |
-| `completed_at`   | `timestamp with time zone`          | yes      |                     |          |           |           | When the Bedrock job first reached a successful terminal status (Completed or PartiallyCompleted). |
-| `failed_at`      | `timestamp with time zone`          | yes      |                     |          |           |           | When the Bedrock job terminated unsuccessfully (Failed or Expired).                                |
-| `cancelled_at`   | `timestamp with time zone`          | yes      |                     |          |           |           | When the Bedrock job was Stopped before completion.                                                |
+| Column           | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                            |
+| ---------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------- |
+| `id`             | `uuid`                              | no       | `uuidv7()`                   |          |           |           | UUIDv7 identifier of this Bedrock embedding batch.                                                 |
+| `job_arn`        | `text`                              | yes      |                              |          |           |           | The Bedrock model invocation job ARN.                                                              |
+| `model_id`       | `text`                              | no       |                              |          |           |           | The Amazon Bedrock model id used for embeddings.                                                   |
+| `job_type`       | `bedrock_embedding_batch_job_types` | no       |                              |          |           |           | Which entity type this batch processes.                                                            |
+| `data`           | `jsonb`                             | no       | `'{}'::jsonb`                |          |           |           | JSONB batch document: status, model id, job ARN, S3 URIs, input size, and submission metadata.     |
+| `url_id`         | `uuid`                              | yes      |                              |          |           |           | Optional URL this batch was created for.                                                           |
+| `crawl_id`       | `uuid`                              | yes      |                              |          |           |           | Optional crawl this batch was created for. Cleared before that crawl partition is dropped.         |
+| `records`        | `integer`                           | no       | `0`                          |          |           |           | Number of records in this batch.                                                                   |
+| `created_at`     | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                    |
+| `updated_at`     | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                    |
+| `submitted_at`   | `timestamp with time zone`          | yes      |                              |          |           |           | When the Bedrock job was successfully submitted (Submitted/Validating/Scheduled).                  |
+| `in_progress_at` | `timestamp with time zone`          | yes      |                              |          |           |           | When the Bedrock job first reported InProgress or Stopping.                                        |
+| `completed_at`   | `timestamp with time zone`          | yes      |                              |          |           |           | When the Bedrock job first reached a successful terminal status (Completed or PartiallyCompleted). |
+| `failed_at`      | `timestamp with time zone`          | yes      |                              |          |           |           | When the Bedrock job terminated unsuccessfully (Failed or Expired).                                |
+| `cancelled_at`   | `timestamp with time zone`          | yes      |                              |          |           |           | When the Bedrock job was Stopped before completion.                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -41,9 +41,8 @@ _none_
 **Indexes:**
 
 - `bedrock_embedding_batches_pkey`: `CREATE UNIQUE INDEX bedrock_embedding_batches_pkey ON public.bedrock_embedding_batches USING btree (id)`
-- `idx_bedrock_embedding_batches__active`: `CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (created_at) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))`
+- `idx_bedrock_embedding_batches__active`: `CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))`
 - `idx_bedrock_embedding_batches__crawl_id`: `CREATE INDEX idx_bedrock_embedding_batches__crawl_id ON public.bedrock_embedding_batches USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)`
-- `idx_bedrock_embedding_batches__created_at`: `CREATE INDEX idx_bedrock_embedding_batches__created_at ON public.bedrock_embedding_batches USING btree (created_at)`
 - `idx_bedrock_embedding_batches__job_arn`: `CREATE UNIQUE INDEX idx_bedrock_embedding_batches__job_arn ON public.bedrock_embedding_batches USING btree (job_arn) WHERE (job_arn IS NOT NULL)`
 - `idx_bedrock_embedding_batches__url_id`: `CREATE INDEX idx_bedrock_embedding_batches__url_id ON public.bedrock_embedding_batches USING btree (url_id) WHERE (url_id IS NOT NULL)`
 

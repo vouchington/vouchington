@@ -56,16 +56,18 @@ export async function insertTestVerifiedIdentity(
 ): Promise<void> {
   await write(sql`/* insertTestVerifiedIdentity */
     WITH registered_identity_document_type_id AS (
-      INSERT INTO identity_document_types (id) VALUES ('passport')
-      ON CONFLICT (id) DO NOTHING
+      INSERT INTO identity_document_types (identity_document_type) VALUES ('passport')
+      ON CONFLICT (identity_document_type) DO UPDATE
+        SET identity_document_type = EXCLUDED.identity_document_type
+      RETURNING id
     )
     INSERT INTO verified_identities (
       user_id, provider, provider_session_id, identity_fingerprint,
       issuing_country, identity_document_type_id, verified_at, checkout_session_id
-    ) VALUES (
+    ) SELECT
       ${userId}, 'stripe_identity', ${sessionId}, ${fingerprint},
-      'US', 'passport', CURRENT_TIMESTAMP, 'cs_test'
-    )
+      'US', registered_identity_document_type_id.id, CURRENT_TIMESTAMP, 'cs_test'
+    FROM registered_identity_document_type_id
   `)
 }
 

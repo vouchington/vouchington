@@ -8,7 +8,7 @@ Not partitioned — growth: unbounded.
 
 | Column              | Type                                | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                   |
 | ------------------- | ----------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `batch_id`          | `text`                              | no       |                     |          |           |           | The batch job processing this entity.                                                     |
+| `batch_id`          | `uuid`                              | no       |                     |          |           |           | The batch job processing this entity.                                                     |
 | `entity_type`       | `bedrock_embedding_batch_job_types` | no       |                     |          |           |           | The entity type being processed.                                                          |
 | `topic_id`          | `uuid`                              | yes      |                     |          |           |           | Topic currently being processed in a Bedrock embeddings batch.                            |
 | `post_id`           | `uuid`                              | yes      |                     |          |           |           | Post currently being processed in a Bedrock embeddings batch.                             |

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import {
@@ -19,7 +19,6 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
   }),
 )
 
-const batchIdPrefix = 'poll-mock-test-'
 const createdBatchIds: string[] = []
 
 describe('processBatch', () => {
@@ -32,7 +31,7 @@ describe('processBatch', () => {
   })
 
   function batchId() {
-    const id = `${batchIdPrefix}${randomUUID()}`
+    const id = mintUUIDv7()
     createdBatchIds.push(id)
     return id
   }

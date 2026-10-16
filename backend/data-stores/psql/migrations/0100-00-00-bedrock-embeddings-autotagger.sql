@@ -21,7 +21,7 @@ END $$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_embedding_batches (
-  id TEXT PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   job_arn TEXT,
   model_id TEXT NOT NULL,
   job_type bedrock_embedding_batch_job_types NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS bedrock_embedding_batches (
   url_id UUID REFERENCES urls ON DELETE SET NULL,
   crawl_id UUID REFERENCES crawls ON DELETE SET NULL,
   records INT NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   submitted_at TIMESTAMPTZ,
   in_progress_at TIMESTAMPTZ,
@@ -56,15 +56,11 @@ EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at', 'canc
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__active
-ON bedrock_embedding_batches (created_at)
+ON bedrock_embedding_batches (id)
 WHERE submitted_at IS NOT NULL
   AND completed_at IS NULL
   AND failed_at IS NULL
   AND cancelled_at IS NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__created_at
-ON bedrock_embedding_batches (created_at);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__job_arn
@@ -82,6 +78,7 @@ ON bedrock_embedding_batches (crawl_id)
 WHERE crawl_id IS NOT NULL;
 
 COMMENT ON TABLE bedrock_embedding_batches IS 'Tracks Amazon Bedrock batch embedding jobs and their lifecycle.';
+COMMENT ON COLUMN bedrock_embedding_batches.id IS 'UUIDv7 identifier of this Bedrock embedding batch.';
 COMMENT ON COLUMN bedrock_embedding_batches.job_arn IS 'The Bedrock model invocation job ARN.';
 COMMENT ON COLUMN bedrock_embedding_batches.model_id IS 'The Amazon Bedrock model id used for embeddings.';
 COMMENT ON COLUMN bedrock_embedding_batches.job_type IS 'Which entity type this batch processes.';
@@ -97,7 +94,7 @@ COMMENT ON COLUMN bedrock_embedding_batches.cancelled_at IS 'When the Bedrock jo
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_embedding_batch_entities (
-  batch_id TEXT NOT NULL REFERENCES bedrock_embedding_batches ON DELETE CASCADE,
+  batch_id UUID NOT NULL REFERENCES bedrock_embedding_batches ON DELETE CASCADE,
   entity_type bedrock_embedding_batch_job_types NOT NULL,
   topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
