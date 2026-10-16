@@ -119,6 +119,7 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
           target_is_restricted: _e,
           target_is_anonymous,
           post_moderation_context: _f,
+          case_id: _caseId,
           ...report
         }) => ({
           ...report,

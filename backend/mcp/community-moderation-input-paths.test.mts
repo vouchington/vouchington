@@ -41,4 +41,16 @@ describe('community moderation REST UUID path validation', () => {
       expect(error).toContain('Invalid tool arguments')
     }
   })
+  it('rejects malformed ban user body IDs before dispatch', async () => {
+    const caller = await createTestPlusMcpCaller()
+    for (const user_id of ['not-a-uuid', `urn:uuid:${crypto.randomUUID()}`]) {
+      const error = await callRejectedMcpTool(
+        caller,
+        'add_community_moderation',
+        optionArgs('ban_user', { community: crypto.randomUUID(), user_id }),
+        ['community-moderation:read', 'community-moderation:write'],
+      )
+      expect(error).toContain('Invalid tool arguments')
+    }
+  })
 })

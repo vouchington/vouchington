@@ -18,6 +18,7 @@ const NON_TOOL_FILES = new Set([
   'bookmark-tool-support.mts',
   'community-moderation-contract.mts',
   'community-moderation-guards.mts',
+  'community-moderation-input-paths.mts',
   'community-moderation-list-writes.mts',
   'community-moderation-other-writes.mts',
   'community-moderation-output-parts.mts',

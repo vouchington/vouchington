@@ -43,7 +43,7 @@ const bodyFieldOverrides: Record<
 > = {
   ban_user: {
     properties: {
-      user_id: { type: 'string', format: 'uuid' },
+      user_id: { type: 'string', format: 'uuid', minLength: 36, maxLength: 36 },
       reason: { type: ['string', 'null'] },
       expires_at: { type: ['string', 'null'] },
     },

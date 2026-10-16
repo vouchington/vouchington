@@ -15980,7 +15980,9 @@
                         },
                         "user_id": {
                           "type": "string",
-                          "format": "uuid"
+                          "format": "uuid",
+                          "minLength": 36,
+                          "maxLength": 36
                         }
                       },
                       "required": ["community", "user_id"],
