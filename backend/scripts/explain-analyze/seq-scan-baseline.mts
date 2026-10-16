@@ -50,7 +50,7 @@ export function assertNoNewSeqScans(
   )
   const added = [...stable].filter(fingerprint => !allowed.has(fingerprint)).toSorted()
   const stale = [
-    ...[...allowed].filter(fingerprint => !stable.has(fingerprint)),
+    ...[...allowed].filter(fingerprint => !first.has(fingerprint) && !repeated.has(fingerprint)),
     ...Object.entries(baseline)
       .filter(([, relations]) => relations.length === 0)
       .map(([identity]) => identity),

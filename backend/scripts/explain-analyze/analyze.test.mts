@@ -67,6 +67,14 @@ describe('explain analyze summary helpers', () => {
       onlyFirst: [],
       onlyRepeated: ['hydration|0|default|force_generic_plan:posts'],
     })
+    expect(assertNoNewSeqScans(results, withoutDefault, baseline)).toEqual({
+      onlyFirst: ['hydration|0|default|force_generic_plan:posts'],
+      onlyRepeated: [],
+    })
+    expect(assertNoNewSeqScans(withoutDefault, results, baseline)).toEqual({
+      onlyFirst: [],
+      onlyRepeated: ['hydration|0|default|force_generic_plan:posts'],
+    })
     expect(() =>
       assertNoNewSeqScans(results, results, { ...baseline, 'other|0|old|auto': ['topics'] }),
     ).toThrow('stale [other|0|old|auto:topics]')
