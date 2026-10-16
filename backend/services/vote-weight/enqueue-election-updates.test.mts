@@ -122,10 +122,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
         id: `processUpdateElectionVoteStats__post__${postId}`,
         mode: 'throttle',
       },
-      ordering: {
-        key: 'vote-aggregation:post',
-        concurrency: 100,
-      },
+      ordering: { key: 'vote-aggregation', concurrency: 10 },
     })
   })
 
@@ -146,10 +143,7 @@ describe('enqueueElectionUpdatePageForUser', () => {
         id: `processUpdateElectionVoteStats__user_vouch__${target!.id}`,
         mode: 'throttle',
       },
-      ordering: {
-        key: 'vote-aggregation:user_vouch',
-        concurrency: 100,
-      },
+      ordering: { key: 'vote-aggregation', concurrency: 10 },
     })
   })
 

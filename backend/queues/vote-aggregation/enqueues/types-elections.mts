@@ -1,6 +1,6 @@
 import type { ElectionLane } from '@queues/background/enqueues/vote-aggregation-jobs'
 
-/** The lane an election recomputes in; its ordering key is `vote-aggregation:<lane>`. */
+/** The lane an election recomputes in. */
 export type ElectionOrderingKey = ElectionLane
 
 declare const entityRelationElectionTableBrand: unique symbol

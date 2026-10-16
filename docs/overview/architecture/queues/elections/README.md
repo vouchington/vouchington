@@ -6,14 +6,13 @@ Queue system for asynchronous vote-stat refreshes.
 
 ## Queue
 
-| Queue (domain)                    | Job                                               | Ordering Key (100 each)            | Default Priority |
-| --------------------------------- | ------------------------------------------------- | ---------------------------------- | ---------------- |
-| `background` (`vote-aggregation`) | `vote-aggregation.processUpdateElectionVoteStats` | `vote-aggregation:post`            | 10               |
-| `background` (`vote-aggregation`) | `vote-aggregation.processUpdateElectionVoteStats` | `vote-aggregation:entity_relation` | 10               |
-| `background` (`vote-aggregation`) | `vote-aggregation.processUpdateElectionVoteStats` | `vote-aggregation:rss_feed_item`   | 10               |
+| Queue (domain)                    | Job                                               | Group              | Default Priority |
+| --------------------------------- | ------------------------------------------------- | ------------------ | ---------------- |
+| `background` (`vote-aggregation`) | `vote-aggregation.processUpdateElectionVoteStats` | `vote-aggregation` | 10               |
 
-The other lanes are `topic`, `hostname`, `agent_moderation`, and `user_vouch`. The payload carries the
-bare lane in `orderingKey`; the job's ordering key is `vote-aggregation:<lane>`.
+The domain group allows 10 jobs of any `vote-aggregation` name at once. The payload carries the
+lane in `orderingKey` (`post`, `entity_relation`, `rss_feed_item`, `topic`, `hostname`,
+`agent_moderation`, or `user_vouch`); the lane is not an ordering key.
 
 ## Responsibilities
 

@@ -216,7 +216,7 @@ describe('owned vote-route admission settlement', () => {
       queue.add(
         'vote-aggregation.processUpdateElectionVoteStats',
         { electionId: topicId, orderingKey: 'topic' },
-        { ordering: { key: 'vote-aggregation:topic' }, attempts: 1 },
+        { attempts: 1 },
       ),
     )
     const settlement = finish()

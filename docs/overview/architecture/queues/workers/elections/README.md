@@ -6,8 +6,7 @@ The shared `background` worker runs election vote-stat refresh jobs as the `vote
 
 ## Exports
 
-- `voteAggregationHandlers` - the domain's handlers. The election handler checks that the job's
-  ordering key is `vote-aggregation:<lane>` for the payload's lane and requires a
+- `voteAggregationHandlers` - the domain's handlers. The election handler requires a
   metadata-validated relation table for entity-relation jobs; it never scans tables to resolve an
   omitted target.
 
