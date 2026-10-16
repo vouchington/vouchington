@@ -60,6 +60,8 @@ transaction-local state permits subset reentry but rejects additional roots afte
 batch; it follows borrowed clients and resets with transaction/savepoint rollback. Exact delivery
 publication remains placement-only and does not expand into asset admission.
 
+An empty delivery-mutation domain still marks narrower authority as started in PostgreSQL, so later asset expansion remains forbidden. It skips binding discovery and placement-row locking because every requested identity array is empty.
+
 Surface mutations then use explicit user-profile, profile-link, topic, and community owner domains
 (topic/community domains cover both slots) and retain the complete historical placement
 footprint in canonical order. The retained transaction discovers all historical placement IDs in
