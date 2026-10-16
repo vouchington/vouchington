@@ -4,7 +4,7 @@ import { BASELINE_FINGERPRINTS } from './seq-scan-baseline-data.mts'
 
 export type SeqScanBaseline = Readonly<Record<string, readonly string[]>>
 
-// Starting baseline from CI run 38557423714 (2026-10-14T11-42-47-022Z), first/repeat captures.
+// The starting fingerprints and their CI provenance live in seq-scan-baseline-data.mts.
 // Remove an entry when its scan is fixed.
 const baselineByIdentity = new Map<string, string[]>()
 for (const fingerprint of BASELINE_FINGERPRINTS) {

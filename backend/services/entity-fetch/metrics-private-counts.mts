@@ -60,6 +60,10 @@ function buildCountSelect(collection: UserProfileCollection): string {
   const userColumn = relation.direction === 'subject' ? 'object_id' : 'subject_id'
   /* c8 ignore next -- no current owner-only private counts use subject-directed relations. */
   const targetColumn = relation.direction === 'subject' ? 'subject_id' : 'object_id'
+  const targetJoin =
+    relation.targetTable === 'posts'
+      ? `JOIN LATERAL (SELECT 1 FROM posts target WHERE target.id = rel.${targetColumn}${targetDeletedFilter} LIMIT 1) matched_post ON TRUE`
+      : `JOIN ${relation.targetTable} target ON target.id = rel.${targetColumn}${targetDeletedFilter}`
 
-  return `(SELECT COUNT(*)::INT FROM ${relation.tableName} rel JOIN ${relation.targetTable} target ON target.id = rel.${targetColumn}${targetDeletedFilter} WHERE rel.${userColumn} = $1 AND rel.deleted_at IS NULL) AS ${collection.metricKey}`
+  return `(SELECT COUNT(*)::INT FROM ${relation.tableName} rel ${targetJoin} WHERE rel.${userColumn} = $1 AND rel.deleted_at IS NULL) AS ${collection.metricKey}`
 }

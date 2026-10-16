@@ -309,9 +309,10 @@ entries, while default `auto` captures keep sequential scans advisory because th
 from CI compare-mode captures. One-pass scans stay advisory, as do estimate-mismatch, append,
 planning-ratio, and buffer warnings.
 
-After bulk seeding, fixture maintenance vacuums and analyzes the five seeded relations whose
+After bulk seeding, fixture maintenance vacuums and analyzes the six seeded relations whose
 plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,
-topics, and post review topic ratings. This settles their visibility maps and statistics before
+topics, post review topic ratings, and post data-point topics. This settles their visibility maps
+and statistics before
 the first capture instead of depending on autovacuum timing. The `ANALYZE` between paired captures
 still tests plan stability on the same seeded rows; production planner settings are unchanged.
 
