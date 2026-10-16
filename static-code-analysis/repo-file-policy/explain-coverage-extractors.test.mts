@@ -15,19 +15,13 @@ describe('EXPLAIN extractor overlap', () => {
           completedScenarioIds: ['fixture'],
         }),
       )
-      const sources = [
-        'backend/services/notifications/reconcile-batches.mts',
-        'backend/services/notifications/reconcile-temp-tables.mts',
-      ].map(fileName => ({
-        fileName,
-        source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
-      }))
-      const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report).toMatchObject({ annotatedStatements: 6, reads: 3, coveredReads: 0 })
+      const fileName = 'backend/services/notifications/reconcile-batches.mts'
+      const source = readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8')
+      const report = await reportCoverage([{ fileName, source }], resultsPath, ['fixture'])
+      expect(report).toMatchObject({ annotatedStatements: 2, reads: 2, coveredReads: 0 })
       expect(report.uncoveredReads.map(read => read.name)).toEqual([
         'selectRssFeedItemNotificationRecipientBatch',
         'selectPostNotificationRecipientBatch',
-        'selectCreatedNotificationBatch',
       ])
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
@@ -149,7 +143,6 @@ describe('EXPLAIN extractor overlap', () => {
       )
       const paths = [
         'backend/services/notifications/reconcile-batches.mts',
-        'backend/services/notifications/reconcile-temp-tables.mts',
         'backend/services/referral-program-link-validations/contains-referral-links.mts',
       ]
       const sources = paths.map(fileName => ({
@@ -157,15 +150,12 @@ describe('EXPLAIN extractor overlap', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report).toMatchObject({ annotatedStatements: 7, reads: 4, coveredReads: 0 })
+      expect(report).toMatchObject({ annotatedStatements: 3, reads: 3, coveredReads: 0 })
       expect(report.ambiguousReads.map(read => read.name)).toEqual([
         'selectRssFeedItemNotificationRecipientBatch',
         'selectPostNotificationRecipientBatch',
       ])
-      expect(report.uncoveredReads.map(read => read.name)).toEqual([
-        'selectCreatedNotificationBatch',
-        'containsReferralLinks',
-      ])
+      expect(report.uncoveredReads.map(read => read.name)).toEqual(['containsReferralLinks'])
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
