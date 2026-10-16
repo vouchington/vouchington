@@ -75,12 +75,31 @@ describe('explain analyze summary helpers', () => {
       onlyFirst: [],
       onlyRepeated: ['hydration|0|default|force_generic_plan:posts'],
     })
+    expect(assertNoNewSeqScans([results[0]], [results[0]], baseline)).toEqual({
+      onlyFirst: [],
+      onlyRepeated: [],
+    })
+    const autoResults = [{ ...results[0], plan_cache_mode: 'auto' as const }]
+    expect(assertNoNewSeqScans(autoResults, autoResults, baseline)).toEqual({
+      onlyFirst: [],
+      onlyRepeated: [],
+    })
+    const newCustomScan = [result('monthly', 'posts', 'force_custom_plan')]
+    expect(() => assertNoNewSeqScans(newCustomScan, newCustomScan, baseline)).toThrow(
+      'new [hydration|0|monthly|force_custom_plan:posts]',
+    )
     expect(() =>
-      assertNoNewSeqScans(results, results, { ...baseline, 'other|0|old|auto': ['topics'] }),
-    ).toThrow('stale [other|0|old|auto:topics]')
+      assertNoNewSeqScans(results, results, {
+        ...baseline,
+        'other|0|old|force_custom_plan': ['topics'],
+      }),
+    ).toThrow('stale [other|0|old|force_custom_plan:topics]')
     expect(() =>
-      assertNoNewSeqScans(results, results, { ...baseline, 'other|0|empty|auto': [] }),
-    ).toThrow('stale [other|0|empty|auto]')
+      assertNoNewSeqScans(results, results, {
+        ...baseline,
+        'other|0|empty|force_generic_plan': [],
+      }),
+    ).toThrow('stale [other|0|empty|force_generic_plan]')
     expect(() =>
       assertNoNewSeqScans(results, results, {
         'hydration|0|monthly|force_custom_plan': ['crawls'],

@@ -40,19 +40,37 @@ export function assertNoNewSeqScans(
 
   const first = scanFingerprints(firstResults)
   const repeated = scanFingerprints(repeatedResults)
-  const stable = new Set([...first].filter(fingerprint => repeated.has(fingerprint)))
   const onlyFirst = [...first].filter(fingerprint => !repeated.has(fingerprint)).toSorted()
   const onlyRepeated = [...repeated].filter(fingerprint => !first.has(fingerprint)).toSorted()
+  const compareModes = new Set(['force_custom_plan', 'force_generic_plan'])
+  const capturedModes = new Set<string>(
+    firstResults.map(result => result.plan_cache_mode ?? 'auto'),
+  )
+  const gatedFirst = scanFingerprints(
+    firstResults.filter(result => compareModes.has(result.plan_cache_mode ?? 'auto')),
+  )
+  const gatedRepeated = scanFingerprints(
+    repeatedResults.filter(result => compareModes.has(result.plan_cache_mode ?? 'auto')),
+  )
+  const stable = new Set([...gatedFirst].filter(fingerprint => gatedRepeated.has(fingerprint)))
+  const isCapturedCompareIdentity = (identity: string) => {
+    const mode = identity.slice(identity.lastIndexOf('|') + 1)
+    return compareModes.has(mode) && capturedModes.has(mode)
+  }
   const allowed = new Set(
-    Object.entries(baseline).flatMap(([identity, relations]) =>
-      relations.map(relation => `${identity}:${relation}`),
-    ),
+    Object.entries(baseline)
+      .filter(([identity]) => isCapturedCompareIdentity(identity))
+      .flatMap(([identity, relations]) => relations.map(relation => `${identity}:${relation}`)),
   )
   const added = [...stable].filter(fingerprint => !allowed.has(fingerprint)).toSorted()
   const stale = [
-    ...[...allowed].filter(fingerprint => !first.has(fingerprint) && !repeated.has(fingerprint)),
+    ...[...allowed].filter(
+      fingerprint => !gatedFirst.has(fingerprint) && !gatedRepeated.has(fingerprint),
+    ),
     ...Object.entries(baseline)
-      .filter(([, relations]) => relations.length === 0)
+      .filter(
+        ([identity, relations]) => isCapturedCompareIdentity(identity) && relations.length === 0,
+      )
       .map(([identity]) => identity),
   ].toSorted()
   if (added.length > 0 || stale.length > 0)

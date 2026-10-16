@@ -303,9 +303,11 @@ relations between captures. The service callback and fixture cleanup run only be
 EXPLAIN rolls back each statement's database writes, although PostgreSQL may still change physical
 visibility information. The diagnostic log hashes selected captured parameters and seeded relation
 keys and records relation and column statistics for plan comparisons. A fingerprint present in both
-captures but absent from the baseline fails, as does a baseline entry absent from the stable
-intersection. A scan seen in only one pass is reported as unstable and stays advisory. Estimate
-mismatch, append, planning-ratio, and buffer warnings remain advisory.
+captures but absent from the baseline fails in captured forced plan-cache modes; a baseline entry
+fails as stale only when both captures miss it. A single forced mode checks only its own baseline
+entries, while default `auto` captures keep sequential scans advisory because the baseline comes
+from CI compare-mode captures. One-pass scans stay advisory, as do estimate-mismatch, append,
+planning-ratio, and buffer warnings.
 
 After bulk seeding, fixture maintenance vacuums and analyzes the five seeded relations whose
 plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,
