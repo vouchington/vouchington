@@ -1,3 +1,4 @@
+import { participationWriteGroups } from './participation-write-groups.mts'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from './index.mts'
 import { userMergedAccountGroups } from './user-merged-account-tools.mts'
@@ -17,6 +18,7 @@ function containsPost(schema: unknown): boolean {
 describe('registered MCP post outputs', () => {
   it('routes every post or recommendation shape through a sanitizing transform', () => {
     const groups = [
+      ...participationWriteGroups,
       ...userMergedAccountGroups,
       ...userMergedParticipationGroups,
       ...userMergedReadingGroups,

@@ -22,13 +22,14 @@ const USER_RESOURCE_SCOPES = {
   'reference-data': ['read'],
   'referral-links': ['read', 'write'],
   reports: ['write'],
-  'rss-feeds': ['read'],
-  'rss-feed-items': ['read'],
+  'rss-feeds': ['read', 'write'],
+  'rss-feed-items': ['read', 'write'],
   'rewards-statuses': ['read', 'write'],
   spending: ['read', 'write'],
   'topic-recommendations': ['read', 'write'],
   topics: ['read'],
   users: ['read'],
+  votes: ['write'],
   'web-search': ['read'],
 } as const
 

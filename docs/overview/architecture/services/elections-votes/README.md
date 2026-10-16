@@ -41,6 +41,13 @@ and writes only that relation’s vote table under one mutation lock. The vote A
 
 ### Route Handler Factory ([`backend/api/election-vote-handler.mts`](../../../../../backend/api/election-vote-handler.mts))
 
+The REST factory delegates to `applyVoteMutation` in
+[`backend/services/elections-votes/vote-handler.mts`](../../../../../backend/services/elections-votes/vote-handler.mts).
+The user MCP `vote` tool invokes this same kernel and the shared post/topic/RSS option objects,
+retaining visibility checks, federation hooks, quota, integrity and idempotent no-op repair. REST
+keeps authentication, request contracts and the 204 response; MCP keeps its selected-route charge
+and returns `{ success: true }`.
+
 All seven PUT vote endpoints and their DELETE clear routes use the shared handlers to eliminate
 boilerplate. The handlers cover:
 

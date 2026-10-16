@@ -109,6 +109,15 @@ describe('createMergedTool', () => {
     ).toThrow(McpToolOutputMismatchError)
   })
 
+  it('supports one closed option and refuses an empty group', async () => {
+    const single = createMergedTool('single', 'Single', [{ option: 'get', source: source('get') }])
+    const args = { option: 'get', arguments: { id: 'one' } }
+    expect(validateToolArguments(single.schema.parameters, args)).toBeNull()
+    expect(await single.function({} as never)(args)).toEqual({ success: true, get: { id: 'one' } })
+    expect(single.meta?.auditOption?.(args)).toBe('get')
+    expect(() => createMergedTool('empty', 'Empty', [])).toThrow('needs at least one option')
+  })
+
   it.each(['plan', 'scopes', 'admin scopes', 'roles', 'annotations', 'switch'] as const)(
     'rejects incompatible declared %s metadata',
     field => {

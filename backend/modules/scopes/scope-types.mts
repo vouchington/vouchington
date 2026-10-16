@@ -72,7 +72,9 @@ export type ApiScope =
   | 'rewards-statuses:write'
   | 'rss:read'
   | 'rss-feeds:read'
+  | 'rss-feeds:write'
   | 'rss-feed-items:read'
+  | 'rss-feed-items:write'
   | 'feeds:read'
   | 'spending:read'
   | 'spending:write'
@@ -80,6 +82,7 @@ export type ApiScope =
   | 'topic-recommendations:write'
   | 'topics:read'
   | 'users:read'
+  | 'votes:write'
   | 'web-search:read'
 
 export type ScopeDefinition = {

@@ -1,3 +1,4 @@
+import { participationWriteGroups } from './participation-write-groups.mts'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -68,6 +69,7 @@ const NON_TOOL_FILES = new Set([
 describe('tool registry', () => {
   it('registers named tools and references every anonymous option source exactly once', async () => {
     const mergedGroups = [
+      ...participationWriteGroups,
       ...userMergedAccountGroups,
       ...userMergedParticipationGroups,
       ...userMergedReadingGroups,

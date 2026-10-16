@@ -64,6 +64,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@jongleberry/api-server": "^3.0.1",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
@@ -72,6 +73,7 @@
     "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/analytics": "workspace:^",
+    "@services/contribution-gating": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/moderation-training": "workspace:^",
@@ -80,6 +82,7 @@
     "@services/session-advisory-lock": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
+    "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2"
   },

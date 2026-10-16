@@ -246,6 +246,24 @@ Metadata Document consent name and hostname changes therefore remain in that hos
 surface and do not change native REST DTOs or fixture consumers. A discovered native DTO or
 consumer change requires the normal linked client validation PR.
 
+### Votes, RSS writes and discussion MCP handoff
+
+Plus user MCP now exposes `vote` (`set_post`, `clear_post`, `set_topic`, `clear_topic`,
+`set_rss_feed_item`, `clear_rss_feed_item`), `set_rss_feed_item_read` (`read`, `unread`),
+`share_rss_feed_item` (`share`, `send`), `submit_rss_feed` (`submit`) and `start_discussion`
+(`rss_feed_item`, `story`). Calls use `{ option, arguments }`; discussion arguments require a UUID
+`idempotency_key`. The tools reuse REST authorization, contribution limits and vote integrity.
+The ordinary `votes:write`, `rss-feed-items:write` and `rss-feeds:write` scopes arrive through the
+scope catalogue; RSS write scopes require their reads, while votes have no read prerequisite.
+Hosted consent and credential pickers consume this metadata through their existing flows.
+
+Web REST behavior and DTOs are unchanged. Reader `tools/list` is byte-identical; eligible Plus
+grants gain exactly five tools. Swift and .NET MCP discovery, strict option dispatch and structured
+results must adopt the generated catalog through
+[vouchington-clients#218](https://github.com/vouchington/vouchington-clients/issues/218).
+See the [MCP write contract](../overview/architecture/services/mcp-tools/README.md#votes-rss-writes-and-discussions)
+for the option-to-REST mapping. Native adoption remains pending and does not block this producer.
+
 ### Community, report, dispute and appeal MCP tool handoff
 
 Eleven user MCP tools write or read community membership, content reports, review disputes and

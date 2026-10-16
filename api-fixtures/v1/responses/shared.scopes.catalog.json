@@ -523,12 +523,30 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "rss-feed-items:read",
+      "resource": "rss-feed-items",
+      "scope": "rss-feed-items:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
       "action": "read",
       "audience": "user",
       "description_key": null,
       "requires": null,
       "resource": "rss-feeds",
       "scope": "rss-feeds:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": "rss-feeds:read",
+      "resource": "rss-feeds",
+      "scope": "rss-feeds:write",
       "surfaces": ["api-key", "oauth"]
     },
     {
@@ -628,6 +646,15 @@
       "requires": null,
       "resource": "users",
       "scope": "users:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": null,
+      "requires": null,
+      "resource": "votes",
+      "scope": "votes:write",
       "surfaces": ["api-key", "oauth"]
     },
     {

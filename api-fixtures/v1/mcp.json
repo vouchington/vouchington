@@ -10747,6 +10747,225 @@
         },
         {
           "tool": {
+            "name": "vote",
+            "title": "Vote",
+            "description": "set_post: Set your post vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_post: Clear your current post vote. A vote already cleared succeeds without changing anything.\nset_topic: Set your topic vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_topic: Clear your current topic vote. A vote already cleared succeeds without changing anything.\nset_rss_feed_item: Set your rss feed item vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_rss_feed_item: Clear your current rss feed item vote. A vote already cleared succeeds without changing anything.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["set_post"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "choice": {
+                          "type": "string",
+                          "enum": [
+                            "vouch",
+                            "like",
+                            "neutral",
+                            "dislike",
+                            "disavow",
+                            "support",
+                            "oppose"
+                          ],
+                          "description": "Semantic vote choice."
+                        }
+                      },
+                      "required": ["id", "choice"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["clear_post"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S4"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["set_topic"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "choice": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["id", "choice"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["clear_topic"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S3"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["set_rss_feed_item"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "choice": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["id", "choice"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["clear_rss_feed_item"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S2"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "type": "string",
+                  "enum": ["vouch", "like", "neutral", "dislike", "disavow"],
+                  "description": "Semantic vote choice."
+                },
+                "S2": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The rss feed item ID."
+                },
+                "S3": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The topic ID."
+                },
+                "S4": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The post ID."
+                }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["votes:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PUT",
+              "path": "/api/v1/posts/:id/vote"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/posts/:id/vote"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/topics/:id/vote"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/topics/:id/vote"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/rss-feed-items/:id/vote"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/rss-feed-items/:id/vote"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "create_community",
             "title": "Create Community",
             "description": "Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed_at lets members invite others, and post_approval_required_at sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner image ids and list_type match the REST community inputs. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Returns the community id, slug, visibility and creation time.",
@@ -11492,6 +11711,509 @@
             {
               "method": "POST",
               "path": "/api/v1/appeals"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "set_rss_feed_item_read",
+            "title": "Set RSS Feed Item Read State",
+            "description": "read: Mark an existing RSS item read.\nunread: Mark an existing RSS item unread.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["read"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["unread"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "rss_feed_item_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["rss_feed_item_id"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                }
+              },
+              "required": ["success"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feed-items:read", "rss-feed-items:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "PUT",
+              "path": "/api/v1/rss-feed-items/:id/read"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/rss-feed-items/:id/read"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "share_rss_feed_item",
+            "title": "Share RSS Feed Item",
+            "description": "share: Share an RSS item with followers, at most once per day.\nsend: Send an RSS item to all or selected current followers, at most once per day.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["share"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "rss_feed_item_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["rss_feed_item_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["send"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "rss_feed_item_id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "audience": {
+                              "const": "all_followers"
+                            }
+                          },
+                          "required": ["rss_feed_item_id", "audience"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "rss_feed_item_id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "audience": {
+                              "const": "selected_followers"
+                            },
+                            "recipient_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "minItems": 1,
+                              "maxItems": 100,
+                              "uniqueItems": true
+                            }
+                          },
+                          "required": ["rss_feed_item_id", "audience", "recipient_user_ids"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {}
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "const": "accepted"
+                },
+                "distribution_id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["status", "distribution_id"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feed-items:read", "rss-feed-items:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/rss-feed-items/:rssFeedItemId/shares"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/rss-feed-items/:rssFeedItemId/sends"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "submit_rss_feed",
+            "title": "Submit RSS Feed",
+            "description": "submit: Submit a feed URL, returning the existing feed when already submitted. Follow defaults to true.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["submit"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "rss_feed_url": {
+                          "type": "string"
+                        },
+                        "follow": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["rss_feed_url"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {}
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": ["created", "upvoted"]
+                },
+                "rss_feed_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "topic_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "topic_slug": {
+                  "type": "string"
+                }
+              },
+              "required": ["status", "rss_feed_id", "topic_id", "topic_slug"],
+              "additionalProperties": false
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/rss-feeds"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "start_discussion",
+            "title": "Start Discussion",
+            "description": "rss_feed_item: Start a link discussion from an RSS item. Reuse the UUID idempotency_key with the same input to retry safely.\nstory: Start a discussion from a discoverable story. Reuse the UUID idempotency_key with the same input to retry safely.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["rss_feed_item"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "rss_feed_item_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "idempotency_key": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["rss_feed_item_id", "idempotency_key"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["story"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "story_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "idempotency_key": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["story_id", "idempotency_key"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {}
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "const": true
+                },
+                "post": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "post_type": {
+                      "enum": [
+                        "article",
+                        "blog_post",
+                        "comment",
+                        "data_point",
+                        "discussion",
+                        "link",
+                        "review",
+                        "story",
+                        "topic_recommendation"
+                      ],
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "markdown": {
+                      "type": "string"
+                    },
+                    "parent_post_id": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "root_post_id": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "created_by_id": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "is_anonymous": {
+                      "type": "boolean"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "provenance": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "app": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "client_id": {
+                                  "type": "string"
+                                },
+                                "client_name": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "verified"
+                                }
+                              },
+                              "required": ["client_id", "client_name", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "hostname": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "hostname"
+                                }
+                              },
+                              "required": ["hostname", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "key": {
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "known"
+                                }
+                              },
+                              "required": ["key", "kind"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "via": {
+                          "enum": ["api", "mcp"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["app", "via"],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "post_type",
+                    "title",
+                    "markdown",
+                    "parent_post_id",
+                    "root_post_id",
+                    "created_by_id",
+                    "is_anonymous",
+                    "created_at",
+                    "updated_at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": ["success", "post"],
+              "additionalProperties": false,
+              "$defs": {
+                "S1": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["posts:read", "posts:write"]
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/rss-feed-items/:id/discussions"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/stories/:storyId/discussions"
             }
           ]
         },

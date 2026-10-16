@@ -7,8 +7,6 @@ import {
   getRssFeedItemElectionVotesByUser,
   getRssFeedItemElectionVotesByElectionId,
   getRssFeedItemElectionVotesByUserForEntity,
-  getRssFeedItemElectionVote,
-  upsertRssFeedItemElectionVotes,
 } from '@services/elections-votes/rss-feed-item'
 import { getRssFeedItemElectionByIdCachedBatch } from '@services/entity-fetch'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
@@ -21,8 +19,7 @@ import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
 import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
-import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateRssFeedItemElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
+import { rssFeedItemVoteOptions } from '../../election-vote-options/rss-feed-item.mts'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
@@ -93,30 +90,11 @@ app.route('/api/v1/rss-feed-items/:id/follow-context').get(async (ctx: Context) 
 })
 
 // PUT /api/v1/rss-feed-items/:id/vote
-const rssFeedItemVoteHandler = createVoteHandler({
-  rateLimitPrefix: 'rss-feed-item-election-vote',
-  routeKey: 'PUT:/api/v1/rss-feed-items/:id/vote',
-  requestContractOperation: 'PUT:/api/v1/rss-feed-items/:id/vote',
-  entityType: 'rss_feed_item',
-  getEntity: getRssFeedItemById,
-  entityNotFoundMessage: 'RSS feed item not found',
-  votePolicy: 'sentiment',
-  getCurrentVote: getRssFeedItemElectionVote,
-  upsertVotes: upsertRssFeedItemElectionVotes,
-  onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateRssFeedItemElectionVoteStats),
-})
-
+const rssFeedItemVoteHandler = createVoteHandler(rssFeedItemVoteOptions)
 const clearRssFeedItemVoteHandler = createVoteClearHandler({
-  rateLimitPrefix: 'rss-feed-item-election-vote',
+  ...rssFeedItemVoteOptions,
   routeKey: 'DELETE:/api/v1/rss-feed-items/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/rss-feed-items/:id/vote',
-  entityType: 'rss_feed_item',
-  getEntity: getRssFeedItemById,
-  entityNotFoundMessage: 'RSS feed item not found',
-  votePolicy: 'sentiment',
-  upsertVotes: upsertRssFeedItemElectionVotes,
-  getCurrentVote: getRssFeedItemElectionVote,
-  onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateRssFeedItemElectionVoteStats),
 })
 
 app.route('/api/v1/rss-feed-items/:id/vote').put(async ctx => {
