@@ -52,7 +52,6 @@
     "@modules/stripe": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/background": "workspace:^",
     "@queues/memberships": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",

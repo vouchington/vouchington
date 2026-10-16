@@ -7200,9 +7200,6 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../../queues/background
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
