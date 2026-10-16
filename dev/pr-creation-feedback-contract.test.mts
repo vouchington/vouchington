@@ -86,7 +86,7 @@ describe('agent-authored PR creation feedback contract', () => {
     const retrospective = normalized('.agents/skills/retrospective/SKILL.md')
 
     expect(retrospective).toContain('vouchington-workflow:retrospective')
-    expect(retrospective).toContain('node dev/retrospective-save.mts')
+    expect(retrospective).toContain('retrospective_save')
     expect(retrospective).toContain('[PR feedback](pr-feedback.md)')
   })
 

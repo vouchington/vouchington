@@ -1,22 +1,12 @@
-import { AgentBlackboardError, Entries, type ClientConfig, type Sessions } from 'agent-blackboard'
+import { Entries, type ClientConfig } from 'agent-blackboard'
 import { resolveBlackboardConnection as resolvePortableBlackboardConnection } from 'vouchington-tooling/agent-blackboard'
 
 export type BlackboardConnection = ClientConfig
-
-export type BlackboardSessionsClient = Pick<Sessions, 'ensure' | 'get' | 'list' | 'patch'>
 
 export type BlackboardEntriesClient = Pick<Entries, 'append' | 'get'>
 
 export function createEntriesClient(connection: BlackboardConnection): BlackboardEntriesClient {
   return new Entries(connection)
-}
-
-// A never-created session reads as a 404 from the public client, possibly wrapped by a caller.
-export function isBlackboardNotFound(error: unknown): boolean {
-  for (let current = error; current instanceof Error; current = current.cause) {
-    if (current instanceof AgentBlackboardError) return current.status === 404
-  }
-  return false
 }
 
 // Resolves the public agent-blackboard client configuration for the hosted deployment.

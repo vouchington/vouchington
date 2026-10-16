@@ -1,7 +1,4 @@
-import { parse as load } from 'yaml'
 import type { FeedbackReference } from 'vouchington-tooling/agent-blackboard'
-
-import { isValidSessionId } from '../agent-session-id/valid-id.mts'
 
 const FRONT_MATTER_DELIMITER = '---'
 
@@ -18,7 +15,7 @@ export type FrontMatterFields = {
 // provenance-field-set contract, it is not a first-class entry field — it stays
 // readable only inside the stored markdown's own front matter.
 export function parseFrontMatter(markdown: string): FrontMatterFields {
-  const lines = markdown.split('\n')
+  const lines = markdown.split('\n').map(line => line.replace(/\r$/, ''))
   if (lines[0] !== FRONT_MATTER_DELIMITER) {
     throw new Error('retrospective doc is missing a front-matter block (must start with "---")')
   }
@@ -27,16 +24,21 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     throw new Error('retrospective doc front-matter block is not closed with a second "---"')
   }
 
-  let parsed: unknown
-  try {
-    parsed = load(lines.slice(1, endIndex).join('\n'))
-  } catch (err) {
-    throw new Error(`retrospective doc front matter is not valid YAML: ${String(err)}`, {
-      cause: err,
-    })
-  }
-  if (typeof parsed !== 'object' || parsed === null) {
-    throw new Error('retrospective doc front matter must be a YAML mapping')
+  // Null prototype so a hand-written `__proto__` key stays an own property.
+  const parsed: Record<string, unknown> = Object.create(null)
+  for (const line of lines.slice(1, endIndex)) {
+    // The tooling composer separates fields with blank lines, and its parser skips them.
+    if (line.trim() === '') continue
+    const match = /^([a-z_]+): (.*)$/.exec(line)
+    if (!match)
+      throw new Error(`retrospective doc front matter line is not "key: <JSON value>": ${line}`)
+    try {
+      parsed[match[1]] = JSON.parse(match[2])
+    } catch (err) {
+      throw new Error(`retrospective doc front matter "${match[1]}" is not a JSON value`, {
+        cause: err,
+      })
+    }
   }
 
   const {
@@ -47,7 +49,7 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
     session_id: sessionId,
     work_outcome: workOutcome,
     feedback_coverage: feedbackCoverage,
-  } = parsed as Record<string, unknown>
+  } = parsed
   if ((workOutcome !== undefined) !== (feedbackCoverage !== undefined))
     throw new Error(
       'retrospective front matter must provide both work_outcome and feedback_coverage',
@@ -64,9 +66,7 @@ export function parseFrontMatter(markdown: string): FrontMatterFields {
   if (sessionId !== undefined && (typeof sessionId !== 'string' || sessionId.trim() === '')) {
     throw new Error('retrospective doc front matter "session_id" field must be a non-empty string')
   }
-  if (sessionId !== undefined && !isValidSessionId(sessionId.trim())) {
-    throw new Error('retrospective doc front matter "session_id" field must be a valid session id')
-  }
+  // The server validates the session id and rejects a session_id that differs from it.
   const references = (values: unknown[], field: string): FeedbackReference[] =>
     values.map(value => {
       if (

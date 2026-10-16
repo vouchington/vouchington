@@ -120,17 +120,10 @@ machine-registered `vouchington-tooling` MCP server (see
 [docs/development/agent-blackboard.md](../agent-blackboard.md) for the hosted connection, the
 and outbox.
 
-[`agent-session-id/resolve.mts`](../../../dev/agent-session-id/resolve.mts) resolves a coherent
-harness, agent, and session for the retrospective scripts when their CLI override is absent. Cursor
-CLI also reads `.local/cursor-session-id`; native Grok with `GROK_AGENT` reads
-`.local/grok-session-id`. An interactive root Codex call always passes `--root-codex`; an
-absent-thread new root session also passes `--new-root-codex-session` exactly once, then reuses
-`.local/codex-session-id`. A real thread id replaces it; children and detached processes must not
-pass either root flag.
-
-`node dev/retrospective-save.mts compose --input <json-file>` assembles routine facts and markers,
-including validated work outcome and coverage front matter. `save --mode interactive|autonomous --file <path>`
-preserves that metadata and rejects contradictory explicit outcome or coverage flags.
+Agents save a retrospective with the `retrospective_check` and `retrospective_save` tools of the same
+server (see [the `retrospective` skill](../../../.agents/skills/retrospective/SKILL.md)); the tool's
+`compose` argument assembles routine facts and markers, including validated work outcome and coverage
+front matter, and the repository policy module `dev/agent-policy.mts` validates the document.
 
 ### Read-only helpers
 
@@ -142,7 +135,6 @@ preserves that metadata and rejects contradictory explicit outcome or coverage f
 | `./dev/config-inventory [--format json]`                                                                 | Reports environment and Dynamic Config readers and contracts.                                                                                                                                                                                                                           |
 | `pnpm exec vouchington retrospective-facts --pr N / --branch name / --no-pr [--repo owner/name] [--raw]` | Fetches and reports branch, PR, push, and diff facts without modifying repository files. Requires an explicit identity flag.                                                                                                                                                            |
 | `pnpm exec vouchington retrospective-transcript`                                                         | Reports turn, tool-call, and token facts from the current session transcript.                                                                                                                                                                                                           |
-| `node dev/retrospective-save.mts check [--session-id <id> \| --root-codex [--new-root-codex-session]]`   | Accepts at most one identity override; reports whether a retrospective entry exists. Root mode refreshes the worktree-local identity. Absent-thread root Codex passes the new-session flag once, then only `--root-codex`; a real thread id replaces its fallback.                      |
 | `node dev/retrospective-distill.mts <partition.jsonl> --retro-cutoff <iso> --session-cutoff <iso>`       | Classifies each session in a local `snapshot_export`/`snapshot partition` JSONL file by shape and eligibility for the `retrospective-distill` skill; pure local parsing, no MCP, network, or writes.                                                                                    |
 | `pnpm exec pr-shepherd journal extract --body-file <path>`                                               | Reads one explicit local Markdown body file and prints the typed Shepherd Journal extraction JSON plus newline. It never accepts stdin or logs the source body; invalid arguments and file-read errors exit nonzero, while typed `ok: false` extraction results are normal JSON output. |
 | `node dev/cloc.mts`                                                                                      | Produces the repository's classified line-count report.                                                                                                                                                                                                                                 |

@@ -12,8 +12,6 @@ import {
 import { validateRootCodexOptions } from './root-codex-options.mts'
 import { isValidSessionId } from './valid-id.mts'
 
-export { validateRootCodexOptions } from './root-codex-options.mts'
-
 export type BlackboardAgent = 'claude-code' | 'codex' | 'cursor' | 'grok'
 
 export type BlackboardAgentHints = {
