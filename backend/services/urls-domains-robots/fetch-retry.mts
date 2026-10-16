@@ -33,8 +33,7 @@ export type RobotsDependencies = PinnedRobotsFetchDependencies & {
 }
 
 export const defaultRobotsDependencies: RobotsDependencies = {
-  fetchWithTimeoutSimple: async (url, timeoutMs) =>
-    (await fetchPinnedRobotsTxt(url, timeoutMs, defaultRobotsDependencies)).response,
+  fetchWithTimeoutSimple,
   readResponseBody,
   isNetworkError,
   isRetryableError,
@@ -91,7 +90,7 @@ export async function fetchRobotsTxtWithRetry(
           await delay(dependencies.retryDelayMs)
           continue
         }
-        return ALLOW_ROBOTS_TXT
+        break
       }
       const status = response.status ?? lastStatus ?? 'unknown'
       const statusText = response.statusText || ''
