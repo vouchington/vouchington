@@ -31,8 +31,14 @@ describe('ActivityPub inbox recovery processors', () => {
 
   it('continues a full page from its largest delivery id instead of draining in one job', async () => {
     // The largest id sits in the middle, so the pairwise maximum is exercised in both directions.
-    const page = ['2', '3', '1'].map(suffix => ({
-      deliveryId: `00000000-0000-7000-8000-00000000000${suffix}`,
+    const page = (
+      [
+        '00000000-0000-7000-8000-000000000002',
+        '00000000-0000-7000-8000-000000000003',
+        '00000000-0000-7000-8000-000000000001',
+      ] as const
+    ).map(deliveryId => ({
+      deliveryId,
       leaseToken: randomUUID(),
     }))
     const { dependencies, rearmFailed, enqueueContinuation } = rearmBoundary([page])
