@@ -22,12 +22,15 @@ export interface UncoveredRead {
   group: string
 }
 
+export type UnclassifiedStatement = UncoveredRead & { reason: string }
+
 export interface CoverageReport {
   annotatedStatements: number
   reads: number
   coveredReads: number
   uncoveredReads: UncoveredRead[]
   ambiguousReads: UncoveredRead[]
+  unclassifiedStatements: UnclassifiedStatement[]
 }
 
 export function stripPlanCacheMode(name: string): string {
@@ -58,12 +61,24 @@ export function buildCoverageReport(
   let coveredReads = 0
   const uncoveredReads: UncoveredRead[] = []
   const ambiguousReads: UncoveredRead[] = []
+  const unclassifiedStatements: UnclassifiedStatement[] = []
 
   for (const fact of facts) {
     const annotation = fact.annotation
     if (!annotation) continue
     annotatedStatements++
-    if (!isRead(fact.sqlText)) continue
+    if (!isRead(fact.sqlText)) {
+      if (fact.incompleteReason) {
+        unclassifiedStatements.push({
+          name: annotation,
+          fileName: fact.fileName,
+          line: fact.line,
+          group: groupForFile(fact.fileName),
+          reason: fact.incompleteReason,
+        })
+      }
+      continue
+    }
     reads++
     const matchingCaptures = captures.get(annotation) ?? []
     const exactMatch =
@@ -86,7 +101,14 @@ export function buildCoverageReport(
     destination.push(entry)
   }
 
-  return { annotatedStatements, reads, coveredReads, uncoveredReads, ambiguousReads }
+  return {
+    annotatedStatements,
+    reads,
+    coveredReads,
+    uncoveredReads,
+    ambiguousReads,
+    unclassifiedStatements,
+  }
 }
 
 function formatGroups(entries: readonly UncoveredRead[]): string[] {
@@ -108,7 +130,8 @@ function formatGroups(entries: readonly UncoveredRead[]): string[] {
         left.fileName.localeCompare(right.fileName) ||
         left.line - right.line,
     )) {
-      lines.push(`  ${read.name} — ${read.fileName}:${read.line}`)
+      const reason = 'reason' in read ? ` — ${read.reason}` : ''
+      lines.push(`  ${read.name} — ${read.fileName}:${read.line}${reason}`)
     }
   }
   return lines
@@ -129,6 +152,9 @@ export function formatCoverageReport(report: CoverageReport): string {
           ...formatGroups(report.ambiguousReads),
         ]
       : []),
+    '',
+    `Unclassified annotated SQL: ${report.unclassifiedStatements.length}`,
+    ...formatGroups(report.unclassifiedStatements),
   ].join('\n')
 }
 

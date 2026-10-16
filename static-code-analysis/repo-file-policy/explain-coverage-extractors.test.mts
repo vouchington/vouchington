@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
-
 describe('EXPLAIN extractor overlap', () => {
   it('keeps raw session-local PoolClient reads visible as uncovered', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-pool-client-'))
@@ -29,7 +28,6 @@ describe('EXPLAIN extractor overlap', () => {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
   })
-
   it('lists assembled reads only when their extracted SQL has a known read verb', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-assembled-'))
     try {
@@ -77,7 +75,9 @@ describe('EXPLAIN extractor overlap', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report.uncoveredReads.map(read => read.name)).toEqual(
+      expect(
+        [...report.uncoveredReads, ...report.unclassifiedStatements].map(read => read.name),
+      ).toEqual(
         expect.arrayContaining([
           'buildCommentAncestorsQuery',
           'getVisibleCommentDescendantIdsPage',
@@ -120,7 +120,6 @@ describe('EXPLAIN extractor overlap', () => {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
   })
-
   it('counts overlapping extraction passes once while retaining subpath cursor and notification reads', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-extractors-'))
     try {
@@ -198,7 +197,9 @@ describe('EXPLAIN extractor overlap', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report.uncoveredReads.map(read => read.name)).toEqual(
+      expect(
+        [...report.uncoveredReads, ...report.unclassifiedStatements].map(read => read.name),
+      ).toEqual(
         expect.arrayContaining([
           'readBlueskyLinkAuthorization',
           'getLandingPageRowForUser',
@@ -242,7 +243,12 @@ describe('EXPLAIN extractor overlap', () => {
       const fileName = 'backend/services/topics/get.mts'
       const source = readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8')
       const report = await reportCoverage([{ fileName, source }], resultsPath, ['fixture'])
-      expect(report.ambiguousReads.map(read => read.name)).toContain('getTopicByAny')
+      expect(report.unclassifiedStatements).toContainEqual(
+        expect.objectContaining({
+          name: 'getTopicByAny',
+          reason: 'unresolved-sql-fragment',
+        }),
+      )
       expect(report.coveredReads).toBe(0)
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })

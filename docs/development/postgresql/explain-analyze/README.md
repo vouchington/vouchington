@@ -289,7 +289,9 @@ pnpm run explain:analyze
 
 `explain:coverage` compares annotated runtime SQL with captured query names and available exact
 query text. It reports annotated statements, reads, covered reads, confirmed uncovered reads, and
-ambiguous same-name reads, then groups the latter two by owning backend directory. A scenario
+ambiguous same-name reads, and unclassified annotated SQL with the evaluator's reason, then
+groups entries by owning backend directory. Unclassified statements are not counted as proven
+reads; this category can also contain writes whose full SQL was not recovered. A scenario
 suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
 `TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
 the annotated-statement total. Leading SQL comments after the annotation do not hide a read;
@@ -303,9 +305,9 @@ list. The current capture hook observes PostgreSQL wrapper calls, while EXPLAIN 
 different connection; a raw client read of a session-local temporary table cannot be captured or
 replayed by this harness. The scheduled prompt skips such entries when choosing a scenario and
 keeps their coverage gap visible. An annotated statement with an interpolated first
-SQL token remains in the annotated-statement total but is not classified as a read: its verb
-cannot be proven statically. Move a fixed leading read verb to the execution callsite when its
-SQL builder is dynamic, preserving the executed SQL and parameters.
+SQL token remains in the annotated-statement total and appears as unclassified with its
+evaluator reason; its verb cannot be proven statically. Move a fixed leading read verb to the
+execution callsite when its SQL builder is dynamic, preserving the executed SQL and parameters.
 Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
 
 ```bash

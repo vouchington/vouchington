@@ -26,12 +26,15 @@ describe('assembled EXPLAIN reads', () => {
         source: readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8'),
       }))
       const report = await reportCoverage(sources, resultsPath, ['fixture'])
-      expect(report.reads).toBe(3)
-      expect(report.uncoveredReads.map(read => read.name)).toEqual([
-        'getTrendingPosts',
-        'getTrendingTopics',
-        'canViewPostsBatch',
+      expect(report.reads).toBe(0)
+      expect(
+        report.unclassifiedStatements.map(statement => [statement.name, statement.reason]),
+      ).toEqual([
+        ['getTrendingPosts', 'unresolved-sql-fragment'],
+        ['getTrendingTopics', 'unresolved-sql-fragment'],
+        ['canViewPostsBatch', 'unresolved-sql-fragment'],
       ])
+      expect(report.uncoveredReads.map(read => read.name)).toEqual([])
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })
     }
