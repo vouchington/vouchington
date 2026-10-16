@@ -65,18 +65,21 @@ export function buildCoverageReport(
 
   for (const fact of facts) {
     const annotation = fact.annotation
-    if (!annotation) continue
+    const entry = {
+      name: annotation ?? '(annotation unavailable)',
+      fileName: fact.fileName,
+      line: fact.line,
+      group: groupForFile(fact.fileName),
+    }
+    if (!annotation) {
+      if (fact.incompleteReason)
+        unclassifiedStatements.push({ ...entry, reason: fact.incompleteReason })
+      continue
+    }
     annotatedStatements++
     if (!isRead(fact.sqlText)) {
-      if (fact.incompleteReason) {
-        unclassifiedStatements.push({
-          name: annotation,
-          fileName: fact.fileName,
-          line: fact.line,
-          group: groupForFile(fact.fileName),
-          reason: fact.incompleteReason,
-        })
-      }
+      if (fact.incompleteReason)
+        unclassifiedStatements.push({ ...entry, reason: fact.incompleteReason })
       continue
     }
     reads++
@@ -89,12 +92,6 @@ export function buildCoverageReport(
     if (matchingCaptures.length > 0 && exactMatch) {
       coveredReads++
       continue
-    }
-    const entry = {
-      name: annotation,
-      fileName: fact.fileName,
-      line: fact.line,
-      group: groupForFile(fact.fileName),
     }
     const destination =
       matchingCaptures.length > 0 && !fact.complete ? ambiguousReads : uncoveredReads
@@ -153,7 +150,7 @@ export function formatCoverageReport(report: CoverageReport): string {
         ]
       : []),
     '',
-    `Unclassified annotated SQL: ${report.unclassifiedStatements.length}`,
+    `Unclassified SQL executions: ${report.unclassifiedStatements.length}`,
     ...formatGroups(report.unclassifiedStatements),
   ].join('\n')
 }
@@ -165,27 +162,27 @@ export async function reportCoverage(
 ): Promise<CoverageReport> {
   const results = readCompletedExplainResults(resultsPath, expectedScenarioIds)
   const cursorNames = ['createAsyncGeneratorFromCursor', 'executeHandlerWithCursorInBatches']
-  const [rootFacts, cursorSubpathFacts] = await Promise.all([
-    extractExecutedPostgresSql({
-      sources,
-      importSpecifier: '@data-stores/psql',
-      executorNames: ['query', 'read', 'write', ...cursorNames],
-      executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-      executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
-    }),
-    extractExecutedPostgresSql({
-      sources,
-      importSpecifier: '@data-stores/psql/cursors',
-      executorNames: cursorNames,
-    }),
-  ])
-  // Both import passes can find the same cursor call. Keep one fact per source callsite.
-  const factKey = (fact: SqlFact) => JSON.stringify(fact)
-  const rootKeys = new Set(rootFacts.map(factKey))
-  return buildCoverageReport(
-    [...rootFacts, ...cursorSubpathFacts.filter(fact => !rootKeys.has(factKey(fact)))],
-    results,
+  const passes = await Promise.all(
+    [
+      {
+        sources,
+        importSpecifier: '@data-stores/psql',
+        executorNames: ['query', 'read', 'write', ...cursorNames],
+        executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
+        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
+      },
+      { sources, importSpecifier: '@data-stores/psql/cursors', executorNames: cursorNames },
+      {
+        sources: sources.filter(source => source.fileName.startsWith('backend/data-stores/psql/')),
+        importSpecifier: './clients.mts',
+        executorNames: ['query', 'read', 'write'],
+      },
+    ].map(options => extractExecutedPostgresSql(options)),
   )
+  // Passes can find the same callsite; retain one copy of each source fact.
+  const unique = new Map<string, SqlFact>()
+  for (const fact of passes.flat()) unique.set(JSON.stringify(fact), fact)
+  return buildCoverageReport([...unique.values()], results)
 }
 
 if (import.meta.main) {

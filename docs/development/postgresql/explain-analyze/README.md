@@ -289,9 +289,10 @@ pnpm run explain:analyze
 
 `explain:coverage` compares annotated runtime SQL with captured query names and available exact
 query text. It reports annotated statements, reads, covered reads, confirmed uncovered reads, and
-ambiguous same-name reads, and unclassified annotated SQL with the evaluator's reason, then
-groups entries by owning backend directory. Unclassified statements are not counted as proven
-reads; this category can also contain writes whose full SQL was not recovered. A scenario
+ambiguous same-name reads, and unclassified SQL executions with the evaluator's reason, then
+groups entries by owning backend directory. Unclassified calls are not counted as proven reads;
+this category also shows callsites where an imported builder's annotation cannot be recovered and
+can contain writes whose full SQL was not recovered. A scenario
 suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
 `TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
 the annotated-statement total. Leading SQL comments after the annotation do not hide a read;

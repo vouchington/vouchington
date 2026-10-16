@@ -11,7 +11,7 @@ per run.
    using an artifact. The command rejects an artifact missing any registered scenario. Select one
    confirmed uncovered read on a user-facing path: feeds, posts, users, topics, communities, or
    search. Prefer these over workers. Skip ambiguous same-name reads and any read already covered
-   by an open PR. Skip unclassified annotated SQL: the evaluator has not proved its verb or full
+   by an open PR. Skip unclassified SQL executions: the evaluator has not proved its verb or full
    shape, even when its name matches a read. The report retains raw `PoolClient.query` reads in its
    counts and uncovered list.
    The current harness captures PostgreSQL wrapper calls and replays plans on a separate connection;
