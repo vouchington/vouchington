@@ -3,6 +3,10 @@ import type { TestProjectConfiguration } from 'vitest/config'
 
 // Dependency-injected unit tests need neither database bootstrap nor module mocking.
 export const backendNoDataUnitTestFiles = [
+  'backend/services/urls-domains-robots/__tests__/fetch-body-signal.test.mts',
+  'backend/services/urls-domains-robots/__tests__/fetch-unread-body.test.mts',
+  'backend/services/urls-domains-robots/__tests__/fetch-pinned.test.mts',
+  'backend/services/urls-domains-robots/__tests__/fetch-pinned-budget.test.mts',
   'backend/services/oauth/__tests__/authorization-provider-url.test.mts',
   'backend/services/users/settle-deletion-operations.test.mts',
   'backend/services/users/enqueue-delete-user-bookmark-bloom-filter.test.mts',

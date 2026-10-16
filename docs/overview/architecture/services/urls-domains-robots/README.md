@@ -25,7 +25,7 @@ See [docs/overview/architecture/crawling.md](../../crawling.md) for runtime beha
 - `@vouchington/robots` owns generic robots.txt parsing; blacklist, fetch, retry, status fallback, Valkey caching, and rate-limit policy remain in this service
 - `Crawl-delay` values from robots.txt are in seconds; `getCrawlDelayMs` converts to milliseconds via `Math.ceil(delay * 1000)`
 - Allow, disallow, and crawl-delay groups match the User-Agent product token: the first token, without a `/version` suffix. `voucha-bot https://voucha.ai/article/voucha-bot` matches `User-agent: voucha-bot`. The HTTP header stays the full crawler string. A matching specific group does not inherit the `*` group's crawl delay.
-- robots.txt fetches use the shared backend external-request dispatcher so repeated hostname checks reuse sockets instead of opening a fresh connection per request
+- robots.txt fetches validate each URL, pin the connection to those addresses, and follow at most five redirects. Each redirect is validated and pinned again. Targets that fail SSRF validation, including redirects that are not `http` or `https`, are DISALLOW and are not requested. DNS timeouts and other network errors still retry and then ALLOW. The original `https://{domain}/robots.txt` URL stays the parser origin. The chain budget covers DNS, redirects, and the final body read. HTTP 4xx, 5xx, and other statuses that are not parsed cancel that body before they allow, retry, or throw, so an unread error body does not hold the pinned connection until the dispatcher body timeout. The budgets are recorded in [runtime timeout classification](../../../../development/reference-runtime-timeouts-classification.md#hard-constraints-externalprotocol-driven).
 
 ## Related
 

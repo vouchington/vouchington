@@ -10611,6 +10611,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      ssrf-guard:
+        specifier: ^1.0.0
+        version: 1.0.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
