@@ -86,6 +86,15 @@ Pure test-helper validation belongs to `backend-test-helpers` and must not initi
 merely by importing a helper. A helper test that intentionally inspects the live PostgreSQL pools,
 such as `bluesky-link-authorizations.test.mts`, belongs to `backend-data-stores` instead.
 
+The `backend-test-helpers` project uses five-second test and hook defaults, checked by
+`ci/vitest-backend-helper-project-defaults.test.mts`. Existing explicit hook budgets, including
+the finite compiler fixture's fifteen-second setup, remain within the suite cap. Resource
+admission still follows the normal setup and module closure. The production search SQL syntax
+contract, `post-search-query-syntax.test.mts`, imports modules that construct real PostgreSQL
+and Valkey clients. The isolation-helper contract, `dynamic-config.test.mts`, imports real
+Valkyries clients through its helper. Both belong to the initialized `backend-data-stores`
+project with its ordinary budgets; their business assertions remain unchanged.
+
 Do not force a reporter for local Vitest runs; Vitest's default reporter behavior automatically uses `minimal` when it detects an AI coding agent. CI reporter wiring lives in `vitest.config.mts` and is activated by workflow env vars.
 
 Backend Vitest projects alias `glide-mq` to an inline test shim. The shim drain waits for flushed
