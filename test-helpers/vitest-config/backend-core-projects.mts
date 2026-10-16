@@ -57,6 +57,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         'backend/test-helpers/election-vote-stats.test.mts',
+        'backend/test-helpers/post-search-query-syntax.test.mts',
+        'backend/test-helpers/dynamic-config.test.mts',
         'backend/test-helpers/services/posts/test-support.test.mts',
         'backend/test-helpers/services/users/test-support.test.mts',
         'backend/test-helpers/workers/entity-listeners/test-support.test.mts',
@@ -64,8 +66,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         // Canonical contract assertions read checked-in artifacts validated by static-backend.
         'backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts',
       ],
-      testTimeout: 15_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
