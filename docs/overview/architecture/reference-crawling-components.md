@@ -27,7 +27,7 @@ For each URL crawl:
 
 1. **Guard checks** — skip if `hostname.is_blocked = true` or `hostname.is_crawlable = false`
 2. **Domain rate limit check** — skip (throw `CrawlerRateLimitError`) if domain has an active 429 lock in Valkey
-3. **robots.txt check** — skip if `isUrlCrawlable()` returns false; network errors and HTTP 4xx/5xx from robots.txt are treated as ALLOW (RFC 9309); only unexpected runtime exceptions (e.g. parsing bugs) are treated as disallowed
+3. **robots.txt check** — skip if `isUrlCrawlable()` returns false; network errors and HTTP 4xx/5xx from robots.txt are treated as ALLOW (RFC 9309); SSRF-rejected robots.txt targets are disallowed before the request; only unexpected runtime exceptions (e.g. parsing bugs) are treated as disallowed
 4. **Crawler rule lookup** — fetch per-hostname rules (`css_selectors_to_remove`, `link_*_to_remove`)
 5. **Google Web Risk** — optional lookup runs only after local blocklist, rate-limit, robots, and crawler-rule checks pass. Provider failures/rate limits fail open; risky verdicts block the registrable domain locally.
 6. **Conditional HTTP fetch** — send `If-None-Match`/`If-Modified-Since` from last successful crawl
@@ -47,7 +47,7 @@ For each URL crawl:
 13. **Canonical URL** — extract from `<link rel="canonical">`, create/link URL entry, and skip links that normalize to the current URL row
 14. **Embeddings** — chunk markdown via `@services/ai-chunking`, reuse existing embeddings by SHA256, enqueue OpenAI jobs for new chunks
 
-Crawler-related outbound HTTP uses centralized undici dispatchers to reuse sockets and avoid port exhaustion under worker/test concurrency. SSRF-validated HTML fetches use cached pinned dispatchers keyed by resolved addresses so DNS pinning still removes the TOCTOU window between validation and connect. `@jongleberry/vurst-html` decodes bounded HTML bytes before parsing, with BOM, `Content-Type`, and early HTML meta declarations taking precedence before UTF-8 and Windows-1252 fallbacks so legacy pages can still be parsed.
+Crawler-related outbound HTTP uses centralized undici dispatchers to reuse sockets and avoid port exhaustion under worker/test concurrency. SSRF-validated HTML and robots.txt fetches use cached pinned dispatchers keyed by resolved addresses so DNS pinning still removes the TOCTOU window between validation and connect. `@jongleberry/vurst-html` decodes bounded HTML bytes before parsing, with BOM, `Content-Type`, and early HTML meta declarations taking precedence before UTF-8 and Windows-1252 fallbacks so legacy pages can still be parsed.
 
 The `crawl_urls/crawl_url` queue processor stores crawl output through the crawl service and returns only a small crawl reference to GlideMQ. It must not return full crawl rows because `markdown`, `links`, and `meta_tags` can exceed GlideMQ's serialized return-value limit.
 

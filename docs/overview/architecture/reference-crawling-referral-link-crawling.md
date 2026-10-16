@@ -34,6 +34,7 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 - 5xx after 3 retries → ALLOW (temporary server error)
 - Network error after 3 retries → ALLOW
 - Blacklisted domain → DISALLOW (before fetch)
+- SSRF-rejected robots.txt target, including a private redirect, → DISALLOW before that request. See [robots.txt fetches](services/urls-domains-robots/README.md#notes)
 
 ## Related
 

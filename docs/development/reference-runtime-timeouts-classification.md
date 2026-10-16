@@ -20,7 +20,8 @@ crawl/delivery holding a worker slot.
 | Fediverse NodeInfo budget                            | `backend/config/fediverse.mts`                                     | `FEDIVERSE_ADAPTER_BUDGET_MS`    | 4,500  |
 | Domain verification — DNS/SSRF resolution            | `backend/services/topic-claims/domain-verification-well-known.mts` | `DNS_TIMEOUT_MS`                 | 5,000  |
 | Domain verification well-known                       | `backend/services/topic-claims/domain-verification-well-known.mts` | `FETCH_TIMEOUT_MS`               | 10,000 |
-| robots.txt                                           | `backend/services/urls-domains-robots/index.mts`                   | `FETCH_TIMEOUT_MS`               | 10,000 |
+| robots.txt — DNS/SSRF resolution                     | `backend/services/urls-domains-robots/fetch-pinned.mts`            | `DNS_TIMEOUT_MS`                 | 5,000  |
+| robots.txt — whole redirect chain                    | `backend/services/urls-domains-robots/fetch-retry.mts`             | `FETCH_TIMEOUT_MS`               | 10,000 |
 | Remote ActivityPub actor fetch — DNS/SSRF resolution | `backend/services/remote-actors/fetch-remote-actor-document.mts`   | `DNS_TIMEOUT_MS`                 | 5,000  |
 | Remote ActivityPub actor fetch                       | `backend/services/remote-actors/fetch-remote-actor-document.mts`   | `FETCH_TIMEOUT_MS`               | 10,000 |
 | ActivityPub delivery — DNS/SSRF resolution           | `backend/services/activitypub-delivery/deliver-activity.mts`       | `DNS_TIMEOUT_MS`                 | 5,000  |
@@ -55,6 +56,8 @@ phase specifically, matching the per-phase model above; it also now forwards the
 `AbortSignal` into `validateUrl()` instead of silently dropping it. The domain-verification well-known
 row above previously implied a single `FETCH_TIMEOUT_MS` bounded the whole request; DNS/SSRF
 resolution is a separate, independently-bounded phase that runs before it, same as every other row.
+The robots.txt chain budget still caps the whole redirect sequence: each hop's DNS lookup uses
+`DNS_TIMEOUT_MS` or the time left in `FETCH_TIMEOUT_MS`, whichever is smaller.
 The import-provenance-aware Oxlint `no-mistakes/require-options-on-imported-call` rule enforces
 every `validateUrl` import from `ssrf-guard/node`, including aliased and namespace imports, has a
 second options argument containing `timeoutMs` or `signal`. The companion
