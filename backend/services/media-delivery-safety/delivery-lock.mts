@@ -26,6 +26,12 @@ export async function lockImageDeliveryMutation(
   const requestedPostIds = [...new Set(input.postIds ?? [])]
   const requestedImageIds = [...new Set(input.imageIds ?? [])]
   const requestedPlacementIds = [...new Set(input.placementIds ?? [])]
+  if (
+    requestedPostIds.length === 0 &&
+    requestedImageIds.length === 0 &&
+    requestedPlacementIds.length === 0
+  )
+    return
   const { rows } = await query<{
     placement_id: string
     post_id: string | null

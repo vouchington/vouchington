@@ -746,12 +746,12 @@
   },
   {
     "annotation": "lockImageDeliveryMutation:findBindings",
-    "reason": "Image delivery and placement locks run once per image or surface",
+    "reason": "Discovers distinct nonempty post, image or placement domains before acquiring their advisory locks",
     "issue": 2606
   },
   {
     "annotation": "lockImageDeliveryMutation:lockPlacements",
-    "reason": "Image delivery and placement locks run once per image or surface",
+    "reason": "Rechecks and row-locks each nonempty placement domain after acquiring its advisory locks",
     "issue": 2606
   },
   {

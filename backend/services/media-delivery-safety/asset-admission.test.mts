@@ -17,6 +17,10 @@ import {
   setTestDeliveryUserImageInTransaction,
 } from '@voucha/test-helpers/entities/media-delivery-repair'
 import { installTestMediaDeliveryEdge } from '@voucha/test-helpers/media-delivery-edge'
+import {
+  countCapturedQueriesByAnnotation,
+  withCapturedTestQueries,
+} from '@voucha/test-helpers/query-capture'
 import { getImagePlacementDeliveryKey } from '@ts-shared/url-signing'
 import {
   lockImageAssetAdmission,
@@ -79,7 +83,16 @@ describe('asset admission root domain', () => {
     const edge = installTestMediaDeliveryEdge()
     await lockImageAssetAdmission([b, a], transaction)
     await withTestDeliveryBorrowedClient(transaction, query => lockImageAssetAdmission([a], query))
-    await lockImageDeliveryMutation(transaction, { placementOnly: true })
+    const { queries } = await withCapturedTestQueries(() =>
+      lockImageDeliveryMutation(transaction, { placementOnly: true }),
+    )
+    expect(countCapturedQueriesByAnnotation(queries, 'markImageDeliveryAuthorityStarted')).toBe(1)
+    expect(
+      countCapturedQueriesByAnnotation(queries, 'lockImageDeliveryMutation:findBindings'),
+    ).toBe(0)
+    expect(
+      countCapturedQueriesByAnnotation(queries, 'lockImageDeliveryMutation:lockPlacements'),
+    ).toBe(0)
     await withTestDeliveryBorrowedClient(transaction, async query => {
       await expect(lockImageAssetAdmission([crypto.randomUUID()], query)).rejects.toThrow(
         'Declare all',
