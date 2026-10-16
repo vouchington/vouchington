@@ -898,12 +898,17 @@ write_worker_env() {
     # server origin even when pages are loaded through the HTTPS CF Worker.
     local csp_asset_origin="http://localhost:$NEXT_PORT"
 
+    # Local-only placeholder nonce; without it the worker bypasses the anonymous HTML cache.
+    local cache_placeholder_nonce
+    cache_placeholder_nonce=$(openssl rand -hex 32)
+
     cat > cloudflare-worker/.dev.vars << EOF
 BACKEND_ORIGIN=http://localhost:$BACKEND_PORT
 WEB_ORIGIN=http://localhost:$NEXT_PORT
 CSP_ASSET_ORIGIN=$csp_asset_origin
 CSP_BROWSER_UPLOAD_ORIGINS=["https://$S3_BUCKET_IMAGE_UPLOADS.s3.us-west-2.amazonaws.com","https://$S3_BUCKET_IMAGE_UPLOADS.s3.dualstack.us-west-2.amazonaws.com"]
 CF_WORKER_SECRET="$CF_WORKER_SECRET"
+CACHE_PLACEHOLDER_NONCE=$cache_placeholder_nonce
 # Local-only Next.js HMR support. The worker rejects WebSocket upgrades when
 # PRODUCTION=true or WEB_ORIGIN is not localhost/127.0.0.1/[::1].
 DEV_WEBSOCKET_PROXY=true
