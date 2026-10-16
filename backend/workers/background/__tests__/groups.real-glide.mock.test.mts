@@ -6,6 +6,7 @@ import {
   startBackgroundHarness,
   type BackgroundHarness,
 } from '@voucha/test-helpers/real-glide-background'
+import { measureDomainCap } from '@voucha/test-helpers/real-glide-domain-cap'
 import { createBackgroundProcessor } from '../processors.mts'
 import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
@@ -74,45 +75,14 @@ describe('background domain groups through real GlideMQ', () => {
   })
 
   it('caps openai-moderation at its old worker concurrency of five while another domain runs beside it', async () => {
-    let active = 0
-    let maxActive = 0
-    const fiveStarted = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const otherDomainRan = Promise.withResolvers<void>()
-    harness = await startBackgroundHarness({
-      connection,
-      createProcessor: createBackgroundProcessor,
-      concurrency: 8,
-      bodies: {
-        [OPENAI_MODERATION_POST_JOB.name]: async () => {
-          active += 1
-          maxActive = Math.max(maxActive, active)
-          if (active === 5) fiveStarted.resolve()
-          await release.promise
-          active -= 1
-        },
-        [SES_INBOUND_PROCESS_JOB.name]: () => otherDomainRan.resolve(),
-      },
-    })
-    try {
-      const flood = await Promise.all(
-        Array.from({ length: 8 }, () =>
-          harness!.add(OPENAI_MODERATION_POST_JOB, { id: randomUUID() }),
-        ),
-      )
-      await fiveStarted.promise
-      const other = await harness.add(SES_INBOUND_PROCESS_JOB, sesData())
-
-      // Three of the eight worker slots are free, and only another domain can use them.
-      await otherDomainRan.promise
-      expect(maxActive).toBe(5)
-
-      release.resolve()
-      await Promise.all([...flood, other].map(job => harness!.settled(job)))
-      expect(maxActive).toBe(5)
-    } finally {
-      release.resolve()
-    }
+    await expect(
+      measureDomainCap({
+        jobs: [OPENAI_MODERATION_POST_JOB],
+        cap: 5,
+        connection,
+        createProcessor: createBackgroundProcessor,
+      }),
+    ).resolves.toBe(5)
   })
 
   it('starts no more jobs than the group rate limit allows in its window', async () => {

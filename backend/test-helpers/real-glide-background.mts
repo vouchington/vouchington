@@ -21,6 +21,15 @@ export type BackgroundHarness = {
   close(): Promise<void>
 }
 
+export type BackgroundHarnessOptions = {
+  connection: Connection
+  createProcessor: (handlers: ReadonlyMap<string, BackgroundHandler>) => WorkerOptionsProcessor
+  bodies?: Record<string, JobBody>
+  workers?: number
+  concurrency?: number
+  workerOptions?: Partial<WorkerOptions>
+}
+
 /**
  * Real GlideMQ, real PostgreSQL pause state, and the production processor over an isolated queue.
  * The caller passes `createProcessor` (the worker package's production factory, which this shared
@@ -28,14 +37,9 @@ export type BackgroundHarness = {
  * name; every other registered job completes at once. The queue name is unique, so no worker fleet
  * can consume it.
  */
-export async function startBackgroundHarness(options: {
-  connection: Connection
-  createProcessor: (handlers: ReadonlyMap<string, BackgroundHandler>) => WorkerOptionsProcessor
-  bodies?: Record<string, JobBody>
-  workers?: number
-  concurrency?: number
-  workerOptions?: Partial<WorkerOptions>
-}): Promise<BackgroundHarness> {
+export async function startBackgroundHarness(
+  options: BackgroundHarnessOptions,
+): Promise<BackgroundHarness> {
   const { connection, bodies = {}, workers = 1, concurrency = 1 } = options
   const queueName = `background_harness_${randomUUID()}`
   const queue = new Queue(queueName, connection)
