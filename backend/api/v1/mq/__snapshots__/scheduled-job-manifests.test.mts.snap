@@ -360,7 +360,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 50,
+          "concurrency": 5,
           "key": "openai-moderation",
           "rateLimit": {
             "duration": 1000,
@@ -401,7 +401,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "type": "exponential",
         },
         "ordering": {
-          "concurrency": 50,
+          "concurrency": 5,
           "key": "openai-moderation",
           "rateLimit": {
             "duration": 1000,
