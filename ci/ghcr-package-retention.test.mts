@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -67,11 +67,13 @@ describe('ghcr-package-retention', () => {
   beforeAll(async () => {
     repo = await temporaryDirectory()
     await git(repo, 'init', '-q', '-b', 'main')
-    await execFileAsync(
-      'bash',
-      ['-c', 'for i in $(seq 31); do git commit -q --allow-empty -m "$i"; done'],
-      { cwd: repo, env: GIT_ENV },
-    )
+    let history = ''
+    for (let i = 1; i <= 31; i++) {
+      history += `commit refs/heads/main\nmark :${i}\ncommitter CI <ci@example.test> ${1_000_000_000 + i} +0000\ndata ${String(i).length}\n${i}\n`
+      if (i > 1) history += `from :${i - 1}\n`
+      history += '\n'
+    }
+    execFileSync('git', ['fast-import', '--quiet'], { cwd: repo, env: GIT_ENV, input: history })
     revisions = (await git(repo, 'rev-list', 'HEAD')).split('\n')
     shallow = join(await temporaryDirectory(), 'shallow')
     await git(repo, 'clone', '-q', '--depth', '1', `file://${repo}`, shallow)
