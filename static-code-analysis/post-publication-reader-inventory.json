@@ -19,7 +19,7 @@
       "classification": "direct-boundary"
     },
     {
-      "path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "path": "backend/services/posts/vote-handler-options.mts",
       "classification": "direct-boundary"
     },
     {
@@ -180,21 +180,21 @@
       "path": "backend/services/comments/ancestor-ids.mts",
       "classification": "raw-hydrator",
       "reason": "Entity-listener ancestry lookup is a worker primitive, while the public ancestors route batch-filters every hydrated post.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
       "owner_classification": "direct-boundary"
     },
     {
       "path": "backend/services/comments/ancestors.mts",
       "classification": "raw-hydrator",
       "reason": "The public ancestors route validates every returned ancestor with canViewPostsBatch before serialization.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
       "owner_classification": "direct-boundary"
     },
     {
       "path": "backend/services/comments/ancestors-batch.mts",
       "classification": "raw-hydrator",
       "reason": "The batch ancestry reader returns chains to MCP resolveReadableThreads, which validates every chain node with canViewPostsBatch before returning a thread.",
-      "owner_path": "backend/api/v1/posts/post-routes/comment-ancestors-route.mts",
+      "owner_path": "backend/api/v1/posts/post-routes/comment-descendants-route.mts",
       "owner_classification": "direct-boundary"
     },
     {
