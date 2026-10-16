@@ -181,7 +181,7 @@
   },
   {
     "annotation": "createCopyrightStatementDeliveryInTransaction:existing",
-    "reason": "Copyright delivery steps run once per recipient or target",
+    "reason": "Checks distinct deterministic event keys before delivery; absent nonclaimant identities skip this lookup",
     "issue": 2607
   },
   {

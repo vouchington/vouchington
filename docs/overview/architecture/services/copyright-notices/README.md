@@ -27,6 +27,8 @@ correspondence `sent_at` in the same database transaction as the intent receipt.
 notification-queue reconciliation re-enqueues pending, failed, and expired claims. Bounce and
 complaint feedback transitions only the correlated SES intent to `bounced`. Intake replies share it.
 
+Statement delivery skips prior-obligation lookup when a non-claimant recipient identity is absent or is the deleted-user sentinel. Claimants retain email-only delivery, and other recipient identities still require the lifecycle fence and current active-account check.
+
 A statutory counter-notice forwarding intent is created only inside the qualifying deadline
 transaction, after an identified reviewer has found the immutable counter-notice compliant. The
 forwarded body and restoration date derive from that assessed submission and exact target scope.

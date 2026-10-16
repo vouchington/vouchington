@@ -22,6 +22,11 @@ export async function createCopyrightStatementDeliveryInTransaction(
   },
   transaction: TransactionQuery,
 ): Promise<void> {
+  if (
+    input.recipientRole !== 'claimant' &&
+    (!input.recipientUserId || input.recipientUserId === DELETED_USER_ID)
+  )
+    return
   const { rows } = await transaction<{
     idempotency_key: string
   }>(sql`/* createCopyrightStatementDeliveryInTransaction:existing */
