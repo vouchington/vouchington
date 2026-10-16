@@ -58,6 +58,8 @@ export async function fetchInner(
   const pathname = url.pathname
   const removedSideload = rejectRemovedSideloadRoute(pathname)
   if (removedSideload) return removedSideload
+  const geoBlockedResponse = getGeoBlockedResponse(request, env)
+  if (geoBlockedResponse) return geoBlockedResponse
   const isExternalIngress = isExternalServerToServerIngress(method, pathname)
   const basicAuthRateLimit = await getBasicAuthRateLimitRejection(request, env, url, ip)
   if (basicAuthRateLimit.response) return basicAuthRateLimit.response
@@ -67,8 +69,6 @@ export async function fetchInner(
       : rejectByIdentityLimit(env, method, pathname, ip, isRateLimitExempt, botTier, isServerAction)
   const basicAuthResponse = getBasicAuthResponse(request, env, url)
   if (basicAuthResponse) return basicAuthResponse
-  const geoBlockedResponse = getGeoBlockedResponse(request, env)
-  if (geoBlockedResponse) return geoBlockedResponse
   if (canaryFault === 'unexpected-throw') throw new Error('Injected staging canary failure')
   // Serve Worker-owned responses before session, cache-dispatch, and rate-limit decisions.
   const staticInlineResponse = getStaticInlineResponse(request, url, env)
