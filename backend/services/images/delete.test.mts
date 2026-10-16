@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { interceptNextEntityListenerAddBulk } from '../../test-helpers/entity-listener-add-failure.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
@@ -132,7 +133,7 @@ describe('deleteImageById rollback', () => {
       typeof entitiesListeners.addBulk
     >
     void rejectedBulk.catch(() => {})
-    vi.spyOn(entitiesListeners, 'addBulk').mockReturnValueOnce(rejectedBulk)
+    interceptNextEntityListenerAddBulk(() => rejectedBulk)
 
     await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
 
@@ -190,7 +191,7 @@ describe('deleteImageById rollback', () => {
     let enqueueStarted!: () => void
     const started = new Promise<void>(resolve => (enqueueStarted = resolve))
     const blockedEnqueue = new Promise<never>((_, reject) => (rejectEnqueue = reject))
-    vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAddBulk(async () => {
       enqueueStarted()
       return blockedEnqueue
     })
@@ -231,7 +232,7 @@ describe('deleteImageById rollback', () => {
     const enqueueError = new Error('enqueue failed — omitRollback path')
     const rejected = Promise.reject(enqueueError) as ReturnType<typeof entitiesListeners.addBulk>
     void rejected.catch(() => {})
-    vi.spyOn(entitiesListeners, 'addBulk').mockReturnValueOnce(rejected)
+    interceptNextEntityListenerAddBulk(() => rejected)
 
     // With omitRollback=true, the function should not throw even when enqueue fails
     await expect(deleteImageById(imageId, true)).resolves.toBeUndefined()
@@ -274,7 +275,7 @@ describe('deleteImageById rollback', () => {
     const beforePost = await getPostModerationResetState(postId)
     const editedHash = randomBytes(32)
     const enqueueError = new Error('bulk post update enqueue failed')
-    vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAddBulk(async () => {
       await setPostLLMModerationContentSha256(postId, editedHash)
       throw enqueueError
     })

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { interceptNextEntityListenerAddBulk } from '../../test-helpers/entity-listener-add-failure.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { setPostClearanceStatus } from '@services/post-clearance'
@@ -48,7 +49,7 @@ describe('deleteImageById clearance rollback', () => {
         typeof entitiesListeners.addBulk
       >
       void rejectedBulk.catch(() => {})
-      vi.spyOn(entitiesListeners, 'addBulk').mockReturnValueOnce(rejectedBulk)
+      interceptNextEntityListenerAddBulk(() => rejectedBulk)
 
       await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
 
