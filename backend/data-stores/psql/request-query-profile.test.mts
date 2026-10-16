@@ -92,11 +92,12 @@ describe('request query profile attribution', () => {
       for (let i = 0; i < 2; i++) {
         recordQueryTiming({ ...timing, annotation: 'beginTransaction' })
         recordQueryTiming({ ...timing, annotation: 'beginBoundedTransaction' })
+        recordQueryTiming({ ...timing, annotation: 'withClientTransaction' })
         recordQueryTiming({ ...timing, annotation: 'insideTransaction' })
       }
     })
     const summary = profile.summarize()
-    expect(summary.totalQueries).toBe(6)
+    expect(summary.totalQueries).toBe(8)
     expect(summary.repeats).toEqual([{ annotation: 'insideTransaction', count: 2 }])
   })
 })
