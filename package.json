@@ -87,6 +87,7 @@
     "oxlint:fix": "oxlint --type-aware --fix --deny-warnings",
     "oxfmt": "oxfmt",
     "oxfmt:check": "oxfmt --check",
+    "commitlint": "commitlint",
     "knip": "knip --treat-config-hints-as-errors",
     "knip:production-exports": "knip --production --include-entry-exports --exports --workspace '@voucha/backend' --workspace '@voucha/api' --workspace '@entrypoints/*' --workspace '@services/*' --workspace '@modules/*' --workspace '@data-stores/*' --workspace '@queues/*' --workspace '@workers/*' --workspace '@agents/*' --treat-config-hints-as-errors",
     "syncpack:lint": "syncpack lint && syncpack format --check",
@@ -148,7 +149,6 @@
     "eslint-plugin-vouchington": "^0.2.0",
     "gh-pr-attach-screenshots": "^0.2.0",
     "glide-mq": "^0.18.0",
-    "husky": "^9.1.7",
     "jose": "^6.2.12",
     "jscpd": "^5.4.1",
     "jsdom": "^30.1.2",
@@ -172,11 +172,6 @@
   },
   "engines": {
     "node": ">=24.16.0"
-  },
-  "knip": {
-    "ignoreDependencies": [
-      "husky"
-    ]
   },
   "vouchington-tooling": {
     "policy": "dev/agent-policy.mts"
