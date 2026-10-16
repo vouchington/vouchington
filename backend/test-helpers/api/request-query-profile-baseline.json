@@ -705,11 +705,6 @@
     "issue": 2610
   },
   {
-    "annotation": "lockCommunityUsers",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607

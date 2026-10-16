@@ -1,4 +1,5 @@
 import { it, expect, describe } from 'vitest'
+import { createRequestQueryProfile } from '@data-stores/psql/request-query-profile'
 import {
   createTestUser,
   createTestUserDirect,
@@ -31,7 +32,11 @@ describe('initiateOwnershipTransfer', () => {
       }),
     ])
 
-    await initiateOwnershipTransfer(owner.id, community, moderator.id)
+    const profile = createRequestQueryProfile()
+    await profile.run(() => initiateOwnershipTransfer(owner.id, community, moderator.id))
+    expect(profile.summarize().repeats.map(repeat => repeat.annotation)).not.toContain(
+      'lockCommunityUsers',
+    )
 
     const ownerAfter = await getCommunityMember(community.id, owner.id)
     expect(ownerAfter?.role).toBe('moderator')
