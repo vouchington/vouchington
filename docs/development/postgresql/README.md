@@ -61,9 +61,9 @@ closes early:
 
 - **Repeat (N+1 suspect):** the same `/* annotation */` ran two or more times in one request.
   Cursor-batch iteration (`cursorBatches`) and pipelined batches are one logical statement and are
-  excluded. Transaction control (`beginTransaction` and `beginBoundedTransaction`, including
-  COMMIT and ROLLBACK) is also excluded: starting a transaction is not a lookup. A per-item
-  transaction loop is still caught by the statements repeated inside it.
+  excluded. Transaction control (`beginTransaction`, `beginBoundedTransaction`, and
+  `withClientTransaction`, including COMMIT and ROLLBACK) is also excluded: starting a transaction
+  is not a lookup. A per-item transaction loop is still caught by the statements repeated inside it.
 - **Serial depth:** the largest set of non-overlapping query intervals (start = completion time
   minus `durationMs`), i.e. round trips on the critical path. `Promise.all` queries count once, but
   `Promise.all` on a transaction client still runs serially. "Round Trips" cells in

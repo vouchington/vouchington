@@ -1160,11 +1160,6 @@
     "issue": 2610
   },
   {
-    "annotation": "withClientTransaction",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "withMfaLock",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
