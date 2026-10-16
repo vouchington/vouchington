@@ -77,9 +77,12 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
   it('cancels each 5xx body before the next attempt', async () => {
     vi.useFakeTimers()
     try {
-      const fetchWithTimeoutSimple = vi.fn<FetchWithTimeoutSimpleFn>(async () =>
-        ignoredRobotsResponse(503, 'Service Unavailable'),
-      )
+      const responses: Response[] = []
+      const fetchWithTimeoutSimple = vi.fn<FetchWithTimeoutSimpleFn>(async () => {
+        const response = ignoredRobotsResponse(503, 'Service Unavailable')
+        responses.push(response)
+        return response
+      })
       const { dependencies, cancelResponseBody, readResponseBody } =
         retryDependencies(fetchWithTimeoutSimple)
       const pending = fetchRobotsTxtWithRetry('example.com', dependencies)
@@ -89,7 +92,9 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
       await expect(settled).resolves.toBe(ALLOW_ROBOTS_TXT)
       expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
       expect(cancelResponseBody).toHaveBeenCalledTimes(3)
-      expect(cancelResponseBody.mock.calls.map(call => call[0]?.status)).toEqual([503, 503, 503])
+      for (const response of responses) {
+        expect(cancelResponseBody).toHaveBeenCalledWith(response)
+      }
       expect(readResponseBody).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
