@@ -77,6 +77,12 @@ describe('follower distribution worker processors with queue side effects', () =
     expect(mockEnqueueBackfillContinuation).not.toHaveBeenCalled()
   })
 
+  it('backfills through the real page reader past the last possible id', async () => {
+    await expect(
+      backfillFollowerDistributions('ffffffff-ffff-ffff-ffff-ffffffffffff'),
+    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+  })
+
   it('enqueues nothing when no distribution is incomplete', async () => {
     mockListIncompleteFollowerDistributionIdPage.mockResolvedValue({ ids: [], hasMore: false })
 

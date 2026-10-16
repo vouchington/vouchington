@@ -1,7 +1,11 @@
 import { getApInboxActivitiesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+  sharedDbIdsScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 import type { RecoverableActivityPubInboxDelivery } from './durable-delivery-transition-contract.mts'
 
 export async function recoverActivityPubInboxDeliveries(
@@ -57,7 +61,10 @@ export async function rearmFailedActivityPubInboxDeliveries(
 ): Promise<RecoverableActivityPubInboxDelivery[]> {
   const WORK_PAGE_SIZE = getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size')
   if (deliveryIds?.length === 0) return []
-  observeSharedDbScope('rearmFailedActivityPubInboxDeliveries', sharedDbIdsScope(deliveryIds))
+  observeSharedDbScope(
+    'rearmFailedActivityPubInboxDeliveries',
+    deliveryIds ? sharedDbIdsScope(deliveryIds) : sharedDbCursorScope(afterId),
+  )
   const idScope = deliveryIds ? [...deliveryIds] : null
   const { rows } = await write(sql`/* rearmFailedActivityPubInboxDeliveries */
     WITH candidates AS (

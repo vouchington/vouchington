@@ -93,6 +93,18 @@ describe('bluesky follow propagation worker processors', () => {
     expect(mockFollowContinuation).not.toHaveBeenCalled()
   })
 
+  it('backfills through the real page readers past the last possible cursor', async () => {
+    const lastId = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+
+    await expect(
+      backfillBlueskyFollowPropagation({ followerUserId: lastId, followeeUserId: lastId }),
+    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+    await expect(backfillBlueskyDisconnectRequests(lastId)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
+  })
+
   it('disconnects only the exact generation carried by the durable job', async () => {
     const data = {
       userId: 'user-1',

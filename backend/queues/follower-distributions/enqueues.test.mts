@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
   enqueueBackfillFollowerDistributions,
+  enqueueBackfillFollowerDistributionsContinuation,
   enqueueBulkProcessFollowerDistributions,
   enqueueProcessFollowerDistribution,
 } from './enqueues.mts'
@@ -72,6 +73,20 @@ describe('follower distribution enqueue helpers', () => {
       removeOnComplete: 100,
       removeOnFail: 100,
       deduplication: { id: 'backfill_follower_distributions', mode: 'throttle' },
+    })
+  })
+
+  it('enqueues a backfill continuation whose job id is the cursor and which releases its record', async () => {
+    const afterId = randomUUID()
+    const jobId = `backfill_follower_distributions__${afterId}`
+
+    await enqueueBackfillFollowerDistributionsContinuation(afterId)
+
+    const allJobs = await readAllQueueJobs(followerDistributions)
+    expect(allJobs.find(job => job.id === jobId)).toMatchObject({
+      id: jobId,
+      data: { afterId },
+      opts: { removeOnComplete: true, removeOnFail: true },
     })
   })
 })

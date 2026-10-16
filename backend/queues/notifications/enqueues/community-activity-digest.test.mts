@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   enqueueCommunityActivityDigestBatch,
   enqueueCommunityActivityDigestDispatch,
+  enqueueCommunityActivityDigestScheduleTick,
   getCommunityActivityDigestDispatchData,
 } from './community-activity-digest.mts'
 import { notifications } from '../queues.mts'
@@ -91,5 +92,14 @@ describe('community activity digest queue wiring', () => {
     expect(scheduledJobManifest.queueName).toBe('background')
     expect(tick?.repeat).toEqual({ pattern: '0 9 * * 1' })
     expect(tick?.template.name).toBe('notifications.processCommunityActivityDigestScheduleTick')
+  })
+
+  it('enqueues the schedule tick as an empty background job', async () => {
+    const tick = await enqueueCommunityActivityDigestScheduleTick()
+
+    expect(tick).toMatchObject({
+      name: 'notifications.processCommunityActivityDigestScheduleTick',
+      data: {},
+    })
   })
 })

@@ -219,6 +219,20 @@ describe('durable Bluesky disconnect', () => {
     expect(new Set(authorizationIds).size).toBe(authorizationIds.length)
     expect(seen).toEqual(expect.arrayContaining(expected))
   })
+
+  it('starts from the first authorization id when no cursor is given', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
+    )
+    const user = await createTestUserDirect()
+    await insertTestBlueskyLinkedAccount({ userId: user.id })
+    await requestBlueskyDisconnect(user.id)
+
+    const page = await listPendingBlueskyDisconnectPage()
+
+    expect(page.requests).toHaveLength(1)
+    expect(page.hasMore).toBe(true)
+  })
 })
 
 async function listPendingFrom(afterId: string): Promise<BlueskyDisconnectRequest[]> {

@@ -43,6 +43,20 @@ describe('listIncompleteFollowerDistributionIdPage', () => {
     expect(new Set(seen).size).toBe(seen.length)
   })
 
+  it('starts from the first id when no cursor is given', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(followerDistributionsWorkConfig, {
+        backfill_batch_size: 1,
+      }),
+    )
+    await createOwnDistribution()
+
+    const page = await listIncompleteFollowerDistributionIdPage()
+
+    expect(page.ids).toHaveLength(1)
+    expect(page.hasMore).toBe(true)
+  })
+
   it('stops after the last incomplete distribution', async () => {
     const id = await createOwnDistribution()
     const page = await listIncompleteFollowerDistributionIdPage(id)

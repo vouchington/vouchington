@@ -1,4 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readAllQueueJobs } from '@voucha/test-helpers'
+import { NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB } from '@queues/background/enqueues/notifications-jobs'
+import { notifications } from '@queues/notifications/queues'
 import type {
   enqueueBulkDeliverNotificationPushIntents,
   enqueueContinueReconcilePostNotifications,
@@ -64,6 +68,31 @@ describe('notification reconcile page continuation', () => {
       rssFeedItemId: 'item-1',
       afterUserId: 'user-8',
     })
+  })
+
+  it('queues the next RSS feed item page on the real queue when only the reconcile is injected', async () => {
+    const rssFeedItemId = randomUUID()
+    const afterUserId = randomUUID()
+    mockReconcileRssFeedItem.mockResolvedValueOnce({
+      created: 2,
+      pruned: 0,
+      nextAfterUserId: afterUserId,
+    })
+
+    await processReconcileRssFeedItemNotifications(
+      { rssFeedItemId },
+      { reconcileNotificationsForRssFeedItem: mockReconcileRssFeedItem },
+    )
+
+    const jobs = await readAllQueueJobs(notifications)
+    expect(
+      jobs.some(
+        job =>
+          job.name === NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB.name &&
+          (job.data as { rssFeedItemId?: string }).rssFeedItemId === rssFeedItemId &&
+          (job.data as { afterUserId?: string }).afterUserId === afterUserId,
+      ),
+    ).toBe(true)
   })
 })
 

@@ -6,9 +6,7 @@ import {
 import * as processors from './processors.mts'
 
 export const followerDistributionsHandlers = [
-  backgroundHandler(FOLLOWER_DISTRIBUTIONS_PROCESS_JOB, job =>
-    processors.processFollowerDistribution(job),
-  ),
+  backgroundHandler(FOLLOWER_DISTRIBUTIONS_PROCESS_JOB, processors.processFollowerDistribution),
   backgroundHandler(FOLLOWER_DISTRIBUTIONS_BACKFILL_JOB, job =>
     processors.backfillFollowerDistributions(job.data.afterId),
   ),

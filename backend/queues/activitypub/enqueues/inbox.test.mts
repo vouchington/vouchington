@@ -7,6 +7,7 @@ import {
   enqueueBulkActivityPubInboxDeliveries,
   enqueueDelayedActivityPubInboxDelivery,
   enqueueCleanupExpiredActivityPubInboxDeliveries,
+  enqueueRearmFailedActivityPubInboxDeliveriesContinuation,
   enqueueRecoverActivityPubInboxDeliveries,
 } from './inbox.mts'
 import { activitypub } from '../queues.mts'
@@ -90,5 +91,20 @@ describe('ActivityPub inbox enqueues', () => {
       },
     })
     expect(PRIORITY_DISPATCH).toBeGreaterThan(PRIORITY_TASK)
+  })
+
+  it('enqueues a re-arm continuation whose job id is the cursor and which releases its record', async () => {
+    const afterId = randomUUID()
+    const jobId = `activitypub-inbox-failed-backfill__${afterId}`
+
+    await enqueueRearmFailedActivityPubInboxDeliveriesContinuation(afterId)
+
+    const jobs = await readAllQueueJobs(activitypub)
+    expect(jobs.find(job => job.id === jobId)).toMatchObject({
+      id: jobId,
+      name: 'activitypub.rearmFailedDeliveries',
+      data: { afterId },
+      opts: { removeOnComplete: true, removeOnFail: true },
+    })
   })
 })
