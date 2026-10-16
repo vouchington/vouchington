@@ -6,7 +6,7 @@ import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 // exclusivity. One domain-wide group of 10 keeps the cap and replaces the lane keys.
 export const VOTE_AGGREGATION_DOMAIN = defineBackgroundDomain({
   domain: 'vote-aggregation',
-  group: { kind: 'domain', concurrency: 10 },
+  group: { kind: 'domain', concurrency: 10, deferral: 'job' },
   workerConcurrency: 10,
 })
 

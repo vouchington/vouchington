@@ -13,7 +13,7 @@ import type {
 // sweep saves a cursor and moves itself to delayed), so no job here fans out unbounded.
 export const ENTITY_LISTENERS_DOMAIN = defineBackgroundDomain({
   domain: 'entity-listeners',
-  group: { kind: 'domain', concurrency: 5 },
+  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
   workerConcurrency: 5,
 })
 

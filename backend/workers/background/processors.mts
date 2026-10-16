@@ -33,13 +33,16 @@ export function createBackgroundProcessor(handlers: ReadonlyMap<string, Backgrou
 }
 
 /**
- * Defers one job without spending an attempt. A domain with one domain-wide group parks the group,
- * so its other jobs wait too and nothing activates in the meantime; any other domain delays only
- * this job, which re-checks on its next activation.
+ * Defers one job without spending an attempt. A domain whose group shares one external limit parks
+ * the group, so its other jobs wait too and nothing activates in the meantime; any other domain,
+ * including a domain group with job-scoped deferral, delays only this job, which re-checks on its
+ * next activation.
  */
 function deferJob(job: Job, domain: BackgroundDomain, delayMs: number): Promise<never> {
   const { group } = getBackgroundDomainDefinition(domain)
-  if (group.kind === 'domain' && job.groupKey === domain) return job.rateLimitGroup(delayMs)
+  if (group.kind === 'domain' && group.deferral !== 'job' && job.groupKey === domain) {
+    return job.rateLimitGroup(delayMs)
+  }
   return job.moveToDelayed(Date.now() + delayMs)
 }
 

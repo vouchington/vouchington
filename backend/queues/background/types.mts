@@ -9,7 +9,17 @@ type GroupRateLimit = { readonly max: number; readonly duration: number }
  * job supplies its own namespaced key), never both. `none` runs under the worker's concurrency.
  */
 export type BackgroundGroup =
-  | { readonly kind: 'domain'; readonly concurrency: number; readonly rateLimit?: GroupRateLimit }
+  | {
+      readonly kind: 'domain'
+      readonly concurrency: number
+      readonly rateLimit?: GroupRateLimit
+      /**
+       * Where a provider rate-limit signal or a pause defers. `group` (the default) parks the whole
+       * group, for a domain whose jobs share one external limit. `job` delays only the signalling
+       * job, for a domain whose jobs reach many independent hosts or none at all.
+       */
+      readonly deferral?: 'group' | 'job'
+    }
   | { readonly kind: 'entity' }
   | { readonly kind: 'none' }
 

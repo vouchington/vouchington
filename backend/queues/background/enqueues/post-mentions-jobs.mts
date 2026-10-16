@@ -5,7 +5,7 @@ import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 // domain-wide group of 5 keeps that cap on the shared worker.
 export const POST_MENTIONS_DOMAIN = defineBackgroundDomain({
   domain: 'post-mentions',
-  group: { kind: 'domain', concurrency: 5 },
+  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
   workerConcurrency: 5,
 })
 
