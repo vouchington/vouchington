@@ -1919,6 +1919,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
+      '@queues/follower-distributions':
+        specifier: workspace:^
+        version: link:../queues/follower-distributions
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications
@@ -1982,6 +1985,9 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../services/feeds
+      '@services/follower-distributions':
+        specifier: workspace:^
+        version: link:../services/follower-distributions
       '@services/growth-metrics':
         specifier: workspace:^
         version: link:../services/growth-metrics
@@ -2033,6 +2039,9 @@ importers:
       '@services/queue-monitoring':
         specifier: workspace:^
         version: link:../services/queue-monitoring
+      '@services/read-states':
+        specifier: workspace:^
+        version: link:../services/read-states
       '@services/recommended-rss-feeds':
         specifier: workspace:^
         version: link:../services/recommended-rss-feeds
@@ -2145,9 +2154,6 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
     devDependencies:
-      '@services/follower-distributions':
-        specifier: workspace:^
-        version: link:../services/follower-distributions
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
@@ -5805,6 +5811,9 @@ importers:
       '@data-stores/valkey-rate-limiter':
         specifier: workspace:^
         version: link:../../data-stores/valkey-rate-limiter
+      '@jongleberry/api-server':
+        specifier: ^3.0.1
+        version: 3.0.1
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -5829,6 +5838,9 @@ importers:
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
+      '@services/contribution-gating':
+        specifier: workspace:^
+        version: link:../contribution-gating
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -8570,6 +8582,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/activitypub':
+        specifier: workspace:^
+        version: link:../../queues/activitypub
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -8591,6 +8606,9 @@ importers:
       '@queues/spam-detection':
         specifier: workspace:^
         version: link:../../queues/spam-detection
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -9372,6 +9390,9 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
+      '@queues/vote-aggregation':
+        specifier: workspace:^
+        version: link:../../queues/vote-aggregation
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
@@ -10167,6 +10188,9 @@ importers:
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../bedrock-embeddings
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -10219,9 +10243,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/elections-votes':
-        specifier: workspace:^
-        version: link:../elections-votes
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

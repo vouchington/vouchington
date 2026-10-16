@@ -4,12 +4,11 @@
 // (e.g. elections-votes/post/index.mts → vote-stats.mts → @services/entity-fetch → this file).
 import { getPrivateUserByAny, getPublicUserByAny } from '@services/users/get'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
-import { getTopicByAny, getTopicByAnyWithRedirect } from '@services/topics/get'
+import { getTopicByAnyWithRedirect } from '@services/topics/get'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
 import { getTopicMetricsByAnyBatch } from '@services/topics/metrics-batch'
 import { getAgentModerationElectionsByIdBatch } from '@services/elections-votes/agent-moderation/get-election-batch'
-import { getPostByAny } from '@services/posts/get'
 import { getPostsByAnyBatch } from '@services/posts/get-batch'
 import { getPostMetricsByAny } from '@services/posts/metrics'
 import { getPostMetricsByAnyBatch } from '@services/posts/metrics-batch'
@@ -45,7 +44,7 @@ export async function getUserPublicByAnyCachedBatch(identifiers: string[]) {
   const activeIds = await getActiveUserIds(users.flatMap(user => (user ? [user.id] : [])))
   return users.map(user => (user && activeIds.has(user.id) ? user : null))
 }
-export const getTopicByAnyCached = caches.topics.cacheGetByAny(getTopicByAny)
+export { getTopicByAnyCached } from '@services/topics/get-cached'
 export const getTopicByAnyWithRedirectCached =
   caches.topics_with_redirect.cacheGetByAny(getTopicByAnyWithRedirect)
 export const getTopicByAnyCachedBatch = caches.topics.cacheGetByAnyBatch(getTopicsByAnyBatch)
@@ -54,7 +53,7 @@ export const getTopicMetricsByAnyCachedBatch =
   caches.topic_metrics.cacheGetByAnyBatch(getTopicMetricsByAnyBatch)
 export const getAgentModerationElectionByIdCachedBatch =
   caches.agent_moderation_elections.cacheGetByAnyBatch(getAgentModerationElectionsByIdBatch)
-export const getPostByAnyCached = caches.posts.cacheGetByAny(getPostByAny)
+export { getPostByAnyCached } from '@services/posts/get-cached'
 export const getPostByAnyCachedBatch = caches.posts.cacheGetByAnyBatch(getPostsByAnyBatch)
 export const getPostMetricsByAnyCached = caches.post_metrics.cacheGetByAny(getPostMetricsByAny)
 export const getPostMetricsByAnyCachedBatch =

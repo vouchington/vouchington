@@ -22,6 +22,7 @@ export async function admitDelegatedContribution<T>(input: {
   idempotencyKey: string
   intent: unknown
   beforeCapacity?: () => Promise<void>
+  beforeCommit?: () => Promise<void>
   execute: (query: TransactionQuery) => Promise<T>
 }): Promise<T> {
   if (

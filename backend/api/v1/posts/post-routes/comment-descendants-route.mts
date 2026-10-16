@@ -24,7 +24,7 @@ import { canViewPostsBatch } from '@services/posts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
-import { getRouteAccessPost } from '../get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 import { apiQuery, apiResponse } from '../../../response-contract.mts'
 import {
   commentAncestorPaginationQuery,

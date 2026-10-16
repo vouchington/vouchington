@@ -28,6 +28,12 @@ that refuses an admitted call still writes the existing `accepted` and `tool_err
 the selected option. For example, free callers can read RSS feed details, while crawl reads retain
 their existing runtime 403 rather than becoming a declared plan denial.
 
+## Votes, RSS writes and discussions
+
+The [participation write tools](../../mcp/participation-write-tools.md) expose votes, RSS read
+state, shares/sends, feed submission and discussion creation through five Plus-only user tools.
+Their closed option envelopes preserve REST guards, selected-route charges and option audit.
+
 ## Consolidation acceptance
 
 The [route completeness test](../../../../../backend/services/mcp-tools/route-completeness.test.mts)

@@ -1,3 +1,4 @@
+import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { readFileSync } from 'node:fs'
 import { isDeepStrictEqual } from 'node:util'
 import { describe, expect, it } from 'vitest'
@@ -77,6 +78,7 @@ const requestContracts = JSON.parse(
 type RouteSource = Pick<Tool, 'roles' | 'meta'> & { schema: Pick<Tool['schema'], 'parameters'> }
 type SourceEntry = { publicName: string; option: string | null; source: RouteSource }
 const mergedGroups = [
+  ...participationWriteGroups,
   ...userMergedReadingGroups,
   ...userMergedParticipationGroups,
   ...userMergedAccountGroups,

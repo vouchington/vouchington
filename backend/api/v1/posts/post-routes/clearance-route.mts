@@ -36,7 +36,7 @@ import {
   indexPostModerationsByPostId,
   mergeElectionVotesWithAgentModerations,
 } from '../admin-moderation-data.mts'
-import { getRouteAccessPost } from '../get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 import { createPaginationParser } from '@modules/pagination'
 
 const descendantsParser = createPaginationParser({

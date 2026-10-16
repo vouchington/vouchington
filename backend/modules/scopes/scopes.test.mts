@@ -9,6 +9,15 @@ import {
 } from './index.mts'
 
 describe('validateScopeSet', () => {
+  it.each(['votes:write', 'rss-feed-items:write', 'rss-feeds:write'] as const)(
+    'covers ordinary %s only through the write umbrella',
+    scope => {
+      expect(hasScope(['mcp.user:write'], scope)).toBe(true)
+      expect(hasScope(['mcp.user:read'], scope)).toBe(false)
+      expect(SCOPE_DEFINITIONS[scope]).not.toHaveProperty('requiresExactGrant')
+    },
+  )
+
   it('parses only exact catalogue values', () => {
     expect(parseApiScope('rss:read')).toBe('rss:read')
     expect(parseApiScope('RSS:read')).toBeNull()

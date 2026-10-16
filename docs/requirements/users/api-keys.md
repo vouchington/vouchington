@@ -27,8 +27,6 @@ Keys are stored as SHA-256 hashes and cannot be recovered. The raw key is return
 
 API keys use a permission-based access control system. Each key has a `permissions` array that determines what it can access.
 
-### Available Permissions
-
 - `rss:read` — Access RSS feed endpoints (`/rss/posts`, `/rss/news`)
 - `topics:read` — Read topic and recommendation MCP tools
 - `posts:read/write` — Read posts and create, reply, edit, archive or delete own posts and comments through MCP; write requires read
@@ -36,6 +34,8 @@ API keys use a permission-based access control system. Each key has a `permissio
 - `communities:write`, `disputes:read/write`, `appeals:read/write`, `reports:write` — MCP community, dispute, appeal and content report tools; write requires read, except `reports:write`
 - `cards:read/write` — Read or manage cards; write requires read
 - `entity-relations:read/write` — Read or add relations, add or remove tags; write requires read
+- `votes:write` — Cast or clear post, topic and RSS item votes through Plus MCP; no read prerequisite
+- `rss-feed-items:read/write`, `rss-feeds:read/write` — RSS read state, share/send and feed submission through Plus MCP; write requires read
 - `bookmarks:read/write`, `lists:read/write` — Set bookmarks or manage lists and items; write requires read
 - `referral-links:read/write`, `topic-recommendations:read/write` — Manage own referral links; list own topic recommendations (read) and create, edit or withdraw own pending ones (write); write requires read
 - `post-relations.owned-private:write` — Add relations, tags, bookmarks, or list items for owned private posts, and read own private lists

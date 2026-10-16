@@ -20,6 +20,7 @@
     "@modules/request-client-info": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/follower-distributions": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/admin-imports": "workspace:^",
@@ -41,6 +42,7 @@
     "@services/entity-relation-actions": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/feeds": "workspace:^",
+    "@services/follower-distributions": "workspace:^",
     "@services/growth-metrics": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/landing-page-analytics": "workspace:^",
@@ -58,6 +60,7 @@
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
+    "@services/read-states": "workspace:^",
     "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",
@@ -97,7 +100,6 @@
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
-    "@services/follower-distributions": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }

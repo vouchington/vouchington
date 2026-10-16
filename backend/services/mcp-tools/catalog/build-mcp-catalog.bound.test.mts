@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
@@ -36,10 +37,10 @@ const grants = [
   },
 ]
 
-// Final #2495 user-server ceilings. Sizes are compact UTF-16 code units.
+// User-server ceilings amended by #2545 owner decision (2026-10-15). Sizes are compact UTF-16 code units.
 const caps = {
   mcp: {
-    all: { count: 69, list: 260000, core: 110000, output: 240000 },
+    all: { count: 74, list: 260000, core: 115000, output: 250000 },
     Reader: { count: 9, list: 65000, core: 30000, output: 60000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
@@ -136,5 +137,48 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
       .map(entry => entry.tool.name)
     expect(paidNames.length).toBeGreaterThan(0)
     expect(freeTools.every(tool => !paidNames.includes(tool.name))).toBe(true)
+  })
+})
+
+const names = [
+  'vote',
+  'set_rss_feed_item_read',
+  'share_rss_feed_item',
+  'submit_rss_feed',
+  'start_discussion',
+]
+const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
+const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+const caller = { id: 'participation-listing', roles: [], membership_plan: null }
+
+// Compact serialized listings pinned before #2545, from main 4f03a701c.
+describe('participation write discovery contract', () => {
+  it('keeps Reader tools/list byte-identical', () => {
+    const listing = listMcpToolsForUser(caller, readerScopes, USER_MCP_SERVER_CONFIG, true)
+    expect(JSON.stringify(listing)).toHaveLength(56093)
+    expect(hash(listing)).toBe('0c4daab5391dbb4b32fc576d379e276e0dba61bd1a74c794303a2ce2c1a59e24')
+  })
+  it('adds exactly the five approved tools to Plus without changing existing tools', () => {
+    const paid = listMcpToolsForUser(
+      { ...caller, membership_plan: 'plus' },
+      scopes,
+      USER_MCP_SERVER_CONFIG,
+      true,
+    )
+    expect(paid).toHaveLength(74)
+    expect(
+      paid
+        .filter(tool => names.includes(tool.name))
+        .map(tool => tool.name)
+        .toSorted(),
+    ).toEqual(names.toSorted())
+    expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
+      'e8e1f6f4109247033c746fd57226084397ed299bfed84070ed2a968011736ee8',
+    )
+    for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
+      expect(
+        listMcpToolsForUser(caller, scopes, config, true).some(tool => names.includes(tool.name)),
+      ).toBe(false)
+    }
   })
 })

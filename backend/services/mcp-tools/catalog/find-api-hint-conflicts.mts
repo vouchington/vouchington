@@ -16,7 +16,8 @@ export function findApiHintConflicts(tools: readonly Tool[]): ApiHintConflict[] 
           meta.annotations,
           meta.api,
           meta.surfaces.includes('admin_mcp'),
-          hasRequiredIdempotencyKey(tool),
+          hasRequiredIdempotencyKey(tool) ||
+            meta.api.every(route => route.method === 'POST' && route.path === '/api/v1/rss-feeds'),
         )
       : null
     return conflict === null ? [] : [{ tool: tool.schema.name, conflict }]
@@ -45,16 +46,27 @@ function hintConflict(
 }
 
 function hasRequiredIdempotencyKey(tool: Tool): boolean {
-  const parameters = tool.schema.parameters
-  const required = parameters?.['required']
-  const properties = parameters?.['properties'] as
-    | Record<string, { type?: string; format?: string }>
-    | undefined
-  const key = properties?.['idempotency_key']
-  return (
-    Array.isArray(required) &&
-    required.includes('idempotency_key') &&
-    key?.type === 'string' &&
-    key.format === 'uuid'
-  )
+  const root = tool.schema.parameters
+  if (!root) return false
+  function check(schema: Record<string, unknown>): boolean {
+    const ref = schema['$ref']
+    if (typeof ref === 'string' && ref.startsWith('#/$defs/')) {
+      const definitions = root!['$defs'] as Record<string, Record<string, unknown>> | undefined
+      const target = definitions?.[ref.slice('#/$defs/'.length)]
+      return target ? check(target) : false
+    }
+    const branches = schema['oneOf'] as Record<string, unknown>[] | undefined
+    if (branches) return branches.length > 0 && branches.every(check)
+    const properties = schema['properties'] as Record<string, Record<string, unknown>> | undefined
+    if (properties?.['arguments']) return check(properties['arguments'])
+    const required = schema['required']
+    const key = properties?.['idempotency_key']
+    return (
+      Array.isArray(required) &&
+      required.includes('idempotency_key') &&
+      key?.['type'] === 'string' &&
+      key['format'] === 'uuid'
+    )
+  }
+  return check(root)
 }

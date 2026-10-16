@@ -33,7 +33,7 @@ import {
   validateRequestContract,
   setAnonymousPublicCacheHeaders,
 } from '../../../response-helpers.mts'
-import { getRouteAccessPost } from '../get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 
 app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts/:idOrSlug')

@@ -30,7 +30,6 @@ ignores:
   - 'backend/api/app-origin-guard.mts'
   # Pre-existing exports in helper/registry files that do not act as route
   # modules. Tracked for future cleanup; do not add new exports to these files.
-  - 'backend/api/v1/posts/get-route-access-post.mts'
   - 'backend/api/v1/posts/admin-moderation-data.mts'
   - 'backend/api/v1/communities/list-query.mts'
 rule:

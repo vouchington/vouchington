@@ -123,7 +123,9 @@
 - `rewards-statuses:read`
 - `rewards-statuses:write`
 - `rss-feed-items:read`
+- `rss-feed-items:write`
 - `rss-feeds:read`
+- `rss-feeds:write`
 - `rss:read`
 - `site-operations:config`
 - `site-operations:jobs`
@@ -135,6 +137,7 @@
 - `topic-recommendations:write`
 - `topics:read`
 - `users:read`
+- `votes:write`
 - `web-search:read`
 
 ## `app_attestation_environments`

@@ -27,7 +27,7 @@ export const sdkCatalogCases = [
     scopes: allScopes,
     plan: 'pro',
     admin: true,
-    count: 69,
+    count: 74,
   },
   {
     server: USER_MCP_SERVER_CONFIG,

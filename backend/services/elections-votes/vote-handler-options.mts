@@ -10,8 +10,11 @@ import type {
 } from '@services/elections-votes/shared'
 import type { PrivateUser } from '@services/users/types'
 
+export type VoteAccessContext = Pick<Context, 'assert'>
+
 export type CreateVoteHandlerOptions<
   VoteResult extends ElectionVoteMutationResult = ElectionVoteMutationResult,
+  AccessContext extends Pick<Context, 'assert'> = Context,
 > = {
   rateLimitPrefix: string
   entityType: string
@@ -30,12 +33,16 @@ export type CreateVoteHandlerOptions<
   /** Current ballot used to suppress same-choice and official Clear no-ops before quota. */
   getCurrentVote?: (userId: string, entityId: string) => Promise<ElectionVote | null>
   /** Runs before entity lookup, for checks that must not disclose entity existence. */
-  preAssertAccess?: (ctx: Context, currentUser: PrivateUser) => Promise<void> | void
+  preAssertAccess?: (ctx: AccessContext, currentUser: PrivateUser) => Promise<void> | void
   /** Runs after entity lookup, when the access decision needs the entity. */
-  assertAccess?: (ctx: Context, currentUser: PrivateUser, entity: unknown) => Promise<void> | void
+  assertAccess?: (
+    ctx: AccessContext,
+    currentUser: PrivateUser,
+    entity: unknown,
+  ) => Promise<void> | void
   /** Runs after entity lookup when clearing a prior ballot has narrower access requirements. */
   assertClearAccess?: (
-    ctx: Context,
+    ctx: AccessContext,
     currentUser: PrivateUser,
     entity: unknown,
   ) => Promise<void> | void

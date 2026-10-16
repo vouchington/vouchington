@@ -62,7 +62,7 @@ No election-backed vote or relation is written.
 
 ## Where the restriction applies
 
-- `api/election-vote-handler-guards.mts:14`, called at `election-vote-handler.mts:77`: blocks sentiment votes on every `createVoteHandler` route unless the route opts out. Clears are always allowed. Covered by `election-vote-handler.test.mts` (administrator) and `election-vote-handler.platform-accounts.test.mts` (`official`, `system`, `ai_agent`).
+- `services/elections-votes/vote-handler-guards.mts` (`assertOfficialVoteMutationAccess`), called by `applyVoteMutation` in `services/elections-votes/vote-handler.mts`: blocks sentiment votes on every shared REST/MCP vote path unless the option configuration opts out. Clears are always allowed. Covered by `election-vote-handler.test.mts` (administrator) and `election-vote-handler.platform-accounts.test.mts` (`official`, `system`, `ai_agent`).
 - `services/entity-relation-actions/user-tag-authorization.mts:17`: blocks user-tag relation add and vote, except for administrators. Covered by `user-tags-authorization.test.mts` (`system` and `ai_agent` rejected, administrator allowed).
 - `services/bookmarks/upsert.mts:123`: blocks a follow casting a vouch. Covered by `upsert.follow-vouch.test.mts`.
 - `services/elections-votes/shared/vote-upsert.mts`: the topic and post writers reject non-null votes from platform accounts and allow clears (see [Topic and post election writers](#topic-and-post-election-writers)). Covered by `shared/platform-account-votes.test.mts` (`official`, `system`, `ai_agent`, for both writers).
@@ -72,7 +72,7 @@ No election-backed vote or relation is written.
 
 ## Administrator authority
 
-The user-tag exemption (`user-tag-authorization.mts:17`) and the administrator moderation vote (`allowOfficialAccounts: true` at `api/v1/agents/agent-moderation.mts:51,68`, and the admin MCP tool `tools/admin/agent-votes.mts:47`) are intentional. The two routes that opt out of the vote guard are the structural relation vote (`shouldAllowOfficialAccount`) and the administrator moderation vote (`allowOfficialAccounts`). Topic-recommendation approval is administrator-only (`approve-topic-recommendation.mts:111`). MCP tools match REST: `add_entity_relation` goes through `createEntityRelationAction`, the same guard as the REST route, and `withdraw_entity_relation_vote` only retracts.
+The user-tag exemption (`user-tag-authorization.mts:17`) and the administrator moderation vote (`allowOfficialAccounts: true` at `api/v1/agents/agent-moderation.mts:51,68`, and the admin MCP tool `tools/admin/agent-votes.mts:47`) are intentional. The two routes that opt out of the vote guard are the structural relation vote (`shouldAllowOfficialAccount`) and the administrator moderation vote (`allowOfficialAccounts`). Topic-recommendation approval is administrator-only (`approve-topic-recommendation.mts:111`). MCP tools match REST: `vote` uses the shared election handler and the same post/topic/RSS option guards; `add_entity_relation` goes through `createEntityRelationAction`, the same guard as the REST route, and `withdraw_entity_relation_vote` only retracts.
 
 ## Mismatches
 

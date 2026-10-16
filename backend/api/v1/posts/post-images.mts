@@ -4,7 +4,7 @@ import { getPostByAnyCached } from '@services/entity-fetch'
 import { canViewPost, currentUserCanUpdatePost } from '@services/posts'
 import { getPostImages, setPostImages, type PostImageInput } from '@services/posts/images'
 import { assertNotSuspended } from '@services/users'
-import { getRouteAccessPost } from './get-route-access-post.mts'
+import { getRouteAccessPost } from '@services/posts/route-access'
 import {
   getOptionalAuthAndRateLimit,
   requireAuth,

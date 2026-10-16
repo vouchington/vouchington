@@ -36,3 +36,7 @@ current owner behavior remain unchanged.
 - `fetchRssFeedItemsWithMetadata`
 - `fetchTopicsWithMetadata`
 - `invalidateAnonymousSearchCaches`
+
+The single post/topic cached getters live in their domain services and are re-exported by this
+aggregation API. Domain authorization and vote options use those same functions directly, sharing
+the `entity-cache` singleton without depending back on the entity-fetch aggregator.

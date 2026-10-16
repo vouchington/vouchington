@@ -44,7 +44,7 @@ export function createMergedTool(
   title: string,
   options: readonly MergedToolOption[],
 ): Tool {
-  if (options.length < 2) throw new Error(`${name} must merge at least two tools`)
+  if (options.length < 1) throw new Error(`${name} needs at least one option`)
   const first = options[0]!.source
   if (!first.meta?.outputSchema) throw new Error(`${name} needs source output schemas`)
   const byOption = new Map(options.map(entry => [entry.option, entry.source]))

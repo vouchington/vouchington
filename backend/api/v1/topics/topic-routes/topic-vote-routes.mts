@@ -1,10 +1,6 @@
-import { getTopicElectionVote, upsertTopicElectionVotes } from '@services/elections-votes/topic'
-import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateTopicElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
-import { enqueueBulkUpdateTopicRatingStatsForTopicId } from '@queues/vote-aggregation/enqueues/topic-ratings'
-import { getTopicByAnyCached } from '@services/entity-fetch'
 import app from '../../../app.mts'
 import { createVoteClearHandler, createVoteHandler } from '../../../election-vote-handler.mts'
+import { topicVoteOptions } from '@services/topics/vote-handler-options'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
@@ -12,37 +8,11 @@ import {
 } from '../../../response-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 
-// PUT /api/v1/topics/:id/vote
-const topicVoteHandler = createVoteHandler({
-  rateLimitPrefix: 'topic-election-vote',
-  routeKey: 'PUT:/api/v1/topics/:id/vote',
-  requestContractOperation: 'PUT:/api/v1/topics/:id/vote',
-  entityType: 'topic',
-  getEntity: getTopicByAnyCached,
-  entityNotFoundMessage: 'Topic not found',
-  votePolicy: 'sentiment',
-  upsertVotes: upsertTopicElectionVotes,
-  getCurrentVote: getTopicElectionVote,
-  onNoop: createVoteStatsNoopReconciler(
-    enqueueBulkUpdateTopicElectionVoteStats,
-    enqueueBulkUpdateTopicRatingStatsForTopicId,
-  ),
-})
-
+const topicVoteHandler = createVoteHandler(topicVoteOptions)
 const clearTopicVoteHandler = createVoteClearHandler({
-  rateLimitPrefix: 'topic-election-vote',
+  ...topicVoteOptions,
   routeKey: 'DELETE:/api/v1/topics/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/topics/:id/vote',
-  entityType: 'topic',
-  getEntity: getTopicByAnyCached,
-  entityNotFoundMessage: 'Topic not found',
-  votePolicy: 'sentiment',
-  upsertVotes: upsertTopicElectionVotes,
-  getCurrentVote: getTopicElectionVote,
-  onNoop: createVoteStatsNoopReconciler(
-    enqueueBulkUpdateTopicElectionVoteStats,
-    enqueueBulkUpdateTopicRatingStatsForTopicId,
-  ),
 })
 
 app.route('/api/v1/topics/:id/vote').put(async ctx => {

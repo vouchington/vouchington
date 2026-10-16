@@ -61,6 +61,13 @@ export const sdkMergedSuccessNames = {
     'review_copyright_email_correspondence',
     'replay_copyright_intent',
   ],
+  participationFixture: [
+    'vote',
+    'set_rss_feed_item_read',
+    'share_rss_feed_item',
+    'submit_rss_feed',
+    'start_discussion',
+  ],
   operationalFixture: ['run_operational_job'],
 } as const
 

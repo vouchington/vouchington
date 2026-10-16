@@ -21,6 +21,33 @@ function fixtureTool(
 }
 
 describe('findApiHintConflicts', () => {
+  it('recognizes admission keys in every strict merged option with local references', () => {
+    const tool = fixtureTool('discussion', IDEMPOTENT_WRITE, ['POST'])
+    tool.schema.parameters = {
+      type: 'object',
+      oneOf: [{ properties: { arguments: { $ref: '#/$defs/Args' } } }],
+      $defs: {
+        Args: {
+          type: 'object',
+          required: ['idempotency_key'],
+          properties: { idempotency_key: { type: 'string', format: 'uuid' } },
+        },
+      },
+    }
+    expect(findApiHintConflicts([tool])).toEqual([])
+    ;(tool.schema.parameters['oneOf'] as unknown[]).push({ properties: {} })
+    expect(findApiHintConflicts([tool])).toEqual([
+      { tool: 'discussion', conflict: 'idempotentHint should be false' },
+    ])
+  })
+  it('recognizes feed submission service idempotence without inferring it for other POST routes', () => {
+    const tool = fixtureTool('submit', IDEMPOTENT_WRITE, ['POST'])
+    tool.meta!.api = [{ method: 'POST', path: '/api/v1/rss-feeds' }]
+    expect(findApiHintConflicts([tool])).toEqual([])
+    tool.meta!.api = [{ method: 'POST', path: '/api/v1/posts' }]
+    expect(findApiHintConflicts([tool])).toHaveLength(1)
+  })
+
   it('recognizes required UUID admission keys on POST tools', () => {
     const tool = fixtureTool('admitted_create', IDEMPOTENT_WRITE, ['POST'])
     tool.schema.parameters = {

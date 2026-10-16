@@ -19,7 +19,7 @@ import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiRequestContract } from '../../../response-contract.mts'
-import { getRouteAccessPost, getRouteRootAccessPost } from '../get-route-access-post.mts'
+import { getRouteAccessPost, getRouteRootAccessPost } from '@services/posts/route-access'
 
 app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
   apiRequestContract<'PATCH:/api/v1/posts/:idOrSlug', UpdatePostChanges>(

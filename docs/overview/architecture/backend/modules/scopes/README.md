@@ -54,6 +54,13 @@ write-only: it carries no read prerequisite because `create_content_report` retu
 it filed. See
 [Community, Report, Dispute and Appeal Tools](../../../mcp/community-report-appeal-write-tools.md).
 
+`votes:write`, `rss-feed-items:write` and `rss-feeds:write` are ordinary user grants covered by
+`mcp.user:write`, never by `mcp.user:read`. Votes are write-only with no read prerequisite; RSS
+writes require their matching read scope. The catalogue drives both API-key pickers and OAuth
+consent, so these permissions use the same ordinary-scope presentation as `lists:write`.
+See [votes, RSS writes and discussions](../../../services/mcp-tools/README.md#votes-rss-writes-and-discussions)
+for the Plus tools and their REST twins.
+
 `hostnames:read` and `users:read` are user-audience resource scopes for the hostname and user MCP
 read tools. Both tools read as a signed-out reader whatever the credential owner's role, so neither
 scope exposes a blocked hostname or a private profile field, and `mcp.user:read` covers them like
@@ -82,6 +89,10 @@ recommendations its owner submitted.
 The same coverage rule (`hasEveryScope`) decides whether an OAuth client's registered scopes cover
 a requested scope. `listScopesForAudience` feeds OAuth discovery metadata, and
 `withScopePrerequisites` completes the scope set an MCP `insufficient_scope` challenge asks for.
+
+Scope definitions also generate the PostgreSQL `api_scopes` enum during fresh bootstrap. Adding
+or removing a scope is a schema snapshot input even when no SQL file changes; regenerate through
+the [PostgreSQL snapshot workflow](../../../../../development/postgresql/schema-snapshot/README.md#update-flow).
 
 ## Related
 
