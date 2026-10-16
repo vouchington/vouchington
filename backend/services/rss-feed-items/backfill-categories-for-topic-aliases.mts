@@ -52,6 +52,7 @@ async function backfillCategoryBatch(
       [topicId, CATEGORY_BACKFILL_BATCH_SIZE],
     )
     const candidateItemIds = candidateItems.map(row => row.rss_feed_item_id)
+    if (candidateItemIds.length === 0) return { rows: [], changedItemIds: [], statTargets: [] }
     await lockRssFeedItemsForStoryPublicationChanges(query, candidateItemIds)
     const { rows } = await query<{
       rss_feed_item_id: string

@@ -189,6 +189,8 @@ Admins can permanently hide a category from the pending triage queue by rejectin
 
 `backfillCategoriesForTopicAliases` is a shared helper that updates `rss_feed_item_categories.topic_id` for rows whose `category_text` matches any of the topic's aliases (overwriting stale assignments), or the topic's `name`/`slug` (filling nulls only).
 
+Its bounded candidate scan ends the backfill when no item remains. That empty terminal page skips the update and category side effects; nonempty pages still acquire publication locks before rechecking and updating matching rows.
+
 The admin API (`GET/POST/DELETE /api/v1/rss-feed-categories`) and page (`/rss-feed-categories`) are the primary callers. See [RSS Feed Category Aliases requirements](../../../../requirements/content/RSS-FEED-CATEGORY-ALIASES.md) for full feature spec.
 
 ## Related
