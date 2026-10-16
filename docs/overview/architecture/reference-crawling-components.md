@@ -27,7 +27,7 @@ For each URL crawl:
 
 1. **Guard checks** — skip if `hostname.is_blocked = true` or `hostname.is_crawlable = false`
 2. **Domain rate limit check** — skip (throw `CrawlerRateLimitError`) if domain has an active 429 lock in Valkey
-3. **robots.txt check** — skip if `isUrlCrawlable()` returns false; network errors and HTTP 4xx/5xx from robots.txt are treated as ALLOW (RFC 9309); SSRF-rejected robots.txt targets are disallowed before the request; only unexpected runtime exceptions (e.g. parsing bugs) are treated as disallowed
+3. **robots.txt check** — skip if `isUrlCrawlable()` returns false. HTTP 4xx from robots.txt is ALLOW (RFC 9309 unavailable). Exhausted HTTP 5xx and network errors are complete disallow for 15 minutes (RFC 9309 unreachable) unless a cached robots.txt body is still valid. SSRF-rejected robots.txt targets are disallowed before the request. Unexpected runtime exceptions (for example parsing bugs) are disallowed.
 4. **Crawler rule lookup** — fetch per-hostname rules (`css_selectors_to_remove`, `link_*_to_remove`)
 5. **Google Web Risk** — optional lookup runs only after local blocklist, rate-limit, robots, and crawler-rule checks pass. Provider failures/rate limits fail open; risky verdicts block the registrable domain locally.
 6. **Conditional HTTP fetch** — send `If-None-Match`/`If-Modified-Since` from last successful crawl

@@ -16,7 +16,7 @@ connections). See `predecessor-issue#4717`.
 ## Notes
 
 - `crawl_referral_link` jobs with `crawler_type = 'automation'` immediately enqueue a `crawl-browser` job and return — no Valkey calls in that path.
-- For fetch-path jobs, `crawlUrl` is called, which runs the same preflight as the `crawler` worker: domain rate-limit `pttl`, Web Risk local limiter script (1 rate-limiter op), URL blocklist bloom `mexistsIfReady` (1 cache op), and robots.txt `ValkeyCache.get` (1 cache op).
+- For fetch-path jobs, `crawlUrl` is called, which runs the same preflight as the `crawler` worker: domain rate-limit `pttl`, Web Risk local limiter script (1 rate-limiter op), URL blocklist bloom `mexistsIfReady` (1 cache op), and robots.txt `ValkeyCache.get` (1 cache op on a rules hit; a rules miss adds the short unreachable-marker read and one `set`).
 - If web-risk is disabled or the clean-verdict cache is warm, the Web Risk local limiter op may be skipped. See `services/web-risk/state.mts`.
 - **Conditional:** When web-risk is enabled and no cached clean verdict exists, `assertUrlAllowedByWebRisk` reads the clean-verdict key and the provider cooldown key in one pipelined `Batch`, then writes the clean-verdict key after a clean response — up to 3 more `rateLimiterValkeyClient` commands in 2 round trips, same as the `crawler` worker.
 - The dispatcher job (`crawl_referral_links_dispatcher`) is PSQL-only with no Valkey calls.

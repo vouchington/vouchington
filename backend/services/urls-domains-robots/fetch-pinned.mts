@@ -88,7 +88,7 @@ async function resolveRobotsAddresses(
       throw new RobotsUnsafeTargetError(url, err.reason)
     }
     // validateUrl reports a DNS timeout as AbortError. isNetworkError does not treat AbortError
-    // as retryable, so remap it to TimeoutError and keep the existing retry-then-ALLOW path.
+    // as retryable, so remap it to TimeoutError and keep the existing retry-then-DISALLOW path.
     if (isTimeoutError(err)) {
       const timeout = new Error(err.message, { cause: err })
       timeout.name = 'TimeoutError'

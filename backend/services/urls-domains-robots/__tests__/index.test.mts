@@ -144,7 +144,7 @@ describe('urls-domains-robots', () => {
     expect(mockReadResponseBody).not.toHaveBeenCalled()
   })
 
-  it('returns ALLOW on network error', async () => {
+  it('returns complete disallow after network errors are exhausted', async () => {
     const domain = randomDomain()
     const networkError = new Error('Network timeout')
     mockFetchWithTimeoutSimple.mockRejectedValue(networkError)
@@ -152,7 +152,8 @@ describe('urls-domains-robots', () => {
 
     const result = await fetchRobotsTxtForTest(domain)
 
-    expect(result).toBe('User-agent: *\nAllow: /')
+    expect(result).toBe('User-agent: *\nDisallow: /')
+    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
   })
 
   it('retries on 5xx error and succeeds on retry', async () => {

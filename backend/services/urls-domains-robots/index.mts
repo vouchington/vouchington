@@ -1,35 +1,23 @@
-import { ValkeyCache } from '@data-stores/valkey/cache'
 import { parseRobotsTxt } from '@vouchington/robots'
 import { checkDomainBlacklisted } from './check-domain-blacklisted.mts'
-import {
-  defaultRobotsDependencies,
-  DISALLOW_ROBOTS_TXT,
-  fetchRobotsTxtWithRetry,
-  type RobotsDependencies,
-} from './fetch-retry.mts'
+import { fetchRobotsTxtCached } from './fetch-cache.mts'
+import { fetchRobotsTxtOutcome, type RobotsDependencies } from './fetch-retry.mts'
 
 export { checkDomainBlacklisted }
-
-const cache = new ValkeyCache({
-  prefix: 'urls-domains-robots',
-  ttlSeconds: 60 * 60 * 24,
-})
+export { fetchRobotsTxtCached }
+export {
+  ROBOTS_RULES_CACHE_PREFIX,
+  ROBOTS_UNREACHABLE_CACHE_PREFIX,
+  ROBOTS_UNREACHABLE_MARKER,
+} from './fetch-cache.mts'
 
 export const fetchRobotsTxt = async (
   domain: string,
   dependencyOverrides: Partial<RobotsDependencies> = {},
 ): Promise<string> => {
-  const dependencies = { ...defaultRobotsDependencies, ...dependencyOverrides }
-  const isBlacklisted = await dependencies.checkDomainBlacklisted(domain)
-
-  if (isBlacklisted) {
-    return DISALLOW_ROBOTS_TXT
-  }
-
-  return fetchRobotsTxtWithRetry(domain, dependencies)
+  const outcome = await fetchRobotsTxtOutcome(domain, dependencyOverrides)
+  return outcome.body
 }
-
-export const fetchRobotsTxtCached = cache.cacheGetByAny(fetchRobotsTxt)
 
 async function getParsedRobots(
   domain: string,
