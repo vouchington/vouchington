@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,12 @@ const testDirs: string[] = []
 
 function git(cwd: string, ...args: string[]) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+}
+
+function makeTempDir() {
+  const dir = mkdtempSync(join(tmpdir(), 'voucha-check-fresh-base-'))
+  testDirs.push(dir)
+  return dir
 }
 
 function commit(cwd: string, file: string, contents: string) {
@@ -121,6 +127,19 @@ describe('dev/check-fresh-base', () => {
     expect(context).toContain('refresh of `origin/main` failed')
     expect(context).toContain('freshness is unknown')
     expect(context).toContain('Retry `git fetch origin`')
+  })
+
+  it('reports unknown freshness when the fresh-base CLI is unavailable', () => {
+    const dir = makeTempDir()
+    mkdirSync(join(dir, 'dev'))
+    copyFileSync(scriptPath, join(dir, 'dev', 'check-fresh-base'))
+    const result = spawnSync('/bin/bash', [join(dir, 'dev', 'check-fresh-base')], {
+      cwd: makeRepo(),
+      encoding: 'utf8',
+      input: '{}',
+    })
+
+    expect(additionalContext(result.stdout)).toContain('freshness is unknown')
   })
 
   it('stays silent for a compact session restart', () => {

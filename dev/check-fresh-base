@@ -32,7 +32,12 @@ if [ -n "${CHECK_FRESH_BASE_SKIP_FETCH:-}" ]; then
   ARGS+=(--skip-fetch)
 fi
 REPORT="$("$CLI" "${ARGS[@]}" 2>/dev/null || true)"
-if [ -z "$REPORT" ] || [ "$(printf '%s' "$REPORT" | jq -r '.needsAttention')" != "true" ]; then
+if [ -z "$REPORT" ]; then
+  # A missing or failing CLI (for example before `pnpm install`) must not read as a clean worktree.
+  jq -n '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"⚠️  Worktree base check: `vouchington fresh-base` is unavailable (run `pnpm install`), so freshness is unknown. Retry `git fetch origin` and compare with `origin/main` before relying on the current checkout."}}'
+  exit 0
+fi
+if [ "$(printf '%s' "$REPORT" | jq -r '.needsAttention')" != "true" ]; then
   exit 0
 fi
 
