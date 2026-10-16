@@ -66,12 +66,12 @@
   },
   {
     "annotation": "backfillCategoriesForTopicAliases",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "reason": "One update per nonempty bounded category page; empty terminal pages skip the update",
     "issue": 2605
   },
   {
     "annotation": "backfillCategoriesForTopicAliases.candidateItems",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
+    "reason": "Bounded category backfill scans each page and a terminal page to establish exhaustion",
     "issue": 2605
   },
   {
