@@ -54,10 +54,9 @@ describe('listenOnLoopbackEphemeralPort', () => {
 
 describe('listenOnEphemeralPort', () => {
   it('binds a real server to a plain ephemeral port with no predicate', async () => {
-    const server = net.createServer()
+    await using server = net.createServer()
     const port = await listenOnEphemeralPort(server, '127.0.0.1')
     expect(port).toBeGreaterThan(0)
-    await new Promise<void>(resolve => server.close(() => resolve()))
   })
 
   it('retries a rejected candidate before returning an allowed port', async () => {
