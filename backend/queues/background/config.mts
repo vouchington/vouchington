@@ -27,7 +27,6 @@ export const BACKGROUND_DOMAINS = [
   'activitypub',
   'follower-distributions',
   'bluesky-follow-propagation',
-  'find-your-friends',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]

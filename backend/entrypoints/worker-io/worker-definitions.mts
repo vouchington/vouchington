@@ -16,6 +16,10 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/cache-purge/workers').then(module => module.cachePurge),
   },
   {
+    queueName: 'find-your-friends',
+    load: () => import('@workers/find-your-friends/workers').then(module => module.findYourFriends),
+  },
+  {
     queueName: 'emails',
     load: () => import('@workers/emails/workers').then(module => module.emails),
   },

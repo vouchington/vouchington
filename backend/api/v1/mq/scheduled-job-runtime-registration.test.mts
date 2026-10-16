@@ -24,7 +24,11 @@ import {
   upsertSchedules as registerCrawlReferral,
 } from '@queues/crawl-referral-links/enqueues/schedules'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
-import { scheduledJobManifest as findYourFriendsManifest } from '@queues/find-your-friends/enqueues/schedules'
+import {
+  scheduledJobManifest as findYourFriendsManifest,
+  upsertSchedules as registerFindYourFriends,
+} from '@queues/find-your-friends/enqueues/schedules'
+import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import {
   scheduledJobManifest as contentAnalysisManifest,
   upsertSchedules as registerContentAnalysis,
@@ -67,7 +71,6 @@ const BACKGROUND_MANIFESTS = [
   storyProjectionManifest,
   postPublicationManifest,
   voteWeightManifest,
-  findYourFriendsManifest,
 ]
 const registerBackground = () => upsertBackgroundSchedules(BACKGROUND_MANIFESTS)
 
@@ -77,6 +80,7 @@ const REGISTRATIONS = [
   [registerBloom, bloomFilters, bloomManifest],
   [registerCrawlDispatch, crawlDispatchQueue, crawlDispatchManifest],
   [registerCrawlReferral, crawlReferralLinksQueue, crawlReferralManifest],
+  [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
   [registerContentAnalysis, contentAnalysisQueue, contentAnalysisManifest],
   [registerBackground, background, combineBackgroundManifests(BACKGROUND_MANIFESTS)],
   [registerKagi, kagiSmallWeb, kagiManifest],

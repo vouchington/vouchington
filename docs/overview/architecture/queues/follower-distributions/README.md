@@ -6,7 +6,7 @@ Processes manual follower share/send distribution intents in bounded chunks.
 
 ## Queue
 
-- Domain `follower-distributions` of the shared [`background` queue](../background/README.md); job names are `follower-distributions.<name>`. The domain has no group (no domain-wide cap, no ordering keys) and adds a worker baseline of five. `WORKER_CONCURRENCY_FOLLOWER_DISTRIBUTIONS` no longer exists.
+- Domain `follower-distributions` of the shared [`background` queue](../background/README.md); job names are `follower-distributions.<name>`. The domain has one domain-wide group of five (the old worker concurrency) and adds a worker baseline of five. `WORKER_CONCURRENCY_FOLLOWER_DISTRIBUTIONS` no longer exists.
 
 ## Jobs
 

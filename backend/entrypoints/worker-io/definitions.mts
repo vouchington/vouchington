@@ -16,7 +16,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/oauth-authorization-exchange/enqueues/schedules'),
         import('@queues/notifications/enqueues/schedules'),
         import('@queues/activitypub/enqueues/schedules'),
-        import('@queues/find-your-friends/enqueues/schedules'),
       ])
       return async () => {
         await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
@@ -41,6 +40,11 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/rss-feed-maintenance/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
+  },
+  {
+    queueName: 'find-your-friends',
+    load: () =>
+      import('@queues/find-your-friends/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'emails',

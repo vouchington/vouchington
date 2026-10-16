@@ -55,6 +55,7 @@
     "@workers/cache-purge": "workspace:^",
     "@workers/crawl-embeds": "workspace:^",
     "@workers/emails": "workspace:^",
+    "@workers/find-your-friends": "workspace:^",
     "@workers/kagi-smallweb": "workspace:^",
     "@workers/memberships": "workspace:^",
     "@workers/psql": "workspace:^",

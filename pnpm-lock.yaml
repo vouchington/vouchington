@@ -1835,6 +1835,9 @@ importers:
       '@workers/emails':
         specifier: workspace:^
         version: link:../../workers/emails
+      '@workers/find-your-friends':
+        specifier: workspace:^
+        version: link:../../workers/find-your-friends
       '@workers/kagi-smallweb':
         specifier: workspace:^
         version: link:../../workers/kagi-smallweb
@@ -2973,22 +2976,18 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/follower-distributions:
     dependencies:
@@ -11909,9 +11908,6 @@ importers:
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../entity-listeners
-      '@workers/find-your-friends':
-        specifier: workspace:^
-        version: link:../find-your-friends
       '@workers/follower-distributions':
         specifier: workspace:^
         version: link:../follower-distributions
@@ -11949,9 +11945,6 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
-      '@queues/find-your-friends':
-        specifier: workspace:^
-        version: link:../../queues/find-your-friends
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12338,6 +12331,9 @@ importers:
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
+      '@queues/find-your-friends':
+        specifier: workspace:^
+        version: link:../../queues/find-your-friends
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -12624,9 +12620,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@queues/background':
+      '@modules/queue-config':
         specifier: workspace:^
-        version: link:../../queues/background
+        version: link:../../modules/queue-config
       '@queues/find-your-friends':
         specifier: workspace:^
         version: link:../../queues/find-your-friends

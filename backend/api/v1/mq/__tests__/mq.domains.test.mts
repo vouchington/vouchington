@@ -71,7 +71,6 @@ describe('background queue domain routes', () => {
         'article-sync',
         'bluesky-follow-propagation',
         'entity-listeners',
-        'find-your-friends',
         'follower-distributions',
         'notifications',
         'oauth-authorization-exchange',

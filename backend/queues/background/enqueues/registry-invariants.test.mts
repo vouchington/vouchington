@@ -4,12 +4,12 @@ import { assertRegistryInvariants } from './registry-invariants.mts'
 
 const sesDomain = defineBackgroundDomain({
   domain: 'ses-inbound',
-  group: { kind: 'none' },
+  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 1,
 })
 const moderationDomain = defineBackgroundDomain({
   domain: 'openai-moderation',
-  group: { kind: 'none' },
+  group: { kind: 'domain', concurrency: 1 },
   workerConcurrency: 1,
 })
 const sesJob = defineBackgroundJob(sesDomain, { name: 'process', priority: 10 })

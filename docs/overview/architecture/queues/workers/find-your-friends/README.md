@@ -6,9 +6,7 @@ Worker package for social graph sync and find-your-friends dispatch jobs.
 
 ## Exports
 
-- `findYourFriendsHandlers` - the domain's handlers for the shared
-  [background worker](../background/README.md); there is no per-queue `Worker`. The sync handlers
-  switch on the job's ordering lane and throw on any other key.
+- `findYourFriends` - worker instance for the `find-your-friends` queue.
 
 A 429 from X, Facebook, or GitHub during a sync is no longer rewrapped as a 502 that burns the job's
 three attempts on a 5-second backoff. The sync services throw GlideMQ's rate-limit signal carrying the

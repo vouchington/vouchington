@@ -1,11 +1,13 @@
 import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
-import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 
-// One ordering lane per provider sync, namespaced so no other domain shares the key.
+export const QUEUE_NAME = 'find-your-friends'
+export const PRIORITY_DEFAULT = 10
+export const PRIORITY_DISPATCHER = 100
+
 export const FIND_YOUR_FRIENDS_ORDERING = {
-  sync_facebook: { key: entityOrderingKey('find-your-friends', 'sync_facebook'), concurrency: 5 },
-  sync_x: { key: entityOrderingKey('find-your-friends', 'sync_x'), concurrency: 2 }, // tight rate limits
-  sync_github: { key: entityOrderingKey('find-your-friends', 'sync_github'), concurrency: 5 },
+  sync_facebook: { key: 'sync_facebook', concurrency: 5 },
+  sync_x: { key: 'sync_x', concurrency: 2 }, // tight rate limits
+  sync_github: { key: 'sync_github', concurrency: 5 },
 } as const
 
 export const FIND_YOUR_FRIENDS_RATE_LIMITS = {
@@ -14,7 +16,13 @@ export const FIND_YOUR_FRIENDS_RATE_LIMITS = {
   sync_github: { max: 5, duration: 1_000 }, // 5 req/s
 } as const
 
-export const FIND_YOUR_FRIENDS_DEDUPLICATION_TTL_MS = 5 * 60_000 // 5 minutes
+export const FIND_YOUR_FRIENDS_DEFAULTS = {
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
+  removeOnComplete: 100,
+  removeOnFail: 100,
+  deduplicationTtlMs: 5 * 60_000, // 5 minutes
+}
 
 const defaultFields = {
   enqueue_batch_size: 1000,

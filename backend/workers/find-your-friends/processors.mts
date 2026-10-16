@@ -3,7 +3,7 @@ import {
   enqueueBulkSyncXFriends,
   enqueueBulkSyncGithubFriends,
 } from '@queues/find-your-friends/enqueues'
-import type { FriendsDispatchData } from '@queues/background/enqueues/find-your-friends-jobs'
+import type { FriendsDispatchData } from '@queues/find-your-friends/types'
 import {
   streamFacebookAccountsToSync,
   streamXAccountsToSync,

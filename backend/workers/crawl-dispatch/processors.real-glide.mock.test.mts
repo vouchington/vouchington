@@ -23,6 +23,9 @@ import { scheduledJobManifest as referralManifest } from '@queues/crawl-referral
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import { enqueueUnfurlReferralLinksDispatcher } from '@queues/unfurl-referral-links/enqueues'
 import { scheduledJobManifest as unfurlManifest } from '@queues/unfurl-referral-links/enqueues/schedules'
+import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
+import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
+import { scheduledJobManifest as friendsManifest } from '@queues/find-your-friends/enqueues/schedules'
 import { processCrawlDispatchJob } from './processors.mts'
 
 vi.hoisted(() => {
@@ -75,6 +78,14 @@ const fixtures = [
     work: 'unfurl_referral_links_dispatcher',
     root: enqueueUnfurlReferralLinksDispatcher,
   },
+  {
+    label: 'friends',
+    queue: findYourFriendsQueue,
+    manifest: friendsManifest,
+    schedulerId: 'dispatchFindYourFriends',
+    work: 'dispatchFindYourFriends',
+    root: enqueueDispatchFindYourFriends,
+  },
 ] as const
 
 describe('periodic sweep coalescing', () => {
@@ -87,13 +98,23 @@ describe('periodic sweep coalescing', () => {
     const manual = Promise.withResolvers<void>()
     const seen: { id: string; data: unknown }[] = []
     const cursorId = crypto.randomUUID()
-    const initial = { cursor: { sweepStartedAt } }
+    const initial =
+      fixture.label === 'friends'
+        ? {
+            sweepStartedAt,
+            upperIds: { facebook: 'tail', x: null, github: null },
+            afterIds: {},
+            finishedProviders: [],
+          }
+        : { cursor: { sweepStartedAt } }
     const advanced =
-      fixture.label === 'referral'
-        ? { cursor: { sweepStartedAt, afterWork: { dueAt: '-infinity', id: cursorId } } }
-        : fixture.label === 'unfurl'
-          ? { cursor: { sweepStartedAt, after: { requestedAt: sweepStartedAt, id: cursorId } } }
-          : { cursor: { sweepStartedAt, afterId: cursorId } }
+      fixture.label === 'friends'
+        ? { ...initial, afterIds: { facebook: 'tail' } }
+        : fixture.label === 'referral'
+          ? { cursor: { sweepStartedAt, afterWork: { dueAt: '-infinity', id: cursorId } } }
+          : fixture.label === 'unfurl'
+            ? { cursor: { sweepStartedAt, after: { requestedAt: sweepStartedAt, id: cursorId } } }
+            : { cursor: { sweepStartedAt, afterId: cursorId } }
     let roots = 0
     const worker = new Worker(
       queue.name,
@@ -228,6 +249,7 @@ describe('periodic sweep coalescing', () => {
         queue.close(),
         crawlReferralLinksQueue.close(),
         unfurlReferralLinksQueue.close(),
+        findYourFriendsQueue.close(),
       ])
     }
   })

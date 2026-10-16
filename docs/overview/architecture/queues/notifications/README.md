@@ -8,7 +8,7 @@ Queue domain for reconciling notifications and delivering browser push messages.
 
 - Domain `notifications` of the shared [`background` queue](../background/README.md); every job is named
   `notifications.<name>` (for example `notifications.processReconcilePostNotifications`).
-- Group `none` and baseline worker concurrency 5: no domain-wide cap and no ordering keys. Tasks rank
+- One domain-wide group of 5 (the old worker concurrency) and no ordering keys. Tasks rank
   10; dispatchers, recovery, and reconcile continuations rank 100. Operators pause the domain, not the queue.
 
 ## Jobs

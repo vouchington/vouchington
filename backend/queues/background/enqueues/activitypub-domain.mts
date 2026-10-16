@@ -1,11 +1,12 @@
 import { defineBackgroundDomain } from './define-job.mts'
 
-// The old queue had no queue-wide cap: its only ordering key was one `activitypub-distribute__<activityId>`
-// lane per activity at concurrency 1, namespaced at enqueue time, so the group is `entity`. Baseline
-// worker load was 10.
+// The old queue's cap was its worker concurrency of 10. Its only ordering key was one lane per
+// activity at concurrency 1, but a distribute page already runs under a durable lease (a second
+// holder gets `busy` and retries later), so the lane was redundant. One domain-wide group of 10
+// keeps the cap and replaces the lanes.
 export const ACTIVITYPUB_DOMAIN = defineBackgroundDomain({
   domain: 'activitypub',
-  group: { kind: 'entity' },
+  group: { kind: 'domain', concurrency: 10 },
   workerConcurrency: 10,
 })
 

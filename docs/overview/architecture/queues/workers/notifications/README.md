@@ -49,7 +49,7 @@ flowchart LR
 ## Exports
 
 - `notificationsHandlers` - the domain's job handlers, served by the shared `background` worker
-  (no per-queue Worker). The `notifications` domain has baseline concurrency 5 and no group.
+  (no per-queue Worker). The `notifications` domain has baseline concurrency 5 and a domain-wide group of 5.
 
 ## Related
 

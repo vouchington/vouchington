@@ -4,7 +4,6 @@ import { activitypubHandlers } from '@workers/activitypub/workers'
 import { articleSyncHandlers } from '@workers/article-sync/workers'
 import { blueskyFollowPropagationHandlers } from '@workers/bluesky-follow-propagation/workers'
 import { entityListenersHandlers } from '@workers/entity-listeners/workers'
-import { findYourFriendsHandlers } from '@workers/find-your-friends/workers'
 import { followerDistributionsHandlers } from '@workers/follower-distributions/workers'
 import { notificationsHandlers } from '@workers/notifications/workers'
 import { oauthAuthorizationExchangeHandlers } from '@workers/oauth-authorization-exchange/workers'
@@ -31,5 +30,4 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...activitypubHandlers,
   ...followerDistributionsHandlers,
   ...blueskyFollowPropagationHandlers,
-  ...findYourFriendsHandlers,
 ]

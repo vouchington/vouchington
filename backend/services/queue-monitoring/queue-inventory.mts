@@ -15,6 +15,7 @@ import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
+import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { memberships } from '@queues/memberships/queues'
@@ -45,6 +46,7 @@ const allQueues = [
   bloomFilters,
   adminImports,
   crawlReferralLinksQueue,
+  findYourFriendsQueue,
   imageUploadsQueue,
   kagiSmallWeb,
   memberships,

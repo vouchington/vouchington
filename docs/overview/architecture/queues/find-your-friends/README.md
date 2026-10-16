@@ -6,22 +6,13 @@ Syncs social connections from Facebook, X, and GitHub to discover existing platf
 
 ## Queue Configuration
 
-### `find-your-friends`
+### `find-your-friends` (concurrency: 10)
 
-Domain `find-your-friends` of the shared [`background` queue](../background/README.md); job names are
-`find-your-friends.<name>`. The domain has no domain-wide cap: each provider sync runs in its own
-namespaced ordering lane `find-your-friends:sync_<provider>` with that provider's concurrency and
-rate limit, and the dispatchers have no lane. It adds a worker baseline of five.
-`WORKER_CONCURRENCY_FIND_YOUR_FRIENDS` no longer exists.
-
-- `find-your-friends.enqueueDispatchFindYourFriends` — daily scheduler producer that coalesces one live sweep (priority 100)
-- `find-your-friends.dispatchFindYourFriends` — retained dispatcher that enqueues social sync jobs for all OAuth providers linked to a user (priority 100)
-- `find-your-friends.syncFacebookFriends` — fetches the user's Facebook friends list and matches against platform users (lane `sync_facebook`: concurrency 5, 5 per second)
-- `find-your-friends.syncXFriends` — fetches the user's X following list and matches against platform users (lane `sync_x`: concurrency 2, 1 per 2 seconds)
-- `find-your-friends.syncGithubFriends` — fetches the user's GitHub following list and matches against platform users (lane `sync_github`: concurrency 5, 5 per second)
-
-A sync job runs only inside its own lane: the handler refuses a job whose ordering key is not its
-provider's lane, so a job enqueued without the lane can never run unthrottled.
+- `enqueueDispatchFindYourFriends` — daily scheduler producer that coalesces one live sweep
+- `dispatchFindYourFriends` — retained dispatcher that enqueues social sync jobs for all OAuth providers linked to a user
+- `syncFacebookFriends` — fetches the user's Facebook friends list and matches against platform users (global concurrency: 5)
+- `syncXFriends` — fetches the user's X following list and matches against platform users (global concurrency: 2)
+- `syncGithubFriends` — fetches the user's GitHub following list and matches against platform users (global concurrency: 5)
 
 ## Durable Recovery
 

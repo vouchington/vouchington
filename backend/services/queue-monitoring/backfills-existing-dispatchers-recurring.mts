@@ -7,7 +7,6 @@ import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueu
 import { enqueueKagiSmallWebSync } from '@queues/kagi-smallweb/enqueues'
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { FIND_YOUR_FRIENDS_DISPATCH_JOB } from '@queues/background/enqueues/find-your-friends-jobs'
 import { VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
@@ -86,8 +85,8 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'find-your-friends-dispatch',
-    queue_name: BACKGROUND_QUEUE_NAME,
-    job_name: FIND_YOUR_FRIENDS_DISPATCH_JOB.name,
+    queue_name: 'find-your-friends',
+    job_name: 'dispatchFindYourFriends',
     description: 'Dispatch find-your-friends social sync jobs',
     source_table: 'facebook_accounts, x_accounts, github_accounts',
     trigger: createBackfillDispatcherTrigger(

@@ -26,6 +26,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     const expectedDefinitions = [
       ['background', 'background', 'createBackgroundWorker'],
       ['cache-purge', 'cache-purge', 'cachePurge'],
+      ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['emails', 'emails', 'emails'],
       ['urls-domains-blacklist', 'urls-domains-blacklist', 'urlsDomainsBlacklist'],
       ['rss-feeds', 'rss-feeds', 'rss_feeds'],

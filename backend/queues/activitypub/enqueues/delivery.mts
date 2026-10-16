@@ -7,23 +7,12 @@ import {
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
 } from '@queues/background/enqueues/activitypub-jobs'
-import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 import type { EnqueueReturnType } from '@voucha/types'
 import { v5 as uuidv5 } from 'uuid'
 
 export type { DeliverActivityData, DistributeActivityData }
 
 export type DistributeActivityInput = DistributeActivityData
-
-// One lane per activity keeps its fan-out pages and retries from running side by side.
-function getDistributeActivityOptions(data: DistributeActivityData) {
-  return {
-    ordering: {
-      key: entityOrderingKey('activitypub', `activitypub-distribute__${data.activityId}`),
-      concurrency: 1,
-    },
-  }
-}
 
 const enqueueDistributeActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB)
 const enqueueDeliverActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DELIVER_ACTIVITY_JOB)
@@ -32,10 +21,7 @@ const enqueueDeliverActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DELIVER_AC
 // call): one addBulk round-trip per batch, not one enqueue per input.
 export const enqueueBulkDistributeActivity = createBackgroundBulkEnqueue(
   ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
-  (input: DistributeActivityInput) => ({
-    data: input,
-    opts: getDistributeActivityOptions(input),
-  }),
+  (input: DistributeActivityInput) => ({ data: input }),
 )
 
 // One job per follower inbox. Callers should dedupe inboxUrl within a batch before calling this —
@@ -54,11 +40,13 @@ export const enqueueBulkDeliverActivity = createBackgroundBulkEnqueue(
   }),
 )
 
+// A distribute page runs under a durable lease, so concurrent holders of one activity are
+// already excluded; the domain-wide group of 10 caps the rest.
 // Fans a single social action (Follow / Like / Undo-Like) out to the acting user's remote
 // followers (Phase C4). The caller supplies the activity identity from durable PostgreSQL state,
 // so every fan-out job and retry shares the same AS2 activity id.
 export function enqueueDistributeActivity(input: DistributeActivityInput): EnqueueReturnType {
-  return enqueueDistributeActivityJob(input, getDistributeActivityOptions(input))
+  return enqueueDistributeActivityJob(input)
 }
 
 export type DeliverAcceptActivityInput = Pick<

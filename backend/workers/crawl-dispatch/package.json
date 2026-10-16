@@ -32,6 +32,7 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
+    "@queues/find-your-friends": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/urls": "workspace:^",

@@ -10,7 +10,7 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
-import type { FriendsDispatchData } from '@queues/background/enqueues/find-your-friends-jobs'
+import type { FriendsDispatchData } from '@queues/find-your-friends/types'
 import { processFindYourFriendsDispatcher } from './processors.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
@@ -76,9 +76,9 @@ describe('friend dispatcher continuations', () => {
         hasMore: true,
       })
       const syncName = {
-        facebook: 'find-your-friends.syncFacebookFriends',
-        x: 'find-your-friends.syncXFriends',
-        github: 'find-your-friends.syncGithubFriends',
+        facebook: 'syncFacebookFriends',
+        x: 'syncXFriends',
+        github: 'syncGithubFriends',
       }[provider]
       const key = { facebook: 'facebookUserId', x: 'xUserId', github: 'githubUserId' }[provider]
       expect(

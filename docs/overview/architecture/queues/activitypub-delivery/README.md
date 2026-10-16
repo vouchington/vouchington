@@ -31,8 +31,8 @@ followers, then delivers the signed AS2 activity to each follower's inbox (Phase
   - Claims a bounded page with an expiring token, then bulk-enqueues its distinct inbox URLs.
     A token-fenced compare-and-swap commits the last remote actor
     only after that enqueue succeeds, then enqueues one continuation when another page remains.
-    `distributeActivity` jobs are ordered at concurrency `1` per activity ID (ordering key `activitypub:activitypub-distribute__<activityId>`), so a large fan-out
-    yields between pages instead of occupying a worker for its entire follower set.
+    A distribute page runs under a durable lease (a second holder gets `busy`), and
+    the domain-wide group of 10 keeps a large fan-out from occupying more than its share of the shared worker.
 - `activitypub.deliverActivity`
   - One job per follower inbox. Builds the AS2 activity JSON (`@services/activitypub-delivery`)
     and signs + `POST`s it to the inbox.
