@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
+  toSchedulerTemplateOptions,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import {
@@ -76,6 +77,7 @@ describe('reconciliation sweep ownership', () => {
             {
               ...ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.options,
               ...entityReconciliationRootOptions(),
+              ordering: undefined,
             },
           )
           if (++roots >= 2) repeated.resolve()
@@ -111,10 +113,20 @@ describe('reconciliation sweep ownership', () => {
       },
     })
     const queue = harness.queue
+    // This test is about root coalescing, so the jobs run outside the domain group: GlideMQ can park
+    // a group job whose ordering sequence a parallel claim reaches first until another job completes.
     const template = scheduledJobManifest.jobs[0]!
     const fastSchedule = defineScheduledJobManifest(queue.name, [
       {
         ...template,
+        template: {
+          name: ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.name,
+          data: {},
+          opts: toSchedulerTemplateOptions({
+            ...ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.options,
+            ordering: undefined,
+          }),
+        },
         repeat: () => ({ every: 1000 }),
         subMinuteJustification: 'Synthetic scheduler repeat regression within the test timeout.',
       },
