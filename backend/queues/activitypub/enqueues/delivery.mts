@@ -14,7 +14,6 @@ export type { DeliverActivityData, DistributeActivityData }
 
 export type DistributeActivityInput = DistributeActivityData
 
-const enqueueDistributeActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB)
 const enqueueDeliverActivityJob = createBackgroundEnqueue(ACTIVITYPUB_DELIVER_ACTIVITY_JOB)
 
 // Bulk fan-out for a batch of social actions (e.g. every relation in one upsertEntityRelation
@@ -45,9 +44,9 @@ export const enqueueBulkDeliverActivity = createBackgroundBulkEnqueue(
 // Fans a single social action (Follow / Like / Undo-Like) out to the acting user's remote
 // followers (Phase C4). The caller supplies the activity identity from durable PostgreSQL state,
 // so every fan-out job and retry shares the same AS2 activity id.
-export function enqueueDistributeActivity(input: DistributeActivityInput): EnqueueReturnType {
-  return enqueueDistributeActivityJob(input)
-}
+export const enqueueDistributeActivity = createBackgroundEnqueue(
+  ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB,
+)
 
 export type DeliverAcceptActivityInput = Pick<
   Extract<DeliverActivityData, { activityType: 'Accept' }>,
