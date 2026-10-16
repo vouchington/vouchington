@@ -7,6 +7,7 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import {
   recordPublicationApprovedFeedback,
   recordPublicationRejectedFeedback,
+  type PublicationTrainingOptions,
 } from './training-feedback.mts'
 import { recordCommunityPublicationChange } from './publication-change.mts'
 import { assertPublicationModeratorAccess, getPublicationReview } from './access.mts'
@@ -25,6 +26,7 @@ export async function approvePublication(
   currentUser: PrivateUser,
   communityId: string,
   postId: string,
+  evidenceOptions: PublicationTrainingOptions = {},
 ): Promise<void> {
   const access = await assertPublicationModeratorAccess(currentUser, communityId)
   if (access.isPlatformModerator) {
@@ -83,6 +85,7 @@ export async function approvePublication(
       communityId,
       postId,
       communityTrusted: Boolean(access.community.trusted_at),
+      trainingEvidence: evidenceOptions.trainingEvidence ?? 'staff_or_user',
     })
     await recordModeratorAction(currentUser.id, { actionType: 'approve', communityId, postId })
     void enqueueRefreshTopHashtags()
@@ -94,6 +97,7 @@ export async function rejectPublication(
   communityId: string,
   postId: string,
   reason?: string,
+  evidenceOptions: PublicationTrainingOptions = {},
 ): Promise<void> {
   const access = await assertPublicationModeratorAccess(currentUser, communityId)
   if (access.isPlatformModerator) {
@@ -146,6 +150,7 @@ export async function rejectPublication(
       communityId,
       postId,
       reason,
+      trainingEvidence: evidenceOptions.trainingEvidence ?? 'staff_or_user',
     })
     await recordModeratorAction(currentUser.id, {
       actionType: 'reject',

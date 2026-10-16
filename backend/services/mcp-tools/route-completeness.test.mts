@@ -8,6 +8,7 @@ import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
+import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
@@ -83,6 +84,7 @@ const mergedGroups = [
   ...userMergedParticipationGroups,
   ...userMergedAccountGroups,
   ...adminMergedGroups,
+  ...communityModerationGroups,
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sourceEntries: SourceEntry[] = [

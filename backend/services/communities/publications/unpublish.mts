@@ -5,7 +5,10 @@ import type { PrivateUser } from '@services/users/types'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication } from '@services/post-publication'
-import { recordPublicationUnpublishedFeedback } from './training-feedback.mts'
+import {
+  recordPublicationUnpublishedFeedback,
+  type PublicationTrainingOptions,
+} from './training-feedback.mts'
 import { assertPublicationModeratorAccess, getPublicationReview } from './access.mts'
 import { recordCommunityPublicationChange } from './publication-change.mts'
 import { overridePublication } from './platform-override.mts'
@@ -15,6 +18,7 @@ export async function unpublishPost(
   currentUser: PrivateUser,
   communityId: string,
   postId: string,
+  evidenceOptions: PublicationTrainingOptions = {},
 ): Promise<void> {
   const access = await assertPublicationModeratorAccess(currentUser, communityId)
   if (access.isPlatformModerator) {
@@ -61,7 +65,12 @@ export async function unpublishPost(
   await query.commit()
 
   if (changed) {
-    await recordPublicationUnpublishedFeedback({ actorUserId: currentUser.id, communityId, postId })
+    await recordPublicationUnpublishedFeedback({
+      actorUserId: currentUser.id,
+      communityId,
+      postId,
+      trainingEvidence: evidenceOptions.trainingEvidence ?? 'staff_or_user',
+    })
     await recordModeratorAction(currentUser.id, { actionType: 'remove', communityId, postId })
     void enqueueRefreshTopHashtags()
   }

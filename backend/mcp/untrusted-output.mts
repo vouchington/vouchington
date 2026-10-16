@@ -57,6 +57,18 @@ const PRIVATE_FIELDS = new Set([
   'password_hash',
 ])
 
+/** Filter before serializing an untrusted JSON field, including its nested objects. */
+export function filterPrivateOutputFields(value: unknown): unknown {
+  if (value instanceof Date || Buffer.isBuffer(value)) return value
+  if (Array.isArray(value)) return value.map(filterPrivateOutputFields)
+  if (!value || typeof value !== 'object') return value
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !PRIVATE_FIELDS.has(key))
+      .map(([key, child]) => [key, filterPrivateOutputFields(child)]),
+  )
+}
+
 /** Standard JSON Schema shape for text that an agent must treat as data. */
 export function untrustedText(): Record<string, unknown> {
   return {
@@ -64,12 +76,19 @@ export function untrustedText(): Record<string, unknown> {
   }
 }
 
-export function adminOutputSchema(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(adminOutputSchema)
+export function adminOutputSchema(
+  value: unknown,
+  additionalUntrustedFields: readonly string[] = [],
+): unknown {
+  if (Array.isArray(value))
+    return value.map(child => adminOutputSchema(child, additionalUntrustedFields))
   if (!value || typeof value !== 'object') return value
   const schema = value as Record<string, unknown>
   const output = Object.fromEntries(
-    Object.entries(schema).map(([key, child]) => [key, adminOutputSchema(child)]),
+    Object.entries(schema).map(([key, child]) => [
+      key,
+      adminOutputSchema(child, additionalUntrustedFields),
+    ]),
   )
   if (schema['properties'] && typeof schema['properties'] === 'object') {
     const properties = schema['properties'] as Record<string, unknown>
@@ -78,9 +97,9 @@ export function adminOutputSchema(value: unknown): unknown {
         .filter(([key]) => !PRIVATE_FIELDS.has(key))
         .map(([key, child]) => [
           key,
-          UNTRUSTED_FIELDS.has(key)
+          UNTRUSTED_FIELDS.has(key) || additionalUntrustedFields.includes(key)
             ? { anyOf: [untrustedText(), { type: 'null' }] }
-            : adminOutputSchema(child),
+            : adminOutputSchema(child, additionalUntrustedFields),
         ]),
     )
     if (Array.isArray(schema['required']))
@@ -89,20 +108,28 @@ export function adminOutputSchema(value: unknown): unknown {
   return output
 }
 
-export async function wrapAdminOutput(value: unknown): Promise<unknown> {
+export async function wrapAdminOutput(
+  value: unknown,
+  additionalUntrustedFields: readonly string[] = [],
+): Promise<unknown> {
   if (value instanceof Date) return value.toISOString()
-  if (Array.isArray(value)) return Promise.all(value.map(wrapAdminOutput))
+  if (Array.isArray(value))
+    return Promise.all(value.map(child => wrapAdminOutput(child, additionalUntrustedFields)))
   if (!value || typeof value !== 'object') return value
   const entries = await Promise.all(
     Object.entries(value as Record<string, unknown>)
       .filter(([key]) => !PRIVATE_FIELDS.has(key))
       .map(async ([key, child]) => {
-        if (UNTRUSTED_FIELDS.has(key) && child !== null && child !== undefined) {
+        if (
+          (UNTRUSTED_FIELDS.has(key) || additionalUntrustedFields.includes(key)) &&
+          child !== null &&
+          child !== undefined
+        ) {
           const text = typeof child === 'string' ? child : JSON.stringify(child)
           const sanitized = await sanitizePromptInjection(text)
           return [key, wrapExternalContent(sanitized, { source: 'api_response', contentType: key })]
         }
-        return [key, await wrapAdminOutput(child)]
+        return [key, await wrapAdminOutput(child, additionalUntrustedFields)]
       }),
   )
   return Object.fromEntries(entries)

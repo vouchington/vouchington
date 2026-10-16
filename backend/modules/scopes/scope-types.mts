@@ -8,6 +8,8 @@ export type ScopeDescriptionKey =
   | 'financial_profile_write'
   | 'spending_read'
   | 'spending_write'
+  | 'community_moderation_read'
+  | 'community_moderation_write'
 
 export type ApiScope =
   | 'appeals:read'
@@ -37,6 +39,8 @@ export type ApiScope =
   | 'cards:write'
   | 'communities:read'
   | 'communities:write'
+  | 'community-moderation:read'
+  | 'community-moderation:write'
   | 'data-points:read'
   | 'disputes:read'
   | 'disputes:write'

@@ -196,8 +196,20 @@ insufficient_scope` with the scopes to re-authorize with; every other denial sta
 JSON-RPC error.
 
 Route admission verifies only that the credential is for the user or admin audience. Role, plan,
-ownership inside a tool, and scope remain independent checks. Legacy `mcp.user:*` grants remain a
-compatible superset while resource-scoped credentials are preferred.
+ownership inside a tool, and scope remain independent checks. Legacy `mcp.user:*` grants cover
+ordinary user scopes; exact-grant scopes always require explicit consent.
+
+**Community moderation.** `read_community_moderation` is a free read tool under the exact
+`community-moderation:read` grant. `add_community_moderation` requires Plus and the exact
+`community-moderation:write` grant; its options are non-destructive. `update_community_moderation`
+and `remove_community_moderation` also require Plus and the exact write grant. Update is marked
+destructive because it can unpublish a post or replace pinned posts; remove is marked destructive.
+All three write tools use conservative `idempotentHint: false` annotations; reads are idempotent.
+The options include only routes whose REST guard requires a community moderator or owner. Member
+modmail reads and writes, public reads, and site-staff-only actions are omitted. Tool output marks
+other users' text as external content and filters credential fields through the shared MCP wrapper.
+The write grant requires
+`community-moderation:read`, and neither MCP user umbrella grant covers either exact scope.
 
 ## Admin MCP is OAuth-only
 

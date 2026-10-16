@@ -1904,6 +1904,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
+      '@services/community-member-vacations':
+        specifier: workspace:^
+        version: link:../services/community-member-vacations
       '@services/content-provenance':
         specifier: workspace:^
         version: link:../services/content-provenance
@@ -1970,12 +1973,24 @@ importers:
       '@services/moderation-appeals':
         specifier: workspace:^
         version: link:../services/moderation-appeals
+      '@services/moderation-claims':
+        specifier: workspace:^
+        version: link:../services/moderation-claims
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../services/moderation-reports
+      '@services/moderation-threads':
+        specifier: workspace:^
+        version: link:../services/moderation-threads
+      '@services/moderation-training':
+        specifier: workspace:^
+        version: link:../services/moderation-training
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../services/moderator-actions
+      '@services/modmail':
+        specifier: workspace:^
+        version: link:../services/modmail
       '@services/my':
         specifier: workspace:^
         version: link:../services/my

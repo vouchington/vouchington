@@ -38,6 +38,12 @@ public community data: the tools read as a signed-out reader whatever the creden
 membership, so the scope never exposes a private community. `mcp.user:read` covers it like every
 other user read scope.
 
+`community-moderation:read` and `community-moderation:write` are exact user-audience grants for the
+community moderator MCP tools. Both require an explicit grant on API keys and OAuth; neither
+`mcp.user:read` nor `mcp.user:write` covers them. Write requires read, so credentials must include
+both scopes. OAuth consent describes each permission separately, and the exact grants appear in
+`sensitive_scopes`.
+
 `profile:read/write`, `notifications:read/write`, and `preferences:read/write` are user-audience
 resource scopes for the profile, notification, and preference write tools. Each write requires its
 read, `mcp.user:read` with `mcp.user:write` covers them, and none is an exact grant. `profile:read`

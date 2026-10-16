@@ -6065,6 +6065,8 @@
 {"id":"copy.oauth.consent.permissionsHeading","value":"Permisos solicitados"},
 {"id":"copy.oauth.consent.resourceHeading","value":"Recurso"},
 {"id":"copy.oauth.consent.title","value":"{clientName} solicita acceso a Voucha"},
+{"id":"copy.scopeDescription.communityModerationRead","value":"Leer las colas de moderación, los reportes, las solicitudes de miembros y la configuración de moderación de la comunidad."},
+{"id":"copy.scopeDescription.communityModerationWrite","value":"Añadir y actualizar datos de moderación de la comunidad; algunas actualizaciones pueden eliminar publicaciones fijadas o despublicar una publicación."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Leer tu rango de puntuación crediticia, rango de ingresos declarados, límite de crédito total y años de historial crediticio."},
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Actualizar tu rango de puntuación crediticia, rango de ingresos declarados, límite de crédito total y años de historial crediticio."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Acceso completo de MCP de administrador"},
