@@ -46,7 +46,7 @@ GUIDANCE="For a new task in Plan Mode, do not reset while planning. Treat \`orig
 MESSAGE="$(printf '%s' "$REPORT" | jq -r --arg guidance "$GUIDANCE" '
   "⚠️  Worktree base check: branch `\(.branch)`" +
   (if .status == "unknown" and .ahead == null then
-    "; working tree is \(.tree); `origin/main` is unavailable, so freshness is unknown. Retry `git fetch origin` before relying on the current checkout."
+    "; working tree is \(.tree); `origin/main` is unavailable or the history is shallow, so freshness is unknown. Retry `git fetch origin` (`git fetch --unshallow origin` for a shallow clone) before relying on the current checkout."
   else
     " " + ({"matches":"matches","behind":"is behind","ahead":"is ahead of","diverged":"has diverged from"}[.relation] // "could not be compared with")
     + " `origin/main` (\(.ahead // "?") ahead, \(.behind // "?") behind); working tree is \(.tree)."
