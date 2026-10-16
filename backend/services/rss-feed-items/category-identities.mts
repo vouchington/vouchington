@@ -13,8 +13,7 @@ export async function registerRssCategoryIdentities(
       FROM UNNEST($1::text[]) AS input(category_text)
       WHERE TRIM(input.category_text) <> ''
       ORDER BY 1
-      ON CONFLICT (category_text) DO UPDATE
-      SET category_text = EXCLUDED.category_text`,
+      ON CONFLICT (category_text) DO NOTHING`,
     [categories],
   )
 }
