@@ -7,11 +7,11 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | Queue                                        | Processor                                               | Group Keys                               | Default Priority |
 | -------------------------------------------- | ------------------------------------------------------- | ---------------------------------------- | ---------------- |
 | background                                   | ses-inbound.process                                     | ses-inbound                              | 10               |
-| content-analysis                             | language-detection                             | —                                        | 10               |
-| content-analysis                             | backfill_*                                     | —                                        | 100              |
-| content-analysis                             | staydown-hash                                  | —                                        | 10               |
-| content-analysis                             | cleanup-abandoned-uploads                      | —                                        | 100              |
-| image-uploads                                | extract-metadata                               | —                                        | —                |
+| content-analysis                             | language-detection                                      | —                                        | 10               |
+| content-analysis                             | backfill_*                                              | —                                        | 100              |
+| content-analysis                             | staydown-hash                                           | —                                        | 10               |
+| content-analysis                             | cleanup-abandoned-uploads                               | —                                        | 100              |
+| image-uploads                                | extract-metadata                                        | —                                        | —                |
 | background                                   | ses-inbound.reconcile                                   | ses-inbound                              | 100              |
 | background                                   | openai-moderation.post                                  | openai-moderation                        | 10               |
 | background                                   | openai-moderation.image                                 | openai-moderation                        | 10               |
