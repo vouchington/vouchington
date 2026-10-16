@@ -114,7 +114,7 @@ describe('fetchRobotsTxt', () => {
     mockFetchWithTimeoutSimple.mockResolvedValue({
       status: 503,
       statusText: 'Service Unavailable',
-      body: {},
+      body: { cancel: () => Promise.resolve() },
     })
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(false)
@@ -150,7 +150,7 @@ describe('fetchRobotsTxt', () => {
     mockFetchWithTimeoutSimple.mockResolvedValue({
       status,
       statusText,
-      body: {},
+      body: { cancel: () => Promise.resolve() },
     })
     dependencies.isNetworkError.mockReturnValue(false)
     dependencies.isRetryableError.mockReturnValue(false)

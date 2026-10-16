@@ -58,7 +58,9 @@ row above previously implied a single `FETCH_TIMEOUT_MS` bounded the whole reque
 resolution is a separate, independently-bounded phase that runs before it, same as every other row.
 The robots.txt chain budget still caps the whole redirect sequence, including the final body
 read: each hop's DNS lookup uses `DNS_TIMEOUT_MS` or the time left in `FETCH_TIMEOUT_MS`,
-whichever is smaller, and the body read aborts on the time left after headers arrive.
+whichever is smaller, and the body read aborts on the time left after headers arrive. Statuses
+that are not parsed (HTTP 4xx, 5xx, and anything outside 2xx) cancel the unread body before the
+allow, retry, or throw, so that body does not wait out the pinned dispatcher's body timeout.
 The import-provenance-aware Oxlint `no-mistakes/require-options-on-imported-call` rule enforces
 every `validateUrl` import from `ssrf-guard/node`, including aliased and namespace imports, has a
 second options argument containing `timeoutMs` or `signal`. The companion

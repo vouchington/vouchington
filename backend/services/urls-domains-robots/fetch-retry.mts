@@ -1,4 +1,3 @@
-import { setTimeout as delay } from 'node:timers/promises'
 import {
   cancelResponseBody,
   fetchWithTimeout,
@@ -75,6 +74,10 @@ export async function fetchRobotsTxtWithRetry(
         }
       }
 
+      // Status fallbacks do not read the body. Cancel it first: bodySignal reaches Undici only
+      // through readResponseBody, and an ignored body would hold the pinned connection until the
+      // dispatcher body timeout.
+      releaseUnreadRobotsBody(response, dependencies)
       if (response.status >= 400 && response.status < 500) {
         return ALLOW_ROBOTS_TXT
       }
@@ -131,6 +134,16 @@ function fetchRobotsResponse(
     return plainRobotsResponse(fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS))
   }
   return fetchPinnedRobotsTxt(url, FETCH_TIMEOUT_MS, dependencies)
+}
+
+function releaseUnreadRobotsBody(response: Response, dependencies: RobotsDependencies): void {
+  dependencies.cancelResponseBody(response)
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms)
+  })
 }
 
 function plainRobotsResponse(
