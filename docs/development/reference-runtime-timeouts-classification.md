@@ -56,8 +56,9 @@ phase specifically, matching the per-phase model above; it also now forwards the
 `AbortSignal` into `validateUrl()` instead of silently dropping it. The domain-verification well-known
 row above previously implied a single `FETCH_TIMEOUT_MS` bounded the whole request; DNS/SSRF
 resolution is a separate, independently-bounded phase that runs before it, same as every other row.
-The robots.txt chain budget still caps the whole redirect sequence: each hop's DNS lookup uses
-`DNS_TIMEOUT_MS` or the time left in `FETCH_TIMEOUT_MS`, whichever is smaller.
+The robots.txt chain budget still caps the whole redirect sequence, including the final body
+read: each hop's DNS lookup uses `DNS_TIMEOUT_MS` or the time left in `FETCH_TIMEOUT_MS`,
+whichever is smaller, and the body read aborts on the time left after headers arrive.
 The import-provenance-aware Oxlint `no-mistakes/require-options-on-imported-call` rule enforces
 every `validateUrl` import from `ssrf-guard/node`, including aliased and namespace imports, has a
 second options argument containing `timeoutMs` or `signal`. The companion

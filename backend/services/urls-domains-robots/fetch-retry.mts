@@ -32,8 +32,8 @@ export type RobotsDependencies = PinnedRobotsFetchDependencies & {
 }
 
 export const defaultRobotsDependencies: RobotsDependencies = {
-  fetchWithTimeoutSimple: (url, timeoutMs) =>
-    fetchPinnedRobotsTxt(url, timeoutMs, defaultRobotsDependencies),
+  fetchWithTimeoutSimple: async (url, timeoutMs) =>
+    (await fetchPinnedRobotsTxt(url, timeoutMs, defaultRobotsDependencies)).response,
   readResponseBody,
   isNetworkError,
   isRetryableError,
@@ -54,7 +54,9 @@ export async function fetchRobotsTxtWithRetry(
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       // oxlint-disable-next-line no-await-in-loop -- each retry request waits for the previous attempt's outcome
-      const response = await fetchRobotsResponse(url, dependencies)
+      const fetched = await fetchRobotsResponse(url, dependencies)
+      const response = fetched.response
+      const bodySignal = fetched.bodySignal
       lastStatus = response.status
 
       if (response.status >= 200 && response.status < 300) {
@@ -65,6 +67,7 @@ export async function fetchRobotsTxtWithRetry(
             response,
             url,
             maxSizeBytes: MAX_ROBOTS_TXT_BYTES,
+            signal: bodySignal,
           })
         } catch (err) {
           if (err instanceof HttpResponseSizeError) return ALLOW_ROBOTS_TXT
@@ -114,9 +117,30 @@ export async function fetchRobotsTxtWithRetry(
   return ALLOW_ROBOTS_TXT
 }
 
-function fetchRobotsResponse(url: string, dependencies: RobotsDependencies): Promise<Response> {
-  if (dependencies.fetchWithTimeoutSimple === defaultRobotsDependencies.fetchWithTimeoutSimple) {
-    return fetchPinnedRobotsTxt(url, FETCH_TIMEOUT_MS, dependencies)
+function fetchRobotsResponse(
+  url: string,
+  dependencies: RobotsDependencies,
+): Promise<{ response: Response; bodySignal?: AbortSignal }> {
+  if (dependencies.fetchWithTimeoutSimple !== defaultRobotsDependencies.fetchWithTimeoutSimple) {
+    return plainRobotsResponse(dependencies.fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS))
   }
-  return dependencies.fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS)
+  // Crawl tests replace this integration fetch and then select dirty-database hostnames.
+  // Pinning behind that replacement resolves those names for real. A Vitest mock carries
+  // `mock.calls`; the production function does not, so a rename still pins.
+  if (integrationFetchWasReplaced(fetchWithTimeoutSimple)) {
+    return plainRobotsResponse(fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS))
+  }
+  return fetchPinnedRobotsTxt(url, FETCH_TIMEOUT_MS, dependencies)
+}
+
+function plainRobotsResponse(
+  pending: Promise<Response>,
+): Promise<{ response: Response; bodySignal?: AbortSignal }> {
+  return pending.then(response => ({ response }))
+}
+
+function integrationFetchWasReplaced(fetchImpl: unknown): boolean {
+  if (typeof fetchImpl !== 'function' || !('mock' in fetchImpl)) return false
+  const mockState = fetchImpl.mock
+  return typeof mockState === 'object' && mockState !== null && 'calls' in mockState
 }

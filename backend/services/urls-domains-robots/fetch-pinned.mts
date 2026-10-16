@@ -27,17 +27,23 @@ export class RobotsUnsafeTargetError extends Error {
   }
 }
 
+export type PinnedRobotsFetchResult = {
+  response: Response
+  /** Aborts when the chain deadline, or the body-phase timer, expires. */
+  bodySignal: AbortSignal
+}
+
 /**
  * Fetches robots.txt with SSRF-validated, pinned connections.
- * `timeoutMs` is the budget for the whole redirect chain, matching the previous single
- * `fetchWithTimeoutSimple` timeout. Each hop is validated again. At most five redirects are
- * followed (RFC 9309); a leftover redirect is returned so the caller keeps its fail-closed path.
+ * `timeoutMs` is the budget for the whole redirect chain, including the final body read.
+ * Each hop is validated again. At most five redirects are followed (RFC 9309); a leftover
+ * redirect is returned so the caller keeps its fail-closed path.
  */
 export async function fetchPinnedRobotsTxt(
   url: string,
   timeoutMs: number,
   dependencies: PinnedRobotsFetchDependencies,
-): Promise<Response> {
+): Promise<PinnedRobotsFetchResult> {
   const deadline = Date.now() + timeoutMs
   let currentUrl = url
 
@@ -47,7 +53,7 @@ export async function fetchPinnedRobotsTxt(
     const resolvedAddresses = await resolveRobotsAddresses(currentUrl, hopBudget, dependencies)
     const fetchBudget = remainingMs(deadline)
     // oxlint-disable-next-line no-await-in-loop -- the next hop depends on this response
-    const { response } = await dependencies.fetchWithTimeout({
+    const { response, responseSignal } = await dependencies.fetchWithTimeout({
       url: currentUrl,
       headers: {},
       requestTimeoutMs: fetchBudget,
@@ -56,8 +62,7 @@ export async function fetchPinnedRobotsTxt(
     })
 
     if (!REDIRECT_STATUSES.has(response.status) || followed >= MAX_ROBOTS_REDIRECT_HOPS) {
-      if (REDIRECT_STATUSES.has(response.status)) dependencies.cancelResponseBody(response)
-      return response
+      return finishPinnedResponse(response, responseSignal, deadline, dependencies)
     }
 
     const nextUrl = nextRobotsRedirectUrl(response, currentUrl)
@@ -91,6 +96,39 @@ async function resolveRobotsAddresses(
     }
     throw err
   }
+}
+
+function finishPinnedResponse(
+  response: Response,
+  responseSignal: AbortSignal,
+  deadline: number,
+  dependencies: PinnedRobotsFetchDependencies,
+): PinnedRobotsFetchResult {
+  // responseSignal starts when headers arrive and can outlive the chain deadline. The chain
+  // signal is the cap the caller must pass into the body read.
+  const bodySignal = AbortSignal.any([chainBodySignal(deadline), responseSignal])
+  if (bodySignal.aborted) {
+    dependencies.cancelResponseBody(response)
+    throw timeoutFromSignal(bodySignal)
+  }
+  if (REDIRECT_STATUSES.has(response.status)) dependencies.cancelResponseBody(response)
+  return { response, bodySignal }
+}
+
+function chainBodySignal(deadline: number): AbortSignal {
+  const remaining = deadline - Date.now()
+  if (remaining > 0) return AbortSignal.timeout(remaining)
+  const timeout = new DOMException('robots.txt fetch timed out', 'TimeoutError')
+  const controller = new AbortController()
+  controller.abort(timeout)
+  return controller.signal
+}
+
+function timeoutFromSignal(signal: AbortSignal): Error {
+  if (signal.reason instanceof Error) return signal.reason
+  const timeout = new Error('robots.txt fetch timed out')
+  timeout.name = 'TimeoutError'
+  return timeout
 }
 
 function remainingMs(deadline: number): number {

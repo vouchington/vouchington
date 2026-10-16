@@ -2,14 +2,19 @@ import {
   cancelResponseBody,
   isNetworkError,
   isRetryableError,
-  readResponseBody,
-  fetchWithTimeoutSimple,
-  type fetchWithTimeout,
+  readResponseBody as readResponseBodyFn,
+  fetchWithTimeoutSimple as fetchWithTimeoutSimpleFn,
+  type fetchWithTimeout as fetchWithTimeoutFn,
 } from '@modules/utils/http'
-import type { validateUrl } from 'ssrf-guard/node'
+import type { validateUrl as validateUrlFn } from 'ssrf-guard/node'
 import { describe, expect, it, vi } from 'vitest'
 import { RobotsUnsafeTargetError } from '../fetch-pinned.mts'
 import { fetchRobotsTxt } from '../index.mts'
+
+type FetchWithTimeoutFn = typeof fetchWithTimeoutFn
+type ValidateUrlFn = typeof validateUrlFn
+type ReadResponseBodyFn = typeof readResponseBodyFn
+type FetchWithTimeoutSimpleFn = typeof fetchWithTimeoutSimpleFn
 
 const ALLOW_ROBOTS_TXT = 'User-agent: *\nAllow: /'
 const DISALLOW_ROBOTS_TXT = 'User-agent: *\nDisallow: /'
@@ -38,8 +43,8 @@ function robotsHttpResponse(status: number, headers: Record<string, string> = {}
 
 describe('fetchRobotsTxt SSRF policy', () => {
   it('returns disallow immediately when the robots.txt target is unsafe', async () => {
-    const readResponseBody = vi.fn<typeof readResponseBody>()
-    const fetchWithTimeoutSimple = vi.fn<typeof fetchWithTimeoutSimple>(async () => {
+    const readResponseBody = vi.fn<ReadResponseBodyFn>()
+    const fetchWithTimeoutSimple = vi.fn<FetchWithTimeoutSimpleFn>(async () => {
       throw new RobotsUnsafeTargetError('https://unsafe.test/robots.txt', 'private IP')
     })
 
@@ -59,9 +64,9 @@ describe('fetchRobotsTxt SSRF policy', () => {
   })
 
   it('does not fetch a robots.txt host that resolves to a private address', async () => {
-    const fetchWithTimeout = vi.fn<typeof fetchWithTimeout>()
+    const fetchWithTimeout = vi.fn<FetchWithTimeoutFn>()
     const validateUrl = vi
-      .fn<typeof validateUrl>()
+      .fn<ValidateUrlFn>()
       .mockRejectedValue(
         new TestUnsafeUrlError(
           'https://evil.test/robots.txt',
@@ -87,8 +92,8 @@ describe('fetchRobotsTxt SSRF policy', () => {
   it('allows the domain after DNS timeouts are exhausted', async () => {
     const timeout = new Error('DNS lookup for slow.test timed out after 5000ms')
     timeout.name = 'AbortError'
-    const fetchWithTimeout = vi.fn<typeof fetchWithTimeout>()
-    const validateUrl = vi.fn<typeof validateUrl>().mockRejectedValue(timeout)
+    const fetchWithTimeout = vi.fn<FetchWithTimeoutFn>()
+    const validateUrl = vi.fn<ValidateUrlFn>().mockRejectedValue(timeout)
 
     await expect(
       fetchRobotsTxt('slow.test', {
@@ -109,15 +114,15 @@ describe('fetchRobotsTxt SSRF policy', () => {
     const redirect = robotsHttpResponse(302, { location: 'https://cdn.example/robots.txt' })
     const ok = robotsHttpResponse(200)
     const validateUrl = vi
-      .fn<typeof validateUrl>()
+      .fn<ValidateUrlFn>()
       .mockResolvedValueOnce(PUBLIC_ADDRESSES)
       .mockResolvedValueOnce([{ address: '93.184.216.35', family: 4 as const }])
     const fetchWithTimeout = vi
-      .fn<typeof fetchWithTimeout>()
+      .fn<FetchWithTimeoutFn>()
       .mockResolvedValueOnce({ response: redirect, responseSignal: AbortSignal.timeout(10_000) })
       .mockResolvedValueOnce({ response: ok, responseSignal: AbortSignal.timeout(10_000) })
     const readResponseBody = vi
-      .fn<typeof readResponseBody>()
+      .fn<ReadResponseBodyFn>()
       .mockResolvedValue('User-agent: *\nDisallow: /private\n')
 
     await expect(
@@ -137,16 +142,19 @@ describe('fetchRobotsTxt SSRF policy', () => {
       expect.objectContaining({
         url: 'https://example.com/robots.txt',
         response: ok,
+        signal: expect.any(AbortSignal),
       }),
     )
+    const bodySignal = readResponseBody.mock.calls[0]?.[0].signal
+    expect(bodySignal?.aborted).toBe(false)
   })
 
   it('keeps an injected fetch on the two-argument timeout contract', async () => {
     const fetchWithTimeoutSimple = vi
-      .fn<typeof fetchWithTimeoutSimple>()
+      .fn<FetchWithTimeoutSimpleFn>()
       .mockResolvedValue(robotsHttpResponse(200))
-    const validateUrl = vi.fn<typeof validateUrl>()
-    const readResponseBody = vi.fn<typeof readResponseBody>().mockResolvedValue(ALLOW_ROBOTS_TXT)
+    const validateUrl = vi.fn<ValidateUrlFn>()
+    const readResponseBody = vi.fn<ReadResponseBodyFn>().mockResolvedValue(ALLOW_ROBOTS_TXT)
 
     await expect(
       fetchRobotsTxt('example.com', {
