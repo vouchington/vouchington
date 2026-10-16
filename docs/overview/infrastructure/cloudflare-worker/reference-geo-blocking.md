@@ -13,7 +13,7 @@ Requests from sanctioned/restricted countries are rejected at the edge before re
 
 **Default list** (set by private infrastructure for deployed Workers): `CN,HK,IR,RU,KP,BY,SY,VE,CU,MM,SD`
 
-Blocking happens before cookie parsing, JWT verification, and rate limiting so blocked requests consume no quota and no CPU-intensive work.
+Blocking happens before cookie parsing, JWT verification, staging Basic Auth, and rate limiting. A blocked request therefore receives `403` without consuming the staging identity limiter or receiving a Basic challenge. Maintenance mode still answers first.
 
 Tor exit nodes (`T1`) and unknown country (`XX`) are not blocked by default but can be added via the env var.
 

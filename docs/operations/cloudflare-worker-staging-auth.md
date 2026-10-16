@@ -9,7 +9,9 @@ in private `vouchington-infra` operator runbooks.
 - `BASIC_AUTH_CREDENTIALS` enables the gate. An unset or empty value disables it; any malformed
   configured entry keeps the gate enabled and fails closed with `401`.
 - Covered requests consume the identity rate limiter before credentials are checked. A rejected
-  request therefore returns `429` before an authentication response.
+  request therefore returns `429` before an authentication response. Geo-blocked requests are
+  rejected with `403` before this gate, so they do not consume the limiter or receive a Basic
+  challenge.
 - Ordinary clients send HTTP Basic credentials in `Authorization`. A backend Bearer request may put
   its Basic credential in `X-Voucha-Staging-Authorization`; ambiguous, duplicated, or malformed
   header combinations fail closed.
@@ -75,7 +77,7 @@ slash. All other rows are exact normalized path matches. Wrong methods remain pr
 After an authorized staging change, observe all of the following without recording credentials:
 
 1. An unauthenticated covered request receives `401` with a Basic challenge, while an intentionally
-   rate-limited request receives `429` first.
+   rate-limited request receives `429` first. A geo-blocked request receives `403` before either.
 2. Both the retained and replacement credentials work during rotation; only the replacement works
    after retirement.
 3. A Bearer request with the secondary staging-auth header reaches the backend, and the backend does

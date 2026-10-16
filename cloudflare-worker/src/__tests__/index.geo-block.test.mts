@@ -183,4 +183,41 @@ describe('geo-blocking', () => {
     expect(response.status).toBe(403)
     expect(rateLimiterCalls).toHaveLength(0)
   })
+
+  it('rejects a geo-blocked staging request before basic auth can consume the identity limiter', async () => {
+    const rateLimiterCalls: string[] = []
+    const env: Env = {
+      ...baseEnv,
+      BASIC_AUTH_CREDENTIALS: 'staging:password',
+      GEO_BLOCKED_COUNTRIES: 'CN',
+      RATE_LIMITER_GET_HEAD: {
+        limit: ({ key }) => {
+          rateLimiterCalls.push(key)
+          return { success: false }
+        },
+      },
+    }
+
+    const response = await worker.fetch(
+      new Request('https://staging.voucha.ai/', {
+        headers: {
+          authorization: `Basic ${btoa('staging:password')}`,
+          'cf-connecting-ip': '1.1.1.1',
+          'cf-ipcountry': 'CN',
+          'cf-ray': 'test-ray',
+        },
+      }),
+      env,
+      createContext(env),
+    )
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({
+      message: 'Access denied',
+      code: 'FORBIDDEN',
+    })
+    expect(response.headers.get('www-authenticate')).toBeNull()
+    expect(rateLimiterCalls).toHaveLength(0)
+    expect(globalThis.fetch).not.toHaveBeenCalled()
+  })
 })

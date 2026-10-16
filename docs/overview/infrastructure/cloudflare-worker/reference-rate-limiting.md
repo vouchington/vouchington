@@ -5,7 +5,7 @@
 Rate limiting is IP-based and operates on two dimensions:
 
 - **Method class**: `GET` (shared by GET/HEAD) vs. `MUTATING` (shared by POST/PUT/PATCH/DELETE/etc.)
-- **Area**: `/api/*` vs. `web` — the API prefix check is case-insensitive. Inline responses and fully cached GETs that can actually dispatch to Workers Cache are exempt unless staging Basic Auth applies; covered staging Basic Auth requests consume the generic identity limiter before credential validation. Cache-bypassed HEAD, Bearer, RSC, and misconfigured web-cache requests remain limited.
+- **Area**: `/api/*` vs. `web` — the API prefix check is case-insensitive. Inline responses and fully cached GETs that can actually dispatch to Workers Cache are exempt unless staging Basic Auth applies; covered staging Basic Auth requests consume the generic identity limiter before credential validation. Geo-blocked requests are rejected before that staging gate and do not consume it. Cache-bypassed HEAD, Bearer, RSC, and misconfigured web-cache requests remain limited.
 
 The exact delivery route `POST /ap/inbox` bypasses both the generic pre-cache mutating limiter and
 the unknown-bot post-cache mutating limiter. The backend first applies a runtime-configurable

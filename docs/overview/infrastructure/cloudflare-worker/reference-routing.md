@@ -33,7 +33,7 @@ dispatch decision at the bottom.
 flowchart TD
     A[Incoming request] --> B{WebSocket upgrade?}
     B -- yes --> B1["Local HMR allowed, else rejected"]
-    B -- no --> C{"Maintenance (503), basic-auth (429/401, staging), or geo-block gate"}
+    B -- no --> C{"Maintenance (503), then geo-block (403), then staging basic-auth (429/401)"}
     C -- gated --> C1["Short-circuit response"]
     C -- pass --> D{"Special intercept? (/monitoring, /infra/cache-purge)"}
     D -- yes --> D1["/monitoring: rate-limit then Sentry tunnel; /infra/cache-purge: secret-gated, no rate limit"]

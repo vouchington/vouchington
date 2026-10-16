@@ -9,7 +9,7 @@ IP-level rate limiting at the CDN edge before requests reach the backend.
 - Separate method-class buckets: `GET` is shared by GET/HEAD, and `MUTATING` is shared by every other method
 - Separate buckets for `/api/*` vs. web routes, with API prefix matching evaluated case-insensitively
 - Backend-bound worker prefixes such as `/api/*`, `/infra/*`, `/md/*`, and `/rss/*` are classified case-insensitively before origin routing
-- Inline responses and fully cached GETs that can dispatch to Workers Cache bypass rate limiting unless staging Basic Auth applies; covered staging Basic Auth requests consume the generic identity limiter before credential validation
+- Inline responses and fully cached GETs that can dispatch to Workers Cache bypass rate limiting unless staging Basic Auth applies; covered staging Basic Auth requests consume the generic identity limiter before credential validation. Geo-blocked requests are rejected before that staging gate and do not consume it.
 - HEAD, Bearer, RSC, and other cache-bypassed requests remain limited
 - Key format: `{area}:{methodClass}:{ip}` (identity keys add the `anon` or `server-action` tier prefix)
 - A web Server Action POST consumes the generic mutating quota first and then its stricter Server Action quota; `/api/*` requests carrying `next-action` remain generic mutations
