@@ -4,7 +4,7 @@ import { defineBackgroundDomain } from './define-job.mts'
 // of 5 keeps that cap on the shared worker.
 export const NOTIFICATIONS_DOMAIN = defineBackgroundDomain({
   domain: 'notifications',
-  group: { kind: 'domain', concurrency: 5 },
+  group: { kind: 'domain', concurrency: 5, deferral: 'job' },
   workerConcurrency: 5,
 })
 

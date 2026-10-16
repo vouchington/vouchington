@@ -6,7 +6,7 @@ import { defineBackgroundDomain } from './define-job.mts'
 // keeps the cap and replaces the lanes.
 export const ACTIVITYPUB_DOMAIN = defineBackgroundDomain({
   domain: 'activitypub',
-  group: { kind: 'domain', concurrency: 10 },
+  group: { kind: 'domain', concurrency: 10, deferral: 'job' },
   workerConcurrency: 10,
 })
 
