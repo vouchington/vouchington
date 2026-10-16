@@ -1,3 +1,4 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import {
   cancelResponseBody,
   fetchWithTimeout,
@@ -28,6 +29,7 @@ export type RobotsDependencies = PinnedRobotsFetchDependencies & {
   isNetworkError: typeof isNetworkError
   isRetryableError: typeof isRetryableError
   checkDomainBlacklisted: typeof checkDomainBlacklisted
+  retryDelayMs: number
 }
 
 export const defaultRobotsDependencies: RobotsDependencies = {
@@ -41,6 +43,7 @@ export const defaultRobotsDependencies: RobotsDependencies = {
   fetchWithTimeout,
   unsafeUrlError: UnsafeUrlError,
   cancelResponseBody,
+  retryDelayMs: RETRY_DELAY_MS,
 }
 
 export async function fetchRobotsTxtWithRetry(
@@ -85,7 +88,7 @@ export async function fetchRobotsTxtWithRetry(
       if (response.status >= 500 && response.status < 600) {
         if (attempt < MAX_RETRIES) {
           // oxlint-disable-next-line no-await-in-loop -- server retry backoff must finish before the next request
-          await delay(RETRY_DELAY_MS)
+          await delay(dependencies.retryDelayMs)
           continue
         }
         return ALLOW_ROBOTS_TXT
@@ -101,7 +104,7 @@ export async function fetchRobotsTxtWithRetry(
       if (dependencies.isNetworkError(err)) {
         if (attempt < MAX_RETRIES) {
           // oxlint-disable-next-line no-await-in-loop -- network retry backoff must finish before the next request
-          await delay(RETRY_DELAY_MS)
+          await delay(dependencies.retryDelayMs)
           continue
         }
         return ALLOW_ROBOTS_TXT
@@ -109,7 +112,7 @@ export async function fetchRobotsTxtWithRetry(
 
       if (dependencies.isRetryableError(err, lastStatus) && attempt < MAX_RETRIES) {
         // oxlint-disable-next-line no-await-in-loop -- retryable-error backoff must finish before the next request
-        await delay(RETRY_DELAY_MS)
+        await delay(dependencies.retryDelayMs)
         continue
       }
 
@@ -138,12 +141,6 @@ function fetchRobotsResponse(
 
 function releaseUnreadRobotsBody(response: Response, dependencies: RobotsDependencies): void {
   dependencies.cancelResponseBody(response)
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms)
-  })
 }
 
 function plainRobotsResponse(

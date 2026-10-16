@@ -35,6 +35,7 @@ function retryDependencies(
       checkDomainBlacklisted: async () => false,
       isNetworkError: () => false,
       isRetryableError: () => false,
+      retryDelayMs: 0,
     },
     cancelResponseBody,
     readResponseBody,
@@ -75,30 +76,25 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
   })
 
   it('cancels each 5xx body before the next attempt', async () => {
-    vi.useFakeTimers()
-    try {
-      const responses: Response[] = []
-      const fetchWithTimeoutSimple = vi.fn<FetchWithTimeoutSimpleFn>(async () => {
-        const response = ignoredRobotsResponse(503, 'Service Unavailable')
-        responses.push(response)
-        return response
-      })
-      const { dependencies, cancelResponseBody, readResponseBody } =
-        retryDependencies(fetchWithTimeoutSimple)
-      const pending = fetchRobotsTxtWithRetry('example.com', dependencies)
-      const settled = pending.then(value => value)
-      await vi.runAllTimersAsync()
+    const responses: Response[] = []
+    const fetchWithTimeoutSimple = vi.fn<FetchWithTimeoutSimpleFn>(async () => {
+      const response = ignoredRobotsResponse(503, 'Service Unavailable')
+      responses.push(response)
+      return response
+    })
+    const { dependencies, cancelResponseBody, readResponseBody } =
+      retryDependencies(fetchWithTimeoutSimple)
 
-      await expect(settled).resolves.toBe(ALLOW_ROBOTS_TXT)
-      expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
-      expect(cancelResponseBody).toHaveBeenCalledTimes(3)
-      for (const response of responses) {
-        expect(cancelResponseBody).toHaveBeenCalledWith(response)
-      }
-      expect(readResponseBody).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
+    await expect(fetchRobotsTxtWithRetry('example.com', dependencies)).resolves.toBe(
+      ALLOW_ROBOTS_TXT,
+    )
+
+    expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+    expect(cancelResponseBody).toHaveBeenCalledTimes(3)
+    for (const response of responses) {
+      expect(cancelResponseBody).toHaveBeenCalledWith(response)
     }
+    expect(readResponseBody).not.toHaveBeenCalled()
   })
 
   it('cancels an unread non-retry status before throwing', async () => {
