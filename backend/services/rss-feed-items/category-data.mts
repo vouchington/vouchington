@@ -30,7 +30,7 @@ export async function readCategoryDataChunk(
       SELECT
         input.rss_feed_item_id,
         input.category_text,
-        existing.category_text IS NOT NULL as exists,
+        existing.category_identity_id IS NOT NULL as exists,
         existing.topic_id as existing_topic_id,
         existing.topic_alias_id as existing_topic_alias_id,
         COALESCE(t_alias.id, t_name.id, t_slug.id) as new_topic_id
@@ -43,9 +43,11 @@ export async function readCategoryDataChunk(
           unnest(${categoryTexts}::text[]) as category_text,
           unnest(${hashtagAliases}::text[]) as hashtag_alias
       ) as input
+      LEFT JOIN rss_category_identities identity
+        ON identity.category_text = LOWER(TRIM(input.category_text))
       LEFT JOIN rss_feed_item_categories existing
         ON existing.rss_feed_item_id = input.rss_feed_item_id
-        AND LOWER(existing.category_text) = LOWER(input.category_text)
+        AND existing.category_identity_id = identity.id
       LEFT JOIN topic_aliases ta
         ON ta.alias = input.hashtag_alias
       LEFT JOIN topic_aliases text_alias

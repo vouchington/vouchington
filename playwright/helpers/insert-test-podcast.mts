@@ -3,6 +3,7 @@ import { setRssFeedItemMediaDetails } from '../../backend/test-helpers/entities/
 import { write } from '../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../backend/test-helpers/entities/rss-feed-items.mts'
 import { setTopicHostnameLink } from '../../backend/services/topics/hostname-link.mts'
+import { registerRssCategoryIdentities } from '../../backend/services/rss-feed-items/category-identities.mts'
 import { PLAYWRIGHT_PODCAST_COVER_URL } from '../../lambdas/playwright-podcast-cover.mts'
 
 // 32-byte zero buffer used as the bedrock_nova_multimodal_v1_content_sha256 placeholder.
@@ -118,9 +119,12 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   const bizTopicId = bizTopicResult.rows[0].id as string
 
   // Feed categories with topic_id linked (so the rss_feed_categories EXISTS filter works).
+  await registerRssCategoryIdentities([categorySlug, 'news', topicSlug], write)
   await write(
-    allowUnannotatedQuery(`INSERT INTO rss_feed_categories (rss_feed_id, category_text, topic_id)
-     VALUES ($1, $2, $3), ($1, 'news', NULL)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_categories (rss_feed_id, category_identity_id, topic_id)
+     SELECT $1::uuid, identity.id, input.topic_id
+     FROM (VALUES ($2::text, $3::uuid), ('news', NULL::uuid)) AS input(category_text, topic_id)
+     JOIN rss_category_identities identity ON identity.category_text = input.category_text
      ON CONFLICT DO NOTHING`),
     [rssFeedId, categorySlug, bizTopicId],
   )
@@ -171,8 +175,9 @@ export async function insertTestPodcastShow(suffix: string): Promise<TestPodcast
   //   EXISTS (SELECT 1 FROM rss_feed_item_categories WHERE topic_id = topicId)
   // So the episode must have an rss_feed_item_categories row with topic_id = testPodcastTopicId.
   await write(
-    allowUnannotatedQuery(`INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
-     VALUES ($1, $2, $3)
+    allowUnannotatedQuery(`INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_identity_id, category_text, topic_id)
+     SELECT $1::uuid, identity.id, $2, $3::uuid
+     FROM rss_category_identities identity WHERE identity.category_text = $2
      ON CONFLICT DO NOTHING`),
     [episodeId, topicSlug, topicId],
   )

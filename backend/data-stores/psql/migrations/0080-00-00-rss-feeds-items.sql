@@ -383,6 +383,25 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_items__lingua_rs_pending
   ON rss_feed_items (id)
   WHERE lingua_rs_input_sha256 IS NULL;
 
+-- rss_category_identities
+-------------------------------------------------------------------------------
+
+-- One normalized external category value shared by feed, item, rejection, and count rows.
+-- The item row separately retains the first authored spelling for presentation.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS rss_category_identities (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  category_text TEXT NOT NULL UNIQUE,
+  CONSTRAINT chk_rss_category_identities__normalized_text
+    CHECK (category_text <> '' AND category_text = LOWER(TRIM(category_text)))
+);
+
+COMMENT ON TABLE rss_category_identities IS 'Canonical normalized RSS category identities shared across feeds and items.';
+COMMENT ON COLUMN rss_category_identities.id IS 'UUIDv7 relational identity of the normalized external category value.';
+COMMENT ON COLUMN rss_category_identities.created_at IS 'Creation time derived from the UUIDv7 identity.';
+COMMENT ON COLUMN rss_category_identities.category_text IS 'Trimmed, lowercased category value used only to resolve external RSS and staff input.';
+
 -------------------------------------------------------------------------------
 -- rss_feed_item_category_rejections
 -------------------------------------------------------------------------------
@@ -391,13 +410,13 @@ CREATE INDEX IF NOT EXISTS idx_rss_feed_items__lingua_rs_pending
 -- A rejected category is hidden from the unmapped-category work queue.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_category_rejections (
-  category_text TEXT PRIMARY KEY,
+  category_identity_id UUID PRIMARY KEY REFERENCES rss_category_identities ON DELETE RESTRICT,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   created_by_id UUID REFERENCES users ON DELETE SET NULL
 );
 
 COMMENT ON TABLE rss_feed_item_category_rejections IS 'Category strings marked by admins as too vague to map to a topic (e.g. "news"). Hidden from the unmapped-category triage queue.';
-COMMENT ON COLUMN rss_feed_item_category_rejections.category_text IS 'Normalized (trimmed, lowercased) category text — matches rss_feed_item_categories.category_text. Primary key.';
+COMMENT ON COLUMN rss_feed_item_category_rejections.category_identity_id IS 'Canonical category identity rejected from editorial triage.';
 
 COMMENT ON TABLE rss_feed_item_guids IS 'RSS feed item identity lookup. Unique per (url_hostname_id, guid): same GUID on same feed domain = same item, regardless of which feed URL discovered it.';
 COMMENT ON COLUMN rss_feed_item_guids.guid IS 'The GUID/ID as defined by the RSS feed, for deduplication within the same hostname.';
@@ -449,19 +468,16 @@ COMMENT ON COLUMN rss_feed_item_sources.published_at IS 'Publication timestamp c
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_categories (
   rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
-  category_text TEXT NOT NULL, -- the category text from the RSS feed
+  category_identity_id UUID NOT NULL REFERENCES rss_category_identities ON DELETE RESTRICT,
+  category_text TEXT NOT NULL, -- first authored spelling from the RSS feed
   topic_id UUID REFERENCES topics ON DELETE SET NULL, -- the internal topic, stored here for lookup
   topic_alias_id UUID REFERENCES topic_aliases ON DELETE RESTRICT, -- valid canonical hashtag, if any
 
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-  PRIMARY KEY (rss_feed_item_id, category_text)
+  PRIMARY KEY (rss_feed_item_id, category_identity_id)
 );
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_rss_feed_item_categories__item_category_lower
-ON rss_feed_item_categories (rss_feed_item_id, (LOWER(category_text)));
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_rss_feed_item_categories_updated_at
@@ -487,21 +503,16 @@ WHERE topic_alias_id IS NOT NULL;
 
 COMMENT ON INDEX idx_rss_feed_item_categories__rss_feed_item_id__mapped IS 'Bounds mapped hashtag occurrences by content id before joining recent RSS items.';
 
--- for updating and joining
+-- Category-led editorial and count reads need an index beyond the item-led primary key.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__category_text
-ON rss_feed_item_categories (LOWER(category_text));
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__unmapped_category_text
-ON rss_feed_item_categories (LOWER(category_text))
-WHERE topic_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_rss_feed_item_categories__category_identity_id
+ON rss_feed_item_categories (category_identity_id, rss_feed_item_id);
 
 -- Incrementally refreshed aggregate for count-ranked admin triage. Keeping this
 -- in the same transaction as category writes avoids stale queue results.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS rss_feed_item_unmapped_category_counts (
-  category_text TEXT PRIMARY KEY,
+  category_identity_id UUID PRIMARY KEY REFERENCES rss_category_identities ON DELETE RESTRICT,
   item_count BIGINT NOT NULL CHECK (item_count > 0),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -520,23 +531,23 @@ BEGIN
   IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN
     SELECT item_count INTO current_item_count
     FROM rss_feed_item_unmapped_category_counts
-    WHERE category_text = LOWER(OLD.category_text)
+    WHERE category_identity_id = OLD.category_identity_id
     FOR UPDATE;
 
     IF current_item_count = 1 THEN
       DELETE FROM rss_feed_item_unmapped_category_counts
-      WHERE category_text = LOWER(OLD.category_text);
+      WHERE category_identity_id = OLD.category_identity_id;
     ELSIF current_item_count > 1 THEN
       UPDATE rss_feed_item_unmapped_category_counts
       SET item_count = item_count - 1
-      WHERE category_text = LOWER(OLD.category_text);
+      WHERE category_identity_id = OLD.category_identity_id;
     END IF;
   END IF;
 
   IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN
-    INSERT INTO rss_feed_item_unmapped_category_counts (category_text, item_count)
-    VALUES (LOWER(NEW.category_text), 1)
-    ON CONFLICT (category_text) DO UPDATE
+    INSERT INTO rss_feed_item_unmapped_category_counts (category_identity_id, item_count)
+    VALUES (NEW.category_identity_id, 1)
+    ON CONFLICT (category_identity_id) DO UPDATE
     SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1;
   END IF;
 
@@ -546,17 +557,18 @@ $$ LANGUAGE plpgsql;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count
-AFTER INSERT OR DELETE OR UPDATE OF category_text, topic_id ON rss_feed_item_categories
+AFTER INSERT OR DELETE OR UPDATE OF category_identity_id, topic_id ON rss_feed_item_categories
 FOR EACH ROW
 EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count();
 
 COMMENT ON TABLE rss_feed_item_categories IS 'Maps RSS feed item categories to internal topics. Categories belong to the item, not to a specific feed.';
 COMMENT ON COLUMN rss_feed_item_categories.rss_feed_item_id IS 'The RSS feed item these categories belong to.';
+COMMENT ON COLUMN rss_feed_item_categories.category_identity_id IS 'Canonical normalized category identity; paired with the item id for one row per category.';
 COMMENT ON COLUMN rss_feed_item_categories.category_text IS 'The first authored category text from the RSS feed; identity is case-insensitive per item.';
 COMMENT ON COLUMN rss_feed_item_categories.topic_id IS 'The mapped internal topic. NULL if not yet mapped.';
 COMMENT ON COLUMN rss_feed_item_categories.topic_alias_id IS 'The valid canonical hashtag alias. NULL for non-hashtag RSS labels.';
-COMMENT ON TABLE rss_feed_item_unmapped_category_counts IS 'Transactionally refreshed counts of normalized RSS item category strings whose topic_id is NULL.';
-COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.category_text IS 'Lowercase RSS category text with no current topic mapping.';
+COMMENT ON TABLE rss_feed_item_unmapped_category_counts IS 'Transactionally refreshed counts of RSS category identities whose item topic_id is NULL.';
+COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.category_identity_id IS 'Canonical category identity with no current topic mapping.';
 COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.item_count IS 'Number of RSS feed items currently carrying this unmapped category.';
 COMMENT ON COLUMN rss_feed_item_unmapped_category_counts.updated_at IS 'When this category count last changed.';
 

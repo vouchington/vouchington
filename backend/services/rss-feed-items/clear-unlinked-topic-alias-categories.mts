@@ -34,9 +34,10 @@ export async function clearUnlinkedTopicAliasCategories(
         WITH candidates AS (
           SELECT
             feed_category.rss_feed_id,
-            feed_category.category_text,
+            feed_category.category_identity_id,
             replacement.topic_id AS replacement_topic_id
           FROM rss_feed_categories feed_category
+          JOIN rss_category_identities identity ON identity.id = feed_category.category_identity_id
           LEFT JOIN topic_aliases source_alias ON source_alias.id = $1
           LEFT JOIN LATERAL (
             SELECT topic.id AS topic_id
@@ -45,13 +46,13 @@ export async function clearUnlinkedTopicAliasCategories(
               AND topic.merged_into_topic_id IS NULL
               AND (
                 LOWER(topic.name) IN (
-                  LOWER(feed_category.category_text),
-                  LOWER(CASE WHEN LEFT(feed_category.category_text, 1) = '#' THEN SUBSTRING(feed_category.category_text FROM 2) ELSE feed_category.category_text END),
+                  identity.category_text,
+                  CASE WHEN LEFT(identity.category_text, 1) = '#' THEN SUBSTRING(identity.category_text FROM 2) ELSE identity.category_text END,
                   LOWER(source_alias.alias)
                 )
                 OR topic.slug IN (
-                  LOWER(feed_category.category_text),
-                  LOWER(CASE WHEN LEFT(feed_category.category_text, 1) = '#' THEN SUBSTRING(feed_category.category_text FROM 2) ELSE feed_category.category_text END),
+                  identity.category_text,
+                  CASE WHEN LEFT(identity.category_text, 1) = '#' THEN SUBSTRING(identity.category_text FROM 2) ELSE identity.category_text END,
                   LOWER(source_alias.alias)
                 )
               )
@@ -59,7 +60,7 @@ export async function clearUnlinkedTopicAliasCategories(
             LIMIT 1
           ) replacement ON TRUE
           WHERE feed_category.topic_id IS NOT NULL
-            AND LOWER(feed_category.category_text) = LOWER($2)
+            AND identity.category_text = LOWER($2)
             AND ($3::uuid IS NULL OR feed_category.topic_id = $3)
             AND NOT EXISTS (
               SELECT 1
@@ -72,7 +73,7 @@ export async function clearUnlinkedTopicAliasCategories(
         SET topic_id = candidates.replacement_topic_id
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
-          AND target.category_text = candidates.category_text`,
+          AND target.category_identity_id = candidates.category_identity_id`,
       [topicAliasId, alias, formerTopicId ?? null],
     )
 

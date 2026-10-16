@@ -66,9 +66,16 @@ export async function seedTopHashtags(): Promise<void> {
     [JSON.stringify(rssRows)],
   )
   await transaction(
+    `/* seedTopHashtagsCategoryIdentity */ INSERT INTO rss_category_identities (category_text)
+     VALUES ('seedhashtag')
+     ON CONFLICT (category_text) DO UPDATE SET category_text = EXCLUDED.category_text`,
+  )
+  await transaction(
     `/* seedTopHashtagsCategories */ INSERT INTO rss_feed_item_categories
-      (rss_feed_item_id, category_text, topic_alias_id)
-     SELECT id, 'SeedHashtag', $2 FROM jsonb_to_recordset($1::jsonb) AS seed(id uuid)
+      (rss_feed_item_id, category_identity_id, category_text, topic_alias_id)
+     SELECT seed.id, identity.id, 'SeedHashtag', $2
+     FROM jsonb_to_recordset($1::jsonb) AS seed(id uuid)
+     JOIN rss_category_identities identity ON identity.category_text = 'seedhashtag'
      ON CONFLICT DO NOTHING`,
     [JSON.stringify(rssRows), aliasId],
   )

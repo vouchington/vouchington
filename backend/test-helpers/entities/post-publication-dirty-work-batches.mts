@@ -1,6 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
+import { registerTestRssCategoryIdentity } from './rss-category-identities.mts'
 
 export async function insertTestPostBatch(createdById: string, count: number): Promise<string[]> {
   const sha256 = `\\x${'0'.repeat(64)}`
@@ -89,6 +90,7 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
   const postIds = Array.from({ length: options.count }, () => uuidv7())
   const guids = itemIds.map(id => `publication-batch-${id}`)
   const sha256 = `\\x${'0'.repeat(64)}`
+  const categoryId = await registerTestRssCategoryIdentity(options.categoryText)
   await write(
     `/* insertTestStoryCategoryPublicationBatch */
     WITH input AS (
@@ -109,8 +111,8 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       INSERT INTO rss_feed_item_sources (rss_feed_id, rss_feed_item_id, published_at)
       SELECT $7, id, published_at FROM inserted_items
     ), inserted_categories AS (
-      INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_text, topic_id)
-      SELECT item_id, $8, $9 FROM input
+      INSERT INTO rss_feed_item_categories (rss_feed_item_id, category_identity_id, category_text, topic_id)
+      SELECT item_id, $11::uuid, $8, $9 FROM input
     ), inserted_posts AS (
       INSERT INTO posts (
         id, post_type, title, markdown, created_by_id,
@@ -134,6 +136,7 @@ export async function insertTestStoryCategoryPublicationBatch(options: {
       options.categoryText,
       options.topicId,
       options.createdById,
+      categoryId,
     ],
   )
   return { postIds, storyIds }

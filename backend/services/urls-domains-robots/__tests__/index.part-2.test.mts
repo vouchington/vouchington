@@ -166,12 +166,18 @@ describe('fetchRobotsTxt', () => {
     try {
       const domain = randomDomain()
       const retryableError = new Error('temporary upstream failure')
-      mockFetchWithTimeoutSimple.mockRejectedValue(retryableError)
+      const fetchStarted = Promise.withResolvers<void>()
+      mockFetchWithTimeoutSimple.mockImplementation(async () => {
+        fetchStarted.resolve()
+        throw retryableError
+      })
       dependencies.isNetworkError.mockReturnValue(false)
       dependencies.isRetryableError.mockReturnValue(true)
 
       const result = fetchRobotsTxtForTest(domain)
       const resultRejection = result.catch((err: unknown) => err)
+      // Let the real blacklist/database preflight finish before advancing retry timers.
+      await fetchStarted.promise
       await vi.runAllTimersAsync()
 
       await expect(resultRejection).resolves.toBe(retryableError)

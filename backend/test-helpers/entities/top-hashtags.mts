@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import { registerTestRssCategoryIdentity } from './rss-category-identities.mts'
 
 export type PostHashtagSourceForTest = {
   alias: string
@@ -129,12 +130,13 @@ export async function createTopHashtagRssSourceForTest({
   topicAliasId: string
   authoredToken: string
 }): Promise<void> {
+  const categoryId = await registerTestRssCategoryIdentity(authoredToken)
   await write(
     `/* createTopHashtagRssSourceForTest category */
       INSERT INTO rss_feed_item_categories (
-        rss_feed_item_id, category_text, topic_alias_id
-      ) VALUES ($1, $2, $3)`,
-    [rssFeedItemId, authoredToken, topicAliasId],
+        rss_feed_item_id, category_identity_id, category_text, topic_alias_id
+      ) VALUES ($1::uuid, $4::uuid, $2, $3::uuid)`,
+    [rssFeedItemId, authoredToken, topicAliasId, categoryId],
   )
   await write(
     `/* createTopHashtagRssSourceForTest relation */

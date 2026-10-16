@@ -2,6 +2,7 @@ import { getRssFeedsWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { chunkArray } from '@services/rss-feed-items/processing-limits'
+import { registerRssCategoryIdentities } from '@services/rss-feed-items/category-identities'
 
 /**
  * Normalizes an array of raw itunes:category texts for storage.
@@ -21,7 +22,7 @@ function normalizeFeedCategories(categories: string[]): string[] {
 
 /**
  * Upserts feed-level Apple itunes:category rows for an RSS feed (podcast show).
- * Inserts missing (feed, category_text) pairs; resolves topic_id via alias/name/slug,
+ * Inserts missing (feed, category identity) pairs; resolves topic_id via alias/name/slug,
  * mirroring the item-level rss_feed_item_categories approach.
  */
 export async function upsertRssFeedCategories(
@@ -42,9 +43,13 @@ export async function upsertRssFeedCategories(
   // Remove categories the publisher dropped between crawls.
   await write(
     sql`/* upsertRssFeedCategories:deleteRemoved */
-      DELETE FROM rss_feed_categories
-      WHERE rss_feed_id = ${rssFeedId}
-        AND category_text <> ALL (${normalized}::text[])
+      DELETE FROM rss_feed_categories category
+      WHERE category.rss_feed_id = ${rssFeedId}
+        AND NOT EXISTS (
+          SELECT 1 FROM rss_category_identities identity
+          WHERE identity.id = category.category_identity_id
+            AND identity.category_text = ANY (${normalized}::text[])
+        )
     `,
   )
 }
@@ -65,20 +70,23 @@ async function upsertRssFeedCategoriesChunk(
   rssFeedId: string,
   categories: string[],
 ): Promise<void> {
+  await registerRssCategoryIdentities(categories, write)
   await write(
     sql`/* upsertRssFeedCategories */
       INSERT INTO rss_feed_categories (
         rss_feed_id,
-        category_text,
+        category_identity_id,
         topic_id
       )
       SELECT
         ${rssFeedId}::uuid AS rss_feed_id,
-        input.category_text,
+        identity.id,
         COALESCE(t_alias.id, t_name.id, t_slug.id) AS topic_id
       FROM (
         SELECT unnest(${categories}::text[]) AS category_text
       ) AS input
+      JOIN rss_category_identities identity
+        ON identity.category_text = input.category_text
       LEFT JOIN topic_aliases ta ON ta.alias = input.category_text
       LEFT JOIN topics t_alias
         ON t_alias.id = ta.topic_id
@@ -92,8 +100,8 @@ async function upsertRssFeedCategoriesChunk(
         ON t_slug.slug = input.category_text
         AND t_slug.deleted_at IS NULL
         AND t_slug.merged_into_topic_id IS NULL
-      ORDER BY rss_feed_id ASC NULLS LAST, input.category_text ASC NULLS LAST
-      ON CONFLICT (rss_feed_id, category_text) DO UPDATE
+      ORDER BY rss_feed_id ASC NULLS LAST, identity.id ASC NULLS LAST
+      ON CONFLICT (rss_feed_id, category_identity_id) DO UPDATE
         SET topic_id = EXCLUDED.topic_id
     `,
   )
@@ -112,16 +120,18 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
     const { rowCount } = await write(
       sql`/* backfillCategoriesForTopicAlias */
         WITH candidates AS (
-          SELECT rss_feed_id, category_text
-          FROM rss_feed_categories
+          SELECT category.rss_feed_id, category.category_identity_id
+          FROM rss_feed_categories category
+          JOIN rss_category_identities identity
+            ON identity.id = category.category_identity_id
           WHERE
             (
-              LOWER(category_text) IN (SELECT alias FROM topic_aliases WHERE topic_id = ${topicId})
-              AND (topic_id IS NULL OR topic_id != ${topicId})
+              identity.category_text IN (SELECT alias FROM topic_aliases WHERE topic_id = ${topicId})
+              AND (category.topic_id IS NULL OR category.topic_id != ${topicId})
             )
             OR (
-              topic_id IS NULL
-              AND LOWER(category_text) = (
+              category.topic_id IS NULL
+              AND identity.category_text = (
                 SELECT LOWER(name) FROM topics
                 WHERE id = ${topicId}
                   AND deleted_at IS NULL
@@ -129,23 +139,23 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
               )
             )
             OR (
-              topic_id IS NULL
-              AND LOWER(category_text) = (
+              category.topic_id IS NULL
+              AND identity.category_text = (
                 SELECT slug FROM topics
                 WHERE id = ${topicId}
                   AND deleted_at IS NULL
                   AND merged_into_topic_id IS NULL
               )
             )
-          ORDER BY rss_feed_id, category_text
+          ORDER BY category.rss_feed_id, category.category_identity_id
           LIMIT ${RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE}
-          FOR UPDATE SKIP LOCKED
+          FOR UPDATE OF category SKIP LOCKED
         )
         UPDATE rss_feed_categories target
         SET topic_id = ${topicId}
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
-          AND target.category_text = candidates.category_text
+          AND target.category_identity_id = candidates.category_identity_id
       `,
     )
     const batchUpdated = rowCount ?? 0
@@ -163,10 +173,11 @@ export async function getRssFeedCategories(
 ): Promise<Array<{ category_text: string; topic_id: string | null }>> {
   const { rows } = await read(
     sql`/* getRssFeedCategories */
-      SELECT category_text, topic_id
-      FROM rss_feed_categories
-      WHERE rss_feed_id = ${rssFeedId}
-      ORDER BY category_text
+      SELECT identity.category_text, category.topic_id
+      FROM rss_feed_categories category
+      JOIN rss_category_identities identity ON identity.id = category.category_identity_id
+      WHERE category.rss_feed_id = ${rssFeedId}
+      ORDER BY identity.category_text
     `,
   )
   return rows as Array<{ category_text: string; topic_id: string | null }>

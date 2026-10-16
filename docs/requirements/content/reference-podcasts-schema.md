@@ -10,15 +10,16 @@ Migration: `backend/data-stores/psql/migrations/0480-00-00-podcasts.sql`
 
 Feed-level Apple iTunes categories. Mirrors item-level `rss_feed_item_categories`.
 
-| Column          | Type        | Notes                                            |
-| --------------- | ----------- | ------------------------------------------------ |
-| `rss_feed_id`   | UUID FK     | References `rss_feeds ON DELETE CASCADE`         |
-| `category_text` | TEXT        | Normalized (trim + lowercase). PK with feed_id.  |
-| `topic_id`      | UUID FK     | Optional topic mapping; SET NULL on topic delete |
-| `created_at`    | TIMESTAMPTZ |                                                  |
-| `updated_at`    | TIMESTAMPTZ |                                                  |
+| Column                 | Type        | Notes                                            |
+| ---------------------- | ----------- | ------------------------------------------------ |
+| `rss_feed_id`          | UUID FK     | References `rss_feeds ON DELETE CASCADE`         |
+| `category_identity_id` | UUID FK     | Normalized category identity; PK with feed_id.   |
+| `topic_id`             | UUID FK     | Optional topic mapping; SET NULL on topic delete |
+| `created_at`           | TIMESTAMPTZ |                                                  |
+| `updated_at`           | TIMESTAMPTZ |                                                  |
 
-Indexes: `topic_id`, `LOWER(category_text)` for the `/podcasts/[category]` hub filter.
+Indexes: `topic_id`, `category_identity_id`. The `/podcasts/[category]` hub filter resolves the external
+category text through `rss_category_identities` and filters feed rows by ID.
 
 ### `podcast_shows`
 

@@ -1382,7 +1382,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_record_user_data_request_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.processing_started_at IS NOT NULL THEN\n    INSERT INTO user_data_request_attempts (\n      request_id,\n      processing_attempt_id,\n      started_at,\n      upload_lease_expires_at\n    ) VALUES (\n      NEW.id,\n      NEW.processing_attempt_id,\n      NEW.processing_started_at,\n      NULL\n    )\n    ON CONFLICT (request_id, processing_attempt_id) DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_refresh_rss_feed_item_unmapped_category_count()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_text = LOWER(OLD.category_text)\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_text = LOWER(OLD.category_text);\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1\n      WHERE category_text = LOWER(OLD.category_text);\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_text, item_count)\n    VALUES (LOWER(NEW.category_text), 1)\n    ON CONFLICT (category_text) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_refresh_rss_feed_item_unmapped_category_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  current_item_count BIGINT;\nBEGIN\n  IF TG_OP != 'INSERT' AND OLD.topic_id IS NULL THEN\n    SELECT item_count INTO current_item_count\n    FROM rss_feed_item_unmapped_category_counts\n    WHERE category_identity_id = OLD.category_identity_id\n    FOR UPDATE;\n\n    IF current_item_count = 1 THEN\n      DELETE FROM rss_feed_item_unmapped_category_counts\n      WHERE category_identity_id = OLD.category_identity_id;\n    ELSIF current_item_count > 1 THEN\n      UPDATE rss_feed_item_unmapped_category_counts\n      SET item_count = item_count - 1\n      WHERE category_identity_id = OLD.category_identity_id;\n    END IF;\n  END IF;\n\n  IF TG_OP != 'DELETE' AND NEW.topic_id IS NULL THEN\n    INSERT INTO rss_feed_item_unmapped_category_counts (category_identity_id, item_count)\n    VALUES (NEW.category_identity_id, 1)\n    ON CONFLICT (category_identity_id) DO UPDATE\n    SET item_count = rss_feed_item_unmapped_category_counts.item_count + 1;\n  END IF;\n\n  RETURN NULL;\nEND;\n$function$\n"
     },
     "fn_project_retire_deleted_profile_link_image_surfaces()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_retire_deleted_profile_link_image_surfaces()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_sync_image_surface_placement('user-profile-link-image', NULL, NULL, NULL, NULL, OLD.id);\n  UPDATE image_surface_placements SET user_profile_link_id = NULL\n  WHERE surface_kind = 'user-profile-link-image' AND user_profile_link_id = OLD.id;\n  RETURN OLD;\nEND;\n$function$\n"
@@ -114425,12 +114425,113 @@
       },
       "uniqueConstraints": {}
     },
+    "rss_category_identities": {
+      "checkConstraints": {
+        "chk_rss_category_identities__normalized_text": {
+          "definition": "CHECK (((category_text <> ''::text) AND (category_text = lower(TRIM(BOTH FROM category_text)))))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "category_text": {
+          "comment": "Trimmed, lowercased category value used only to resolve external RSS and staff input.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "created_at": {
+          "comment": "Creation time derived from the UUIDv7 identity.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": "UUIDv7 relational identity of the normalized external category value.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Canonical normalized RSS category identities shared across feeds and items.",
+      "foreignKeys": {},
+      "indexes": {
+        "rss_category_identities_category_text_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX rss_category_identities_category_text_key ON public.rss_category_identities USING btree (category_text)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "category_text",
+              "descending": false,
+              "expression": "category_text",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "rss_category_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX rss_category_identities_pkey ON public.rss_category_identities USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "rss_category_identities_category_text_key": {
+          "columns": ["category_text"]
+        }
+      }
+    },
     "rss_feed_categories": {
       "checkConstraints": {},
       "columns": {
-        "category_text": {
-          "comment": "Normalized (trimmed, lowercased) Apple itunes:category text from the feed.",
-          "dataType": "text",
+        "category_identity_id": {
+          "comment": "Canonical normalized Apple itunes:category identity.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -114479,8 +114580,16 @@
           "ordinalPosition": 5
         }
       },
-      "comment": "Maps feed-level Apple itunes:category values to internal topics. One row per (feed, category_text) pair.",
+      "comment": "Maps feed-level Apple itunes:category identities to internal topics. One row per feed and category pair.",
       "foreignKeys": {
+        "fk_rss_feed_categories__category_identity_id": {
+          "columns": ["category_identity_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_category_identities",
+          "validated": true
+        },
         "rss_feed_categories_rss_feed_id_fkey": {
           "columns": ["rss_feed_id"],
           "onDelete": "CASCADE",
@@ -114499,19 +114608,28 @@
         }
       },
       "indexes": {
-        "idx_rss_feed_categories__category_text": {
+        "idx_rss_feed_categories__category_identity_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_categories__category_text ON public.rss_feed_categories USING btree (category_text)",
+          "definition": "CREATE INDEX idx_rss_feed_categories__category_identity_id ON public.rss_feed_categories USING btree (category_identity_id, rss_feed_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "category_text",
+              "collation": null,
+              "column": "category_identity_id",
               "descending": false,
-              "expression": "category_text",
+              "expression": "category_identity_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "rss_feed_id",
+              "descending": false,
+              "expression": "rss_feed_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -114557,7 +114675,7 @@
         "rss_feed_categories_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_categories_pkey ON public.rss_feed_categories USING btree (rss_feed_id, category_text)",
+          "definition": "CREATE UNIQUE INDEX rss_feed_categories_pkey ON public.rss_feed_categories USING btree (rss_feed_id, category_identity_id)",
           "immediate": true,
           "keys": [
             {
@@ -114570,12 +114688,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "category_text",
+              "collation": null,
+              "column": "category_identity_id",
               "descending": false,
-              "expression": "category_text",
+              "expression": "category_identity_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -114589,7 +114707,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["rss_feed_id", "category_text"]
+        "columns": ["rss_feed_id", "category_identity_id"]
       },
       "relationKind": "table",
       "triggers": {
@@ -115220,6 +115338,16 @@
     "rss_feed_item_categories": {
       "checkConstraints": {},
       "columns": {
+        "category_identity_id": {
+          "comment": "Canonical normalized category identity; paired with the item id for one row per category.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
         "category_text": {
           "comment": "The first authored category text from the RSS feed; identity is case-insensitive per item.",
           "dataType": "text",
@@ -115228,7 +115356,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "created_at": {
           "comment": null,
@@ -115238,7 +115366,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "rss_feed_item_id": {
           "comment": "The RSS feed item these categories belong to.",
@@ -115258,7 +115386,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "topic_id": {
           "comment": "The mapped internal topic. NULL if not yet mapped.",
@@ -115268,7 +115396,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
@@ -115278,11 +115406,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         }
       },
       "comment": "Maps RSS feed item categories to internal topics. Categories belong to the item, not to a specific feed.",
       "foreignKeys": {
+        "rss_feed_item_categories_category_identity_id_fkey": {
+          "columns": ["category_identity_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_category_identities",
+          "validated": true
+        },
         "rss_feed_item_categories_rss_feed_item_id_fkey": {
           "columns": ["rss_feed_item_id"],
           "onDelete": "CASCADE",
@@ -115309,35 +115445,21 @@
         }
       },
       "indexes": {
-        "idx_rss_feed_item_categories__category_text": {
+        "idx_rss_feed_item_categories__category_identity_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_categories__category_text ON public.rss_feed_item_categories USING btree (lower(category_text))",
+          "definition": "CREATE INDEX idx_rss_feed_item_categories__category_identity_id ON public.rss_feed_item_categories USING btree (category_identity_id, rss_feed_item_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
+              "collation": null,
+              "column": "category_identity_id",
               "descending": false,
-              "expression": "lower(category_text)",
+              "expression": "category_identity_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_rss_feed_item_categories__item_category_lower": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_rss_feed_item_categories__item_category_lower ON public.rss_feed_item_categories USING btree (rss_feed_item_id, lower(category_text))",
-          "immediate": true,
-          "keys": [
+            },
             {
               "collation": null,
               "column": "rss_feed_item_id",
@@ -115346,22 +115468,13 @@
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
-            },
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "lower(category_text)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
             }
           ],
           "live": true,
           "predicate": null,
           "primary": false,
           "ready": true,
-          "unique": true,
+          "unique": false,
           "valid": true
         },
         "idx_rss_feed_item_categories__rss_feed_item_id__mapped": {
@@ -115451,33 +115564,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_rss_feed_item_categories__unmapped_category_text": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_item_categories__unmapped_category_text ON public.rss_feed_item_categories USING btree (lower(category_text)) WHERE (topic_id IS NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": null,
-              "descending": false,
-              "expression": "lower(category_text)",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(topic_id IS NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "rss_feed_item_categories_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_categories_pkey ON public.rss_feed_item_categories USING btree (rss_feed_item_id, category_text)",
+          "definition": "CREATE UNIQUE INDEX rss_feed_item_categories_pkey ON public.rss_feed_item_categories USING btree (rss_feed_item_id, category_identity_id)",
           "immediate": true,
           "keys": [
             {
@@ -115490,12 +115580,12 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "category_text",
+              "collation": null,
+              "column": "category_identity_id",
               "descending": false,
-              "expression": "category_text",
+              "expression": "category_identity_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -115509,12 +115599,12 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["rss_feed_item_id", "category_text"]
+        "columns": ["rss_feed_item_id", "category_identity_id"]
       },
       "relationKind": "table",
       "triggers": {
         "trigger_refresh_rss_feed_item_unmapped_category_count": {
-          "definition": "CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_text, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()"
+          "definition": "CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_identity_id, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()"
         },
         "trigger_rss_feed_item_categories_updated_at": {
           "definition": "CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
@@ -115525,9 +115615,9 @@
     "rss_feed_item_category_rejections": {
       "checkConstraints": {},
       "columns": {
-        "category_text": {
-          "comment": "Normalized (trimmed, lowercased) category text — matches rss_feed_item_categories.category_text. Primary key.",
-          "dataType": "text",
+        "category_identity_id": {
+          "comment": "Canonical category identity rejected from editorial triage.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -115558,6 +115648,14 @@
       },
       "comment": "Category strings marked by admins as too vague to map to a topic (e.g. \"news\"). Hidden from the unmapped-category triage queue.",
       "foreignKeys": {
+        "rss_feed_item_category_rejections_category_identity_id_fkey": {
+          "columns": ["category_identity_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_category_identities",
+          "validated": true
+        },
         "rss_feed_item_category_rejections_created_by_id_fkey": {
           "columns": ["created_by_id"],
           "onDelete": "SET NULL",
@@ -115571,16 +115669,16 @@
         "rss_feed_item_category_rejections_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_category_rejections_pkey ON public.rss_feed_item_category_rejections USING btree (category_text)",
+          "definition": "CREATE UNIQUE INDEX rss_feed_item_category_rejections_pkey ON public.rss_feed_item_category_rejections USING btree (category_identity_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "category_text",
+              "collation": null,
+              "column": "category_identity_id",
               "descending": false,
-              "expression": "category_text",
+              "expression": "category_identity_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -115594,7 +115692,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["category_text"]
+        "columns": ["category_identity_id"]
       },
       "relationKind": "table",
       "triggers": {},
@@ -116592,9 +116690,9 @@
         }
       },
       "columns": {
-        "category_text": {
-          "comment": "Lowercase RSS category text with no current topic mapping.",
-          "dataType": "text",
+        "category_identity_id": {
+          "comment": "Canonical category identity with no current topic mapping.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -116623,22 +116721,31 @@
           "ordinalPosition": 3
         }
       },
-      "comment": "Transactionally refreshed counts of normalized RSS item category strings whose topic_id is NULL.",
-      "foreignKeys": {},
+      "comment": "Transactionally refreshed counts of RSS category identities whose item topic_id is NULL.",
+      "foreignKeys": {
+        "rss_feed_item_unmapped_category_count_category_identity_id_fkey": {
+          "columns": ["category_identity_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_category_identities",
+          "validated": true
+        }
+      },
       "indexes": {
         "rss_feed_item_unmapped_category_counts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX rss_feed_item_unmapped_category_counts_pkey ON public.rss_feed_item_unmapped_category_counts USING btree (category_text)",
+          "definition": "CREATE UNIQUE INDEX rss_feed_item_unmapped_category_counts_pkey ON public.rss_feed_item_unmapped_category_counts USING btree (category_identity_id)",
           "immediate": true,
           "keys": [
             {
-              "collation": "pg_catalog.\"default\"",
-              "column": "category_text",
+              "collation": null,
+              "column": "category_identity_id",
               "descending": false,
-              "expression": "category_text",
+              "expression": "category_identity_id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
@@ -116652,7 +116759,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["category_text"]
+        "columns": ["category_identity_id"]
       },
       "relationKind": "table",
       "triggers": {
@@ -142339,7 +142446,7 @@
     },
     "view_rss_feeds": {
       "comment": "RSS feed response projection with current discoverability and topic references.",
-      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN topic_hostname.hostname IS NULL THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN publisher_type_topic.id IS NULL THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN topic_hostname.id IS NULL THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN podcast_show.rss_feed_id IS NULL THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', c.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY c.category_text) AS json_agg\n           FROM rss_feed_categories c\n             LEFT JOIN topics t ON t.id = c.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL\n          WHERE c.rss_feed_id = rss_feeds.id), '[]'::json) AS categories\n   FROM rss_feeds\n     JOIN urls feed_url ON feed_url.id = rss_feeds.rss_feed_url_id\n     JOIN url_hostnames feed_hostname ON feed_hostname.id = feed_url.hostname_id\n     JOIN view_embedded_topics ON view_embedded_topics.id = rss_feeds.topic_id\n     LEFT JOIN view_url_hostnames topic_hostname ON topic_hostname.id = view_embedded_topics.hostname_id\n     JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rss_feeds.id\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM relation__topic__publisher_type__topic relation\n             JOIN topics ON topics.id = relation.object_id\n          WHERE relation.subject_id = rss_feeds.topic_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision AND topics.deleted_at IS NULL\n          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id\n         LIMIT 1) publisher_type_topic ON true\n     LEFT JOIN podcast_shows podcast_show ON podcast_show.rss_feed_id = rss_feeds.id;",
+      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN topic_hostname.hostname IS NULL THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN publisher_type_topic.id IS NULL THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN topic_hostname.id IS NULL THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN podcast_show.rss_feed_id IS NULL THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM rss_feed_categories c\n             JOIN rss_category_identities category_identity ON category_identity.id = c.category_identity_id\n             LEFT JOIN topics t ON t.id = c.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL\n          WHERE c.rss_feed_id = rss_feeds.id), '[]'::json) AS categories\n   FROM rss_feeds\n     JOIN urls feed_url ON feed_url.id = rss_feeds.rss_feed_url_id\n     JOIN url_hostnames feed_hostname ON feed_hostname.id = feed_url.hostname_id\n     JOIN view_embedded_topics ON view_embedded_topics.id = rss_feeds.topic_id\n     LEFT JOIN view_url_hostnames topic_hostname ON topic_hostname.id = view_embedded_topics.hostname_id\n     JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rss_feeds.id\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM relation__topic__publisher_type__topic relation\n             JOIN topics ON topics.id = relation.object_id\n          WHERE relation.subject_id = rss_feeds.topic_id AND relation.deleted_at IS NULL AND relation.votes_score_net > 0::double precision AND topics.deleted_at IS NULL\n          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id\n         LIMIT 1) publisher_type_topic ON true\n     LEFT JOIN podcast_shows podcast_show ON podcast_show.rss_feed_id = rss_feeds.id;",
       "materialized": false
     },
     "view_topic_metrics": {

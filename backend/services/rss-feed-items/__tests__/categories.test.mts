@@ -7,6 +7,9 @@ import { upsertRssFeedItems } from '../upsert.mts'
 import { v4 as uuid } from 'uuid'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createRssFeedItemCategoryTestFixture } from '../../../test-helpers/services/rss-feed-items/category-test-fixture.mts'
+import { upsertRssFeedCategories } from '../../rss-feeds/categories.mts'
+import { rejectRssFeedItemCategory } from '../unmapped-categories.mts'
+import { getTestRssCategoryIdentityUsage } from '../../../test-helpers/entities/rss-category-identities.mts'
 
 describe('categories', () => {
   type Category = { category_text: string; topic_id: string | null }
@@ -64,6 +67,30 @@ describe('categories', () => {
     // Should dedupe on a case-insensitive key while retaining the source spelling.
     expect(categories).toHaveLength(1)
     expect(categories[0].category_text).toBe(testCategory)
+  })
+
+  it('shares one category ID across feed, item, rejection, and unmapped count rows', async () => {
+    const categoryText = `Shared-${uuid()}`
+    const admin = await createTestUser({ administrator: true })
+    await upsertRssFeedCategories(testRssFeedId, [categoryText.toLowerCase()])
+    await upsertRssFeedItemCategories([
+      { rss_feed_item_id: testRssFeedItemId, categories: [categoryText] },
+    ])
+    await rejectRssFeedItemCategory(admin, categoryText.toUpperCase())
+
+    const usage = await getTestRssCategoryIdentityUsage(
+      categoryText,
+      testRssFeedId,
+      testRssFeedItemId,
+    )
+    expect(usage).toMatchObject({
+      feed_category_identity_id: usage?.identity_id,
+      item_category_identity_id: usage?.identity_id,
+      authored_category_text: categoryText,
+      rejection_category_identity_id: usage?.identity_id,
+      count_category_identity_id: usage?.identity_id,
+      item_count: 1,
+    })
   })
 
   it('deduplicates category casing across repeated ingests', async () => {
