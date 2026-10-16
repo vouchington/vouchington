@@ -208,6 +208,28 @@ describe('plan expectation registry', () => {
       'never called capped function fn_image_policy',
     )
   })
+
+  it('rejects a function-call cap when launched parallel workers make leader counts incomplete', () => {
+    registerScenarioContract('post-search-new', {
+      expectations: [{ kind: 'maxFunctionCalls', function: 'fn_image_policy', max: 2 }],
+    })
+    const captured = result('post-search-new', {
+      'Node Type': 'Gather',
+      'Workers Launched': 2,
+      Plans: [{ 'Node Type': 'Seq Scan', 'Relation Name': 'posts' }],
+    })
+    captured.function_calls = [
+      { funcname: 'fn_image_policy', calls: 1, total_time: 1, self_time: 1 },
+    ]
+    expect(() => assertRequiredPlanShape(captured)).toThrow('parallel workers')
+
+    captured.plan = result('post-search-new', {
+      'Node Type': 'Gather',
+      'Workers Launched': 0,
+      Plans: [{ 'Node Type': 'Seq Scan', 'Relation Name': 'posts' }],
+    }).plan
+    expect(() => assertRequiredPlanShape(captured)).not.toThrow()
+  })
 })
 
 describe('media replay read budgets', () => {

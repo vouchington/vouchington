@@ -1,4 +1,4 @@
-import type { ExplainResult, FunctionCall } from '@data-stores/psql/explain-analyze'
+import type { ExplainResult, FunctionCall } from '@data-stores/psql'
 import { collectNodes, type NodeStats } from './plan-node-stats.mts'
 
 const LARGE_TABLES = new Set([

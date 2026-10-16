@@ -134,7 +134,11 @@ export async function explainAnalyze(
   try {
     // ast-grep-ignore: no-three-sequential-awaits -- database transaction/setup statements must remain ordered
     await client.query(sql`/* explainAnalyze */ BEGIN`)
-    await client.query("/* explainAnalyze */ SET LOCAL track_functions = 'all'")
+    try {
+      await client.query("/* explainAnalyze */ SET LOCAL track_functions = 'all'")
+    } catch (err) {
+      throw new Error('EXPLAIN requires SET privilege on track_functions', { cause: err })
+    }
     // Configure before PREPARE so generic planning and execution use identical settings.
     await client.query(sql`/* explainAnalyze */
       SELECT set_config(key, value, true)
