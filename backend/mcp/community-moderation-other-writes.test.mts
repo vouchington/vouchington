@@ -24,6 +24,30 @@ async function fixture() {
 }
 
 describe('community moderation MCP other writes — real PostgreSQL and Valkey', () => {
+  it.each(['ban_user', 'activate_restrictions'])('rejects empty %s expiry values', async option => {
+    const { owner, member, community } = await fixture()
+    const error = await callRejectedMcpTool(
+      owner,
+      'add_community_moderation',
+      optionArgs(option, {
+        community: community.id,
+        expires_at: '',
+        ...(option === 'ban_user' ? { user_id: member.id } : { restriction_types: ['no_links'] }),
+      }),
+      scopes,
+    )
+    expect(error).toContain('expires_at')
+    const result = await callStructuredMcpTool(
+      owner,
+      'read_community_moderation',
+      optionArgs(option === 'ban_user' ? 'list_bans' : 'list_restrictions', {
+        community: community.id,
+      }),
+      readScopes,
+    )
+    expect(result.results).toEqual([])
+  })
+
   it('activates and lifts a restriction with a structured list response', async () => {
     const { owner, member, community } = await fixture()
     const args = optionArgs('activate_restrictions', {

@@ -1,4 +1,4 @@
-/** REST twins that call validateUUIDParam in addition to their request contract. */
+/** REST twins that explicitly validate UUID paths in addition to their request contract. */
 export const communityModerationUuidPaths: Readonly<Record<string, string>> = {
   claim_post: 'postId',
   release_post_claim: 'postId',
@@ -15,4 +15,5 @@ export const communityModerationUuidPaths: Readonly<Record<string, string>> = {
   lift_ban: 'userId',
   dismiss_ban_evasion: 'userId',
   lift_restriction: 'id',
+  delete_saved_reply: 'id',
 }

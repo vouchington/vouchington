@@ -19,6 +19,7 @@ const cases = [
   ['lift_ban', 'userId'],
   ['dismiss_ban_evasion', 'userId'],
   ['lift_restriction', 'id'],
+  ['delete_saved_reply', 'id'],
 ] as const
 
 describe('community moderation REST UUID path validation', () => {

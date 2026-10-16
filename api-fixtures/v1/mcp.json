@@ -17932,7 +17932,17 @@
                       "enum": ["revoke_invite"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S7"
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["community", "id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18105,17 +18115,7 @@
                       "enum": ["lift_restriction"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "community": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "id": {
-                          "$ref": "#/$defs/S3"
-                        }
-                      },
-                      "required": ["community", "id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S7"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18206,7 +18206,7 @@
                       "$ref": "#/$defs/S1"
                     },
                     "id": {
-                      "type": "string"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["community", "id"],

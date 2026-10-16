@@ -131,6 +131,7 @@ describe('every current MCP operation: planning, real route charge, and durable 
     const actor =
       row.surface === 'admin_mcp' ? adminActor : userActors[CASES.indexOf(row) % userActors.length]!
     const config = selectedConfig(row)
+    const scopes = row.scopes ?? ALL_SCOPES
     const identities = {
       ip: `2001:db8:2497::${randomUUID()}`,
       ...(actor.credential.credential === 'api_key'
@@ -150,7 +151,7 @@ describe('every current MCP operation: planning, real route charge, and durable 
     }
     await expectCounts(keyToInspect, identities, 0)
 
-    const acceptedPlan = planMcpCalls(call(row, row.input, 1), actor.user, ALL_SCOPES, config, true)
+    const acceptedPlan = planMcpCalls(call(row, row.input, 1), actor.user, scopes, config, true)
     expect(acceptedPlan.events).toEqual([
       expect.objectContaining({
         jsonrpcMethod: 'tools/call',
@@ -203,13 +204,7 @@ describe('every current MCP operation: planning, real route charge, and durable 
           ]
         : []),
     ]) {
-      const invalidPlan = planMcpCalls(
-        call(row, invalidInput, 3),
-        actor.user,
-        ALL_SCOPES,
-        config,
-        true,
-      )
+      const invalidPlan = planMcpCalls(call(row, invalidInput, 3), actor.user, scopes, config, true)
       expect(invalidPlan.events).toEqual([
         expect.objectContaining({
           toolName: row.name,
@@ -219,7 +214,7 @@ describe('every current MCP operation: planning, real route charge, and durable 
       ])
       expect(invalidPlan.charges).toEqual([])
       await expect(
-        callMcpTool(row.name, invalidInput, actor.user, ALL_SCOPES, config, true),
+        callMcpTool(row.name, invalidInput, actor.user, scopes, config, true),
       ).rejects.toMatchObject({
         code: ErrorCode.InvalidParams,
         message: expect.stringContaining('Invalid tool arguments'),

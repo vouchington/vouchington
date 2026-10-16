@@ -36,7 +36,7 @@ export const communityModerationOtherWrites: Record<string, CommunityModerationH
       422,
       'user_id must be a valid UUID',
     )
-    const expiresAt = args.expires_at ? new Date(args.expires_at as string) : undefined
+    const expiresAt = args.expires_at == null ? undefined : new Date(args.expires_at as string)
     assert(
       !expiresAt || (!isNaN(expiresAt.getTime()) && expiresAt > new Date()),
       422,
@@ -82,7 +82,7 @@ export const communityModerationOtherWrites: Record<string, CommunityModerationH
       422,
       'Invalid restriction_type',
     )
-    const expiresAt = args.expires_at ? new Date(args.expires_at as string) : null
+    const expiresAt = args.expires_at == null ? null : new Date(args.expires_at as string)
     assert(!expiresAt || !isNaN(expiresAt.getTime()), 422, 'expires_at is not a valid date')
     const restrictions = await activateCommunityRestrictions(user, loaded, {
       restrictionTypes: args.restriction_types as CommunityRestrictionType[],

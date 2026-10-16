@@ -1,4 +1,5 @@
 import assert from 'http-assert'
+import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { createPaginationParser } from '@modules/pagination'
 import { getPaginationLimitsForContract } from '@services/pagination'
 import { indexById } from '@modules/utils'
@@ -7,8 +8,9 @@ import {
   attachPostClaims,
   listCommunityPendingModerationReports,
 } from '@services/moderation-claims'
-import { attachPostProvenance } from '@services/content-provenance'
+import { labelAndMaskPosts } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
+import type { Post } from '@services/posts'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
 import { isAdminUser, isModerationStaff } from '@services/users'
 import { buildReportPageInfo } from '@services/moderation-reports'
@@ -26,6 +28,44 @@ const reportParser = createPaginationParser({
   limit: { min: 1, max: 100, default: 50 },
 })
 
+async function sanitizePendingPostText(value: string, contentType: string): Promise<string> {
+  return wrapExternalContent(await sanitizePromptInjection(value), {
+    source: 'post',
+    contentType,
+  })
+}
+
+async function sanitizePendingStructuredData(value: unknown): Promise<unknown> {
+  if (typeof value === 'string') return sanitizePendingPostText(value, 'structured_data')
+  if (Array.isArray(value)) return Promise.all(value.map(sanitizePendingStructuredData))
+  if (value === null || typeof value !== 'object') return value
+  return Object.fromEntries(
+    await Promise.all(
+      Object.entries(value).map(async ([key, child]) => [
+        key,
+        await sanitizePendingStructuredData(child),
+      ]),
+    ),
+  )
+}
+
+async function sanitizePendingPost(
+  post: Post | null | undefined,
+): Promise<Post | null | undefined> {
+  if (!post) return post
+  const safe = { ...post }
+  if ('structured_data' in post)
+    safe.structured_data = await sanitizePendingStructuredData(post.structured_data)
+  if (post.images)
+    safe.images = await Promise.all(
+      post.images.map(async image => ({
+        ...image,
+        caption: await sanitizePendingPostText(image.caption, 'image_caption'),
+      })),
+    )
+  return safe
+}
+
 export const communityModerationReadQueues: Record<string, CommunityModerationHandler> = {
   async list_pending_posts(user, args) {
     const { community } = await loadCommunityForPublicationModerator(user, args.community)
@@ -42,7 +82,9 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
         ((row as Record<string, unknown>).escalated_at as string | null) ?? null,
       ]),
     )
-    const posts = await getPostByAnyCachedBatch(ids).then(rows => attachPostProvenance(rows, user))
+    const posts = await Promise.all(
+      (await labelAndMaskPosts(await getPostByAnyCachedBatch(ids), null)).map(sanitizePendingPost),
+    )
     const byId = indexById(posts)
     for (const [id, post] of Object.entries(byId)) {
       ;(post as Record<string, unknown>).claim = claimByPostId.get(id) ?? null
