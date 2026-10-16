@@ -11,13 +11,14 @@ import {
   readAdminWorkflowWarnings,
 } from '@voucha/test-helpers/admin-workflow-fixtures'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
+import { getTestModerationReportCaseId } from '@voucha/test-helpers/entities/moderation-reports'
 import { readStaffActionTarget } from '@voucha/test-helpers/staff-action-history'
 import { callStructuredMcpTool, optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 
 const scopes = ['community-moderation:read', 'community-moderation:write'] as const
 
-async function reportFixture() {
-  const moderator = await createTestPlusMcpCaller()
+async function reportFixture(administrator = false) {
+  const moderator = await createTestPlusMcpCaller({ administrator })
   const target = await createTestUser()
   const reporter = await createTestUser()
   const community = await insertTestCommunity({ createdById: moderator.id })
@@ -46,6 +47,7 @@ async function reportFixture() {
 describe('community moderation MCP implicit decisions — real PostgreSQL and Valkey', () => {
   it('resolves a report without recording agent training feedback', async () => {
     const { moderator, community, reportId } = await reportFixture()
+    const caseId = await getTestModerationReportCaseId(reportId)
     expect(await readAdminWorkflowTraining(moderator.id)).toEqual([])
 
     const result = await callStructuredMcpTool(
@@ -55,11 +57,25 @@ describe('community moderation MCP implicit decisions — real PostgreSQL and Va
       scopes,
     )
     expect(result.report).toMatchObject({ id: reportId, status: 'dismissed' })
+    expect(result.report).not.toHaveProperty('case_id')
+    expect(JSON.stringify(result)).not.toContain(caseId)
     expect(await readStaffActionTarget('report', reportId)).toMatchObject({
       resolution_action: 'dismissed',
       resolved_by_id: moderator.id,
     })
     expect(await readAdminWorkflowTraining(moderator.id)).toEqual([])
+  })
+
+  it('keeps the report case visible to moderation staff', async () => {
+    const { moderator, community, reportId } = await reportFixture(true)
+    const caseId = await getTestModerationReportCaseId(reportId)
+    const result = await callStructuredMcpTool(
+      moderator,
+      'update_community_moderation',
+      optionArgs('resolve_report', { community: community.id, reportId, status: 'dismissed' }),
+      scopes,
+    )
+    expect(result.report).toMatchObject({ id: reportId, case_id: caseId })
   })
 
   it('issues a report-linked warning and resolves it without recording agent training feedback', async () => {

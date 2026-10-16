@@ -12790,6 +12790,13 @@
                           "default": "30",
                           "enum": ["30", "90"],
                           "type": "string"
+                        },
+                        "after": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1
                         }
                       },
                       "required": ["community"],
@@ -13933,9 +13940,12 @@
                     },
                     "users": {
                       "$ref": "#/$defs/S1"
+                    },
+                    "page_info": {
+                      "$ref": "#/$defs/S5"
                     }
                   },
-                  "required": ["window", "stats", "users"],
+                  "required": ["window", "stats", "users", "page_info"],
                   "additionalProperties": false
                 },
                 {
@@ -16276,7 +16286,8 @@
                       "$ref": "#/$defs/S1"
                     },
                     "postId": {
-                      "type": "string"
+                      "type": "string",
+                      "format": "uuid"
                     }
                   },
                   "required": ["community", "postId"],
@@ -16289,7 +16300,8 @@
                       "$ref": "#/$defs/S1"
                     },
                     "reportId": {
-                      "type": "string"
+                      "type": "string",
+                      "format": "uuid"
                     }
                   },
                   "required": ["community", "reportId"],
@@ -16976,7 +16988,8 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reportId": {
-                          "type": "string"
+                          "type": "string",
+                          "format": "uuid"
                         },
                         "status": {
                           "enum": ["reviewed", "dismissed"]
@@ -17117,7 +17130,8 @@
                           "$ref": "#/$defs/S1"
                         },
                         "postId": {
-                          "type": "string"
+                          "type": "string",
+                          "format": "uuid"
                         }
                       },
                       "required": ["community", "postId"],
@@ -17140,7 +17154,8 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reportId": {
-                          "type": "string"
+                          "type": "string",
+                          "format": "uuid"
                         }
                       },
                       "required": ["community", "reportId"],
@@ -17528,7 +17543,6 @@
                         }
                       },
                       "required": [
-                        "case_id",
                         "created_at",
                         "entity_id",
                         "entity_type",
@@ -17883,7 +17897,7 @@
                       "enum": ["dismiss_ban_evasion"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -17896,7 +17910,7 @@
                       "enum": ["lift_ban"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -17909,7 +17923,7 @@
                       "enum": ["revoke_invite"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S6"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -17987,7 +18001,17 @@
                       "enum": ["remove_member"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S3"
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "userId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["community", "userId"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18020,7 +18044,7 @@
                       "enum": ["release_post_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S6"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18033,7 +18057,7 @@
                       "enum": ["deescalate_post"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S6"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18046,7 +18070,7 @@
                       "enum": ["release_report_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18059,7 +18083,7 @@
                       "enum": ["deescalate_report"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18072,7 +18096,18 @@
                       "enum": ["lift_restriction"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["community", "id"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18085,7 +18120,7 @@
                       "enum": ["delete_saved_reply"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S6"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -18117,14 +18152,43 @@
                     "community": {
                       "$ref": "#/$defs/S1"
                     },
+                    "reportId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["community", "reportId"],
+                  "additionalProperties": false
+                },
+                "S4": {
+                  "type": "object",
+                  "properties": {
+                    "community": {
+                      "$ref": "#/$defs/S1"
+                    },
                     "userId": {
-                      "type": "string"
+                      "type": "string",
+                      "format": "uuid"
                     }
                   },
                   "required": ["community", "userId"],
                   "additionalProperties": false
                 },
-                "S4": {
+                "S5": {
+                  "type": "object",
+                  "properties": {
+                    "community": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "postId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["community", "postId"],
+                  "additionalProperties": false
+                },
+                "S6": {
                   "type": "object",
                   "properties": {
                     "community": {
@@ -18135,32 +18199,6 @@
                     }
                   },
                   "required": ["community", "id"],
-                  "additionalProperties": false
-                },
-                "S5": {
-                  "type": "object",
-                  "properties": {
-                    "community": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "reportId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["community", "reportId"],
-                  "additionalProperties": false
-                },
-                "S6": {
-                  "type": "object",
-                  "properties": {
-                    "community": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "postId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["community", "postId"],
                   "additionalProperties": false
                 }
               }

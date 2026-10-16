@@ -135,7 +135,7 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
       return indexed(
         'community_invite',
         'community_invites',
-        changeComponent('CommunityInvite', {}, ['__entity_type']),
+        changeComponent('CommunityInvite', {}, ['__entity_type', 'code']),
       )
     case 'read_moderation_analytics':
       return component('ModerationAnalytics')
@@ -144,6 +144,7 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
         window: { enum: [30, 90] },
         stats: array(component('ModeratorActionCounts')),
         users: component('Record_string_PublicUser'),
+        page_info: pageInfo(),
       })
     case 'read_moderator_vacation':
       return component('CommunityMemberVacationSettings')

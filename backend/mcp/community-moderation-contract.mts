@@ -10,6 +10,7 @@ import {
 import { communityModerationRoutes } from './community-moderation-routes.mts'
 import { MODERATION_REPORT_RESOLUTION_STATUSES } from '@services/moderation-reports'
 import { COMMUNITY_RESTRICTION_TYPES } from '@services/communities'
+import { communityModerationUuidPaths } from './community-moderation-input-paths.mts'
 
 export const COMMUNITY_MODERATION_UNTRUSTED_FIELDS = [
   'name',
@@ -115,7 +116,14 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
     Object.assign(properties, override.properties)
     for (const field of override.required ?? []) required.add(field)
   }
-  if (option === 'list_saved_replies') {
+  const uuidField = option ? communityModerationUuidPaths[option] : undefined
+  if (uuidField) {
+    properties[uuidField] = {
+      ...(properties[uuidField] as Record<string, unknown>),
+      format: 'uuid',
+    }
+  }
+  if (option === 'list_saved_replies' || option === 'read_moderator_stats') {
     properties['after'] = { type: 'string' }
     properties['limit'] = { type: 'integer', minimum: 1 }
   }

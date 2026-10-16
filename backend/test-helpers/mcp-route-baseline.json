@@ -2555,6 +2555,14 @@
         "community",
         "itemId"
       ]
+    ],
+    "I166": [
+      [
+        "after",
+        "community",
+        "limit",
+        "window"
+      ]
     ]
   },
   "routes": {
@@ -5991,7 +5999,7 @@
         {
           "surface": "mcp",
           "facts": "F93",
-          "inputFields": "I138",
+          "inputFields": "I166",
           "requestBodyFields": null,
           "operation": {
             "tool": "read_community_moderation",

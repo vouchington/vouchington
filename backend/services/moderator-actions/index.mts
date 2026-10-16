@@ -1,3 +1,4 @@
+export { searchModeratorActionCounts } from './search-counts.mts'
 export { aggregateModeratorActionCounts } from './aggregate.mts'
 export { recordModeratorAction, recordModeratorActions } from './record.mts'
 export { searchModeratorActions } from './search.mts'

@@ -7719,6 +7719,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils

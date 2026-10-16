@@ -61,7 +61,9 @@ export const communityModerationReadLists: Record<string, CommunityModerationHan
     return {
       results: result.results.map(i => ({ __entity_type: 'community_invite', id: i.id })),
       page_info: result.page_info,
-      community_invites: indexById(result.results),
+      community_invites: Object.fromEntries(
+        result.results.map(({ code: _code, ...invite }) => [invite.id, invite]),
+      ),
     }
   },
 

@@ -27,5 +27,7 @@ export const resolveCommunityReport: CommunityModerationHandler = async (user, a
     resolvedById: user.id,
     status,
   })
-  return { report: isModerationStaff(user) ? report : redactCommunityReport(report) }
+  if (isModerationStaff(user)) return { report }
+  const { case_id: _caseId, ...visibleReport } = redactCommunityReport(report)
+  return { report: visibleReport }
 }

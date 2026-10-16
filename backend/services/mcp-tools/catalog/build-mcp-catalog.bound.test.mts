@@ -57,7 +57,7 @@ const grants: {
 // Sizes are compact UTF-16 code units.
 const caps = {
   mcp: {
-    all: { count: 78, list: 329000, core: 137000, output: 316000 },
+    all: { count: 78, list: 330000, core: 138000, output: 316000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
     Plus: { count: 70, list: 217000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },

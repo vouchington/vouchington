@@ -2,7 +2,7 @@ import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { getModerationAnalytics } from '@services/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@services/moderation-analytics/types'
 import {
-  aggregateModeratorActionCounts,
+  searchModeratorActionCounts,
   searchModeratorActions,
   MODERATOR_ACTION_TYPES,
 } from '@services/moderator-actions'
@@ -19,6 +19,11 @@ import {
 } from '@services/moderation-training/route-input'
 import type { CommunityModerationHandler } from './community-moderation-contract.mts'
 import { communityWithGuard } from './community-moderation-guards.mts'
+
+const moderatorStatsParser = createPaginationParser({
+  cursor: { type: 'score' },
+  limit: { default: 25, max: 100 },
+})
 
 const modlogParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -63,11 +68,17 @@ export const communityModerationReadAnalytics: Record<string, CommunityModeratio
   async read_moderator_stats(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'modlog')
     const window = args.window === '90' ? 90 : 30
-    const stats = await aggregateModeratorActionCounts({
+    const { limit, after } = moderatorStatsParser.parse(
+      args,
+      getPaginationLimitsForContract(moderatorStatsParser.queryContract),
+    )
+    const { stats, page_info } = await searchModeratorActionCounts({
       communityId: community.id,
       windowDays: window,
+      limit,
+      after,
     })
-    return { window, stats, users: await publicUsers(stats.map(s => s.actor_user_id)) }
+    return { window, stats, page_info, users: await publicUsers(stats.map(s => s.actor_user_id)) }
   },
   async read_modlog(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'modlog')

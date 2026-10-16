@@ -1,8 +1,7 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import assert from 'http-assert'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { buildModeratorActionCountsQuery } from './aggregate-query.mts'
 import type { ModeratorActionCounts } from './types.mts'
 
 export interface AggregateModeratorActionCountsOptions extends QueryOptions {
@@ -22,23 +21,8 @@ export interface AggregateModeratorActionCountsOptions extends QueryOptions {
 export async function aggregateModeratorActionCounts(
   options: AggregateModeratorActionCountsOptions,
 ): Promise<ModeratorActionCounts[]> {
-  assert(options.windowDays === 30 || options.windowDays === 90, 422, 'windowDays must be 30 or 90')
-
-  const windowStart = getMinUUIDv7ForDate(
-    new Date(Date.now() - options.windowDays * 24 * 60 * 60 * 1000),
-  )
-
-  const query = sql`/* aggregateModeratorActionCounts */
-    SELECT
-      actor_user_id,
-      action_type,
-      COUNT(*)::int AS count
-    FROM moderator_actions
-    WHERE community_id = ${options.communityId}
-      AND actor_user_id IS NOT NULL
-      AND id >= ${windowStart}::uuid
-    GROUP BY actor_user_id, action_type
-  `
+  const query = sql`/* aggregateModeratorActionCounts */`
+  query.append(buildModeratorActionCountsQuery(options))
 
   const { rows } = await read(query, options)
 

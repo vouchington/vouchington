@@ -61,6 +61,13 @@ describe('registered community moderation catalog SDK', () => {
       })
       const modlog = await call('read_community_moderation', 'read_modlog', {})
       expect(modlog).toMatchObject({ results: expect.arrayContaining([expect.any(Object)]) })
+      expect(
+        await call('read_community_moderation', 'read_moderator_stats', { limit: 1 }),
+      ).toMatchObject({
+        window: 30,
+        stats: [expect.objectContaining({ actor_user_id: owner.id })],
+        page_info: { has_next_page: false },
+      })
       const name = `SDK community ${crypto.randomUUID()}`
       await call('update_community_moderation', 'update_community_settings', { name })
       expect((await getCommunityOrThrow(community.id)).name).toBe(name)
