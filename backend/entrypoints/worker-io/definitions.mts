@@ -15,13 +15,8 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/account-lifecycle/enqueues/schedules'),
         import('@queues/oauth-authorization-exchange/enqueues/schedules'),
       ])
-      const memberships = await import('@queues/memberships/enqueues/schedules')
       return async () => {
-        await upsertBackgroundSchedules(
-          [...domains, memberships].map(domain => domain.scheduledJobManifest),
-        )
-        // Memberships also seeds two recovery jobs at worker start, ahead of their first interval.
-        await memberships.enqueueMembershipStartupJobs()
+        await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
       }
     },
   },
@@ -76,6 +71,11 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     queueName: 'sitemaps',
     load: () =>
       import('@queues/sitemaps/enqueues/schedules').then(module => module.upsertSchedules),
+  },
+  {
+    queueName: 'memberships',
+    load: () =>
+      import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'kagi-smallweb',

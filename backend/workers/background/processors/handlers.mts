@@ -2,7 +2,6 @@ import type { BackgroundHandler } from '@queues/background/types'
 import { accountLifecycleHandlers } from '@workers/account-lifecycle/workers'
 import { articleSyncHandlers } from '@workers/article-sync/workers'
 import { entityListenersHandlers } from '@workers/entity-listeners/workers'
-import { membershipsHandlers } from '@workers/memberships/workers'
 import { oauthAuthorizationExchangeHandlers } from '@workers/oauth-authorization-exchange/workers'
 import { openAiModerationHandlers } from '@workers/openai-moderation/workers'
 import { postMentionsHandlers } from '@workers/post-mentions/workers'
@@ -22,6 +21,5 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...entityListenersHandlers,
   ...accountLifecycleHandlers,
   ...articleSyncHandlers,
-  ...membershipsHandlers,
   ...oauthAuthorizationExchangeHandlers,
 ]

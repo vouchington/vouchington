@@ -10,13 +10,14 @@ import {
   startBackgroundHarness,
   type BackgroundHarness,
 } from '@voucha/test-helpers/real-glide-background'
+import { measureDomainCap } from '@voucha/test-helpers/real-glide-domain-cap'
 import { createBackgroundProcessor } from '../processors.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 
-describe('oauth-authorization-exchange group through real GlideMQ', () => {
+describe('oauth-authorization-exchange through real GlideMQ', () => {
   let harness: BackgroundHarness | undefined
 
   afterEach(async () => {
@@ -24,25 +25,34 @@ describe('oauth-authorization-exchange group through real GlideMQ', () => {
     harness = undefined
   })
 
-  it('serializes dispatcher passes across workers while exchanges run uncapped', async () => {
-    let exchangesStarted = 0
+  it('runs at most four exchanges at once while another domain runs beside them', async () => {
+    await expect(
+      measureDomainCap({
+        jobs: [OAUTH_AUTHORIZATION_EXCHANGE_JOB],
+        cap: 4,
+        connection,
+        createProcessor: createBackgroundProcessor,
+      }),
+    ).resolves.toBe(4)
+  })
+
+  it('serializes dispatcher passes across workers beside a full set of exchanges', async () => {
+    let exchangesActive = 0
     let dispatchActive = 0
     let dispatchMaxActive = 0
     const dispatchStarted: string[] = []
-    const threeExchangesActive = Promise.withResolvers<void>()
+    const fourExchangesActive = Promise.withResolvers<void>()
     const firstDispatchStarted = Promise.withResolvers<void>()
-    const laterExchangeRan = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
     harness = await startBackgroundHarness({
       connection,
       createProcessor: createBackgroundProcessor,
       workers: 2,
-      concurrency: 3,
+      concurrency: 4,
       bodies: {
         [OAUTH_AUTHORIZATION_EXCHANGE_JOB.name]: async () => {
-          exchangesStarted += 1
-          if (exchangesStarted > 3) return laterExchangeRan.resolve()
-          if (exchangesStarted === 3) threeExchangesActive.resolve()
+          exchangesActive += 1
+          if (exchangesActive === 4) fourExchangesActive.resolve()
           await release.promise
         },
         [OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name]: async job => {
@@ -56,13 +66,16 @@ describe('oauth-authorization-exchange group through real GlideMQ', () => {
       },
     })
     try {
-      const exchanges = await Promise.all(
-        Array.from({ length: 3 }, () =>
-          harness!.add(OAUTH_AUTHORIZATION_EXCHANGE_JOB, { authorizationId: randomUUID() }),
-        ),
-      )
-      // No domain-wide cap: three exchanges are in flight at once.
-      await threeExchangesActive.promise
+      const exchanges = []
+      for (let index = 0; index < 4; index += 1) {
+        const job = await harness.add(OAUTH_AUTHORIZATION_EXCHANGE_JOB, {
+          authorizationId: randomUUID(),
+        })
+        await harness.activated(job, 1)
+        exchanges.push(job)
+      }
+      await fourExchangesActive.promise
+      // The dispatcher's own singleton key puts it outside the exchange group, so it still starts.
       const dispatchers = await Promise.all(
         Array.from({ length: 3 }, () =>
           harness!.add(
@@ -73,17 +86,11 @@ describe('oauth-authorization-exchange group through real GlideMQ', () => {
         ),
       )
       await firstDispatchStarted.promise
-      const later = await harness.add(OAUTH_AUTHORIZATION_EXCHANGE_JOB, {
-        authorizationId: randomUUID(),
-      })
-
-      // A free worker slot ran another exchange while the other dispatcher passes stayed parked.
-      await laterExchangeRan.promise
       expect(dispatchStarted).toHaveLength(1)
       expect(dispatchMaxActive).toBe(1)
 
       release.resolve()
-      await Promise.all([...exchanges, ...dispatchers, later].map(job => harness!.settled(job)))
+      await Promise.all([...exchanges, ...dispatchers].map(job => harness!.settled(job)))
       expect(dispatchStarted).toHaveLength(dispatchers.length)
       expect(dispatchMaxActive).toBe(1)
     } finally {

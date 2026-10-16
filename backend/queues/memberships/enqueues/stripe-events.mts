@@ -1,23 +1,46 @@
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
-import type { ProcessStripeEventData } from '@queues/background/enqueues/memberships-domain'
-import {
-  MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB,
-  MEMBERSHIPS_STRIPE_EVENT_JOB,
-} from '@queues/background/enqueues/memberships-jobs'
-import { background } from '@queues/background/queues'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { membershipOrdering } from './ordering.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
+import { memberships } from '../queues.mts'
+import type { MembershipsJobs, ProcessStripeEventData } from '../types.mts'
 
+const STRIPE_EVENT_JOB_NAME: MembershipsJobs = 'processStripeEvent'
+const STRIPE_RECOVERY_JOB_NAME: MembershipsJobs = 'recoverStripeEvents'
 const STRIPE_RECOVERY_INTERVAL_MS = 300_000
 
-const enqueueProcessStripeEventJob = createBackgroundEnqueue(MEMBERSHIPS_STRIPE_EVENT_JOB)
-
-export const enqueueBulkProcessStripeEvents = createBackgroundBulkEnqueue(
-  MEMBERSHIPS_STRIPE_EVENT_JOB,
-  (data: ProcessStripeEventData) => ({ data, opts: stripeEventJobOptions(data) }),
+const enqueueProcessStripeEventJob = createEnqueueFunction<ProcessStripeEventData, MembershipsJobs>(
+  { queue: memberships, queueName: QUEUE_NAME, jobName: STRIPE_EVENT_JOB_NAME },
 )
+
+export const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction<
+  ProcessStripeEventData,
+  ProcessStripeEventData,
+  MembershipsJobs
+>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: STRIPE_EVENT_JOB_NAME,
+  defaults: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+  },
+  buildJob: data => {
+    const jobId = stripeEventJobId(data)
+    return {
+      data,
+      opts: {
+        jobId,
+        priority: PRIORITY_DEFAULT,
+        deduplication: { id: jobId, mode: 'simple' as const },
+        ...getStripeEventOrdering(data),
+      },
+    }
+  },
+})
 
 /**
  * Recovery re-adds an unleased event under the same lease token while its job may still be queued,
@@ -26,23 +49,42 @@ export const enqueueBulkProcessStripeEvents = createBackgroundBulkEnqueue(
  */
 export function enqueueOrReactivateBulkProcessStripeEvents(events: ProcessStripeEventData[]) {
   return enqueueBulkReactivatingFinished({
-    queue: background,
+    queue: memberships,
     inputs: events,
     jobIdOf: stripeEventJobId,
     enqueueBulk: enqueueBulkProcessStripeEvents,
   })
 }
 
-const enqueueRecoverStripeEventsJob = createBackgroundEnqueue(MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB)
+const enqueueRecoverStripeEventsJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>(
+  {
+    queue: memberships,
+    queueName: QUEUE_NAME,
+    jobName: STRIPE_RECOVERY_JOB_NAME,
+    defaults: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+    },
+  },
+)
 
 export function enqueueProcessStripeEvent(data: ProcessStripeEventData): EnqueueReturnType {
-  return enqueueProcessStripeEventJob(data, stripeEventJobOptions(data))
+  const jobId = stripeEventJobId(data)
+  return enqueueProcessStripeEventJob(data, {
+    jobId,
+    priority: PRIORITY_DEFAULT,
+    deduplication: { id: jobId, mode: 'simple' },
+    ...getStripeEventOrdering(data),
+  } satisfies Partial<JobOptions>)
 }
 
 export function enqueueRecoverStripeEvents(): EnqueueReturnType {
   const jobId = `stripe-event-recovery__${Math.floor(Date.now() / STRIPE_RECOVERY_INTERVAL_MS)}`
   return enqueueRecoverStripeEventsJob({}, {
     jobId,
+    priority: PRIORITY_DISPATCHER,
     deduplication: {
       id: 'stripe-event-recovery',
       mode: 'throttle',
@@ -55,17 +97,12 @@ function stripeEventJobId(data: ProcessStripeEventData): string {
   return `stripe-event__${data.stripeEventRecordId}__${data.leaseToken}`
 }
 
-function stripeEventJobOptions(data: ProcessStripeEventData): Partial<JobOptions> {
-  const jobId = stripeEventJobId(data)
+function getStripeEventOrdering(data: ProcessStripeEventData): Partial<JobOptions> {
+  if (!data.stripeSubscriptionId) return {}
   return {
-    jobId,
-    deduplication: { id: jobId, mode: 'simple' },
-    ...(data.stripeSubscriptionId
-      ? {
-          ordering: membershipOrdering(
-            `stripe-subscription:${data.isLiveMode ? 'production' : 'test'}:${data.stripeSubscriptionId}`,
-          ),
-        }
-      : {}),
+    ordering: {
+      key: `stripe-subscription:${data.isLiveMode ? 'production' : 'test'}:${data.stripeSubscriptionId}`,
+      concurrency: 1,
+    },
   }
 }

@@ -53,7 +53,7 @@ registry does not know.
 
 Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
 `story-post-related-url-projections`, `post-publication`, `vote-aggregation`,
-`entity-listeners`, `account-lifecycle`, `article-sync`, `memberships`, and
+`entity-listeners`, `account-lifecycle`, `article-sync`, and
 `oauth-authorization-exchange`.
 
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses

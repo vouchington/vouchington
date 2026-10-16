@@ -60,6 +60,7 @@
     "@workers/find-your-friends": "workspace:^",
     "@workers/follower-distributions": "workspace:^",
     "@workers/kagi-smallweb": "workspace:^",
+    "@workers/memberships": "workspace:^",
     "@workers/notifications": "workspace:^",
     "@workers/psql": "workspace:^",
     "@workers/rss-feed-maintenance": "workspace:^",

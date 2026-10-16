@@ -1,25 +1,41 @@
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
-import type { ReconcileMicrosoftStoreSourceData } from '@queues/background/enqueues/memberships-domain'
-import {
-  MEMBERSHIPS_MICROSOFT_STORE_SOURCE_JOB,
-  MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB,
-} from '@queues/background/enqueues/memberships-jobs'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS } from '../config.mts'
-import { membershipOrdering } from './ordering.mts'
+import {
+  MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS,
+  PRIORITY_DEFAULT,
+  PRIORITY_DISPATCHER,
+  QUEUE_NAME,
+} from '../config.mts'
+import { memberships } from '../queues.mts'
+import type { MembershipsJobs, ReconcileMicrosoftStoreSourceData } from '../types.mts'
 
-export const microsoftStoreRecoveryOrdering = membershipOrdering('microsoft-store-recovery')
+const defaults = {
+  attempts: 10,
+  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
+  removeOnComplete: true,
+  removeOnFail: true,
+}
+const recoveryOrdering = { key: 'microsoft-store-recovery', concurrency: 1 }
 
-const enqueueRecovery = createBackgroundEnqueue(MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB)
+const enqueueRecovery = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: 'recoverMicrosoftStoreSources',
+  defaults,
+})
 
-const enqueueBulkSource = createBackgroundBulkEnqueue(
-  MEMBERSHIPS_MICROSOFT_STORE_SOURCE_JOB,
-  ({ bucket, ...data }: ReconcileMicrosoftStoreSourceData & { bucket: number }) => ({
-    data,
-    opts: sourceJobOptions(data, bucket),
-  }),
-)
+const enqueueBulkSource = createBulkEnqueueFunction<
+  ReconcileMicrosoftStoreSourceData & { bucket: number },
+  ReconcileMicrosoftStoreSourceData,
+  MembershipsJobs
+>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: 'reconcileMicrosoftStoreSource',
+  defaults,
+  buildJob: ({ bucket, ...data }) => ({ data, opts: sourceJobOptions(data, bucket) }),
+})
 
 function currentSourceBucket(): number {
   return Math.floor(Date.now() / MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS)
@@ -31,8 +47,9 @@ function sourceJobOptions(
 ): Partial<JobOptions> {
   return {
     jobId: `microsoft-store-source__${data.sourceId}__${bucket}`,
+    priority: PRIORITY_DEFAULT,
     deduplication: { id: `microsoft-store-source__${data.sourceId}__${bucket}`, mode: 'simple' },
-    ordering: membershipOrdering(`microsoft-store-source:${data.sourceId}`),
+    ordering: { key: `microsoft-store-source:${data.sourceId}`, concurrency: 1 },
   }
 }
 
@@ -48,18 +65,20 @@ export function enqueueRecoverMicrosoftStoreSources(): EnqueueReturnType {
   const bucket = currentSourceBucket()
   return enqueueRecovery({}, {
     jobId: `microsoft-store-recovery__${bucket}`,
+    priority: PRIORITY_DISPATCHER,
     deduplication: {
       id: 'microsoft-store-recovery',
       mode: 'throttle',
       ttl: MICROSOFT_STORE_SOURCE_RECOVERY_INTERVAL_MS,
     },
-    ordering: microsoftStoreRecoveryOrdering,
+    ordering: recoveryOrdering,
   } satisfies Partial<JobOptions>)
 }
 
 /** Continues a frozen recovery sweep without waiting for the hourly dispatcher bucket. */
 export function enqueueContinueRecoverMicrosoftStoreSources(): EnqueueReturnType {
   return enqueueRecovery({}, {
-    ordering: microsoftStoreRecoveryOrdering,
+    priority: PRIORITY_DISPATCHER,
+    ordering: recoveryOrdering,
   } satisfies Partial<JobOptions>)
 }

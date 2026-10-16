@@ -35,7 +35,7 @@ Pool configuration includes:
 - connection acquisition and establishment timeout via `PG_CONNECTION_TIMEOUT_MS`
 - `pg-pool` reports establishment timeout as `Connection terminated due to connection timeout`;
   a queued checkout that cannot obtain a client before the same deadline reports
-  `timeout exceeded when trying to connect`. The `psql` worker and the `memberships` domain handlers treat these
+  `timeout exceeded when trying to connect`. The `psql` and `memberships` workers treat these
   exact failures as bounded job deferrals. The second message can also mean pool saturation; it
   does not by itself identify an Aurora resume. API queries retain ordinary error behavior.
 - test pools keep the same default size as production (`PG_TEST_POOL_MAX`, default 20) but evict

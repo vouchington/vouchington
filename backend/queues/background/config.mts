@@ -22,7 +22,6 @@ export const BACKGROUND_DOMAINS = [
   'entity-listeners',
   'account-lifecycle',
   'article-sync',
-  'memberships',
   'oauth-authorization-exchange',
 ] as const
 

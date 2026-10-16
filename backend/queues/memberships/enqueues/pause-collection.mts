@@ -1,24 +1,41 @@
-import { createBackgroundEnqueue } from '@queues/background/enqueues'
-import {
-  MEMBERSHIPS_PAUSE_COLLECTION_DISPATCH_JOB,
-  MEMBERSHIPS_PAUSE_COLLECTION_SYNC_JOB,
-} from '@queues/background/enqueues/memberships-jobs-2'
-import type { SyncMembershipPauseCollectionData } from '@queues/background/enqueues/memberships-domain'
-import { toSchedulerTemplateOptions } from '@modules/scheduled-job-manifest'
+import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS } from '../config.mts'
-import { membershipOrdering } from './ordering.mts'
+import {
+  MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS,
+  PRIORITY_DEFAULT,
+  PRIORITY_DISPATCHER,
+  QUEUE_NAME,
+} from '../config.mts'
+import { memberships } from '../queues.mts'
+import type { MembershipsJobs, SyncMembershipPauseCollectionData } from '../types.mts'
 
+const DISPATCH_JOB_NAME: MembershipsJobs = 'dispatchMembershipPauseCollection'
+const SYNC_JOB_NAME: MembershipsJobs = 'syncMembershipPauseCollection'
 const INTERVAL_MS = MEMBERSHIP_PAUSE_COLLECTION_INTERVAL_MS
 
-const enqueueDispatchJob = createBackgroundEnqueue(MEMBERSHIPS_PAUSE_COLLECTION_DISPATCH_JOB)
-const enqueueSyncJob = createBackgroundEnqueue(MEMBERSHIPS_PAUSE_COLLECTION_SYNC_JOB)
+const enqueueDispatchJob = createEnqueueFunction<Record<string, never>, MembershipsJobs>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: DISPATCH_JOB_NAME,
+})
+const enqueueSyncJob = createEnqueueFunction<SyncMembershipPauseCollectionData, MembershipsJobs>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: SYNC_JOB_NAME,
+  defaults: {
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+    removeOnComplete: 100,
+    removeOnFail: 100,
+  },
+})
 
 function enqueueDispatchMembershipPauseCollection(): EnqueueReturnType {
   const bucket = Math.floor(Date.now() / INTERVAL_MS)
   return enqueueDispatchJob({}, {
     jobId: `membership-pause-collection-dispatch__${bucket}`,
+    priority: PRIORITY_DISPATCHER,
     deduplication: {
       id: 'membership-pause-collection-dispatch',
       mode: 'throttle',
@@ -28,17 +45,23 @@ function enqueueDispatchMembershipPauseCollection(): EnqueueReturnType {
 }
 
 export const pauseCollectionSchedule = {
-  schedulerId: 'dispatchMembershipPauseCollection',
+  schedulerId: DISPATCH_JOB_NAME,
   repeat: { every: INTERVAL_MS },
   template: {
-    name: MEMBERSHIPS_PAUSE_COLLECTION_DISPATCH_JOB.name,
+    name: DISPATCH_JOB_NAME,
     data: {},
-    opts: toSchedulerTemplateOptions({ ...MEMBERSHIPS_PAUSE_COLLECTION_DISPATCH_JOB.options }),
+    opts: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
+      removeOnComplete: 100,
+      removeOnFail: 100,
+      priority: PRIORITY_DISPATCHER,
+    } satisfies JobOptions,
   },
   operatorSurfaces: [
     {
       kind: 'scheduled-jobs',
-      id: 'dispatchMembershipPauseCollection',
+      id: DISPATCH_JOB_NAME,
       schedule: 'every 1m',
       description: 'Recover Stripe pause-collection work lost after a suspension change',
       trigger: enqueueDispatchMembershipPauseCollection,
@@ -55,7 +78,8 @@ export function enqueueSyncMembershipPauseCollection(
   const jobId = `membership-pause-collection__${data.userId}__${requestedAtMs}__${generation}`
   return enqueueSyncJob(data, {
     jobId,
+    priority: PRIORITY_DEFAULT,
     deduplication: { id: jobId, mode: 'simple' },
-    ordering: membershipOrdering(`pause-collection:${data.userId}`),
+    ordering: { key: `pause-collection:${data.userId}`, concurrency: 1 },
   } satisfies Partial<JobOptions>)
 }

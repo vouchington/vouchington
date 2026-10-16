@@ -1,15 +1,28 @@
-import { defineBackgroundDomain } from './define-job.mts'
-
-// The old queue had no queue-wide cap: its jobs ordered per entity (provider lineage, purchase
-// token, source, subscription, user, one catalog key), each key at concurrency 1. Those keys are
-// namespaced with the domain at enqueue time, so the group is `entity`. Baseline worker load was 5.
-export const MEMBERSHIPS_DOMAIN = defineBackgroundDomain({
-  domain: 'memberships',
-  group: { kind: 'entity' },
-  workerConcurrency: 5,
-})
-
-export type EmptyMembershipsJobData = Record<string, never>
+export type MembershipsJobs =
+  | 'processStripeEvent'
+  | 'processAppleNotification'
+  | 'recoverAppleNotifications'
+  | 'processGooglePlayNotification'
+  | 'recoverGooglePlayNotifications'
+  | 'reconcileGooglePlayActiveSource'
+  | 'recoverGooglePlayActiveSources'
+  | 'acknowledgeGooglePlayPurchase'
+  | 'recoverGooglePlayAcknowledgements'
+  | 'refreshGooglePlayOidcTrust'
+  | 'recoverMicrosoftStoreSources'
+  | 'reconcileMicrosoftStoreSource'
+  | 'processMembershipVerification'
+  | 'recoverMembershipVerifications'
+  | 'recoverStripeEvents'
+  | 'reconcileStripeMembershipCatalog'
+  | 'deliverMembershipEntitlementEffects'
+  | 'expireElapsedMemberships'
+  | 'processRenewalNotificationCheck'
+  | 'processSendRenewalPriceIncreaseEmail'
+  | 'dispatchMembershipRefundReconciliation'
+  | 'reconcileMembershipRefundOperation'
+  | 'dispatchMembershipPauseCollection'
+  | 'syncMembershipPauseCollection'
 
 export type ProcessStripeEventData = {
   stripeEventRecordId: string
@@ -53,5 +66,3 @@ export type SyncMembershipPauseCollectionData = {
   requestedAt: string
   leaseToken?: string
 }
-
-export type RenewalNotificationCheckData = { afterId?: string }

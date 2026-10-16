@@ -1,149 +1,193 @@
 import type { Job } from 'glide-mq'
 import { deferPostgresConnectionTimeout } from '@modules/queue-errors'
-import { backgroundHandler } from '@queues/background/enqueues/define-handler'
+import type { MembershipsJobs } from '@queues/memberships/types'
+import { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {
-  MEMBERSHIPS_APPLE_NOTIFICATION_JOB,
-  MEMBERSHIPS_GOOGLE_PLAY_ACKNOWLEDGE_JOB,
-  MEMBERSHIPS_GOOGLE_PLAY_ACTIVE_SOURCE_JOB,
-  MEMBERSHIPS_GOOGLE_PLAY_NOTIFICATION_JOB,
-  MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB,
-  MEMBERSHIPS_MICROSOFT_STORE_SOURCE_JOB,
-  MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB,
-  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB,
-  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB,
-  MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB,
-  MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB,
-  MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB,
-  MEMBERSHIPS_STRIPE_CATALOG_JOB,
-  MEMBERSHIPS_STRIPE_EVENT_JOB,
-} from '@queues/background/enqueues/memberships-jobs'
+  deliverPendingMembershipEntitlementEffects,
+  expireElapsedMembershipsBatch,
+  reconcileStripeMembershipCatalog,
+  dispatchDueRefundReconciliations,
+  reconcileMembershipRefundOperation,
+  dispatchDuePauseCollectionWork,
+  syncMembershipPauseCollection,
+} from '@services/memberships'
 import {
-  MEMBERSHIPS_ENTITLEMENT_EFFECTS_JOB,
-  MEMBERSHIPS_GRANT_EXPIRY_JOB,
-  MEMBERSHIPS_PAUSE_COLLECTION_DISPATCH_JOB,
-  MEMBERSHIPS_PAUSE_COLLECTION_SYNC_JOB,
-  MEMBERSHIPS_RECOVER_VERIFICATIONS_JOB,
-  MEMBERSHIPS_REFUND_DISPATCH_JOB,
-  MEMBERSHIPS_REFUND_OPERATION_JOB,
-  MEMBERSHIPS_RENEWAL_CHECK_JOB,
-  MEMBERSHIPS_RENEWAL_PRICE_INCREASE_EMAIL_JOB,
-  MEMBERSHIPS_VERIFICATION_JOB,
-} from '@queues/background/enqueues/memberships-jobs-2'
-import type { BackgroundHandler } from '@queues/background/types'
-import { PROCESSORS, type MembershipJobProcessors } from './job-processors.mts'
+  enqueueReconcileMembershipRefundOperation,
+  enqueueSyncMembershipPauseCollection,
+} from '@queues/memberships/enqueues'
+import { processMembershipVerification } from '@services/memberships/process-verification'
+import { recoverAppleNotifications } from './apple-notification-recovery.mts'
+import {
+  processGooglePlayNotification,
+  recoverGooglePlayNotifications,
+  recoverGooglePlayActiveSources,
+  processGooglePlayActiveSource,
+  processGooglePlayAcknowledgement,
+  recoverGooglePlayAcknowledgements,
+  refreshConfiguredGoogleOidcTrustMaterial,
+} from './google-play.mts'
+import { processRenewalNotificationCheckDispatcher } from './renewal-notification-check.mts'
+import { processMicrosoftStoreSource, recoverMicrosoftStoreSources } from './microsoft-store.mts'
+import { processSendRenewalPriceIncreaseEmail } from './send-renewal-price-increase-email.mts'
+import { processStripeEvent, recoverStripeEvents } from './stripe-event.mts'
+import { recoverMembershipVerifications } from './verification-recovery.mts'
 
-/** Defers a job while PostgreSQL cannot hand out a connection, instead of burning an attempt. */
-function guarded<TData>(run: (job: Job<TData>) => unknown): (job: Job<TData>) => Promise<unknown> {
-  return job => deferPostgresConnectionTimeout(job, async () => run(job))
+type MembershipJobProcessors = {
+  deliverMembershipEntitlementEffects: typeof deliverPendingMembershipEntitlementEffects
+  expireElapsedMemberships: typeof expireElapsedMembershipsBatch
+  processAppleNotification: typeof reconcileAppleNotification
+  processMembershipVerification: typeof processMembershipVerification
+  processRenewalNotificationCheckDispatcher: typeof processRenewalNotificationCheckDispatcher
+  processSendRenewalPriceIncreaseEmail: typeof processSendRenewalPriceIncreaseEmail
+  processStripeEvent: typeof processStripeEvent
+  recoverMembershipVerifications: typeof recoverMembershipVerifications
+  recoverAppleNotifications: typeof recoverAppleNotifications
+  processGooglePlayNotification: typeof processGooglePlayNotification
+  recoverGooglePlayNotifications: typeof recoverGooglePlayNotifications
+  recoverGooglePlayActiveSources: typeof recoverGooglePlayActiveSources
+  processGooglePlayActiveSource: typeof processGooglePlayActiveSource
+  processGooglePlayAcknowledgement: typeof processGooglePlayAcknowledgement
+  recoverGooglePlayAcknowledgements: typeof recoverGooglePlayAcknowledgements
+  refreshGooglePlayOidcTrust: typeof refreshConfiguredGoogleOidcTrustMaterial
+  recoverMicrosoftStoreSources: typeof recoverMicrosoftStoreSources
+  reconcileMicrosoftStoreSource: typeof processMicrosoftStoreSource
+  recoverStripeEvents: typeof recoverStripeEvents
+  reconcileStripeMembershipCatalog: typeof reconcileStripeMembershipCatalog
+  dispatchMembershipRefundReconciliation: typeof dispatchMembershipRefundReconciliation
+  reconcileMembershipRefundOperation: typeof reconcileMembershipRefundOperation
+  dispatchMembershipPauseCollection: typeof dispatchMembershipPauseCollection
+  syncMembershipPauseCollection: typeof syncMembershipPauseCollection
 }
 
-/** One handler per memberships job; `processors` is injectable so a test can observe each route. */
-export function createMembershipsHandlers(
-  p: MembershipJobProcessors = PROCESSORS,
-): BackgroundHandler[] {
-  return [
-    backgroundHandler(
-      MEMBERSHIPS_STRIPE_EVENT_JOB,
-      guarded(job =>
-        p.processStripeEvent(job.data, job.attemptsMade + 1 >= (job.opts.attempts ?? 1)),
-      ),
+const PROCESSORS: MembershipJobProcessors = {
+  deliverMembershipEntitlementEffects: deliverPendingMembershipEntitlementEffects,
+  expireElapsedMemberships: expireElapsedMembershipsBatch,
+  processAppleNotification: reconcileAppleNotification,
+  processMembershipVerification,
+  processRenewalNotificationCheckDispatcher,
+  processSendRenewalPriceIncreaseEmail,
+  processStripeEvent,
+  recoverMembershipVerifications,
+  recoverAppleNotifications,
+  processGooglePlayNotification,
+  recoverGooglePlayNotifications,
+  recoverGooglePlayActiveSources,
+  processGooglePlayActiveSource,
+  processGooglePlayAcknowledgement,
+  recoverGooglePlayAcknowledgements,
+  refreshGooglePlayOidcTrust: refreshConfiguredGoogleOidcTrustMaterial,
+  recoverMicrosoftStoreSources,
+  reconcileMicrosoftStoreSource: processMicrosoftStoreSource,
+  recoverStripeEvents,
+  reconcileStripeMembershipCatalog,
+  dispatchMembershipRefundReconciliation,
+  reconcileMembershipRefundOperation,
+  dispatchMembershipPauseCollection,
+  syncMembershipPauseCollection,
+}
+
+async function dispatchMembershipPauseCollection(): Promise<void> {
+  const leases = await dispatchDuePauseCollectionWork()
+  await Promise.all(leases.map(lease => enqueueSyncMembershipPauseCollection(lease)))
+}
+
+async function dispatchMembershipRefundReconciliation(): Promise<void> {
+  const leases = await dispatchDueRefundReconciliations()
+  await Promise.all(
+    leases.map(lease =>
+      enqueueReconcileMembershipRefundOperation({
+        operationId: lease.id,
+        leaseToken: lease.leaseToken,
+      }),
     ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB,
-      guarded(() => p.recoverStripeEvents()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_STRIPE_CATALOG_JOB,
-      guarded(() => p.reconcileStripeMembershipCatalog()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_APPLE_NOTIFICATION_JOB,
-      guarded(job => p.processAppleNotification(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB,
-      guarded(() => p.recoverAppleNotifications()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_GOOGLE_PLAY_NOTIFICATION_JOB,
-      guarded(job => p.processGooglePlayNotification(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_GOOGLE_PLAY_NOTIFICATIONS_JOB,
-      guarded(() => p.recoverGooglePlayNotifications()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACTIVE_SOURCES_JOB,
-      guarded(() => p.recoverGooglePlayActiveSources()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_GOOGLE_PLAY_ACTIVE_SOURCE_JOB,
-      guarded(job => p.processGooglePlayActiveSource(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_GOOGLE_PLAY_ACKNOWLEDGE_JOB,
-      guarded(job => p.processGooglePlayAcknowledgement(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_GOOGLE_PLAY_ACKNOWLEDGEMENTS_JOB,
-      guarded(() => p.recoverGooglePlayAcknowledgements()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_GOOGLE_PLAY_OIDC_REFRESH_JOB,
-      guarded(() => p.refreshGooglePlayOidcTrust()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_MICROSOFT_STORE_SOURCES_JOB,
-      guarded(() => p.recoverMicrosoftStoreSources()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_MICROSOFT_STORE_SOURCE_JOB,
-      guarded(job => p.reconcileMicrosoftStoreSource(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_VERIFICATION_JOB,
-      guarded(job => p.processMembershipVerification(job.data.verificationId)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RECOVER_VERIFICATIONS_JOB,
-      guarded(() => p.recoverMembershipVerifications()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_ENTITLEMENT_EFFECTS_JOB,
-      guarded(() => p.deliverMembershipEntitlementEffects()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_GRANT_EXPIRY_JOB,
-      guarded(() => p.expireElapsedMemberships()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RENEWAL_CHECK_JOB,
-      guarded(job => p.processRenewalNotificationCheckDispatcher(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_RENEWAL_PRICE_INCREASE_EMAIL_JOB,
-      guarded(job => p.processSendRenewalPriceIncreaseEmail(job.data)),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_REFUND_DISPATCH_JOB,
-      guarded(() => p.dispatchMembershipRefundReconciliation()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_REFUND_OPERATION_JOB,
-      guarded(job =>
-        p.reconcileMembershipRefundOperation({
-          id: job.data.operationId,
-          leaseToken: job.data.leaseToken,
-        }),
-      ),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_PAUSE_COLLECTION_DISPATCH_JOB,
-      guarded(() => p.dispatchMembershipPauseCollection()),
-    ),
-    backgroundHandler(
-      MEMBERSHIPS_PAUSE_COLLECTION_SYNC_JOB,
-      guarded(job => p.syncMembershipPauseCollection(job.data)),
-    ),
-  ] as BackgroundHandler[]
+  )
+}
+
+export function processMembershipJob(job: Job, processors = PROCESSORS): Promise<void> {
+  return deferPostgresConnectionTimeout(job, () => dispatchMembershipJob(job, processors))
+}
+
+async function dispatchMembershipJob(job: Job, processors: MembershipJobProcessors): Promise<void> {
+  switch (job.name as MembershipsJobs) {
+    case 'deliverMembershipEntitlementEffects':
+      await processors.deliverMembershipEntitlementEffects()
+      return
+    case 'expireElapsedMemberships':
+      await processors.expireElapsedMemberships()
+      return
+    case 'processMembershipVerification':
+      await processors.processMembershipVerification(job.data.verificationId)
+      return
+    case 'processAppleNotification':
+      await processors.processAppleNotification(job.data)
+      return
+    case 'recoverMembershipVerifications':
+      await processors.recoverMembershipVerifications()
+      return
+    case 'recoverAppleNotifications':
+      await processors.recoverAppleNotifications()
+      return
+    case 'processGooglePlayNotification':
+      await processors.processGooglePlayNotification(job.data)
+      return
+    case 'recoverGooglePlayNotifications':
+      await processors.recoverGooglePlayNotifications()
+      return
+    case 'recoverGooglePlayActiveSources':
+      await processors.recoverGooglePlayActiveSources()
+      return
+    case 'reconcileGooglePlayActiveSource':
+      await processors.processGooglePlayActiveSource(job.data)
+      return
+    case 'acknowledgeGooglePlayPurchase':
+      await processors.processGooglePlayAcknowledgement(job.data)
+      return
+    case 'recoverGooglePlayAcknowledgements':
+      await processors.recoverGooglePlayAcknowledgements()
+      return
+    case 'refreshGooglePlayOidcTrust':
+      await processors.refreshGooglePlayOidcTrust()
+      return
+    case 'recoverMicrosoftStoreSources':
+      await processors.recoverMicrosoftStoreSources()
+      return
+    case 'reconcileMicrosoftStoreSource':
+      await processors.reconcileMicrosoftStoreSource(job.data)
+      return
+    case 'processStripeEvent':
+      await processors.processStripeEvent(
+        job.data,
+        job.attemptsMade + 1 >= (job.opts.attempts ?? 1),
+      )
+      return
+    case 'recoverStripeEvents':
+      await processors.recoverStripeEvents()
+      return
+    case 'reconcileStripeMembershipCatalog':
+      await processors.reconcileStripeMembershipCatalog()
+      return
+    case 'processRenewalNotificationCheck':
+      await processors.processRenewalNotificationCheckDispatcher(job.data as { afterId?: string })
+      return
+    case 'processSendRenewalPriceIncreaseEmail':
+      await processors.processSendRenewalPriceIncreaseEmail(job.data)
+      return
+    case 'dispatchMembershipRefundReconciliation':
+      await processors.dispatchMembershipRefundReconciliation()
+      return
+    case 'reconcileMembershipRefundOperation':
+      await processors.reconcileMembershipRefundOperation({
+        id: (job.data as { operationId: string }).operationId,
+        leaseToken: (job.data as { leaseToken: string }).leaseToken,
+      })
+      return
+    case 'dispatchMembershipPauseCollection':
+      await processors.dispatchMembershipPauseCollection()
+      return
+    case 'syncMembershipPauseCollection':
+      await processors.syncMembershipPauseCollection(job.data)
+      return
+    default:
+      throw new Error(`Unknown job name: ${job.name}`)
+  }
 }

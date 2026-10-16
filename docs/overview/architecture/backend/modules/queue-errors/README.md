@@ -72,7 +72,7 @@ construction and any `worker.rateLimit(ms)` call.
 | `boundRateLimitDeferral(job, run)`                      | Runs a processor; once `job` is older than `MAX_RATE_LIMIT_DEFERRAL_AGE_MS` (24 h) a requeue signal becomes its plain `cause`, so the job spends attempts and ends. For hosts the operator does not control                                             |
 | `deferJobForRateLimit(job, ms?)`                        | Parks only `job` with `job.moveToDelayed()`; never resolves                                                                                                                                                                                             |
 | `getRetryAfterMs(error)`                                | The wait a failure names (`retryAfterMs` or a `Retry-After` header), or `null`                                                                                                                                                                          |
-| `deferPostgresConnectionTimeout(job, run)`              | In the `psql` worker and the `memberships` domain handlers, defers the two PostgreSQL pool connection or checkout timeout errors for 30 seconds without using an attempt; after the existing 24-hour deferral bound, the original error spends attempts |
+| `deferPostgresConnectionTimeout(job, run)`              | In the `psql` and `memberships` workers, defers the two PostgreSQL pool connection or checkout timeout errors for 30 seconds without using an attempt; after the existing 24-hour deferral bound, the original error spends attempts |
 
 The wait travels with the job, so every replica that receives a 429 honors it. `worker.rateLimit(ms)`
 only set a timestamp in that one process, so other replicas kept calling the provider. GlideMQ also
@@ -95,7 +95,7 @@ first; that call is redundant because GlideMQ applies the signal's `delayMs` its
 | 429 with a stated `Retry-After`                                                                       | `wrapHttpForRetry(err)` or `throwRateLimited(ms)` (requeued, no attempt used)            |
 | Validation error / missing entity                                                                     | `unrecoverable(err)`                                                                     |
 | Soft-deleted entity (processor early-exits after fetch)                                               | `return` early — already idempotent                                                      |
-| PostgreSQL pool connection or checkout timeout in the `psql` worker and `memberships` domain handlers | Requeue after 30 seconds without an attempt, bounded to 24 hours before ordinary retries |
+| PostgreSQL pool connection or checkout timeout in `psql` and `memberships` workers | Requeue after 30 seconds without an attempt, bounded to 24 hours before ordinary retries |
 | 429 with no stated wait, 5xx HTTP, other network/DB errors, AWS throttling                            | re-throw — glide-mq retries with backoff                                                 |
 
 ## Related

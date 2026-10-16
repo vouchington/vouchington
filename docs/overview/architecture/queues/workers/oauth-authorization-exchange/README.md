@@ -10,7 +10,7 @@ only route jobs to those service operations.
 `@workers/oauth-authorization-exchange` has no worker of its own:
 `oauthAuthorizationExchangeHandlers` registers the two job names with the shared
 [background worker](../background/README.md), which serves them with a baseline concurrency of 4
-(added to the shared worker's baseline), no domain-wide cap, and the domain's pause switch. Only the
+(added to the shared worker's baseline), a domain-wide group of 4, and the domain's pause switch. Only the
 recovery dispatcher is serialized, under the `oauth-authorization-exchange:dispatcher` ordering key.
 
 ## Related

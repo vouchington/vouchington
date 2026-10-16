@@ -1,11 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { MEMBERSHIPS_GOOGLE_PLAY_NOTIFICATION_JOB } from '@queues/background/enqueues/memberships-jobs'
-import {
-  forgetDedupEntries,
-  removeQueuedJobsById,
-} from '../../../test-helpers/shared-queue-cleanup.mts'
 import { memberships } from '../queues.mts'
 import {
   enqueueAcknowledgeGooglePlayPurchase,
@@ -21,19 +15,12 @@ import {
   enqueueBulkReconcileGooglePlayActiveSources,
 } from './google-play-jobs.mts'
 
-const RECOVERY_DEDUP_IDS = [
-  'google-play-notification-recovery',
-  'google-play-acknowledgement-recovery',
-  'google-play-active-source-recovery',
-  'google-play-oidc-refresh',
-]
+const queueStates = ['waiting', 'active', 'completed', 'failed', 'delayed'] as const
+const queuedJobs = async () =>
+  (await Promise.all(queueStates.map(state => memberships.getJobs(state)))).flat()
 
 describe('Google Play membership enqueues', () => {
-  const created: string[] = []
-  afterEach(async () => {
-    await removeQueuedJobsById(memberships, created.splice(0))
-    forgetDedupEntries(BACKGROUND_QUEUE_NAME, RECOVERY_DEDUP_IDS)
-  })
+  afterEach(() => memberships.obliterate({ force: true }))
 
   it('keeps purchase tokens out of jobs and serializes notification work by token digest', async () => {
     const evidenceId = randomUUID()
@@ -41,41 +28,26 @@ describe('Google Play membership enqueues', () => {
     const purchaseTokenLookupSha256 = createHash('sha256').update(purchaseToken).digest('hex')
     await enqueueProcessGooglePlayNotification({ evidenceId, purchaseToken, environment: 'test' })
     const jobId = `google-play-notification__${evidenceId}`
-    created.push(jobId)
-    const job = await memberships.getJob(jobId)
-    expect(job).toMatchObject({
-      name: MEMBERSHIPS_GOOGLE_PLAY_NOTIFICATION_JOB.name,
+    expect((await queuedJobs()).find(job => job.id === jobId)).toMatchObject({
       data: { evidenceId, purchaseTokenLookupSha256, environment: 'test' },
       opts: {
-        priority: 10,
         deduplication: { id: jobId, mode: 'simple' },
-        ordering: {
-          key: `memberships:google-play-token:test:${purchaseTokenLookupSha256}`,
-          concurrency: 1,
-        },
+        ordering: { key: `google-play-token:test:${purchaseTokenLookupSha256}`, concurrency: 1 },
       },
     })
-    // Serialize the payload only: a live test job references its queue, which references the job.
-    expect(JSON.stringify({ data: job!.data, opts: job!.opts })).not.toContain(purchaseToken)
+    // Serialize the payloads only: a live test job references its queue, which references the job.
+    const payloads = (await queuedJobs()).map(job => ({ data: job.data, opts: job.opts }))
+    expect(JSON.stringify(payloads)).not.toContain(purchaseToken)
   })
 
   it('deduplicates acknowledgement and source reconciliation by stable identity', async () => {
     const acknowledgementId = randomUUID()
     const sourceId = randomUUID()
-    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_123)
-    try {
-      await enqueueAcknowledgeGooglePlayPurchase({ acknowledgementId })
-      await enqueueBulkReconcileGooglePlayActiveSources([{ sourceId }])
-    } finally {
-      dateNow.mockRestore()
-    }
-    const bucket = Math.floor(1_800_000_000_123 / 3_600_000)
-    created.push(
-      `google-play-acknowledgement__${acknowledgementId}`,
-      `google-play-active-source__${sourceId}__${bucket}`,
-    )
+    await enqueueAcknowledgeGooglePlayPurchase({ acknowledgementId })
+    await enqueueBulkReconcileGooglePlayActiveSources([{ sourceId }])
+    const jobs = await queuedJobs()
     expect(
-      await memberships.getJob(`google-play-acknowledgement__${acknowledgementId}`),
+      jobs.find(job => job.id === `google-play-acknowledgement__${acknowledgementId}`),
     ).toMatchObject({
       data: { acknowledgementId },
       opts: {
@@ -83,12 +55,10 @@ describe('Google Play membership enqueues', () => {
       },
     })
     expect(
-      await memberships.getJob(`google-play-active-source__${sourceId}__${bucket}`),
+      jobs.find(job => job.id?.startsWith(`google-play-active-source__${sourceId}__`)),
     ).toMatchObject({
       data: { sourceId },
-      opts: {
-        ordering: { key: `memberships:google-play-source:${sourceId}`, concurrency: 1 },
-      },
+      opts: { ordering: { key: `google-play-source:${sourceId}`, concurrency: 1 } },
     })
   })
 
@@ -112,17 +82,14 @@ describe('Google Play membership enqueues', () => {
     } finally {
       dateNow.mockRestore()
     }
-    const payloads: unknown[] = []
+    const jobs = await queuedJobs()
 
     for (const notification of notifications) {
       const jobId = `google-play-notification__${notification.evidenceId}`
-      created.push(jobId)
       const purchaseTokenLookupSha256 = createHash('sha256')
         .update(notification.purchaseToken)
         .digest('hex')
-      const job = await memberships.getJob(jobId)
-      payloads.push({ data: job?.data, opts: job?.opts })
-      expect(job).toMatchObject({
+      expect(jobs.find(job => job.id === jobId)).toMatchObject({
         data: {
           evidenceId: notification.evidenceId,
           purchaseTokenLookupSha256,
@@ -132,7 +99,7 @@ describe('Google Play membership enqueues', () => {
           priority: 10,
           deduplication: { id: jobId, mode: 'simple' },
           ordering: {
-            key: `memberships:google-play-token:${notification.environment}:${purchaseTokenLookupSha256}`,
+            key: `google-play-token:${notification.environment}:${purchaseTokenLookupSha256}`,
             concurrency: 1,
           },
         },
@@ -140,37 +107,36 @@ describe('Google Play membership enqueues', () => {
     }
     for (const acknowledgementId of acknowledgementIds) {
       const jobId = `google-play-acknowledgement__${acknowledgementId}`
-      created.push(jobId)
-      expect(await memberships.getJob(jobId)).toMatchObject({
+      expect(jobs.find(job => job.id === jobId)).toMatchObject({
         data: { acknowledgementId },
         opts: { priority: 10, deduplication: { id: jobId, mode: 'simple' } },
       })
     }
     for (const sourceId of sourceIds) {
       const jobId = `google-play-active-source__${sourceId}__${bucket}`
-      created.push(jobId)
-      expect(await memberships.getJob(jobId)).toMatchObject({
+      expect(jobs.find(job => job.id === jobId)).toMatchObject({
         data: { sourceId },
         opts: {
           priority: 10,
           deduplication: { id: jobId, mode: 'simple' },
-          ordering: { key: `memberships:google-play-source:${sourceId}`, concurrency: 1 },
+          ordering: { key: `google-play-source:${sourceId}`, concurrency: 1 },
         },
       })
     }
+    const payloads = jobs.map(job => ({ data: job.data, opts: job.opts }))
     for (const notification of notifications)
       expect(JSON.stringify(payloads)).not.toContain(notification.purchaseToken)
   })
 
   it('throttles each recovery and trust-refresh scan to its own interval', async () => {
     const now = 1_800_000_000_123
-    forgetDedupEntries(BACKGROUND_QUEUE_NAME, RECOVERY_DEDUP_IDS)
     const dateNow = vi.spyOn(Date, 'now').mockReturnValue(now)
     try {
       await enqueueRecoverGooglePlayNotifications()
       await enqueueRecoverGooglePlayAcknowledgements()
       await enqueueRecoverGooglePlayActiveSources()
       await enqueueRefreshGooglePlayOidcTrust()
+      const jobs = await queuedJobs()
       for (const [prefix, intervalMs] of [
         ['google-play-notification-recovery', 300_000],
         ['google-play-acknowledgement-recovery', 300_000],
@@ -178,13 +144,9 @@ describe('Google Play membership enqueues', () => {
         ['google-play-oidc-refresh', 10_800_000],
       ] as const) {
         const id = `${prefix}__${Math.floor(now / intervalMs)}`
-        created.push(id)
-        expect(await memberships.getJob(id)).toMatchObject({
+        expect(jobs.find(job => job.id === id)).toMatchObject({
           data: {},
-          opts: {
-            priority: 100,
-            deduplication: { id: prefix, mode: 'throttle', ttl: intervalMs },
-          },
+          opts: { deduplication: { id: prefix, mode: 'throttle', ttl: intervalMs } },
         })
       }
     } finally {

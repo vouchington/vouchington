@@ -8,14 +8,11 @@ import {
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { membershipWorkConfig } from '@services/memberships/work-limits'
 import { createMembership } from '@services/memberships'
-import {
-  MEMBERSHIPS_RENEWAL_CHECK_JOB,
-  MEMBERSHIPS_RENEWAL_PRICE_INCREASE_EMAIL_JOB,
-} from '@queues/background/enqueues/memberships-jobs-2'
 import { memberships } from '@queues/memberships/queues'
 import { processRenewalNotificationCheckDispatcher } from './renewal-notification-check.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
+const STATES = ['waiting', 'active', 'completed', 'failed', 'delayed'] as const
 
 describe('renewal dispatcher work budget', () => {
   afterAll(() => memberships.close())
@@ -61,18 +58,25 @@ describe('renewal dispatcher work budget', () => {
     await expect(processRenewalNotificationCheckDispatcher({ afterId: ids[0] })).resolves.toEqual({
       hasMore: true,
     })
-    const [continuation] = await memberships.searchJobs({
-      name: MEMBERSHIPS_RENEWAL_CHECK_JOB.name,
-      data: { afterId: ids[1] },
-    })
+    const jobs = (await Promise.all(STATES.map(state => memberships.getJobs(state, 0, -1)))).flat()
+    const continuation = jobs.find(
+      job =>
+        job.name === 'processRenewalNotificationCheck' &&
+        (job.data as { afterId?: string }).afterId === ids[1],
+    )
     expect(continuation).toBeDefined()
     await expect(
       processRenewalNotificationCheckDispatcher(continuation!.data as { afterId?: string }),
     ).resolves.toEqual({ hasMore: true })
-    const tailJobs = await memberships.searchJobs({
-      name: MEMBERSHIPS_RENEWAL_PRICE_INCREASE_EMAIL_JOB.name,
-      data: { membershipId: ids[2] },
-    })
-    expect(tailJobs).toHaveLength(1)
+    const tailJobs = (
+      await Promise.all(STATES.map(state => memberships.getJobs(state, 0, -1)))
+    ).flat()
+    expect(
+      tailJobs.some(
+        job =>
+          job.name === 'processSendRenewalPriceIncreaseEmail' &&
+          (job.data as { membershipId?: string }).membershipId === ids[2],
+      ),
+    ).toBe(true)
   })
 })

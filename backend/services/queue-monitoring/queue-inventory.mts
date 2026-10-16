@@ -19,6 +19,7 @@ import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { followerDistributions } from '@queues/follower-distributions/queues'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
+import { memberships } from '@queues/memberships/queues'
 import { notifications } from '@queues/notifications/queues'
 import { sitemaps } from '@queues/sitemaps/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
@@ -53,6 +54,7 @@ const allQueues = [
   followerDistributions,
   imageUploadsQueue,
   kagiSmallWeb,
+  memberships,
   notifications,
   sitemaps,
   spam_detection,

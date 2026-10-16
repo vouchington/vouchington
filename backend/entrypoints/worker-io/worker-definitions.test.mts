@@ -38,6 +38,7 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
       ['follower-distributions', 'follower-distributions', 'followerDistributionsWorker'],
       ['sitemaps', 'sitemaps', 'sitemaps'],
+      ['memberships', 'memberships', 'memberships'],
       ['notifications', 'notifications', 'notificationsWorker'],
       ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
       ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],

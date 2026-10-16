@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SqsMessage } from '@backend/worker-runtime'
-import {
-  getStripeEventById,
-  getStripeEventByStripeEventId,
-  type ingestStripeEvent,
-} from '@services/stripe/events'
+import { getStripeEventByStripeEventId, type ingestStripeEvent } from '@services/stripe/events'
 import { memberships } from '@queues/memberships/queues'
 import { processStripeEventsSqsMessage } from '../processors.mts'
 
@@ -54,13 +50,19 @@ function createStripeEvent(overrides: Partial<StripeEvent> = {}): StripeEvent {
 }
 
 async function findStripeEventJobsFor(stripeEventRecordId: string) {
-  // The job id is derived from the durable record and its lease, so this reads this test's own job
-  // on the shared queue by id, whatever state glide-mq keeps it in (a prioritized job is reported
-  // as delayed, not waiting).
-  const stored = await getStripeEventById(stripeEventRecordId)
-  if (!stored) return []
-  const job = await memberships.getJob(`stripe-event__${stored.id}__${stored.lease_token}`)
-  return job ? [job] : []
+  // enqueueProcessStripeEvent sets opts.priority (PRIORITY_DEFAULT), and glide-mq's `add()`
+  // enqueues any prioritized job to its scheduled ZSet rather than the plain FIFO stream --
+  // getJobs() reports that ZSet as the 'delayed' state even though no opts.delay is set, so a
+  // freshly enqueued job here legitimately never appears in 'waiting'.
+  const [waiting, delayed] = await Promise.all([
+    memberships.getJobs('waiting'),
+    memberships.getJobs('delayed'),
+  ])
+  return [...waiting, ...delayed].filter(
+    job =>
+      (job.data as { stripeEventRecordId?: unknown } | null | undefined)?.stripeEventRecordId ===
+      stripeEventRecordId,
+  )
 }
 
 describe('processStripeEventsSqsMessage', () => {
@@ -107,7 +109,7 @@ describe('processStripeEventsSqsMessage', () => {
     })
     expect(jobs[0]?.opts.deduplication).toEqual({ id: jobId, mode: 'simple' })
     expect(jobs[0]?.opts.ordering).toEqual({
-      key: `memberships:stripe-subscription:production:${subscriptionId}`,
+      key: `stripe-subscription:production:${subscriptionId}`,
       concurrency: 1,
     })
   })

@@ -3,6 +3,7 @@ import { upsertSchedules as upsertActivityPubInboxSchedules } from '@queues/acti
 import { upsertSchedules as upsertBloomFilterSchedules } from '@queues/bloom-filters/enqueues/schedules'
 import { upsertSchedules as upsertFindYourFriendsSchedules } from '@queues/find-your-friends/enqueues/schedules'
 import { upsertSchedules as upsertKagiSmallwebSchedules } from '@queues/kagi-smallweb/enqueues/schedules'
+import { upsertSchedules as upsertMembershipSchedules } from '@queues/memberships/enqueues/schedules'
 import { upsertSchedules as upsertNotificationSchedules } from '@queues/notifications/enqueues/schedules'
 import { upsertSchedules as upsertEmailSchedules } from '@queues/emails/enqueues/schedules'
 import { upsertSchedules as upsertPsqlSchedules } from '@queues/psql/enqueues/schedules'
@@ -30,14 +31,17 @@ describe('worker-io SCHEDULE_DEFINITIONS load functions', () => {
     await expect(byQueue('bloom-filters').load()).resolves.toBe(upsertBloomFilterSchedules)
     await expect(byQueue('find-your-friends').load()).resolves.toBe(upsertFindYourFriendsSchedules)
     await expect(byQueue('sitemaps').load()).resolves.toBe(upsertSitemapSchedules)
+    await expect(byQueue('memberships').load()).resolves.toBe(upsertMembershipSchedules)
     await expect(byQueue('kagi-smallweb').load()).resolves.toBe(upsertKagiSmallwebSchedules)
     await expect(byQueue('background').load()).resolves.toBeTypeOf('function')
   })
 
-  it('registers the background (including account recovery) and membership schedules', async () => {
+  it('registers the background (including account recovery) and Stripe recovery schedules', async () => {
     const upsertBackgroundSchedules = await SCHEDULE_DEFINITIONS.find(
       d => d.queueName === 'background',
     )!.load()
-    await expect(upsertBackgroundSchedules()).resolves.toBeUndefined()
+    await expect(
+      Promise.all([upsertBackgroundSchedules(), upsertMembershipSchedules()]),
+    ).resolves.toHaveLength(2)
   })
 })

@@ -1,6 +1,6 @@
 import { beginTransaction, read, write, type QueryExecutor } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
-import type { ProcessAppleNotificationData } from '@queues/background/enqueues/memberships-domain'
+import type { ProcessAppleNotificationData } from '@queues/memberships/types'
 import { projectVerifiedProviderMembershipObservation } from '@services/memberships/provider-observation-projection'
 import sql from 'sql-template-strings'
 import {

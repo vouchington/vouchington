@@ -1,24 +1,56 @@
-import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
-import type { ProcessAppleNotificationData } from '@queues/background/enqueues/memberships-domain'
-import {
-  MEMBERSHIPS_APPLE_NOTIFICATION_JOB,
-  MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB,
-} from '@queues/background/enqueues/memberships-jobs'
+import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS } from '../config.mts'
-import { membershipOrdering } from './ordering.mts'
+import {
+  APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS,
+  PRIORITY_DEFAULT,
+  PRIORITY_DISPATCHER,
+  QUEUE_NAME,
+} from '../config.mts'
+import { memberships } from '../queues.mts'
+import type { MembershipsJobs, ProcessAppleNotificationData } from '../types.mts'
 
-const enqueueAppleNotificationJob = createBackgroundEnqueue(MEMBERSHIPS_APPLE_NOTIFICATION_JOB)
+const JOB_NAME: MembershipsJobs = 'processAppleNotification'
+const RECOVERY_JOB_NAME: MembershipsJobs = 'recoverAppleNotifications'
 
-export const enqueueBulkProcessAppleNotifications = createBackgroundBulkEnqueue(
-  MEMBERSHIPS_APPLE_NOTIFICATION_JOB,
-  (data: ProcessAppleNotificationData) => ({ data, opts: appleNotificationJobOptions(data) }),
-)
+const appleNotificationDefaults = {
+  attempts: 10,
+  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
+  removeOnComplete: true,
+  removeOnFail: true,
+}
 
-const enqueueRecoverAppleNotificationsJob = createBackgroundEnqueue(
-  MEMBERSHIPS_RECOVER_APPLE_NOTIFICATIONS_JOB,
-)
+const enqueueAppleNotificationJob = createEnqueueFunction<
+  ProcessAppleNotificationData,
+  MembershipsJobs
+>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: JOB_NAME,
+  defaults: appleNotificationDefaults,
+})
+
+export const enqueueBulkProcessAppleNotifications = createBulkEnqueueFunction<
+  ProcessAppleNotificationData,
+  ProcessAppleNotificationData,
+  MembershipsJobs
+>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: JOB_NAME,
+  defaults: appleNotificationDefaults,
+  buildJob: data => ({ data, opts: appleNotificationJobOptions(data) }),
+})
+
+const enqueueRecoverAppleNotificationsJob = createEnqueueFunction<
+  Record<string, never>,
+  MembershipsJobs
+>({
+  queue: memberships,
+  queueName: QUEUE_NAME,
+  jobName: RECOVERY_JOB_NAME,
+  defaults: appleNotificationDefaults,
+})
 
 export function enqueueProcessAppleNotification(
   data: ProcessAppleNotificationData,
@@ -30,6 +62,7 @@ export function enqueueRecoverAppleNotifications(): EnqueueReturnType {
   const timeBucket = Math.floor(Date.now() / APPLE_NOTIFICATION_RECOVERY_INTERVAL_MS)
   return enqueueRecoverAppleNotificationsJob({}, {
     jobId: `apple-notification-recovery__${timeBucket}`,
+    priority: PRIORITY_DISPATCHER,
     deduplication: {
       id: 'apple-notification-recovery',
       mode: 'throttle',
@@ -42,7 +75,11 @@ function appleNotificationJobOptions(data: ProcessAppleNotificationData): Partia
   const jobId = `apple-notification__${data.evidenceId}`
   return {
     jobId,
+    priority: PRIORITY_DEFAULT,
     deduplication: { id: jobId, mode: 'simple' },
-    ordering: membershipOrdering(`apple-lineage:${data.environment}:${data.providerLineageId}`),
+    ordering: {
+      key: `apple-lineage:${data.environment}:${data.providerLineageId}`,
+      concurrency: 1,
+    },
   } satisfies Partial<JobOptions>
 }

@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   enqueueBulkReconcileMicrosoftStoreSources,
   enqueueContinueRecoverMicrosoftStoreSources,
+  enqueueRecoverMicrosoftStoreSources,
 } from '@queues/memberships/enqueues'
-import { enqueueRecoverMicrosoftStoreSources } from '@queues/memberships/enqueues/microsoft-store'
 import { memberships } from '@queues/memberships/queues'
 import {
   createMembershipVerification,
@@ -51,7 +51,7 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
       const expectedJobMetadata = accepted
         ? {
             id: jobId,
-            name: 'memberships.recoverMicrosoftStoreSources',
+            name: 'recoverMicrosoftStoreSources',
             data: {},
             deduplication: {
               id: 'microsoft-store-recovery',
@@ -74,10 +74,10 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
     try {
       await expect(memberships.getJob(jobId)).resolves.toMatchObject({
         id: jobId,
-        name: 'memberships.recoverMicrosoftStoreSources',
+        name: 'recoverMicrosoftStoreSources',
         data: {},
         opts: {
-          ordering: { key: 'memberships:microsoft-store-recovery', concurrency: 1 },
+          ordering: { key: 'microsoft-store-recovery', concurrency: 1 },
           priority: 100,
         },
       })
@@ -109,14 +109,11 @@ describe('Microsoft Store source recovery with real GlideMQ', () => {
 
       await expect(memberships.getJob(sourceJobId)).resolves.toMatchObject({
         id: sourceJobId,
-        name: 'memberships.reconcileMicrosoftStoreSource',
+        name: 'reconcileMicrosoftStoreSource',
         data: { sourceId: fixture.sourceId },
         opts: {
           deduplication: { id: sourceJobId, mode: 'simple' },
-          ordering: {
-            key: `memberships:microsoft-store-source:${fixture.sourceId}`,
-            concurrency: 1,
-          },
+          ordering: { key: `microsoft-store-source:${fixture.sourceId}`, concurrency: 1 },
         },
       })
     } finally {

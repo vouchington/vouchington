@@ -3,8 +3,6 @@ import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../typ
 import { ACCOUNT_LIFECYCLE_DOMAIN, ACCOUNT_LIFECYCLE_JOBS } from './account-lifecycle-jobs.mts'
 import { ARTICLE_SYNC_DOMAIN, ARTICLE_SYNC_JOBS } from './article-sync-jobs.mts'
 import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
-import { MEMBERSHIPS_DOMAIN } from './memberships-domain.mts'
-import { MEMBERSHIPS_JOBS } from './memberships-jobs-2.mts'
 import {
   OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
   OAUTH_AUTHORIZATION_EXCHANGE_JOBS,
@@ -31,7 +29,6 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   ENTITY_LISTENERS_DOMAIN,
   ACCOUNT_LIFECYCLE_DOMAIN,
   ARTICLE_SYNC_DOMAIN,
-  MEMBERSHIPS_DOMAIN,
   OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
 ]
 
@@ -45,7 +42,6 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...ENTITY_LISTENERS_JOBS,
   ...ACCOUNT_LIFECYCLE_JOBS,
   ...ARTICLE_SYNC_JOBS,
-  ...MEMBERSHIPS_JOBS,
   ...OAUTH_AUTHORIZATION_EXCHANGE_JOBS,
 ]
 

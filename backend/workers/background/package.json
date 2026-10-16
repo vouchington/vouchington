@@ -30,7 +30,6 @@
     "@workers/account-lifecycle": "workspace:^",
     "@workers/article-sync": "workspace:^",
     "@workers/entity-listeners": "workspace:^",
-    "@workers/memberships": "workspace:^",
     "@workers/oauth-authorization-exchange": "workspace:^",
     "@workers/openai-moderation": "workspace:^",
     "@workers/post-mentions": "workspace:^",

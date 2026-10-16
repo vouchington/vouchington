@@ -11,7 +11,8 @@ retained retry jobs can therefore carry both UUIDs; no provider code, token, or 
 ## Jobs
 
 This is the `oauth-authorization-exchange` domain of the shared [`background`](../background/README.md)
-queue (group kind `entity`: no domain-wide cap, only the dispatcher lane). Job names are namespaced
+queue (one domain-wide group of 4, the old worker concurrency, plus the dispatcher's own
+singleton lane, so at most 4 exchanges and 1 dispatcher pass run at once). Job names are namespaced
 as `<domain>.<name>`; the job ID stays the bare authorization UUID, which cannot collide with another
 domain. Pause, retry, and stats are by domain.
 

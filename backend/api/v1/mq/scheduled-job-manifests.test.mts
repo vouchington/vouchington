@@ -49,20 +49,20 @@ const EXPECTED_SCHEDULED_JOBS = [
   'heartbeat/publish-glidemq-stats',
   'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
   'kagi-smallweb/kagi-smallweb-sync',
-  'background/dispatchMembershipPauseCollection',
-  'background/dispatchMembershipRefundReconciliation',
-  'background/membershipEntitlementEffects',
-  'background/membershipGrantExpiry',
-  'background/appleNotificationRecovery',
-  'background/googlePlayNotificationRecovery',
-  'background/googlePlayAcknowledgementRecovery',
-  'background/googlePlayActiveSourceRecovery',
-  'background/googlePlayOidcTrustRefresh',
-  'background/microsoftStoreSourceRecovery',
-  'background/membershipVerificationRecovery',
-  'background/renewalNotificationCheck',
-  'background/stripeCatalogReconciliation',
-  'background/stripeEventRecovery',
+  'memberships/dispatchMembershipPauseCollection',
+  'memberships/dispatchMembershipRefundReconciliation',
+  'memberships/membershipEntitlementEffects',
+  'memberships/membershipGrantExpiry',
+  'memberships/appleNotificationRecovery',
+  'memberships/googlePlayNotificationRecovery',
+  'memberships/googlePlayAcknowledgementRecovery',
+  'memberships/googlePlayActiveSourceRecovery',
+  'memberships/googlePlayOidcTrustRefresh',
+  'memberships/microsoftStoreSourceRecovery',
+  'memberships/membershipVerificationRecovery',
+  'memberships/renewalNotificationCheck',
+  'memberships/stripeCatalogReconciliation',
+  'memberships/stripeEventRecovery',
   'notifications/community-activity-digest-weekly',
   'notifications/media-delivery-registry-reconciliation',
   'notifications/copyright-action-reconciliation',
@@ -99,8 +99,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 19 manifests and 76 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(19)
+  it('imports the exact 20 manifests and 76 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(20)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),
@@ -175,8 +175,8 @@ describe('scheduled job manifest catalog', () => {
     expect(SCHEDULED_JOBS_REGISTRY).toContainEqual(
       expect.objectContaining({
         id: 'stripeCatalogReconciliation',
-        queue_name: 'background',
-        job_name: 'memberships.reconcileStripeMembershipCatalog',
+        queue_name: 'memberships',
+        job_name: 'reconcileStripeMembershipCatalog',
         schedule: 'every 5m',
       }),
     )

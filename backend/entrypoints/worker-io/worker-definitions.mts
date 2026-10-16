@@ -62,6 +62,10 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/sitemaps/workers').then(module => module.sitemaps),
   },
   {
+    queueName: 'memberships',
+    load: () => import('@workers/memberships/workers').then(module => module.memberships),
+  },
+  {
     queueName: 'notifications',
     load: () => import('@workers/notifications/workers').then(module => module.notificationsWorker),
   },

@@ -20,7 +20,6 @@ import {
   ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
 } from '@queues/background/enqueues/account-lifecycle-jobs'
 import { ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
-import { MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB } from '@queues/background/enqueues/memberships-jobs'
 import { VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueBackfillReportIntegrity } from '@queues/vote-aggregation/enqueues/report-integrity'
 import {
@@ -81,8 +80,8 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'stripe-event-recovery',
-    queue_name: BACKGROUND_QUEUE_NAME,
-    job_name: MEMBERSHIPS_RECOVER_STRIPE_EVENTS_JOB.name,
+    queue_name: 'memberships',
+    job_name: 'recoverStripeEvents',
     description: 'Recover persisted Stripe events that were not completed',
     source_table: 'stripe_events',
     trigger: createBackfillTrigger(enqueueRecoverStripeEvents),

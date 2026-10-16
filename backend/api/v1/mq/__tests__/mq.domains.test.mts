@@ -69,7 +69,6 @@ describe('background queue domain routes', () => {
         'account-lifecycle',
         'article-sync',
         'entity-listeners',
-        'memberships',
         'oauth-authorization-exchange',
         'openai-moderation',
         'post-mentions',

@@ -49,7 +49,7 @@ describe('membership verification recovery with real GlideMQ', () => {
 
       await expect(memberships.getJob(jobId)).resolves.toMatchObject({
         id: jobId,
-        name: 'memberships.processMembershipVerification',
+        name: 'processMembershipVerification',
         data: { verificationId: verification.id },
         opts: { deduplication: { id: jobId, mode: 'simple' } },
       })
