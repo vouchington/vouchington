@@ -6,10 +6,9 @@ import {
 import { processOAuthAuthorizationExchangeJob } from './processors/process-job.mts'
 
 export const oauthAuthorizationExchangeHandlers = [
-  backgroundHandler(OAUTH_AUTHORIZATION_EXCHANGE_JOB, job =>
-    processOAuthAuthorizationExchangeJob(job),
-  ),
-  backgroundHandler(OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB, job =>
-    processOAuthAuthorizationExchangeJob(job),
+  backgroundHandler(OAUTH_AUTHORIZATION_EXCHANGE_JOB, processOAuthAuthorizationExchangeJob),
+  backgroundHandler(
+    OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
+    processOAuthAuthorizationExchangeJob,
   ),
 ]

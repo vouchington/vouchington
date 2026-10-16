@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { ARTICLE_SYNC_PROCESS_JOB } from '@queues/background/enqueues/article-sync-jobs'
 import type { Job } from 'glide-mq'
@@ -12,6 +13,14 @@ describe('article-sync workers', () => {
     const [handler] = articleSyncHandlers
     await expect(handler!.handle({ id: '1', data: {} } as Job)).rejects.toThrow(
       'Article sync job missing userId',
+    )
+  })
+
+  it('hands the job user to the article sync processor', async () => {
+    const [handler] = articleSyncHandlers
+    const userId = randomUUID()
+    await expect(handler!.handle({ data: { userId } } as Job)).rejects.toThrow(
+      `User ${userId} not found`,
     )
   })
 })
