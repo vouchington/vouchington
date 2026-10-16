@@ -274,6 +274,11 @@ describe('analyzeResult', () => {
 })
 
 describe('frequentFunctionCalls', () => {
+  it('rejects incomplete parallel-worker function counts', () => {
+    const parallel = makeResult({ Plan: { 'Node Type': 'Gather', 'Workers Launched': 1 } })
+    expect(() => frequentFunctionCalls([parallel])).toThrow('parallel workers')
+  })
+
   it('reports only queries whose busiest function reaches 50 calls', () => {
     const below = makeResult(null, {
       name: 'below',

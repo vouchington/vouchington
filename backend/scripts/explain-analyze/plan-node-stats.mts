@@ -97,3 +97,10 @@ export function collectNodes(node: unknown, stats: NodeStats[] = []): NodeStats[
 
   return stats
 }
+
+export function hasLaunchedParallelWorkers(plan: unknown): boolean {
+  return collectNodes(plan).some(
+    node =>
+      (node.nodeType === 'Gather' || node.nodeType === 'Gather Merge') && node.workersLaunched > 0,
+  )
+}

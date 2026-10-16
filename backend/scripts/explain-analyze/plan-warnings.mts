@@ -1,5 +1,5 @@
 import type { ExplainResult, FunctionCall } from '@data-stores/psql'
-import { collectNodes, type NodeStats } from './plan-node-stats.mts'
+import { collectNodes, hasLaunchedParallelWorkers, type NodeStats } from './plan-node-stats.mts'
 
 const LARGE_TABLES = new Set([
   'posts',
@@ -39,6 +39,10 @@ export function frequentFunctionCalls(
   results: readonly ExplainResult[],
 ): Array<{ result: ExplainResult; busiest: FunctionCall }> {
   return results.flatMap(result => {
+    if (hasLaunchedParallelWorkers(result.plan))
+      throw new Error(
+        `${result.name} launched parallel workers; function-call report is incomplete`,
+      )
     const busiest = busiestFunctionCall(result)
     return busiest && busiest.calls >= 50 ? [{ result, busiest }] : []
   })

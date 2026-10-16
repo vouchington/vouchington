@@ -1,5 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectNodes } from './plan-node-stats.mts'
+import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 import { getScenarioContract, type PlanExpectation } from './plan-expectations.mts'
 
 type FunctionCallExpectation = Extract<PlanExpectation, { kind: 'maxFunctionCalls' }>
@@ -8,13 +8,7 @@ export function assertFunctionCallCap(
   result: ExplainResult,
   expectation: FunctionCallExpectation,
 ): void {
-  if (
-    collectNodes(result.plan).some(
-      node =>
-        (node.nodeType === 'Gather' || node.nodeType === 'Gather Merge') &&
-        node.workersLaunched > 0,
-    )
-  )
+  if (hasLaunchedParallelWorkers(result.plan))
     throw new Error(
       `${result.name} launched parallel workers; transaction-local function counts omit worker calls`,
     )
