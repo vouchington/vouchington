@@ -35,14 +35,11 @@ export function busiestFunctionCall(result: ExplainResult): FunctionCall | null 
   )
 }
 
-export function frequentFunctionCalls(
+export function functionCallReports(
   results: readonly ExplainResult[],
-): Array<{ result: ExplainResult; busiest: FunctionCall }> {
-  return results.flatMap(result => {
-    if (hasLaunchedParallelWorkers(result.plan))
-      throw new Error(
-        `${result.name} launched parallel workers; function-call report is incomplete`,
-      )
+): Array<{ result: ExplainResult; busiest: FunctionCall | null }> {
+  return results.flatMap<{ result: ExplainResult; busiest: FunctionCall | null }>(result => {
+    if (hasLaunchedParallelWorkers(result.plan)) return [{ result, busiest: null }]
     const busiest = busiestFunctionCall(result)
     return busiest && busiest.calls >= 50 ? [{ result, busiest }] : []
   })

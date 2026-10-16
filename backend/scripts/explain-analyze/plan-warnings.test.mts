@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzeResult, frequentFunctionCalls } from './plan-warnings.mts'
+import { analyzeResult, functionCallReports } from './plan-warnings.mts'
 import type { ExplainResult } from '@data-stores/psql'
 
 function makeResult(plan: unknown, opts?: Partial<ExplainResult>): ExplainResult {
@@ -273,10 +273,10 @@ describe('analyzeResult', () => {
   })
 })
 
-describe('frequentFunctionCalls', () => {
-  it('rejects incomplete parallel-worker function counts', () => {
+describe('functionCallReports', () => {
+  it('marks parallel-worker function counts incomplete', () => {
     const parallel = makeResult({ Plan: { 'Node Type': 'Gather', 'Workers Launched': 1 } })
-    expect(() => frequentFunctionCalls([parallel])).toThrow('parallel workers')
+    expect(functionCallReports([parallel])).toEqual([{ result: parallel, busiest: null }])
   })
 
   it('reports only queries whose busiest function reaches 50 calls', () => {
@@ -291,7 +291,7 @@ describe('frequentFunctionCalls', () => {
         { funcname: 'fn_busy', calls: 50, total_time: 2, self_time: 2 },
       ],
     })
-    expect(frequentFunctionCalls([below, atLimit])).toEqual([
+    expect(functionCallReports([below, atLimit])).toEqual([
       { result: atLimit, busiest: atLimit.function_calls?.[1] },
     ])
   })

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { ExplainResult } from '@data-stores/psql'
 import {
   analyzeResult,
-  frequentFunctionCalls,
+  functionCallReports,
   getResourcePressureFingerprints,
 } from './plan-warnings.mts'
 import {
@@ -123,11 +123,15 @@ function main() {
     )
   }
 
-  const frequentCalls = frequentFunctionCalls(sorted)
-  if (frequentCalls.length > 0) {
-    console.log('\n### Queries with frequent function calls\n')
-    for (const { result, busiest } of frequentCalls)
-      console.log(`- ${result.name}: ${busiest.funcname} called ${busiest.calls} times`)
+  const callReports = functionCallReports(sorted)
+  if (callReports.length > 0) {
+    console.log('\n### Function-call findings\n')
+    for (const { result, busiest } of callReports) {
+      const detail = busiest
+        ? `${busiest.funcname} called ${busiest.calls} times`
+        : 'incomplete: parallel workers omit calls from leader-local counts'
+      console.log(`- ${result.name}: ${detail}`)
+    }
   }
 
   // Print detailed warnings section

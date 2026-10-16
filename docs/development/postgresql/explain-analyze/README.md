@@ -169,8 +169,8 @@ Each replay sets `track_functions = all` inside its rollback-only transaction an
 the readings immediately before and after the explained statement, so preparation work is excluded.
 Inlined SQL functions do not appear in PostgreSQL's function statistics. The harness role must be
 allowed to set `track_functions`; the CI PostgreSQL service connects as its superuser.
-Function-call caps and frequent-call reports reject plans that launched parallel workers: their
-transaction-local counters omit calls made in worker backends.
+Function-call caps reject plans that launched parallel workers; frequent-call reports mark those
+results incomplete because transaction-local counters omit calls made in worker backends.
 
 ```bash
 pnpm run explain:run
