@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
 
 describe('current EXPLAIN read inventory', () => {
-  it('counts proven readers and excludes unresolved WITH fragments from production sources', async () => {
+  it('counts conditional executor reads and keeps opaque builders unclassified', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-current-reads-'))
     try {
       const resultsPath = join(fixtureDir, 'results.json')
@@ -27,7 +27,10 @@ describe('current EXPLAIN read inventory', () => {
         'backend/services/stories/get-post-stories.mts',
         'backend/services/urls/get.mts',
         'backend/services/entity-cache/keys.mts',
+        'backend/services/entity-relations/query.mts',
         'backend/services/hostname-blocking/soft-delete-relations.mts',
+        'backend/services/posts/create/source-url-relation.mts',
+        'backend/services/urls-hostnames/get.mts',
       ]
       const sources = paths.map(fileName => ({
         fileName,
@@ -43,9 +46,20 @@ describe('current EXPLAIN read inventory', () => {
         'getPostStoryByPostId',
         'getUrlById',
         'getPostCacheKeys',
+        'getPostRecoverySourceUrlIds',
+        'getPostRelatedUrlIds',
+        'getUrlHostnameCrawlerDetailsById',
       ]) {
         expect(names.filter(candidate => candidate === name)).toHaveLength(1)
       }
+      expect(report.unclassifiedStatements).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fileName: 'backend/services/entity-relations/query.mts',
+            reason: 'unresolved-sql-fragment',
+          }),
+        ]),
+      )
       for (const name of [
         'getTopicsByAnyBatch',
         'getUrlHostnamesByAnyBatch',
