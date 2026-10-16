@@ -47,7 +47,9 @@ and its generated extension versions move together.
 `postgres-key-column-types` in
 [`.no-mistakes.yml`](../../../../.no-mistakes.yml) reads. `no-mistakes` owns this format and its
 generator and never reads `schema.json`; `schema.json` and the catalog describe one database for two
-readers and are generated, written, and compared together.
+readers and are generated, written, and compared together. Backend images omit the catalog through
+[`.dockerignore`](../../../../.dockerignore); `verifyLiveSchemaMatchesSnapshot` reads `schema.json`
+only.
 
 - **Generation.** `generate.mts` calls the `no-mistakes` N-API `generatePostgresCatalog` with
   `connectionEnv: 'DATABASE_URL'`, `schema: 'public'`, `coverage: 'complete'`, and a fixed
