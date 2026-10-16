@@ -14,6 +14,8 @@ import {
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { callMcpTool } from '../../services/mcp-tools/call-tool.mts'
+import { USER_MCP_SERVER_CONFIG } from '../../services/mcp-tools/config.mts'
 
 const ITEM_SCOPES = ['rss-feed-items:read', 'rss-feed-items:write'] as const
 const FEED_SCOPES = ['rss-feeds:read', 'rss-feeds:write'] as const
@@ -95,10 +97,22 @@ describe('RSS participation tools — real store and REST parity', () => {
     expect(send).toMatchObject({ status: 'accepted', distribution_id: expect.any(String) })
     expect(send.distribution_id).not.toBe(share.distribution_id)
     for (const args of [shareArgs, sendArgs]) {
-      const error = JSON.parse(
-        await callRejectedMcpTool(user, 'share_rss_feed_item', args, ITEM_SCOPES),
+      const onRateLimited = vi.fn<() => Promise<void>>(async () => {})
+      const result = await callMcpTool(
+        'share_rss_feed_item',
+        args,
+        user,
+        ITEM_SCOPES,
+        USER_MCP_SERVER_CONFIG,
+        false,
+        { ip: undefined, onRateLimited },
       )
-      expect(error).toMatchObject({ error: { status: 429 } })
+      expect(result.isError).toBe(true)
+      const error = JSON.parse((result.content[0] as { text: string }).text)
+      expect(error).toMatchObject({
+        error: { status: 429, code: 'RATE_LIMIT', retryable: true },
+      })
+      expect(onRateLimited).toHaveBeenCalledOnce()
     }
   })
 

@@ -76,6 +76,16 @@ export async function callMcpTool(
       await rateLimitContext?.onRateLimited()
       return buildRateLimitedToolResult(err.retryAfterSeconds)
     }
+    // Services shared with REST can reject through http-assert (vote and follower distribution
+    // limits do this). Treat their 429s like typed tool limits so the MCP audit records the
+    // refusal. Contribution capacity is a distinct, coded domain outcome.
+    if (isHttpError(err) && err.status === 429 && err['code'] !== CONTRIBUTION_QUOTA_EXCEEDED) {
+      await rateLimitContext?.onRateLimited()
+      const retryAfterSeconds = err['retryAfterSeconds']
+      return buildRateLimitedToolResult(
+        typeof retryAfterSeconds === 'number' ? retryAfterSeconds : 0,
+      )
+    }
     // An oversized result is fixed by asking for less, so it goes back to the caller unreported.
     if (err instanceof McpToolResultTooLargeError) {
       return { isError: true, content: [{ type: 'text', text: MCP_TOOL_RESULT_TOO_LARGE_TEXT }] }
