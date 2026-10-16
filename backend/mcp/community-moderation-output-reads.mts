@@ -21,7 +21,7 @@ const indexed = (kind: string, field: string, entity: Schema, users = false) =>
     results: array(reference(kind)),
     page_info: pageInfo(),
     [field]: map(entity),
-    ...(users ? { users: map(component('BasicUser')) } : {}),
+    ...(users ? { users: component('Record_string_PublicUser') } : {}),
   })
 
 const pendingReport = () => {
@@ -56,11 +56,23 @@ const pendingReport = () => {
   }
 }
 
-const pendingPost = () =>
-  changeComponent('Post', {
+const pendingPost = () => {
+  const basicUser = component('BasicUser')
+  const createdBy = {
+    ...basicUser,
+    properties: {
+      ...(basicUser['properties'] as Record<string, Schema>),
+      display_account: nullOr(component('PublicDisplayAccount')),
+    },
+  }
+  return changeComponent('Post', {
     claim: nullOr(component('ModerationQueueClaim')),
     escalated_at: nullOr(text),
+    is_flagged_by_openai_omni_moderation: nullOr(boolean),
+    created_by: nullOr(createdBy),
+    updated_by: nullOr(createdBy),
   })
+}
 
 const automodActions = () =>
   object({
@@ -77,6 +89,7 @@ const moderatorAction = () =>
   object({
     id: text,
     community_id: nullOr(text),
+    moderation_transparency_community_id: nullOr(text),
     actor_user_id: nullOr(text),
     action_type: text,
     post_id: nullOr(text),
@@ -91,7 +104,6 @@ const moderatorAction = () =>
     vote_integrity_flag_id: nullOr(text),
     vote_weight_penalty_id: nullOr(text),
     agent_moderation_id: nullOr(text),
-    agent_moderation_post_id: nullOr(text),
     oauth_client_id: nullOr(text),
     user_moderator_note_id: nullOr(text),
     hostname_crawler_configuration_id: nullOr(text),
@@ -113,21 +125,25 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
       return indexed(
         'community_application',
         'community_applications',
-        component('CommunityApplication'),
+        changeComponent('CommunityApplication', {}, ['__entity_type']),
       )
     case 'list_automod_actions':
       return automodActions()
     case 'list_bans':
       return indexed('community_ban', 'community_bans', ban(), true)
     case 'list_invites':
-      return indexed('community_invite', 'community_invites', component('CommunityInvite'))
+      return indexed(
+        'community_invite',
+        'community_invites',
+        changeComponent('CommunityInvite', {}, ['__entity_type']),
+      )
     case 'read_moderation_analytics':
       return component('ModerationAnalytics')
     case 'read_moderator_stats':
       return object({
         window: { enum: [30, 90] },
         stats: array(component('ModeratorActionCounts')),
-        users: map(component('BasicUser')),
+        users: component('Record_string_PublicUser'),
       })
     case 'read_moderator_vacation':
       return component('CommunityMemberVacationSettings')
@@ -155,16 +171,10 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
         }),
       })
     case 'list_restrictions': {
-      const base = restriction()
-      const withScore = {
-        ...base,
-        properties: { ...(base['properties'] as Record<string, Schema>), active_score: number },
-        required: [...(base['required'] as string[]), 'active_score'],
-      }
       return object({
         results: array(reference('community_restriction')),
         page_info: pageInfo(),
-        community_restrictions: map(withScore),
+        community_restrictions: map(restriction()),
         raid_mode_suggestion: component('RaidModeSuggestion'),
       })
     }

@@ -82,7 +82,9 @@ export function communityModerationWriteOutput(option: string): ToolOutputSchema
     case 'resolve_report':
       return object({ report: report() })
     case 'set_application_questions':
-      return object({ questions: array(component('CommunityApplicationQuestion')) })
+      return object({
+        questions: array(changeComponent('CommunityApplicationQuestion', {}, ['__entity_type'])),
+      })
     case 'set_moderator_vacation':
       return component('CommunityMemberVacationSettings')
     case 'set_pinned_posts':

@@ -13069,16 +13069,13 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     },
                     "community_applications": {
                       "type": "object",
                       "additionalProperties": {
                         "additionalProperties": false,
                         "properties": {
-                          "__entity_type": {
-                            "const": "community_application"
-                          },
                           "answers": {
                             "$ref": "#/$defs/S3"
                           },
@@ -13114,7 +13111,6 @@
                           }
                         },
                         "required": [
-                          "__entity_type",
                           "answers",
                           "approved_at",
                           "community_id",
@@ -13158,7 +13154,7 @@
                             "type": "string"
                           },
                           "confidence_score": {
-                            "$ref": "#/$defs/S9"
+                            "$ref": "#/$defs/S10"
                           },
                           "created_at": {
                             "type": "string"
@@ -13320,7 +13316,7 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     },
                     "community_bans": {
                       "type": "object",
@@ -13374,7 +13370,7 @@
                       }
                     },
                     "users": {
-                      "$ref": "#/$defs/S10"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["results", "page_info", "community_bans", "users"],
@@ -13400,16 +13396,13 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     },
                     "community_invites": {
                       "type": "object",
                       "additionalProperties": {
                         "additionalProperties": false,
                         "properties": {
-                          "__entity_type": {
-                            "const": "community_invite"
-                          },
                           "accepted_at": {
                             "$ref": "#/$defs/S2"
                           },
@@ -13442,7 +13435,6 @@
                           }
                         },
                         "required": [
-                          "__entity_type",
                           "accepted_at",
                           "accepted_by_id",
                           "community_id",
@@ -13477,7 +13469,7 @@
                           "type": "number"
                         },
                         "success_rate": {
-                          "$ref": "#/$defs/S9"
+                          "$ref": "#/$defs/S10"
                         },
                         "total_closed": {
                           "type": "number"
@@ -13490,7 +13482,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "actions_over_time": {
-                          "$ref": "#/$defs/S5"
+                          "$ref": "#/$defs/S6"
                         },
                         "auto_removes": {
                           "type": "number"
@@ -13515,7 +13507,7 @@
                           "type": "number"
                         },
                         "false_positive_rate": {
-                          "$ref": "#/$defs/S9"
+                          "$ref": "#/$defs/S10"
                         },
                         "reviewed_count": {
                           "type": "number"
@@ -13573,7 +13565,7 @@
                                 "type": "number"
                               },
                               "weekly_counts": {
-                                "$ref": "#/$defs/S5"
+                                "$ref": "#/$defs/S6"
                               }
                             },
                             "required": ["actor_user_id", "counts", "total", "weekly_counts"],
@@ -13600,7 +13592,7 @@
                           "type": "number"
                         },
                         "rejection_rate": {
-                          "$ref": "#/$defs/S9"
+                          "$ref": "#/$defs/S10"
                         }
                       },
                       "required": ["first_posts", "rejected_first_posts", "rejection_rate"],
@@ -13616,10 +13608,10 @@
                       "additionalProperties": false,
                       "properties": {
                         "clearance_actions_over_time": {
-                          "$ref": "#/$defs/S5"
+                          "$ref": "#/$defs/S6"
                         },
                         "moderator_actions_over_time": {
-                          "$ref": "#/$defs/S5"
+                          "$ref": "#/$defs/S6"
                         },
                         "pending_reports": {
                           "type": "number"
@@ -13677,7 +13669,7 @@
                           "type": "array"
                         },
                         "reasons_over_time": {
-                          "$ref": "#/$defs/S5"
+                          "$ref": "#/$defs/S6"
                         }
                       },
                       "required": ["reasons", "reasons_over_time"],
@@ -13940,7 +13932,7 @@
                       }
                     },
                     "users": {
-                      "$ref": "#/$defs/S10"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["window", "stats", "users"],
@@ -14015,7 +14007,7 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     },
                     "moderator_actions": {
                       "type": "object",
@@ -14026,6 +14018,9 @@
                             "type": "string"
                           },
                           "community_id": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "moderation_transparency_community_id": {
                             "$ref": "#/$defs/S3"
                           },
                           "actor_user_id": {
@@ -14068,9 +14063,6 @@
                             "$ref": "#/$defs/S3"
                           },
                           "agent_moderation_id": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "agent_moderation_post_id": {
                             "$ref": "#/$defs/S3"
                           },
                           "oauth_client_id": {
@@ -14116,6 +14108,7 @@
                         "required": [
                           "id",
                           "community_id",
+                          "moderation_transparency_community_id",
                           "actor_user_id",
                           "action_type",
                           "post_id",
@@ -14130,7 +14123,6 @@
                           "vote_integrity_flag_id",
                           "vote_weight_penalty_id",
                           "agent_moderation_id",
-                          "agent_moderation_post_id",
                           "oauth_client_id",
                           "user_moderator_note_id",
                           "hostname_crawler_configuration_id",
@@ -14149,7 +14141,7 @@
                       }
                     },
                     "users": {
-                      "$ref": "#/$defs/S10"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["results", "page_info", "moderator_actions", "users"],
@@ -14175,7 +14167,7 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     },
                     "posts": {
                       "type": "object",
@@ -14221,14 +14213,7 @@
                             "type": "string"
                           },
                           "created_by": {
-                            "anyOf": [
-                              {
-                                "$ref": "#/$defs/S1"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
+                            "$ref": "#/$defs/S4"
                           },
                           "created_by_id": {
                             "$ref": "#/$defs/S2"
@@ -14610,7 +14595,7 @@
                                   "hostname": {
                                     "anyOf": [
                                       {
-                                        "$ref": "#/$defs/S8"
+                                        "$ref": "#/$defs/S9"
                                       },
                                       {
                                         "type": "null"
@@ -14622,7 +14607,7 @@
                                   },
                                   "hostnames": {
                                     "items": {
-                                      "$ref": "#/$defs/S8"
+                                      "$ref": "#/$defs/S9"
                                     },
                                     "type": "array"
                                   },
@@ -14689,14 +14674,7 @@
                             "type": "string"
                           },
                           "updated_by": {
-                            "anyOf": [
-                              {
-                                "$ref": "#/$defs/S1"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
+                            "$ref": "#/$defs/S4"
                           },
                           "updated_by_id": {
                             "$ref": "#/$defs/S2"
@@ -14705,10 +14683,20 @@
                             "$ref": "#/$defs/S2"
                           },
                           "claim": {
-                            "$ref": "#/$defs/S6"
+                            "$ref": "#/$defs/S7"
                           },
                           "escalated_at": {
                             "$ref": "#/$defs/S3"
+                          },
+                          "is_flagged_by_openai_omni_moderation": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -14740,7 +14728,10 @@
                           "updated_at",
                           "updated_by_id",
                           "claim",
-                          "escalated_at"
+                          "escalated_at",
+                          "is_flagged_by_openai_omni_moderation",
+                          "created_by",
+                          "updated_by"
                         ],
                         "type": "object"
                       }
@@ -14826,7 +14817,7 @@
                             "type": "string"
                           },
                           "player": {
-                            "$ref": "#/$defs/S7"
+                            "$ref": "#/$defs/S8"
                           },
                           "provider": {
                             "anyOf": [
@@ -14861,7 +14852,7 @@
                             "type": "string"
                           },
                           "thumbnail": {
-                            "$ref": "#/$defs/S7"
+                            "$ref": "#/$defs/S8"
                           },
                           "title": {
                             "$ref": "#/$defs/S3"
@@ -14982,7 +14973,7 @@
                                     "type": "boolean"
                                   },
                                   "judged_report_count": {
-                                    "$ref": "#/$defs/S9"
+                                    "$ref": "#/$defs/S10"
                                   },
                                   "public_response": {
                                     "$ref": "#/$defs/S3"
@@ -15096,7 +15087,7 @@
                             "$ref": "#/$defs/S3"
                           },
                           "claim": {
-                            "$ref": "#/$defs/S6"
+                            "$ref": "#/$defs/S7"
                           }
                         },
                         "required": [
@@ -15171,7 +15162,7 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     },
                     "community_restrictions": {
                       "type": "object",
@@ -15215,9 +15206,6 @@
                           },
                           "reason": {
                             "$ref": "#/$defs/S3"
-                          },
-                          "active_score": {
-                            "type": "number"
                           }
                         },
                         "required": [
@@ -15231,8 +15219,7 @@
                           "updated_at",
                           "lifted_at",
                           "lifted_by_id",
-                          "reason",
-                          "active_score"
+                          "reason"
                         ],
                         "additionalProperties": false
                       }
@@ -15313,7 +15300,7 @@
                       }
                     },
                     "page_info": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["results", "page_info"],
@@ -15322,180 +15309,227 @@
               ],
               "$defs": {
                 "S1": {
-                  "additionalProperties": false,
-                  "properties": {
-                    "__entity_type": {
-                      "const": "user"
-                    },
-                    "account_type": {
-                      "anyOf": [
-                        {
-                          "const": "ai_agent"
-                        },
-                        {
-                          "const": "official"
-                        },
-                        {
-                          "const": "system"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "individual_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "is_verified_badge_visible": {
-                      "anyOf": [
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "markdown": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "profile_image_id": {
-                      "anyOf": [
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "profile_image_placement": {
-                      "anyOf": [
-                        {
-                          "additionalProperties": false,
-                          "properties": {
-                            "image_id": {
-                              "type": "string"
-                            },
-                            "placement_id": {
-                              "type": "string"
-                            },
-                            "placement_revision": {
-                              "type": "number"
-                            }
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "__entity_type": {
+                        "const": "user"
+                      },
+                      "account_type": {
+                        "anyOf": [
+                          {
+                            "const": "ai_agent"
                           },
-                          "required": ["image_id", "placement_id", "placement_revision"],
-                          "type": "object"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "roles": {
-                      "items": {
+                          {
+                            "const": "official"
+                          },
+                          {
+                            "const": "system"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "display_account": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "name": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": ["name"],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "id": {
                         "type": "string"
                       },
-                      "type": "array"
-                    },
-                    "use_display_name_from": {
-                      "anyOf": [
-                        {
-                          "const": "apple"
-                        },
-                        {
-                          "const": "facebook"
-                        },
-                        {
-                          "const": "github"
-                        },
-                        {
-                          "const": "google"
-                        },
-                        {
-                          "const": "linkedin"
-                        },
-                        {
-                          "const": "microsoft"
-                        },
-                        {
-                          "const": "username"
-                        },
-                        {
-                          "const": "x"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "username": {
-                      "anyOf": [
-                        {
+                      "is_verified_badge_visible": {
+                        "anyOf": [
+                          {
+                            "const": false
+                          },
+                          {
+                            "const": true
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lingua_rs_detected_language": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "markdown": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "profile_image_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "profile_image_placement": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "image_id": {
+                                "type": "string"
+                              },
+                              "placement_id": {
+                                "type": "string"
+                              },
+                              "placement_revision": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["image_id", "placement_id", "placement_revision"],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "public_verified_name_display": {
+                        "anyOf": [
+                          {
+                            "const": "first_name_last_initial"
+                          },
+                          {
+                            "const": "first_name"
+                          },
+                          {
+                            "const": "full_name"
+                          },
+                          {
+                            "const": "hidden"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "roles": {
+                        "items": {
                           "type": "string"
                         },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                        "type": "array"
+                      },
+                      "use_display_name_from": {
+                        "anyOf": [
+                          {
+                            "const": "apple"
+                          },
+                          {
+                            "const": "facebook"
+                          },
+                          {
+                            "const": "github"
+                          },
+                          {
+                            "const": "google"
+                          },
+                          {
+                            "const": "linkedin"
+                          },
+                          {
+                            "const": "microsoft"
+                          },
+                          {
+                            "const": "username"
+                          },
+                          {
+                            "const": "x"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "username": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "verification_status": {
+                        "anyOf": [
+                          {
+                            "const": "duplicate_id"
+                          },
+                          {
+                            "const": "failed"
+                          },
+                          {
+                            "const": "identity_pending"
+                          },
+                          {
+                            "const": "payment_pending"
+                          },
+                          {
+                            "const": "unverified"
+                          },
+                          {
+                            "const": "verified"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "verified_display_name": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
                     },
-                    "verification_status": {
-                      "anyOf": [
-                        {
-                          "const": "duplicate_id"
-                        },
-                        {
-                          "const": "failed"
-                        },
-                        {
-                          "const": "identity_pending"
-                        },
-                        {
-                          "const": "payment_pending"
-                        },
-                        {
-                          "const": "unverified"
-                        },
-                        {
-                          "const": "verified"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "verified_display_name": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
+                    "required": ["__entity_type", "account_type", "id", "roles"],
+                    "type": "object"
                   },
-                  "required": ["__entity_type", "account_type", "id", "roles"],
+                  "properties": {},
                   "type": "object"
                 },
                 "S2": {
@@ -15519,6 +15553,172 @@
                   ]
                 },
                 "S4": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "const": "user"
+                        },
+                        "account_type": {
+                          "anyOf": [
+                            {
+                              "const": "ai_agent"
+                            },
+                            {
+                              "const": "official"
+                            },
+                            {
+                              "const": "system"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "individual_id": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "is_verified_badge_visible": {
+                          "anyOf": [
+                            {
+                              "const": false
+                            },
+                            {
+                              "const": true
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "markdown": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "profile_image_id": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "profile_image_placement": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "image_id": {
+                                  "type": "string"
+                                },
+                                "placement_id": {
+                                  "type": "string"
+                                },
+                                "placement_revision": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["image_id", "placement_id", "placement_revision"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "roles": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "use_display_name_from": {
+                          "anyOf": [
+                            {
+                              "const": "apple"
+                            },
+                            {
+                              "const": "facebook"
+                            },
+                            {
+                              "const": "github"
+                            },
+                            {
+                              "const": "google"
+                            },
+                            {
+                              "const": "linkedin"
+                            },
+                            {
+                              "const": "microsoft"
+                            },
+                            {
+                              "const": "username"
+                            },
+                            {
+                              "const": "x"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "username": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "verification_status": {
+                          "anyOf": [
+                            {
+                              "const": "duplicate_id"
+                            },
+                            {
+                              "const": "failed"
+                            },
+                            {
+                              "const": "identity_pending"
+                            },
+                            {
+                              "const": "payment_pending"
+                            },
+                            {
+                              "const": "unverified"
+                            },
+                            {
+                              "const": "verified"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "verified_display_name": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "display_account": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "$ref": "#/$defs/S3"
+                                }
+                              },
+                              "required": ["name"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["__entity_type", "account_type", "id", "roles"],
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "S5": {
                   "additionalProperties": false,
                   "properties": {
                     "end_cursor": {
@@ -15534,7 +15734,7 @@
                   "required": ["end_cursor", "has_next_page", "start_cursor"],
                   "type": "object"
                 },
-                "S5": {
+                "S6": {
                   "items": {
                     "additionalProperties": false,
                     "properties": {
@@ -15553,7 +15753,7 @@
                   },
                   "type": "array"
                 },
-                "S6": {
+                "S7": {
                   "anyOf": [
                     {
                       "additionalProperties": false,
@@ -15596,7 +15796,7 @@
                     }
                   ]
                 },
-                "S7": {
+                "S8": {
                   "anyOf": [
                     {
                       "additionalProperties": false,
@@ -15633,7 +15833,7 @@
                     }
                   ]
                 },
-                "S8": {
+                "S9": {
                   "additionalProperties": false,
                   "properties": {
                     "__entity_type": {
@@ -15649,7 +15849,7 @@
                   "required": ["__entity_type", "hostname", "id"],
                   "type": "object"
                 },
-                "S9": {
+                "S10": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -15658,12 +15858,6 @@
                       "type": "number"
                     }
                   ]
-                },
-                "S10": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "$ref": "#/$defs/S1"
-                  }
                 },
                 "S11": {
                   "items": {
@@ -17358,9 +17552,6 @@
                       "items": {
                         "additionalProperties": false,
                         "properties": {
-                          "__entity_type": {
-                            "const": "community_application_question"
-                          },
                           "community_id": {
                             "type": "string"
                           },
@@ -17397,7 +17588,6 @@
                           }
                         },
                         "required": [
-                          "__entity_type",
                           "community_id",
                           "created_at",
                           "deleted_at",

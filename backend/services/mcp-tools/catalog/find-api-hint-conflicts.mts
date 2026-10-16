@@ -5,8 +5,8 @@ export type ApiHintConflict = { tool: string; conflict: string }
 const IDEMPOTENT_METHODS: ReadonlySet<ToolApiEndpoint['method']> = new Set(['PUT', 'DELETE'])
 
 // A tool's MCP hints must agree with the REST operations it names: a read maps only to GETs, and a
-// user write is idempotent with a required UUID admission key, or when every operation is
-// PUT or DELETE. Staff actions declare
+// user write may claim idempotency with a required UUID admission key, or when every operation is
+// PUT or DELETE. A conservative false hint is always valid. Staff actions declare
 // their service semantics explicitly: history and guarded no-ops do not follow HTTP methods.
 export function findApiHintConflicts(tools: readonly Tool[]): ApiHintConflict[] {
   return tools.flatMap(tool => {
@@ -42,7 +42,10 @@ function hintConflict(
       : 'staff write must declare idempotentHint'
   const idempotent =
     requiredIdempotencyKey || methods.every(method => IDEMPOTENT_METHODS.has(method))
-  return annotations.idempotentHint === idempotent ? null : `idempotentHint should be ${idempotent}`
+  return typeof annotations.idempotentHint === 'boolean' &&
+    (!annotations.idempotentHint || idempotent)
+    ? null
+    : `idempotentHint should be ${idempotent}`
 }
 
 function hasRequiredIdempotencyKey(tool: Tool): boolean {
