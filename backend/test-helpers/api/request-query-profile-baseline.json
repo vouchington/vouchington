@@ -30,11 +30,6 @@
     "issue": 2606
   },
   {
-    "annotation": "assertOAuthAccountConnectionUserActive",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
-  },
-  {
     "annotation": "assertPostMutationAccess",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612
@@ -758,16 +753,6 @@
     "annotation": "lockImageSurfacePlacements",
     "reason": "Image delivery and placement locks run once per image or surface",
     "issue": 2606
-  },
-  {
-    "annotation": "lockOAuthAccountConnectionUser",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
-  },
-  {
-    "annotation": "lockOAuthAccountConnectionUserRow",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
   },
   {
     "annotation": "lockPostPublicationCaptures",

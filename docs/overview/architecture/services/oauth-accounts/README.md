@@ -55,6 +55,12 @@ await connectOAuthAccountToUser(provider, currentUserId, providerUserId)
   clears `users.vote_weight_recalculated_at`, leaving durable intent for the vote-weight dispatcher.
   Callers run the immediate recalculation enqueue and best-effort verified-email cache invalidation
   after commit. Throws `409` if linked to another user, `404` if the account doesn't exist.
+- `assertOAuthAccountConnectionUserActive(query, userId)` returns an opaque active-user context
+  after taking the lifecycle advisory lock, the user row lock, and a fresh suspension read.
+  `connectOAuthAccountToActiveUser(provider, context, providerUserId)` reuses that context and its
+  exact transaction. OAuth completion retains the locks through linking and completion persistence,
+  so it runs these guards once; replays still take the guards in their own transaction. New
+  suspensions require a conflicting user FK lock and deletion requires the lifecycle lock.
 - `getOAuthAccountByProviderUserId(provider, providerUserId)` — looks up an account row by provider user ID, or `null`
 - `decodeJwtPart(part)` — base64url-decodes and JSON-parses a JWT segment (header/payload); throws `422` on malformed input
 
