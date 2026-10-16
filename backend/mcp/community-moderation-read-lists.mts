@@ -27,6 +27,19 @@ function page(args: CommunityModerationArgs) {
   return { limit: args.limit as number | undefined, after: args.after as string | undefined }
 }
 
+async function readBanPage(communityId: string, args: CommunityModerationArgs) {
+  const result = await searchCommunityBans(communityId, page(args))
+  const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(b => b.user_id))
+  return {
+    results: result.results.map(b => ({ __entity_type: 'community_ban', id: b.id })),
+    page_info: result.page_info,
+    community_bans: Object.fromEntries(
+      result.results.map(({ case_id: _, ...ban }) => [ban.id, ban]),
+    ),
+    users: indexById(publicUsers.filter(user => user != null)),
+  }
+}
+
 export const communityModerationReadLists: Record<string, CommunityModerationHandler> = {
   async list_applications(user, args) {
     const { community } = await loadCommunityForModerator(user, args.community)
@@ -43,16 +56,7 @@ export const communityModerationReadLists: Record<string, CommunityModerationHan
 
   async list_bans(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'bans')
-    const result = await searchCommunityBans(community.id, page(args))
-    const publicUsers = await getUserPublicByAnyCachedBatch(result.results.map(b => b.user_id))
-    return {
-      results: result.results.map(b => ({ __entity_type: 'community_ban', id: b.id })),
-      page_info: result.page_info,
-      community_bans: Object.fromEntries(
-        result.results.map(({ case_id: _, ...ban }) => [ban.id, ban]),
-      ),
-      users: indexById(publicUsers.filter(user => user != null)),
-    }
+    return readBanPage(community.id, args)
   },
 
   async list_invites(user, args) {
