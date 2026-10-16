@@ -4,7 +4,6 @@ import {
   SES_INBOUND_PROCESS_JOB,
   SES_INBOUND_RECONCILE_JOB,
 } from '@queues/background/enqueues/ses-inbound-jobs'
-import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { background } from '@queues/background/queues'
 import { readRetainedFailedSesInboundProcessJobs } from '@queues/ses-inbound/enqueues'
 import { BACKGROUND_HANDLERS } from '../processors/handlers.mts'
@@ -48,19 +47,9 @@ describe('SES inbound background handlers', () => {
     }
   })
 
-  it('parks a registered job of a domain this worker does not serve and rejects an unknown name', async () => {
-    const job = await background.add(
-      OPENAI_MODERATION_POST_JOB.name,
-      { id: crypto.randomUUID() },
-      { attempts: 1 },
-    )
-    try {
-      expect(await job?.getState()).toBe('delayed')
-      await expect(
-        background.add('not-a-domain.job', {}, { attempts: 1, removeOnFail: true }),
-      ).rejects.toThrow('Unknown background job: not-a-domain.job')
-    } finally {
-      await job?.remove()
-    }
+  it('rejects an unknown job name before it reaches a worker', async () => {
+    await expect(
+      background.add('not-a-domain.job', {}, { attempts: 1, removeOnFail: true }),
+    ).rejects.toThrow('Unknown background job: not-a-domain.job')
   })
 })

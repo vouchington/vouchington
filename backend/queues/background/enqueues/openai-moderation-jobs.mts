@@ -1,12 +1,13 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
-// OpenAI's moderation endpoint is the external limit: 10 starts per second across every worker.
-// The group concurrency never binds; worker concurrency bounds jobs in flight, and the group
-// exists for its `rateLimit`, which replaces the old queue-wide limiter.
+// OpenAI's moderation endpoint is the external limit: 10 starts per second across every worker,
+// which the group `rateLimit` enforces in place of the old queue-wide limiter. The group
+// concurrency is the old worker's baseline of 5, so a moderation backlog cannot take the shared
+// worker's slots.
 export const OPENAI_MODERATION_DOMAIN = defineBackgroundDomain({
   domain: 'openai-moderation',
-  group: { kind: 'domain', concurrency: 50, rateLimit: { max: 10, duration: 1_000 } },
+  group: { kind: 'domain', concurrency: 5, rateLimit: { max: 10, duration: 1_000 } },
   workerConcurrency: 5,
 })
 

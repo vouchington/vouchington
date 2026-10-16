@@ -41,7 +41,7 @@ describe('enqueueCreatePostModeration', () => {
       priority: 10,
       ordering: {
         key: 'openai-moderation',
-        concurrency: 50,
+        concurrency: 5,
         rateLimit: { max: 10, duration: 1000 },
       },
       deduplication: {
