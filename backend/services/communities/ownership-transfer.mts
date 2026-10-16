@@ -15,56 +15,6 @@ import {
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 
-export async function transferCommunityOwnershipWithOptions(
-  communityId: string,
-  fromUserId: string,
-  toUserId: string,
-  options: QueryOptions,
-): Promise<{ demotedUpdatedAt: Date; promotedUpdatedAt: Date }> {
-  await lockCommunityUsers(communityId, [fromUserId, toUserId], options)
-
-  // Swap roles atomically in one statement: if either precondition fails, neither update commits.
-  const { rows } = await write(
-    sql`/* transferCommunityOwnership */
-    WITH demote AS (
-      UPDATE community_members
-      SET role = 'moderator'
-      WHERE community_id = ${communityId}
-        AND user_id = ${fromUserId}
-        AND role = 'owner'
-        AND removed_at IS NULL
-      RETURNING updated_at
-    ),
-    promote AS (
-      UPDATE community_members
-      SET role = 'owner'
-      WHERE community_id = ${communityId}
-        AND user_id = ${toUserId}
-        AND role = 'moderator'
-        AND removed_at IS NULL
-        AND EXISTS (SELECT 1 FROM demote)
-      RETURNING updated_at
-    )
-    SELECT
-      (SELECT COUNT(*) FROM demote)::int AS demoted,
-      (SELECT COUNT(*) FROM promote)::int AS promoted,
-      (SELECT updated_at FROM demote) AS demoted_updated_at,
-      (SELECT updated_at FROM promote) AS promoted_updated_at
-    `,
-    options,
-  )
-  const { demoted, promoted, demoted_updated_at, promoted_updated_at } = rows[0] as {
-    demoted: number
-    promoted: number
-    demoted_updated_at: Date | null
-    promoted_updated_at: Date | null
-  }
-  if (demoted === 0) throw createHttpError(409, 'Community ownership changed concurrently')
-  if (promoted === 0) throw createHttpError(422, 'Target user is no longer an eligible moderator')
-  assert(demoted_updated_at && promoted_updated_at, 500, 'Ownership transition timestamps missing')
-  return { demotedUpdatedAt: demoted_updated_at, promotedUpdatedAt: promoted_updated_at }
-}
-
 /**
  * Allows an owner to voluntarily transfer ownership to a moderator.
  * The target must be an active moderator of the community.
@@ -92,7 +42,7 @@ export async function initiateOwnershipTransfer(
   assert(targetMember, 404, 'Target user is not a member of this community')
   assert(targetMember.role === 'moderator', 422, 'Ownership can only be transferred to a moderator')
 
-  const transition = await transferCommunityOwnershipWithOptions(
+  const transition = await transferLockedCommunityOwnership(
     communityId,
     currentUserId,
     targetUserId,
@@ -137,6 +87,54 @@ export async function initiateOwnershipTransfer(
     targetUserId,
     currentUserId,
   )
+}
+
+async function transferLockedCommunityOwnership(
+  communityId: string,
+  fromUserId: string,
+  toUserId: string,
+  options: QueryOptions,
+): Promise<{ demotedUpdatedAt: Date; promotedUpdatedAt: Date }> {
+  // Swap roles atomically in one statement: if either precondition fails, neither update commits.
+  const { rows } = await write(
+    sql`/* transferCommunityOwnership */
+    WITH demote AS (
+      UPDATE community_members
+      SET role = 'moderator'
+      WHERE community_id = ${communityId}
+        AND user_id = ${fromUserId}
+        AND role = 'owner'
+        AND removed_at IS NULL
+      RETURNING updated_at
+    ),
+    promote AS (
+      UPDATE community_members
+      SET role = 'owner'
+      WHERE community_id = ${communityId}
+        AND user_id = ${toUserId}
+        AND role = 'moderator'
+        AND removed_at IS NULL
+        AND EXISTS (SELECT 1 FROM demote)
+      RETURNING updated_at
+    )
+    SELECT
+      (SELECT COUNT(*) FROM demote)::int AS demoted,
+      (SELECT COUNT(*) FROM promote)::int AS promoted,
+      (SELECT updated_at FROM demote) AS demoted_updated_at,
+      (SELECT updated_at FROM promote) AS promoted_updated_at
+    `,
+    options,
+  )
+  const { demoted, promoted, demoted_updated_at, promoted_updated_at } = rows[0] as {
+    demoted: number
+    promoted: number
+    demoted_updated_at: Date | null
+    promoted_updated_at: Date | null
+  }
+  if (demoted === 0) throw createHttpError(409, 'Community ownership changed concurrently')
+  if (promoted === 0) throw createHttpError(422, 'Target user is no longer an eligible moderator')
+  assert(demoted_updated_at && promoted_updated_at, 500, 'Ownership transition timestamps missing')
+  return { demotedUpdatedAt: demoted_updated_at, promotedUpdatedAt: promoted_updated_at }
 }
 
 type OwnershipTransferEmailEnqueues = {

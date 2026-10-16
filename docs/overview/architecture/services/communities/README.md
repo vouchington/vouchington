@@ -20,6 +20,10 @@ observe queue admission; the API does not await it. Enqueue failures retain the 
 error reporting, so a decision-email enqueue rejection does not turn a committed review into an API
 failure.
 
+Ownership transfer takes the sorted per-user community advisory locks once, before reading both
+memberships. Its private role-transition helper uses that same transaction and retains the locks
+through role updates and notification persistence.
+
 Invite creation, member role changes, and ownership transfers also expose the resulting email
 enqueue promises to service callers that need to observe admission. `createInvite()` keeps the
 invite-row return used by the API; `createInviteWithEmailEnqueue()` additionally returns
