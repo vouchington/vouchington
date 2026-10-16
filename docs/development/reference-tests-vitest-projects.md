@@ -20,6 +20,11 @@ Project test and hook budgets obey the [suite hard cap](tests.md#test-suite-rule
 Enforcing that cap is separate from the five-second defaults rollout in #2149; it does not
 change server startup or transport deadlines.
 
+The `ts-shared`, `backend-email-templates`, and `backend-contract-artifacts` projects
+use five-second test and hook defaults, checked by
+`ci/vitest-shared-render-project-defaults.test.mts`. Existing explicit case overrides
+remain within the suite cap; project routing, rendering and artifact contracts are unchanged.
+
 Every project must declare an explicit `testTimeout` and `hookTimeout`, enforced by
 `dev/vitest-config.test.mts`. Follow the [suite rules](tests.md#test-suite-rules) when choosing
 budgets for a new project or a per-test override. Existing project budgets are being reduced in

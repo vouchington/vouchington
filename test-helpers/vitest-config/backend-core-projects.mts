@@ -21,8 +21,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       name: 'ts-shared',
       include: ['ts-shared/**/*.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      testTimeout: 15_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
@@ -77,8 +77,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       name: 'backend-contract-artifacts',
       include: ['backend/test-helpers/api-fixtures/native-moderation-optional-contracts.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
-      testTimeout: 30_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
@@ -107,8 +107,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       include: ['email-templates/**/*.test.{tsx,mts}'],
       exclude: ['**/node_modules/**', '**/.git/**'],
       environment: 'node',
-      testTimeout: 15_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
