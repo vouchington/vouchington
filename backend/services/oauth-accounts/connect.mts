@@ -30,51 +30,69 @@ export async function connectOAuthAccountToUser(
   providerUserId: string,
   options: QueryOptions = {},
 ): Promise<void> {
-  const config = providerTableConfigs[provider]
   await withTransactionOptions(options, async query => {
-    await assertOAuthAccountConnectionUserActive(query, userId)
-    const { rows, rowCount } = await query<{ provider_user_id: string }>(
-      `/* connectOAuthAccountToUser */
-       WITH connected_account AS (
-         UPDATE ${config.table} AS account
-         SET user_id = $1
-         FROM users
-         WHERE account.${config.providerUserIdColumn} = $2
-           AND users.id = $1
-           AND users.deleted_at IS NULL
-           AND (account.user_id IS NULL OR account.user_id = $1)
-         RETURNING account.${config.providerUserIdColumn} AS provider_user_id
-       ),
-       vote_weight_recovery AS (
-         UPDATE users
-         SET vote_weight_recalculated_at = NULL
-         WHERE id = $1
-           AND deleted_at IS NULL
-           AND EXISTS (SELECT 1 FROM connected_account)
-         RETURNING id
-       )
-       SELECT connected_account.provider_user_id
-       FROM connected_account
-       INNER JOIN vote_weight_recovery ON TRUE`,
-      [userId, providerUserId],
-    )
-    if (!rowCount || !rows[0]) {
-      const existing = await query(
-        `/* connectOAuthAccountToUser */ SELECT ${config.providerUserIdColumn} FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
-        [providerUserId],
-      )
-      if (existing.rows[0]) {
-        throw createHttpError(409, `${provider} account already connected to another account`)
-      }
-      throw createHttpError(404, `${provider} account not found`)
-    }
+    const activeUser = await assertOAuthAccountConnectionUserActive(query, userId)
+    await connectOAuthAccountToActiveUser(provider, activeUser, providerUserId)
   })
+}
+
+const activeConnectionUser = Symbol('activeOAuthAccountConnectionUser')
+
+type ActiveOAuthAccountConnectionUser = {
+  readonly [activeConnectionUser]: true
+  readonly query: TransactionQuery
+  readonly userId: string
+}
+
+/** Reuses the active-user guard while its transaction still holds the lifecycle and row locks. */
+export async function connectOAuthAccountToActiveUser(
+  provider: OAuthProvider,
+  activeUser: ActiveOAuthAccountConnectionUser,
+  providerUserId: string,
+): Promise<void> {
+  const { query, userId } = activeUser
+  const config = providerTableConfigs[provider]
+  const { rows, rowCount } = await query<{ provider_user_id: string }>(
+    `/* connectOAuthAccountToUser */
+     WITH connected_account AS (
+       UPDATE ${config.table} AS account
+       SET user_id = $1
+       FROM users
+       WHERE account.${config.providerUserIdColumn} = $2
+         AND users.id = $1
+         AND users.deleted_at IS NULL
+         AND (account.user_id IS NULL OR account.user_id = $1)
+       RETURNING account.${config.providerUserIdColumn} AS provider_user_id
+     ),
+     vote_weight_recovery AS (
+       UPDATE users
+       SET vote_weight_recalculated_at = NULL
+       WHERE id = $1
+         AND deleted_at IS NULL
+         AND EXISTS (SELECT 1 FROM connected_account)
+       RETURNING id
+     )
+     SELECT connected_account.provider_user_id
+     FROM connected_account
+     INNER JOIN vote_weight_recovery ON TRUE`,
+    [userId, providerUserId],
+  )
+  if (!rowCount || !rows[0]) {
+    const existing = await query(
+      `/* connectOAuthAccountToUser */ SELECT ${config.providerUserIdColumn} FROM ${config.table} WHERE ${config.providerUserIdColumn} = $1`,
+      [providerUserId],
+    )
+    if (existing.rows[0]) {
+      throw createHttpError(409, `${provider} account already connected to another account`)
+    }
+    throw createHttpError(404, `${provider} account not found`)
+  }
 }
 
 export async function assertOAuthAccountConnectionUserActive(
   query: TransactionQuery,
   userId: string,
-): Promise<void> {
+): Promise<ActiveOAuthAccountConnectionUser> {
   // Deletion takes this advisory lock before the user row; keep the same lock order.
   await query('/* lockOAuthAccountConnectionUser */ SELECT fn_lock_active_user_for_mutation($1)', [
     userId,
@@ -95,6 +113,8 @@ export async function assertOAuthAccountConnectionUserActive(
   if (rows[0]?.suspended) {
     throw createCodedError(403, 'Your account has been suspended', ACCOUNT_SUSPENDED)
   }
+  // FOR UPDATE also blocks the users FK check on every new suspension until commit.
+  return Object.freeze({ [activeConnectionUser]: true as const, query, userId })
 }
 
 export async function runOAuthAccountConnectionPostCommitEffects(
