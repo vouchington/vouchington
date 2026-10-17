@@ -55,7 +55,7 @@ async function connectBlueskyAccountInTransaction(
 ): Promise<void> {
   await lockBlueskyLinkOwner(userId, did, query)
   await lockAuthorization(linkAuthorizationId, userId, query)
-  await connectBlueskyAccountInLockedTransaction(userId, did, handle, linkAuthorizationId, query)
+  return connectBlueskyAccountInLockedTransaction(userId, did, handle, linkAuthorizationId, query)
 }
 
 async function lockBlueskyLinkOwner(

@@ -560,6 +560,11 @@
     "issue": 2607
   },
   {
+    "annotation": "lockBlueskyLinkAuthorization",
+    "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
+    "issue": 3119
+  },
+  {
     "annotation": "lockBlueskySessionOwner:did",
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
     "issue": 3119
