@@ -1487,6 +1487,32 @@ rules:
       - '**/yarn.lock'
       - '**/Cargo.lock'
       - '**/Package.resolved'
+  - name: Durable app-owned IDs in creation paths use UUIDv7
+    rule: forbidden-calls
+    scope: repository
+    message: >-
+      randomUUID()/v4() are reserved for temporary markers, tokens, and other opaque non-durable
+      values; mint durable app-owned IDs as UUIDv7.
+    options:
+      roots:
+        - file: backend/services/bedrock-embeddings-batch/orchestrator/create.mts
+        - file: backend/services/admin-imports/seed-csvs.mts
+        - file: backend/api/v1/posts/posts-routes/posts-create-post.mts
+        - file: backend/api/v1/communities/posts-honeypot-response.mts
+      traversal: direct
+      unknownCalls: ignore
+      targets:
+        - exact: crypto.randomUUID
+        - moduleExport:
+            module: node:crypto
+            export: randomUUID
+        - moduleExport:
+            module: crypto
+            export: randomUUID
+        - moduleExport:
+            module: uuid
+            export: v4
+
   - name: Vitest tests do not invoke real timers
     rule: forbidden-calls
     scope: repository

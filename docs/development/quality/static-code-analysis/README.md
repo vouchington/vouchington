@@ -390,7 +390,7 @@ identifiers and domain-specific reset functions remain valid. Two entity test he
 exact file-, AST-, and canonical-`ValkeyCache`-binding exceptions for legitimate domain-cache
 resets; the email-domain exception additionally requires its literal cache prefix.
 
-The durable UUID guard (`no-durable-random-uuidv4.yml`) keeps new app-owned IDs in the current post, community, import-batch, and Bedrock batch creation paths on UUIDv7. It is intentionally narrow and does not police temporary tables or filenames, request/correlation tokens, or analytics event IDs.
+The durable UUID guard (the `.no-mistakes.yml` `forbidden-calls` application "Durable app-owned IDs in creation paths use UUIDv7") keeps new app-owned IDs in the current post, community, import-batch, and Bedrock batch creation paths on UUIDv7. It is intentionally narrow and does not police temporary tables or filenames, request/correlation tokens, or analytics event IDs.
 
 The `gh-api-no-query-string.yml` rule bans a `gh api` argument-array element that hand-builds a query
 string — a `/`-bearing string or template literal that also carries a `?`, i.e. an endpoint path with
