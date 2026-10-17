@@ -1,3 +1,7 @@
+import {
+  enqueueRejectedFamilyVoteWeightAfterCommit,
+  validateMembershipEvidenceRejectionReason,
+} from './rejection-vote-weight.mts'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
@@ -21,7 +25,7 @@ export async function rejectMembershipProviderEvidence(
     enqueueDeliverMembershipEntitlementEffects?: typeof enqueueDeliverMembershipEntitlementEffectsBestEffort
   } = {},
 ): Promise<{ invalidated: boolean; membershipId: string | null }> {
-  const rejectionReason = validateRejectionReason(reason)
+  const rejectionReason = validateMembershipEvidenceRejectionReason(reason)
   const enqueueEntitlementEffects =
     dependencies.enqueueDeliverMembershipEntitlementEffects ??
     enqueueDeliverMembershipEntitlementEffectsBestEffort
@@ -55,6 +59,8 @@ async function rejectMembershipProviderEvidenceInTransaction(
     query,
   )
   if (!rejectedAt) return { audited: false, invalidated: false, membershipId: null }
+
+  enqueueRejectedFamilyVoteWeightAfterCommit(query, lockedTarget, evidenceId)
 
   await query(sql`/* rejectMembershipProviderEvidence: cancel source */
     UPDATE membership_source_states
@@ -189,11 +195,4 @@ async function rejectVerifiedMembershipProviderEvidence(
     WHERE id = ${evidenceId} AND verified_at IS NOT NULL AND rejected_at IS NULL
     RETURNING rejected_at`)
   return (rows[0] as { rejected_at: Date } | undefined)?.rejected_at ?? null
-}
-
-function validateRejectionReason(reason: string): string {
-  const rejectionReason = reason.trim()
-  if (rejectionReason.length < 1 || rejectionReason.length > 1000)
-    throw new RangeError('Rejection reason must be 1-1000 characters')
-  return rejectionReason
 }

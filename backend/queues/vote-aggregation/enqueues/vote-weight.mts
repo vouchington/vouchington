@@ -1,13 +1,17 @@
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
+  VOTE_AGGREGATION_AGE_MILESTONES_JOB,
+  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
+  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
   VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
   VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
   type UserElectionFanOutCursor,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { VOTE_WEIGHT_DEDUPLICATION_TTL_MS } from './config-vote-weight.mts'
+import { voteAggregation } from '../queues.mts'
 import type { ProcessRecalculateUserVoteWeightData } from './types-vote-weight.mts'
 
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
@@ -22,11 +26,11 @@ function buildRecalculateUserVoteWeightOptions(
   replayElectionsOnly?: boolean,
 ): Partial<JobOptions> {
   return {
-    deduplication: {
-      id: `processRecalculateUserVoteWeight__${userId}${forceRecalculate ? '__force' : ''}${replayElectionsOnly ? '__replay' : ''}`,
-      mode: 'debounce',
-      ttl: VOTE_WEIGHT_DEDUPLICATION_TTL_MS,
-    },
+    jobId: replayElectionsOnly
+      ? `voteWeight__${userId}__replay`
+      : forceRecalculate
+        ? `voteWeight__${userId}__force`
+        : `voteWeight__${userId}__direct__${Date.now()}`,
   }
 }
 
@@ -58,9 +62,13 @@ export function enqueueRecalculateUserVoteWeight(
   userId: string,
   forceRecalculate?: boolean,
 ): EnqueueReturnType {
+  if (forceRecalculate)
+    return enqueueRecalculateVoteWeightEvents([
+      { userId, jobId: `voteWeight__${userId}__force`, forceRecalculate: true },
+    ])
   return enqueueRecalculateUserVoteWeightJob(
-    { userId, forceRecalculate },
-    buildRecalculateUserVoteWeightOptions(userId, forceRecalculate),
+    { userId },
+    buildRecalculateUserVoteWeightOptions(userId),
   )
 }
 
@@ -68,9 +76,36 @@ export function enqueueBulkRecalculateUserVoteWeight(
   userIds: string[],
   forceRecalculate?: boolean,
 ): EnqueueReturnType {
+  if (forceRecalculate)
+    return enqueueRecalculateVoteWeightEvents(
+      userIds.map(userId => ({
+        userId,
+        jobId: `voteWeight__${userId}__force`,
+        forceRecalculate: true,
+      })),
+    )
   return enqueueBulkRecalculateUserVoteWeightJobs(
     userIds.map(userId => ({ userId, forceRecalculate })),
   )
+}
+
+export type VoteWeightEvent = { userId: string; jobId: string; forceRecalculate?: boolean }
+const enqueueVoteWeightEvents = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
+  (event: VoteWeightEvent) => ({
+    data: { userId: event.userId, forceRecalculate: event.forceRecalculate },
+    opts: { jobId: event.jobId },
+  }),
+)
+
+/** Stable signal IDs are recoverable after a completed or failed retained job. */
+export function enqueueRecalculateVoteWeightEvents(events: VoteWeightEvent[]) {
+  return enqueueBulkReactivatingFinished({
+    queue: voteAggregation,
+    inputs: events,
+    jobIdOf: event => event.jobId,
+    enqueueBulk: enqueueVoteWeightEvents,
+  })
 }
 
 export function enqueueRecalculateVoteWeightDispatcher(
@@ -89,6 +124,30 @@ export function enqueueRecalculateVoteWeightDispatcher(
         }
       : undefined,
   )
+}
+
+const enqueueAgeMilestonesJob = createBackgroundEnqueue(VOTE_AGGREGATION_AGE_MILESTONES_JOB)
+const enqueueMembershipExpirationsJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
+)
+const enqueueFamilySourceChangesJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+)
+
+export function enqueueVoteWeightAgeMilestones(
+  data: Parameters<typeof enqueueAgeMilestonesJob>[0] = {},
+) {
+  return enqueueAgeMilestonesJob(data)
+}
+export function enqueueVoteWeightMembershipExpirations(
+  data: Parameters<typeof enqueueMembershipExpirationsJob>[0] = {},
+) {
+  return enqueueMembershipExpirationsJob(data)
+}
+export function enqueueVoteWeightFamilySourceChanges(
+  data: Parameters<typeof enqueueFamilySourceChangesJob>[0] = {},
+) {
+  return enqueueFamilySourceChangesJob(data)
 }
 
 /**
@@ -110,7 +169,10 @@ export function enqueueUserElectionFanOut(
 
 /** Replays election targets without changing saved weights or administrator overrides. */
 export function enqueueBulkElectionUpdateReplay(userIds: string[]): EnqueueReturnType {
-  return enqueueBulkRecalculateUserVoteWeightJobs(
-    userIds.map(userId => ({ userId, replayElectionsOnly: true })),
-  )
+  return enqueueBulkReactivatingFinished({
+    queue: voteAggregation,
+    inputs: userIds.map(userId => ({ userId, replayElectionsOnly: true })),
+    jobIdOf: data => `voteWeight__${data.userId}__replay`,
+    enqueueBulk: enqueueBulkRecalculateUserVoteWeightJobs,
+  })
 }

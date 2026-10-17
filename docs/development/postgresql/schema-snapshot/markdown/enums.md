@@ -1660,3 +1660,9 @@
 - `dismissed`
 - `penalized`
 - `suspended`
+
+## `vote_weight_recalculation_dispatchers`
+
+- `age_milestones`
+- `membership_expirations`
+- `family_source_changes`

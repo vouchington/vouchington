@@ -35,6 +35,8 @@ import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mt
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
+import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
+import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 
 async function main() {
   prepareOutputDir()
@@ -66,6 +68,9 @@ async function main() {
     await runRoundTripShapeScenarios()
     await runUserProfileRoundTripScenarios()
     await runRelationReadBatchScenarios()
+    // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
+    await seedVoteWeightDispatch()
+    await runVoteWeightDispatchScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

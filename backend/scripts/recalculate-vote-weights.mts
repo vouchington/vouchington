@@ -1,10 +1,18 @@
-import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation/enqueues/vote-weight'
+import {
+  enqueueVoteWeightAgeMilestones,
+  enqueueVoteWeightMembershipExpirations,
+  enqueueVoteWeightFamilySourceChanges,
+} from '@queues/vote-aggregation/enqueues/vote-weight'
 import onError from '@modules/on-error'
 
 async function main() {
-  console.log('Enqueuing vote weight recalculation dispatcher...')
-  await enqueueRecalculateVoteWeightDispatcher(null)
-  console.log('Done. Dispatcher job enqueued.')
+  console.log('Enqueuing vote weight signal dispatchers...')
+  await Promise.all([
+    enqueueVoteWeightAgeMilestones(),
+    enqueueVoteWeightMembershipExpirations(),
+    enqueueVoteWeightFamilySourceChanges(),
+  ])
+  console.log('Done. Dispatcher jobs enqueued.')
 }
 
 main().catch(err => {

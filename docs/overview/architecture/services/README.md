@@ -48,6 +48,10 @@ flowchart LR
 
 ## Decisions worth knowing
 
+Vote-weight maintenance separates indexed trigger selection from idempotent recalculation of current
+facts. Source writes enqueue after commit; overlapping persisted windows provide recovery. See
+[vote-weight recovery](../queues/README.md#vote-weight-recovery) for continuation and replay semantics.
+
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong
   there too. Branch on `error.name`, `code` or `status`, never `error.message`.
