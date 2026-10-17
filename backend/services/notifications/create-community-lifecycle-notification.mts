@@ -46,7 +46,8 @@ export async function createCommunityLifecycleNotifications(
         ${inputs.map(input => truncateText(input.title, 300))}::text[],
         ${inputs.map(input => truncateText(input.body, 1000))}::text[]
       ) AS t(user_id, entity_type, community_id, event_key, title, body)
-      ON CONFLICT DO NOTHING
+      ORDER BY user_id ASC, event_key ASC
+      ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING
       RETURNING user_id, id
     `,
     options,
