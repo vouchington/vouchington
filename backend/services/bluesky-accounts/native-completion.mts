@@ -3,7 +3,7 @@ import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { connectBlueskyAccountToUser } from './connect.mts'
+import { connectBlueskyAccountInLockedTransaction } from './connect-locked.mts'
 import { lockBlueskyAuthorizationOwner } from './session-generation.mts'
 import {
   nativeCompletionProofMatches,
@@ -41,11 +41,13 @@ export async function finalizeNativeBlueskyAccountLink(
     throw createHttpError(404, 'Bluesky link completion not found or expired')
   }
   assertActiveNativeLinkUserState(await getActiveNativeLinkUserState(currentUserId, query))
-  await connectBlueskyAccountToUser(currentUserId, completion.bluesky_did, completion.handle, {
+  await connectBlueskyAccountInLockedTransaction(
+    currentUserId,
+    completion.bluesky_did,
+    completion.handle,
+    flowId,
     query,
-    enqueueUserUpdate: false,
-    linkAuthorizationId: flowId,
-  })
+  )
   await write(
     sql`/* finalizeNativeBlueskyAccountLink:consume */
         DELETE FROM bluesky_link_completions WHERE account_link_authorization_id = ${flowId}`,

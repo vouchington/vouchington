@@ -215,11 +215,6 @@
     "issue": 2615
   },
   {
-    "annotation": "deletePasskey",
-    "reason": "The passkey delete runs after fn_lock_active_user_for_mutation; an outer MFA transaction can already hold the user and factor locks",
-    "issue": 3119
-  },
-  {
     "annotation": "deletePendingRecommendation",
     "reason": "Pending-review admission is reread under FOR UPDATE before ordered extension and owning-post deletion writes",
     "issue": 2612
@@ -228,11 +223,6 @@
     "annotation": "deleteProfileLink",
     "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
     "issue": 3120
-  },
-  {
-    "annotation": "deleteTotpAuthenticator",
-    "reason": "The authenticator delete runs after fn_lock_active_user_for_mutation; an outer MFA transaction can already hold the user and factor locks",
-    "issue": 3119
   },
   {
     "annotation": "deleteUserModNote",
@@ -568,11 +558,6 @@
     "annotation": "lockAssessmentForm",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
-  },
-  {
-    "annotation": "lockBlueskyLinkAuthorization",
-    "reason": "SDK credential revocation and durable attachment or rejection each own a transaction that reacquires the authorization generation row lock",
-    "issue": 3119
   },
   {
     "annotation": "lockBlueskySessionOwner:did",

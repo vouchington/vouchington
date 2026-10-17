@@ -1,4 +1,4 @@
-import { beginTransaction, type QueryOptions } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
@@ -6,13 +6,11 @@ import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enque
 export async function deletePasskey(
   currentUserId: string,
   passkeyId: string,
-  opts?: QueryOptions,
+  lockedUserTransaction?: TransactionQuery,
 ): Promise<void> {
-  if (opts?.query) {
-    await opts.query(
-      sql`/* deletePasskey */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
-    )
-    const { rowCount } = await opts.query(
+  // MFA protection already holds the active-user fence and all factor row locks.
+  if (lockedUserTransaction) {
+    const { rowCount } = await lockedUserTransaction(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )
     assert(rowCount === 1, 404, 'Passkey not found')
