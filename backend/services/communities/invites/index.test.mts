@@ -6,6 +6,7 @@ import {
   insertTestCommunityInvite,
   readEnqueuedJob,
   updateTestUserUiLocale,
+  getTestCommunityInviteStorage,
 } from '@voucha/test-helpers'
 import { emails } from '@queues/emails/queues'
 import {
@@ -20,6 +21,7 @@ import { archiveCommunity } from '../archive.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 import { loadCommunityWithViewer } from '../load-with-viewer.mts'
+import { hashToken } from '@modules/token-secrets'
 
 describe('index', () => {
   let owner: PrivateUser
@@ -39,6 +41,24 @@ describe('index', () => {
       expect(invite.invited_user_id).toBe(invitee.id)
       expect(invite.invited_by_id).toBe(owner.id)
       expect(invite.accepted_at).toBeNull()
+      const stored = await getTestCommunityInviteStorage(invite.id)
+      expect(stored?.code_hash).toBe(hashToken('community-invite-code', invite.code))
+      expect(stored?.code_hash).not.toBe(invite.code)
+    })
+
+    it('reinviting a username revokes the old pending code and issues a fresh code', async () => {
+      const invitee = await createTestUser()
+      const first = await inviteAs(owner.id, community.id, { username: invitee.username! })
+      const second = await inviteAs(owner.id, community.id, { username: invitee.username! })
+
+      expect(second.id).not.toBe(first.id)
+      expect(second.code).not.toBe(first.code)
+      expect((await getTestCommunityInviteStorage(first.id))?.revoked_at).not.toBeNull()
+      await expect(redeemInviteCode(invitee.id, first.code)).rejects.toMatchObject({ status: 404 })
+      expect((await getTestCommunityInviteStorage(second.id))?.revoked_at).toBeNull()
+      const redeemed = await redeemInviteCode(invitee.id, second.code)
+      expect(redeemed.accepted_by_id).toBe(invitee.id)
+      expect(await getCommunityMember(community.id, invitee.id)).not.toBeNull()
     })
 
     it('owner can invite by email', async () => {
@@ -168,10 +188,19 @@ describe('index', () => {
         invitedById: owner.id,
         invitedUserId: invitee.id,
       })
+      const emailInvite = await insertTestCommunityInvite({
+        communityId: community.id,
+        invitedById: owner.id,
+        invitedEmail: invitee.email_address!,
+      })
 
       const redeemed = await redeemInviteCode(invitee.id, invite.code)
       expect(redeemed.accepted_at).not.toBeNull()
       expect(redeemed.accepted_by_id).toBe(invitee.id)
+      expect(redeemed).not.toHaveProperty('code')
+      expect(redeemed).not.toHaveProperty('code_hash')
+      expect((await getTestCommunityInviteStorage(invite.id))?.accepted_at).not.toBeNull()
+      expect(await getTestCommunityInviteStorage(emailInvite.id)).toBeNull()
 
       const membership = await getCommunityMember(community.id, invitee.id)
       expect(membership).not.toBeNull()

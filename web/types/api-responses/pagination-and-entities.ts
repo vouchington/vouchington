@@ -91,6 +91,8 @@ export interface ActivateCommunityRestrictionsResponseBody {
 
 export type CommunityInvite = Serialized<BackendCommunityInvite>
 
+export type CreatedCommunityInvite = CommunityInvite & { code: string }
+
 export type { ModeratorActionType }
 
 export interface ModeratorActionView {

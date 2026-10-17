@@ -71,6 +71,18 @@ checks pass. Existing producer/client localization cleanup tracked by Vouchingto
 [vouchington-clients#166](https://github.com/vouchington/vouchington-clients/issues/166) currently
 blocks the native exporter independently of these story fixtures.
 
+## Invite code handoff
+
+Community invite metadata no longer includes `code`. Only invite creation returns a one-time code;
+list and redemption responses contain metadata. Web displays the creation code until dismissed or
+another creation starts. Clients must offer a fresh invitation to share another code.
+
+Swift's `CommunityInvite.code` and .NET's `CommunityInvite.Code` currently require the removed
+field. Native adoption remains pending: make list/redemption models metadata-only and decode the
+creation response separately, retaining its code only for the immediate display. The .NET send
+helper must consume that response. This producer change does not complete native invite UI parity.
+Shared invite fixtures exercise metadata without a code.
+
 ## Push generation handoff
 
 Vouchington owns the API fixture and generated web client contract for push subscription generations.

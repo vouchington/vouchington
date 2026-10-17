@@ -16,6 +16,7 @@ import {
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
+import { deletePendingInvitesForMember } from '../invites/delete-pending-for-member.mts'
 
 type DecisionEmailEnqueue = ReturnType<typeof enqueueSendCommunityApplicationDecisionEmail>
 
@@ -66,6 +67,7 @@ export async function approveApplication(
     `,
     options,
   )
+  await deletePendingInvitesForMember(application.community_id, application.user_id, options)
   const notification = await createCommunityLifecycleNotification(
     {
       userId: application.user_id,

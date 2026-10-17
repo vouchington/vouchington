@@ -43,8 +43,7 @@ export function InviteItem({ invite, loading, onRevoke }: Props) {
           className='text-xs text-muted-foreground'
           suppressHydrationWarning
         >
-          {t('extracted.communities.inviteItem.codeCodeSentSentdate_a7693ef0', {
-            code: invite.code,
+          {t('extracted.communities.inviteItem.sentDate', {
             sentDate: new Date(invite.created_at).toLocaleDateString(),
           })}
         </p>

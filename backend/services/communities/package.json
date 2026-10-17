@@ -33,6 +33,7 @@
     "@modules/markdown-extraction": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/ban-evasion": "workspace:^",

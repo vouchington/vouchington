@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { LoadedCommunity } from '../load-with-viewer.mts'
@@ -7,7 +7,9 @@ import { getCommunityMember } from '../members/get.mts'
 import { getPublicUserByAny } from '@services/users/get'
 import { enqueueSendCommunityInviteEmail } from '@queues/emails/enqueues'
 import onError from '@modules/on-error'
-import type { CommunityInvite } from '../types.mts'
+import type { CommunityInvite, CreatedCommunityInvite } from '../types.mts'
+import { hashCommunityInviteCode } from './code.mts'
+import { lockCommunityUser } from '../bans/lock.mts'
 
 function generateInviteCode(): string {
   return randomBytes(4).toString('hex')
@@ -22,7 +24,7 @@ export async function createInvite(
   currentUserId: string,
   loaded: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
-): Promise<CommunityInvite> {
+): Promise<CreatedCommunityInvite> {
   const { invite } = await createInviteWithEmailEnqueue(currentUserId, loaded, input)
   return invite
 }
@@ -32,7 +34,7 @@ export async function createInviteWithEmailEnqueue(
   { community, membership }: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
 ): Promise<{
-  invite: CommunityInvite
+  invite: CreatedCommunityInvite
   emailEnqueue: ReturnType<typeof enqueueSendCommunityInviteEmail> | null
 }> {
   assert(input.username || input.email, 422, 'Either username or email is required')
@@ -58,9 +60,6 @@ export async function createInviteWithEmailEnqueue(
     const user = await getPublicUserByAny(input.username)
     assert(user, 404, 'User not found')
     invitedUserId = user.id
-
-    const existing = await getCommunityMember(communityId, invitedUserId)
-    assert(!existing, 409, 'This user is already a member of the community')
   } else if (input.email) {
     invitedEmail = input.email.toLowerCase().trim()
     assert(invitedEmail.length > 0 && invitedEmail.length <= 320, 422, 'Invalid email address')
@@ -71,17 +70,37 @@ export async function createInviteWithEmailEnqueue(
   if (inviter?.username) inviterName = inviter.username
 
   const code = generateInviteCode()
+  const codeHash = hashCommunityInviteCode(code)
+
+  await using transaction = await beginTransaction()
+  const options = { query: transaction }
+  if (invitedUserId) {
+    await lockCommunityUser(communityId, invitedUserId, options)
+    const existing = await getCommunityMember(communityId, invitedUserId, options)
+    assert(!existing, 409, 'This user is already a member of the community')
+    await write(
+      sql`/* createInvite:revoke-pending */
+      UPDATE community_invites SET revoked_at = CURRENT_TIMESTAMP
+      WHERE community_id = ${communityId} AND invited_user_id = ${invitedUserId}
+        AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
+    `,
+      options,
+    )
+  }
 
   const { rows } = await write(
     sql`/* createInvite */
-    INSERT INTO community_invites (community_id, code, invited_user_id, invited_email, invited_by_id)
-    VALUES (${communityId}, ${code}, ${invitedUserId}, ${invitedEmail}, ${currentUserId})
-    RETURNING id, community_id, code, invited_user_id, invited_email, invited_by_id,
+    INSERT INTO community_invites (community_id, code_hash, invited_user_id, invited_email, invited_by_id)
+    VALUES (${communityId}, ${codeHash}, ${invitedUserId}, ${invitedEmail}, ${currentUserId})
+    RETURNING 'community_invite'::text AS __entity_type,
+      id, community_id, invited_user_id, invited_email, invited_by_id,
       accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     `,
+    options,
   )
 
-  const invite = rows[0] as CommunityInvite
+  const invite = { ...(rows[0] as CommunityInvite), code }
+  await transaction.commit()
 
   const emailEnqueue = invitedEmail
     ? enqueueInviteEmail(

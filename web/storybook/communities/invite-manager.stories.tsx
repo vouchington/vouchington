@@ -5,6 +5,7 @@ import {
   setStoryMutationFixture,
 } from '@/storybook/mocks/story-mutation-fixture'
 import { InviteManager } from '@/components/communities/invite-manager'
+import { InviteCodeNotice } from '@/components/communities/invite-code-notice'
 import type { CommunityInvite, CommunityInvitesResponseBody } from '@/types/api-responses'
 import { communities } from '@/storybook/entities/fixtures/communities'
 import { page_info } from '@/storybook/entities/fixtures/shared'
@@ -26,7 +27,6 @@ type Story = StoryObj<typeof meta>
 const pendingInvite: CommunityInvite = {
   __entity_type: 'community_invite',
   id: 'invite-alex',
-  code: 'CARD42',
   community_id: communities[0]!.id,
   invited_user_id: publicUsers[0]!.id,
   invited_email: 'alex@example.com',
@@ -83,4 +83,15 @@ export const PendingInvite: Story = {
 export const Empty: Story = {
   args: { communitySlug: communities[0]!.slug, data: emptyInvites },
   render: args => <InvitePreview {...args} />,
+}
+
+export const CreatedCodeNotice = {
+  render: () => (
+    <StoryFrame>
+      <InviteCodeNotice
+        code='STORY1'
+        onDismiss={() => {}}
+      />
+    </StoryFrame>
+  ),
 }

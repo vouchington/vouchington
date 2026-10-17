@@ -7,6 +7,8 @@ import { assertNotBanned } from '../bans/get.mts'
 import { lockCommunityUser } from '../bans/lock.mts'
 import type { CommunityInvite } from '../types.mts'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
+import { hashCommunityInviteCode } from './code.mts'
+import { deletePendingInvitesForMember } from './delete-pending-for-member.mts'
 
 export async function redeemInviteCode(
   currentUserId: string,
@@ -14,13 +16,15 @@ export async function redeemInviteCode(
 ): Promise<CommunityInvite> {
   await using query = await beginTransaction()
   const options = { query }
+  const codeHash = hashCommunityInviteCode(code)
 
   const { rows } = await read(
     sql`/* redeemInviteCode */
-    SELECT id, community_id, code, invited_user_id, invited_email, invited_by_id,
+    SELECT 'community_invite'::text AS __entity_type,
+      id, community_id, invited_user_id, invited_email, invited_by_id,
       accepted_at, accepted_by_id, declined_at, revoked_at, created_at
     FROM community_invites
-    WHERE code = ${code.toLowerCase()}
+    WHERE code_hash = ${codeHash}
       AND accepted_at IS NULL
       AND declined_at IS NULL
       AND revoked_at IS NULL
@@ -53,7 +57,7 @@ export async function redeemInviteCode(
     UPDATE community_invites
     SET accepted_at = CURRENT_TIMESTAMP,
         accepted_by_id = ${currentUserId}
-    WHERE code = ${code.toLowerCase()}
+    WHERE id = ${found.id}
       AND accepted_at IS NULL
       AND declined_at IS NULL
       AND revoked_at IS NULL
@@ -92,6 +96,7 @@ export async function redeemInviteCode(
     `,
     options,
   )
+  await deletePendingInvitesForMember(found.community_id, currentUserId, options)
 
   const invite = {
     ...found,

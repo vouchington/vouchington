@@ -2821,7 +2821,7 @@
     },
     "web.communities.invites.default": {
       "fixtureIds": ["web.communities.invites.default"],
-      "hash": "b4b190c5154aec307d05d8039a07a19af09dbdad5136953df1ad4ccf658b3635"
+      "hash": "7f385ab7c507b187eb4addea0a580ce14c9ed6c22b4ed5b667ed0601aa450366"
     },
     "web.communities.list-items.counts.default": {
       "fixtureIds": ["web.communities.list-items.counts.default"],

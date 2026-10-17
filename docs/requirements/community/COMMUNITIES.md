@@ -84,6 +84,17 @@ The canonical community post feed is `/communities/:slug/posts`. It uses the sha
 field and supports `sort=new` and `sort=hot`; the default is `new`. Pinned posts appear at the top of
 the unfiltered first page and are excluded from the normal paginated result list to avoid duplicates.
 
+## Invitations
+
+Invite codes are shown once when an invite is created and included in its delivery email. The
+invite list shows recipient and lifecycle metadata. To share a code again, create a fresh invite.
+Inviting the same username again atomically revokes that user's pending invite in the community
+and issues a new code; the previous code no longer works. Multiple email invitations are allowed.
+
+Joining through public membership, an approved application, or an invite deletes that community's
+pending invitations addressed to the user or any of their verified email addresses. Other
+communities' invitations and completed invitations remain. A redeemed invitation remains accepted.
+
 ## Join Applications
 
 Private communities accept join applications. Owners replace the active question set by soft-deleting the previous questions. Select labels are the JSON array `community_application_questions.options`; a label is data, not an entity id.

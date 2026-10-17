@@ -95,7 +95,6 @@ export type CommunityInvite = {
   __entity_type: 'community_invite'
   id: string
   community_id: string
-  code: string
   invited_user_id: string | null
   invited_email: string | null
   invited_by_id: string
@@ -105,6 +104,8 @@ export type CommunityInvite = {
   revoked_at: Date | null
   created_at: Date
 }
+
+export type CreatedCommunityInvite = CommunityInvite & { code: string }
 
 export type CommunityPostReview = {
   __entity_type: 'community_post_review'

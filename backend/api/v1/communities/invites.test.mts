@@ -17,6 +17,32 @@ describe('Community Invites Routes', () => {
       forbiddenSlugPrefix: 'invites-get-403-',
       okSlugPrefix: 'invites-get-ok-',
     })
+
+    it('returns pending invite metadata without either code or hash', async () => {
+      const owner = await createTestUser()
+      const community = await insertTestCommunity({ createdById: owner.id })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: owner.id,
+        role: 'owner',
+      })
+      const invite = await insertTestCommunityInvite({
+        communityId: community.id,
+        invitedById: owner.id,
+        invitedEmail: `tests+list-${createRandomString(8)}@voucha.ai`,
+      })
+
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const response = await request
+        .get(`/api/v1/communities/${community.slug}/invites`)
+        .expect(200)
+      const listed = response.body.community_invites[invite.id]
+      expect(listed).toMatchObject({ id: invite.id, community_id: community.id })
+      expect(listed.__entity_type).toBe('community_invite')
+      expect(listed).not.toHaveProperty('code')
+      expect(listed).not.toHaveProperty('code_hash')
+    })
   })
 
   describe('POST /api/v1/communities/:slug/invites', () => {
@@ -88,6 +114,9 @@ describe('Community Invites Routes', () => {
 
       expect(response.body).toHaveProperty('community_invite')
       expect(response.body.community_invite.community_id).toBe(community.id)
+      expect(response.body.community_invite.__entity_type).toBe('community_invite')
+      expect(response.body.community_invite.code).toMatch(/^[a-f0-9]{8}$/)
+      expect(response.body.community_invite).not.toHaveProperty('code_hash')
     })
 
     it('creates invite with username and returns 201 as mod', async () => {
@@ -113,6 +142,8 @@ describe('Community Invites Routes', () => {
         .expect(201)
 
       expect(response.body).toHaveProperty('community_invite')
+      expect(response.body.community_invite.code).toMatch(/^[a-f0-9]{8}$/)
+      expect(response.body.community_invite).not.toHaveProperty('code_hash')
       expect(response.body.community_invite.invited_user_id).toBe(invitee!.id)
     })
   })
@@ -185,6 +216,9 @@ describe('Community Invites Routes', () => {
         .expect(200)
 
       expect(response.body).toHaveProperty('community_invite')
+      expect(response.body.community_invite).not.toHaveProperty('code')
+      expect(response.body.community_invite.__entity_type).toBe('community_invite')
+      expect(response.body.community_invite).not.toHaveProperty('code_hash')
     })
   })
 })

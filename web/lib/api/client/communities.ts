@@ -6,6 +6,7 @@ import type {
   Community,
   CommunityResponseBody,
   CommunityInvite,
+  CreatedCommunityInvite,
   CommunityMemberRole,
   CommunityPinnedPostsResponseBody,
   CommunityPostTypeSettingsResponseBody,
@@ -113,8 +114,8 @@ export function unpublishCommunityPost(idOrSlug: string, postId: string): Promis
 export function sendInvite(
   idOrSlug: string,
   input: { email?: string; username?: string },
-): Promise<{ community_invite: CommunityInvite }> {
-  return clientApi.post<{ community_invite: CommunityInvite }>(
+): Promise<{ community_invite: CreatedCommunityInvite }> {
+  return clientApi.post<{ community_invite: CreatedCommunityInvite }>(
     `/api/v1/communities/${idOrSlug}/invites`,
     input,
   )

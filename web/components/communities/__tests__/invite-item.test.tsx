@@ -6,17 +6,18 @@ import type { CommunityInvite } from '@/types/api-responses/pagination-and-entit
 function makeInvite(overrides: Partial<CommunityInvite>): CommunityInvite {
   return {
     id: 'invite-1',
-    code: 'abc123',
     community_id: 'community-1',
     created_at: '2026-05-24T00:00:00.000Z',
-    created_by_id: 'user-1',
+    __entity_type: 'community_invite',
+    invited_by_id: 'user-1',
+    accepted_by_id: null,
     invited_email: 'tests+a@voucha.ai',
     invited_user_id: null,
     accepted_at: null,
     declined_at: null,
     revoked_at: null,
     ...overrides,
-  } as CommunityInvite
+  }
 }
 
 describe('InviteItem', () => {
@@ -31,6 +32,7 @@ describe('InviteItem', () => {
     )
 
     expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getByText(/^Sent /)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Revoke' }))
     expect(onRevoke).toHaveBeenCalledWith('invite-1')
   })

@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import { validateEmailAddress } from '@services/email-address-validator'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
 import { createLoginToken } from '@services/users/login-token'
+import { hashToken } from '@modules/token-secrets'
 import {
   invalidateVerifiedEmailCache,
   primeVerifiedEmailCache,
@@ -46,6 +47,7 @@ export async function createEmailVerificationToken(
   await assertEmailAddressAvailableForUser(userId, normalized)
 
   const token = createLoginToken()
+  const tokenHash = hashToken('email-address-verification-token', token)
 
   await using query = await beginTransaction()
   await query(
@@ -53,11 +55,11 @@ export async function createEmailVerificationToken(
   )
   await query(sql`/* createEmailVerificationToken */
       INSERT INTO email_address_login_tokens (email_address, token, user_id)
-      VALUES (${normalized}, ${token}, ${userId})
+      VALUES (${normalized}, ${tokenHash}, ${userId})
       ON CONFLICT (user_id, email_address) WHERE user_id IS NOT NULL
       DO UPDATE SET
         id = uuidv7(),
-        token = ${token},
+        token = ${tokenHash},
         logged_in_at = NULL
     `)
   await query.commit()
@@ -72,10 +74,11 @@ export async function verifyEmailVerificationToken(
 ): Promise<void> {
   const normalized = emailAddress.toLowerCase().trim()
   const normalizedToken = token.toUpperCase().trim()
+  const tokenHash = hashToken('email-address-verification-token', normalizedToken)
 
   await invalidateVerifiedEmailCache(userId).catch(onError)
 
-  await verifyTokenAndPrimeEmailCache(userId, normalized, normalizedToken)
+  await verifyTokenAndPrimeEmailCache(userId, normalized, tokenHash)
 
   void enqueueOnUserUpdated(userId)
 }

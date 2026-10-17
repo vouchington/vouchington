@@ -4,12 +4,16 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  insertTestCommunityInvite,
+  getTestCommunityInviteStorage,
+  addVerifiedEmailForUser,
 } from '@voucha/test-helpers'
 
 import { archiveCommunity } from '../../archive.mts'
 import { getCommunityOrThrow } from '../../get.mts'
 import { loadCommunityWithViewer } from '../../load-with-viewer.mts'
 import { joinCommunity } from '../join.mts'
+import { revokeInvite } from '../../invites/revoke.mts'
 
 import { leaveCommunity } from '../leave.mts'
 
@@ -60,6 +64,47 @@ describe('index', () => {
       expect(member.user_id).toBe(user.id)
       expect(member.community_id).toBe(publicCommunity.id)
       expect(member.role).toBe('member')
+    })
+
+    it('joining removes username and verified-email pending invites', async () => {
+      const user = await createTestUser()
+      const secondaryEmail = `tests+join-${crypto.randomUUID()}@voucha.ai`
+      await addVerifiedEmailForUser(user.id, secondaryEmail)
+      const byUsername = await insertTestCommunityInvite({
+        communityId: publicCommunity.id,
+        invitedById: owner.id,
+        invitedUserId: user.id,
+      })
+      const byEmail = await insertTestCommunityInvite({
+        communityId: publicCommunity.id,
+        invitedById: owner.id,
+        invitedEmail: secondaryEmail,
+      })
+      const secondByEmail = await insertTestCommunityInvite({
+        communityId: publicCommunity.id,
+        invitedById: owner.id,
+        invitedEmail: secondaryEmail,
+      })
+      const revoked = await insertTestCommunityInvite({
+        communityId: publicCommunity.id,
+        invitedById: owner.id,
+        invitedEmail: secondaryEmail,
+      })
+      await revokeInvite(owner.id, revoked.id)
+      const otherCommunity = await insertTestCommunity({ createdById: owner.id })
+      const unrelated = await insertTestCommunityInvite({
+        communityId: otherCommunity.id,
+        invitedById: owner.id,
+        invitedUserId: user.id,
+      })
+
+      await joinCommunity(user.id, publicCommunity)
+
+      expect(await getTestCommunityInviteStorage(byUsername.id)).toBeNull()
+      expect(await getTestCommunityInviteStorage(byEmail.id)).toBeNull()
+      expect(await getTestCommunityInviteStorage(secondByEmail.id)).toBeNull()
+      expect((await getTestCommunityInviteStorage(revoked.id))?.revoked_at).not.toBeNull()
+      expect(await getTestCommunityInviteStorage(unrelated.id)).not.toBeNull()
     })
 
     it('rejects joining a private community directly', async () => {
