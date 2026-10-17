@@ -8,16 +8,17 @@ import { promisify } from 'node:util'
 import type { CommandRunner } from '../benchmarks/topic-metrics/database-lifecycle.mts'
 import { createOwnedPruningDatabase, createPruningDatabaseName } from './database-lifecycle.mts'
 import {
+  pruningDatabaseExists,
+  pruningLifecycleConnectionUrl,
+} from './database-lifecycle-scope.mts'
+import { migrationCommandFailure } from './migration-command-failure.mts'
+import { assertMigrationServerClientsClosed } from './migration-control-clients.mts'
+import {
   launchMigrationControlChild,
   readMigrationChildIdentity,
   migrationChildGroupMembers,
   recordMigrationChildFailure,
 } from './migration-control-process.mts'
-import { migrationCommandFailure } from './migration-command-failure.mts'
-import {
-  pruningDatabaseExists,
-  pruningLifecycleConnectionUrl,
-} from './database-lifecycle-scope.mts'
 
 const exec = promisify(execFile)
 const root = resolve(import.meta.dirname, '../../../..')
@@ -136,16 +137,15 @@ export async function withOwnedMigrationControl(
   // No root/stream/group proof => retain the independently recorded sibling, even on failure.
   if (reserved && closedChild) {
     try {
-      const clients = await run('psql', [
-        '-X',
-        '-v',
-        'ON_ERROR_STOP=1',
-        '-d',
+      // The child process group is already empty. PostgreSQL can still list that child's
+      // backend until the server reaps it. A client that remains is a leaked session.
+      await assertMigrationServerClientsClosed({
+        run,
+        databaseName: name,
         sourceUrl,
-        '-Atqc',
-        `/* assertMigrationControlClientsClosed */ SELECT count(*) FROM pg_stat_activity WHERE datname = '${name}'`,
-      ])
-      assert.equal(clients.stdout.trim(), '0', 'Owned database still has server clients')
+        now: () => performance.now(),
+        controlDeadline: deadline,
+      })
       const identity = await run('psql', [
         '-X',
         '-v',
