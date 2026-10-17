@@ -6065,6 +6065,8 @@
 {"id":"copy.oauth.consent.permissionsHeading","value":"Permisos solicitados"},
 {"id":"copy.oauth.consent.resourceHeading","value":"Recurso"},
 {"id":"copy.oauth.consent.title","value":"{clientName} solicita acceso a Voucha"},
+{"id":"copy.scopeDescription.communityModerationRead","value":"Leer datos de moderación de la comunidad, incluidos los correos electrónicos de las personas invitadas, los mensajes privados de moderación, los reportes, las solicitudes de membresía, las suspensiones, las restricciones y el historial de moderación."},
+{"id":"copy.scopeDescription.communityModerationWrite","value":"Gestionar la moderación de la comunidad: suspender o eliminar miembros, emitir advertencias, revisar solicitudes y reportes, cambiar la configuración de moderación y archivar la comunidad. Algunas acciones pueden quitar publicaciones fijadas o retirar publicaciones."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Leer tu rango de puntuación crediticia, rango de ingresos declarados, límite de crédito total y años de historial crediticio."},
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Actualizar tu rango de puntuación crediticia, rango de ingresos declarados, límite de crédito total y años de historial crediticio."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Acceso completo de MCP de administrador"},

@@ -140,6 +140,12 @@ describe('scopeDescriptionMessageKey', () => {
     expect(scopeDescriptionMessageKey('mcp_admin_full_access')).toBe(
       'settings.apiKeys.scopeDescription.mcpAdminFullAccess',
     )
+    expect(scopeDescriptionMessageKey('community_moderation_read')).toBe(
+      'settings.apiKeys.scopeDescription.communityModerationRead',
+    )
+    expect(scopeDescriptionMessageKey('community_moderation_write')).toBe(
+      'settings.apiKeys.scopeDescription.communityModerationWrite',
+    )
   })
 
   it('fails closed when an unrecognized description key reaches the client', () => {

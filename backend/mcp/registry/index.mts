@@ -61,6 +61,7 @@ import { entityRelationWriteTools } from './entity-relation-write-tools.mts'
 import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 import { rssReadTools } from './rss-read-tools.mts'
+import { communityModerationTools } from '../community-moderation-tools.mts'
 
 const adminSourceTools = [
   ...adminEditorialStoryTools,
@@ -102,6 +103,7 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...ownDataReadTools,
   ...searchReferenceReadTools,
   ...rssReadTools,
+  ...communityModerationTools,
   activateReferralLinkTool,
   addListItemTool,
   addMyProfileLinkTool,

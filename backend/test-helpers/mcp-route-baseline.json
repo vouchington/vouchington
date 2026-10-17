@@ -922,6 +922,35 @@
         "destructiveHint": false,
         "idempotentHint": true
       }
+    },
+    "F93": {
+      "scopes": ["community-moderation:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F94": {
+      "scopes": ["community-moderation:read", "community-moderation:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "F95": {
+      "scopes": ["community-moderation:read", "community-moderation:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
     }
   },
   "inputs": {
@@ -1321,7 +1350,68 @@
     "I130": [["idempotency_key", "story_id"]],
     "I131": [["domain", "name", "reason"]],
     "I132": [["domain", "name"]],
-    "I133": [["domains_of"]]
+    "I133": [["domains_of"]],
+    "I134": [["after", "community", "limit", "status"]],
+    "I135": [
+      [
+        "after",
+        "agent",
+        "community",
+        "content_type",
+        "limit",
+        "max_confidence",
+        "post_type",
+        "source",
+        "window"
+      ]
+    ],
+    "I136": [["after", "community", "limit"]],
+    "I137": [["community", "range"]],
+    "I138": [["community", "window"]],
+    "I139": [["community"]],
+    "I140": [["action_type", "after", "community", "limit"]],
+    "I141": [["after", "community", "limit", "sort"]],
+    "I142": [["community", "expires_at", "reason", "user_id"]],
+    "I143": [["community", "url_hostname_id"]],
+    "I144": [["community", "post_id"]],
+    "I145": [["community", "rss_feed_id"]],
+    "I146": [["community", "topic_id"]],
+    "I147": [["community", "url_id"]],
+    "I148": [["community", "postId"]],
+    "I149": [["community", "reportId"]],
+    "I150": [["community", "expires_at", "reason", "restriction_types"]],
+    "I151": [["body", "community", "title"]],
+    "I152": [["community", "publicMessage", "reason", "reportId", "resolveReport", "userId"]],
+    "I153": [
+      [
+        "archive",
+        "banner_image_id",
+        "community",
+        "default_language",
+        "list_type",
+        "markdown",
+        "member_invites_allowed_at",
+        "member_roster_visibility",
+        "name",
+        "post_approval_required_at",
+        "profile_image_id",
+        "slug",
+        "visibility"
+      ]
+    ],
+    "I154": [["community", "id", "reason", "status"]],
+    "I155": [["community", "should_suppress_community_digests_while_on_vacation"]],
+    "I156": [["assigned_moderator_user_id", "community", "conversationId", "resolved"]],
+    "I157": [["community", "should_allow_data_point_posts", "should_allow_review_posts"]],
+    "I158": [["community", "postId", "private_note", "reason", "reason_code", "status"]],
+    "I159": [["community", "reportId", "status"]],
+    "I160": [["community", "questions"]],
+    "I161": [["community", "ends_at"]],
+    "I162": [["community", "post_ids"]],
+    "I163": [["community", "userId"]],
+    "I164": [["community", "id"]],
+    "I165": [["community", "itemId"]],
+    "I166": [["after", "community", "limit", "window"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4640,6 +4730,883 @@
           "operation": {
             "tool": "read_queue_catalog",
             "option": "queues"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/applications": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I134",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_applications"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/automod/recent-actions": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I135",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_automod_actions"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/bans": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I136",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_bans"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/invites": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I136",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_invites"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderation-analytics": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I137",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "read_moderation_analytics"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderator-stats": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I166",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "read_moderator_stats"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I139",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "read_moderator_vacation"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/modlog": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I140",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "read_modlog"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/posts/pending": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I136",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_pending_posts"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/reports/pending": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I141",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_pending_reports"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/restrictions": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I136",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_restrictions"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "GET:/api/v1/communities/:idOrSlug/saved-replies": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F93",
+          "inputFields": "I136",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "read_community_moderation",
+            "option": "list_saved_replies"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/bans": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I142",
+          "requestBodyFields": ["expires_at", "reason", "user_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "ban_user"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/list-items/domains": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I143",
+          "requestBodyFields": ["url_hostname_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "add_domain_to_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/list-items/posts": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I144",
+          "requestBodyFields": ["post_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "add_post_to_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/list-items/rss-feeds": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I145",
+          "requestBodyFields": ["rss_feed_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "add_rss_feed_to_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/list-items/topics": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I146",
+          "requestBodyFields": ["topic_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "add_topic_to_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/list-items/urls": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I147",
+          "requestBodyFields": ["url_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "add_url_to_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I148",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "dismiss_automod_flag"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/escalation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I148",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "escalate_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/posts/:postId/mod-internal-thread": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I148",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "open_post_mod_internal_thread"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/reports/:reportId/escalation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I149",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "escalate_report"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I149",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "open_report_mod_internal_thread"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/restrictions": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I150",
+          "requestBodyFields": ["expires_at", "reason", "restriction_types"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "activate_restrictions"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/saved-replies": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I151",
+          "requestBodyFields": ["body", "title"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "create_saved_reply"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/warnings": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I152",
+          "requestBodyFields": ["publicMessage", "reason", "reportId", "resolveReport", "userId"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "issue_warning"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I153",
+          "requestBodyFields": [
+            "archive",
+            "banner_image_id",
+            "default_language",
+            "list_type",
+            "markdown",
+            "member_invites_allowed_at",
+            "member_roster_visibility",
+            "name",
+            "post_approval_required_at",
+            "profile_image_id",
+            "slug",
+            "visibility"
+          ],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "update_community_settings"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/applications/:id": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I154",
+          "requestBodyFields": ["reason", "status"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "review_application"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I155",
+          "requestBodyFields": ["should_suppress_community_digests_while_on_vacation"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "set_vacation_digest_preference"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/modmail/:conversationId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I156",
+          "requestBodyFields": ["assigned_moderator_user_id", "resolved"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "update_modmail_thread"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/post-type-settings": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I157",
+          "requestBodyFields": ["should_allow_data_point_posts", "should_allow_review_posts"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "update_post_type_settings"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/posts/:postId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I158",
+          "requestBodyFields": ["private_note", "reason", "reason_code", "status"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "moderate_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PATCH:/api/v1/communities/:idOrSlug/reports/:reportId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I159",
+          "requestBodyFields": ["status"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "resolve_report"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PUT:/api/v1/communities/:idOrSlug/application-questions": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I160",
+          "requestBodyFields": ["questions"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "set_application_questions"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PUT:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I161",
+          "requestBodyFields": ["ends_at"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "set_moderator_vacation"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PUT:/api/v1/communities/:idOrSlug/pinned-posts": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I162",
+          "requestBodyFields": ["post_ids"],
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "set_pinned_posts"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PUT:/api/v1/communities/:idOrSlug/posts/:postId/claim": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I148",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "claim_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "PUT:/api/v1/communities/:idOrSlug/reports/:reportId/claim": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I149",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "update_community_moderation",
+            "option": "claim_report"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I163",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "dismiss_ban_evasion"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/bans/:userId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I163",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "lift_ban"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/invites/:id": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I164",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "revoke_invite"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/domains/:itemId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I165",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "remove_domain_from_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/posts/:itemId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I165",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "remove_post_from_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I165",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "remove_rss_feed_from_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/topics/:itemId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I165",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "remove_topic_from_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/list-items/urls/:itemId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I165",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "remove_url_from_list"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/members/:userId": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I163",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "remove_member"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/moderator-vacation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I139",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "clear_moderator_vacation"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/posts/:postId/claim": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I148",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "release_post_claim"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/posts/:postId/escalation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I148",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "deescalate_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/claim": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I149",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "release_report_claim"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/reports/:reportId/escalation": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I149",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "deescalate_report"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/restrictions/:id": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I164",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "lift_restriction"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/communities/:idOrSlug/saved-replies/:id": {
+      "pullRequest": 2972,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I164",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "delete_saved_reply"
           },
           "decision": false
         }

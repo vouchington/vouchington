@@ -6065,6 +6065,8 @@
 {"descriptor":null,"id":"copy.oauth.consent.permissionsHeading"},
 {"descriptor":null,"id":"copy.oauth.consent.resourceHeading"},
 {"descriptor":null,"id":"copy.oauth.consent.title"},
+{"descriptor":null,"id":"copy.scopeDescription.communityModerationRead"},
+{"descriptor":null,"id":"copy.scopeDescription.communityModerationWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.financialProfileRead"},
 {"descriptor":null,"id":"copy.scopeDescription.financialProfileWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpAdminFullAccess"},

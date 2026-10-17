@@ -61,6 +61,8 @@
         "cards:write",
         "communities:read",
         "communities:write",
+        "community-moderation:read",
+        "community-moderation:write",
         "copyright-notices:read",
         "copyright-notices:write",
         "data-points:read",

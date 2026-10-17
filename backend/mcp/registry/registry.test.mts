@@ -6,6 +6,7 @@ import { ALL_TOOLS, getRegisteredToolByName } from './index.mts'
 import { userMergedAccountGroups } from './user-merged-account-tools.mts'
 import { userMergedParticipationGroups } from './user-merged-participation-tools.mts'
 import { userMergedReadingGroups } from './user-merged-reading-tools.mts'
+import { communityModerationGroups } from '../community-moderation-tools.mts'
 import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { SCOPE_DEFINITIONS } from '@modules/scopes'
@@ -15,6 +16,32 @@ const TOOLS_DIR = path.join(import.meta.dirname, '..')
 // Files in tools/ that are NOT tool definitions (factories, helpers, types, barrel)
 const NON_TOOL_FILES = new Set([
   'bookmark-tool-support.mts',
+  'community-moderation-contract.mts',
+  'community-moderation-guards.mts',
+  'community-moderation-input-paths.mts',
+  'community-moderation-list-writes.mts',
+  'community-moderation-other-writes.mts',
+  'community-moderation-pending-post-text.mts',
+  'community-moderation-output-parts.mts',
+  'community-moderation-output-reads.mts',
+  'community-moderation-output-schemas.mts',
+  'community-moderation-output-writes.mts',
+  'community-moderation-queue-writes.mts',
+  'community-moderation-read-analytics.mts',
+  'community-moderation-read-lists.mts',
+  'community-moderation-read-queues.mts',
+  'community-moderation-routes.mts',
+  'community-moderation-routes-read-add.mts',
+  'community-moderation-routes-update-remove.mts',
+  'community-moderation-tools.mts',
+  'community-moderation-update-applications.mts',
+  'community-moderation-update-community.mts',
+  'community-moderation-update-modmail-post-settings.mts',
+  'community-moderation-update-pinned-posts.mts',
+  'community-moderation-update-publications.mts',
+  'community-moderation-update-reports.mts',
+  'community-moderation-update-vacation.mts',
+  'community-moderation-updates.mts',
   'create-get-my-entity-list-tool.mts',
   'create-manage-entity-tool.mts',
   'create-merged-tool.mts',
@@ -65,6 +92,7 @@ const NON_TOOL_FILES = new Set([
   'topic-recommendation-tool-support.mts',
   'tool-schema-contract.mts',
   'tool-schema-traversal.mts',
+  'untrusted-output.mts',
 ])
 
 describe('tool registry', () => {
@@ -74,6 +102,7 @@ describe('tool registry', () => {
       ...userMergedAccountGroups,
       ...userMergedParticipationGroups,
       ...userMergedReadingGroups,
+      ...communityModerationGroups,
     ]
     const sourceCounts = new Map<object, number>()
     for (const group of mergedGroups) {
@@ -167,9 +196,7 @@ describe('tool registry', () => {
     const missing = ALL_TOOLS.filter(tool => {
       const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
       if (!surfaces.has('mcp')) return false
-      // Anything not explicitly read-only is treated as a mutation, not just destructiveHint:
-      // true, so a future write annotated only readOnlyHint: false (or left to idempotentHint)
-      // can't slip past this gate ungated.
+      // Treat every tool without an explicit read-only hint as a mutation.
       if (tool.meta?.annotations?.readOnlyHint === true) return false
       return tool.meta?.plan !== 'plus' && tool.meta?.plan !== 'pro'
     })
@@ -188,9 +215,7 @@ describe('tool registry', () => {
   })
 
   it('rejects a mutating tool that shares the user and admin MCP surfaces', () => {
-    // meta.plan is a single field: it cannot express "plus on mcp, free on admin_mcp". A
-    // mutating tool exposed on both surfaces is unsupported until the model can encode
-    // separate per-surface plans, whether or not it declares a plan at all.
+    // One meta.plan cannot express "plus on mcp, free on admin_mcp" for a shared mutation.
     const sharedMutation: Tool = {
       schema: {
         name: 'shared_mutation_fixture',

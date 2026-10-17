@@ -1,6 +1,8 @@
 import { participationWriteGroups } from './participation-write-groups.mts'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from './index.mts'
+import { communityModerationGroups } from '../community-moderation-tools.mts'
+import { communityModerationReadQueues } from '../community-moderation-read-queues.mts'
 import { userMergedAccountGroups } from './user-merged-account-tools.mts'
 import { userMergedParticipationGroups } from './user-merged-participation-tools.mts'
 import { userMergedReadingGroups } from './user-merged-reading-tools.mts'
@@ -22,6 +24,7 @@ describe('registered MCP post outputs', () => {
       ...userMergedAccountGroups,
       ...userMergedParticipationGroups,
       ...userMergedReadingGroups,
+      ...communityModerationGroups,
     ]
     const postTools = ALL_TOOLS.filter(tool => tool.meta?.surfaces?.includes('mcp'))
       .flatMap(tool => {
@@ -43,7 +46,14 @@ describe('registered MCP post outputs', () => {
       const inlineSearch =
         /\bsanitizePromptInjection\b/.test(implementation) &&
         /\bwrapExternalContent\b/.test(implementation)
-      expect({ tool: tool.name, sanitized: shared || inlineSearch }).toEqual({
+      const pendingModerationPost =
+        tool.name === 'read_community_moderation(list_pending_posts)' &&
+        /\blabelAndMaskPosts\b/.test(String(communityModerationReadQueues['list_pending_posts'])) &&
+        /\bsanitizePendingPost\b/.test(String(communityModerationReadQueues['list_pending_posts']))
+      expect({
+        tool: tool.name,
+        sanitized: shared || inlineSearch || pendingModerationPost,
+      }).toEqual({
         tool: tool.name,
         sanitized: true,
       })

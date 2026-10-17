@@ -70,6 +70,8 @@ describe('findApiHintConflicts', () => {
         fixtureTool('read', READ, ['GET', 'GET']),
         fixtureTool('write', WRITE, ['POST', 'PATCH', 'DELETE']),
         fixtureTool('idempotent_write', IDEMPOTENT_WRITE, ['PUT', 'DELETE']),
+        fixtureTool('conservative_puts', WRITE, ['PUT']),
+        fixtureTool('conservative_deletes', WRITE, ['DELETE']),
       ]),
     ).toEqual([])
   })
@@ -91,13 +93,11 @@ describe('findApiHintConflicts', () => {
         fixtureTool('read_posts', READ, ['GET', 'POST']),
         fixtureTool('write_gets', IDEMPOTENT_WRITE, ['GET', 'PUT']),
         fixtureTool('idempotent_posts', IDEMPOTENT_WRITE, ['POST']),
-        fixtureTool('non_idempotent_puts', WRITE, ['PUT']),
       ]),
     ).toEqual([
       { tool: 'read_posts', conflict: 'a read-only tool names a non-GET operation' },
       { tool: 'write_gets', conflict: 'a write tool names a GET operation' },
       { tool: 'idempotent_posts', conflict: 'idempotentHint should be false' },
-      { tool: 'non_idempotent_puts', conflict: 'idempotentHint should be true' },
     ])
   })
 })

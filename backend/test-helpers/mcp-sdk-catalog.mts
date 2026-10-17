@@ -11,7 +11,9 @@ import { createTestMembership } from './entities/memberships.mts'
 import { createTestUser } from './entities/users.mts'
 import { issueTestOAuthTokensForClient } from './services/oauth-authorization-server/test-support.mts'
 
-export const allScopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
+const preModerationScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
+  scope => scope !== 'community-moderation:read' && scope !== 'community-moderation:write',
+)
 const readerScopes: ApiScope[] = [
   'topics:read',
   'posts:read',
@@ -24,7 +26,7 @@ export const sdkCatalogCases = [
   {
     server: USER_MCP_SERVER_CONFIG,
     grant: 'all',
-    scopes: allScopes,
+    scopes: preModerationScopes,
     plan: 'pro',
     admin: true,
     count: 74,
@@ -48,7 +50,7 @@ export const sdkCatalogCases = [
   {
     server: ADMIN_MCP_SERVER_CONFIG,
     grant: 'all',
-    scopes: allScopes,
+    scopes: preModerationScopes,
     plan: 'pro',
     admin: true,
     count: 75,
@@ -71,8 +73,17 @@ export const sdkCatalogCases = [
   },
 ] as const
 
+export const sdkCommunityModerationCase = {
+  server: USER_MCP_SERVER_CONFIG,
+  grant: 'Community moderator',
+  scopes: ['community-moderation:read', 'community-moderation:write'] as ApiScope[],
+  plan: 'plus',
+  admin: false,
+  count: 4,
+} as const
+
 export async function connectSdkCatalog<T>(
-  testCase: (typeof sdkCatalogCases)[number],
+  testCase: (typeof sdkCatalogCases)[number] | typeof sdkCommunityModerationCase,
   account: Awaited<ReturnType<typeof createTestUser>> | undefined,
   makeClient: (
     url: URL,
@@ -80,7 +91,7 @@ export async function connectSdkCatalog<T>(
   ) => Promise<T>,
 ): Promise<T> {
   const owner = account ?? (await createTestUser({ administrator: testCase.admin }))
-  if (testCase.plan === 'pro') await createTestMembership({ user_id: owner.id, plan: 'pro' })
+  if (testCase.plan !== null) await createTestMembership({ user_id: owner.id, plan: testCase.plan })
   const user = { ...owner, membership_plan: testCase.plan }
   const origin: CredentialRequestOrigin =
     testCase.server.surface === 'mcp' || !testCase.admin

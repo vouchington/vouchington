@@ -1,13 +1,21 @@
-import { recordModerationTrainingFeedback } from '@services/moderation-training'
+import {
+  recordModerationTrainingFeedback,
+  type ModerationTrainingEvidence,
+} from '@services/moderation-training'
+
+export type PublicationTrainingOptions = {
+  trainingEvidence?: ModerationTrainingEvidence
+}
 
 export function recordPublicationApprovedFeedback(input: {
   actorUserId: string
   communityId: string
   postId: string
   communityTrusted: boolean
+  trainingEvidence: ModerationTrainingEvidence
 }): Promise<unknown> {
   return recordModerationTrainingFeedback({
-    trainingEvidence: 'staff_or_user',
+    trainingEvidence: input.trainingEvidence,
     sourceType: 'community_review',
     eventType: 'manual_action_inferred',
     label: 'true_negative',
@@ -25,9 +33,10 @@ export function recordPublicationRejectedFeedback(input: {
   communityId: string
   postId: string
   reason?: string
+  trainingEvidence: ModerationTrainingEvidence
 }): Promise<unknown> {
   return recordModerationTrainingFeedback({
-    trainingEvidence: 'staff_or_user',
+    trainingEvidence: input.trainingEvidence,
     sourceType: 'community_review',
     eventType: 'manual_action_inferred',
     label: 'true_positive',
@@ -45,9 +54,10 @@ export function recordPublicationUnpublishedFeedback(input: {
   actorUserId: string
   communityId: string
   postId: string
+  trainingEvidence: ModerationTrainingEvidence
 }): Promise<unknown> {
   return recordModerationTrainingFeedback({
-    trainingEvidence: 'staff_or_user',
+    trainingEvidence: input.trainingEvidence,
     sourceType: 'community_review',
     eventType: 'manual_action_inferred',
     label: 'true_positive',
