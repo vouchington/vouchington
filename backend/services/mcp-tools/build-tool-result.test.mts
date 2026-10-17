@@ -225,8 +225,8 @@ describe('official SDK against the registered MCP catalogs', () => {
       ...adminMergedGroups,
     ].map(group => group.name)
     const covered = Object.values(sdkMergedSuccessNames).flat()
-    expect(current).toHaveLength(61)
-    expect(covered).toHaveLength(61)
+    expect(current).toHaveLength(62)
+    expect(covered).toHaveLength(62)
     expect([...covered].toSorted()).toEqual([...current].toSorted())
   })
 
