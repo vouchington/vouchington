@@ -21,7 +21,7 @@ function isEnoent(error: unknown): boolean {
 }
 
 function isUnderSrcBuild(target: string): boolean {
-  return /^(?:\.\/)?build\/src(?:\/|$)/.test(target)
+  return /^(?:\.\/)?build\/src(?:\/|$)/.test(path.posix.normalize(target))
 }
 
 function collectRuntimeTargets(node: unknown, targets: string[]): boolean {
@@ -70,7 +70,8 @@ async function srcReferencesAlternateBuild(directory: string): Promise<boolean> 
     if (!entry.isFile()) continue
     if (!/\.(?:c|m)?js$/.test(entry.name)) continue
     const text = await readFile(entryPath, 'utf8')
-    if (/build\/(?:esm|esnext)/.test(text)) return true
+    // Retain on any alternate-build name, including relative sibling imports.
+    if (/\b(?:esm|esnext)\b/.test(text)) return true
   }
   return false
 }

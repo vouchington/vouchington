@@ -43,6 +43,18 @@ describe('alternateBuildsAreUnused', () => {
     ).toBe(false)
   })
 
+  it.each(['build/src/../esm/index.js', './build/src/../esnext/index.js'])(
+    'retains alternate builds for normalized target %s',
+    target => {
+      expect(alternateBuildsAreUnused({ main: target })).toBe(false)
+      expect(alternateBuildsAreUnused({ exports: { '.': target } })).toBe(false)
+    },
+  )
+
+  it('accepts normalized targets that remain under src', () => {
+    expect(alternateBuildsAreUnused({ main: './build/src/nested/../index.js' })).toBe(true)
+  })
+
   it('rejects an exports array instead of guessing', () => {
     expect(alternateBuildsAreUnused({ exports: ['./build/src/index.js'] })).toBe(false)
   })
@@ -132,12 +144,16 @@ describe('pruneOpenTelemetryAlternateBuilds', () => {
     ).rejects.toThrow(/ENOENT/)
   })
 
-  it('leaves alternate builds when the src tree references them', async () => {
+  it.each([
+    "require('./vendor/build/esm/index.js')\n",
+    "require('../esm/index.js')\n",
+    "import('../esnext/index.js')\n",
+  ])('leaves alternate builds for source reference %s', async srcText => {
     const prodDir = await writePackage({
       storeName: 'otel-core',
       packageName: 'core',
       manifest: { main: './build/src/index.js' },
-      srcText: "require('./vendor/build/esm/index.js')\n",
+      srcText,
     })
 
     expect(await pruneOpenTelemetryAlternateBuilds(prodDir)).toEqual({

@@ -26,6 +26,7 @@ on:
       - 'localization/**'
       - 'dev/localization/**'
       - 'static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts'
+      - 'static-code-analysis/docker-deploy/prune-opentelemetry-alternate-builds.mts'
       - 'static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts'
       - 'ts-shared/**'
       - 'test-helpers/**'

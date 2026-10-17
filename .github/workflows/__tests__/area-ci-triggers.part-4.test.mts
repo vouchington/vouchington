@@ -143,8 +143,13 @@ describe('Area CI Docker triggers', () => {
   it('tracks backend packaging helpers in broad and PR filters', () => {
     const helpers = [
       'static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts',
+      'static-code-analysis/docker-deploy/prune-opentelemetry-alternate-builds.mts',
       'static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts',
     ]
+    const mainWorkflow = load(readFileSync('.github/workflows/main-backend.yml', 'utf8')) as {
+      on: { push: { paths: string[] } }
+    }
+    expect(helpers.filter(path => !pathMatches(mainWorkflow.on.push.paths, path))).toEqual([])
     expectPrimaryMatches('build-backend', helpers)
     expectPrimaryMatches('build-backend-infra', helpers)
     expect(
