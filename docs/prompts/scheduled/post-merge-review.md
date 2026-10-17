@@ -104,7 +104,7 @@ repository evidence confirms it.
    but does not list an item, push the fix to it as an additional commit and add the item to its
    body. If an item has no clear or bounded fix, make no change for it and report it as a
    recommendation; this run cannot file issues. One run fixes one merged PR, so record every other
-   actionable item as pending: in the run report and under `## Pending post-merge review items` in
+   actionable item as pending: in the run report and under `### Pending post-merge review items` in
    the PR body, each as its URL and a one-line reason. A pending item is not covered, so a later run
    finds it again while it stays inside the window, and one that leaves the window unhandled is not
    revisited. A pending list that keeps growing means the window or the run frequency must change.
