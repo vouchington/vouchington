@@ -25,7 +25,6 @@ export const adminToolOnlyExclusions = exclusions(
     'PUT /users/:userId/suspension',
     'DELETE /users/:userId/vote-weight',
     'PUT /users/:userId/vote-weight',
-    'POST /users/:userId/mod-notes',
     'PATCH /crawlers/:id',
     'PUT /crawlers/referral-program',
     'PATCH /dynamic-config/namespaces/:namespace',
