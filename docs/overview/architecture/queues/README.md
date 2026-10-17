@@ -40,13 +40,8 @@ flowchart LR
   reconciler, or a documented accepted loss. See [job replayability](../../../requirements/platform/JOB-REPLAYABILITY.md). Worker sizing is covered in [worker performance](../../../development/worker-performance.md).
 - **Never enqueue and wait.** A request or job does not block on another job's result. Clients poll
   durable state; a job that needs a result calls the service directly.
-- **User-waiting jobs get their own queue.** A person's action enqueues event-triggered mail on
-  [`emails`](../../../../backend/queues/emails/queues.mts), which takes no priority because every job
-  there is equally urgent. Scheduled digest dispatch and the sends it fans out are the
-  `email-digests` domain on the shared `background` queue
-  ([`email-digests`](../../../../backend/queues/email-digests/queues.mts)). Ranked priority only
-  orders jobs promoted in the same batch, so those digests stay off `emails`: a login or
-  verification message must not wait behind a digest backlog.
+- **User-waiting jobs get their own queue.** Latency-critical mail a person is waiting on (login,
+  verification) is isolated from bulk digest work, so it never waits behind a digest backlog.
 - **A `limiter` exists only for an external rate limit.** Database-only work is throttled with
   concurrency. Provider 429s and domain pauses defer the single job (`moveToDelayed`, which spends no
   attempt), never `RateLimitError` or `worker.rateLimit()`, because those idle the whole shared
@@ -75,8 +70,7 @@ flowchart LR
 - AI: `ai-agents`, `openai-moderation`, `bedrock-embeddings*`. See the [AI platform](../ai-platform.md).
 - Moderation and trust: `report-integrity`, `vote-*`, `elections`, `ban-evasion`, `spam-detection`.
 - Accounts and money: `account-lifecycle`, `user-deletions`, `account-data-requests`, `memberships`,
-  `emails` (event-triggered mail), `email-digests` (digest dispatch and sends on `background`),
-  `notifications`, `oauth-authorization-exchange`.
+  `emails`, `email-digests`, `notifications`, `oauth-authorization-exchange`.
 - Federation: `activitypub*`, `bluesky-follow-propagation`, `follower-distributions`. See
   [fediverse federation](../fediverse-federation.md).
 - Platform: `heartbeat`, `bloom-filters`, `entity-listeners`, `entity-metrics-cache-refresh`, `psql`.
