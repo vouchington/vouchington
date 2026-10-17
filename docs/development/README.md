@@ -48,7 +48,7 @@ browser crawl).
 latest requested mode, and `./dev/reset-worktree` is the intentional invalidation boundary; see
 [Initialization Modes](local-development/reference-initialization-modes.md). No shared secrets are
 required to start the app; `~/voucha.env` is optional ([local-env-vars.md](local-env-vars.md)).
-Command contracts are in the [`dev/` command catalog](local-development/README.md#command-catalog).
+Command contracts are in each `dev/` script's usage text.
 
 ## Working on a Parallel Branch
 
@@ -116,13 +116,11 @@ binary.
 - [CI Job Conditions](reference-ci-ci-job-conditions.md)
 - [Destructive Manual Workflows](reference-ci-destructive-manual-workflows.md)
 - [Adding a new pinned binary](reference-dependency-updates-adding-a-new-pinned-binary.md)
-- [First-party release-gate exemptions](reference-dependency-updates-first-party-release-gate-exemptions.md)
 - [Frozen-install policy](reference-dependency-updates-frozen-install-policy.md)
 - [Manually maintained pins](reference-dependency-updates-manually-maintained-pins.md)
 - [Supply-chain policy](reference-dependency-updates-supply-chain-policy.md)
 - [DynamicConfig Cleanup](reference-dynamicconfig-cleanup.md)
 - [Explain Test Selection and Vitest Ownership](reference-explain-test-selection-and-vitest-ownership.md)
-- [Automation PR labeling](reference-merge-authority-automation-pr-labeling.md)
 - [Decision flow](reference-merge-authority-decision-flow.md)
 - [Why "automation" means GitHub Actions](reference-merge-authority-why-automation-means-github-actions.md)
 - [E2E and Visual](reference-tests-e2e-and-visual.md)

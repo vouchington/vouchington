@@ -14,7 +14,7 @@ flowchart TD
     Materialize --> Providers["provider image/package update"]
 ```
 
-The [area workflows](../../development/ci/workflows/reference-workflow-automation-pull-requests.md)
+The area workflows
 run on pull requests and merge groups. Their backend and web image jobs validate without publishing
 on pull requests, then publish the tested immutable images with provenance from trusted merge
 groups. Main reuses each image whose attestation verifies; only a missing manifest permits a missing-only

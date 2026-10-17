@@ -9,7 +9,7 @@ export type VitestInvocationForm =
 
 export interface VitestProjectOwnership {
   readonly project: string
-  // The VITEST.md "Credential requirement" column text, e.g. 'None', 'OPENAI_API_KEY'.
+  // The credential requirement text, e.g. 'None', 'OPENAI_API_KEY'.
   readonly credential: string
   // Only web-storybook-browser sets this today: it is the one project whose --project token is
   // never literal text in a workflow YAML `run:` line — it's assembled at runtime by

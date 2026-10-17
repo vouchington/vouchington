@@ -93,19 +93,4 @@ describe('secret-backed workflow context gates (wiring and routing)', () => {
       )
     }
   })
-
-  it('documents every Vitest project exactly once in VITEST.md', () => {
-    const mappingTable = read('docs/development/ci/workflows/VITEST.md').split(
-      '\nCurrent conventions for future credentialed suites:',
-    )[0]
-    const projectNames = Array.from(
-      new Set(Array.from(vitestConfig.matchAll(/name: '([^']+)'/g), match => match[1])),
-    )
-    const documentedProjects = Array.from(
-      mappingTable.matchAll(/\| `([^`]+)`\s+\| `[^`]+\.yml`/g),
-      match => match[1],
-    )
-
-    expect(documentedProjects.toSorted()).toEqual(projectNames.toSorted())
-  })
 })

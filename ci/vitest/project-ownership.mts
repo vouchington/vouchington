@@ -5,10 +5,8 @@
 //     file is raw data, that one is derived collections).
 //   - `.github/workflows/vitest-project-ownership.test.mts` validates against the real
 //     `--project` commands in `.github/workflows/tests-*.yml` / `storybook.yml`.
-//   - `ci/vitest/generate-ownership-table.mts` renders into `docs/development/ci/workflows/VITEST.md`.
-// To add, move, rename, or remove a project: edit the entry below, then run
-// `node ci/vitest/generate-ownership-table.mts` to refresh VITEST.md. The three consumers above
-// enforce that every surface stays in sync — see VITEST.md's "Single source of truth" section.
+// To add, move, rename, or remove a project: edit the entry below. The consumers above
+// enforce that every surface stays in sync.
 import { VITEST_PROJECT_GROUPS } from '../run-vitest-project-group.mts'
 import {
   dedicatedToolingWorkflowProjectNames,

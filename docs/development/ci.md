@@ -1,9 +1,7 @@
 # CI Reference
 
 Why CI is shaped the way it is. Workflow YAML is the source of truth for triggers, jobs, and
-dependencies; `pnpm run ci:topology --format mermaid` renders the exact graph, and the
-hand-maintained diagrams are linked from the
-[Workflow automation map](ci/workflows/reference-workflow-automation-map.md). For local commands see
+dependencies; `pnpm run ci:topology --format mermaid` renders the exact graph. For local commands see
 [tests.md](tests.md), and for the rest of the CI docs see the [CI documentation index](ci/README.md).
 
 ## Budgets and cost
@@ -87,8 +85,7 @@ schedule and manual dispatch select every area without a diff. Static-analysis f
 only the tests and Docker validation builds they gate. Main push workflows stay independent with
 `cancel-in-progress: false`.
 
-<a id="area-workflows"></a>The per-area workflows listed in the
-[Workflow automation map](ci/workflows/reference-workflow-automation-map.md) run on pull-request
+<a id="area-workflows"></a>The per-area workflows run on pull-request
 events and merge groups, and their names are the Main ruleset's required gates (see
 [.github/workflows/AGENTS.md](../../.github/workflows/AGENTS.md)). `static` runs full static
 analysis on every change, docs-only included. Every other area starts with a `changes` job that

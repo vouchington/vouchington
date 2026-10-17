@@ -1,7 +1,7 @@
 Review released upstream changes against local workarounds and local copies of package features. Pick at most one concrete, bounded removal or adoption that is safe to ship in one PR.
 
-[First-Party Dependencies](../../development/first-party-dependencies.md) owns package ownership and
-the wrappers that intentionally stay local. [Dependency Updates](../../development/dependency-updates.md)
+`pnpm-release-age-policy.permanentPackages` in [.no-mistakes.yml](../../../.no-mistakes.yml) owns
+package ownership. [Dependency Updates](../../development/dependency-updates.md)
 owns installs, lockfiles, release delays and version policy. The
 [first-party dependency audit](first-party-dependencies.md) tracks upstream defects that are not yet
 fixed. This prompt removes local code only after the upstream fix or capability has been released.

@@ -13,7 +13,6 @@ import {
 import { unprovisionedSecretsWithoutReadinessStep } from '../.github/workflows/workflow-secrets-readiness.mts'
 import { assertNoWorkflowViolations } from '../.github/test-helpers/workflow-fixtures.mts'
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
-import { writeJobsInventoryDoc } from './render-workflow-runner-inventory.mts'
 
 const noMistakesPolicyCommand = 'node ci/check-no-mistakes-test-policy.mts'
 
@@ -66,7 +65,6 @@ if (import.meta.main) {
       missingTopLevelPermissionPaths(githubWorkflowPaths()),
       'Workflows missing top-level permissions:',
     )
-    await writeJobsInventoryDoc({ check: true, topology })
     console.log('Live workflow topology checks passed.')
     process.exit(0)
   } catch (err) {

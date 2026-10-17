@@ -36,38 +36,17 @@ function toolingFilter(): string[] {
 }
 
 const fixtureDocumentationPaths = [
-  'docs/development/ci/workflows/JOBS.md',
   '.github/workflows/README.md',
-  'docs/development/ci/workflows/VITEST.md',
   '.github/workflows/AGENTS.md',
-  'docs/development/ci/workflows/WORKFLOWS.md',
-  'docs/development/ci/workflows/reference-artifact-rerun-safety.md',
-  'docs/development/ci/workflows/reference-fixed-branch-automation-prs.md',
-  'docs/development/ci/workflows/reference-fix-main-dependency-policy.md',
-  'docs/development/ci/workflows/reference-workflow-automation-map.md',
-  'docs/development/ci/workflows/reference-workflow-automation-always-run.md',
-  'docs/development/ci/workflows/reference-workflow-automation-pull-requests.md',
-  'docs/development/ci/workflows/reference-workflow-automation-main.md',
-  'docs/development/ci/workflows/reference-core-ci.md',
-  'docs/development/ci/workflows/reference-vitest.md',
-  'docs/development/ci/workflows/reference-playwright-and-storybook.md',
   'docs/development/ci/workflows/reference-deploy-and-release.md',
-  'docs/development/ci/workflows/reference-harness-automation.md',
-  'docs/development/ci/workflows/reference-workflow-change-preflight.md',
-  'docs/development/ci/workflows/reference-maintenance-security-and-utilities.md',
   'AGENTS.md',
   'docs/development/ci.md',
-  'docs/development/reference-ci-classifying-transient-infrastructure-failures.md',
   'docs/development/reference-ci-ci-job-conditions.md',
   'docs/checklists/github-actions.md',
-  'docs/development/reference-dependency-updates-frozen-install-policy.md',
   'docs/development/dependency-updates.md',
-  'docs/development/first-party-dependencies.md',
-  'docs/development/reference-dependency-updates-first-party-release-gate-exemptions.md',
   'docs/development/reference-dependency-updates-supply-chain-policy.md',
   'docs/development/local-development/reference-bedrock-embeddings-local.md',
   'docs/development/local-development/README.md',
-  'docs/development/local-development/reference-command-catalog.md',
   'docs/overview/architecture/backend/README.md',
   'backend/agents/AGENTS.md',
   'backend/agents/README.md',
@@ -101,9 +80,12 @@ describe('CI fixture documentation classifier', () => {
     }
 
     expect(docsOnly(['docs/development/ci.md', 'docs/development/tests.md'])).toBe(false)
-    expect(docsOnly(['docs/development/tests.md', 'docs/development/ci/workflows/VITEST.md'])).toBe(
-      false,
-    )
+    expect(
+      docsOnly([
+        'docs/development/tests.md',
+        'docs/development/ci/workflows/reference-deploy-and-release.md',
+      ]),
+    ).toBe(false)
     expect(docsOnly(['.github/workflows/cleanup-artifacts.yml'])).toBe(false)
     expect(docsOnly(['docs/development/tests.md', 'package.json'])).toBe(false)
     // Now covered by the whole-tree docs/prompts/.+\.mdx? pattern -- see FIXTURE_DOC_TREES.

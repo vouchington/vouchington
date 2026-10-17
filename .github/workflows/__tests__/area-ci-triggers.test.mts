@@ -153,7 +153,6 @@ describe('Area CI triggers', () => {
       '.github/workflows/tests-backend-unit.yml',
       '.github/workflows/checks-backend-smoke.yml',
       '.github/workflows/README.md',
-      'docs/development/ci/workflows/VITEST.md',
       '.github/workflows/AGENTS.md',
       '.github/workflows/example.yaml',
       '.github/workflows/secret-context.test.mts',
