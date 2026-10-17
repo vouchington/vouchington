@@ -1,4 +1,4 @@
-import { asRecord } from '../retrospective-transcript-facts/compute-shared.mts'
+import { asRecord } from 'vouchington-tooling/retrospective-transcript'
 import type { ClaudeEscalationRecord } from './types.mts'
 import {
   appendBounded,

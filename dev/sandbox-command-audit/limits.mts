@@ -1,4 +1,4 @@
-import { asRecord } from '../retrospective-transcript-facts/compute-shared.mts'
+import { asRecord } from 'vouchington-tooling/retrospective-transcript'
 
 export const MAX_PENDING_CLAUDE_TOOL_USES = 10_000
 export const MAX_RETAINED_RAW_TEXT_CHARS = 64 * 1024

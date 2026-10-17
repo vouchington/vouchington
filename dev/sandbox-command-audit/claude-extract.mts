@@ -1,4 +1,4 @@
-import { asArray, asRecord } from '../retrospective-transcript-facts/compute-shared.mts'
+import { asArray, asRecord } from 'vouchington-tooling/retrospective-transcript'
 import type {
   ClaudeDenialRecord,
   ClaudeEscalationRecord,
