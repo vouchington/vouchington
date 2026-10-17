@@ -13,7 +13,9 @@ Source entrypoint: [backend/queues/crawl-embeds/README.md](../../../../../backen
 
 Jobs use simple deduplication per crawl. Queue ordering spaces requests by destination hostname
 (`oembed:<hostname>`). A provider 429 follows the queue's bounded exponential retry policy; a
-replacement job is deliberately not added while the simple-deduplicated job remains active.
+replacement job is deliberately not added while the simple-deduplicated job remains active. An
+embed-policy denial of the persisted endpoint is deterministic, so the worker fails the job as
+unrecoverable after one attempt; the crawl row stays pending.
 
 The crawl row is the durable source of truth. The recovery/backfill path re-enqueues rows with a
 persisted endpoint that have not reached their crawl-local oEmbed completion marker.
