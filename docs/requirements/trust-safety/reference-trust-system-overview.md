@@ -26,13 +26,3 @@ At launch, trust is simple and transparent.
 | Referral link ranking  | Social graph (followed users) rank higher; vote-based decay ranking for others |
 | RSS source ranking     | Domain vote scores determine source visibility                                 |
 | Data point aggregation | All verified contributors weighted equally                                     |
-
-### Limitations
-
-Phase 1 trust is vulnerable to:
-
-- Vote brigading (coordinated up/downvoting)
-- Account farming (creating many accounts for vote manipulation)
-- Low-quality contributions from users with no track record
-
-These are acceptable at launch scale and addressed in Phase 2.

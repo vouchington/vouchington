@@ -1,14 +1,13 @@
 # Asides
 
-Right-sidebar content is rendered per-page via props-based composition using `PageWithAside`. Each page or layout passes aside JSX as the `aside` prop, which renders server-side in `AsideColumn` (desktop) and `AsideDrawer` (mobile sheet).
+Right-sidebar content is passed per page as the `aside` prop of `PageWithAside` and rendered
+server-side. Which asides appear where is read from the pages.
 
-## Contents
+## Rules
 
-- <a id="core-rules"></a>[Core Rules](reference-asides-core-rules.md)
-- <a id="aside-inventory"></a>[Aside Inventory](reference-asides-aside-inventory.md)
-- <a id="page-to-aside-mapping"></a>[Page-to-Aside Mapping](reference-asides-page-to-aside-mapping.md)
-- <a id="architecture"></a>[Architecture](reference-asides-architecture.md)
-- <a id="wrapper-components"></a>[Wrapper Components](reference-asides-architecture.md)
-- <a id="adding-new-asides"></a>[Adding New Asides](reference-asides-architecture.md)
-- <a id="styling-guidelines"></a>[Styling Guidelines](reference-asides-styling-guidelines.md)
-- <a id="related-documentation"></a>[Related Documentation](reference-asides-styling-guidelines.md)
+- Asides shown only to signed-in users or administrators are React Server Components that check
+  auth on the server, so auth-gated code stays out of the client bundle. Interactive parts move to a
+  client content component.
+- Within an `aside` prop, static asides come first, then asides that load data, wrapped so they
+  stream sequentially, and the footer last.
+- Activity-gated asides nudge until the user completes an action, then hide themselves.

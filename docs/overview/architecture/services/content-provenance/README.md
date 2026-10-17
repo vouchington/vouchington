@@ -5,7 +5,7 @@ Source entrypoint: [backend/services/content-provenance/README.md](../../../../.
 Decides what a viewer may learn about how a post, community, topic, list or RSS feed was created.
 The rules, the four label tiers, the anonymous-post rule, the scope rule and the routes and MCP
 tools that carry the label are in
-[Content provenance exposure](../../../../requirements/content/reference-content-provenance-exposure.md).
+Content provenance exposure.
 This page covers how to call the service.
 
 ## Exports

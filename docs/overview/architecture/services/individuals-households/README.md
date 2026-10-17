@@ -57,5 +57,3 @@ This service manages the personal finance profile layer for users. An individual
 
 - [Users Service](../users/README.md)
 - [Topics Service](../topics/README.md)
-- [Individuals API](../../../../requirements/api/v1/individuals/README.md)
-- [Households API](../../../../requirements/api/v1/households/README.md)

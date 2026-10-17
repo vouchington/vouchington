@@ -27,5 +27,4 @@ records. This exclusion must remain explicit in the replayability matrix.
 ## Related
 
 - Service: [docs/overview/architecture/services/admin-imports/README.md](../../services/admin-imports/README.md)
-- API: [docs/requirements/api/v1/admin/imports/README.md](../../../../requirements/api/v1/admin/imports/README.md)
 - Parent: [backend/queues/AGENTS.md](../../../../../backend/queues/AGENTS.md)

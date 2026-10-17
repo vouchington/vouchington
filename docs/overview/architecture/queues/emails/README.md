@@ -54,5 +54,5 @@ time. Every other email job keeps the default retention.
 The hourly `dispatchApiKeyExpiryReminders` job queues bounded pages of
 `processSendApiKeyExpiryReminder` jobs carrying only an API-key id. The service's durable claim
 prevents duplicate sending after queue retries or deduplication expiry. See the
-[API-key lifecycle](../../../../requirements/users/reference-api-key-lifecycle.md) and its
+API-key lifecycle and its
 [durable transition matrix](../../services/api-keys/README.md#expiry-reminders).

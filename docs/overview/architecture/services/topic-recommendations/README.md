@@ -60,7 +60,7 @@ Conditional-required validation is enforced in `normalizeTopicRecommendationValu
 
 ## Related
 
-- API: [../../api/v1/topic-recommendations/README.md](../../../../requirements/api/v1/topic-recommendations/README.md)
+- API: ../../api/v1/topic-recommendations/README.md
 - Posts: [../posts/AGENTS.md](../../../../../backend/services/posts/AGENTS.md)
 
 ## Provisional export status (#1360)

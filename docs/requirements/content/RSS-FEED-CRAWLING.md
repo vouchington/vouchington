@@ -1,102 +1,27 @@
 # RSS Feed Crawling
 
-Prioritized, tiered crawl scheduling for RSS feeds.
+Prioritized, tiered crawl scheduling for RSS feeds. Tier cutoffs, SLAs, and the dispatch budget are
+read from the view SQL and the `rss-feed-crawl-config` DynamicConfig key.
 
-## Background
+## Decisions
 
-All enabled RSS feeds are eligible for periodic crawling. Tiered crawling assigns each feed a target
-fetch SLA based on its relative importance. The dispatcher prioritizes feeds that are past their
-SLA, then backfills with not-yet-due feeds up to the capacity budget.
-
-## Crawl Score and Tiers (materialized view)
-
-`mv_rss_feed_crawl_tiers` precomputes, per enabled feed, the crawl score **and** tier:
-
-```
-crawl_score = log1p(weighted_follower_count) + votes_score_net
-crawl_tier  = percentile bucket of crawl_score (1 = highest)
-```
-
-The score formula and the percentile thresholds are **baked into the materialized-view SQL**
-(`backend/data-stores/psql/views/2026-05-07-rss-feed-crawl-inputs.sql`) so that `CUME_DIST()`
-runs once at refresh time, never per dispatch. `log1p` dampens very large follower counts. Follower
-counts are routed through `canonical_rss_feed_id` so a permanently-redirected feed's followers
-credit the enabled canonical feed. A user who follows both an alias and its canonical feed is counted
-once. The private weight per unique follower is Free = 1, Plus = 2, and Pro = 3. Paid weighting
-applies only while the membership is otherwise current: `active` or `past_due`, not deleted/cancelled/
-expired/paused. Expiry is source-specific: direct provider sources follow the provider-authoritative
-terminal lifecycle, so a stale `expires_at` or billing-period end alone does not revoke access;
-time-bounded administrator grants and family entitlements require `expires_at` to be absent or in the
-future. The shared
-`view_current_paid_memberships` view chooses at most one current plan per user, preferring Pro,
-so membership lifecycle and tier selection cannot fan out follower demand. Changes take effect at
-the next nightly view refresh.
-
-Following a feed improves its **relative** crawl priority. It is not a public or guaranteed crawl
-SLA; capacity budget, percentile tiers, queue priority, and dispatcher policy remain the scheduling
-authority.
-
-| Tier | Percentile cutoff | Default fetch SLA |
-| ---- | ----------------- | ----------------- |
-| 1    | top 0.1%          | 5 minutes         |
-| 2    | top 1%            | 15 minutes        |
-| 3    | top 5%            | 1 hour            |
-| 4    | top 20%           | 2 hours           |
-| 5    | remainder         | 24 hours          |
-
-A unique index on `rss_feed_id` allows `REFRESH MATERIALIZED VIEW CONCURRENTLY` so reads are not
-blocked during refresh.
-
-## Refreshing the view
-
-The materialized view is refreshed by the **psql queue's generic `refreshMaterializedView` job**
-(`backend/queues/psql`), scheduled nightly at 01:00 UTC (`refresh-rss-feed-crawl-tiers`). The job
-takes `{ viewName }` and is allow-listed in
-`backend/data-stores/psql/migration-runner/refresh-materialized-view.mts`. There is no bespoke
-re-tier job on the `rss-feeds` domain of the `background` queue.
-
-## Dispatcher
-
-`processRssFeedsDispatcher` runs every minute and calls `getRssFeedsToFetch()`:
-
-- **Due bucket**: feeds whose `last_fetched_at` is older than their tier SLA, ordered by
-  `crawl_score DESC, id ASC`.
-- **Backfill bucket**: not-yet-due feeds that were last fetched at least the tier-1 SLA ago,
-  ordered by time-until-deadline ASC then `crawl_score DESC` — fills spare capacity up to
-  `capacity_budget` (default 100).
-- **New feeds** not yet in the view default to **tier 5** (`COALESCE(crawl_tier, 5)`) and are
-  still dispatched, so a freshly created feed is never missed before the next nightly refresh.
-
-Feeds are grouped by `crawl_tier` and enqueued with matching glide-mq priority constants
-(`TIER_PRIORITY` in `backend/queues/rss-feeds/config.mts`): tier 1 -> priority 1, tier 5 -> priority 20. Backfill feeds omit the per-tier SLA TTL (so they are not throttled for the full SLA window) but still use the per-feed `simple` dedup via `enqueueBulkFetchRssFeeds`, which skips a feed while its fetch job is waiting, active, or retrying and admits it again once that job completes or fails. A fetch someone requests now (non-forced administrator refresh, redirect target, new feed) keeps its own `rss-feed-request__<id>` dedup key, and forced/manual refreshes set `skipDeduplication`, so an explicit refresh is not dropped behind a queued normal fetch.
-
-## DynamicConfig Key
-
-Key: `rss-feed-crawl-config`, editable through `/admin/dynamic-config`. Score weights and
-percentile thresholds are **not** configured here — they are baked into the materialized-view SQL.
-Only the dispatch knobs are tunable at runtime:
-
-| Field             | Type   | Default    | Constraints       | Description                                  |
-| ----------------- | ------ | ---------- | ----------------- | -------------------------------------------- |
-| `tier1_sla_ms`    | number | `300000`   | 1 ms to 7 days    | Tier 1 fetch SLA in milliseconds (5 min).    |
-| `tier2_sla_ms`    | number | `900000`   | 1 ms to 7 days    | Tier 2 fetch SLA in milliseconds (15 min).   |
-| `tier3_sla_ms`    | number | `3600000`  | 1 ms to 7 days    | Tier 3 fetch SLA in milliseconds (1 hour).   |
-| `tier4_sla_ms`    | number | `7200000`  | 1 ms to 7 days    | Tier 4 fetch SLA in milliseconds (2 hours).  |
-| `tier5_sla_ms`    | number | `86400000` | 1 ms to 7 days    | Tier 5 fetch SLA in milliseconds (24 hours). |
-| `capacity_budget` | number | `100`      | 1 to 10,000 feeds | Max feeds dispatched per dispatcher run.     |
-
-## Crawl history retention
-
-`rss_feed_crawls` retains 30 days of crawl history. Expired months are dropped by
-`cleanupPartitions` rather than row-deleted. Conditional GET metadata stays on `rss_feeds`.
-Fetch withholds `If-None-Match`/`If-Modified-Since` when no replayable crawl body remains, so a
-304 cannot starve item updates after partition drop. Reconstructing a 304 body still needs a
-crawl row inside the retention window.
+- **Priority is relative, not a promise.** Every enabled feed is crawled periodically, and
+  following a feed improves its relative priority. It is not a public or guaranteed crawl SLA;
+  capacity, percentile tiers, queue priority, and dispatcher policy remain the scheduling authority.
+- **The score and tiers are baked into a materialized view.** Computing the percentile once at
+  refresh time, never per dispatch, keeps the dispatcher cheap. The score dampens very large
+  follower counts, and follower counts route through the canonical feed so a redirected feed's
+  followers credit the enabled one, counted once per user.
+- **Paid followers weigh more**, only while the membership is current, and entitlement lifecycle is
+  decided by the shared current-paid-memberships view so tier selection cannot fan out demand.
+- **New feeds default to the lowest tier** and are still dispatched, so a fresh feed is never missed
+  before the next view refresh.
+- **Explicit refreshes are never dropped** behind a queued normal fetch: requested and forced
+  fetches carry their own dedup behavior.
+- **Conditional GET is withheld when no replayable crawl body remains**, because a 304 would
+  otherwise starve item updates after the crawl history partition is dropped.
 
 ## Related
 
-- Queue configuration: [../../docs/overview/architecture/queues/rss-feeds/README.md](../../overview/architecture/queues/rss-feeds/README.md)
-- psql maintenance queue: [../../docs/overview/architecture/queues/psql/README.md](../../overview/architecture/queues/psql/README.md)
-- Partition drop retention: [../../overview/architecture/partitioning-strategy.md](../../overview/architecture/partitioning-strategy.md)
-- Service: [../../docs/overview/architecture/services/rss-feeds/README.md](../../overview/architecture/services/rss-feeds/README.md)
-- Implementation: `backend/services/rss-feeds/crawl-config.mts`, `backend/services/rss-feeds/get-to-fetch.mts`
+- [RSS feeds queue](../../overview/architecture/queues/rss-feeds/README.md)
+- [Partition retention](../../overview/architecture/partitioning-strategy.md)

@@ -146,7 +146,7 @@ generated resource, catalog, manifest, generator, runtime, and localization-guar
 select existing native, `ts-shared`, or tooling jobs as appropriate.
 
 Other translation consumers, one command each (see [LOCALIZATION.md § Translation Validation
-Checklist](../requirements/users/LOCALIZATION.md#translation-validation-checklist) for the full
+Checklist](../requirements/users/LOCALIZATION.md) for the full
 checklist and consumer matrix):
 
 - `pnpm run test:email-templates` — transactional email catalog resolution.

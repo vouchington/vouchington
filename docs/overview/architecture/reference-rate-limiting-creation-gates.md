@@ -17,7 +17,7 @@ only the contribution account-age gate; they still require authentication, verif
 non-disposable email for free users, quota, access, and vote-specific rate-limit checks.
 
 Per-action contribution cooldown and daily limits are documented in
-[Contribution Limits](../../requirements/trust-safety/CONTRIBUTION-LIMITS.md).
+Contribution Limits.
 
 **Files:** `backend/services/contribution-gating/`, `backend/services/communities/authorization.mts`, `backend/services/posts/authorization.mts`
 

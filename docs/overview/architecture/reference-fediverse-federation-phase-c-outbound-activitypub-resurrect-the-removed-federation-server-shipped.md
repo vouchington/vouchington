@@ -13,7 +13,7 @@ Federatable actors are **Voucha users first** (people as AP actors); source/topi
 secondary. Federation is **per-user opt-in, default off**. The outbox publishes **social actions
 only** (follow, like) — it never publishes posts, reviews, or data points as ActivityPub objects, and
 that boundary does not move in this phase or any later one (see
-[FEDIVERSE.md](../../requirements/content/FEDIVERSE.md), Current boundaries).
+FEDIVERSE.md, Current boundaries).
 
 **Correctness prerequisites**, required before any inbound or outbound work — these are not optional
 design choices:
@@ -103,7 +103,7 @@ flowchart LR
   R --> Q
 ```
 
-Phase C's completion updated [FEDIVERSE.md](../../requirements/content/FEDIVERSE.md)'s boundary list
+Phase C's completion updated FEDIVERSE.md's boundary list
 and replaced `backend/api/v1/fediverse/__tests__/federation-removal.test.mts`: the paths matching real
 Phase C routes (WebFinger, NodeInfo) now assert they serve, while the paths that were never part of
 Phase C — the old `/api/v1/activitypub/*` namespace, a Mastodon-compatible REST API, and a per-actor

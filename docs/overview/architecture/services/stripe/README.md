@@ -42,7 +42,7 @@ Implemented in `mapStripeSubscriptionStatus()` in [`backend/services/stripe/even
 
 ## Stripe Event Handling
 
-Stripe events are processed durably via the `stripe_events` ledger. Active handlers process membership-relevant events; see [docs/checklists/stripe-events.md](../../../../checklists/stripe-events.md) for the complete event list, and [Membership Stripe Integration § Subscription Updates](../../../../requirements/users/reference-memberships-stripe-integration.md#subscription-updates-stripe-events) for the membership event flow details.
+Stripe events are processed durably via the `stripe_events` ledger. Active handlers process membership-relevant events; see [docs/checklists/stripe-events.md](../../../../checklists/stripe-events.md) for the complete event list, and Membership Stripe Integration § Subscription Updates for the membership event flow details.
 
 All received events are stored in `stripe_events` (deduped by Stripe event ID) and queued for processing with 3 retries and exponential backoff.
 

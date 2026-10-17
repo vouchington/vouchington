@@ -4,7 +4,7 @@ This document is the authoritative policy for which action buttons are visible t
 
 Code entry points: [web/components/shared/follow-button.tsx](../../../web/components/shared/follow-button.tsx) · [web/components/votes/score-vote.tsx](../../../web/components/votes/score-vote.tsx) · [web/lib/permissions/can-see-downvotes.ts](../../../web/lib/permissions/can-see-downvotes.ts) · [web/components/shared/hide-button.tsx](../../../web/components/shared/hide-button.tsx) · [web/components/news/news-item-actions.tsx](../../../web/components/news/news-item-actions.tsx)
 
-See also: [web/AGENTS.md](../../../web/AGENTS.md) · [docs/requirements/security/AUTH.md](../security/AUTH.md) · [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md)
+See also: [web/AGENTS.md](../../../web/AGENTS.md) · [docs/requirements/security/AUTH.md](../security/AUTH.md) · Entity × Action Matrix
 
 ## Policy
 

@@ -203,6 +203,5 @@ flowchart LR
 
 ## Related
 
-- [docs/requirements/api/v1/entity-relations/README.md](../../../../requirements/api/v1/entity-relations/README.md)
 - [docs/overview/architecture/services/bookmarks/README.md](../bookmarks/README.md)
 - [docs/overview/architecture/entity-relations.md](../../entity-relations.md)

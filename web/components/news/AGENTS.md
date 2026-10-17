@@ -1,6 +1,6 @@
 # News components
 
-- Follow [news requirements](../../../docs/requirements/content/NEWS-DISCUSSIONS.md) and [story CTA/visibility/403/409 behavior](../../../docs/requirements/content/news-story-clusters.md).
+- Follow news requirements and story CTA/visibility/403/409 behavior.
 - `NewsDiscussMenu` reads `useAuth()`, never auth props; every branch renders `data-pw='news-discuss-button'`.
 - Cluster members are bare `NewsItemCard`s with `border-t`, never nested Cards. Official-source badges belong in matching member headers, never story-title wrappers.
 - Only `NewsItemCluster` filters the story post from `relatedPosts`.

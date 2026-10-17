@@ -19,7 +19,7 @@
 
 ## Keyboard Shortcuts
 
-All global keyboard shortcuts — see [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md):
+All global keyboard shortcuts — see KEYBOARD-SHORTCUTS.md:
 
 - `⌘K` / `Ctrl+K` — open search
 - `⌘/` / `Ctrl+/` — toggle sidebar

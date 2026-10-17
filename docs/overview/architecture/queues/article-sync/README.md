@@ -16,5 +16,5 @@ The admin status endpoints read a job by id and treat an id that belongs to anot
 
 - Worker: [../../workers/article-sync/README.md](../workers/article-sync/README.md)
 - Service: [../../services/articles/](../../../../../backend/services/articles/)
-- API: [../../api/v1/admin/README.md](../../../../requirements/api/v1/admin/README.md)
+- API: ../../api/v1/admin/README.md
 - Parent: [../AGENTS.md](../../../../../backend/queues/AGENTS.md)

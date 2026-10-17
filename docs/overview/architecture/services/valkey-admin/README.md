@@ -75,6 +75,6 @@ names, connection URLs, credentials, or raw `INFO` output.
 
 ## Related
 
-- API: [../../api/v1/valkey/README.md](../../../../requirements/api/v1/valkey/README.md)
+- API: ../../api/v1/valkey/README.md
 - Entity cache: [../entity-cache/](../entity-cache/README.md)
 - Operations: [../../../docs/operations/valkey-memory-recovery.md](../../../../operations/valkey-memory-recovery.md)

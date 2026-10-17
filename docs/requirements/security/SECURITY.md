@@ -1,14 +1,20 @@
 # Security Architecture
 
-Reference document for the security posture across the CF Worker, backend, and web layers.
+Orientation for the security posture across the Cloudflare Worker, backend, and web layers. The
+code is the source of truth for headers, limits, and routes.
 
----
-
-## Contents
-
-- <a id="response-headers"></a>[Response Headers](reference-security-response-headers.md)
-- <a id="api-server-runtime-controls"></a>[API Server Runtime Controls](reference-backend-defence-in-depth.md)
-- <a id="authentication-origin-validation-native-tls-pinning-and-rate-limiting"></a>[Authentication, Origin Validation, Native TLS Pinning, and Rate Limiting](reference-security-authentication-sessions.md)
-- <a id="ssrf-protection-and-creation-gates"></a>[SSRF Protection and Creation Gates](reference-security-ssrf-protection.md)
-- <a id="honeypot-fields-input-sanitization-link-attributes-images-scraping-protection-production-checklist-and-related"></a>[Honeypot Fields, Input Sanitization, Link Attributes, Images, Scraping Protection, Production Checklist, and Related](reference-security-honeypot-fields.md)
-- <a id="sentry-query-string-and-fragment-scrubbing"></a>[Sentry Query-String and Fragment Scrubbing](reference-security-observability-scrubbing.md)
+- **Edge is authoritative.** The Cloudflare Worker sets security headers on every response and
+  strips client-supplied auth headers, so browser authority is cookie-only. Backend routes serve
+  APIs and normally carry no CSP. See [Content Security Policy](reference-content-security-policy-cf-worker.md).
+- **CSRF.** No tokens; layered defenses make a forged request impossible to construct. See
+  [CSRF](./CSRF.md).
+- **Authentication.** Cookie sessions for browsers, bearer credentials for native and server
+  clients. See [Authentication architecture](../../overview/architecture/auth-overview.md) and
+  [OAuth authorization server](./OAUTH-AUTHORIZATION-SERVER.md).
+- **SSRF.** Every outbound fetch of a user-supplied URL (URL addition, crawling, image sideloads,
+  OAuth metadata documents) goes through the shared SSRF-safe, DNS-pinned HTTP boundary, and
+  creation is gated before any fetch.
+- **Honeypots and scraping.** Public forms carry honeypot fields, and pagination depth and robots
+  directives limit scraping.
+- **Telemetry.** Least-data collection and mandatory scrubbing: see
+  [Sentry scrubbing](reference-security-observability-scrubbing.md).

@@ -7,19 +7,21 @@ still run asynchronously after report creation or update.
 
 See also:
 
-- [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — Report listed in Table A and Table B for all four entities
-- [Actions](../navigation/ACTIONS.md) — Report placement principles and per-entity tables
-- [Signed-out Actions](../navigation/SIGNED_OUT_ACTIONS.md) — Report is auth-only, not rendered for signed-out users
-- [Post Moderation rules](./POST-MODERATION.md) — authorization matrix, roles, and all moderation actions
-- [Moderation Flows](./MODERATION-FLOWS.md) — full automated moderation pipeline that runs before and after user reports
-- [How Moderation Works](../../../articles/how-moderation-works.md) — public-facing overview of the moderation system
-- [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md) — canonical policy registry (severity, appealEligible, recommendedAction) from which report reasons and AI content-policy categories both derive
-- [Moderation Analytics](./MODERATION-ANALYTICS.md) — paid transparency releases delayed, suppressed, rounded report aggregates only
+- [Actions](../navigation/ACTIONS.md) — Report placement principles
+- [Signed-out Actions](../navigation/SIGNED_OUT_ACTIONS.md) — Report is auth-only
+- [Moderation Flows](./MODERATION-FLOWS.md) — the automated pipeline around user reports
+- [How Moderation Works](../../../articles/how-moderation-works.md) — public-facing overview
+- [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md) — the policy registry report reasons derive from
 
----
+## Reporter privacy
+
+- The reporter is stored but never exposed to the reported user, who is not notified.
+- Staff see full report rows. Community owners and moderators see community-scoped summaries
+  without reporter identity, reporter notes, or note-derived AI judgements.
+- Pending queues hide reports whose target was deleted, and deleting a post or comment dismisses its
+  pending reports.
 
 ## Contents
 
 - <a id="reportable-entities"></a>[Reportable entities](reference-reporting-reportable-entities.md)
-- <a id="report-reasons-submission-flow-and-idempotency"></a>[Report Reasons, Submission Flow, and Idempotency](reference-reporting-report-reasons.md)
-- <a id="rate-limiting-reporter-privacy-admin-queue-database-schema-and-deleted-targets"></a>[Rate Limiting, Reporter Privacy, Admin Queue, Database Schema, and Deleted Targets](reference-reporting-rate-limiting.md)
+- <a id="report-reasons-submission-flow-and-idempotency"></a>[Report Reasons and Idempotency](reference-reporting-report-reasons.md)

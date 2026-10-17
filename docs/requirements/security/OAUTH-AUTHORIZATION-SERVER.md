@@ -53,13 +53,12 @@ OpenID Connect, ID-token, or UserInfo flows.
 ## Client types
 
 Public clients authenticate with their `client_id` and mandatory PKCE. Confidential clients also
-authenticate with HTTP Basic and a generated client secret. B1 implements RFC 7591 registration,
-not the RFC 7592 registration-management protocol, so it does not mint an unused registration
-management credential. Signed-in owners and administrators manage clients and grants through the
+authenticate with HTTP Basic and a generated client secret. Voucha implements RFC 7591 registration,
+not RFC 7592 registration management, so it mints no unused management credential. Signed-in owners and administrators manage clients and grants through the
 first-party routes below instead.
 
 Signed-in users register and manage their own clients through `/api/v1/my/oauth-apps`
-([OAuth apps](../users/oauth-apps.md#oauth-apps)). Owner registration reuses the RFC 7591 validators
+(OAuth apps). Owner registration reuses the RFC 7591 validators
 and records `owner_user_id`; rotation replaces the stored client-secret hash and returns the new
 secret once, and renaming a client or replacing its redirect URIs clears `verified_at` and
 `verified_by_id` in the same update. Every owner mutation first takes the account-deletion lock
@@ -69,112 +68,30 @@ the apps the account owns in bounded worker batches.
 
 ### Client ID Metadata Documents
 
-An HTTPS URL with a path may be used directly as `client_id`. Voucha fetches that exact URL through
-the SSRF-safe, DNS-pinned HTTP boundary and never follows redirects. Userinfo, fragments, dot path
-segments, private or special-use targets, non-200 responses, non-JSON responses, documents larger
-than 5 KiB, and responses exceeding the 5-second header or 5-second body budget are rejected. The
-document's `client_id` must equal the requested URL byte for byte.
-
-CIMD clients are public, secretless clients and still require S256 PKCE. Their names, redirect URIs,
-grant types, response types, and scopes use the RFC 7591 validators, except redirect strings remain
-unserialized so authorization preserves exact bytes except the loopback-port rule below. Shared-secret methods and values,
-and private key material embedded in JWK metadata, are rejected. Public JWK metadata is permitted
-but does not change Voucha's supported `none` authentication method.
-
-A validated document is upserted into `oauth_clients` under the exact URL so the existing request,
-grant, token, evidence, and provenance foreign keys remain authoritative. Cache freshness respects
-`Cache-Control: max-age` or, when absent, `Expires` relative to `Date`, with a 5-minute default and
-1-hour ceiling after response age is deducted.
-`no-cache`, `no-store`, and zero remaining freshness require another fetch for the next
-authorization. Failed or invalid refreshes abort authorization and cannot authorize an error
-redirect through stale metadata. Database-ordered refresh generations prevent an older concurrent
-response from overwriting a newer validated representation; the fetch-start timestamp remains the
-recorded refresh time.
-
-Consent uses the in-code app name for exact first-party native client IDs. Other CIMD clients
-use a reviewed display name only when the exact document URL is in `known-clients.mts`; otherwise
-they use the URL hostname. The hostname is always visible. RFC
-7591 registration and owned-app clients retain their existing behavior. Connected-app grant lists
-apply the same reviewed-name-or-hostname policy instead of exposing a document's mutable name.
+An HTTPS URL with a path may be used directly as `client_id`. The metadata is fetched through the
+SSRF-safe, DNS-pinned boundary with no redirects, strict size and time budgets, and must name its
+own URL. These clients are public and secretless and still require S256 PKCE. Consent always shows
+the URL hostname, and shows a display name only when the exact URL is in the reviewed
+`known-clients.mts` list, because a document's mutable name must never be trusted for display.
+A failed or invalid refresh aborts authorization rather than falling back to stale metadata.
 
 ### First-party native clients
 
-Native agents use OAuth authorization code with S256 PKCE to call `tools/list` and `tools/call`
-on `/api/v1/mcp`. They receive the same wrapped external content, structured results, scope checks,
-rate limits, usage quota and audit as every other MCP client. MCP accepts OAuth tokens and API
-keys; OAuth connects native agents with mandatory consent. Every mutating user-MCP tool
-requires Plus, so a Free member's native agent gets read tools only, with no native exception.
-This is the accepted plan-gating decision for now.
-
-Let `<site origin>` be `getSiteOrigin()`, also the OAuth issuer. Each environment has its own IDs:
-
-| App                       | Public client ID                                    | Registered redirect URIs                                                                       |
-| ------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| iOS (`ai.voucha.ios`)     | `<site origin>/api/v1/oauth/native-clients/ios`     | `<site origin>/oauth/native/ios/callback`                                                      |
-| macOS (`ai.voucha.macos`) | `<site origin>/api/v1/oauth/native-clients/macos`   | `<site origin>/oauth/native/macos/callback`                                                    |
-| Windows                   | `<site origin>/api/v1/oauth/native-clients/windows` | `http://127.0.0.1/oauth/native/windows/callback`, `http://[::1]/oauth/native/windows/callback` |
-
-One in-code definition serves and resolves these documents without a self-fetch. Exact first-party
-IDs are recognized before external HTTPS-only CIMD URL parsing so local HTTP origins work too.
-The local HTTP metadata URL exception in `oauth_clients_metadata_url_check` is limited to
-loopback native-client paths; external CIMD URL resolution remains HTTPS-only. The documents use
-`token_endpoint_auth_method: "none"`, authorization-code and refresh-token grants,
-`response_types: ["code"]`, and only `mcp.user:read mcp.user:write` scopes. They pass the ordinary
-metadata validation and share the ordinary `oauth_clients` cache, grants and tokens. Windows has
-no `localhost` redirect, and the .NET Mac Catalyst target has no client ID.
-
-Only a port-less `http:` registration with the literal host `127.0.0.1` or `[::1]` accepts any
-requested port. Path, query, host and scheme stay exact. The same rule applies at authorization,
-error redirects, stored-request reads, consent and the authorization-code registration recheck.
-Requests and codes retain the requested URI with its port. Token exchange must send that exact
-URI; a changed port returns `invalid_grant`.
-
-Consent always applies, including first-party clients and repeat authorizations. A local app can
-use the Windows client ID and loopback redirect, so the public client ID does not prove which app
-started the request. The consent screen uses the first-party app name and hostname.
-
-Apple's claimed HTTPS callbacks require `webcredentials` association for iOS 17.4+ and macOS
-14.4+; serving the AASA is tracked separately in
-[#70](https://github.com/vouchington/vouchington/issues/70). The native MCP/OAuth implementation is
-[vouchington-clients#210](https://github.com/vouchington/vouchington-clients/issues/210).
-
-Administrators verify dynamically registered clients through `/api/v1/admin/oauth-clients`
-([Admin API](../api/v1/admin/README.md)). Verification records `verified_at` and
-`verified_by_id` only when the stored `client_name` and `redirect_uris` still equal the name and
-redirect URIs the administrator reviewed, so an owner's rename or re-pointing between review and
-approval returns 409 instead of verifying what staff never saw. The staff UI refreshes that
-conflicted row from the server before another review, so a retry cannot approve stale name or
-redirect-URI data.
-Revoked clients and Client ID Metadata Document clients cannot be verified. Clearing verification
-sets both columns back to `NULL`. A suspended administrator can neither verify nor clear
-verification. Staff review the queue at `/admin/oauth-clients`, which defaults to unverified
-clients, filters to verified or all clients, shows each client's owner (or none for an anonymous
-registration), redirect URIs and scopes, and verifies the displayed name and redirect URIs or
-removes verification from the row.
-
-Users list and revoke the grants they approved through `/api/v1/my/oauth-grants`
-([connected apps](../users/oauth-apps.md#connected-apps)). A revoked grant fails the bearer, refresh
-and code paths on their next use because each requires an unrevoked grant. The listed `verified`
-flag reflects the client's `verified_at`, and `last_used_at` is the later of the grant's own
-token-exchange timestamp and its newest access-token use. Consent and re-consent update
-`consented_at` without counting as use: a grant stays unused until a code or refresh-token exchange
-or successful bearer validation, and later consent preserves its prior real-use timestamp.
+Native agents use the same authorization code with S256 PKCE flow to call the user MCP resource,
+with the same scope checks, rate limits, quota, and audit as every other MCP client. Consent always
+applies. Every mutating user-MCP tool requires a paid plan, so a Free member's native agent gets
+read tools only. Their exact client ids and redirect URIs live in code, so first-party clients
+resolve without a self-fetch; loopback redirects accept any port while the token endpoint matches
+the authorization request exactly.
 
 ## Persistence and retention
 
-Durable clients, grants, and append-only authorization lifecycle events are separate from short-lived
-consent requests, codes, access tokens, and refresh-token families. Data retention deletes expired
-protocol artifacts in bounded, retry-safe batches while preserving clients, grants, and consent and
-revocation evidence. Expiry indexes include terminal rows so consumed and revoked credentials remain
-prunable.
-
-Clients are retired through `revoked_at` and never deleted, because
-[content provenance](../content/content-provenance.md) references the client that created each
-row. `metadata_url`, `verified_at` and `verified_by_id` decide whether a public provenance label may
-name the client. `metadata_url` is the exact identifier URL for Client ID Metadata Document clients
-and stays `NULL` for dynamically registered and owned clients. `metadata_refresh_generation`
-orders concurrent document updates, `metadata_refreshed_at` records the winning fetch's start time,
-and `metadata_expires_at` controls reuse for new authorization requests.
+Durable clients, grants, and append-only authorization lifecycle events are kept separately from
+short-lived consent requests, codes, and tokens, so retention can prune expired protocol artifacts
+while preserving consent and revocation evidence. Clients are retired through `revoked_at` and
+never deleted, because [content provenance](../content/content-provenance.md) references the
+client that created each row. A client's verification decides whether a public provenance label may
+name it.
 
 ## Account deletion
 
@@ -225,31 +142,17 @@ describe the surrounding lifecycle.
 
 ## MCP challenges
 
-The user MCP route accepts an OAuth access token or an MCP API key as the bearer credential. The
-admin MCP route accepts only an OAuth access token: an API key there is an unrecognized credential
-and gets the same `401` as an unknown token.
-
-- A missing credential gets `401` with
-  `WWW-Authenticate: Bearer resource_metadata="…", scope="mcp.<audience>:read mcp.<audience>:write"`.
-- An unknown, expired, or revoked token, a token for the other resource, or a suspended owner gets
-  `401` with `error="invalid_token"`.
-- A single `tools/call` whose only failure is a missing scope gets `403` with
-  `error="insufficient_scope"` and a `scope` naming the granted scopes plus the tool's, so re-consent
-  never drops access the grant already holds.
-- Role and plan denials, JSON-RPC batches, and API keys keep in-band JSON-RPC errors: re-consent
-  cannot fix a role or plan, a batch has no single tool to step up for, and an API key cannot be
-  re-authorized.
-- The admin route additionally answers `403` before reading the body when the token's owner is no
-  longer an administrator, and `403 insufficient_scope` naming `mcp.admin:read` when the token holds
-  no admin-audience scope.
-- Every call a verified token makes to the user or admin route, accepted or rejected, is written to the
-  append-only `mcp_call_audit_events` table before it runs, and the response carries the row's
-  `X-Correlation-Id`. If the audit row cannot be stored the request fails closed with `503`. See the
-  [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+Missing or invalid credentials get a standard `401` with a resource-metadata challenge, and a call
+that fails only on a missing scope gets `403 insufficient_scope` naming the granted plus required
+scopes so re-consent never drops access already held. Role and plan denials, batches, and API keys
+keep in-band JSON-RPC errors because re-consent cannot fix them. Every call a verified token makes
+is written to an append-only audit table before it runs, and the request fails closed if the audit
+row cannot be stored. See the
+[MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
 
 ## Related
 
 - [Authentication architecture](../../overview/architecture/auth-overview.md)
 - [Security requirements](./SECURITY.md)
-- [API routes](../api/oauth/README.md)
+- [API design decisions](../api/README.md)
 - [Authorization-server service](../../overview/architecture/services/oauth-authorization-server/README.md)

@@ -109,7 +109,6 @@ await setCommunityArchiveState(currentUser, communityId, true, membership)
 
 - API routes: [../../api/v1/communities/README.md](../../../../../backend/api/v1/communities/README.md)
 - Moderation queue: [../community-agent-prompts/README.md](../community-agent-prompts/README.md)
-- [Communities requirements](../../../../requirements/community/COMMUNITIES.md)
 - [Memberships](../../../../requirements/users/memberships.md) — tier limits and billing
 
 ## Provisional export status (#1360)

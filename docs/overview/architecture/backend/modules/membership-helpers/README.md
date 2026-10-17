@@ -10,7 +10,7 @@ Pure helper functions for checking membership tier and status — no database ac
 
 Returns `true` if the membership status is `'active'` or `'past_due'`. Grant expiry is
 derived as `expired` by `view_memberships`; this helper does not re-interpret
-`expires_at`. See [statuses](../../../../../requirements/users/reference-memberships-membership-statuses.md).
+`expires_at`. See statuses.
 
 ### `hasPlusTier(m: Membership | null, now?: Date): boolean`
 

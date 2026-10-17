@@ -101,6 +101,4 @@ namespace value. Public reads started after that write remain eligible to refres
   compatibility facade over the environment-agnostic platform primitives
 - [@vouchington/utils feature flags](https://github.com/vouchington/vouchington-platform/tree/main/packages/utils) -- dependency-free cookie codec mechanics
 - `backend/data-stores/valkey/dynamic-config.mts` -- `DynamicConfig` class
-- [docs/requirements/api/v1/feature-flags/README.md](../../requirements/api/v1/feature-flags/README.md) -- read endpoint
-- [docs/requirements/api/v1/dynamic-config/README.md](../../requirements/api/v1/dynamic-config/README.md) -- admin write endpoint and history
 - [Web rules](../../../web/AGENTS.md) -- UI conventions for feature flags

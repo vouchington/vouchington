@@ -37,7 +37,7 @@ await config.setFields(validatedChanges)
 
 ## Related
 
-- API route: [../../api/v1/dynamic-config/README.md](../../../../requirements/api/v1/dynamic-config/README.md)
+- API route: ../../api/v1/dynamic-config/README.md
 - Admin service: [../dynamic-config-admin/README.md](../dynamic-config-admin/README.md)
 - Valkey DynamicConfig: [../../data-stores/valkey/README.md](../../../../development/valkey/README.md)
 - Services guide: [../AGENTS.md](../../../../../backend/services/AGENTS.md)

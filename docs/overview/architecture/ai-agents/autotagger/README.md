@@ -112,13 +112,13 @@ its two tools and `agent-instructions.mts` the prompt.
 - Posts: the classifier's topic cap is tiered by the **post author's** membership plan (admin
   authors are treated as pro-level, since plan resolution has no admin concept) — free authors
   (including authorless posts) get zero topics, and the request settles as no work. See
-  [Autotagger feature limits](../../../../requirements/users/reference-memberships-feature-limits.md#autotagger)
+  Autotagger feature limits
   for the per-tier table.
 - RSS feed items: topic enrichment is additive across three independent sources that stack rather
   than replace one another — (1) category→topic mapping (pre-existing, unaffected by tiering),
   (2) a discoverable-source classifier pass, and (3) a no-LLM collaborative-filter pass over paid
   followers (`applyCollaborativeTopicRelations`, capped separately per Plus/Pro follower). See
-  [Source Item Anatomy](../../../../requirements/anatomy/source-item.md) for the full
+  Source Item Anatomy for the full
   topic-source breakdown. The collaborative pass is its own job that runs whenever the `enabled`
   kill-switch is on, independent of discoverability or of whether the classifier run completes,
   because it derives topics from current follow/vote relations, not from classifier output, and is

@@ -132,7 +132,7 @@ Card-style toggle rows (bordered box + label + optional description):
 - Title: `text-sm font-medium leading-none`
 - Description: `text-sm font-normal text-muted-foreground`
 - The entire row must be clickable — use `CheckboxCard` from `@/components/ui/checkbox-card`, which wraps everything in a `<Label htmlFor>` element.
-- See [docs/requirements/navigation/COMPONENTS.md](../../../requirements/navigation/reference-components-page-layout-primitives.md#checkbox--radio-rows).
+- See docs/requirements/navigation/COMPONENTS.md.
 
 ## Button groups
 

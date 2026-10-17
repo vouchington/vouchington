@@ -4034,18 +4034,6 @@ rules:
       schemaCatalogPath: backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
       partitionKeys: require
 
-  - name: split-requirement parents link canonical children
-    rule: markdown-child-links
-    scope: repository
-    options:
-      groups:
-        - parents: ['docs/requirements/ADMIN-NAVIGATION-MATRIX.md']
-          children:
-            - 'docs/requirements/reference-admin-navigation-matrix-table-a-entity-surface-actions-navigation.md'
-            - 'docs/requirements/reference-admin-navigation-matrix-table-b-entity-action-description.md'
-            - 'docs/requirements/reference-admin-navigation-matrix-known-gaps.md'
-          requireWholeFile: true
-
   - name: dependency policy documentation stays canonical
     rule: doc-consistency
     scope: repository
@@ -4092,118 +4080,22 @@ rules:
     scope: repository
     options:
       groups:
-        - parents: ['docs/requirements/CLIENT-PARITY-MATRIX.md']
-          children:
-            - 'docs/requirements/reference-client-parity-matrix-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/ENTITIES.md']
-          children:
-            - 'docs/requirements/reference-entities-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/ENTITY-ACTION-MATRIX.md']
-          children:
-            - 'docs/requirements/reference-entity-action-matrix-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/ENTITY-LIFECYCLE-MATRIX.md']
-          children:
-            - 'docs/requirements/reference-entity-lifecycle-matrix-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/admin/CUSTOMER-SUPPORT.md']
-          children:
-            - 'docs/requirements/admin/reference-customer-support-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/anatomy/fediverse-instance.md']
-          children:
-            - 'docs/requirements/anatomy/reference-fediverse-instance-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/community/community-lists.md']
-          children:
-            - 'docs/requirements/community/reference-community-lists-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/content/LISTS.md']
-          children:
-            - 'docs/requirements/content/reference-lists-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/content/PODCASTS.md']
-          children:
-            - 'docs/requirements/content/reference-podcasts-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/content/TOPICS.md']
-          children:
-            - 'docs/requirements/content/reference-topics-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/content/stories.md']
-          children:
-            - 'docs/requirements/content/reference-stories-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/moderation/MODERATION-FLOWS.md']
-          children:
-            - 'docs/requirements/moderation/reference-moderation-flows-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/moderation/MODERATION-TEST-MATRIX.md']
-          children:
-            - 'docs/requirements/moderation/reference-moderation-test-matrix-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/moderation/POST-MODERATION.md']
-          children:
-            - 'docs/requirements/moderation/reference-post-moderation-*.md'
-          requireWholeFile: true
         - parents: ['docs/requirements/moderation/REPORTING.md']
           children:
             - 'docs/requirements/moderation/reference-reporting-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/moderation/community-moderation.md']
-          children:
-            - 'docs/requirements/moderation/reference-community-moderation-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/navigation/ACTIONS.md']
-          children:
-            - 'docs/requirements/navigation/reference-actions-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/navigation/ASIDES.md']
-          children:
-            - 'docs/requirements/navigation/reference-asides-*.md'
           requireWholeFile: true
         - parents: ['docs/requirements/navigation/COMPONENTS.md']
           children:
             - 'docs/requirements/navigation/reference-components-*.md'
           requireWholeFile: true
-        - parents: ['docs/requirements/navigation/NAVIGATION.md']
-          children:
-            - 'docs/requirements/navigation/reference-navigation-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/navigation/SIDEBAR.md']
-          children:
-            - 'docs/requirements/navigation/reference-sidebar-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/platform/JOB-REPLAYABILITY.md']
-          children:
-            - 'docs/requirements/platform/reference-job-replayability-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/platform/data-points-spec.md']
-          children:
-            - 'docs/requirements/platform/reference-data-points-spec-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/security/SECURITY-NEXTJS-CVES.md']
-          children:
-            - 'docs/requirements/security/reference-security-nextjs-cves-*.md'
-          requireWholeFile: true
         - parents: ['docs/requirements/security/SECURITY.md']
           children:
-            - 'docs/requirements/security/reference-security-response-headers.md'
-            - 'docs/requirements/security/reference-backend-defence-in-depth.md'
-            - 'docs/requirements/security/reference-security-authentication-sessions.md'
-            - 'docs/requirements/security/reference-security-ssrf-protection.md'
-            - 'docs/requirements/security/reference-security-honeypot-fields.md'
+            - 'docs/requirements/security/reference-content-security-policy-cf-worker.md'
             - 'docs/requirements/security/reference-security-observability-scrubbing.md'
           requireWholeFile: true
         - parents: ['docs/requirements/trust-safety/trust-system.md']
           children:
             - 'docs/requirements/trust-safety/reference-trust-system-*.md'
-          requireWholeFile: true
-        - parents: ['docs/requirements/users/REFERRAL-LINKS.md']
-          children:
-            - 'docs/requirements/users/reference-referral-links-*.md'
           requireWholeFile: true
         - parents: ['docs/requirements/users/memberships.md']
           children:

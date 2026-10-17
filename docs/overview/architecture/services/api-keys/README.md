@@ -75,7 +75,7 @@ The bloom filter stores hex-encoded SHA-256 hashes of active keys. It is:
 The emails queue owns the hourly `dispatchApiKeyExpiryReminders` schedule and
 `processSendApiKeyExpiryReminder` job. The API-key service scans due keys in 100-row UUID cursor
 pages and owns the typed delivery claim. The worker renders the template and sends through
-`sendClassifiedEmail`; see the [expiry contract](../../../../requirements/users/reference-api-key-lifecycle.md).
+`sendClassifiedEmail`; see the expiry contract.
 The replacement self-FK uses `ON DELETE SET NULL`; owner deletion still cascades all live keys.
 Expiry and replacement indexes support due scans and foreign-key lookups. Retained key identities
 continue to preserve audit attribution without authorizing deleted keys.

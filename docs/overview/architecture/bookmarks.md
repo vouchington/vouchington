@@ -3,7 +3,7 @@
 User bookmark system for saving, following, muting, blocking, and hiding entities. Built on top of entity relations with a Valkey bloom filter optimization for fast existence checks.
 
 User-facing management surfaces for every user-subject bookmark relation are listed in the
-[User Relation Matrix](../../requirements/users/USER-RELATION-MATRIX.md).
+User Relation Matrix.
 
 ## What Are Bookmarks
 
@@ -121,4 +121,3 @@ When a bloom filter is not ready, a background job (`enqueueBackfillUserBookmark
 - [docs/overview/architecture/services/bookmarks/README.md](services/bookmarks/README.md) -- upsert, get, bloom filter, counts
 - [docs/overview/architecture/services/entity-relations/README.md](services/entity-relations/README.md) -- underlying relation storage
 - [docs/overview/architecture/queues/bloom-filters/README.md](queues/bloom-filters/README.md) -- backfill job queue
-- [docs/requirements/api/v1/entity-relations/README.md](../../requirements/api/v1/entity-relations/README.md) -- bookmark API endpoints

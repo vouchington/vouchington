@@ -61,7 +61,7 @@ stops notifications for later entities.
 
 ## Community Lifecycle and Digest
 
-Community application decisions, role changes, and ownership transfers are persisted atomically with their state transitions and use structured community targets. The weekly Monday dispatcher creates one combined inbox notification per eligible owner/moderator for the previous closed UTC week. Stable event keys make retries safe even after dismissal. See the [notification anatomy](../../requirements/anatomy/notification.md).
+Community application decisions, role changes, and ownership transfers are persisted atomically with their state transitions and use structured community targets. The weekly Monday dispatcher creates one combined inbox notification per eligible owner/moderator for the previous closed UTC week. Stable event keys make retries safe even after dismissal. See the notification anatomy.
 
 ## Browser Push
 

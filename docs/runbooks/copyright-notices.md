@@ -34,7 +34,7 @@ agent cannot grant itself these decision tools. Setting the switch to `false` th
 allowed for a caller otherwise authorized to update that namespace.
 
 Before enablement, review the
-[supported decision groups and exclusions](../requirements/api/v1/admin/README.md#mcp-clients).
+supported decision groups and exclusions.
 Authorize the administrator's OAuth client with exact `copyright-notices:write` and
 `copyright-notices:read` grants; an admin umbrella grant or API key is insufficient. While disabled,
 all 17 tools are hidden and calls return `Tool not found` without a scope step-up. Disabling the
@@ -108,7 +108,7 @@ may dead-letter again; submitted, pending, or unknown items return `{ replayed: 
 Replaying a payload build failure first rebuilds the payload in the same transaction, freezes it,
 and clears the failure; while the data still cannot be built it returns `{ replayed: false }` and
 changes nothing.
-See the [API contract](../requirements/api/v1/copyright-notices/README.md#dsa-statement-replay)
+See the API contract
 and [queue recovery matrix](../overview/architecture/queues/notifications/README.md#dsa-statement-database).
 
 ## DSA transparency report
@@ -138,7 +138,7 @@ Publication is the operator's job. These CSVs contain copyright rows only. Befor
 add the Service name, merge with the platform's other moderation figures, and supply the TOTAL
 row. Service and contextual-information cells are left blank. An empty Value means not computed;
 it must not be presented as zero or not applicable. The
-[API report contract](../requirements/api/v1/copyright-notices/README.md#dsa-transparency-report)
+API report contract
 defines the exported figures and formats.
 
 ## Trusted flaggers
@@ -330,7 +330,7 @@ reply's `received_at`; admission delay does not close it. Mail alone authorizes 
 rejected reply creates no complaint, and an account notifier uses the case page instead.
 
 Record an Art. 21 referral using the dispute-settlement routes in the
-[API contract](../requirements/api/v1/copyright-notices/README.md#eu-filing-complaints-and-dispute-settlement).
+API contract.
 Check the body name, referral time and named party against the received case. Record one outcome;
 a recipient-favouring outcome permits one implementation time at or after its decision. Perform
 the staff case action first, then record implementation: the referral or outcome itself does not

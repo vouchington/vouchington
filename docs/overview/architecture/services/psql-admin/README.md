@@ -36,5 +36,5 @@ const { applied, pending } = await getMigrationStatus()
 
 ## Related
 
-- API: [../../api/v1/psql/README.md](../../../../requirements/api/v1/psql/README.md)
+- API: ../../api/v1/psql/README.md
 - System: [../../queues/psql/](../../queues/psql/README.md)

@@ -3,7 +3,6 @@
 ## Supported Viewports
 
 - Minimum: 320px
-- Target: 320px, 360px, 375px, 393px, 412px, 428px (iphone-14-plus)
 
 ## Rules
 
@@ -12,7 +11,7 @@
 Every page must have no horizontal scrollbar at any supported viewport width.
 Feed and list filter bars must wrap cleanly at 375px and below; use natural-width dropdown triggers
 for feed title/category/subfilter/view controls so the combined search input remains usable.
-See [Feed And List Filters](./FEED-LIST-FILTERS.md) for the route-level filter requirements.
+See Feed And List Filters for the route-level filter requirements.
 
 ### Touch Targets
 

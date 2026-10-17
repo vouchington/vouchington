@@ -29,7 +29,7 @@ The shared UUIDv7 `id` is the `rss_feed_items` primary key used by API routes (f
 `GET /api/v1/rss-feed-items/:id`), frontend references, and all entity-relation FKs. Multiple RSS
 feeds can contain the same hostname-grain item; the N:M `rss_feed_item_sources` join table tracks
 that provenance independently of identity.
-See [Source Item Anatomy](../../../../requirements/anatomy/source-item.md#data-model) for the
+See Source Item Anatomy for the
 cross-surface entity contract.
 
 ### Concurrent ingestion ordering
@@ -192,7 +192,7 @@ Admins can permanently hide a category from the pending triage queue by rejectin
 
 Its bounded candidate scan ends the backfill when no item remains. That empty terminal page skips the update and category side effects; nonempty pages still acquire publication locks before rechecking and updating matching rows.
 
-The admin API (`GET/POST/DELETE /api/v1/rss-feed-categories`) and page (`/rss-feed-categories`) are the primary callers. See [RSS Feed Category Aliases requirements](../../../../requirements/content/RSS-FEED-CATEGORY-ALIASES.md) for full feature spec.
+The admin API (`GET/POST/DELETE /api/v1/rss-feed-categories`) and page (`/rss-feed-categories`) are the primary callers. See RSS Feed Category Aliases requirements for full feature spec.
 
 ## Related
 

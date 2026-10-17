@@ -3,7 +3,7 @@
 Source entrypoint: [backend/services/currencies/README.md](../../../../../backend/services/currencies/README.md)
 
 Reads the immutable supported-currency catalog used by
-[`GET /api/v1/currencies`](../../../../requirements/api/v1/currencies/README.md). `listCurrencies()` returns lowercase
+`GET /api/v1/currencies`. `listCurrencies()` returns lowercase
 ISO 4217 codes and their minor-unit exponents through the canonical opaque cursor contract.
 
 The enum labels come from [`CURRENCIES`](../../../../../ts-shared/money/index.mts) through the generated finite-values

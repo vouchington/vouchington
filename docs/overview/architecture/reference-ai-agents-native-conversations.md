@@ -18,7 +18,7 @@ Native clients can use an on-device model or a configured local endpoint. They p
 turn through `POST /api/v1/conversations/:conversationId/client-generated-chat`; the API accepts
 `apple_foundation`, `windows_foundry`, `android_aicore` and `openai_compatible` model providers.
 The backend stores no local endpoint URL, API key or model list. See the
-[conversation API contract](../../requirements/api/v1/conversations/README.md) for provider names,
+conversation API contract for provider names,
 message identity and retry rules.
 
 The server separately generates a conversation title through one bounded title-generation operation in

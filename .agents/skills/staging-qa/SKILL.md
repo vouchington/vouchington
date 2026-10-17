@@ -101,17 +101,17 @@ if the account is already Plus or Pro.
 Otherwise `/plans` → Plus monthly → Checkout with `4242424242424242`, any
 future expiry, any CVC, any ZIP. Activation is **`invoice.paid`**, not
 `checkout.session.completed`
-([Stripe integration](../../../docs/requirements/users/reference-memberships-stripe-integration.md)).
+(Stripe integration).
 Poll `/my/membership` until `active` or `past_due`. Confirm downvote **counts**
 are visible on a post
-([feature limits](../../../docs/requirements/users/reference-memberships-feature-limits.md)).
+(feature limits).
 Then cancel at period end. Entitlements remain through the paid period.
 
 Do not run Stripe Identity or refunds. An optional decline card must not leave
 `incomplete` blocking the success path.
 
 Plus unblocks `account_too_new` / just_joined create cells
-([contribution gating](../../../docs/requirements/users/reference-memberships-contribution-gating-anti-bot.md)).
+(contribution gating).
 If create is gated, finish Stripe before those cells. Admin is never gated.
 
 ## AWS logs and Sentry

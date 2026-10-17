@@ -137,7 +137,7 @@ hashtags match only their exact alias relation. The `topic_ids` and `category_to
 dimensions for `rss-feed-items` are AND-ed when both are present. One filter is generated per
 hashtag, so items must match every hashtag. Unknown valid hashtags return an empty result.
 
-See [Feed And List Filters](../../requirements/navigation/FEED-LIST-FILTERS.md#hashtag-filter-dimensions-per-surface) for the full surface matrix.
+See Feed And List Filters for the full surface matrix.
 
 ## Related
 

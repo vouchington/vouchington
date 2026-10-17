@@ -78,8 +78,16 @@
             "web/components/my/__tests__/oauth-connections-section.mock.test.tsx"
           ]
         },
-        "swift": { "status": "none", "uiEvidence": [], "behaviorTests": [] },
-        "dotnet": { "status": "none", "uiEvidence": [], "behaviorTests": [] }
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
       },
       "gap": {
         "summary": "The default-disabled LinkedIn broker has web login and connection coverage, but the paired Swift and .NET provider controls and flows are not on native main. Client issue #274 owns enabled, disabled, failure, retry, and connected-state evidence before native parity can be claimed.",
@@ -118,8 +126,16 @@
             "web/lib/api/client/__tests__/auth.mock.test.ts"
           ]
         },
-        "swift": { "status": "none", "uiEvidence": [], "behaviorTests": [] },
-        "dotnet": { "status": "none", "uiEvidence": [], "behaviorTests": [] }
+        "swift": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        },
+        "dotnet": {
+          "status": "none",
+          "uiEvidence": [],
+          "behaviorTests": []
+        }
       },
       "gap": {
         "summary": "The default-disabled Microsoft broker has web login and connection coverage, but paired Swift and .NET provider controls, callback handling, retry, and connected-state rendering remain pending in clients#275.",
@@ -197,7 +213,7 @@
       "title": "Post and community-post compose",
       "domain": "Content",
       "intents": ["posts"],
-      "requirements": ["docs/requirements/content/POSTS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -237,11 +253,7 @@
       "title": "Follower share and manual send",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/POSTS.md",
-        "docs/requirements/content/NEWS-DISCUSSIONS.md",
-        "docs/requirements/navigation/NOTIFICATIONS.md"
-      ],
+      "requirements": ["docs/requirements/navigation/NOTIFICATIONS.md"],
       "matrixRows": [
         {
           "table": "A",
@@ -262,8 +274,8 @@
           "uiEvidence": ["web/components/shared/follower-share-actions.tsx"],
           "behaviorTests": [
             "web/components/shared/__tests__/follower-share-actions.mock.test.tsx",
-            "web/components/shared/__tests__/follower-share-actions.part-2.mock.test.tsx",
-            "web/components/shared/__tests__/follower-share-actions.part-3.mock.test.tsx"
+            "web/components/shared/__tests__/follower-share-actions.part-2.test.tsx",
+            "web/components/shared/__tests__/follower-share-actions.part-3.test.tsx"
           ]
         },
         "swift": {
@@ -335,7 +347,7 @@
       "title": "Markdown and HTML rendering and authoring",
       "domain": "Content",
       "intents": [],
-      "requirements": ["docs/requirements/content/POSTS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -448,7 +460,7 @@
       "title": "Comment and reply threads",
       "domain": "Content",
       "intents": [],
-      "requirements": ["docs/requirements/content/COMMENTS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -488,7 +500,7 @@
       "title": "Direct messages",
       "domain": "Communication",
       "intents": ["messages"],
-      "requirements": ["docs/requirements/users/USER-PRIVACY-MATRIX.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -530,10 +542,7 @@
       "title": "Post and profile image upload",
       "domain": "Media",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/POSTS.md",
-        "docs/requirements/users/USER_SETTINGS.md"
-      ],
+      "requirements": ["docs/requirements/users/USER_SETTINGS.md"],
       "matrixRows": [
         {
           "table": "A",
@@ -679,7 +688,7 @@
       "title": "Communities",
       "domain": "Community",
       "intents": ["communities"],
-      "requirements": ["docs/requirements/community/COMMUNITIES.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -753,7 +762,7 @@
       "title": "Tag management",
       "domain": "Library",
       "intents": [],
-      "requirements": ["docs/requirements/content/TAGS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -793,7 +802,7 @@
       "title": "Growth dashboard",
       "domain": "Staff",
       "intents": ["growth"],
-      "requirements": ["docs/requirements/admin/GROWTH-DASHBOARD.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -829,10 +838,7 @@
       "title": "Moderation logs and analytics",
       "domain": "Staff",
       "intents": ["moderation"],
-      "requirements": [
-        "docs/requirements/moderation/MODLOG.md",
-        "docs/requirements/moderation/MODERATION-ANALYTICS.md"
-      ],
+      "requirements": ["docs/requirements/moderation/MODERATION-ANALYTICS.md"],
       "matrixRows": [
         {
           "table": "B",
@@ -1001,7 +1007,7 @@
       "title": "Moderation review queue actions",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/moderation/POST-MODERATION.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -1178,7 +1184,7 @@
       "title": "Landing page analytics",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/admin/LANDING-PAGE-ANALYTICS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -1256,10 +1262,7 @@
       "title": "Public profile scoped routes and social actions",
       "domain": "Social",
       "intents": ["friends"],
-      "requirements": [
-        "docs/requirements/users/USER-PROFILE-TAB-MATRIX.md",
-        "docs/requirements/users/USER-RELATION-MATRIX.md"
-      ],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -1315,7 +1318,7 @@
       "title": "Friend recommendations",
       "domain": "Social",
       "intents": [],
-      "requirements": ["docs/requirements/users/USERS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -1405,8 +1408,7 @@
         }
       },
       "gap": {
-        "summary": "Web and Swift cover the complete interaction and accessibility contract. .NET has equivalent Core and realized-control evidence, but its non-skipping Mac Catalyst app-shell run remains tracked by #8625.",
-        "trackingIssue": "jonathanong/filaments#8600"
+        "summary": "Web and Swift cover the complete interaction and accessibility contract. .NET has equivalent Core and realized-control evidence, but its non-skipping Mac Catalyst app-shell run remains tracked by #8625."
       }
     },
     {
@@ -1553,11 +1555,11 @@
             "web/components/my/spending-categories-manager.tsx"
           ],
           "behaviorTests": [
-            "web/components/my/__tests__/spending-categories-manager.mock.test.tsx",
-            "web/components/my/__tests__/spending-categories-manager.part-2.mock.test.tsx",
-            "web/components/my/__tests__/spending-categories-manager.part-3.mock.test.tsx",
-            "web/components/my/__tests__/spending-categories-manager.part-4.mock.test.tsx",
-            "web/components/my/__tests__/spending-categories-manager.part-5.mock.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-2.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-3.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-4.test.tsx",
+            "web/components/my/__tests__/spending-categories-manager.part-5.test.tsx",
             "web/components/my/__tests__/spending-categories-pagination.test.ts"
           ]
         },
@@ -1670,8 +1672,8 @@
             "web/components/my/point-valuations-manager.tsx"
           ],
           "behaviorTests": [
-            "web/components/my/__tests__/point-valuations-manager.mock.test.tsx",
-            "web/components/my/__tests__/point-valuations-manager.part-2.mock.test.tsx"
+            "web/components/my/__tests__/point-valuations-manager.test.tsx",
+            "web/components/my/__tests__/point-valuations-manager.part-2.test.tsx"
           ]
         },
         "swift": {
@@ -1703,7 +1705,7 @@
       "title": "Saved collection item actions",
       "domain": "Library",
       "intents": [],
-      "requirements": ["docs/requirements/content/BOOKMARKS-CATALOG.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "A",
@@ -1806,7 +1808,7 @@
       "title": "RSS source import/export",
       "domain": "Sources",
       "intents": [],
-      "requirements": ["docs/requirements/content/SOURCES-DOMAINS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -1856,7 +1858,7 @@
       "title": "Landing-page candidate picker",
       "domain": "Landing pages",
       "intents": ["landing-pages"],
-      "requirements": ["docs/requirements/users/LANDING-PAGES.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -1974,7 +1976,7 @@
       "title": "Fediverse provider filters",
       "domain": "Discovery",
       "intents": ["fediverse"],
-      "requirements": ["docs/requirements/content/FEDIVERSE.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2015,10 +2017,7 @@
       "title": "Fediverse instance discovery and detail",
       "domain": "Discovery",
       "intents": ["fediverse"],
-      "requirements": [
-        "docs/requirements/content/FEDIVERSE.md",
-        "docs/requirements/anatomy/fediverse-instance.md"
-      ],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2091,9 +2090,7 @@
         }
       },
       "gap": {
-        "summary": "Native clients present plan status but lack store billing and management.",
-        "trackingIssue": "jonathanong/filaments#6582",
-        "relatedIssues": ["jonathanong/filaments#6742"]
+        "summary": "Native clients present plan status but lack store billing and management."
       }
     },
     {
@@ -2143,7 +2140,7 @@
       "title": "AI cost operations",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2184,7 +2181,7 @@
       "title": "Dynamic configuration administration",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2222,7 +2219,7 @@
       "title": "Local feature flag overrides",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/ADMIN-NAVIGATION-MATRIX.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2295,7 +2292,7 @@
       "title": "Source directory browse and relations",
       "domain": "Sources",
       "intents": [],
-      "requirements": ["docs/requirements/content/SOURCES-DOMAINS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2327,7 +2324,7 @@
       "title": "Domain and URL browse and relations",
       "domain": "Topics",
       "intents": [],
-      "requirements": ["docs/requirements/content/SOURCES-DOMAINS.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2413,7 +2410,7 @@
       "title": "Landing page management",
       "domain": "Landing pages",
       "intents": [],
-      "requirements": ["docs/requirements/users/LANDING-PAGES.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2447,7 +2444,7 @@
       "title": "Fediverse result browsing",
       "domain": "Discovery",
       "intents": [],
-      "requirements": ["docs/requirements/content/FEDIVERSE.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2483,10 +2480,7 @@
       "title": "API-key and connected-app management",
       "domain": "Account",
       "intents": [],
-      "requirements": [
-        "docs/requirements/users/api-keys.md",
-        "docs/requirements/users/oauth-apps.md"
-      ],
+      "requirements": ["docs/requirements/users/api-keys.md"],
       "matrixRows": [
         {
           "table": "B",
@@ -2624,7 +2618,7 @@
       "title": "User search (staff)",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/users/USERS.md", "docs/requirements/reference-users.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2663,7 +2657,7 @@
       "title": "Administrator identity-verification retry",
       "domain": "Staff",
       "intents": [],
-      "requirements": ["docs/requirements/users/USERS.md", "docs/requirements/reference-users.md"],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -2761,7 +2755,7 @@
       "intents": [],
       "requirements": [
         "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
-        "docs/requirements/api/v1/copyright-notices/README.md"
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md"
       ],
       "matrixRows": [
         {
@@ -2844,7 +2838,7 @@
       "intents": [],
       "requirements": [
         "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
-        "docs/requirements/api/v1/copyright-notices/README.md"
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md"
       ],
       "matrixRows": [
         {
@@ -2900,7 +2894,7 @@
       "intents": [],
       "requirements": [
         "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
-        "docs/requirements/api/v1/copyright-notices/README.md"
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md"
       ],
       "matrixRows": [
         {
@@ -2942,7 +2936,6 @@
             "web/components/copyright/copyright-repeat-infringer-actions.mock.test.tsx",
             "web/components/copyright/copyright-staff-territorial.mock.test.tsx",
             "web/components/copyright/copyright-staff-territorial-decision.mock.test.tsx",
-            "web/components/copyright/copyright-staff-territorial-redress.mock.test.tsx",
             "web/components/copyright/copyright-staff-territorial-dispute.mock.test.tsx",
             "web/components/copyright/copyright-notice-target-picker-staff.mock.test.tsx",
             "web/lib/api/client/copyright-territorial-decisions.mock.test.ts",
@@ -2972,7 +2965,7 @@
       "intents": [],
       "requirements": [
         "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
-        "docs/requirements/api/v1/copyright-notices/README.md"
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md"
       ],
       "matrixRows": [
         {
@@ -3028,7 +3021,7 @@
       "intents": [],
       "requirements": [
         "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
-        "docs/requirements/api/v1/copyright-notices/README.md"
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md"
       ],
       "matrixRows": [
         {
@@ -3071,7 +3064,7 @@
       "intents": [],
       "requirements": [
         "docs/requirements/moderation/COPYRIGHT-NOTICES.md",
-        "docs/requirements/api/v1/copyright-notices/README.md"
+        "docs/requirements/moderation/COPYRIGHT-NOTICES.md"
       ],
       "matrixRows": [
         {
@@ -3119,10 +3112,7 @@
       "title": "Community automod flag review and action setting",
       "domain": "Community",
       "intents": [],
-      "requirements": [
-        "docs/requirements/moderation/community-moderation.md",
-        "docs/requirements/moderation/reference-community-moderation-moderation-queue.md"
-      ],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "B",
@@ -3177,10 +3167,7 @@
       "title": "Post provenance label",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/content-provenance.md",
-        "docs/requirements/anatomy/post.md"
-      ],
+      "requirements": ["docs/requirements/content/content-provenance.md"],
       "matrixRows": [
         {
           "table": "B",
@@ -3228,11 +3215,7 @@
       "title": "Community provenance label",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/content-provenance.md",
-        "docs/requirements/content/reference-content-provenance-exposure.md",
-        "docs/requirements/anatomy/community.md"
-      ],
+      "requirements": ["docs/requirements/content/content-provenance.md"],
       "matrixRows": [
         {
           "table": "B",
@@ -3276,11 +3259,7 @@
       "title": "Topic provenance label",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/content-provenance.md",
-        "docs/requirements/content/reference-content-provenance-exposure.md",
-        "docs/requirements/anatomy/topic.md"
-      ],
+      "requirements": ["docs/requirements/content/content-provenance.md"],
       "matrixRows": [
         {
           "table": "B",
@@ -3324,11 +3303,7 @@
       "title": "List provenance label",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/content-provenance.md",
-        "docs/requirements/content/reference-content-provenance-exposure.md",
-        "docs/requirements/anatomy/list.md"
-      ],
+      "requirements": ["docs/requirements/content/content-provenance.md"],
       "matrixRows": [
         {
           "table": "B",
@@ -3372,10 +3347,7 @@
       "title": "Authored post moderation presentation",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/moderation/POST-MODERATION.md",
-        "docs/requirements/moderation/reference-post-moderation-authorization-matrix.md"
-      ],
+      "requirements": [],
       "matrixRows": [
         {
           "table": "C",
@@ -3416,11 +3388,7 @@
       "title": "RSS feed provenance label",
       "domain": "Content",
       "intents": [],
-      "requirements": [
-        "docs/requirements/content/content-provenance.md",
-        "docs/requirements/content/reference-content-provenance-exposure.md",
-        "docs/requirements/anatomy/source.md"
-      ],
+      "requirements": ["docs/requirements/content/content-provenance.md"],
       "matrixRows": [
         {
           "table": "B",

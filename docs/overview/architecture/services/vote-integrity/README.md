@@ -61,7 +61,7 @@ the generic all-source service response.
 ## Related
 
 - System: [`../../queues/vote-integrity/`](../../queues/vote-integrity/README.md)
-- API: [`../../api/v1/vote-integrity/`](../../../../requirements/api/v1/vote-integrity/README.md)
+- API: `../../api/v1/vote-integrity/`
 
 ## Internal selected flag batches
 

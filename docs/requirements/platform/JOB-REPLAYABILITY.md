@@ -1,15 +1,29 @@
 # Job Replayability & Idempotency
 
-See also: [ENTITY-ACTION-MATRIX.md](../ENTITY-ACTION-MATRIX.md) and the
-[backend queue reference](../../overview/architecture/queues/README.md).
+glide-mq runs on Valkey, which is treated as ephemeral. If Valkey loses all data, every job must be
+re-enqueueable and the system must converge back to its correct state from the Postgres source of
+truth. Two requirements enforce this.
 
-## Contents
+1. **Idempotency.** Every job handler is safe to run more than once. Handlers that write to Postgres
+   use upserts, content-sha guards, or uniqueness constraints, and document the mechanism in the
+   service function comment.
+2. **Backfill.** Every replayable queue registers a backfill entry that scans Postgres and enqueues
+   jobs for every entity missing a derived result. Backfills are triggerable from the admin queue
+   page.
 
-- <a id="overview"></a>[Overview](reference-job-replayability-overview.md)
-- <a id="non-replayable-queues-by-design"></a>[Non-Replayable Queues (by design)](reference-job-replayability-non-replayable-queues-by-design.md)
-- <a id="backfill-implementation-pattern"></a>[Backfill Implementation Pattern](reference-job-replayability-backfill-implementation-pattern.md)
-- <a id="backfillentry-eligibility"></a>[BackfillEntry Eligibility](reference-job-replayability-backfill-implementation-pattern.md)
-- <a id="async-fanout-checklist"></a>[Async Fanout Checklist](reference-job-replayability-backfill-implementation-pattern.md)
-- <a id="delayed-job-audit-checklist"></a>[Delayed-Job Audit Checklist](reference-job-replayability-backfill-implementation-pattern.md)
-- <a id="queue-replayability-matrix"></a>[Queue Replayability Matrix](reference-job-replayability-queue-replayability-matrix.md)
-- <a id="rules-for-new-jobs"></a>[Rules for New Jobs](reference-job-replayability-rules-for-new-jobs.md)
+## Rules for new jobs
+
+- Side-effecting external sends (email, push, SMS, third-party webhooks) are excluded from replay,
+  because replaying them would duplicate user-visible effects. Document the exclusion and reason.
+- Every queue needs a non-dead-letter recovery path, because queues here keep no dead-letter queue
+  and a terminally failed job is trimmed. Acceptable answers are a registered backfill, a
+  self-healing dispatcher or reconciler whose next run recovers missed work, or an explicit
+  accepted-loss record. "It used to land in the DLQ" is not a recovery path.
+- A backfill only counts if its re-enqueue really succeeds. A stable custom `jobId` on a queue with
+  numeric retention silently no-ops the re-enqueue once the prior job finished, because the id's
+  uniqueness claim outlives the job. Let deduplication collapse in-flight duplicates instead. See
+  [define a replay-safe job](../../checklists/reference-backend-queues-define-a-replay-safe-job.md#define-a-replay-safe-job).
+- The registry test validates structure, not completeness against the queue list; keeping the
+  registry complete is a review responsibility.
+
+See also the [backend queue reference](../../overview/architecture/queues/README.md).

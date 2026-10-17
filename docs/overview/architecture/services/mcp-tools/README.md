@@ -223,7 +223,7 @@ even for a developer. See the
 Email approval and correspondence admission construct their REST-validated inputs from the
 latest stored recommendation. They accept no caller contact or reply fields; rejection uses fixed
 reply text and queues no reply without a parsed sender. Staff decision outputs retain their REST
-shapes. The [admin API page](../../../../requirements/api/v1/admin/README.md#mcp-clients)
+shapes. The admin API page
 owns the supported and excluded decision groups.
 
 ## MCP audit log

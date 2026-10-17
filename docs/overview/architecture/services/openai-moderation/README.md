@@ -63,7 +63,6 @@ The API's `checkApiMessageSafety()` injects a capability backed by `createOpenAI
 
 ## Related
 
-- [Community moderation results](../../../../requirements/moderation/reference-community-moderation-api-routes.md#get-apiv1communitiesslugpostspostidmoderation-results)
 - Real OpenAI integration tests: `pnpm run test:backend:openai` with `OPENAI_API_KEY`
 - System: [../../queues/openai-moderation/](../../queues/openai-moderation/README.md) - Moderation job queue
 - Posts Service: [../posts/AGENTS.md](../../../../../backend/services/posts/AGENTS.md)
