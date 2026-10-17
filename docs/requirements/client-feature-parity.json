@@ -378,10 +378,6 @@
         {
           "table": "A",
           "surface": "markdown/html rendering & authoring"
-        },
-        {
-          "table": "C",
-          "surface": "post-author-bio-language"
         }
       ],
       "clients": {
@@ -390,12 +386,25 @@
           "uiEvidence": ["web/components/posts/post-author-aside.tsx"],
           "behaviorTests": ["web/components/posts/__tests__/post-author-aside.mock.test.tsx"]
         },
-        "swift": { "status": "none", "uiEvidence": [], "behaviorTests": [] },
-        "dotnet": { "status": "none", "uiEvidence": [], "behaviorTests": [] }
-      },
-      "gap": {
-        "summary": "Native post-detail author bios do not consume author_aside.lingua_rs_detected_language or set lang and dir on the bio leaf. The producer stages the nullable field in PR #2806; Swift and .NET adoption remains open.",
-        "trackingIssue": "https://github.com/vouchington/vouchington/issues/2819"
+        "swift": {
+          "status": "full",
+          "uiEvidence": [
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativePostAuthorBio.swift",
+            "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeCommentThreadSurface+Body.swift"
+          ],
+          "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/NativePostAuthorBioTests.swift"]
+        },
+        "dotnet": {
+          "status": "full",
+          "uiEvidence": [
+            "dotnet-clients/src/Voucha.Client.App/Pages/PostDetailPage.xaml",
+            "dotnet-clients/src/Voucha.Client.App/Controls/NativeHtmlContentView.AuthoredLanguage.cs"
+          ],
+          "behaviorTests": [
+            "dotnet-clients/tests/Voucha.Client.App.Tests/NativeHtmlContentViewAuthoredLanguageTests.cs",
+            "dotnet-clients/tests/Voucha.Client.App.Tests/PostDetailFocusedPermalinkTests.cs"
+          ]
+        }
       }
     },
     {
