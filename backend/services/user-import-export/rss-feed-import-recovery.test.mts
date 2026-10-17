@@ -10,7 +10,7 @@ import { recoverStalledUserRssFeedImports } from './rss-feed-import-recovery.mts
 // The shared database may hold other tests' unfinished imports, so each case looks only at calls
 // for the import it owns.
 function callsFor(enqueue: ReturnType<typeof vi.fn>, id: string): number {
-  return enqueue.mock.calls.filter(([called]) => called === id).length
+  return enqueue.mock.calls.filter(([called]) => (called as string[]).includes(id)).length
 }
 
 // A sweep takes a bounded number of imports, oldest first, and marks each as touched; repeating
@@ -39,16 +39,16 @@ describe('stalled user RSS feed import recovery', () => {
       [`https://recover-${randomUUID()}.example.com/feed`],
       false,
     )
-    const enqueueDispatch = vi.fn<(id: string) => Promise<undefined>>(async () => undefined)
+    const enqueueDispatches = vi.fn<(ids: string[]) => Promise<undefined>>(async () => undefined)
 
     await sweepUntilSeen(
-      () => recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatch }),
-      enqueueDispatch,
+      () => recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatches }),
+      enqueueDispatches,
       created.import.id,
     )
-    await recoverStalledUserRssFeedImports({ enqueueDispatch })
+    await recoverStalledUserRssFeedImports({ enqueueDispatches })
 
-    expect(callsFor(enqueueDispatch, created.import.id)).toBe(1)
+    expect(callsFor(enqueueDispatches, created.import.id)).toBe(1)
   })
 
   it('does not re-dispatch an import that finished', async () => {
@@ -60,10 +60,10 @@ describe('stalled user RSS feed import recovery', () => {
     )
     const [rowId] = await getRssFeedImportRowIds(created.import.id)
     await updateRssFeedImportRowFailed(rowId!, 'No feed found', { isFinalAttempt: true })
-    const enqueueDispatch = vi.fn<(id: string) => Promise<undefined>>(async () => undefined)
+    const enqueueDispatches = vi.fn<(ids: string[]) => Promise<undefined>>(async () => undefined)
 
-    await recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatch })
+    await recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatches })
 
-    expect(callsFor(enqueueDispatch, created.import.id)).toBe(0)
+    expect(callsFor(enqueueDispatches, created.import.id)).toBe(0)
   })
 })
