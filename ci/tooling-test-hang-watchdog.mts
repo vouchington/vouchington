@@ -93,10 +93,13 @@ export function startToolingHangWatchdog(
   const timer = deps.setInterval(() => {
     if (killed || !shouldKillToolingHang(state, deps.now())) return
     killed = true
-    deps.stderr.write(formatTeardownOverrunDiagnostics())
-    const unfinished = deps.reportUnfinished?.()
-    if (unfinished) deps.stderr.write(unfinished)
-    deps.killProcessGroup(pid, 'SIGKILL')
+    try {
+      deps.stderr.write(formatTeardownOverrunDiagnostics())
+      const unfinished = deps.reportUnfinished?.()
+      if (unfinished) deps.stderr.write(unfinished)
+    } finally {
+      deps.killProcessGroup(pid, 'SIGKILL')
+    }
   }, 1000)
   return {
     onOutput: (chunk, stream) => {

@@ -179,4 +179,32 @@ describe('tooling hang watchdog', () => {
     interval?.()
     expect(stderr.join('')).toContain('[tooling-deadline] unfinished a.test.mts')
   })
+
+  it('still SIGKILLs the process group when the unfinished-file reporter throws', () => {
+    let now = 0
+    const killed: number[] = []
+    let interval: (() => void) | undefined
+    startToolingHangWatchdog(
+      9,
+      {
+        now: () => now,
+        setInterval: (callback: () => void) => {
+          interval = callback
+          return 1
+        },
+        clearInterval: () => undefined,
+        killProcessGroup: pid => {
+          killed.push(pid)
+        },
+        reportUnfinished: () => {
+          throw new Error('ps failed')
+        },
+        stderr: { write: () => true },
+      },
+      { wallClock: true },
+    )
+    now = TOOLING_HANG_WALL_CLOCK_MS
+    expect(() => interval?.()).toThrow('ps failed')
+    expect(killed).toEqual([9])
+  })
 })

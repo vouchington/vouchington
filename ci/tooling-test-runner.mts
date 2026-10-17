@@ -51,8 +51,11 @@ export function buildToolingVitestArgs(args: string[]): string[] {
 export function reportToolingUnfinished(
   progressFile: string | undefined,
   topProcesses: () => string = () =>
-    spawnSync('ps', ['-eo', 'pid,rss,pmem,etime,args', '--sort=-rss'], { encoding: 'utf8' })
-      .stdout.split('\n')
+    (
+      spawnSync('ps', ['-eo', 'pid,rss,pmem,etime,args', '--sort=-rss'], { encoding: 'utf8' })
+        .stdout ?? ''
+    )
+      .split('\n')
       .slice(0, 15)
       .join('\n'),
 ): string {
