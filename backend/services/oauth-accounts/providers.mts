@@ -60,6 +60,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataConflictStrategy: 'replace',
     hasTokenColumns: false,
     hasRefreshToken: false,
+    accountIdColumn: 'id',
   },
   x: {
     table: 'x_accounts',

@@ -73,6 +73,17 @@ describe('upsertOAuthAccount', () => {
     expect(account.provider_user_data).toEqual({ login: 'new-login' })
   })
 
+  it('keeps the Google account identity across provider profile updates', async () => {
+    const providerUserId = `google-account-${randomUUID()}`
+    const first = await upsertOAuthAccount('google', providerUserId, null, { name: 'First' })
+    const updated = await upsertOAuthAccount('google', providerUserId, null, { name: 'Second' })
+
+    expect(first.account_id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(updated.account_id).toBe(first.account_id)
+    expect(updated.provider_user_id).toBe(providerUserId)
+    expect(updated.provider_user_data).toEqual({ name: 'Second' })
+  })
+
   it('stores OAuth tokens as encrypted ciphertext and does not return token material', async () => {
     const providerUserId = `github-token-storage-${randomUUID()}`
     const account = await upsertOAuthAccount(
