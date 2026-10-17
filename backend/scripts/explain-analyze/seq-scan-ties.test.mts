@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { assertNoNewSeqScans, getSeqScanNearTies } from './seq-scan-baseline.mts'
 import {
   costWithoutSeqScan,
+  forcedSeqScan,
   isSeqScanNearTie,
+  isStaleSeqScanNearTie,
   planTotalCost,
   SEQ_SCAN_TIE_RATIO,
   type ProbedExplainResult,
@@ -125,5 +127,64 @@ describe('sequential scan near-ties', () => {
         'post-search-hot|0|buildPostSearchQuery:force_custom_plan|force_custom_plan': ['posts'],
       }),
     ).toThrow(`new []; stale [${FINGERPRINT}]`)
+  })
+
+  describe('stale baseline entries', () => {
+    const IDENTITY = 'post-search-hot|0|buildPostSearchQuery:force_custom_plan|force_custom_plan'
+    const baseline = { [IDENTITY]: ['posts'] }
+    const INDEX_COST = 9000
+    const edge = INDEX_COST + SEQ_SCAN_COST * SEQ_SCAN_TIE_RATIO
+    // The chosen plan no longer scans posts; the forced plan's scan costs SEQ_SCAN_COST.
+    function indexResult(forced?: { total_cost: number; scan_cost: number }): ProbedExplainResult {
+      return seqScanResult({
+        plan: {
+          Plan: {
+            'Node Type': 'Limit',
+            'Total Cost': INDEX_COST,
+            Plans: [{ 'Node Type': 'Index Scan', 'Relation Name': 'posts__default' }],
+          },
+        },
+        ...(forced ? { forced_seq_scans: { posts: forced } } : {}),
+      })
+    }
+
+    it('reads the forced scan only when the plan still scans the relation', () => {
+      const seq = seqScanResult().plan
+      expect(forcedSeqScan(seq, 'posts')).toEqual({
+        total_cost: SEQ_PLAN_COST,
+        scan_cost: SEQ_SCAN_COST,
+      })
+      expect(forcedSeqScan(seq, 'topics')).toBeUndefined()
+      expect(forcedSeqScan({}, 'posts')).toBeUndefined()
+    })
+
+    it('treats a stale entry whose forced scan is a near-tie as advisory', () => {
+      const tied = [indexResult({ total_cost: INDEX_COST + 500, scan_cost: SEQ_SCAN_COST })]
+      expect(getSeqScanNearTies(tied, tied)).toEqual([FINGERPRINT])
+      expect(assertNoNewSeqScans(tied, tied, baseline)).toEqual({ onlyFirst: [], onlyRepeated: [] })
+    })
+
+    it('draws the stale near-tie line at the ratio', () => {
+      const at = indexResult({ total_cost: edge, scan_cost: SEQ_SCAN_COST })
+      const over = indexResult({ total_cost: edge + 1, scan_cost: SEQ_SCAN_COST })
+      expect(isStaleSeqScanNearTie(at, 'posts')).toBe(true)
+      expect(isStaleSeqScanNearTie(over, 'posts')).toBe(false)
+    })
+
+    it('still fails a stale entry whose forced scan costs clearly more', () => {
+      const clear = [indexResult({ total_cost: INDEX_COST * 3, scan_cost: SEQ_SCAN_COST })]
+      expect(() => assertNoNewSeqScans(clear, clear, baseline)).toThrow(
+        `new []; stale [${FINGERPRINT}]`,
+      )
+    })
+
+    it('still fails a stale entry whose forced plan does not reproduce the scan', () => {
+      const unforced = [indexResult()]
+      expect(isStaleSeqScanNearTie(unforced[0], 'posts')).toBe(false)
+      expect(isStaleSeqScanNearTie(seqScanResult({ plan: {} }), 'posts')).toBe(false)
+      expect(() => assertNoNewSeqScans(unforced, unforced, baseline)).toThrow(
+        `new []; stale [${FINGERPRINT}]`,
+      )
+    })
   })
 })
