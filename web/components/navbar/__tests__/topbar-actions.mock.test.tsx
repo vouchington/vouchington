@@ -31,6 +31,10 @@ describe('NavbarSearchButton shortcut chips', () => {
     )
     render(<NavbarSearchButton onOpenSearch={() => undefined} />)
     expect(screen.getAllByTestId('kbd').map(chip => chip.textContent)).toEqual(['Ctrl', 'K'])
+    expect(screen.getByTestId('navbar-search-button')).toHaveAttribute(
+      'aria-label',
+      'Search... Ctrl K, Open search',
+    )
   })
 
   it('renders the command symbol and K as separate keycaps on Mac', () => {
@@ -39,5 +43,9 @@ describe('NavbarSearchButton shortcut chips', () => {
     )
     render(<NavbarSearchButton onOpenSearch={() => undefined} />)
     expect(screen.getAllByTestId('kbd').map(chip => chip.textContent)).toEqual(['⌘', 'K'])
+    expect(screen.getByTestId('navbar-search-button')).toHaveAttribute(
+      'aria-label',
+      'Search... ⌘ K, Open search',
+    )
   })
 })

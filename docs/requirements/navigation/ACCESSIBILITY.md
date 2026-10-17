@@ -66,7 +66,7 @@ them, while retaining WCAG 2.0 and 2.1 A/AA checks.
 
 ## Screen Reader Support
 
-- Use `aria-label` or `aria-labelledby` for elements without visible text labels.
+- Use `aria-label` or `aria-labelledby` for elements without visible text labels. When a control has visible text, the accessible name must include that text in the same order (WCAG 2.5.3). An `aria-label` replaces the name, so it has to include those visible words.
 - Use `sr-only` class for visually hidden but screen-reader-accessible text.
 - Dynamic content updates must use `aria-live` regions (Sonner toast handles this internally).
 - Skip link is provided in the root layout for keyboard users to bypass navigation.

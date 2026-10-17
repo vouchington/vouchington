@@ -23,6 +23,10 @@ interface ProfileMenuProps {
 
 export function ProfileMenu({ onLogout, user }: ProfileMenuProps) {
   const t = useTranslations()
+  const initials = user.avatarLabel.slice(0, 2).toUpperCase()
+  const openProfileMenu = t('extracted.navbar.profileMenu.openProfileMenu_4a239d3d')
+  // WCAG 2.5.3 requires the visible initials inside the accessible name.
+  const accessibleName = initials ? `${initials}, ${openProfileMenu}` : openProfileMenu
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -35,12 +39,10 @@ export function ProfileMenu({ onLogout, user }: ProfileMenuProps) {
                 size='icon'
                 data-pw='navbar-profile-menu-button'
                 className='rounded-full'
-                aria-label={t('extracted.navbar.profileMenu.openProfileMenu_4a239d3d')}
+                aria-label={accessibleName}
               >
                 <Avatar className='h-8 w-8'>
-                  <AvatarFallback className='bg-muted text-xs'>
-                    {user.avatarLabel.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  <AvatarFallback className='bg-muted text-xs'>{initials}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

@@ -16,7 +16,7 @@ test.describe('Topbar', () => {
     await expect(page.getByTestId('navbar-logo')).toHaveAttribute('href', '/')
     await expect(page.getByTestId('navbar-search-button')).toHaveAttribute(
       'aria-label',
-      'Open search',
+      /Search\.\.\. (?:⌘|Ctrl) K, Open search/,
     )
     await expect(page.locator('[data-sidebar="trigger"]')).toBeAttached()
   })
