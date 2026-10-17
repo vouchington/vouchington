@@ -10,7 +10,7 @@ Not partitioned — growth: unbounded.
 | ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
 | `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                   |
 | `community_id`    | `uuid`                     | no       |                              |          |           |           | The community the invite is for.                                                  |
-| `code`            | `text`                     | no       |                              |          |           |           | Unique 8-character lowercase invite code.                                         |
+| `code_hash`       | `text`                     | no       |                              |          |           |           | Purpose-bound HMAC-SHA256 of the invite code; the raw code is never persisted.    |
 | `invited_user_id` | `uuid`                     | yes      |                              |          |           |           | Target user, if inviting an existing user.                                        |
 | `invited_email`   | `text`                     | yes      |                              |          |           |           | Target email address, if inviting someone who may not have an account.            |
 | `invited_by_id`   | `uuid`                     | no       |                              |          |           |           | User who created the invitation.                                                  |
@@ -28,13 +28,11 @@ _none_
 
 **Check constraints:**
 
+- `chk_community_invites__code_hash_format`: `CHECK ((code_hash ~ '^[A-F0-9]{64}$'::text))`
 - `community_invites_check`: `CHECK (((invited_user_id IS NOT NULL) OR (invited_email IS NOT NULL)))`
 - `community_invites_check1`: `CHECK ((NOT ((accepted_at IS NOT NULL) AND (declined_at IS NOT NULL))))`
 - `community_invites_check2`: `CHECK ((NOT ((accepted_at IS NOT NULL) AND (revoked_at IS NOT NULL))))`
 - `community_invites_check3`: `CHECK ((NOT ((declined_at IS NOT NULL) AND (revoked_at IS NOT NULL))))`
-- `community_invites_code_check`: `CHECK ((code = lower(code)))`
-- `community_invites_code_check1`: `CHECK ((code = TRIM(BOTH FROM code)))`
-- `community_invites_code_check2`: `CHECK ((char_length(code) = 8))`
 - `community_invites_invited_email_check`: `CHECK (((invited_email IS NULL) OR (invited_email = lower(TRIM(BOTH FROM invited_email)))))`
 - `community_invites_invited_email_check1`: `CHECK (((invited_email IS NULL) OR (char_length(invited_email) <= 320)))`
 
@@ -48,9 +46,9 @@ _none_
 **Indexes:**
 
 - `community_invites_pkey`: `CREATE UNIQUE INDEX community_invites_pkey ON public.community_invites USING btree (id)`
-- `idx_comm_invites__code`: `CREATE UNIQUE INDEX idx_comm_invites__code ON public.community_invites USING btree (code) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_comm_invites__user`: `CREATE UNIQUE INDEX idx_comm_invites__user ON public.community_invites USING btree (community_id, invited_user_id) WHERE ((invited_user_id IS NOT NULL) AND (accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_community_invites__accepted_by_user_id`: `CREATE INDEX idx_community_invites__accepted_by_user_id ON public.community_invites USING btree (accepted_by_id) WHERE (accepted_by_id IS NOT NULL)`
+- `idx_community_invites__code_hash`: `CREATE UNIQUE INDEX idx_community_invites__code_hash ON public.community_invites USING btree (code_hash) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_community_invites__community_id`: `CREATE INDEX idx_community_invites__community_id ON public.community_invites USING btree (community_id)`
 - `idx_community_invites__invited_by_id`: `CREATE INDEX idx_community_invites__invited_by_id ON public.community_invites USING btree (invited_by_id)`
 - `idx_community_invites__invited_user_id`: `CREATE INDEX idx_community_invites__invited_user_id ON public.community_invites USING btree (invited_user_id) WHERE (invited_user_id IS NOT NULL)`

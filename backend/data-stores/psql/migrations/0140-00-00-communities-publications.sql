@@ -343,7 +343,7 @@ COMMENT ON COLUMN community_application_answers.value IS 'Submitted answer docum
 CREATE TABLE IF NOT EXISTS community_invites (
   id UUID DEFAULT uuidv7() PRIMARY KEY,
   community_id UUID NOT NULL REFERENCES communities ON DELETE CASCADE,
-  code TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
   invited_user_id UUID REFERENCES users ON DELETE CASCADE,
   invited_email TEXT,
   invited_by_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -357,9 +357,7 @@ CREATE TABLE IF NOT EXISTS community_invites (
   CHECK (NOT (accepted_at IS NOT NULL AND declined_at IS NOT NULL)),
   CHECK (NOT (accepted_at IS NOT NULL AND revoked_at IS NOT NULL)),
   CHECK (NOT (declined_at IS NOT NULL AND revoked_at IS NOT NULL)),
-  CHECK (code = LOWER(code)),
-  CHECK (code = TRIM(code)),
-  CHECK (char_length(code) = 8),
+  CONSTRAINT chk_community_invites__code_hash_format CHECK (code_hash ~ '^[A-F0-9]{64}$'),
   CHECK (invited_email IS NULL OR invited_email = LOWER(TRIM(invited_email))),
   CHECK (invited_email IS NULL OR char_length(invited_email) <= 320)
 );
@@ -371,7 +369,7 @@ CREATE OR REPLACE TRIGGER trigger_community_invites_updated_at
   EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_invites__code ON community_invites (code) WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_community_invites__code_hash ON community_invites (code_hash) WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_comm_invites__user ON community_invites (community_id, invited_user_id) WHERE invited_user_id IS NOT NULL AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL;
 
@@ -387,7 +385,7 @@ CREATE INDEX IF NOT EXISTS idx_community_invites__accepted_by_user_id ON communi
 
 COMMENT ON TABLE community_invites IS 'Invitations to join a community, sent to a specific user or email address.';
 COMMENT ON COLUMN community_invites.community_id IS 'The community the invite is for.';
-COMMENT ON COLUMN community_invites.code IS 'Unique 8-character lowercase invite code.';
+COMMENT ON COLUMN community_invites.code_hash IS 'Purpose-bound HMAC-SHA256 of the invite code; the raw code is never persisted.';
 COMMENT ON COLUMN community_invites.invited_user_id IS 'Target user, if inviting an existing user.';
 COMMENT ON COLUMN community_invites.invited_email IS 'Target email address, if inviting someone who may not have an account.';
 COMMENT ON COLUMN community_invites.invited_by_id IS 'User who created the invitation.';

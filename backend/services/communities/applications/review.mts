@@ -16,6 +16,7 @@ import {
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
+import { insertApprovedCommunityMember } from '../members/insert-approved.mts'
 
 type DecisionEmailEnqueue = ReturnType<typeof enqueueSendCommunityApplicationDecisionEmail>
 
@@ -58,12 +59,10 @@ export async function approveApplication(
   )
   assert(rowCount === 1, 422, 'Application has already been reviewed')
 
-  await write(
-    sql`/* approveApplication */
-    INSERT INTO community_members (community_id, user_id, role, approved_by_id)
-    VALUES (${application.community_id}, ${application.user_id}, 'member', ${currentUser.id})
-    ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL DO NOTHING
-    `,
+  await insertApprovedCommunityMember(
+    application.community_id,
+    application.user_id,
+    currentUser.id,
     options,
   )
   const notification = await createCommunityLifecycleNotification(

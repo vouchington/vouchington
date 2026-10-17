@@ -73,6 +73,13 @@
 | POST   | `/api/v1/communities/:idOrSlug/automod/simulate`                    | Required (mod)             | Simulate a community prompt against recent approved posts without applying actions                                                   |
 | GET    | `/api/v1/communities/:idOrSlug/posts/:postId/moderation-results`    | Required                   | View moderation results                                                                                                              |
 
+### Invite responses
+
+Invite creation returns `community_invite` metadata plus its one-time `code`. Invite listing and
+redemption return metadata without `code` or `code_hash`. Codes are stored as purpose-bound keyed
+hashes, so later reads cannot recover them. See [invitations](../../../community/COMMUNITIES.md#invitations)
+for replacement and membership cleanup behavior.
+
 ### Application question visibility
 
 `GET /api/v1/communities/:idOrSlug/application-questions` permits ordinary community viewers

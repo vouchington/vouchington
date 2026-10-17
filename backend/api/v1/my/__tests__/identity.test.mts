@@ -9,6 +9,7 @@ import {
   safeUsername,
   addVerifiedEmailForUser,
   setTestUserEmailAddressId,
+  getLatestEmailAddressLoginTokenHash,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -215,6 +216,9 @@ describe('POST /api/v1/my/email-addresses + verify flow', () => {
 
     // Create token directly via service to avoid real email sending in test
     const { token } = await createEmailVerificationToken(user.id, newEmail)
+    const storedHash = await getLatestEmailAddressLoginTokenHash(newEmail)
+    expect(storedHash).toMatch(/^[A-F0-9]{64}$/)
+    expect(storedHash).not.toBe(token)
 
     const request = createRequest()
     await request.authenticateAs(user)

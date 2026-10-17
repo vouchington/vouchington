@@ -2,6 +2,7 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_11 = [
+  { key: 'native.swift.communities.dismissInviteCode', consumers: ['swift'] },
   { key: 'native.swift.communities.endsAt', consumers: ['swift'] },
   { key: 'native.swift.communities.entityId', consumers: ['swift'] },
   { key: 'native.swift.communities.hours', consumers: ['swift'] },
@@ -22,6 +23,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_11 = [
   { key: 'native.swift.communities.name', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.communities.newsItem', consumers: ['swift'] },
   { key: 'native.swift.communities.note', consumers: ['swift'] },
+  { key: 'native.swift.communities.oneTimeInviteCodeNotice', consumers: ['swift'] },
   { key: 'native.swift.communities.orderPosition', consumers: ['swift'] },
   { key: 'native.swift.communities.pauseCommunityDigestsWhileOnVacation', consumers: ['swift'] },
   { key: 'native.swift.communities.pendingPosts', consumers: ['swift'] },

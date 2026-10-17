@@ -36,6 +36,8 @@ describe('index', () => {
       const invites = await getMyInvites(invitee.id)
       expect(invites.length).toBeGreaterThanOrEqual(1)
       expect(invites[0]!.invited_user_id).toBe(invitee.id)
+      expect(invites[0]).not.toHaveProperty('code')
+      expect(invites[0]).not.toHaveProperty('code_hash')
     })
   })
 })

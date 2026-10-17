@@ -17126,6 +17126,10 @@
     },
     "community_invites": {
       "checkConstraints": {
+        "chk_community_invites__code_hash_format": {
+          "definition": "CHECK ((code_hash ~ '^[A-F0-9]{64}$'::text))",
+          "validated": true
+        },
         "community_invites_check": {
           "definition": "CHECK (((invited_user_id IS NOT NULL) OR (invited_email IS NOT NULL)))",
           "validated": true
@@ -17140,18 +17144,6 @@
         },
         "community_invites_check3": {
           "definition": "CHECK ((NOT ((declined_at IS NOT NULL) AND (revoked_at IS NOT NULL))))",
-          "validated": true
-        },
-        "community_invites_code_check": {
-          "definition": "CHECK ((code = lower(code)))",
-          "validated": true
-        },
-        "community_invites_code_check1": {
-          "definition": "CHECK ((code = TRIM(BOTH FROM code)))",
-          "validated": true
-        },
-        "community_invites_code_check2": {
-          "definition": "CHECK ((char_length(code) = 8))",
           "validated": true
         },
         "community_invites_invited_email_check": {
@@ -17184,8 +17176,8 @@
           "nullable": true,
           "ordinalPosition": 8
         },
-        "code": {
-          "comment": "Unique 8-character lowercase invite code.",
+        "code_hash": {
+          "comment": "Purpose-bound HMAC-SHA256 of the invite code; the raw code is never persisted.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -17344,29 +17336,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_comm_invites__code": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_comm_invites__code ON public.community_invites USING btree (code) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "code",
-              "descending": false,
-              "expression": "code",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
         "idx_comm_invites__user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -17420,6 +17389,29 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_community_invites__code_hash": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_community_invites__code_hash ON public.community_invites USING btree (code_hash) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "code_hash",
+              "descending": false,
+              "expression": "code_hash",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "idx_community_invites__community_id": {

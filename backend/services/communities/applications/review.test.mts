@@ -6,6 +6,8 @@ import {
   insertTestCommunityMember,
   readEnqueuedJob,
   WEB_PROVENANCE,
+  insertTestCommunityInvite,
+  getTestCommunityInviteStorage,
 } from '@voucha/test-helpers'
 import { createApplication } from './create.mts'
 import { approveApplication, rejectApplication } from './review.mts'
@@ -53,6 +55,21 @@ describe('review', () => {
           }),
         ]),
       )
+    })
+
+    it('approving an application removes the applicant’s pending invites', async () => {
+      const applicant = await createTestUser()
+      const community = await createPrivateCommunityOwnedBy(owner.id)
+      const app = await createApplication(applicant.id, WEB_PROVENANCE, community.id, {})
+      const invite = await insertTestCommunityInvite({
+        communityId: community.id,
+        invitedById: owner.id,
+        invitedEmail: applicant.email_address!,
+      })
+
+      await approveApplication(owner, app.id)
+
+      expect(await getTestCommunityInviteStorage(invite.id)).toBeNull()
     })
 
     it('rejects re-reviewing an already reviewed application', async () => {

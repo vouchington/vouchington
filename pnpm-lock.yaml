@@ -4666,6 +4666,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
@@ -7740,6 +7743,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils

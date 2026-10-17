@@ -9,7 +9,8 @@ This module keeps Voucha environment names, cache behavior, and product-facing e
 
 ## Rules
 
-- Use `hashToken(purpose, token)` for one-way OTP storage and comparison. It uses HMAC-SHA256 with `VOUCHA_OTP_TOKEN_HASH_SECRET`; purpose strings separate email, phone, and future token classes.
+- Use `hashToken(purpose, token)` for one-way OTP and community invite storage and comparison. It uses HMAC-SHA256 with `VOUCHA_OTP_TOKEN_HASH_SECRET`; distinct purpose strings separate email login, email verification, phone, and community invite codes.
+- Replacing the hash secret invalidates outstanding OTP and invite codes. Issue fresh codes after rotation; previously issued invite codes cannot be recovered or rehashed from storage.
 - Use `encryptSecret(plaintext, purpose)` / `decryptSecret(ciphertext, purpose)` for secrets that must be read back, such as OAuth access/refresh tokens and TOTP shared secrets. It uses AES-256-GCM with purpose as authenticated associated data.
 - `VOUCHA_STORED_SECRET_ENCRYPTION_KEYS` is comma-separated `kid:base64url-32-byte-key` or
   `kid:raw32:<32-byte sentence>`, newest first. Key ids must match `/^[A-Za-z0-9_-]+$/`, be unique,

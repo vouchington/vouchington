@@ -7,6 +7,7 @@ import onError from '@modules/on-error'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { COMMUNITY_BANNED } from '@modules/on-error/error-codes'
 import { lockCommunityUser } from '../bans/lock.mts'
+import { deletePendingInvitesForMember } from '../invites/delete-pending-for-member.mts'
 import type { Community, CommunityMember } from '../types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
@@ -101,5 +102,6 @@ async function insertJoinedCommunityMember(
     options,
   )
 
+  await deletePendingInvitesForMember(communityId, currentUserId, options)
   return rows[0] as CommunityMember
 }

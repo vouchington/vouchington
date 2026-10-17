@@ -3,6 +3,7 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_05 = [
   { key: 'native.dotnet.csharpCommunities.dismissEvasion', consumers: ['dotnet'] },
+  { key: 'native.dotnet.csharpCommunities.dismissInviteCode', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.email', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.enable', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.enabled', consumers: ['dotnet'] },
@@ -32,6 +33,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_05 = [
   { key: 'native.dotnet.csharpCommunities.name', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.newsItem', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.noStateChange', consumers: ['dotnet'] },
+  { key: 'native.dotnet.csharpCommunities.oneTimeInviteCodeNotice', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.open', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.order', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.pauseDigests', consumers: ['dotnet'] },

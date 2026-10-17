@@ -1,4 +1,4 @@
-import { community, pageInfo } from './web-community-data.mts'
+import { community, pageInfo, timestamp, user } from './web-community-data.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 export const webCommunityMemberModerationApiFixtureCases: ApiFixtureCase[] = [
@@ -28,7 +28,25 @@ export const webCommunityMemberModerationApiFixtureCases: ApiFixtureCase[] = [
     },
     auth: 'fixture-user',
     status: 200,
-    body: { results: [], page_info: pageInfo, community_invites: {} },
+    body: {
+      results: [{ __entity_type: 'community_invite', id: 'invite-1' }],
+      page_info: pageInfo,
+      community_invites: {
+        'invite-1': {
+          __entity_type: 'community_invite',
+          id: 'invite-1',
+          community_id: community.id,
+          invited_user_id: null,
+          invited_email: 'invitee@example.test',
+          invited_by_id: user.id,
+          accepted_at: null,
+          accepted_by_id: null,
+          declined_at: null,
+          revoked_at: null,
+          created_at: timestamp,
+        },
+      },
+    },
     consumers: ['web', 'swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: ['backend/api/v1/communities/invites.mts'],
   },

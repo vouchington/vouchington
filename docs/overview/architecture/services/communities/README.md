@@ -27,7 +27,11 @@ through role updates and notification persistence.
 Invite creation, member role changes, and ownership transfers also expose the resulting email
 enqueue promises to service callers that need to observe admission. `createInvite()` keeps the
 invite-row return used by the API; `createInviteWithEmailEnqueue()` additionally returns
-`emailEnqueue`. Role changes return `roleChangeEmailEnqueue`, and ownership transfers return
+`emailEnqueue`. Only creation adds the one-time raw invite code to the returned metadata; storage
+uses a purpose-bound keyed hash, and read/redemption projections exclude both code and hash.
+Membership paths remove matching pending invitations transactionally; see
+[invitation behavior](../../../../requirements/community/COMMUNITIES.md#invitations).
+Role changes return `roleChangeEmailEnqueue`, and ownership transfers return
 separate `newOwnerEmailEnqueue` and `previousOwnerEmailEnqueue` promises. These handles are
 optional when no email is queued. The API callers do not await them, preserving post-commit
 best-effort email behavior and the queue's internal error reporting.

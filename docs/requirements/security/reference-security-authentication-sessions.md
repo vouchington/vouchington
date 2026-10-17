@@ -74,7 +74,7 @@ every other tool. Billing pause does not lift `ACCOUNT_SUSPENDED`.
 
 ### Token Storage
 
-- Email and phone OTP values are never stored directly. Store a purpose-bound HMAC-SHA256 hash using `VOUCHA_OTP_TOKEN_HASH_SECRET`; use distinct purposes for email and phone flows.
+- Email login, email verification, phone OTP, and community invite codes are never stored directly. Store a purpose-bound HMAC-SHA256 hash using `VOUCHA_OTP_TOKEN_HASH_SECRET`; use a distinct purpose for each flow. Invite creation and email delivery disclose the raw code once; subsequent reads return metadata. Replacing the hash secret invalidates outstanding codes, which must be reissued.
 - API/RSS keys are one-way, one-time display credentials. Store only `key_hash`, validate with checksum plus hash lookup, and invalidate with `revoked_at`.
 - OAuth/social access tokens, OAuth refresh tokens, and TOTP shared secrets must be stored as authenticated ciphertext using `@modules/token-secrets` and `VOUCHA_STORED_SECRET_ENCRYPTION_KEYS`.
 - `VOUCHA_STORED_SECRET_ENCRYPTION_KEYS` rotation is prepend-only: deploy the new key first, keep old key IDs configured for decrypt, then remove old keys only after their ciphertexts are expired or re-encrypted.

@@ -4,6 +4,7 @@ import type {
   CommunityAiAgent,
   CommunityAiAgentResponseBody,
   CommunityMetrics,
+  CommunityInvite,
   CommunityResponseBody,
 } from '@/types/api-responses'
 
@@ -111,4 +112,13 @@ export function makeCommunityAiAgentResponse({
   communityAiAgent?: CommunityAiAgent
 } = {}): CommunityAiAgentResponseBody {
   return { community_ai_agent: communityAiAgent }
+}
+
+export function makeCommunityInvite(overrides: Partial<CommunityInvite> = {}): CommunityInvite {
+  const fixture = loadWebApiFixture('web.communities.invites.default')
+  const invite = fixture.community_invites['invite-1']
+  if (!invite) {
+    throw new Error('web.communities.invites.default must include invite-1')
+  }
+  return { ...invite, ...overrides }
 }

@@ -1,3 +1,4 @@
+export { getTestCommunityInviteStorage } from './community-invite-storage.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createRandomString } from '../data.mts'
@@ -5,10 +6,12 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import type {
   Community,
   CommunityInvite,
+  CreatedCommunityInvite,
   CommunityMemberRosterVisibility,
   CommunityVisibility,
   CommunityListType,
 } from '@voucha/types/entities/community'
+import { hashToken } from '@modules/token-secrets'
 type InsertTestCommunityOptions = {
   name?: string
   slug?: string
@@ -149,7 +152,6 @@ export async function setTestCommunityAgentPromptDeletedAt(
     WHERE id = ${promptId}::uuid
   `)
 }
-
 /** Reassigns a community prompt to exercise source-projection reclassification. */
 export async function setTestCommunityAgentPromptCommunity(
   promptId: string,
@@ -161,7 +163,6 @@ export async function setTestCommunityAgentPromptCommunity(
     WHERE id = ${promptId}::uuid
   `)
 }
-
 /** Removes only the community extension; the underlying prompt remains active. */
 export async function deleteTestCommunityAgentPrompt(promptId: string): Promise<void> {
   await write(sql`/* deleteTestCommunityAgentPrompt */
@@ -169,7 +170,6 @@ export async function deleteTestCommunityAgentPrompt(promptId: string): Promise<
     WHERE id = ${promptId}::uuid
   `)
 }
-
 type InsertTestCommunityInviteOptions = {
   communityId: string
   invitedById: string
@@ -178,23 +178,23 @@ type InsertTestCommunityInviteOptions = {
   invitedEmail?: string
   entities?: unknown[]
 }
-
 export async function insertTestCommunityInvite(
   options: InsertTestCommunityInviteOptions,
-): Promise<CommunityInvite> {
+): Promise<CreatedCommunityInvite> {
   const code = options.code ?? createRandomString(8)
+  const codeHash = hashToken('community-invite-code', code.toLowerCase())
   const { rows } = await write(
     sql`/* insertTestCommunityInvite */
-    INSERT INTO community_invites (community_id, code, invited_user_id, invited_email, invited_by_id)
+    INSERT INTO community_invites (community_id, code_hash, invited_user_id, invited_email, invited_by_id)
     VALUES (
       ${options.communityId},
-      ${code},
+      ${codeHash},
       ${options.invitedUserId ?? null},
       ${options.invitedEmail ?? null},
       ${options.invitedById}
     )
-    RETURNING *
+    RETURNING 'community_invite'::text AS __entity_type, *
     `,
   )
-  return rows[0] as CommunityInvite
+  return { ...(rows[0] as CommunityInvite), code }
 }

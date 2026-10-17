@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { InviteItem } from './invite-item'
+import { InviteCodeNotice } from './invite-code-notice'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { sendInvite, revokeInvite } from '@/lib/api/client'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
@@ -33,6 +34,7 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [sendLoading, setSendLoading] = useState(false)
+  const [createdInviteCode, setCreatedInviteCode] = useState<string | null>(null)
   const [revokedInviteIds, setRevokedInviteIds] = useState<ReadonlySet<string>>(() => new Set())
 
   const invites = results.flatMap(result => {
@@ -43,13 +45,16 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
   async function handleSendInvite(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+    setCreatedInviteCode(null)
     setSendLoading(true)
     try {
       const created = await sendInvite(communitySlug, {
         email: email || undefined,
         username: username || undefined,
       })
-      onInviteCreated?.(created.community_invite)
+      const { code, ...invite } = created.community_invite
+      setCreatedInviteCode(code)
+      onInviteCreated?.(invite)
       setEmail('')
       setUsername('')
       refresh()
@@ -92,6 +97,12 @@ export function InviteManager({ data, communitySlug, onInviteCreated }: InviteMa
           <div className='mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive'>
             {error}
           </div>
+        )}
+        {createdInviteCode && (
+          <InviteCodeNotice
+            code={createdInviteCode}
+            onDismiss={() => setCreatedInviteCode(null)}
+          />
         )}
         <form
           onSubmit={handleSendInvite}

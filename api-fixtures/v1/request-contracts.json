@@ -13891,9 +13891,6 @@
             }
           ]
         },
-        "code": {
-          "type": "string"
-        },
         "community_id": {
           "type": "string"
         },
@@ -13946,6 +13943,37 @@
             }
           ]
         }
+      },
+      "required": [
+        "__entity_type",
+        "accepted_at",
+        "accepted_by_id",
+        "community_id",
+        "created_at",
+        "declined_at",
+        "id",
+        "invited_by_id",
+        "invited_email",
+        "invited_user_id",
+        "revoked_at"
+      ],
+      "type": "object"
+    },
+    "CreatedCommunityInvite": {
+      "additionalProperties": false,
+      "properties": {
+        "__entity_type": { "const": "community_invite" },
+        "accepted_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "accepted_by_id": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "code": { "type": "string" },
+        "community_id": { "type": "string" },
+        "created_at": { "type": "string" },
+        "declined_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "id": { "type": "string" },
+        "invited_by_id": { "type": "string" },
+        "invited_email": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "invited_user_id": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "revoked_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
       },
       "required": [
         "__entity_type",
@@ -49368,6 +49396,22 @@
     },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
       "$ref": "#/components/schemas/BeginOAuthAuthorizationResult"
+    },
+    "POST:/api/v1/communities/:idOrSlug/invites": {
+      "type": "object",
+      "properties": {
+        "community_invite": { "$ref": "#/components/schemas/CreatedCommunityInvite" }
+      },
+      "required": ["community_invite"],
+      "additionalProperties": false
+    },
+    "POST:/api/v1/communities/invite-redemptions": {
+      "type": "object",
+      "properties": {
+        "community_invite": { "$ref": "#/components/schemas/CommunityInvite" }
+      },
+      "required": ["community_invite"],
+      "additionalProperties": false
     },
     "POST:/api/v1/fediverse/instances": {
       "$ref": "#/components/schemas/CreateInstanceResult"

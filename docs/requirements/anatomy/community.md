@@ -80,6 +80,9 @@ The root `/communities/:slug` renders the community's post feed (not a separate 
 
 **Sidebar:** community about card (inline — description, stats, owners/moderators).
 
+Invite management uses a [one-time code display](../community/COMMUNITIES.md#invitations);
+persisted invite lists contain metadata only.
+
 ## Actions
 
 | Action           | Who can act                              |
