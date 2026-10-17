@@ -8,15 +8,12 @@ import {
   getRssFeedImport,
   submitRssFeedImport,
 } from '@services/user-import-export/rss-feed-imports'
-import { enqueueBulkUserRssFeedImportRows } from '@queues/user-rss-feed-imports/enqueues'
+import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
+import { getUserImportExportConfig } from '@services/user-import-export/config'
 import { isUUID } from '@modules/utils'
 import { isAdminUser } from '@services/users'
 import { apiResponse } from '../../response-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-
-const MAX_IMPORT_ITEMS = 500
-// Two MiB prevents abusive buffering before the 500-row cap can reject the import.
-const MAX_OPML_IMPORT_BYTES = '2mb'
 
 type ImportRssFeedsRequest =
   | { opml: string; should_follow_imported_feeds?: boolean }
@@ -45,7 +42,12 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   const provenance = getRequestContentProvenance()
   assertNotSuspended(currentUser)
 
-  const body = await parseJsonBody<ImportRssFeedsRequest>(ctx, MAX_OPML_IMPORT_BYTES)
+  const body = await parseJsonBody<ImportRssFeedsRequest>(
+    ctx,
+    // The body limit, not a row count, bounds an import; it is read per request so an operator's
+    // change applies at once.
+    `${getUserImportExportConfig().import_max_body_bytes}b`,
+  )
   validateRequestContract(ctx, 'POST:/api/v1/my/import/rss-feeds', { body })
 
   const should_follow_imported_feeds =
@@ -53,14 +55,12 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   // The schema fixes which source key is present and its type; counts are semantic checks.
   const urls = parseImportUrls(ctx, body)
   ctx.assert(urls.length > 0, 400, 'At least one URL is required')
-  ctx.assert(urls.length <= MAX_IMPORT_ITEMS, 400, `Maximum ${MAX_IMPORT_ITEMS} URLs per import`)
 
   const submitted = await submitRssFeedImport(currentUser, provenance, urls, {
     should_follow_imported_feeds,
   })
-  await enqueueBulkUserRssFeedImportRows(
-    submitted.rowIds.map(rowId => ({ importId: submitted.import.id, rowId })),
-  )
+  // One dispatcher pages the rows onto the queue, so a large import never floods it.
+  await enqueueUserRssFeedImportDispatch(submitted.import.id)
 
   const statusUrl = `/api/v1/my/import/rss-feeds/${submitted.import.id}`
   ctx.setStatus(201)

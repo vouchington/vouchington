@@ -4,13 +4,18 @@ import { fetchAndClassifyFeed, type FeedClassification } from './validate.mts'
 type ResolveProtocolOptions = {
   beforeFetch?: (url: string) => Promise<void>
   fetchAndClassifyFeedImpl?: typeof fetchAndClassifyFeed
+  /** Aborts the fetch, and stops the HTTP fallback from starting once the budget is spent. */
+  signal?: AbortSignal
 }
 
 export async function resolveProtocolAndClassify(
   rssFeedUrl: string,
   options: ResolveProtocolOptions = {},
 ): Promise<{ resolvedUrl: string; classification: FeedClassification }> {
-  const fetchAndClassifyFeedFn = options.fetchAndClassifyFeedImpl ?? fetchAndClassifyFeed
+  const fetchAndClassifyFeedImpl = options.fetchAndClassifyFeedImpl ?? fetchAndClassifyFeed
+  const { signal } = options
+  const fetchAndClassifyFeedFn = (url: string) =>
+    signal ? fetchAndClassifyFeedImpl(url, { signal }) : fetchAndClassifyFeedImpl(url)
 
   // Use the WHATWG-parsed protocol so uppercase schemes (HTTP://) are handled correctly
   const protocol = new URL(rssFeedUrl).protocol
@@ -33,7 +38,9 @@ export async function resolveProtocolAndClassify(
       throw new Error('HTTPS redirects to HTTP')
     }
     return { resolvedUrl: httpsUrl, classification }
-  } catch {
+  } catch (err) {
+    // A spent budget is not an HTTPS failure: do not spend more of it on the HTTP fallback.
+    if (signal?.aborted) throw err
     const httpUrl = normalizeUrlForUrlTable(rssFeedUrl, { preserveHttp: true }).href
     await options.beforeFetch?.(httpUrl)
     const classification = await fetchAndClassifyFeedFn(httpUrl)

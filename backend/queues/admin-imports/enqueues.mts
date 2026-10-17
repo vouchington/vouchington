@@ -1,52 +1,49 @@
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB,
+  IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB,
+  type AdminTopicImportRowData,
+} from '@queues/background/enqueues/imports-jobs'
+import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
-  ADMIN_IMPORTS_DEFAULTS,
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  getAdminImportsWorkLimit,
+  ADMIN_TOPIC_IMPORT_DISPATCH_ID_PREFIX,
+  ADMIN_TOPIC_IMPORT_ROW_DEDUP_PREFIX,
 } from './config.mts'
-import { adminImports } from './queues.mts'
-import type { AdminImportJobs } from './types.mts'
 
-type ImportRowJob = { batchId: string; rowId: string }
+const enqueueDispatch = createBackgroundEnqueue(IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB)
 
-const JOB_NAME: AdminImportJobs = 'processImportRow'
-const buildImportRowJobId = (rowId: string) => `import-row__${rowId}`
+// A dispatcher cannot re-add itself under the job id it is running with (GlideMQ drops an add
+// whose id is still claimed), so each page has its own id built from the batch and the cursor.
+const dispatchOptions = (batchId: string, cursor: number | undefined) =>
+  ({
+    jobId: `${ADMIN_TOPIC_IMPORT_DISPATCH_ID_PREFIX}__${batchId}__${cursor ?? 'start'}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  }) satisfies Partial<JobOptions>
 
-const enqueueBulkImportRowJobs = createBulkEnqueueFunction<
-  ImportRowJob,
-  ImportRowJob,
-  AdminImportJobs
->({
-  queue: adminImports,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-  defaults: {
-    attempts: ADMIN_IMPORTS_DEFAULTS.attempts,
-    backoff: ADMIN_IMPORTS_DEFAULTS.backoff,
-    removeOnComplete: ADMIN_IMPORTS_DEFAULTS.removeOnComplete,
-    removeOnFail: ADMIN_IMPORTS_DEFAULTS.removeOnFail,
-  },
-  buildJob: ({ batchId, rowId }) => ({
-    data: { batchId, rowId },
+/** Starts a batch's dispatcher at its first pending row. */
+export function enqueueAdminTopicImportDispatch(batchId: string): EnqueueReturnType {
+  return enqueueDispatch({ batchId }, dispatchOptions(batchId, undefined))
+}
+
+/** Continues a batch's dispatcher after the page that ended at `cursor`. */
+export function enqueueAdminTopicImportDispatchContinuation(
+  batchId: string,
+  cursor: number,
+): EnqueueReturnType {
+  return enqueueDispatch({ batchId, cursor }, dispatchOptions(batchId, cursor))
+}
+
+export const enqueueBulkAdminTopicImportRows = createBackgroundBulkEnqueue(
+  IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB,
+  (row: AdminTopicImportRowData) => ({
+    data: row,
     opts: {
       deduplication: {
-        id: buildImportRowJobId(rowId),
-        mode: 'debounce' as const,
-        ttl: ADMIN_IMPORTS_DEFAULTS.deduplicationTtlMs,
+        id: `${ADMIN_TOPIC_IMPORT_ROW_DEDUP_PREFIX}__${row.rowId}`,
+        mode: 'simple' as const,
       },
-    },
+    } satisfies Partial<JobOptions>,
   }),
-})
-
-export async function enqueueBulkImportRows(jobs: ImportRowJob[]): Promise<void> {
-  const ENQUEUE_CHUNK_SIZE = getAdminImportsWorkLimit('enqueue_chunk_size')
-  for (let i = 0; i < jobs.length; i += ENQUEUE_CHUNK_SIZE) {
-    const chunk = jobs.slice(i, i + ENQUEUE_CHUNK_SIZE)
-    // oxlint-disable-next-line no-await-in-loop -- one chunk must settle before the next to bound queue enqueue backpressure
-    await enqueueBulkImportRowJobs(chunk, {
-      priority: PRIORITY_DEFAULT,
-    } satisfies Partial<JobOptions>)
-  }
-}
+)

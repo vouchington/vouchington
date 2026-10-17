@@ -27,7 +27,11 @@ export const assertUrlAllowedByWebRisk = createWebRiskChecker(productionState)
 /** Hostname policies already read for a batch of URLs, keyed by `normalizeHostnameForPolicy`. */
 type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
 
-type WebRiskCheckOptions = { policies?: PrecomputedHostnamePolicies }
+type WebRiskCheckOptions = {
+  policies?: PrecomputedHostnamePolicies
+  /** Aborts the provider lookup. An abort is thrown, never treated as a provider failure. */
+  signal?: AbortSignal
+}
 
 const NO_PROVIDER_GATE: ProviderGate = { cleanCached: false, coolingDown: false }
 
@@ -82,8 +86,9 @@ export function createWebRiskChecker(state: WebRiskState) {
 
     let threat: WebRiskThreat | null
     try {
-      threat = await checkWebRiskUrl(parsed, state)
+      threat = await checkWebRiskUrl(parsed, state, options.signal)
     } catch (err) {
+      if (options.signal?.aborted) throw err
       if (err instanceof WebRiskRateLimitError) {
         onError(err)
         return

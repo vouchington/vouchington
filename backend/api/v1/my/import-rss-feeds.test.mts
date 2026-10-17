@@ -1,4 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
+import { IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB } from '@queues/background/enqueues/imports-jobs'
+import { background } from '@queues/background/queues'
+import { userImportExportConfig } from '@services/user-import-export/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   countRssFeedImportBatchesForTest,
@@ -65,11 +69,30 @@ describe('RSS feed import status and line-list parsing', () => {
     await request.post('/api/v1/my/import/rss-feeds').send({ csv }).expect(400)
   })
 
-  it('returns 400 when a list exceeds the row cap', async () => {
+  it('accepts a list above 500 URLs and starts one dispatcher for it', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
     const urls = Array.from({ length: 501 }, feedUrl)
-    await request.post('/api/v1/my/import/rss-feeds').send({ urls }).expect(400)
+
+    const created = await request.post('/api/v1/my/import/rss-feeds').send({ urls }).expect(201)
+
+    expect(created.body.import).toMatchObject({ total_rows: 501, pending_rows: 501 })
+    const dispatchers = await background.searchJobs({
+      name: IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.name,
+      data: { importId: created.body.import.id },
+    })
+    expect(dispatchers).toHaveLength(1)
+  })
+
+  it('reads the body limit from config on every request', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userImportExportConfig, { import_max_body_bytes: 1_024 }),
+    )
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const urls = Array.from({ length: 100 }, feedUrl)
+
+    await request.post('/api/v1/my/import/rss-feeds').send({ urls }).expect(413)
   })
 })
 

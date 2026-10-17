@@ -47,7 +47,6 @@
     "@queues/story-post-related-url-projections": "workspace:^",
     "@queues/urls-domains-blacklist": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
-    "@workers/admin-imports": "workspace:^",
     "@workers/background": "workspace:^",
     "@workers/ban-evasion": "workspace:^",
     "@workers/bedrock-batch-sqs": "workspace:^",
@@ -61,7 +60,6 @@
     "@workers/ses-bounce-sqs": "workspace:^",
     "@workers/ses-inbound-sqs": "workspace:^",
     "@workers/spam-detection": "workspace:^",
-    "@workers/stripe-events-sqs": "workspace:^",
-    "@workers/user-rss-feed-imports": "workspace:^"
+    "@workers/stripe-events-sqs": "workspace:^"
   }
 }

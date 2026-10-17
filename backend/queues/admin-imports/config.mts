@@ -1,33 +1,28 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
-export const QUEUE_NAME = 'admin-imports'
-export const PRIORITY_DEFAULT = 10
+/** Namespaced so a row's deduplication id can never collide with another domain's. */
+export const ADMIN_TOPIC_IMPORT_ROW_DEDUP_PREFIX = 'imports.processAdminTopicImportRow'
 
-export const ADMIN_IMPORTS_DEFAULTS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 2000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-  deduplicationTtlMs: 60_000,
-}
+/** Job ids may not contain colons, so the domain prefix uses an underscore. */
+export const ADMIN_TOPIC_IMPORT_DISPATCH_ID_PREFIX = 'imports_dispatchAdminTopicImport'
 
 const defaultFields = {
   insert_chunk_size: 1000,
-  enqueue_chunk_size: 1000,
+  dispatch_page_size: 1000,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const adminImportsWorkMaxValues = {
   insert_chunk_size: 10000,
-  enqueue_chunk_size: 10000,
+  dispatch_page_size: 10000,
 }
 
 export const adminImportsWorkConfig = new DynamicConfig({
   key: 'admin-imports-work-config',
   fieldTypes: {
     insert_chunk_size: 'number',
-    enqueue_chunk_size: 'number',
+    dispatch_page_size: 'number',
   },
   defaultFields,
 })

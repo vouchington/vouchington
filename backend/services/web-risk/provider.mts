@@ -24,6 +24,7 @@ export class WebRiskRateLimitError extends Error {
 export async function checkWebRiskUrl(
   url: URL,
   state: WebRiskState,
+  signal?: AbortSignal,
 ): Promise<WebRiskThreat | null> {
   const apiKey = getWebRiskApiKey()
   if (!apiKey) throw new Error('Google Web Risk API key is not configured')
@@ -38,7 +39,9 @@ export async function checkWebRiskUrl(
   const response = await undici
     .fetch(requestUrl, {
       dispatcher: getExternalRequestDispatcher(),
-      signal: AbortSignal.timeout(5000),
+      signal: signal
+        ? AbortSignal.any([AbortSignal.timeout(5000), signal])
+        : AbortSignal.timeout(5000),
     })
     .catch(err => {
       throw new Error('Google Web Risk lookup request failed', { cause: err })

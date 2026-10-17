@@ -1,6 +1,7 @@
 import type { BackgroundHandler } from '@queues/background/types'
 import { accountLifecycleHandlers } from '@workers/account-lifecycle/workers'
 import { activitypubHandlers } from '@workers/activitypub/workers'
+import { adminImportsHandlers } from '@workers/admin-imports/workers'
 import { articleSyncHandlers } from '@workers/article-sync/workers'
 import { cachePurgeHandlers } from '@workers/cache-purge/workers'
 import { blueskyFollowPropagationHandlers } from '@workers/bluesky-follow-propagation/workers'
@@ -17,6 +18,7 @@ import { rssFeedsHandlers } from '@workers/rss-feeds/workers'
 import { sesInboundHandlers } from '@workers/ses-inbound/workers'
 import { sitemapsHandlers } from '@workers/sitemaps/workers'
 import { storyPostRelatedUrlProjectionsHandlers } from '@workers/story-post-related-url-projections/workers'
+import { userRssFeedImportsHandlers } from '@workers/user-rss-feed-imports/workers'
 import { urlsDomainsBlacklistHandlers } from '@workers/urls-domains-blacklist/workers'
 import { voteAggregationHandlers } from '@workers/vote-aggregation/workers'
 
@@ -42,4 +44,6 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...cachePurgeHandlers,
   ...kagiSmallWebHandlers,
   ...emailDigestsHandlers,
+  ...adminImportsHandlers,
+  ...userRssFeedImportsHandlers,
 ]

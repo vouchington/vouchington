@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
@@ -167,7 +168,11 @@ describe('GET /api/v1/imports/:batchId/stream', () => {
       ['https://completed-user-rss-stream-test.example.com/rss'],
       { should_follow_imported_feeds: true },
     )
-    await updateRssFeedImportRowCompleted(submitted.rowIds[0]!, 'source_created', rssFeed.id)
+    await updateRssFeedImportRowCompleted(
+      await getFirstRssFeedImportRowId(submitted.import.id),
+      'source_created',
+      rssFeed.id,
+    )
 
     const request = createRequest()
     await request.authenticateAs(user)

@@ -74,6 +74,7 @@ describe('background queue domain routes', () => {
         'email-digests',
         'entity-listeners',
         'follower-distributions',
+        'imports',
         'kagi-smallweb',
         'notifications',
         'oauth-authorization-exchange',

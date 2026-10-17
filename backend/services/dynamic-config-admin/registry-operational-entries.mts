@@ -7,27 +7,23 @@ import {
   rssFeedCrawlConfig,
 } from '@services/rss-feeds/crawl-config'
 import { rssFeedDiscoverabilityConfig } from '@services/rss-feeds/discoverability-config'
-import {
-  USER_IMPORT_EXPORT_MAX_VALUES,
-  USER_IMPORT_EXPORT_MIN_VALUES,
-  userImportExportConfig,
-} from '@services/user-import-export/config'
 import { webRiskConfig } from '@services/web-risk/config'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
 import { scoreField } from './registry-entry-utils.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
 import { storyRelatedItemsRegistryEntry } from './registry-story-related-items-entry.mts'
+import { userImportExportRegistryEntry } from './registry-user-import-export-entry.mts'
 import {
   validateRssFeedCrawlConfig,
   validateRssFeedDiscoverabilityConfig,
-  validateUserImportExportConfig,
 } from './registry-validators.mts'
 
 export const operationalDynamicConfigRegistryEntries = [
   ...postRelatedUrlDisplayRegistryEntries,
   storyRelatedItemsRegistryEntry,
   membershipBillingRegistryEntry,
+  userImportExportRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'activitypub-inbox',
     label: 'ActivityPub Inbox',
@@ -89,22 +85,6 @@ export const operationalDynamicConfigRegistryEntries = [
       ),
     },
     validate: validateRssFeedCrawlConfig,
-  }),
-  defineDynamicConfigNamespace({
-    namespace: 'user-import-export-config',
-    label: 'User Import/Export',
-    description: 'Runtime bounds for user data import and export workflows.',
-    config: userImportExportConfig,
-    access: { update_roles: ['developer'] },
-    fields: {
-      sync_export_max_items: {
-        description: 'Maximum items allowed in synchronous RSS feed and topic exports.',
-        min_value: USER_IMPORT_EXPORT_MIN_VALUES.sync_export_max_items,
-        max_value: USER_IMPORT_EXPORT_MAX_VALUES.sync_export_max_items,
-        integer: true,
-      },
-    },
-    validate: validateUserImportExportConfig,
   }),
   defineDynamicConfigNamespace({
     namespace: 'data-retention-config',

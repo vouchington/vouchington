@@ -151,16 +151,20 @@ export function validateRssFeedCrawlConfig(next: DynamicConfigFields): void {
 }
 
 export function validateUserImportExportConfig(next: DynamicConfigFields): void {
-  const value = next.sync_export_max_items
-  if (
-    typeof value !== 'number' ||
-    !Number.isInteger(value) ||
-    value < USER_IMPORT_EXPORT_MIN_VALUES.sync_export_max_items ||
-    value > USER_IMPORT_EXPORT_MAX_VALUES.sync_export_max_items
-  ) {
-    throw new DynamicConfigValidationError(
-      `Field sync_export_max_items must be an integer between ${USER_IMPORT_EXPORT_MIN_VALUES.sync_export_max_items} and ${USER_IMPORT_EXPORT_MAX_VALUES.sync_export_max_items}`,
-    )
+  for (const key of Object.keys(USER_IMPORT_EXPORT_MIN_VALUES) as Array<
+    keyof typeof USER_IMPORT_EXPORT_MIN_VALUES
+  >) {
+    const value = next[key]
+    if (
+      typeof value !== 'number' ||
+      !Number.isInteger(value) ||
+      value < USER_IMPORT_EXPORT_MIN_VALUES[key] ||
+      value > USER_IMPORT_EXPORT_MAX_VALUES[key]
+    ) {
+      throw new DynamicConfigValidationError(
+        `Field ${key} must be an integer between ${USER_IMPORT_EXPORT_MIN_VALUES[key]} and ${USER_IMPORT_EXPORT_MAX_VALUES[key]}`,
+      )
+    }
   }
 }
 

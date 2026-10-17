@@ -14,6 +14,7 @@ type FeedValidationDeps = {
   crawlerRss?: typeof CrawlerRss
   discoverFeedUrlFromHtml?: typeof discoverFeedUrlFromHtml
   buildBoundedRssFeedItemsFromFeed?: typeof buildBoundedRssFeedItemsFromFeed
+  signal?: AbortSignal
 }
 
 function resolveFeedValidationDeps(deps: FeedValidationDeps = {}) {
@@ -98,7 +99,9 @@ export async function fetchAndClassifyFeed(
 
   let parsedFeed: Record<string, unknown>
   try {
-    const result = await crawlerRss(rssFeedUrl)
+    const result = await (deps.signal
+      ? crawlerRss(rssFeedUrl, { signal: deps.signal })
+      : crawlerRss(rssFeedUrl))
     if ('redirect' in result && result.redirect) {
       return {
         kind: 'redirect',
