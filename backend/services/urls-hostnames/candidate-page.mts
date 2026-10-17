@@ -43,10 +43,8 @@ export async function readHostnameCandidatePage({
     results,
     page_info: buildPageInfo(results, {
       hasNextPage: all.length > limit,
-      getCursor:
-        order === 'score'
-          ? h => ({ score: h.votes_score_net, id: h.id })
-          : h => ({ name: h.hostname, id: h.id }),
+      getCursor: h =>
+        order === 'score' ? { score: h.votes_score_net, id: h.id } : { name: h.hostname, id: h.id },
     }),
   }
 }
