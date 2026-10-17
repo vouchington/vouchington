@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { promisify } from 'node:util'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 
 const execFile = promisify(execFileCallback)
 const usage = 'Usage: pnpm run db:snapshot:update [-- --pr <pull-request-number>]'
@@ -22,7 +23,11 @@ function parsePullRequestNumber(argv: readonly string[]): string | undefined {
 const pullRequestNumber = parsePullRequestNumber(process.argv.slice(2))
 
 const repositoryInfo = JSON.parse(
-  (await execFile('gh', ['repo', 'view', '--json', 'nameWithOwner,defaultBranchRef'])).stdout,
+  (
+    await execFile('gh', ['repo', 'view', '--json', 'nameWithOwner,defaultBranchRef'], {
+      env: ghSpawnEnv(),
+    })
+  ).stdout,
 ) as { nameWithOwner: string; defaultBranchRef: { name: string } }
 const repository = repositoryInfo.nameWithOwner
 const pullRequestFields = 'number,headRefOid,headRepositoryOwner,state'
@@ -33,7 +38,7 @@ const { stdout } = await execFile(
   pullRequestNumber === undefined
     ? ['pr', 'view', '--json', pullRequestFields]
     : ['pr', 'view', pullRequestNumber, '--repo', repository, '--json', pullRequestFields],
-  { env: { ...process.env, GH_REPO: repository } },
+  { env: { ...ghSpawnEnv(), GH_REPO: repository } },
 )
 const pr = JSON.parse(stdout) as {
   number: number
@@ -51,17 +56,21 @@ if (
     'The open same-repository PR must contain the current pushed HEAD before requesting a snapshot update',
   )
 }
-await execFile('gh', [
-  'workflow',
-  'run',
-  'postgresql-snapshot-update.yml',
-  '--repo',
-  repository,
-  '--ref',
-  repositoryInfo.defaultBranchRef.name,
-  '-f',
-  `pr_number=${pr.number}`,
-])
+await execFile(
+  'gh',
+  [
+    'workflow',
+    'run',
+    'postgresql-snapshot-update.yml',
+    '--repo',
+    repository,
+    '--ref',
+    repositoryInfo.defaultBranchRef.name,
+    '-f',
+    `pr_number=${pr.number}`,
+  ],
+  { env: ghSpawnEnv() },
+)
 console.log(
   `Requested PostgreSQL snapshot update for PR #${pr.number}. Fetch the publisher commit before continuing.`,
 )

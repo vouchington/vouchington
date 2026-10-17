@@ -158,8 +158,8 @@ importers:
         specifier: ^5.0.4
         version: 5.0.4(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.4)(@vitest/coverage-v8@5.0.4)(@vitest/ui@5.0.4)(jsdom@30.1.2(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.44.0
-        version: 0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
+        specifier: ^0.46.0
+        version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -1440,8 +1440,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       vouchington-tooling:
-        specifier: ^0.44.0
-        version: 0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
+        specifier: ^0.46.0
+        version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
     devDependencies:
       no-mistakes:
         specifier: ^0.91.2
@@ -11451,8 +11451,8 @@ importers:
         specifier: ^0.8.2
         version: 0.8.2
       vouchington-tooling:
-        specifier: ^0.44.0
-        version: 0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
+        specifier: ^0.46.0
+        version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -13404,8 +13404,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.44.0
-        version: 0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
+        specifier: ^0.46.0
+        version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -13643,8 +13643,8 @@ importers:
         specifier: ^1.9.1
         version: 1.9.1
       vouchington-tooling:
-        specifier: ^0.44.0
-        version: 0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
+        specifier: ^0.46.0
+        version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -14009,8 +14009,8 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
-        specifier: ^0.44.0
-        version: 0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
+        specifier: ^0.46.0
+        version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
 
 packages:
 
@@ -22746,8 +22746,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.44.0:
-    resolution: {integrity: sha512-QjAB933ix9d0ds+miW4ZxkK3sLRx/pNKgrKGrzN7TJYs9YdzQOXrNc87yeReZFUkSe7560F4Lo7PRBD6mAcjJQ==}
+  vouchington-tooling@0.46.0:
+    resolution: {integrity: sha512-6kuThKw9xevFOAXYm8GuJaWrS5pMj40415BuccqMHUhuTOGx6Mf4FqYkdBPjbox8CMlMNjAvVNJdQ9gztAzmKg==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -32005,7 +32005,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.44.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4):
+  vouchington-tooling@0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3

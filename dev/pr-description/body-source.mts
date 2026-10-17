@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 import { fstatSync } from 'node:fs'
 import { readFile as fsReadFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
@@ -80,6 +81,6 @@ async function defaultReadStdin(): Promise<string> {
 }
 
 async function defaultRunGh(args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync('gh', args)
+  const { stdout } = await execFileAsync('gh', args, { env: ghSpawnEnv() })
   return stdout
 }

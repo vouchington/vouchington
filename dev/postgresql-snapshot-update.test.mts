@@ -34,6 +34,7 @@ async function fixture(
     gh,
     `#!/bin/sh
 printf '%s\\n' "GH_REPO=\${GH_REPO-} $*" >> "$FAKE_GH_ROOT/gh.log"
+printf '%s\\n' "CLICOLOR_FORCE=\${CLICOLOR_FORCE-unset}" >> "$FAKE_GH_ROOT/color.log"
 case "$1 $2" in
   "repo view") exec /bin/cat "$FAKE_GH_ROOT/repo.json" ;;
   "pr view")
@@ -95,6 +96,14 @@ describe('PostgreSQL snapshot dispatch command', () => {
       'GH_REPO=vouchington/vouchington pr view 663 --repo vouchington/vouchington --json number,headRefOid,headRepositoryOwner,state',
       'GH_REPO=vouchington/vouchington pr view 663 --repo vouchington/vouchington --json number,headRefOid,headRepositoryOwner,state',
     ])
+  })
+
+  it('spawns every gh call without the caller CLICOLOR_FORCE', async () => {
+    const { root, env } = await fixture()
+    await dispatch({ ...env, CLICOLOR_FORCE: '1' }, '--pr', '663')
+
+    const colors = (await readFile(join(root, 'color.log'), 'utf8')).trim().split('\n')
+    expect(colors).toEqual(Array(3).fill('CLICOLOR_FORCE=unset'))
   })
 
   it('accepts the documented pnpm --pr forwarding form', async () => {

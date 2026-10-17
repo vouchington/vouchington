@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { promisify } from 'node:util'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 
 import { assessPlanCompletion } from '../dev/pr-description/plan-completion.mts'
 import { mapPlanReads } from './plan-completion-batch.mts'
@@ -20,7 +21,7 @@ const execFile = promisify(execFileCallback)
 type RunGh = (args: string[]) => Promise<string>
 
 async function gh(args: string[]): Promise<string> {
-  const { stdout } = await execFile('gh', args, { maxBuffer: 16 * 1024 * 1024 })
+  const { stdout } = await execFile('gh', args, { env: ghSpawnEnv(), maxBuffer: 16 * 1024 * 1024 })
   return stdout
 }
 
