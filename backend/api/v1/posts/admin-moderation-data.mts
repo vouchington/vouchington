@@ -1,12 +1,10 @@
-import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { getAgentModerationElectionByIdCachedBatch } from '@services/entity-fetch'
-import {
-  getAgentModerationElectionVotesByUser,
-  type ViewAgentModerationElection,
-} from '@services/elections-votes/agent-moderation'
+import { getCachedElectionGroups } from '@services/elections-votes/shared/cached-groups'
+import { searchPostModerationsByPostIds, type AgentModerationResult } from '@services/moderation'
+import { isAdminUser } from '@services/users'
+import type { PrivateUser } from '@services/users/types'
+import { getPostAndModerationVotes } from '@services/elections-votes/shared/post-moderation-votes'
 import type { ElectionVote } from '@services/elections-votes/shared'
-import type { AgentModerationResult } from '@services/moderation'
 
 export function indexPostModerationsByPostId(
   moderations: AgentModerationResult[],
@@ -21,37 +19,30 @@ export function indexPostModerationsByPostId(
   >
 }
 
-export async function getAgentModerationElectionsRecord(
-  moderations: AgentModerationResult[],
-): Promise<Record<string, ViewAgentModerationElection>> {
-  const electionIds = [...new Set(moderations.map(moderation => moderation.id))]
-  if (electionIds.length === 0) {
-    return {}
-  }
-
-  const elections = await getAgentModerationElectionByIdCachedBatch(electionIds)
-  return indexById(elections)
+export function getPostElectionSidecars(currentUser: PrivateUser | null, postIds: string[]) {
+  const moderations = isAdminUser(currentUser)
+    ? searchPostModerationsByPostIds(postIds)
+    : Promise.resolve([])
+  const elections = moderations.then(rows =>
+    getCachedElectionGroups({
+      post: postIds,
+      agent_moderation: rows.map(row => row.id),
+    }),
+  )
+  return { moderations, elections }
 }
 
-export async function mergeElectionVotesWithAgentModerations(
+export async function getPostElectionVotesWithModerations(
   userId: string,
+  postIds: string[],
   moderations: AgentModerationResult[],
-  baseVotes?: Record<string, ElectionVote>,
+  emptyPostResult: 'object' | 'undefined',
 ): Promise<Record<string, ElectionVote> | undefined> {
-  const electionIds = [...new Set(moderations.map(moderation => moderation.id))]
-  if (electionIds.length === 0) {
-    return baseVotes
-  }
-
-  const moderationVotes = await getAgentModerationElectionVotesByUser(userId, electionIds)
-  const mergedVotes = {
-    ...(baseVotes ?? {}),
-    ...electionVotesMapToRecord(
-      new Map<string, ElectionVote>(
-        moderationVotes.map(vote => [vote.entity_id, vote satisfies ElectionVote]),
-      ),
-    ),
-  }
-
-  return Object.keys(mergedVotes).length > 0 ? mergedVotes : undefined
+  const moderationIds = [...new Set(moderations.map(moderation => moderation.id))]
+  const votes = await getPostAndModerationVotes(userId, postIds, moderationIds)
+  const record = electionVotesMapToRecord(new Map(votes.map(vote => [vote.entity_id, vote])))
+  if (Object.keys(record).length > 0) return record
+  if (moderationIds.length > 0 || (postIds.length === 0 && emptyPostResult === 'undefined'))
+    return undefined
+  return record
 }

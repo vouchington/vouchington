@@ -72,8 +72,14 @@ export async function createSourceFromUrl(
   }
 
   // Resolve the effective URL (prefer https, fall back to http) and classify the feed
+  let firstAttempt = true
   const { resolvedUrl, classification } = await resolveProtocolAndClassify(rssFeedUrl, {
-    beforeFetch: assertUrlAllowedByWebRisk,
+    beforeFetch: url => {
+      const alreadyChecked = firstAttempt && url === rssFeedUrl
+      firstAttempt = false
+      // Reuse only this attempt's initial proof; protocol fallback and later hops revalidate.
+      return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url)
+    },
     fetchAndClassifyFeedImpl,
   })
   await assertUrlAllowedByWebRisk(resolvedUrl)

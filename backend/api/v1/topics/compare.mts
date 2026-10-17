@@ -7,8 +7,11 @@ import {
   getTopicElectionByIdCachedBatch,
 } from '@services/entity-fetch'
 import { attachTopicProvenance } from '@services/content-provenance'
-import { getEntityRelations } from '@services/entity-relations/query'
-import { getTopicDataPointInsights } from '@services/data-points/insights'
+import {
+  getEntityRelationsBatch,
+  type EntityRelationResult,
+} from '@services/entity-relations/query'
+import { getTopicDataPointInsightsBatch } from '@services/data-points/insights'
 import { indexById } from '@modules/utils'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
@@ -52,41 +55,30 @@ app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
   const viewer = entityRelationViewerFor(currentUser)
   const topicIds = [topicA!.id, topicB!.id]
 
-  const [
-    labeledTopics,
-    topic_metrics,
-    topic_elections,
-    insightsA,
-    insightsB,
-    relationsA,
-    relationsB,
-  ] = await Promise.all([
+  const [labeledTopics, topic_metrics, topic_elections, insights, relations] = await Promise.all([
     attachTopicProvenance(topics, currentUser),
     getTopicMetricsByAnyCachedBatch(topicIds).then(indexById),
     getTopicElectionByIdCachedBatch(topicIds).then(indexById),
-    getTopicDataPointInsights(topicA!.id),
-    getTopicDataPointInsights(topicB!.id),
-    getEntityRelations('topic', topicA!.id, 'category', 'topic', {
-      viewer,
-      positiveNetVoteScore: true,
-      limit: 20,
-    }),
-    getEntityRelations('topic', topicB!.id, 'category', 'topic', {
+    getTopicDataPointInsightsBatch(topicIds),
+    getEntityRelationsBatch('topic', topicIds, 'category', 'topic', {
       viewer,
       positiveNetVoteScore: true,
       limit: 20,
     }),
   ])
 
-  const categorySlugsA = extractCategorySlugs(relationsA)
-  const categorySlugsB = extractCategorySlugs(relationsB)
+  const categorySlugsA = extractCategorySlugs(relations.get(topicA!.id) ?? [])
+  const categorySlugsB = extractCategorySlugs(relations.get(topicB!.id) ?? [])
 
   const output: Record<string, unknown> = {
     topics: indexById(labeledTopics),
     topic_metrics,
     topic_elections,
     topic_categories: { [topicA!.id]: categorySlugsA, [topicB!.id]: categorySlugsB },
-    data_point_insights: { [topicA!.id]: insightsA, [topicB!.id]: insightsB },
+    data_point_insights: {
+      [topicA!.id]: insights.get(topicA!.id),
+      [topicB!.id]: insights.get(topicB!.id),
+    },
   }
 
   if (currentUser) {
@@ -103,7 +95,7 @@ app.route('/api/v1/topics/compare').get(async (ctx: Context) => {
   await ctx.pipeline(streamJsonObject(output))
 })
 
-function extractCategorySlugs(relations: Awaited<ReturnType<typeof getEntityRelations>>): string[] {
+function extractCategorySlugs(relations: EntityRelationResult[]): string[] {
   return relations.flatMap(relation => {
     const slug = relation.object_data?.['slug']
     return typeof slug === 'string' ? [slug] : []

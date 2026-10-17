@@ -1,3 +1,4 @@
+import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
 import type { EntityRelationEntityType, EntityRelationPredicateType } from './config.mts'
 import { entityRelationMetadatum } from './metadata.mts'
@@ -74,7 +75,14 @@ export async function getEntityRelations(
   })
   const { rows } = await (readOnly === false ? write : read)(query)
   const relations = rows as EntityRelationResult[]
-  if (metadata.object_type !== 'url') return relations
+  return decorateRelations(metadata.object_type, relations)
+}
+
+function decorateRelations(
+  objectType: EntityRelationEntityType,
+  relations: EntityRelationResult[],
+): EntityRelationResult[] {
+  if (objectType !== 'url') return relations
 
   const signingKeys = parseSigningKeys(process.env[SIDELOAD_SIGNING_KEYS_ENV])
   return relations.map(row => {
@@ -90,6 +98,55 @@ export async function getEntityRelations(
       object_data: { ...row.object_data, latest_crawl: { ...crawl, image_url: proxied ?? null } },
     }
   })
+}
+
+/** One bounded page per subject, preserving each subject's own ordering and limit. */
+export async function getEntityRelationsBatch(
+  subjectType: EntityRelationEntityType,
+  subjectIds: string[],
+  predicate: EntityRelationPredicateType,
+  objectType: EntityRelationEntityType,
+  options: EntityRelationQueryOptions,
+): Promise<Map<string, EntityRelationResult[]>> {
+  const uniqueIds = [...new Set(subjectIds)]
+  const grouped = new Map(uniqueIds.map(id => [id, [] as EntityRelationResult[]]))
+  if (uniqueIds.length === 0) return grouped
+  const metadata = entityRelationMetadatum.find(
+    row =>
+      row.subject_type === subjectType &&
+      row.predicate === predicate &&
+      row.object_type === objectType,
+  )
+  if (!metadata)
+    throw new Error(`No entity relation found for ${subjectType} -> ${predicate} -> ${objectType}`)
+  const query = sql`/* getEntityRelationsBatch */ `
+  uniqueIds.forEach((id, index) => {
+    if (index) query.append(' UNION ALL ')
+    query
+      .append(sql`SELECT ${id}::text AS requested_subject_id, page.* FROM (`)
+      .append(
+        buildEntityRelationSelectQuery(metadata, id, {
+          ...options,
+          limit: options.limit ?? 100,
+          sort: options.sort ?? 'best',
+        }),
+      )
+      .append(') page')
+  })
+  query.append(' ORDER BY requested_subject_id, ')
+  if ((options.sort ?? 'best') === 'best' && metadata.election)
+    query.append('votes_score_sort DESC, created_at DESC, object_id DESC')
+  else if (options.sort === 'newest' || !metadata.order_index)
+    query.append('created_at DESC, object_id DESC')
+  else query.append('order_index ASC, object_id ASC')
+  const { rows } = await (options.readOnly === false ? write : read)(query)
+  for (const row of rows) {
+    const { requested_subject_id, ...relation } = row
+    grouped.get(requested_subject_id as string)!.push(relation as EntityRelationResult)
+  }
+  return new Map(
+    [...grouped].map(([id, relations]) => [id, decorateRelations(objectType, relations)]),
+  )
 }
 
 export async function getEntityRelationsPage(

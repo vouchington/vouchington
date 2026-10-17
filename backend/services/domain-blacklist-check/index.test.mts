@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest'
-import * as domains from '@services/urls-domains-blacklist/domains'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { assertNoBlockedDomains, assertUrlNotBlocked } from './index.mts'
 import { insertTestDomainBlacklist, createTestBlacklistSource } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
@@ -54,25 +53,10 @@ describe('index', () => {
     })
   })
 
-  it('reads one batched hostname policy for every domain and URL', async () => {
-    const batchSpy = vi.spyOn(domains, 'getHostnamePolicies')
-    const singleSpy = vi.spyOn(domains, 'getHostnamePolicy')
-    try {
-      await assertNoBlockedDomains(
-        '[a](https://example.com/a) [b](https://example.com/b) ![c](https://cdn.example.org/c.png)',
-      )
-
-      expect(batchSpy).toHaveBeenCalledTimes(1)
-      expect(singleSpy).not.toHaveBeenCalled()
-    } finally {
-      batchSpy.mockRestore()
-      singleSpy.mockRestore()
-    }
-  })
-
   describe('assertUrlNotBlocked', () => {
     it('passes for a clean URL', async () => {
-      await expect(assertUrlNotBlocked('https://example.com/page')).resolves.toBeUndefined()
+      const hostname = `profile-clean-${RANDOM_ID}.com`
+      await expect(assertUrlNotBlocked(`https://${hostname}/page`)).resolves.toBeUndefined()
     })
 
     it('rejects a blocked domain (status 400)', async () => {

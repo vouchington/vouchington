@@ -1,19 +1,15 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
-import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { COMMENT_DESCENDANTS_LIMIT, getCommentDescendantsPage } from '@services/comments'
-import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import {
   getPostByAnyCached,
   getPostByAnyCachedBatch,
-  getPostElectionByIdCachedBatch,
   getPostMetricsByAnyCachedBatch,
 } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
-import { searchPostModerationsByPostIds } from '@services/moderation'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getCommunityMember } from '@services/communities/members/get'
 import {
@@ -32,9 +28,9 @@ import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../r
 import { apiQuery } from '../../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
-  getAgentModerationElectionsRecord,
+  getPostElectionSidecars,
   indexPostModerationsByPostId,
-  mergeElectionVotesWithAgentModerations,
+  getPostElectionVotesWithModerations,
 } from '../admin-moderation-data.mts'
 import { getRouteAccessPost } from '@services/posts/route-access'
 import { createPaginationParser } from '@modules/pagination'
@@ -95,6 +91,10 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
   const postsPromise = getPostByAnyCachedBatch(commentIds).then(posts =>
     labelAndMaskPosts(posts, currentUser),
   )
+  const { moderations: moderationsPromise, elections: electionsPromise } = getPostElectionSidecars(
+    currentUser,
+    commentIds,
+  )
   const output: Record<string, unknown> = {
     results,
     page_info: pageInfo,
@@ -117,7 +117,8 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
       )
     }),
     posts_metrics: getPostMetricsByAnyCachedBatch(commentIds).then(indexById),
-    post_elections: getPostElectionByIdCachedBatch(commentIds)
+    post_elections: electionsPromise
+      .then(groups => groups.post)
       .then(indexById)
       .then(elections => maybeSanitizeElections(currentUser, elections)),
     markdown_to_html: postsPromise.then(async posts => {
@@ -136,22 +137,20 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
       Object.keys(b).length > 0 ? b : undefined,
     )
 
-    const postElectionVotesPromise = postsPromise.then(async posts => {
-      const postIds = posts.flatMap(p => (p != null ? [p.id] : []))
-      if (postIds.length === 0) return undefined
-      const votes = await getPostElectionVotesByUser(currentUser.id, postIds)
-      return electionVotesMapToRecord(new Map(votes.map(v => [v.entity_id, v])))
-    })
-
-    output.election_votes = postElectionVotesPromise
+    output.election_votes = Promise.all([postsPromise, moderationsPromise]).then(
+      ([posts, moderations]) =>
+        getPostElectionVotesWithModerations(
+          currentUser.id,
+          posts.flatMap(post => (post ? [post.id] : [])),
+          moderations,
+          'undefined',
+        ),
+    )
 
     if (isAdminUser(currentUser)) {
-      const moderationsPromise = searchPostModerationsByPostIds(commentIds)
       output.post_moderations = moderationsPromise.then(indexPostModerationsByPostId)
-      output.agent_moderation_elections = moderationsPromise.then(getAgentModerationElectionsRecord)
-      output.election_votes = Promise.all([postElectionVotesPromise, moderationsPromise]).then(
-        ([baseVotes, moderations]) =>
-          mergeElectionVotesWithAgentModerations(currentUser.id, moderations, baseVotes),
+      output.agent_moderation_elections = electionsPromise.then(groups =>
+        indexById(groups.agent_moderation),
       )
     }
   }

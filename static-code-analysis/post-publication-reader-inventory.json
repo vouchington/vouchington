@@ -360,6 +360,13 @@
       "reason": "Internal autotagger input reads the post embedding for similarity classification and never serializes post rows to a public surface.",
       "owner_path": "backend/modules/feed-query-builders/post-publication-eligibility.mts",
       "owner_classification": "canonical-builder"
+    },
+    {
+      "path": "backend/services/entity-relations/post-access-visibility.mts",
+      "classification": "raw-hydrator",
+      "reason": "Batched role reader receives subject and object eligibility predicates from the owning post-access boundary.",
+      "owner_path": "backend/services/entity-relations/post-access.mts",
+      "owner_classification": "mixed-discovery-sql"
     }
   ]
 }

@@ -2,6 +2,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import type { BasicUser } from './types.mts'
 import {
   getFollowedUsersByElectionVoteIds,
+  getFollowedUsersByElectionVoteIdsBatch,
   hydrateFollowContextGroups,
   type FollowContextIds,
   type FollowContextUsers,
@@ -77,13 +78,14 @@ async function getFollowContextVoteIds(
   limit: number,
   queryOptions: QueryOptions,
 ): Promise<[FollowContextIds, FollowContextIds]> {
-  return Promise.all([
-    getFollowedUsersByElectionVoteIds(currentUser, entityId, voteTable, 1, { limit, queryOptions }),
-    getFollowedUsersByElectionVoteIds(currentUser, entityId, voteTable, -1, {
-      limit,
-      queryOptions,
-    }),
-  ])
+  const [positive, negative] = await getFollowedUsersByElectionVoteIdsBatch(
+    currentUser,
+    entityId,
+    voteTable,
+    [1, -1],
+    { limit, queryOptions },
+  )
+  return [positive!, negative!]
 }
 
 /** Retained for the EXPLAIN service scenario that measures a single vote-sign lookup. */

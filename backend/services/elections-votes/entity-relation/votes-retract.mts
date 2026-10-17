@@ -27,11 +27,12 @@ export async function retractEntityRelationVote(
   }
   await beforeMutation?.()
   const cleared = await withElectionVoteRequestLock('entity_relation', userId, id, async () => {
-    if ((await getEntityRelationElectionVote(userId, id)) === null) {
+    const target = await resolveEntityRelationElectionTargetById(id)
+    if (!target || (await getEntityRelationElectionVote(userId, id, target)) === null) {
       refreshVoteStatsAfterNoop(id)
       return []
     }
-    return upsertEntityRelationVotesById(userId, [{ entityId: id, score: null }])
+    return upsertEntityRelationVotesById(userId, [{ entityId: id, score: null }], undefined, target)
   })
   if (cleared[0]) await refreshUserTagVoteStats(id)
 }

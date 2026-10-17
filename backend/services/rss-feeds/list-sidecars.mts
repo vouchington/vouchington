@@ -7,21 +7,8 @@ import {
 import type { ElectionVote } from '@services/elections-votes/shared'
 import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import type { ViewHostnameElection } from '@services/elections-votes/hostname'
-import { getHostnameElectionsByIdBatch } from '@services/elections-votes/hostname/get-election-batch'
-import { getTopicElectionsByIdBatch } from '@services/elections-votes/topic/get-election-batch'
-import { caches } from '@services/entity-cache/caches'
+import { getCachedElectionGroups } from '@services/elections-votes/shared/cached-groups'
 import { indexById } from '@modules/utils'
-
-// Reconstructed locally rather than imported from @services/entity-fetch: entity-fetch already
-// depends on @services/rss-feeds, so importing entity-fetch's cached getters back into rss-feeds
-// would create a fresh rss-feeds<->entity-fetch cycle. Same cache instances/TTL/invalidation-keys
-// as entity-fetch's getHostnameElectionByIdCachedBatch/getTopicElectionByIdCachedBatch.
-const getHostnameElectionByIdCachedBatch = caches.hostname_elections.cacheGetByAnyBatch(
-  getHostnameElectionsByIdBatch,
-)
-const getTopicElectionByIdCachedBatch = caches.topic_elections.cacheGetByAnyBatch(
-  getTopicElectionsByIdBatch,
-)
 
 /**
  * Shape of the sidecar maps included alongside RSS feed list results.
@@ -60,13 +47,8 @@ export async function buildRssFeedSidecars(
   ]
   const feedIds = feeds.map(feed => feed.id)
 
-  const [topic_elections, hostname_elections, votes, bookmarkMaps] = await Promise.all([
-    topicIds.length > 0
-      ? getTopicElectionByIdCachedBatch(topicIds).then(indexById)
-      : Promise.resolve({} as Record<string, ViewTopicElection>),
-    hostnameIds.length > 0
-      ? getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById)
-      : Promise.resolve({} as Record<string, ViewHostnameElection>),
+  const [elections, votes, bookmarkMaps] = await Promise.all([
+    getCachedElectionGroups({ topic: topicIds, hostname: hostnameIds }),
     currentUser && topicIds.length > 0
       ? getTopicElectionVotesByUser(currentUser.id, topicIds)
       : Promise.resolve([]),
@@ -78,7 +60,10 @@ export async function buildRssFeedSidecars(
       : Promise.resolve([{}, {}]),
   ])
 
-  const sidecars: RssFeedSidecars = { topic_elections, hostname_elections }
+  const sidecars: RssFeedSidecars = {
+    topic_elections: indexById(elections.topic),
+    hostname_elections: indexById(elections.hostname),
+  }
 
   if (currentUser) {
     const [feedBookmarks, topicBookmarks] = bookmarkMaps

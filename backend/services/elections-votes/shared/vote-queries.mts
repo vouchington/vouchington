@@ -19,6 +19,18 @@ export async function fetchElectionVoteRowsByUser(
   run: QueryExecutor,
   pagination?: ElectionVoteUserPagination,
 ): Promise<Record<string, unknown>[]> {
+  const { rows } = await run(
+    buildElectionVoteRowsByUserQuery(config, userId, entityIds, pagination),
+  )
+  return rows
+}
+
+export function buildElectionVoteRowsByUserQuery(
+  config: EntityElectionConfig,
+  userId: string,
+  entityIds: string[] | undefined,
+  pagination?: ElectionVoteUserPagination,
+): SQLStatement {
   const query = sql`/* fetchElectionVoteRowsByUser */
     SELECT DISTINCT ON (election_vote.`
   query.append(config.entityIdColumn)
@@ -55,8 +67,7 @@ export async function fetchElectionVoteRowsByUser(
   query.append(sql`, election_vote.id DESC`)
   if (pagination) query.append(sql` LIMIT ${pagination.limit}`)
 
-  const { rows } = await run(query)
-  return rows
+  return query
 }
 
 /**
