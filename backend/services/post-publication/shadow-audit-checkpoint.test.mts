@@ -40,37 +40,20 @@ describe('post publication shadow audit checkpoints', () => {
   })
 
   it('resets the durable checkpoint after the final partial repair page', async () => {
-    const { user, postIds } = await createTestShadowAuditFixtures(2)
-    for (const id of postIds) {
-      await insertAuditPost(
-        user.id,
-        id,
-        `shadow-partial-${id}`,
-        'Final partial audit page',
-        'Owned terminal-page row.',
-      )
-    }
+    const { user } = await createTestShadowAuditFixtures()
     await withTestShadowAuditCheckpoint(async context => {
       const terminal = await context.terminalPage(user.id)
+      if (!terminal.before) throw new Error('Expected a nonempty global predecessor')
       await context.setCheckpoint(terminal.before)
-      // The observed predecessor makes the next global row owned, without owning the global tail.
-      const global = await context.audit({ dryRun: false, limit: 1 })
-      expect(global.scannedByScope.post).toBe(1)
-      expect(global.checkpoint).toBe(terminal.ids[0])
-      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[0])
-      const result = await context.audit({
-        dryRun: false,
-        limit: 100,
-        postIdentityIds: terminal.ids,
-      })
-      expect(result).toMatchObject({ hasMore: false })
-      expect(result.scannedByScope.post).toBeGreaterThanOrEqual(2)
-      expect(result.scannedByScope.post).toBe(2)
+      // A global short page containing both owned witnesses must reset the durable cursor.
+      const result = await context.audit({ dryRun: false, limit: 3 })
+      expect(result).toMatchObject({ hasMore: false, scannedByScope: { post: 2 } })
       expect(result.checkpoint).toBe(terminal.ids[1])
-      await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[0])
-      // Nonempty partial-page evidence is finite; global reset is proven at the real EOF.
+      await expect(context.getCheckpoint()).resolves.toBeNull()
+      expect(terminal.maximum).toBe(terminal.ids[1])
+      // Preserve explicit EOF coverage separately from the nonempty final page.
       await context.setCheckpoint(terminal.maximum)
-      const eof = await context.audit({ dryRun: false, limit: 100 })
+      const eof = await context.audit({ dryRun: false, limit: 3 })
       expect(eof).toMatchObject({ checkpoint: null, scannedByScope: { post: 0 } })
       await expect(context.getCheckpoint()).resolves.toBeNull()
     })
