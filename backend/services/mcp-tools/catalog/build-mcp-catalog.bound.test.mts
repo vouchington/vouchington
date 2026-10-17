@@ -1,3 +1,4 @@
+import { myMessageGroups } from '@voucha/mcp/my-messages'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { hasEveryScope, SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
@@ -58,7 +59,7 @@ const grants: {
 // Owner-approved mcp.all caps: compact UTF-16 sizes plus 1.5%, rounded up to 1,000.
 const caps = {
   mcp: {
-    all: { count: 78, list: 301000, core: 120000, output: 283000 },
+    all: { count: 80, list: 311000, core: 124000, output: 292000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
     Plus: { count: 70, list: 217000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
@@ -146,6 +147,7 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
 
   it('limits every tool or option description to 400 characters, with named offenders', () => {
     const groups = [
+      ...myMessageGroups,
       ...userMergedReadingGroups,
       ...userMergedAccountGroups,
       ...userMergedParticipationGroups,
@@ -244,7 +246,7 @@ const names = [
   'start_discussion',
 ]
 const scopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
-  scope => !scope.startsWith('community-moderation:'),
+  scope => !scope.startsWith('community-moderation:') && !scope.startsWith('messages:'),
 )
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const caller = { id: 'participation-listing', roles: [], membership_plan: null }

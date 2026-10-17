@@ -14,6 +14,7 @@ const USER_RESOURCE_SCOPES = {
   'financial-profile': ['read', 'write'],
   hostnames: ['read'],
   lists: ['read', 'write'],
+  messages: ['read', 'write'],
   notifications: ['read', 'write'],
   'point-valuations': ['read', 'write'],
   posts: ['read', 'write'],
@@ -41,6 +42,8 @@ const SENSITIVE_DESCRIPTIONS: Record<string, ScopeDescriptionKey> = {
   'spending:write': 'spending_write',
   'community-moderation:read': 'community_moderation_read',
   'community-moderation:write': 'community_moderation_write',
+  'messages:read': 'messages_read',
+  'messages:write': 'messages_write',
 }
 
 export function userResourceDefinitions(): Record<string, ScopeDefinition> {

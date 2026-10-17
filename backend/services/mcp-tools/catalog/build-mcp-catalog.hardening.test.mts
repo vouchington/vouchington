@@ -17,17 +17,21 @@ const names = [
   'update_community_moderation',
   'remove_community_moderation',
 ]
-// Pin #2545 listings after main's approved schema, description and option-pointer updates.
+// Pin the exact-grant listing including #208's explicit message grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  '401a6fde95e330d7fe2d9d7bfae3e3fdbb1abe64afd72650910663df867bde7f'
+  '7d3888e702773d3dadc7886ec8749054dff7de8100b350cb0eb1b6627688a65f'
+const PRE_MESSAGE_DIGEST = '401a6fde95e330d7fe2d9d7bfae3e3fdbb1abe64afd72650910663df867bde7f'
 const UMBRELLA_ONLY_DIGEST = '2b3614724eb8fd9cc422649965063d0610b913a7c8f22b38366c5f285e7b758b'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
-  it('keeps the existing Plus listing byte-identical without moderation grants', () => {
+  it('adds only direct-message tools to the existing Plus listing without moderation grants', () => {
     const tools = listMcpToolsForUser(plus, nonModerationScopes, USER_MCP_SERVER_CONFIG)
-    expect(tools).toHaveLength(74)
+    expect(tools).toHaveLength(76)
     expect(digest(tools)).toBe(PLUS_WITHOUT_MODERATION_DIGEST)
+    expect(
+      digest(tools.filter(tool => !['read_my_messages', 'manage_my_messages'].includes(tool.name))),
+    ).toBe(PRE_MESSAGE_DIGEST)
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
   })
 
@@ -42,13 +46,13 @@ describe('community moderation exact-grant catalog boundaries', () => {
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
   })
 
-  it('has exactly 78 tools when every user tool is authorized', () => {
+  it('has exactly 80 tools when every user tool is authorized', () => {
     const caller = {
       ...plus,
       membership_plan: 'pro' as const,
       roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
     }
-    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(78)
+    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(80)
   })
 
   it('adds only the free moderation reader to the unchanged Reader grant', () => {

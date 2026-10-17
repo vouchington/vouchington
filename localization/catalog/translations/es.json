@@ -6071,6 +6071,8 @@
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Actualizar tu rango de puntuación crediticia, rango de ingresos declarados, límite de crédito total y años de historial crediticio."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Acceso completo de MCP de administrador"},
 {"id":"copy.scopeDescription.mcpUserFullAccess","value":"Acceso MCP de usuario, excepto perfil financiero y gastos; solicítalos por separado."},
+{"id":"copy.scopeDescription.messagesRead","value":"Leer tus conversaciones privadas, mensajes y participantes."},
+{"id":"copy.scopeDescription.messagesWrite","value":"Enviar y administrar conversaciones privadas, mensajes y participantes."},
 {"id":"copy.scopeDescription.spendingRead","value":"Leer tus categorías de gastos, importes, frecuencia y notas."},
 {"id":"copy.scopeDescription.spendingWrite","value":"Añadir, actualizar o eliminar tus categorías de gastos, importes, frecuencia y notas."},
 {"id":"copy.settings.activeSessions.confirmCurrentDescription","value":"Esto finalizará tu sesión actual y te enviará de vuelta al inicio de sesión."},

@@ -951,6 +951,25 @@
         "destructiveHint": true,
         "idempotentHint": false
       }
+    },
+    "F96": {
+      "scopes": ["messages:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F97": {
+      "scopes": ["messages:read", "messages:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
     }
   },
   "inputs": {
@@ -1411,7 +1430,13 @@
     "I163": [["community", "userId"]],
     "I164": [["community", "id"]],
     "I165": [["community", "itemId"]],
-    "I166": [["after", "community", "limit", "window"]]
+    "I166": [["after", "community", "limit", "window"]],
+    "I167": [["conversation_id"]],
+    "I168": [["after", "conversation_id", "limit"]],
+    "I169": [["user_id"], ["user_ids"]],
+    "I170": [["conversation_id", "participant_add_policy"]],
+    "I171": [["conversation_id", "text"]],
+    "I172": [["conversation_id", "user_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -5672,6 +5697,150 @@
           },
           "decision": false,
           "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/my/messages": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F96",
+          "operation": {
+            "tool": "read_my_messages",
+            "option": "list"
+          },
+          "decision": false,
+          "inputFields": "I005",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/my/messages/:conversationId": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F96",
+          "operation": {
+            "tool": "read_my_messages",
+            "option": "get"
+          },
+          "decision": false,
+          "inputFields": "I167",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/my/messages/:conversationId/messages": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F96",
+          "operation": {
+            "tool": "read_my_messages",
+            "option": "messages"
+          },
+          "decision": false,
+          "inputFields": "I168",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/my/messages/:conversationId/participants": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F96",
+          "operation": {
+            "tool": "read_my_messages",
+            "option": "participants"
+          },
+          "decision": false,
+          "inputFields": "I168",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/my/messages": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F97",
+          "operation": {
+            "tool": "manage_my_messages",
+            "option": "create"
+          },
+          "decision": false,
+          "inputFields": "I169",
+          "requestBodyFields": ["user_id", "user_ids"]
+        }
+      ]
+    },
+    "PATCH:/api/v1/my/messages/:conversationId": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F97",
+          "operation": {
+            "tool": "manage_my_messages",
+            "option": "update"
+          },
+          "decision": false,
+          "inputFields": "I170",
+          "requestBodyFields": ["participant_add_policy"]
+        }
+      ]
+    },
+    "POST:/api/v1/my/messages/:conversationId/messages": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F97",
+          "operation": {
+            "tool": "manage_my_messages",
+            "option": "send"
+          },
+          "decision": false,
+          "inputFields": "I171",
+          "requestBodyFields": ["text"]
+        }
+      ]
+    },
+    "POST:/api/v1/my/messages/:conversationId/participants": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F97",
+          "operation": {
+            "tool": "manage_my_messages",
+            "option": "add_participant"
+          },
+          "decision": false,
+          "inputFields": "I172",
+          "requestBodyFields": ["user_id"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/my/messages/:conversationId/participants/:userId": {
+      "pullRequest": 3181,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F97",
+          "operation": {
+            "tool": "manage_my_messages",
+            "option": "remove_participant"
+          },
+          "decision": false,
+          "inputFields": "I172",
           "requestBodyFields": null
         }
       ]

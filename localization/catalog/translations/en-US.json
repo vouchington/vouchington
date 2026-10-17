@@ -6071,6 +6071,8 @@
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Update your credit score range, stated income range, total credit limit and years of credit history."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Full administrator MCP access"},
 {"id":"copy.scopeDescription.mcpUserFullAccess","value":"User MCP access, excluding financial profile and spending; request these separately."},
+{"id":"copy.scopeDescription.messagesRead","value":"Read your private conversations, messages, and participants."},
+{"id":"copy.scopeDescription.messagesWrite","value":"Send and manage private conversations, messages, and participants."},
 {"id":"copy.scopeDescription.spendingRead","value":"Read your spending categories, amounts, frequency and notes."},
 {"id":"copy.scopeDescription.spendingWrite","value":"Add, update or remove your spending categories, amounts, frequency and notes."},
 {"id":"copy.settings.activeSessions.confirmCurrentDescription","value":"This will end your current session and send you back to login."},

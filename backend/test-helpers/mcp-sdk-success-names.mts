@@ -2,6 +2,7 @@ import { expect } from 'vitest'
 
 /** Each suite verifies these names against the tools it actually called through the SDK. */
 export const sdkMergedSuccessNames = {
+  messagesFixture: ['read_my_messages', 'manage_my_messages'],
   simple: [
     'discover_communities',
     'discover_topics',

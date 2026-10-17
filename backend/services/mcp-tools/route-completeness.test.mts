@@ -1,3 +1,4 @@
+import { myMessageGroups } from '@voucha/mcp/my-messages'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { readFileSync } from 'node:fs'
 import { isDeepStrictEqual } from 'node:util'
@@ -12,7 +13,6 @@ import { communityModerationGroups } from '@voucha/mcp/community-moderation-tool
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
-
 type BaselineRecord = {
   surface: 'mcp' | 'admin_mcp'
   method: string
@@ -77,6 +77,7 @@ const requestContracts = JSON.parse(
 type RouteSource = Pick<Tool, 'roles' | 'meta'> & { schema: Pick<Tool['schema'], 'parameters'> }
 type SourceEntry = { publicName: string; option: string | null; source: RouteSource }
 const mergedGroups = [
+  ...myMessageGroups,
   ...participationWriteGroups,
   ...userMergedReadingGroups,
   ...userMergedParticipationGroups,
