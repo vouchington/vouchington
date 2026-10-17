@@ -91,7 +91,7 @@ export async function checkRepoFilePolicy(
   checkStaleSchemaAllowlistEntries(ctx.repoRoot, trackedFiles, schema, errors)
   checkRouteAdminSurfaceGuard(ctx.repoRoot, trackedFileSet, errors, options.remaining)
   checkFiniteEnumRippleGuard(ctx, errors, trackedFiles)
-  checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, schema, errors, ctx.readTrackedFile)
+  checkSchemaDocDriftGuard(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   checkClientParityMatrixGuard(ctx.repoRoot, trackedFiles, errors)
   checkLifecycleScenarioContract(ctx.repoRoot, trackedFiles, errors)
   checkLocalLlmEndpointPolicyContract(ctx.repoRoot, trackedFiles, errors)

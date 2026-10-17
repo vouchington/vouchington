@@ -1,1 +1,0 @@
-# ActivityPub Inbound Receiver

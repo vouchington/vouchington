@@ -14,7 +14,6 @@ localized `Deleted` fallback for those creators.
 
 - <a id="content-moderation-pipeline"></a>[Content Moderation Pipeline](reference-ai-agents-content-moderation-pipeline.md)
 - <a id="native-conversations"></a>[Native Conversation Sync](reference-ai-agents-native-conversations.md)
-- [Shared Agent Utilities (`@agents/_shared`)](../../../backend/agents/_shared/README.md)
 - [Prompt Injection Protection](../../../backend/AGENTS.md)
 
 ## Prompt Injection Protection

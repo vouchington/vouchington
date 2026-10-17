@@ -129,8 +129,7 @@ Runtime knobs live in the `recaptcha-config` namespace.
 
 Secrets/keys come from env: `GOOGLE_RECAPTCHA_PROJECT_ID`, `GOOGLE_RECAPTCHA_API_KEY`,
 `GOOGLE_RECAPTCHA_SITE_KEY` (the public site key, same value the web app reads via
-runtime-public config such as `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY`). See
-[environment-variables.md](../infrastructure/environment-variables.md#bot-protection-recaptcha-enterprise).
+runtime-public config such as `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY`). Names and sensitivity are in the typed `@ts-shared/env-contract`.
 
 ## Testing
 

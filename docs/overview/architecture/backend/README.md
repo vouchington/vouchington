@@ -1,7 +1,6 @@
 # Backend
 
-Orientation for `backend/`. Commands, package contracts and helper APIs live in the code,
-[`backend/README.md`](../../../../backend/README.md) and each package's own README or AGENTS.md. This
+Orientation for `backend/`. Commands, package contracts and helper APIs live in the code and each package's AGENTS.md. This
 page says which layer owns what.
 
 ## Layers

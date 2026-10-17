@@ -3,7 +3,6 @@ import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { collectConfigInventory } from './collect.mts'
-import { isCanonicalEnvironmentVariablesReference } from './env-source-buckets.mts'
 import { GENERIC_REVIEW_REASON } from './review-reasons.mts'
 import type { ConfigInventory, EnvVarInventoryRow } from './types.mts'
 import { checkWorkflowEnvReferences } from './workflow-env-policy.mts'
@@ -118,11 +117,6 @@ function checkTypedEnvDocDrift(rows: readonly EnvVarInventoryRow[]): string[] {
   const errors: string[] = []
   for (const row of rows) {
     if (!row.contractKey) continue
-    if (!row.docs.some(isCanonicalEnvironmentVariablesReference)) {
-      errors.push(
-        `typed env var ${row.name} from ${row.contractKey} is missing from a canonical docs/overview/infrastructure/reference-environment-variables-*.md leaf`,
-      )
-    }
     if (hasLocalSurface(row) && !row.docs.includes(LOCAL_ENV_VAR_DOC)) {
       errors.push(
         `typed local env var ${row.name} from ${row.contractKey} is missing from ${LOCAL_ENV_VAR_DOC}`,

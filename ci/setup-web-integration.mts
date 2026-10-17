@@ -16,8 +16,7 @@ const imageOrigin =
 
 // NEXT_PUBLIC_ASSET_PREFIX and NEXT_PUBLIC_API_BASE_URL are Next.js compile-time constants: a
 // per-shard port baked into either would make this build unshareable across shards/runs (#10990).
-// See docs/overview/infrastructure/reference-environment-variables-web-build-time-and-runtime-public-config.md
-// for why neither is needed in CI; robots.ts prerenders its voucha.ai fallback, and this script
+// Neither is needed in CI; robots.ts prerenders its voucha.ai fallback, and this script
 // never derives either from a port -- reaching the build is decided by the caller's environment.
 const totalStart = performance.now()
 const startedAt = new Date().toISOString()

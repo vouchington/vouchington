@@ -1,1 +1,0 @@
-# Bluesky Client Metadata

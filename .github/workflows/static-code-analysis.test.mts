@@ -185,7 +185,6 @@ describe('static-code-analysis workflow', () => {
       'no-git-identity-mutation',
       'queue-worker-required-files',
       'queue-worker-strict-file-structure',
-      'required-local-docs',
       'web-middleware-to-proxy',
       'worker-valkey-docs-policy',
     ]) {
