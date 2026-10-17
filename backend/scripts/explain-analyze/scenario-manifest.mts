@@ -4,6 +4,7 @@ import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
+import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenario-ids.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
@@ -180,6 +181,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'vote-aggregation-post',
   'vote-aggregation-topic',
   'vote-weight-factors',
+  ...VOTE_WEIGHT_DISPATCH_SCENARIO_IDS,
   'follower-distribution-rate-limit-post_share',
   'follower-distribution-rate-limit-post_send',
   'follower-distribution-rate-limit-rss_feed_item_share',

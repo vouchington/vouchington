@@ -66,6 +66,22 @@ flowchart LR
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.
 
+## Vote-weight recovery
+
+Account age milestones, membership expirations, and family-source changes have separate indexed
+windows and durable positions. They enqueue the same idempotent recalculation from current facts;
+expiration also includes direct memberships, whose recalculated weight may stay unchanged.
+Family changes read each timestamp independently, including rejected provider evidence of any kind.
+A bounded continuation preserves the original window and each unfinished branch's keyset.
+Rejected evidence also preserves a recipient keyset because one observation can serve several
+family sources. The
+position advances with compare-and-set only after all child enqueues succeed. An overlap catches
+late commits while event-keyed job ids identify repeated reads of the same trigger.
+
+Source writers enqueue after commit. Replaying an event can reactivate its retained completed or
+failed queue record; a waiting or running record keeps its claim. Election replay has its own
+bounded dispatcher and does not recalculate weights or change administrator overrides.
+
 ## Where to look by domain
 
 - Content and publication: `post-publication`, `post-mentions`, `content-analysis`, `image-uploads`,

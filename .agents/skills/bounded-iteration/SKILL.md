@@ -55,3 +55,6 @@ repository. Keep its rules authoritative; do not copy them here.
 - **UUIDv7 bounds.** Use `getMinUUIDv7ForDate` and `getMinUUIDv7ForParentHistory` from [ids.mts](../../../backend/modules/utils/ids.mts); an age milestone M uses the primary-key range `[min(previousRun - M), min(now - M))`.
 
 - **Bloom repairs.** No scheduled full rebuilds; repair missed adds through the existing [entity-listener window](../../../docs/overview/architecture/services/README.md).
+
+- **Vote-weight signals.** Separate indexed age, membership-expiry, and family-source dispatchers
+  enqueue the same idempotent recalculation; see [vote-weight recovery](../../../docs/overview/architecture/queues/README.md#vote-weight-recovery).
