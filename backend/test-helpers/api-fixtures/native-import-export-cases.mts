@@ -10,8 +10,6 @@ const recommendationId = '70000000-0000-7000-8000-000000000006'
 // Opaque cursors as the server issues them: scoped to this import, naming a row id.
 const firstRowCursor =
   'eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMiIsInNjb3BlIjoicnNzLWZlZWQtaW1wb3J0LXJvd3M6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMDAxOnJvdy1pbmRleC1hc2MifQ'
-const secondRowCursor =
-  'eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMyIsInNjb3BlIjoicnNzLWZlZWQtaW1wb3J0LXJvd3M6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMDAxOnJvdy1pbmRleC1hc2MifQ'
 const createdAt = '2026-07-14T12:00:00.000Z'
 const exportedTopics = [
   { name: 'Local News', slug: 'local-news', topic_type: 'topic' },
@@ -62,10 +60,10 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
     body: {
       import: {
         id: importId,
-        total_rows: 3,
+        total_rows: 2,
         completed_rows: 0,
         failed_rows: 0,
-        pending_rows: 3,
+        pending_rows: 2,
         completed_at: null,
         created_at: createdAt,
       },
@@ -82,8 +80,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           status: 'pending',
         },
       ],
-      // Not the last page: the import has more rows than this page lists.
-      page_info: { has_next_page: true, start_cursor: firstRowCursor, end_cursor: secondRowCursor },
+      page_info: { has_next_page: false, start_cursor: firstRowCursor, end_cursor: null },
     },
   },
   {

@@ -37,7 +37,4 @@ export function getAdminImportsWorkLimit(field: keyof typeof defaultFields): num
   })
 }
 
-export {
-  IMPORT_RECOVERY_CRON,
-  IMPORT_RECOVERY_STALE_MS,
-} from '@queues/background/enqueues/imports-jobs'
+export { IMPORT_RECOVERY_STALE_MS } from '@queues/background/enqueues/imports-jobs'
