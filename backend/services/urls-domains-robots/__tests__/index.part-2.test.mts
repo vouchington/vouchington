@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { withTruncatedHttpResponseForTest } from '../../../test-helpers/truncated-http-response.mts'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchRobotsTxt, fetchRobotsTxtCached, isUrlCrawlable } from '../index.mts'
+import { defaultRobotsDependencies } from '../fetch-retry.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { insertTestDomainBlacklist, insertTestUrlHostname } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
@@ -162,30 +163,18 @@ describe('fetchRobotsTxt', () => {
   })
 
   it('propagates retryable non-network errors after retries are exhausted', async () => {
-    vi.useFakeTimers()
-    try {
-      const domain = randomDomain()
-      const retryableError = new Error('temporary upstream failure')
-      const fetchStarted = Promise.withResolvers<void>()
-      mockFetchWithTimeoutSimple.mockImplementation(async () => {
-        fetchStarted.resolve()
-        throw retryableError
-      })
-      dependencies.isNetworkError.mockReturnValue(false)
-      dependencies.isRetryableError.mockReturnValue(true)
+    const domain = randomDomain()
+    const retryableError = new Error('temporary upstream failure')
+    mockFetchWithTimeoutSimple.mockRejectedValue(retryableError)
+    dependencies.isNetworkError.mockReturnValue(false)
+    dependencies.isRetryableError.mockReturnValue(true)
 
-      const result = fetchRobotsTxtForTest(domain)
-      const resultRejection = result.catch((err: unknown) => err)
-      // Let the real blacklist/database preflight finish before advancing retry timers.
-      await fetchStarted.promise
-      await vi.runAllTimersAsync()
-
-      await expect(resultRejection).resolves.toBe(retryableError)
-      expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
-      expect(dependencies.readResponseBody).not.toHaveBeenCalled()
-    } finally {
-      vi.useRealTimers()
-    }
+    await expect(fetchRobotsTxt(domain, { ...dependencies, retryDelayMs: 0 })).rejects.toBe(
+      retryableError,
+    )
+    expect(defaultRobotsDependencies.retryDelayMs).toBe(1_000)
+    expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
+    expect(dependencies.readResponseBody).not.toHaveBeenCalled()
   })
 })
 
