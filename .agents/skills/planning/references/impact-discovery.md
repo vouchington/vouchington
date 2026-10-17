@@ -160,9 +160,7 @@ unset impact_session impact_dir
 Use the shared [Endpoint Migration](../../agent-workflow/impact-recipes.md#endpoint-migration)
 recipe for endpoint migrations. Use the broader
 [impact recipes](../../agent-workflow/impact-recipes.md) for
-native API parity, proposed imports and package legality, and queue/worker dispatch. For test
-deletion, React props, selectors, exports, and other generic workflows, use the [archived
-no-mistakes impact recipes](https://github.com/jonathanong/filaments/blob/9c16169c0ef234bccd79aea5a50216505f0c8b7c/.agents/skills/no-mistakes/references/impact-recipes.md).
+native API parity, proposed imports and package legality, and queue/worker dispatch.
 
 Use the aggregate driver for generic TS/JS planning; unscoped traversals in specialized recipes are
 reserved for their domain-specific questions.

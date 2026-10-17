@@ -120,8 +120,7 @@ adding evidence to an existing open issue, and use the local issue agent for a n
 first-party releases, explicit rejections, completed work, and existing coverage receive an explicit
 disposition and reason; a version bump alone never resolves a finding.
 
-Archive every eligible session after all issue work completes (see the eligibility rule above,
-including its recheck-before-archive and deferred/failed-theme carve-outs). Report reviewed, fixed, duplicate, deferred, quarantined, actionable, created, updated,
+Report reviewed, fixed, duplicate, deferred, quarantined, actionable, created, updated,
 not-yet-eligible, entry-type-unresolved, and archived counts plus reasons, broken out by
 eligible-with-retro vs. eligible-stale (splitting eligible-stale into checkpoint-only, journal-only,
 zero-entry-child, and zero-entry-root). Do not ask the user for subset or style; the local summary is

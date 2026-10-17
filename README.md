@@ -20,23 +20,7 @@ Voucha is a multi-vertical consumer intelligence platform built on human trust s
 - **Trust-filtered AI chat** — AI answers from YOUR trusted sources
 - **Multi-vertical** — Same trust infrastructure across all product domains
 
-Voucha is a monorepo containing multiple projects that work together to provide a comprehensive platform.
-
-The public product includes social topic pages, a feed-first `/sources` directory for RSS discovery, and `/domains` authority pages that expose domain trust signals, top URLs, and linked feeds.
-Across the web app, cursor-paginated lists are expected to append with infinite scrolling rather than route-level next-page navigation.
-
-## Projects
-
-- **backend/** — Backend server and worker processes (TypeScript, Node.js, PostgreSQL, Valkey)
-- **ts-shared/** — Shared TypeScript packages consumed across all workspaces (backend, cloudflare-worker, lambdas)
-- **web/** — Next.js app-router frontend
-- **cloudflare-worker/** — Cloudflare Worker edge router and caching layer
-- **lambdas/** — Serverless functions (image resize, SES inbound)
-- **playwright/** — End-to-end browser tests
-- **integration-tests/** — Fetch-based full-stack integration tests
-- **dev/** — Worktree and local development tooling
-- **ci/** — CI-local reproduction and workflow support tooling
-- **static-code-analysis/** — Static-analysis tools and invariant tests
+Voucha is a monorepo of several workspaces.
 
 ## Documentation
 

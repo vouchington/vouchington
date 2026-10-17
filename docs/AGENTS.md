@@ -1,24 +1,25 @@
 # Documentation
 
-- Link to canonical values and decisions instead of duplicating them. Use the routed domain and
-  owner indexes below to reach the canonical page within the configured three-link budget.
-- This repository is public. Keep real operational thresholds, infrastructure identities,
-  spend, unit costs, and business projections in private `vouchington/vouchington-docs`.
-  Explain mechanisms here. Consult the [private-doc registry](development/docs-moved-to-vouchington-docs.md)
-  before moving private material or replacing an apparently missing page.
-- Put directory-scoped invariants in the nearest `AGENTS.md`, using concise bullets and owner links.
-  Read target-directory instructions explicitly; startup loading does not cover every subtree.
-- Put task-triggered procedures in an existing matching skill. Add a thin skill only when no
-  existing trigger fits; follow [skill authoring](../.agents/skills/AGENTS.md).
-- Put architecture, explanations, examples, command references, and catalogs in their owning
-  `docs/**` domain. Local `README.md` files are short entrypoints; skill procedure resources stay
-  with their skill. Do not create instruction files solely to satisfy link reachability.
-- Keep navigation within the configured three-link reachability budget. Update incoming links,
-  fragments, code consumers, and generators when moving a page.
-- Save task plans outside Git: an issue/comment, PR description, or durable native plan file.
-  Plans have no mandatory template or separate-issue requirement.
-- Follow the [pinning policy](development/dependency-updates.md#docs-pinning-policy); avoid
-  restating changing versions or configuration values in prose.
+## What belongs in docs
+
+- Docs hold only why (decisions, rationale, rejected alternatives), business impact, and architecture
+  as orientation (a map of where concerns live and how they connect, not an inventory). Human runbooks
+  and not-yet-enforced invariants are also allowed.
+- Delete anything readable from code: routes, schemas, config, constants, file lists, commands,
+  per-package or per-queue catalogs, helper APIs. If a doc exists only because the code is hard to
+  follow, file an issue to fix the code instead.
+- Config values live in dynamic config or config files, never restated in docs. Avoid numbers that
+  can drift from code (limits, thresholds, timeouts, counts, versions, sizes); numbers fixed by an
+  external spec or law are fine.
+- No history (formerly, migrated, cutover, dated inventories, private-repo issue refs) and no plans;
+  save plans in an issue, PR description, or native plan file.
+- This repository is public. Spend, unit costs, prod-tuned values, operator access, strategy, and
+  legal-posture gaps belong in private `vouchington/vouchington-docs`; consult the
+  [private-doc registry](development/docs-moved-to-vouchington-docs.md) before moving private
+  material or replacing an apparently missing page.
+- Put directory-scoped invariants in the nearest `AGENTS.md` and task procedures in a matching skill
+  ([skill authoring](../.agents/skills/AGENTS.md)). Link to canonical owners instead of duplicating.
+  Keep navigation within the three-link reachability budget and update incoming links when moving a page.
 
 ## Domain and owner indexes
 
