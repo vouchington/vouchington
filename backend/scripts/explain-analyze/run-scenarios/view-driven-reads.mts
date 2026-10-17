@@ -14,6 +14,7 @@ import { detectRssFeedItemLanguageBatch } from '@services/language-detection/bat
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { seededRowScanBudget } from '../plan-seeded-rows.mts'
 
 export async function runViewDrivenReadScenarios(): Promise<void> {
   const { rows: rssItems } = await read<{ id: string }>(
@@ -116,7 +117,12 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   registerScenarioContract('autotagger-agent-candidate-topics', {
     expectations: [
       { kind: 'queryBinds', token: 'membership_id' },
-      { kind: 'maxProcessedRows', relation: 'memberships', max: 3000 },
+      // Two membership references retain twenty percent headroom for merge-join rescans.
+      {
+        kind: 'maxProcessedRows',
+        relation: 'memberships',
+        max: seededRowScanBudget('memberships', 2),
+      },
     ],
   })
   await runAndCapture('autotagger-agent-candidate-topics', () =>
