@@ -116,6 +116,7 @@ describe('Vitest CI reporters', () => {
     vi.stubEnv('VITEST_CI_REPORTERS', 'run')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER', undefined)
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
+    vi.stubEnv('VITEST_FILE_PROGRESS_FILE', undefined)
     vi.stubEnv('GITHUB_REPOSITORY', 'example/repository')
     vi.stubEnv('GITHUB_SHA', 'a'.repeat(40))
     vi.stubEnv('GITHUB_WORKSPACE', '/workspace')
@@ -151,6 +152,7 @@ describe('Vitest CI reporters', () => {
     vi.stubEnv('VITEST_CI_REPORTERS', 'run')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER', '1')
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
+    vi.stubEnv('VITEST_FILE_PROGRESS_FILE', undefined)
 
     expect(ciReporters()).toHaveLength(6)
   })
