@@ -4,8 +4,7 @@ Product policy, business rules, and the decisions behind them. Behavior that cod
 (routes, schemas, limits, component inventories) is not documented here.
 
 **Structure:** the cross-repo parity contract lives at this folder's root, and the root `AGENTS.md`
-points at it. Domain decisions live in subfolders. Files in `moderation/` are additionally
-guard-pinned; see [moderation/AGENTS.md](./moderation/AGENTS.md).
+points at it. Domain decisions live in subfolders.
 
 ## Cross-Cut Contract
 

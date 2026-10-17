@@ -30,8 +30,7 @@ flowchart TD
 
 Judgement rows store the report context hash, report count, note hash, and maximum report-reason
 severity rank used by the agent. Automatic refreshes are enqueued when a later report changes the
-report count, increases the maximum reason rank, or changes report notes. Reason rank is
-`illegal_content` > `harassment` / `vote_manipulation` > `misinformation` > `spam` > `other`.
+report count, increases the maximum reason rank, or changes report notes.
 
 If the latest judgement no longer matches the current report context, staff and community
 moderators see it marked `Outdated`. A lower-severity duplicate reason change can mark a judgement

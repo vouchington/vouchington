@@ -27,7 +27,7 @@ Allow users to connect or disconnect other accounts:
 - Microsoft
 - GitHub
 
-OAuth connect buttons use proper provider branding (see [OAuth provider buttons](../navigation/reference-components-patterns.md)).
+OAuth connect buttons use proper provider branding.
 
 Facebook, X, GitHub, and LinkedIn use the same server-begun broker contract on web, Swift, and .NET when the
 corresponding advertised client-mode capability is enabled. Web completes with a path-scoped

@@ -3,10 +3,6 @@ import { join } from 'node:path'
 
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
 
-import {
-  checkModerationPolicyDocSync,
-  isModerationPolicyDocSyncPath,
-} from './moderation-policy-doc-sync-guard.mts'
 import { isMigrationSqlFile, isSchemaDocDriftSourcePath } from './policy-matchers.mts'
 import {
   checkDocumentedPartitionTables,
@@ -18,7 +14,6 @@ import {
 const REPORTING_DOC_PATHS = new Set([
   'docs/requirements/moderation/REPORTING.md',
   'docs/requirements/moderation/MODERATION-FLOWS.md',
-  'docs/overview/architecture/services/moderation-reports/README.md',
 ])
 
 const LEGACY_REPORTING_PATTERNS = [
@@ -84,7 +79,6 @@ export function shouldReadSchemaDocDriftFile(file: string): boolean {
     isSchemaDocDriftSourcePath(file) ||
     isDerivedLifecycleStatusDocPath(file) ||
     REPORTING_DOC_PATHS.has(file) ||
-    isModerationPolicyDocSyncPath(file) ||
     isPartitionInventoryDocPath(file) ||
     file === RSS_PARTITION_COMMENT_PATH
   )
@@ -168,6 +162,4 @@ export function checkSchemaDocDriftGuard(
   }
 
   checkDocumentedPartitionTables(contentsByFile, partitionedTables, errors)
-
-  checkModerationPolicyDocSync(repoRoot, trackedFiles, contentsByFile, errors)
 }

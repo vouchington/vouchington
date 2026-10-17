@@ -55,7 +55,6 @@ a repository guard requires the `## Performance` heading. RSS XML is mounted out
 - [activitypub/README.md](../../../backend/api/activitypub/README.md)
 - [bluesky/README.md](../../../backend/api/bluesky/README.md)
 - [catalog/README.md](../../../backend/api/catalog/README.md)
-- [v1/reports/README.md](v1/reports/README.md) (guard-pinned token mirror)
 - [oauth/README.md](../../../backend/api/oauth/README.md)
 - [v1/admin/README.md](../../../backend/api/v1/admin/README.md)
 - [v1/admin/growth-metrics/README.md](../../../backend/api/v1/admin/growth-metrics/README.md)

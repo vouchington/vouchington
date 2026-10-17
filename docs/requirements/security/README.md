@@ -19,4 +19,3 @@ here and cross-link from `docs/overview/architecture/auth-overview.md` and `back
 
 ## Reference index
 
-- [Content Security Policy (CF Worker)](reference-content-security-policy-cf-worker.md)

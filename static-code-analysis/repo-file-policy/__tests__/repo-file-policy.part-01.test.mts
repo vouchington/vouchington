@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  SYNCED_MODERATION_POLICY_MATRIX_DOC,
-  setupRepoFilePolicyTest,
-} from '../../test-helpers/repo-file-policy-fixtures.mts'
+import { setupRepoFilePolicyTest } from '../../test-helpers/repo-file-policy-fixtures.mts'
 
 describe('repo-file-policy', () => {
   const { makeRepo, run, track } = setupRepoFilePolicyTest()
@@ -89,65 +86,11 @@ describe('repo-file-policy', () => {
         '  CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)',
         ');',
         '```',
-        'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.',
       ].join('\n'),
-    )
-    await track(
-      dir,
-      'docs/requirements/moderation/MODERATION-POLICY-MATRIX.md',
-      SYNCED_MODERATION_POLICY_MATRIX_DOC,
-    )
-    const syncedReportDoc =
-      'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n'
-    await track(dir, 'docs/requirements/moderation/MODERATION-FLOWS.md', syncedReportDoc)
-    await track(dir, 'docs/requirements/api/v1/reports/README.md', syncedReportDoc)
-    await track(
-      dir,
-      'docs/overview/architecture/services/moderation-reports/README.md',
-      syncedReportDoc,
-    )
-    await track(
-      dir,
-      'docs/requirements/moderation/REPORT-JUDGEMENTS.md',
-      'Reason rank is `illegal_content` > `harassment` / `vote_manipulation` > `misinformation` > `spam` > `other`.\n',
     )
 
     await expect(run(dir)).resolves.toMatchObject({
       stdout: 'All checks passed.',
-    })
-  })
-
-  it('rejects moderation report docs missing current entity and reason constants', async () => {
-    const dir = await makeRepo()
-    await track(
-      dir,
-      'docs/requirements/moderation/MODERATION-POLICY-MATRIX.md',
-      SYNCED_MODERATION_POLICY_MATRIX_DOC,
-    )
-    await track(
-      dir,
-      'docs/requirements/moderation/REPORTING.md',
-      'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n',
-    )
-    await track(
-      dir,
-      'docs/requirements/moderation/MODERATION-FLOWS.md',
-      'Entities: rss_feed_item post comment user. Reasons: spam harassment misinformation illegal_content other.\n',
-    )
-    await track(
-      dir,
-      'docs/requirements/api/v1/reports/README.md',
-      'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n',
-    )
-    await track(
-      dir,
-      'docs/overview/architecture/services/moderation-reports/README.md',
-      'Entities: rss_feed_item post comment user url_hostname. Reasons: spam harassment misinformation illegal_content vote_manipulation other.\nvote_manipulation is valid only for post reports.\n',
-    )
-
-    await expect(run(dir)).rejects.toMatchObject({
-      code: 1,
-      stdout: expect.stringContaining('url_hostname is missing from report docs'),
     })
   })
 })

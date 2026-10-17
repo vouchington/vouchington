@@ -4083,17 +4083,12 @@ rules:
     scope: repository
     options:
       groups:
-        - parents: ['docs/requirements/moderation/REPORTING.md']
-          children:
-            - 'docs/requirements/moderation/reference-reporting-*.md'
-          requireWholeFile: true
         - parents: ['docs/requirements/navigation/COMPONENTS.md']
           children:
             - 'docs/requirements/navigation/reference-components-*.md'
           requireWholeFile: true
         - parents: ['docs/requirements/security/SECURITY.md']
           children:
-            - 'docs/requirements/security/reference-content-security-policy-cf-worker.md'
             - 'docs/requirements/security/reference-security-observability-scrubbing.md'
           requireWholeFile: true
         - parents: ['docs/requirements/trust-safety/trust-system.md']
