@@ -28,7 +28,7 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
           format: 'uuid',
           description: 'The ID of the referral program topic the link belongs to.',
         },
-        url: { type: 'string', minLength: 1, description: 'The referral link URL.' },
+        url: { type: 'string', minLength: 1 },
         label: {
           anyOf: [{ type: 'null' }, { type: 'string' }],
           description: 'A short label for the link, or null for none.',

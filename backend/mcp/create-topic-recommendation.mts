@@ -40,7 +40,6 @@ const tool: Tool<Args, { success: true; post: PublicTopicRecommendationPost }> =
         idempotency_key: {
           type: 'string',
           format: 'uuid',
-          description: 'A UUID for this submission and its retries.',
         },
       },
       required: ['idempotency_key', 'markdown', 'topic_title', 'topic_slug'],

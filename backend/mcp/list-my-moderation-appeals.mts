@@ -24,7 +24,8 @@ const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 
 const tool: MergedToolSource<Args, Result> = {
   schema: {
-    description: `List the moderation appeals the current user filed, newest first. status is pending (default) for the ones the moderators have not decided, resolved for the accepted or reduced ones, or dismissed for the denied ones. Each appeal has its id, target_type and target_id (the warning, community ban, removed post or suspension it contests), the community_id and post_removal_kind where they apply, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. Returns at most ${PAGE_LIMIT.max} appeals per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after, with the same status, for the next page. Other users' appeals are never listed.`,
+    description:
+      "List the current user's moderation appeals, newest first. Filter by status: pending (default), resolved or dismissed. target_type and target_id identify the warning, ban, removed post or suspension; results include applicable community_id and post_removal_kind, overdue state, resolution_action and public_response. Other users' appeals never appear.",
     parameters: {
       type: 'object',
       properties: {

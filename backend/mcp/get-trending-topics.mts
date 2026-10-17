@@ -38,7 +38,7 @@ const OUTPUT_SCHEMA = successSchema({
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get topics (cards, bank accounts, rewards programs, etc.) that are trending based on recent post and news activity. Useful for answering "what credit cards are popular right now?" or "what topics are being discussed?". Returns topic IDs with trending scores — use read_topic (option details) to get full card information.',
+      'Find topics trending from recent posts and news. Results give topic ids and scores; use read_topic (option details) for full details.',
     parameters: {
       type: 'object',
       properties: {
@@ -49,7 +49,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         },
         after: {
           type: 'string',
-          description: 'Cursor from a previous result page_info.end_cursor, for the next page.',
         },
         limit: {
           type: 'integer',

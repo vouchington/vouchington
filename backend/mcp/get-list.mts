@@ -14,11 +14,11 @@ type ToolResult = { success: true; list: McpList } | typeof LIST_NOT_FOUND
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get one list by its UUID: its name, description, owner and visibility. Public and unlisted lists are readable by anyone who has the id. A private list is readable only by its owner, and only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it). Every other case, including an unknown, removed or another user\'s private list, returns the same { success: false, error: "List not found" }. Use read_my_lists (option items) to read inside a list.',
+      'Get a list by UUID, including name, owner and visibility. Anyone with the id can read public or unlisted lists. Private lists require ownership and post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Unknown, removed and inaccessible lists return List not found. Use read_my_lists (option items) for contents.',
     parameters: {
       type: 'object',
       properties: {
-        list_id: { type: 'string', format: 'uuid', description: 'The ID of the list.' },
+        list_id: { type: 'string', format: 'uuid' },
       },
       required: ['list_id'],
     },

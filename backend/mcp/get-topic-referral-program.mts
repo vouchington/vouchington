@@ -25,7 +25,7 @@ const optionalIso = (value: Date | string | null | undefined): string | null =>
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get the state of one referral program by its topic UUID or slug: the company it belongs to and when it was enabled or disabled. A topic that does not exist returns { success: false, error: "Topic not found" }, and a topic that is not a referral program returns { success: false, error: "Topic is not a referral program" }. Use get_referral_links for the links under a program.',
+      "Get a referral program's state by topic UUID or slug, including its company and enabled or disabled time. An unknown topic returns Topic not found; a topic that is not a referral program returns Topic is not a referral program. Use get_referral_links for its links.",
     parameters: {
       type: 'object',
       properties: {

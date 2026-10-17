@@ -13,7 +13,7 @@ type ToolResult = { success: true; ancestors: McpPost[] } | { success: false; er
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get the parent chain of a comment by its UUID or slug, ordered from the thread root down to its direct parent and not including the comment itself. A root post has no ancestors. A deleted comment in the chain is left out, so a parent_post_id can name a comment that is not listed. A comment whose thread is not fully public, or that is deleted or missing, returns { success: false, error: "Post not found" }.',
+      "Get a comment's parent chain from thread root to direct parent, excluding the comment. Root posts have none. Deleted ancestors are omitted, so parent_post_id may name an unlisted comment. A deleted, missing or not fully public comment returns Post not found.",
     parameters: {
       type: 'object',
       properties: {

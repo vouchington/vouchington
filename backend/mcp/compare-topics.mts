@@ -58,7 +58,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         vertical: {
           type: 'string',
           enum: VERTICALS,
-          description: 'Optionally filter to a specific data point vertical',
         },
       },
       required: ['topic_id_a', 'topic_id_b'],

@@ -37,17 +37,16 @@ const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `Search the hostnames Voucha knows, as a signed-out reader sees them: an administratively blocked hostname never appears, whoever asks. Each hostname carries its topic_id and its public trust vote totals (election). query and hostname both match part of the hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Sorted by hostname (A to Z, the default) or, with sort "trust", by net trust votes (highest first). Returns at most ${max} hostnames per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page.`,
+    description:
+      'Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic UUID or slug. Sort by hostname (default) or net trust votes (highest first).',
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'Part of the hostname to match. Same as GET /api/v1/hostnames query.',
         },
         hostname: {
           type: 'string',
-          description: 'Part of the hostname to match. Same as GET /api/v1/hostnames hostname.',
         },
         topic: { type: 'string', description: 'Only hostnames of this topic UUID or slug' },
         sort: {

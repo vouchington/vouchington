@@ -22,7 +22,7 @@ type DiscoveryResult<T> =
 const MAX_LIMIT = 100
 const pageProperties = {
   limit: { type: 'integer', minimum: 1, description: 'Defaults to 20; clamped to 100.' },
-  after: { type: 'string', description: 'Previous page_info.end_cursor.' },
+  after: { type: 'string' },
 }
 const feedIdSchema = pickProperties('ViewRssFeed', ['id']).id!
 const trendingSchema = closedObject({

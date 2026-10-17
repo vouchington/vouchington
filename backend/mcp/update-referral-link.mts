@@ -25,7 +25,6 @@ const tool: Tool<UpdateReferralLinkArgs, { success: true; referral_link: UserRef
         link_id: REFERRAL_LINK_ID_PARAMETERS.properties.link_id,
         label: {
           anyOf: [{ type: 'null' }, { type: 'string' }],
-          description: 'The new label, or null for none.',
         },
       },
       required: ['link_id'],

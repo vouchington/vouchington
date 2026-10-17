@@ -10,7 +10,6 @@ export type ProfileLinkToolFields = {
 export const PROFILE_LINK_ID_PARAMETER = {
   type: 'string',
   format: 'uuid',
-  description: 'The ID of one of the current user’s profile links.',
 }
 
 /**

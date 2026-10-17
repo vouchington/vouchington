@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
+import { hasEveryScope, SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
+import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
+import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
+import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
+import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
+import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
 import type { McpToolShape } from '@voucha/mcp/registry/adapters'
 import { describe, expect, it } from 'vitest'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from '../config.mts'
@@ -30,6 +35,12 @@ const grants = [
   },
   { name: 'Reader', roles: [], plan: null, scopes: readerScopes },
   {
+    name: 'Plus',
+    roles: [],
+    plan: 'plus' as const,
+    scopes: ['mcp.user:read', 'mcp.user:write'] as ApiScope[],
+  },
+  {
     name: 'Reviewer',
     roles: ['administrator'],
     plan: null,
@@ -37,17 +48,19 @@ const grants = [
   },
 ]
 
-// User-server ceilings amended by #2545 owner decision (2026-10-15). Sizes are compact UTF-16 code units.
-// #2961 PR A lowers only mcp.all list/output to the projected measurement plus 1.5%, rounded to 1,000.
+// #2961: Plus is umbrella-only; all caps have ~1.5% headroom, rounded up to 1,000.
+// Sizes are compact UTF-16 code units.
 const caps = {
   mcp: {
-    all: { count: 74, list: 243000, core: 115000, output: 230000 },
-    Reader: { count: 9, list: 65000, core: 30000, output: 60000 },
+    all: { count: 74, list: 240000, core: 94000, output: 228000 },
+    Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
+    Plus: { count: 70, list: 231000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
   admin_mcp: {
     all: { count: 75, list: 260000, core: 50000, output: 220000 },
     Reader: { count: 0, list: 2, core: 2, output: 2 },
+    Plus: { count: 0, list: 2, core: 2, output: 2 },
     Reviewer: { count: 8, list: 65000, core: 7000, output: 60000 },
   },
 }
@@ -125,6 +138,34 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
     )
   })
 
+  it('limits every tool or option description to 400 characters, with named offenders', () => {
+    const groups = [
+      ...userMergedReadingGroups,
+      ...userMergedAccountGroups,
+      ...userMergedParticipationGroups,
+      ...participationWriteGroups,
+      ...adminMergedGroups,
+    ]
+    const mergedNames = new Set(groups.map(group => group.name))
+    const descriptions = [
+      ...groups.flatMap(group =>
+        group.options.map(({ option, source }) => ({
+          name: `${group.name}.${option}`,
+          description: source.schema.description ?? '',
+        })),
+      ),
+      ...ALL_TOOLS.filter(tool => !mergedNames.has(tool.schema.name)).map(tool => ({
+        name: tool.schema.name,
+        description: tool.schema.description ?? '',
+      })),
+    ]
+    const offenders = descriptions
+      .filter(({ description }) => description.length > 400)
+      .map(({ name, description }) => `${name}: ${description.length} characters`)
+      .toSorted()
+    expect(offenders).toEqual([])
+  })
+
   it('keeps the generated fixture identical to the complete live registry catalog', () => {
     expect(buildMcpCatalog(ALL_TOOLS)).toEqual(catalog)
   })
@@ -150,12 +191,14 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
               if (!enabled && copyrightDecisions.has(entry.tool.name)) return false
               if (entry.roles?.length && !entry.roles.some(role => caller.roles.includes(role)))
                 return false
-              if ('plan' in entry && entry.plan !== 'free' && caller.membership_plan !== 'pro')
-                return false
+              if (entry.plan === 'plus' && caller.membership_plan === null) return false
+              if (entry.plan === 'pro' && caller.membership_plan !== 'pro') return false
               return (
-                entry.tool['_meta']?.['voucha/requiredScopes'].every(scope =>
-                  (grant.scopes as readonly string[]).includes(scope),
-                ) ?? false
+                !!entry.tool['_meta'] &&
+                hasEveryScope(
+                  grant.scopes,
+                  entry.tool['_meta']['voucha/requiredScopes'] as ApiScope[],
+                )
               )
             })
             .map(entry => entry.tool)
@@ -163,7 +206,7 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
           const cap =
             config.surface === 'admin_mcp' && grant.name === 'all' && !enabled
               ? allAdminDisabled
-              : caps[config.surface][grant.name as 'all' | 'Reader' | 'Reviewer']
+              : caps[config.surface][grant.name as keyof typeof caps.mcp]
           for (const [metric, value] of Object.entries(measure(tools))) {
             expect(value).toBeLessThanOrEqual(cap[metric as keyof typeof cap])
           }
@@ -197,25 +240,14 @@ const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const caller = { id: 'participation-listing', roles: [], membership_plan: null }
 
-// Preserve the old contract baseline while separately checking the newly published member metadata.
-function withoutOptionOutputPointers(tools: readonly McpToolShape[]) {
-  return tools.map(tool => {
-    if (!tool['_meta']) return tool
-    const { 'voucha/optionOutputPointers': _pointers, ...meta } = tool['_meta']
-    return { ...tool, _meta: meta }
-  })
-}
-
-// Compact serialized listings pinned before #2545, from main 4f03a701c.
+// Listing snapshots rebaselined for #2961 prose; #2545 capability gates stay unchanged.
 describe('participation write discovery contract', () => {
-  it('keeps Reader tools/list byte-identical', () => {
+  it('pins the trimmed Reader tools/list', () => {
     const listing = listMcpToolsForUser(caller, readerScopes, USER_MCP_SERVER_CONFIG, true)
-    expect(JSON.stringify(withoutOptionOutputPointers(listing))).toHaveLength(56093)
-    expect(hash(withoutOptionOutputPointers(listing))).toBe(
-      '0c4daab5391dbb4b32fc576d379e276e0dba61bd1a74c794303a2ce2c1a59e24',
-    )
+    expect(JSON.stringify(listing)).toHaveLength(53293)
+    expect(hash(listing)).toBe('2dd6996ed8670e9a6aee1df9bfa47d8418a8a0aa6f98189bf13b1ffb8c642724')
   })
-  it('adds exactly the five approved tools to Plus without changing existing tools', () => {
+  it('keeps the five approved participation tools in the paid listing', () => {
     const paid = listMcpToolsForUser(
       { ...caller, membership_plan: 'plus' },
       scopes,
@@ -229,8 +261,8 @@ describe('participation write discovery contract', () => {
         .map(tool => tool.name)
         .toSorted(),
     ).toEqual(names.toSorted())
-    expect(hash(withoutOptionOutputPointers(paid.filter(tool => !names.includes(tool.name))))).toBe(
-      '1b6d8116dc7bad14e22ba71ea653c3f29873630b7a34b9c982c239793b49d4b6',
+    expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
+      'd292166c618932d9814740f47d7944dd726c000622badcbcf36900e919dbf282',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(

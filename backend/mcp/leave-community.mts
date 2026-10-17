@@ -11,7 +11,7 @@ const tool: Tool<Args, Result> = {
     name: 'leave_community',
     type: 'function',
     description:
-      'Leave a community the current user is a member of, by its UUID or slug. Leaving ends the membership; a private community needs a new invitation or application to rejoin. The call is refused with NOT_FOUND if the user is not a member, with INVALID_INPUT if the user owns the community (transfer ownership first), and with FORBIDDEN if the community is archived. Returns the community_id.',
+      'Leave a community by UUID or slug. Rejoining a private one requires a new invitation or application. Nonmembers get NOT_FOUND; owners must transfer ownership first (INVALID_INPUT); archived communities return FORBIDDEN.',
     parameters: {
       type: 'object',
       properties: {

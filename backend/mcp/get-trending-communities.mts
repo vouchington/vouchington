@@ -30,7 +30,8 @@ const { default: defaultLimit, max } = TRENDING_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the public communities with the most recent activity, as a signed-out reader sees them: a private community never appears, whoever asks. Each result is a community id with its trending score and counts; use read_community (option details) for the community itself. "Trending" is the last 30 days of reviewed posts, members and follows. Returns at most ${max} communities per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description:
+      'List public communities with the most activity over the last 30 days, as a signed-out reader sees them. Private communities never appear. Results contain an id, trending score and counts; use read_community (option details) for the community.',
     parameters: {
       type: 'object',
       properties: pageInputProperties('Communities', TRENDING_PAGE_LIMIT),

@@ -15,7 +15,7 @@ type ToolResult = {
 const tool: MergedToolSource<Record<string, never>, ToolResult> = {
   schema: {
     description:
-      'List the membership plans Voucha sells and what each plan includes. products are the purchasable plans (free is not sold): each has a plan (plus or pro), a billing interval and, per store that sells it, the store product reference and its price (an amount in minor units and a currency, or null when none is set). benefit_catalog is the versioned list of benefits by group, with the value each plan gets (an access level, a yes or no, a quantity or a tier), for comparing plans. This is the same public catalog a signed-out visitor sees. It says nothing about the current user: it is not their plan, entitlements or billing.',
+      "List the public membership catalog: purchasable Plus and Pro products, billing intervals, store prices and each plan's benefits. Free is not sold. Prices use minor units and currency, or null when unset. This signed-out catalog does not show the current user's plan, entitlements or billing.",
     parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
   },
   meta: {

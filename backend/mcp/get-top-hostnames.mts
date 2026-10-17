@@ -30,7 +30,8 @@ const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the most trusted hostnames, as a signed-out reader sees them: hostnames with at least one trust vote up, highest net trust votes first, never an administratively blocked hostname. topic is a topic UUID or slug; a topic that does not exist returns no results. Returns at most ${max} hostnames per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description:
+      'List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic UUID or slug; an unknown topic gives no results.',
     parameters: {
       type: 'object',
       properties: {

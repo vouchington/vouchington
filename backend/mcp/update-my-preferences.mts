@@ -14,7 +14,7 @@ type UpdateMyPreferencesResult = { success: true; settings: ReturnType<typeof pi
 const tool: MergedToolSource<SettingsToolArgs, UpdateMyPreferencesResult> = {
   schema: {
     description:
-      "Change the current user's privacy and posting settings: who can see their follows, followers, likes and community memberships, who can message them, the default audience and privacy of new posts, country, interface locale and Hacker News discussions. Only the fields sent change, and every current setting is returned. Financial-data visibility, consents, federation and the username cannot be changed here.",
+      "Change the current user's privacy and posting settings, including audience, messaging, locale and Hacker News discussions. Only supplied fields change. Financial visibility, consents, federation and username cannot be changed here.",
     parameters: SETTINGS_PARAMETERS,
   },
   meta: {

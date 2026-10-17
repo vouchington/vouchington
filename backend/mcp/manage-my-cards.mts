@@ -32,11 +32,9 @@ export default createManageEntityTool({
     },
     note: {
       anyOf: [{ type: 'string' }, { type: 'null' }],
-      description: 'A note about the card',
     },
     is_authorized_user: {
       type: 'boolean',
-      description: 'Whether the user is an authorized user on this card',
     },
     authorized_user_of_card_id: {
       anyOf: [{ type: 'string' }, { type: 'null' }],

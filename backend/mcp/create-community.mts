@@ -40,18 +40,17 @@ const tool: Tool<Args, Result> = {
     name: 'create_community',
     type: 'function',
     description:
-      'Create a community the current user owns. name is required, has at least 3 words and at most 100 characters, and has no leading or trailing whitespace. slug is optional and generated from the name when omitted; a taken slug is CONFLICT. visibility is public (default) or private. member_roster_visibility says who can list the members: public (default), users, members or moderators. member_invites_allowed_at lets members invite others, and post_approval_required_at sends every new post to moderators for approval; both default to false. should_allow_review_posts and should_allow_data_point_posts default to false. Profile and banner image ids and list_type match the REST community inputs. Creating communities counts against the same daily and short-term quota as the web, and CONTRIBUTION_QUOTA_EXCEEDED means try later. A username is required (FORBIDDEN otherwise). Returns the community id, slug, visibility and creation time.',
+      'Create a community owned by the current user. name cannot have leading or trailing whitespace; a username is required. slug defaults from name and must be unique. visibility and member_roster_visibility default to public. Invitations, post approval and review/data-point posting default off. Creation shares the web quota (CONTRIBUTION_QUOTA_EXCEEDED).',
     parameters: {
       type: 'object',
       properties: {
         idempotency_key: {
           type: 'string',
           format: 'uuid',
-          description: 'A UUID for this community and its retries.',
         },
         name: {
           type: 'string',
-          description: 'The community name: 3 or more words, up to 100 characters.',
+          description: 'At least 3 words and at most 100 characters.',
         },
         slug: { type: 'string', description: 'Optional URL slug.' },
         markdown: { type: 'string', description: 'Optional description, in Markdown.' },

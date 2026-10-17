@@ -5,7 +5,7 @@ export default createGetMyEntityListTool<{ after?: string; limit?: number }>({
   toolName: 'get_my_spending',
   description: "List the current user's spending categories.",
   properties: {
-    after: { type: 'string', description: 'Opaque cursor from the prior list page' },
+    after: { type: 'string' },
     limit: { type: 'number', minimum: 1, maximum: 100, description: 'Entries per list page' },
   },
   listFn: (user, args) => getHouseholdSpendingCategoriesByUserId(user, user, args),

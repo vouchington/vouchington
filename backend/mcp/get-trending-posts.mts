@@ -52,7 +52,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         post_type: {
           type: 'string',
           enum: [...VALID_TRENDING_POST_TYPES],
-          description: 'Optionally filter to a specific post type.',
         },
         topic_id: {
           type: 'string',
@@ -60,7 +59,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         },
         after: {
           type: 'string',
-          description: 'Cursor from a previous result page_info.end_cursor, for the next page.',
         },
         limit: {
           type: 'integer',

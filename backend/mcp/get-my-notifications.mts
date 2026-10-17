@@ -28,7 +28,8 @@ const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the current user's own notifications, newest first, with whether each is read. results lists the notification ids in order; notifications holds each one by id (its entity_type, title, body, actor_label, read_at, target_entity, target_intent and the ids of what it is about) and communities holds the communities they mention. Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Returns at most ${PAGE_LIMIT.max} notifications per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after for the next page. read_my_notifications (option unread) gives just the unread ones with their count. Reading never marks a notification read.`,
+    description:
+      "List the current user's notifications and read state, newest first. results gives ids; notifications and communities hold details by id. Text from others is sanitized or fenced as external content. Use read_my_notifications (option unread) for unread count. Reading never marks an item read.",
     parameters: {
       type: 'object',
       properties: pageInputProperties('Notifications', PAGE_LIMIT),

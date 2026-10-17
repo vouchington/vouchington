@@ -28,11 +28,9 @@ export default createManageEntityTool({
     spending_frequency: {
       type: 'string',
       enum: ['monthly', 'annually'],
-      description: 'How often the spending occurs',
     },
     note: {
       type: 'string',
-      description: 'A note about the spending',
     },
   },
   addFn: (user, args) =>

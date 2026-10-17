@@ -11,11 +11,11 @@ type Result = { success: true; dispute: McpDispute }
 const tool: MergedToolSource<Args, Result> = {
   schema: {
     description:
-      "Get one review dispute the current user filed, by id: the post_id and topic_id it disputes, the reason code, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. The call is refused with NOT_FOUND for an unknown id and with FORBIDDEN for another user's dispute.",
+      "Get a review dispute filed by the current user, including disputed post_id and topic_id, reason, status, overdue state, resolution_action and any public_response. Unknown ids return NOT_FOUND; another user's dispute returns FORBIDDEN.",
     parameters: {
       type: 'object',
       properties: {
-        dispute_id: { type: 'string', format: 'uuid', description: 'The ID of the dispute.' },
+        dispute_id: { type: 'string', format: 'uuid' },
       },
       required: ['dispute_id'],
       additionalProperties: false,

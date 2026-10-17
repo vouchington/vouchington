@@ -14,19 +14,17 @@ export const EMAIL_PREFERENCES_PARAMETERS = {
       type: 'boolean',
       description: 'Whether to receive setup recommendation emails.',
     },
-    news_digest_frequency: { ...FREQUENCY, description: 'How often to receive the news digest.' },
+    news_digest_frequency: { ...FREQUENCY },
     is_moderation_emails_enabled: {
       type: 'boolean',
       description: 'Whether to receive community moderation summary emails.',
     },
     community_digest_frequency: {
       ...FREQUENCY,
-      description: 'How often to receive the community digest.',
     },
     moderation_email_cadence: {
       type: 'string',
       enum: ['daily', 'selected_days', 'weekly'],
-      description: 'How often to receive moderation summaries.',
     },
     moderation_email_days_of_week: {
       type: 'array',
@@ -88,20 +86,18 @@ export function pickSettings(user: object): Record<SettingField, unknown> {
 }
 
 const setting = (field: SettingField) => componentPropertySchema('UpdateUserOptions', field)
-const audience = (what: string) => ({ ...setting('follows_visibility'), description: what })
+const audience = () => setting('follows_visibility')
 
 export const SETTINGS_PARAMETERS = {
   type: 'object',
   properties: {
-    follows_visibility: audience('Who can see the users the current user follows.'),
-    topic_follows_visibility: audience('Who can see the topics the current user follows.'),
-    rss_feed_follows_visibility: audience('Who can see the RSS feeds the current user follows.'),
-    community_memberships_visibility: audience(
-      'Who can see the communities the current user belongs to.',
-    ),
-    followers_visibility: audience('Who can see the current user’s followers.'),
-    likes_visibility: audience('Who can see the current user’s likes.'),
-    direct_messages_audience: audience('Who can send the current user a direct message.'),
+    follows_visibility: audience(),
+    topic_follows_visibility: audience(),
+    rss_feed_follows_visibility: audience(),
+    community_memberships_visibility: audience(),
+    followers_visibility: audience(),
+    likes_visibility: audience(),
+    direct_messages_audience: audience(),
     default_post_broadcast: {
       ...setting('default_post_broadcast'),
       description: 'Who a new post is shown to unless the post says otherwise.',

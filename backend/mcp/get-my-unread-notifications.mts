@@ -15,7 +15,7 @@ type ToolResult = { success: true; unread_count: number } & McpNotificationBody
 const tool: MergedToolSource<Record<string, never>, ToolResult> = {
   schema: {
     description:
-      "Get the current user's unread notifications: unread_count is how many there are in all, and the newest 10 come back in results (their ids, newest first), notifications (each one by id, with its entity_type, title, body, actor_label, target_entity, target_intent and the ids of what it is about) and communities (the communities they mention). Titles, actor labels and community names are sanitized and a body is fenced as external content, because they can quote other users; an empty body is an empty string. Use read_my_notifications (option list) to page through every notification, read or not. Reading never marks a notification read.",
+      "Get the current user's unread count and newest 10 notifications. results gives ids; notifications and communities hold details by id. Text from others is sanitized or fenced as external content. Use read_my_notifications (option list) for all items. Reading never marks an item read.",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {

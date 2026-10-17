@@ -41,7 +41,8 @@ const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `Search public communities, as a signed-out reader sees them: a private community never appears, whoever asks. q matches names and descriptions and may carry #hashtags. Sorted by name (the default, A to Z), members or virtual_subscriptions (most first). Returns at most ${max} communities per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page.`,
+    description:
+      'Search public communities as a signed-out reader sees them; private communities never appear. q matches names, descriptions and #hashtags. Sort by name (default), members or virtual_subscriptions.',
     parameters: {
       type: 'object',
       properties: {

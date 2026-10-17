@@ -39,11 +39,10 @@ export const BOOKMARK_TOOL_PARAMETERS = {
       enum: BOOKMARK_TOOL_ENTITY_TYPES,
       description: `The type of entity. Valid types per predicate: ${VALID_COMBINATIONS}.`,
     },
-    entity_id: { type: 'string', format: 'uuid', description: 'The ID of the entity.' },
+    entity_id: { type: 'string', format: 'uuid' },
     predicate: {
       type: 'string',
       enum: BOOKMARK_TOOL_PREDICATES,
-      description: 'The relation: save, follow, mute, or block.',
     },
   },
   required: ['entity_type', 'entity_id', 'predicate'],

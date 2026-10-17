@@ -140,11 +140,19 @@ Keep the route-to-input audit and per-family rejection coverage with the MCP con
 **Server instructions and budgets.** Put guidance repeated by at least three tools on the same
 server into `backend/services/mcp-tools/instructions.mts`, phrased to say when it applies. Preserve
 tool-specific predicates, cursor bindings, units, identifiers, and examples beside each tool.
+Each tool or individual option description is limited to 400 characters, with every offender
+reported by name and no exceptions. Keep model decision cues (visibility, accepted identifiers,
+and lookup cross-references); omit input descriptions that only repeat a name, format, or enum.
+Pagination continuation and retry guidance live once in the server instructions.
 Instructions do not name tools and may grow by at most 4,000 characters per server over the slice's
 base commit. CI measures generated `tools/list` counts, serialized sizes, core and output-aware
 projections, and instruction length after scope, role, plan, and copyright-switch filtering. The
 approved per-server/grant caps are maintained by the
 [catalog budget test](../../../../../backend/services/mcp-tools/catalog/build-mcp-catalog.bound.test.mts).
+The Plus budget grant is exactly `mcp.user:read` and `mcp.user:write`, on the `plus` plan with
+no roles. Its core ceiling is 110,000 and output-aware ceiling is 240,000 UTF-16 code units;
+exact financial grants are excluded. The all-grants user ceilings track the measured catalog
+with about 1.5% headroom, rounded up to 1,000. Reader ceilings may only decrease.
 Personalized topic recommendations also expose the REST filters and `page_info` continuation;
 malformed cursors return the advertised invalid-cursor outcome.
 

@@ -48,7 +48,6 @@ export default createManageEntityTool<AddPointValuationArgs, UpdatePointValuatio
     },
     note: {
       type: 'string',
-      description: 'A note about the valuation',
     },
   },
   addFn: (user, args) =>

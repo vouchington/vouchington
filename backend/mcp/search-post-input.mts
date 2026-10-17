@@ -21,7 +21,6 @@ export function postSearchFilterSchemaProperties() {
     post_type: {
       type: 'string',
       enum: [...VALID_FILTERABLE_POST_TYPES],
-      description: 'Filter by post type',
     },
     post_types: {
       type: 'array',

@@ -24,7 +24,8 @@ const PAGE_LIMIT: McpPageLimit = { min: 1, max: 100, default: 25 }
 
 const tool: MergedToolSource<Args, Result> = {
   schema: {
-    description: `List the review disputes the current user filed, newest first. status is pending (default) for the ones the moderators have not decided, resolved for the decided ones, or dismissed for the ones the moderators dismissed. Each dispute has its id, the post_id and topic_id it disputes, the reason code, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. Returns at most ${PAGE_LIMIT.max} disputes per page (default ${PAGE_LIMIT.default}) and page_info.end_cursor; pass it as after, with the same status, for the next page. Other users' disputes are never listed.`,
+    description:
+      "List the current user's review disputes, newest first. Filter by status: pending (default), resolved or dismissed. Results include disputed post_id and topic_id, reason, status, overdue state, resolution_action and any public_response. Other users' disputes never appear.",
     parameters: {
       type: 'object',
       properties: {

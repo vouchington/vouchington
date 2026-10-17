@@ -38,20 +38,18 @@ const tool: Tool<Args, Result> = {
     name: 'create_content_report',
     type: 'function',
     description:
-      'Report a post, comment, user, hostname or RSS feed item to the moderators. Reports are about user content only; copyright claims use the copyright process. Reporting something you already have an open report on updates that report and returns is_duplicate true. The note is optional and at most 1000 characters. The vote_manipulation reason is for posts only.',
+      'Report a post, comment, user, hostname or RSS item to moderators. Copyright claims use the copyright process. An open report on the same entity is updated (is_duplicate true). The optional note is at most 1000 characters. vote_manipulation applies only to posts.',
     parameters: {
       type: 'object',
       properties: {
         idempotency_key: {
           type: 'string',
           format: 'uuid',
-          description: 'A UUID for this report and its retries.',
         },
         entity_type: { type: 'string', enum: [...MODERATION_REPORT_ENTITY_TYPES] },
         entity_id: {
           type: 'string',
           format: 'uuid',
-          description: 'The ID of the reported entity.',
         },
         reason: { type: 'string', enum: [...MODERATION_REPORT_REASONS] },
         note: { type: 'string', description: 'Optional context for the moderators.' },

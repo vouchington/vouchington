@@ -16,7 +16,7 @@ import type { PublicTopicRecommendationPost } from '@services/topic-recommendati
 
 type UpdateTopicRecommendationArgs = UpdateTopicRecommendationInput & { id: string }
 
-const text = (description: string) => ({ type: 'string', description })
+const text = (description?: string) => ({ type: 'string', ...(description ? { description } : {}) })
 const textList = (description: string) => ({
   type: 'array',
   items: { type: 'string' },
@@ -36,10 +36,10 @@ const tool: Tool<
       type: 'object',
       properties: {
         id: TOPIC_RECOMMENDATION_ID_SCHEMA,
-        title: text('The recommendation title.'),
+        title: text(),
         markdown: text('The reason for the recommendation, as Markdown.'),
-        topic_title: text('The title of the topic being recommended.'),
-        topic_slug: text('The slug of the topic being recommended.'),
+        topic_title: text(),
+        topic_slug: text(),
         topic_markdown: text('The description of the topic, as Markdown.'),
         topic_hostname: text('The primary hostname of the topic.'),
         topic_hostnames: textList('Every hostname of the topic.'),
@@ -47,9 +47,8 @@ const tool: Tool<
         topic_type: {
           type: 'string',
           enum: ['card', 'referral_program', 'topic'],
-          description: 'What kind of topic is being recommended.',
         },
-        example_referral_link: text('An example referral link for the topic.'),
+        example_referral_link: text(),
         landing_page_urls: textList('Landing page URLs for the topic.'),
       },
       required: ['id'],
