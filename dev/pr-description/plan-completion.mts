@@ -1,6 +1,6 @@
-import { parseClosingIssueReferences } from './closing-refs.mts'
+import { parseClosingIssueReferences, parseNonClosingRefs } from 'vouchington-tooling/gh-cli'
+
 import { extractRelatedIssuesReferenceText } from './content-policy.mts'
-import { parseNonClosingRefs } from './non-closing-refs.mts'
 
 export type PlanCompletionPullRequest = {
   body: string
@@ -28,7 +28,7 @@ function referenceKeys(
     closing: new Set(
       parseClosingIssueReferences(related).map(reference => normalize(reference.key)),
     ),
-    refs: new Set([...parseNonClosingRefs(body)].map(normalize)),
+    refs: new Set([...parseNonClosingRefs(related)].map(normalize)),
   }
 }
 

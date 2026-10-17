@@ -263,7 +263,7 @@ instead, for example `pnpm exec vouchington retrospective-transcript`.
 
 Entries those hooks already appended keep their structural `checkpoint` field and stay in Blackboard
 until archived, so `node dev/retrospective-distill.mts` still classifies a session made only of them
-as `checkpoint-only` (`dev/retrospective-distill/checkpoint-entry.mts`).
+as `checkpoint-only` (vouchington-tooling's `retrospective-distill` classifier).
 
 ## SessionStart availability check
 
@@ -387,9 +387,8 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 
 ## Files
 
-| File                        | Purpose                                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------------------- |
-| `package.json`              | Pins the published package as a root development dependency                                  |
-| `dev/blackboard/client.mts` | Resolves the hosted URL/token and constructs the published JS clients                        |
-| `dev/check-blackboard.mts`  | SessionStart check: prints the hook's session id and probes the hosted connection            |
-| `dev/agent-policy.mts`      | Retrospective policy module that `retrospective_save` runs; the only retrospective validator |
+| File                       | Purpose                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| `package.json`             | Pins the published package as a root development dependency                                  |
+| `dev/check-blackboard.mts` | SessionStart check: prints the hook's session id and probes the hosted connection            |
+| `dev/agent-policy.mts`     | Retrospective policy module that `retrospective_save` runs; the only retrospective validator |

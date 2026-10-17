@@ -8,11 +8,11 @@ export {
   type PrBodyValidationOptions,
   type PrBodyValidationResult,
 } from './validate-body.mts'
+import { parseClosingIssueReferences, type ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
 import {
-  type ClosingIssueReference,
   type IssueReferenceLookup,
   type ReferencedIssue,
-  parseClosingIssueReferences,
   validateResolvedIssueReferences,
 } from './closing-refs.mts'
 import {

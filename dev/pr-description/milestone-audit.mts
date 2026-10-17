@@ -1,4 +1,9 @@
-import { formatReferenceKey, type ClosingIssueReference } from './closing-refs.mts'
+import {
+  formatReferenceKey,
+  parseNonClosingRefs,
+  type ClosingIssueReference,
+} from 'vouchington-tooling/gh-cli'
+
 import {
   formatIssueAuditMarkerHint,
   parseIssueAuditKeepOpenDecisions,
@@ -11,7 +16,7 @@ import {
   type MilestoneGroup,
   type MilestoneSibling,
 } from './milestone-query.mts'
-import { parseNonClosingRefs } from './non-closing-refs.mts'
+import { extractRelatedIssuesReferenceText } from './content-policy.mts'
 import type { ClosingIssueForAudit } from './validate.mts'
 
 /**
@@ -82,7 +87,9 @@ export function validateMilestoneSiblings(
     key.startsWith(localPrefix) ? `#${key.slice(localPrefix.length)}` : key
 
   const closedKeys = new Set(closingRefs.map(ref => normalizeKey(ref.key)))
-  const refsKeys = new Set([...parseNonClosingRefs(body)].map(normalizeKey))
+  const refsKeys = new Set(
+    [...parseNonClosingRefs(extractRelatedIssuesReferenceText(body))].map(normalizeKey),
+  )
   const keptOpenKeys = new Set(
     parseIssueAuditKeepOpenDecisions(body).map(decision =>
       normalizeKey(formatKeepOpenKey(decision)),

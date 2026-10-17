@@ -1,4 +1,5 @@
-import { parseClosingIssueReferences, type ClosingIssueReference } from './closing-refs.mts'
+import { parseClosingIssueReferences, type ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
 import {
   formatIssueAuditMarkerHint,
   parseIssueAuditKeepOpenDecisions,

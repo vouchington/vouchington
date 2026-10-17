@@ -1,6 +1,5 @@
-import type { RunTextCommand } from 'vouchington-tooling/gh-cli'
+import type { ClosingIssueReference, RunTextCommand } from 'vouchington-tooling/gh-cli'
 
-import type { ClosingIssueReference } from './closing-refs.mts'
 import type { ClosureLookup, PullRequestIdentity } from './validate.mts'
 
 export type RunGh = RunTextCommand

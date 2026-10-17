@@ -1,4 +1,5 @@
-import { countDiffLineChanges, type DiffLineChanges } from './diff-size.mts'
+import { countDiffLineChanges, type DiffLineChanges } from 'vouchington-tooling/pull-request-diff'
+
 import {
   parseChangedPackageJsonPaths,
   parseRemovedSurfaces,

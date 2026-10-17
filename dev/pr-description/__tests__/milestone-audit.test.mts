@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ClosingIssueReference, ReferencedIssue } from '../closing-refs.mts'
+import type { ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
+import type { ReferencedIssue } from '../closing-refs.mts'
 import {
   createMilestoneAuditor,
   groupClosedIssuesByMilestone,

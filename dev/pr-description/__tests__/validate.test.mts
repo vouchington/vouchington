@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type {
-  ClosingIssueReference,
-  IssueReferenceLookup,
-  ReferencedIssue,
-} from '../closing-refs.mts'
+import type { ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
+import type { IssueReferenceLookup, ReferencedIssue } from '../closing-refs.mts'
 import { formatReferencedIssueSummary } from '../referenced-issue-summary.mts'
 import {
   VALID_PR_BODY,

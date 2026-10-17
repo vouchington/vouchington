@@ -15,7 +15,7 @@ import { VALID_PR_BODY } from './test-helpers/pr-description/valid-pr-body.mts'
 import { validatePullRequest } from './agent-policy.mts'
 
 const REPO = 'vouchington/vouchington'
-const thresholds = { added: 2, deleted: 2 }
+const thresholds = { addedLines: 2, deletedLines: 2 }
 const base = {
   title: 't',
   body: VALID_PR_BODY,

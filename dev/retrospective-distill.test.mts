@@ -7,7 +7,7 @@ import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
-const scriptPath = fileURLToPath(new URL('../../retrospective-distill.mts', import.meta.url))
+const scriptPath = fileURLToPath(new URL('./retrospective-distill.mts', import.meta.url))
 const testDirs: string[] = []
 
 async function makePartitionFile(lines: unknown[]): Promise<string> {
