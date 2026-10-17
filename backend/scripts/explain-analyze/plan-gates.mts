@@ -61,16 +61,19 @@ function evaluateExpectation(
     case 'usesIndexes': {
       if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
         return
-      const missing = expectation.indexes.filter(
-        index => !nodes.some(node => node['Index Name'] === index),
-      )
+      const used = (index: string) => nodes.some(node => node['Index Name'] === index)
+      const missing = expectation.anyOf
+        ? expectation.indexes.some(used)
+          ? []
+          : expectation.indexes
+        : expectation.indexes.filter(index => !used(index))
       if (
         missing.length ||
         (expectation.noSort &&
           nodes.some(node => stringFromUnknown(node['Node Type']).includes('Sort')))
       )
         throw new Error(
-          `${result.name} must use index(es) ${expectation.indexes.join(', ')}${expectation.noSort ? ' without an explicit Sort' : ''}`,
+          `${result.name} must use ${expectation.anyOf ? 'one of index(es)' : 'index(es)'} ${expectation.indexes.join(', ')}${expectation.noSort ? ' without an explicit Sort' : ''}`,
         )
       return
     }

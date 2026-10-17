@@ -87,6 +87,25 @@ describe('plan expectation registry', () => {
     ).toThrow('posts_pkey')
   })
 
+  it('accepts any one of equivalent indexes when anyOf is set', () => {
+    registerScenarioContract('post-metrics-batch', {
+      expectations: [{ kind: 'usesIndexes', indexes: ['posts_a_idx', 'posts_b_idx'], anyOf: true }],
+    })
+    const scan = (index: string) => ({
+      'Node Type': 'Index Scan',
+      'Relation Name': 'posts__default',
+      'Index Name': index,
+      'Actual Rows': 1,
+      'Actual Loops': 1,
+    })
+    expect(() =>
+      assertRequiredPlanShape(result('post-metrics-batch', scan('posts_b_idx'))),
+    ).not.toThrow()
+    expect(() => assertRequiredPlanShape(result('post-metrics-batch', scan('other')))).toThrow(
+      'one of index(es) posts_a_idx, posts_b_idx',
+    )
+  })
+
   it('fails an executing unpruned parent and passes when only one leaf executes', () => {
     const scans = [
       {
