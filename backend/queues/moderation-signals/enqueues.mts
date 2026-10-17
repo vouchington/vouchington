@@ -6,9 +6,8 @@ import { DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from './config.mts'
 export {
   enqueueBulkDetectBanEvasionAfterPostEmbeddings,
   enqueueDetectBanEvasion,
-  enqueueDetectBanEvasionAfterPostEmbedding,
   enqueueDetectBanEvasionOnJoin,
-} from './ban-evasion-enqueues.mts'
+} from './enqueues/ban-evasion.mts'
 
 type EnqueueSpamDetectionOptions = {
   contentSha256?: Buffer | string

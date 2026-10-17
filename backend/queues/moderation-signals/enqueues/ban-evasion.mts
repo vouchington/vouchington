@@ -1,7 +1,7 @@
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import type { JobOptions } from 'glide-mq'
-import { DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from './config.mts'
+import { DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from '../config.mts'
 
 type BanEvasionPostEmbeddingTrigger = {
   communityId: string

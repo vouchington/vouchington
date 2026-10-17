@@ -5,8 +5,8 @@ import {
   enqueueDetectBanEvasion,
   enqueueDetectBanEvasionAfterPostEmbedding,
   enqueueBulkDetectBanEvasionAfterPostEmbeddings,
-} from './enqueues.mts'
-import { moderationSignalsQueue } from './queues.mts'
+} from './ban-evasion.mts'
+import { moderationSignalsQueue } from '../queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('ban-evasion enqueues', () => {
