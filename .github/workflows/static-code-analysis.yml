@@ -143,7 +143,7 @@ jobs:
         timeout-minutes: 1
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
-        timeout-minutes: 4
+        timeout-minutes: 6
       - name: Check schema generation guard fixtures
         run: node ci/check-schema-generation-guard-fixtures.mts
         timeout-minutes: 2

@@ -26,9 +26,13 @@ The root `pnpm run no-mistakes` script is the canonical local full-check entrypo
 execution deadline remains 60 seconds and no-mistakes' separate default lock-wait timeout remains
 30 seconds. CI has exactly one production CLI invocation, the static-analysis full check, which
 disables both no-mistakes' execution deadline and its machine-wide lock-wait deadline.
-The full-check step has a four-minute deadline: a three-minute deadline killed the scan in
+The full-check step has a six-minute deadline. A three-minute deadline killed the scan in
 [PR #2709's Static run](https://github.com/vouchington/vouchington/actions/runs/38209235486/job/114679473629),
-while same-stack runs completed that step in 2:41 and 1:50.
+and the four-minute deadline that replaced it killed the merge-group run for PR #2942
+([job 117256777075](https://github.com/vouchington/vouchington/actions/runs/38985773237/job/117256777075)):
+the scan printed its final advisory 0.2 seconds before the cap. Healthy hosted runs of this step
+span 1:50 to 3:46 with no code-dependent cause, so the cap sits above that spread. It stays well
+below the 20-minute job cap, which was not changed.
 Route-selector `--check` is a second production consumer through the Node `analyzeProject` API. The `no-mistakes` job starts in parallel with the
 `static-code-analysis` job; its CLI and route-selector checks share a hosted runner, where the local `invocation.lock` protects any overlapping invocations.
 Separate hosted jobs have isolated workspaces, so there is no cross-PR job queue; the
