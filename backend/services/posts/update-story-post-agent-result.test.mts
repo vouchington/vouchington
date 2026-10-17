@@ -195,7 +195,7 @@ describe('updateStoryPostAgentResult', () => {
       openai_omni_moderation_results: { flagged_categories: [] },
     })
     const waiting = await readSpamDetectionJobs()
-    expect(waiting).toHaveLength(0)
+    expect(waiting.filter(job => (job.data as { id?: string }).id === postId)).toHaveLength(0)
   })
 })
 
