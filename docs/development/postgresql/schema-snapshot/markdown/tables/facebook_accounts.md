@@ -8,8 +8,9 @@ Not partitioned — growth: unbounded.
 
 | Column                        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                     |
 | ----------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `id`                          | `uuid`                     | no       | `uuidv7()`          |          |           |           | Internal UUIDv7 identity of the Facebook account.                           |
 | `user_id`                     | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet.         |
-| `facebook_user_id`            | `text`                     | no       |                     |          |           |           | Facebook's unique user ID (primary key).                                    |
+| `facebook_user_id`            | `text`                     | no       |                     |          |           |           | Facebook's unique external user ID.                                         |
 | `facebook_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Facebook profile.                                    |
 | `email_domain_hostname_id`    | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.          |
 | `facebook_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Facebook's /api/me endpoint.                    |
@@ -19,10 +20,11 @@ Not partitioned — growth: unbounded.
 | `created_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                             |
 | `updated_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                             |
 
-**Primary key:** `PRIMARY KEY (facebook_user_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `facebook_accounts_facebook_user_id_key`: `UNIQUE (facebook_user_id)`
 
 **Check constraints:**
 _none_
@@ -34,11 +36,12 @@ _none_
 
 **Indexes:**
 
-- `facebook_accounts_pkey`: `CREATE UNIQUE INDEX facebook_accounts_pkey ON public.facebook_accounts USING btree (facebook_user_id)`
+- `facebook_accounts_facebook_user_id_key`: `CREATE UNIQUE INDEX facebook_accounts_facebook_user_id_key ON public.facebook_accounts USING btree (facebook_user_id)`
+- `facebook_accounts_pkey`: `CREATE UNIQUE INDEX facebook_accounts_pkey ON public.facebook_accounts USING btree (id)`
 - `idx_facebook_accounts__email_domain_hostname_id`: `CREATE INDEX idx_facebook_accounts__email_domain_hostname_id ON public.facebook_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_facebook_accounts__facebook_user_email_address`: `CREATE INDEX idx_facebook_accounts__facebook_user_email_address ON public.facebook_accounts USING btree (facebook_user_email_address) WHERE (facebook_user_email_address IS NOT NULL)`
 - `idx_facebook_accounts__friends_synced_at`: `CREATE INDEX idx_facebook_accounts__friends_synced_at ON public.facebook_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
-- `idx_facebook_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_facebook_accounts__orphan_retention_cleanup ON public.facebook_accounts USING btree (created_at, facebook_user_id) WHERE (user_id IS NULL)`
+- `idx_facebook_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_facebook_accounts__orphan_retention_cleanup ON public.facebook_accounts USING btree (created_at, id) WHERE (user_id IS NULL)`
 - `idx_facebook_accounts__token_expires_at`: `CREATE INDEX idx_facebook_accounts__token_expires_at ON public.facebook_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
 - `idx_facebook_accounts__user_id`: `CREATE UNIQUE INDEX idx_facebook_accounts__user_id ON public.facebook_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
