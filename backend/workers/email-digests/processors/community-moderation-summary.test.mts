@@ -8,10 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import {
-  claimModerationEmailSend,
-  formatLocalDate,
-} from '@services/communities/moderation-summary-emails'
+import { claimModerationEmailSend } from '@services/communities/moderation-summary-emails'
 import { updateUserFields } from '@services/users/update-fields'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
 
@@ -147,73 +144,83 @@ describe('processSendCommunityModerationSummaryEmail', () => {
     expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 
-  it('recomputes the summary date after refreshing current moderation counts', async () => {
-    const user = await createTestUser()
-    await updateUserFields(user!.id, { moderation_email_timezone: 'UTC' })
-    const community = await insertTestCommunity({ createdById: user!.id })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: user!.id,
-      role: 'owner',
-      approvedById: user!.id,
-    })
-    const postId = await insertTestPost({
-      title: 'Recomputed date moderator post',
-      slug: `recomputed-date-moderator-post-${user!.id}`,
-      createdById: user!.id,
-      markdown: 'Needs review.',
-      communityId: community.id,
-    })
-    await insertTestPendingCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: user!.id,
-    })
-    const trackingKey = 'daily:1900-01-01'
-    await claimModerationEmailSend(user!.id, trackingKey)
-    const expectedDate = formatLocalDate(new Date(), 'UTC')
+  it.each([
+    ['2099-01-31T23:59:59.999Z', '2099-01-31'],
+    ['2099-02-01T00:00:00.000Z', '2099-02-01'],
+  ])(
+    'recomputes the summary date for window ending %s after refreshing current moderation counts',
+    async (windowEnd, expectedDate) => {
+      const user = await createTestUser()
+      await updateUserFields(user!.id, { moderation_email_timezone: 'UTC' })
+      const community = await insertTestCommunity({ createdById: user!.id })
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: user!.id,
+        role: 'owner',
+        approvedById: user!.id,
+      })
+      const postId = await insertTestPost({
+        title: 'Recomputed date moderator post',
+        slug: `recomputed-date-moderator-post-${user!.id}`,
+        createdById: user!.id,
+        markdown: 'Needs review.',
+        communityId: community.id,
+      })
+      await insertTestPendingCommunityPostReview({
+        communityId: community.id,
+        postId,
+        submittedById: user!.id,
+      })
+      const trackingKey = 'daily:1900-01-01'
+      await claimModerationEmailSend(user!.id, trackingKey)
+      await processSendCommunityModerationSummaryEmail(
+        {
+          emailAddress: 'tests+moderator@voucha.ai',
+          userId: user!.id,
+          trackingKey,
+          windowStart: '2020-01-01T00:00:00.000Z',
+          windowEnd,
+        },
+        {
+          generatedForDate: '1900-01-01',
+          settingsUrl: 'https://voucha.ai/my/notification-settings',
+          unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
+          physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+          communities: [
+            {
+              name: 'Stale Queued Community',
+              url: 'https://voucha.ai/communities/stale',
+              pendingPostReviews: 1,
+              pendingApplications: 0,
+              pendingReports: 0,
+              escalatedItems: 0,
+              suspectedBanEvaders: 0,
+              netMemberChange: 0,
+              totalActiveMembers: 0,
+              newDiscussionPosts: 0,
+              newReviewPosts: 0,
+              newDataPointPosts: 0,
+              topDiscussionTitle: null,
+              topDiscussionReplyCount: 0,
+              activeMemberCount: 0,
+              activeMemberRate: 0,
+            },
+          ],
+        },
+      )
 
-    await processSendCommunityModerationSummaryEmail(
-      { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey },
-      {
-        generatedForDate: '1900-01-01',
-        settingsUrl: 'https://voucha.ai/my/notification-settings',
-        unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-        physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
-        communities: [
-          {
-            name: 'Stale Queued Community',
-            url: 'https://voucha.ai/communities/stale',
-            pendingPostReviews: 1,
-            pendingApplications: 0,
-            pendingReports: 0,
-            escalatedItems: 0,
-            suspectedBanEvaders: 0,
-            netMemberChange: 0,
-            totalActiveMembers: 0,
-            newDiscussionPosts: 0,
-            newReviewPosts: 0,
-            newDataPointPosts: 0,
-            topDiscussionTitle: null,
-            topDiscussionReplyCount: 0,
-            activeMemberCount: 0,
-            activeMemberRate: 0,
-          },
-        ],
-      },
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subject: `Community moderation summary for ${expectedDate}`,
-        text: expect.stringContaining(`summary for ${expectedDate}`),
-        headers: expect.objectContaining({
-          'List-Unsubscribe': expect.stringContaining('/api/v1/email-unsubscribe?token='),
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      expect(ses.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subject: `Community moderation summary for ${expectedDate}`,
+          text: expect.stringContaining(`summary for ${expectedDate}`),
+          headers: expect.objectContaining({
+            'List-Unsubscribe': expect.stringContaining('/api/v1/email-unsubscribe?token='),
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          }),
         }),
-      }),
-    )
-  })
+      )
+    },
+  )
 
   it('backfills unsubscribeUrl and physicalAddress for a legacy queue payload missing them', async () => {
     const user = await createTestUser()
