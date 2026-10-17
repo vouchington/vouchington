@@ -64,7 +64,7 @@ Reversible staging steps; no production flag changes.
 ## Evidence
 
 Per executed cell, keep redacted evidence only: deployed SHA and UTC time; remote software, exact
-version, and hostname; activity and request IDs (no signed headers or tokens); local and remote
+version, and a stable redacted hostname alias; activity and request IDs (no signed headers or tokens); local and remote
 observations; and `pass`, `fail`, or `unsupported` with a short reason. A run passes when every
 applicable cell has evidence, no credentials leaked, test state is cleaned up, and Sentry shows no
 unexplained delivery failures. Attach the matrix to the PR Shepherd Journal and the tracking issue.

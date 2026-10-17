@@ -22,8 +22,8 @@
   Select procedures from the [skill catalog](.agents/catalog/README.md).
 - Save plans outside Git: an issue/comment, PR description, or native plan file suffices.
   No new Plan issue or template required.
-- Search [docs](docs/README.md) for prior decisions; update the owning page. Docs hold only why,
-  impact, and architecture guidance: no restated code or drifting numbers ([rules](docs/AGENTS.md)).
+- Search [docs](docs/README.md); update owning page. Docs hold only why, impact, architecture,
+  runbooks, and unenforced invariants; no restated code or drifting numbers ([rules](docs/AGENTS.md)).
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).
   Keep shared `AGENTS.md`; do not introduce shadowing `CLAUDE.md` files.
 - No local AST parsers. Vouchington-specific parsing belongs in `vouchington-tooling`;

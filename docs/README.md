@@ -17,7 +17,7 @@ into this page and `docs/catalog/README.md`.
 
 ## Documentation rules
 
-- Docs explain why, business impact, and architecture guidance only; delete anything readable from code, config values, drifting numbers, history, and plans (see the [placement rubric](AGENTS.md#what-belongs-in-docs)).
+- Docs explain why, business impact, and architecture guidance, plus human runbooks and unenforced invariants; delete anything readable from code, config values, drifting numbers, history, and plans (see the [placement rubric](AGENTS.md#what-belongs-in-docs)).
 - Cross-link related docs and code owners. Update links, fragments, code consumers, and generators
   when moving a page. Follow the [placement rubric](AGENTS.md) for `AGENTS.md`, skills, and `docs/**`.
 - Keep public documentation free of real operational thresholds, infrastructure identities, spend,

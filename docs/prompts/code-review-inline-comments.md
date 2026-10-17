@@ -4,8 +4,8 @@
 `code-review` composite action defaults `inline_prompt_path` to
 this file. The caller appends it after the shared
 [code-review-prompt.md](../../.agents/skills/agent-workflow/code-review-prompt.md) when building
-its review prompt, and the composite's poster validates the resulting `code-review-payload.json`
-against this contract.
+its review prompt, and the composite's poster parses and normalizes the resulting
+`code-review-payload.json` before posting.
 
 - This section overrides how findings are published, and which review event is used.
 - You have no MCP tool and no `gh` / `curl` / `node -e` publish path. Do not call `gh`, `curl`, or `node -e`. Do not post a GitHub review yourself. Write the complete review JSON to `code-review-payload.json` at the repository root with the Write tool. A separate trusted poster job posts exactly one review from that file after you exit.
