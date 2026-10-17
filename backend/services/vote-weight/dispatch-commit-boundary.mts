@@ -16,7 +16,7 @@ export async function getVoteWeightFamilyCommitBoundary(now: Date): Promise<stri
           COALESCE(min(xact_start) FILTER (WHERE pid <> pg_backend_pid()), 'infinity'::timestamptz))
         - INTERVAL '1 microsecond')::text AS window_end,
         current_setting('track_activities')::boolean AND COALESCE(bool_and(
-          state IS NOT NULL OR NOT has_any_column_privilege(usesysid,
+          (state IS NOT NULL AND state <> 'disabled') OR NOT has_any_column_privilege(usesysid,
             'membership_source_states', 'UPDATE')), true) AS visible
       FROM pg_stat_activity
       WHERE datname = current_database() AND usesysid IS NOT NULL`,
