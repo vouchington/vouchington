@@ -1,3 +1,4 @@
+import type { BlueskyLinkAuthorization } from './link-authorization.mts'
 import { beginBlueskyAccountLinkDirect, type BlueskyLinkCallbackMode } from './link.mts'
 import {
   completeNativeBlueskyAccountLinkDurably,
@@ -17,11 +18,13 @@ export function completeNativeBlueskyAccountLink(
   params: URLSearchParams,
   flowId: string,
   completionTokenHash: string,
+  authorization?: BlueskyLinkAuthorization,
 ): Promise<null> {
   return completeNativeBlueskyAccountLinkDurably({
     params: params.toString(),
     flowId,
     completionTokenHash,
+    authorization,
   })
 }
 
@@ -29,10 +32,12 @@ export async function completeBlueskyAccountLink(
   params: URLSearchParams,
   currentUserId: string,
   flowId: string,
+  authorization?: BlueskyLinkAuthorization,
 ): Promise<{ did: string; handle: string }> {
   return completeWebBlueskyAccountLinkDurably({
     params: params.toString(),
     flowId,
     currentUserId,
+    authorization,
   })
 }

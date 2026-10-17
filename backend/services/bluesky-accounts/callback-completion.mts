@@ -4,6 +4,7 @@ import { connectBlueskyAccountToUser } from './connect.mts'
 import {
   getBlueskyLinkAuthorizationForCallbackFromPrimary,
   rejectBlueskyLinkAuthorization,
+  type BlueskyLinkAuthorization,
 } from './link-authorization.mts'
 import { persistNativeBlueskyLinkCompletion } from './native-completion-persistence.mts'
 import { deleteBlueskySessionForRejectedAuthorization } from './session-generation.mts'
@@ -12,8 +13,12 @@ export async function completeWebBlueskyAccountLinkDurably(input: {
   params: string
   flowId: string
   currentUserId: string
+  authorization?: BlueskyLinkAuthorization
 }): Promise<{ did: string; handle: string }> {
-  let authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(input.flowId)
+  let authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(
+    input.flowId,
+    input.authorization,
+  )
   if (authorization.callback_mode !== 'web') {
     await rejectBlueskyCallbackGeneration(authorization)
     throw createHttpError(400, 'Invalid Bluesky OAuth state')
@@ -27,6 +32,7 @@ export async function completeWebBlueskyAccountLinkDurably(input: {
     const result = await completeBlueskyAccountLinkCallbackDirect(
       new URLSearchParams(input.params),
       'web',
+      authorization,
     )
     if (result.state.flowId !== input.flowId || result.state.userId !== input.currentUserId) {
       await deleteBlueskySessionForRejectedAuthorization(
@@ -36,7 +42,10 @@ export async function completeWebBlueskyAccountLinkDurably(input: {
       )
       throw createHttpError(400, 'Invalid Bluesky OAuth state')
     }
-    authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(input.flowId)
+    authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(
+      input.flowId,
+      result.authorization,
+    )
     if (authorization.status === 'pending') {
       await rejectBlueskyCallbackGeneration(authorization)
       throw createHttpError(
@@ -63,8 +72,12 @@ export async function completeNativeBlueskyAccountLinkDurably(input: {
   params: string
   flowId: string
   completionTokenHash: string
+  authorization?: BlueskyLinkAuthorization
 }): Promise<null> {
-  let authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(input.flowId)
+  let authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(
+    input.flowId,
+    input.authorization,
+  )
   if (authorization.callback_mode !== 'native') {
     await rejectBlueskyCallbackGeneration(authorization)
     throw createHttpError(400, 'Invalid Bluesky OAuth state')
@@ -73,6 +86,7 @@ export async function completeNativeBlueskyAccountLinkDurably(input: {
     const result = await completeBlueskyAccountLinkCallbackDirect(
       new URLSearchParams(input.params),
       'native',
+      authorization,
     )
     if (result.state.flowId !== input.flowId) {
       await deleteBlueskySessionForRejectedAuthorization(
@@ -82,7 +96,10 @@ export async function completeNativeBlueskyAccountLinkDurably(input: {
       )
       throw createHttpError(400, 'Invalid Bluesky OAuth state')
     }
-    authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(input.flowId)
+    authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(
+      input.flowId,
+      result.authorization,
+    )
     if (authorization.status === 'pending') {
       await rejectBlueskyCallbackGeneration(authorization)
       throw createHttpError(

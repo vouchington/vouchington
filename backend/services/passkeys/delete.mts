@@ -20,14 +20,10 @@ export async function deletePasskey(
   } else {
     await using query = await beginTransaction()
     await query(sql`/* deletePasskey */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`)
-    const { rows: targetRows } = await query(
-      sql`/* deletePasskey */ SELECT id FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId} LIMIT 1`,
-    )
-    assert(targetRows.length > 0, 404, 'Passkey not found')
-
-    await query(
+    const { rowCount } = await query(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )
+    assert(rowCount === 1, 404, 'Passkey not found')
     await query.commit()
     void enqueueRecalculateUserVoteWeight(currentUserId)
   }

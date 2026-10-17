@@ -7,6 +7,7 @@ import {
   completeNativeBlueskyAccountLink,
   resolveNativeBlueskyCallbackFailure,
 } from '@services/bluesky-accounts'
+import type { BlueskyLinkAuthorization } from '@services/bluesky-accounts/link-authorization'
 import { createNativeCompletionToken } from '@services/bluesky-accounts/native-completion-token'
 import { getErrorResponseCode, getErrorStatus } from '../../error-response.mts'
 
@@ -22,10 +23,11 @@ export async function completeNativeCallback(
   ctx: Context,
   params: URLSearchParams,
   flowId: string,
+  authorization: BlueskyLinkAuthorization,
 ): Promise<void> {
   const { token, tokenHash } = createNativeCompletionToken(flowId)
   try {
-    await completeNativeBlueskyAccountLink(params, flowId, tokenHash)
+    await completeNativeBlueskyAccountLink(params, flowId, tokenHash, authorization)
     redirectToNativeApp(ctx, { flow_id: flowId, completion_token: token })
   } catch (err) {
     const outcome = await resolveNativeBlueskyCallbackFailure(flowId, tokenHash)
