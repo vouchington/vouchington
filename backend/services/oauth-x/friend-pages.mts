@@ -48,7 +48,7 @@ async function persistXFriendBatch(
 
   await transaction(
     `/* persistXFriendBatch */ INSERT INTO x_friends (x_account_id, x_friend_id, friend_x_account_id)
-     SELECT $1, friend_id, (SELECT id FROM x_accounts WHERE x_user_id = friend_id)
+     SELECT $1::uuid, friend_id, (SELECT id FROM x_accounts WHERE x_user_id = friend_id)
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (x_account_id, x_friend_id) DO UPDATE SET
