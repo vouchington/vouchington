@@ -17,6 +17,7 @@ import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertTrendingCommunitiesIsCandidateBounded } from './plan-custom/trending-communities.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
+import { assertUsernamePrefixCandidates } from './plan-custom/username-prefix.mts'
 
 const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = {
   mediaDeliveryReplay: assertMediaDeliveryReplayPlan,
@@ -40,7 +41,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
   rssTextCandidates: result => assertCorePlanCheck('rssTextCandidates', result),
   communityTextCandidates: result => assertCorePlanCheck('communityTextCandidates', result),
-  usernamePrefixCandidates: result => assertCorePlanCheck('usernamePrefixCandidates', result),
+  usernamePrefixCandidates: assertUsernamePrefixCandidates,
   relationListingOrder: result => assertCorePlanCheck('relationListingOrder', result),
   entityRelationVotes: result => assertCorePlanCheck('entityRelationVotes', result),
   userRemovedPosts: result => assertCorePlanCheck('userRemovedPosts', result),
