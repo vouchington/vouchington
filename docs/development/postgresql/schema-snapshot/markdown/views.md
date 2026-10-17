@@ -423,7 +423,8 @@ Current paid membership entitlement projection; retained identities alone grant 
 
 ```sql
  SELECT DISTINCT ON (m.user_id) m.user_id,
-    product.plan
+    product.plan,
+    m.id AS membership_id
    FROM (((((memberships m
      JOIN membership_products product ON ((product.id = m.membership_product_id)))
      JOIN membership_sources source ON ((source.id = m.membership_source_id)))
@@ -1008,15 +1009,14 @@ RSS item response projection; callers enforce feed and item visibility.
      JOIN rss_feed_item_guids ON ((rss_feed_item_guids.id = rss_feed_items.id)))
      LEFT JOIN view_urls ON ((view_urls.id = rss_feed_items.url_id)))
      JOIN LATERAL ( SELECT rfis.rss_feed_id
-           FROM (((rss_feed_item_sources rfis
+           FROM ((rss_feed_item_sources rfis
              JOIN rss_feeds rf ON ((rf.id = rfis.rss_feed_id)))
              JOIN topics t ON ((t.id = rf.topic_id)))
-             JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rf.id)))
           WHERE ((rfis.rss_feed_item_id = rss_feed_items.id) AND (rf.deleted_at IS NULL))
-          ORDER BY current_state.is_enabled DESC, current_state.is_discoverable DESC, t.votes_score_net DESC NULLS LAST, rfis.created_at
+          ORDER BY rf.is_enabled DESC, rf.is_discoverable DESC, t.votes_score_net DESC NULLS LAST, rfis.created_at
          LIMIT 1) best_source ON (true))
      JOIN view_rss_feeds primary_feed ON ((primary_feed.id = best_source.rss_feed_id)))
-     LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY vrf.is_enabled DESC, vrf.is_discoverable DESC, t2.votes_score_net DESC NULLS LAST, rfis2.created_at) AS rss_feed_sources
+     LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY rf2.is_enabled DESC, rf2.is_discoverable DESC, t2.votes_score_net DESC NULLS LAST, rfis2.created_at) AS rss_feed_sources
            FROM (((rss_feed_item_sources rfis2
              JOIN rss_feeds rf2 ON ((rf2.id = rfis2.rss_feed_id)))
              JOIN view_rss_feeds vrf ON ((vrf.id = rfis2.rss_feed_id)))
