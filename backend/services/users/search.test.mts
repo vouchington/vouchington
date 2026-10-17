@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addVerifiedEmailForUser,
   createTestUser,
+  getTestUserIdsInLocaleOrder,
   safeUsername,
   softDeleteUser,
 } from '@voucha/test-helpers'
@@ -132,6 +133,25 @@ describe('searchUsers', () => {
 
     expect(secondPage.results).toHaveLength(1)
     expect(secondPage.results[0]!.id).not.toBe(firstPage.results[0]!.id)
+  })
+
+  it('keeps the database locale order for punctuation across pages', async () => {
+    const prefix = `srchlocale${randomSuffix()}`
+    const users = await Promise.all(
+      [`${prefix}-a`, `${prefix}_a`, `${prefix}0`, `${prefix}-b`].map(username =>
+        createTestUser({ username }),
+      ),
+    )
+    const ids = users.map(user => user!.id)
+    const ordered = await getTestUserIdsInLocaleOrder(ids)
+
+    const first = await searchUsers(prefix, { limit: 2 })
+    expect(first.results.map(user => user.id)).toEqual(ordered.slice(0, 2))
+    const second = await searchUsers(prefix, {
+      limit: 2,
+      after: first.results[1]!.username!.toLowerCase(),
+    })
+    expect(second.results.map(user => user.id)).toEqual(ordered.slice(2))
   })
 })
 

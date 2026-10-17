@@ -1,11 +1,11 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { write } from '@data-stores/psql'
 import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
   removeTestCommunityMember,
   insertTestCommunityListItem,
+  removeTestCommunityListItem,
   insertTestTopic,
   createRandomString,
 } from '@voucha/test-helpers'
@@ -132,10 +132,7 @@ describe('search (filters)', () => {
         expect(ids).toContain(withItems.id)
         expect(ids).not.toContain(withoutItems.id)
 
-        await write(
-          '/* removeTestCommunityListItem */ UPDATE community_list_topics SET removed_at = NOW() WHERE id = $1',
-          [item.id],
-        )
+        await removeTestCommunityListItem(item)
         const afterRemoval = await searchCommunities({ hasListItems: true, search: rand })
         expect(afterRemoval.results.map(community => community.id)).not.toContain(withItems.id)
       })

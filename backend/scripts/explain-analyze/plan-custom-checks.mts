@@ -40,6 +40,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
   rssTextCandidates: result => assertCorePlanCheck('rssTextCandidates', result),
   communityTextCandidates: result => assertCorePlanCheck('communityTextCandidates', result),
+  usernamePrefixCandidates: result => assertCorePlanCheck('usernamePrefixCandidates', result),
   relationListingOrder: result => assertCorePlanCheck('relationListingOrder', result),
   entityRelationVotes: result => assertCorePlanCheck('entityRelationVotes', result),
   userRemovedPosts: result => assertCorePlanCheck('userRemovedPosts', result),

@@ -15,30 +15,34 @@ export async function searchUsers(
 
   const limit = Math.max(0, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT))
   const lowerQuery = query.toLowerCase()
+  const upperPrefix = nextTextPatternPrefix(lowerQuery)
   const values: Array<string | number> = [lowerQuery, `${escapeLikePattern(lowerQuery)}%`]
+  const upperInput =
+    upperPrefix !== undefined ? `, $${values.push(upperPrefix)}::text AS upper_prefix` : ''
+  const upperFilter =
+    upperPrefix !== undefined ? ' AND LOWER(users.username) ~<~ search_input.upper_prefix' : ''
   const afterFilter =
     options.after !== undefined ? ` AND LOWER(users.username) > search_input.after` : ''
   const afterInput =
     options.after !== undefined ? `, $${values.push(options.after)}::text AS after` : ''
-  const limitInput = `$${values.push(limit + 1)}::int AS page_limit`
+  const pageLimitParameter = `$${values.push(limit + 1)}`
 
   const { rows } = await read(
     `/* searchUsers */
     WITH search_input AS MATERIALIZED (
-      SELECT $1::text AS prefix, $2::text AS pattern${afterInput}, ${limitInput}
-    ), matched_users AS MATERIALIZED (
-      SELECT matched.id, matched.username_sort
+      SELECT $1::text AS prefix, $2::text AS pattern${upperInput}${afterInput}
+    ), username_candidates AS MATERIALIZED (
+      SELECT users.id, LOWER(users.username) AS username_sort
       FROM search_input
-      CROSS JOIN LATERAL (
-        SELECT users.id, LOWER(users.username) AS username_sort
-        FROM users
-        WHERE users.deleted_at IS NULL
-          AND users.username IS NOT NULL
-          AND LOWER(users.username) >= search_input.prefix
-          AND LOWER(users.username) LIKE search_input.pattern ESCAPE '\\'${afterFilter}
-        ORDER BY LOWER(users.username)
-        LIMIT search_input.page_limit
-      ) matched
+      JOIN users ON users.deleted_at IS NULL
+        AND users.username IS NOT NULL
+        AND LOWER(users.username) ~>=~ search_input.prefix${upperFilter}
+        AND LOWER(users.username) LIKE search_input.pattern ESCAPE '\\'${afterFilter}
+    ), matched_users AS MATERIALIZED (
+      SELECT username_candidates.id, username_candidates.username_sort
+      FROM username_candidates
+      ORDER BY username_candidates.username_sort
+      LIMIT ${pageLimitParameter}
     )
     SELECT vup.*
     FROM matched_users
@@ -131,4 +135,16 @@ export function usersSearchCursorScope(filters: { query: string; admin: boolean 
 
 function escapeLikePattern(pattern: string): string {
   return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+}
+
+/** Upper exclusive bound in the bytewise ordering used by text_pattern_ops. */
+function nextTextPatternPrefix(prefix: string): string | undefined {
+  const codePoints = Array.from(prefix, character => character.codePointAt(0)!)
+  for (let index = codePoints.length - 1; index >= 0; index--) {
+    const codePoint = codePoints[index]!
+    if (codePoint === 0x10ffff) continue
+    const next = codePoint === 0xd7ff ? 0xe000 : codePoint + 1
+    return String.fromCodePoint(...codePoints.slice(0, index), next)
+  }
+  return undefined
 }

@@ -6,15 +6,29 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runAdminUserSearchScenarios(): Promise<void> {
   registerScenarioContract('search-users', {
-    expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_users__username'] },
-      { kind: 'maxProcessedRows', relation: 'users', max: 95 },
-    ],
+    expectations: [{ kind: 'custom', name: 'usernamePrefixCandidates' }],
   })
   await runAndCapture('search-users', async () => {
     const page = await searchUsers('seeduser', { limit: 25 })
     if (page.results.some(user => user.id === seedUuid(20_000, '01')))
       throw new Error('Public user search returned the deleted seed user')
+  })
+  registerScenarioContract('search-users-selective', {
+    expectations: [{ kind: 'custom', name: 'usernamePrefixCandidates' }],
+  })
+  await runAndCapture('search-users-selective', async () => {
+    const page = await searchUsers('seeduser9999', { limit: 25 })
+    if (page.results.length !== 1 || page.results[0]?.username !== 'seeduser9999')
+      throw new Error('Selective public username prefix must return its one seeded match')
+  })
+  registerScenarioContract('search-users-missing', {
+    expectations: [{ kind: 'custom', name: 'usernamePrefixCandidates' }],
+    allowEmptyResult: true,
+  })
+  await runAndCapture('search-users-missing', async () => {
+    const page = await searchUsers('aaaa', { limit: 25 })
+    if (page.results.length !== 0)
+      throw new Error('Missing public username prefix must skip nonmatching seed users')
   })
   await runAndCapture(
     'search-admin-users',
