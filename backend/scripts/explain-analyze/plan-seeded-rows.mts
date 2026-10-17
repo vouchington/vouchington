@@ -52,7 +52,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   communities: 20_261,
   community_search_counts: 20_261,
   community_list_topics: 1,
-  community_members: 100,
+  community_members: 2_100,
   facebook_accounts: 2,
   facebook_friends: 1,
   hostname_votes: 1,

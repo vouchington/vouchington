@@ -21,3 +21,24 @@ export async function seedNonListCommunities(count = 20_000): Promise<void> {
     [ids, names, slugs, createdById],
   )
 }
+
+/** Inactive rows make the member user_id candidate lookup prove it skips unrelated membership noise. */
+export async function seedRemovedCommunityMemberNoise(count = 2_000): Promise<void> {
+  const communityIds: string[] = []
+  const userIds: string[] = []
+  for (let index = 0; index < count; index++) {
+    communityIds.push(seedUuid(index % 5, '14'))
+    userIds.push(seedUuid(10_000 + index, '01'))
+  }
+  await write(
+    `/* seedExplainData */ INSERT INTO community_members (community_id, user_id, role, removed_at)
+     SELECT community_id, user_id, 'member', CURRENT_TIMESTAMP
+     FROM unnest($1::uuid[], $2::uuid[]) AS noise(community_id, user_id)
+     WHERE NOT EXISTS (
+       SELECT 1 FROM community_members existing
+       WHERE existing.community_id = noise.community_id
+         AND existing.user_id = noise.user_id
+     )`,
+    [communityIds, userIds],
+  )
+}

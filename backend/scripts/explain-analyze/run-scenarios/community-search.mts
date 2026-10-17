@@ -4,14 +4,19 @@ import { seedUuid } from '../seed-data/common.mts'
 import { searchCommunities } from '../run-services.mts'
 
 export async function runCommunitySearchScenarios() {
-  // Review caps are the maximum indexed reads in both compare modes and repeat passes +20%.
-  // Broad pages: 2,003 → 2,404; selective pages: 403 → 484.
+  // Candidate caps equal observed matches plus 20% in both compare modes and repeat passes:
+  // member/virtual pages 26 → 32, listed page 1 → 2, text 262 → 315, member filter 1 → 2.
+  // Correlated statistics and key hydration are budgeted independently below.
   registerScenarioContract('search-communities', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 39 },
-      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 2404 },
-      { kind: 'maxProcessedRows', relation: 'communities', max: 1295 },
+      // 26 rows are the 25-result page plus lookahead from the ordered count index; ceil(26 * 1.2) = 32.
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 32 },
+      // 2,000.4 indexed review rows; ceil(2,000.4 * 1.2) = 2,401.
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 2401 },
+      // 1,052 correlated per-post community-key reads plus 78 candidate/page key reads;
+      // ceil(1,130 * 1.2) = 1,356.
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1356 },
     ],
   })
   await runAndCapture(
@@ -22,9 +27,10 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-virtual-subscriptions', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 39 },
-      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 2404 },
-      { kind: 'maxProcessedRows', relation: 'communities', max: 1295 },
+      // The same 26-result-plus-lookahead count-index page and its 20% bound as the member sort.
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 32 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 2401 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1356 },
     ],
   })
   await runAndCapture(
@@ -55,7 +61,10 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-text', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      // GIN returns 262 matching candidates; the custom gate caps them at ceil(262 * 1.2) = 315.
       { kind: 'custom', name: 'communityTextCandidates' },
+      // Candidate read + 262 keyed lookups to order matches + 52 page/key lookups = 576;
+      // ceil(576 * 1.2) = 692. Post-view stats are skipped for this search.
       { kind: 'maxProcessedRows', relation: 'communities', max: 692 },
     ],
   })
@@ -72,8 +81,11 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-member', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      { kind: 'custom', name: 'searchCommunityMemberCandidates' },
+      // One matching membership row; the node-level custom gate enforces ceil(1 * 1.2) = 2.
       { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 484 },
-      { kind: 'maxProcessedRows', relation: 'communities', max: 245 },
+      // The same 252-post community and three keyed candidate/page lookups described above.
+      { kind: 'maxProcessedRows', relation: 'communities', max: 306 },
     ],
   })
   await runAndCapture(

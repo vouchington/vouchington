@@ -11,7 +11,10 @@ import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/rem
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
 import { assertRssFeedCandidatesAreSetBased } from './plan-custom/rss-feed-candidates.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-custom/rss-recency-cursor.mts'
-import { assertSearchCommunitiesEligibilityIsIndexed } from './plan-custom/search-communities.mts'
+import {
+  assertSearchCommunitiesEligibilityIsIndexed,
+  assertSearchCommunityMemberCandidates,
+} from './plan-custom/search-communities.mts'
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
@@ -33,6 +36,7 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   rssFeedCandidates: assertRssFeedCandidatesAreSetBased,
   rssRecencyCursor: assertRssRecencyLateCursorPlan,
   searchCommunitiesEligibility: assertSearchCommunitiesEligibilityIsIndexed,
+  searchCommunityMemberCandidates: assertSearchCommunityMemberCandidates,
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
   topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,

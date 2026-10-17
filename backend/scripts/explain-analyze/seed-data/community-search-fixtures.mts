@@ -1,5 +1,8 @@
 import { seedPrivateSearchCommunity } from './community-search-exclusions.mts'
-import { seedNonListCommunities } from './community-search-noise.mts'
+import {
+  seedNonListCommunities,
+  seedRemovedCommunityMemberNoise,
+} from './community-search-noise.mts'
 import {
   seedCommunities,
   seedCommunityListItemTopic,
@@ -14,6 +17,7 @@ import { seedModerationSummaryRecipient } from './view-driven-reads.mts'
 
 export async function seedCommunitySearchFixtures() {
   await seedCommunities(5, 200)
+  await seedRemovedCommunityMemberNoise()
   await seedModerationSummaryRecipient()
   await seedViewDrivenLists()
   await seedViewDrivenPrompts()

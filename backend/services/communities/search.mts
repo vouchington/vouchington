@@ -55,20 +55,11 @@ export async function searchCommunities(
     !!options?.hasListItems,
     limit,
     options?.search,
+    options?.memberUserId,
   )
 
   appendEligiblePostTypeFilter(searchQuery, options?.currentUser, options?.eligiblePostType)
   if (options?.hashtagHasNoMatches) searchQuery.append(sql` AND FALSE`)
-
-  if (options?.memberUserId) {
-    searchQuery.append(sql`
-      AND EXISTS (
-        SELECT 1 FROM community_members cm
-        WHERE cm.community_id = c.id
-          AND cm.user_id = ${options.memberUserId}
-          AND cm.removed_at IS NULL
-      )`)
-  }
 
   if (options?.listScope === 'mine') {
     assert(options.currentUser, 401, 'Unauthorized')

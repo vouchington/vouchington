@@ -6,6 +6,7 @@ export function startCommunityCandidates(
   hasListItems: boolean,
   limit: number,
   search?: string,
+  memberUserId?: string,
 ): ReturnType<typeof sql> {
   const listedVirtual = hasListItems && sort === 'virtual_subscriptions'
   const query = sql`/* searchCommunities */ WITH `
@@ -14,6 +15,11 @@ export function startCommunityCandidates(
       SELECT id FROM communities
       WHERE deleted_at IS NULL
         AND search_vector @@ websearch_to_tsquery('voucha_english', ${search})
+    ), `)
+  if (memberUserId)
+    query.append(sql`member_matches AS MATERIALIZED (
+      SELECT community_id AS id FROM community_members
+      WHERE user_id = ${memberUserId} AND removed_at IS NULL
     ), `)
   if (listedVirtual) {
     query.append(sql`search_input AS MATERIALIZED (SELECT ${limit + 1}::int AS page_limit),
@@ -34,6 +40,7 @@ export function startCommunityCandidates(
   } else {
     query.append(sql` FROM communities c`)
   }
+  if (memberUserId) query.append(sql` JOIN member_matches member_match ON member_match.id = c.id`)
   if (!listedVirtual && (sort !== 'name' || hasListItems))
     query.append(sql` JOIN community_search_counts counts ON counts.community_id = c.id`)
   query.append(sql` WHERE c.deleted_at IS NULL`)
