@@ -19,15 +19,13 @@ export async function assertUrlsHaveNoBlockedHostnames(
   if (urlIds.length === 0) return
 
   const { rows } = await write(sql`/* assertUrlsHaveNoBlockedHostnames */
-    SELECT url_hostnames.id AS hostname_id
+    SELECT urls.url, url_hostnames.is_blocked
     FROM urls
     JOIN url_hostnames ON url_hostnames.id = urls.hostname_id
     WHERE urls.id = ANY(${urlIds}::uuid[])
-      AND url_hostnames.is_blocked
-    LIMIT 1
   `)
-
-  if (rows.length > 0 && userId) {
+  const blocked = rows.some(row => row.is_blocked)
+  if (blocked && userId) {
     try {
       await penalizeBlockedHostnameAttempt(userId)
     } catch (err) {
@@ -35,12 +33,6 @@ export async function assertUrlsHaveNoBlockedHostnames(
     }
   }
 
-  assert(rows.length === 0, 422, 'URL hostname is blocked')
-
-  const { rows: urlRows } = await write(sql`/* assertUrlsHaveNoBlockedHostnames_getUrls */
-    SELECT url
-    FROM urls
-    WHERE id = ANY(${urlIds}::uuid[])
-  `)
-  await assertUrlsAllowedByWebRisk((urlRows as Array<{ url: string }>).map(row => row.url))
+  assert(!blocked, 422, 'URL hostname is blocked')
+  await assertUrlsAllowedByWebRisk((rows as Array<{ url: string }>).map(row => row.url))
 }

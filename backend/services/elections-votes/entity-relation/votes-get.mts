@@ -1,5 +1,8 @@
 import { resolveEntityRelationElectionTargetById } from './resolve-election-target.mts'
-import type { EntityRelationElectionTable } from '@queues/vote-aggregation/enqueues/types-elections'
+import type {
+  EntityRelationElectionTable,
+  EntityRelationElectionTarget,
+} from '@queues/vote-aggregation/enqueues/types-elections'
 import {
   createVoteGetByUser,
   createVotesGetByElectionId,
@@ -21,8 +24,15 @@ export function getEntityRelationElectionVotesByUser(
     entityIds,
   ) as Promise<ElectionVote<'relation'>[]>
 }
-export async function getEntityRelationElectionVote(userId: string, entityId: string) {
-  const target = await resolveEntityRelationElectionTargetById(entityId)
+export async function getEntityRelationElectionVote(
+  userId: string,
+  entityId: string,
+  resolvedTarget?: EntityRelationElectionTarget,
+) {
+  const target =
+    resolvedTarget?.entityRelationId === entityId
+      ? resolvedTarget
+      : await resolveEntityRelationElectionTargetById(entityId)
   if (!target) return null
   return createVoteGetByUser<'relation'>(getEntityRelationElectionConfig(target.relationTable))(
     userId,
@@ -33,8 +43,12 @@ export async function getEntityRelationElectionVote(userId: string, entityId: st
 export async function getEntityRelationElectionVotesByElectionId(
   entityId: string,
   pagination: { limit: number; after?: string },
+  resolvedTarget?: EntityRelationElectionTarget,
 ) {
-  const target = await resolveEntityRelationElectionTargetById(entityId)
+  const target =
+    resolvedTarget?.entityRelationId === entityId
+      ? resolvedTarget
+      : await resolveEntityRelationElectionTargetById(entityId)
   if (!target) return { results: [], page_info: emptyPageInfo() }
   return createVotesGetByElectionId<'relation'>(
     getEntityRelationElectionConfig(target.relationTable),
@@ -45,8 +59,12 @@ export async function getEntityRelationElectionVotesByUserForEntity(
   userId: string,
   entityId: string,
   pagination: { limit: number; after?: string },
+  resolvedTarget?: EntityRelationElectionTarget,
 ) {
-  const target = await resolveEntityRelationElectionTargetById(entityId)
+  const target =
+    resolvedTarget?.entityRelationId === entityId
+      ? resolvedTarget
+      : await resolveEntityRelationElectionTargetById(entityId)
   if (!target) return { results: [], page_info: emptyPageInfo() }
   return createVotesGetByUserForEntity<'relation'>(
     getEntityRelationElectionConfig(target.relationTable),

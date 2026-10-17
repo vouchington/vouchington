@@ -25,10 +25,9 @@ export async function getFollowedUsersFollowingTopicIds(
           ))
         )`
 
-  const countQuery = `/* getFollowedUsersFollowingTopic */
-    SELECT COUNT(*)::INT AS total
-    FROM (
-      SELECT DISTINCT topic_follows.subject_id
+  const query = `/* getFollowedUsersFollowingTopic */
+    WITH matched AS MATERIALIZED (
+      SELECT topic_follows.subject_id AS user_id, MAX(topic_follows.created_at) AS followed_at
       FROM relation__user__follow__topic AS topic_follows
       JOIN relation__user__follow__user AS user_follows
         ON user_follows.subject_id = $1
@@ -39,33 +38,18 @@ export async function getFollowedUsersFollowingTopicIds(
         AND topic_follows.deleted_at IS NULL
         AND follow_user.deleted_at IS NULL
         ${topicFollowsVisibilityFilter}
-    ) AS matched
+      GROUP BY topic_follows.subject_id
+    )
+    SELECT (SELECT COUNT(*)::INT FROM matched) AS total,
+      ARRAY(SELECT user_id FROM matched
+        ORDER BY followed_at DESC, user_id ASC LIMIT $3) AS user_ids
   `
 
-  const limitedQuery = `/* getFollowedUsersFollowingTopic */
-    SELECT topic_follows.subject_id AS user_id, MAX(topic_follows.created_at) AS followed_at
-    FROM relation__user__follow__topic AS topic_follows
-    JOIN relation__user__follow__user AS user_follows
-      ON user_follows.subject_id = $1
-     AND user_follows.object_id = topic_follows.subject_id
-     AND user_follows.deleted_at IS NULL
-    JOIN users AS follow_user ON follow_user.id = topic_follows.subject_id
-    WHERE topic_follows.object_id = $2
-      AND topic_follows.deleted_at IS NULL
-      AND follow_user.deleted_at IS NULL
-      ${topicFollowsVisibilityFilter}
-    GROUP BY topic_follows.subject_id
-    ORDER BY followed_at DESC, topic_follows.subject_id ASC
-    LIMIT $3
-  `
+  const { rows } = await read<{ total: number; user_ids: string[] }>(
+    query,
+    [currentUserId, topicId, normalizedLimit],
+    options,
+  )
 
-  const [{ rows: countRows }, { rows: userRows }] = await Promise.all([
-    read(countQuery, [currentUserId, topicId], options),
-    read(limitedQuery, [currentUserId, topicId, normalizedLimit], options),
-  ])
-
-  return {
-    total: Number(countRows[0]?.total ?? 0),
-    userIds: userRows.map(row => row.user_id as string),
-  }
+  return { total: rows[0]!.total, userIds: rows[0]!.user_ids }
 }

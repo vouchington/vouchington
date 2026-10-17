@@ -9,7 +9,10 @@ import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { getPostByAny } from '@services/posts'
 import assert from 'http-assert'
 import { createTopicAliases } from '@services/topics/aliases'
-import { createTopicRecommendationLinkRelation } from './create-topic-recommendation-link-relation.mts'
+import {
+  createTopicRecommendationLinkRelation,
+  getTopicRecommendationHostnameConflicts,
+} from './create-topic-recommendation-link-relation.mts'
 import { createTopicRecommendationUrlRelation } from './create-topic-recommendation-url-relation.mts'
 import { getLockedTopicRecommendationApproval } from './get-locked-topic-recommendation-approval.mts'
 import { markTopicRecommendationApproved } from './mark-topic-recommendation-approved.mts'
@@ -54,6 +57,11 @@ export async function approveTopicRecommendationInTransaction(
     })
   }
 
+  const hostnameConflicts = await getTopicRecommendationHostnameConflicts(
+    topic.id,
+    lockedRecommendation.hostnames.map(hostname => hostname.id),
+    options,
+  )
   const relations: EntityRelation[] = []
   const urlIds: string[] = []
 
@@ -64,6 +72,7 @@ export async function approveTopicRecommendationInTransaction(
       topic,
       hostname,
       options,
+      hostnameConflicts.has(hostname.id),
     )
     if (relationResult.relation) relations.push(relationResult.relation)
     if (relationResult.urlId) urlIds.push(relationResult.urlId)

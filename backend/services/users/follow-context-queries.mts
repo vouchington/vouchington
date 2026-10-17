@@ -59,18 +59,18 @@ export async function hydrateFollowContextGroups(
   }))
 }
 
-export async function getFollowedUsersByElectionVoteIds(
+export async function getFollowedUsersByElectionVoteIdsBatch(
   currentUser: BasicUser,
   entityId: string | null | undefined,
   voteTable: VoteTableName,
-  sign: -1 | 1,
+  signs: Array<-1 | 1>,
   {
     limit = DEFAULT_LIMIT,
     queryOptions = {},
   }: { limit?: number; queryOptions?: QueryOptions } = {},
-): Promise<FollowContextIds> {
+): Promise<FollowContextIds[]> {
   if (!entityId) {
-    return { total: 0, userIds: [] }
+    return signs.map(() => ({ total: 0, userIds: [] }))
   }
   const currentUserId = currentUser.id
   const normalizedLimit = normalizeFollowContextLimit(limit)
@@ -98,43 +98,48 @@ export async function getFollowedUsersByElectionVoteIds(
       ORDER BY user_id, id DESC
     )`
 
-  const countQuery = `/* getFollowedUsersByElectionVote */
-    WITH ${currentVotesCte}
-    SELECT COUNT(*)::INT AS total
-    FROM current_votes AS cv
-    JOIN relation__user__follow__user AS follows
-      ON follows.subject_id = $1
-     AND follows.object_id = cv.user_id
-     AND follows.deleted_at IS NULL
-    JOIN users AS vote_user ON vote_user.id = cv.user_id
-    WHERE cv.score * $3 > 0
-      AND vote_user.deleted_at IS NULL
-      ${likesVisibilityFilter}
+  const query = `/* getFollowedUsersByElectionVote */
+    WITH ${currentVotesCte}, matched AS MATERIALIZED (
+      SELECT cv.id, cv.user_id, SIGN(cv.score)::INT AS sign
+      FROM current_votes AS cv
+      JOIN relation__user__follow__user AS follows
+        ON follows.subject_id = $1
+       AND follows.object_id = cv.user_id
+       AND follows.deleted_at IS NULL
+      JOIN users AS vote_user ON vote_user.id = cv.user_id
+      WHERE cv.score <> 0
+        AND vote_user.deleted_at IS NULL
+        ${likesVisibilityFilter}
+    )
+    SELECT requested.sign,
+      (SELECT COUNT(*)::INT FROM matched WHERE matched.sign = requested.sign) AS total,
+      ARRAY(SELECT user_id FROM matched WHERE matched.sign = requested.sign
+        ORDER BY id DESC, user_id ASC LIMIT $4) AS user_ids
+    FROM UNNEST($3::INT[]) WITH ORDINALITY AS requested(sign, position)
+    ORDER BY requested.position
   `
 
-  const limitedQuery = `/* getFollowedUsersByElectionVote */
-    WITH ${currentVotesCte}
-    SELECT cv.user_id, cv.created_at AS voted_at
-    FROM current_votes AS cv
-    JOIN relation__user__follow__user AS follows
-      ON follows.subject_id = $1
-     AND follows.object_id = cv.user_id
-     AND follows.deleted_at IS NULL
-    JOIN users AS vote_user ON vote_user.id = cv.user_id
-    WHERE cv.score * $3 > 0
-      AND vote_user.deleted_at IS NULL
-      ${likesVisibilityFilter}
-    ORDER BY cv.id DESC, cv.user_id ASC
-    LIMIT $4
-  `
+  const { rows } = await read<{ total: number; user_ids: string[] }>(
+    query,
+    [currentUserId, entityId, signs, normalizedLimit],
+    queryOptions,
+  )
+  return rows.map(row => ({ total: row.total, userIds: row.user_ids }))
+}
 
-  const [{ rows: countRows }, { rows: userRows }] = await Promise.all([
-    read(countQuery, [currentUserId, entityId, sign], queryOptions),
-    read(limitedQuery, [currentUserId, entityId, sign, normalizedLimit], queryOptions),
-  ])
-
-  return {
-    total: Number(countRows[0]?.total ?? 0),
-    userIds: userRows.map(row => row.user_id as string),
-  }
+export async function getFollowedUsersByElectionVoteIds(
+  currentUser: BasicUser,
+  entityId: string | null | undefined,
+  voteTable: VoteTableName,
+  sign: -1 | 1,
+  options: { limit?: number; queryOptions?: QueryOptions } = {},
+): Promise<FollowContextIds> {
+  const [group] = await getFollowedUsersByElectionVoteIdsBatch(
+    currentUser,
+    entityId,
+    voteTable,
+    [sign],
+    options,
+  )
+  return group!
 }

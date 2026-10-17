@@ -19,22 +19,12 @@ export async function createTopicRecommendationLinkRelation(
   topic: Topic,
   hostname: { id: string; hostname: string },
   options: QueryOptions,
+  hasExistingTopic: boolean,
 ): Promise<{ relation: EntityRelation | null; urlId: string | null }> {
   assert(options.query, 500, 'Query options are required')
 
-  const existingRelationQuery = await options.query(sql`/* createTopicRecommendationLinkRelation */
-    SELECT rel.subject_id
-    FROM relation__topic__landing_page__url rel
-    JOIN urls u ON u.id = rel.object_id
-    WHERE rel.deleted_at IS NULL
-      AND u.hostname_id = ${hostname.id}
-      AND rel.subject_id <> ${topic.id}
-    LIMIT 1
-  `)
-
-  const existingTopicId = existingRelationQuery.rows[0]?.subject_id as string | undefined
   assert(
-    !existingTopicId,
+    !hasExistingTopic,
     422,
     `Hostname ${hostname.hostname} is already associated with another topic`,
   )
@@ -53,4 +43,23 @@ export async function createTopicRecommendationLinkRelation(
   )
 
   return { relation: relations[0] ?? null, urlId: url.id }
+}
+
+/** Newly inserted relations belong to topicId and cannot change this conflict set. */
+export async function getTopicRecommendationHostnameConflicts(
+  topicId: string,
+  hostnameIds: string[],
+  options: QueryOptions,
+): Promise<Set<string>> {
+  assert(options.query, 500, 'Query options are required')
+  if (!hostnameIds.length) return new Set()
+  const { rows } = await options.query(sql`/* createTopicRecommendationLinkRelation */
+    SELECT DISTINCT u.hostname_id
+    FROM relation__topic__landing_page__url rel
+    JOIN urls u ON u.id = rel.object_id
+    WHERE rel.deleted_at IS NULL
+      AND u.hostname_id = ANY(${hostnameIds}::uuid[])
+      AND rel.subject_id <> ${topicId}
+  `)
+  return new Set(rows.map(row => row.hostname_id as string))
 }

@@ -1,3 +1,4 @@
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import onError from '@modules/on-error'
 import { getUserTagRelationById } from '@services/entity-relations/user-tags'
@@ -23,12 +24,17 @@ export async function upsertEntityRelationVotesById(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
   context?: VoteEventContext,
+  resolvedTarget?: EntityRelationElectionTarget | null,
 ): Promise<ElectionVoteMutationResult[]> {
-  const target = await resolveEntityRelationElectionTargetById(votes[0]!.entityId)
+  const entityId = votes[0]!.entityId
+  const target =
+    resolvedTarget === null || resolvedTarget?.entityRelationId === entityId
+      ? resolvedTarget
+      : await resolveEntityRelationElectionTargetById(entityId)
   const metadata = entityRelationMetadatum.find(item => item.table_name === target?.relationTable)
   if (!metadata) return []
   const isUserTagVote =
-    votes.length === 1 && Boolean(await getUserTagRelationById(votes[0]!.entityId))
+    votes.length === 1 && target?.relationTable === 'relation__user__category__topic'
   return upsertEntityRelationElectionVotes(userId, votes, context, metadata, {
     enqueueVoteStats: !isUserTagVote,
   })

@@ -1,4 +1,5 @@
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
+import { seedRecommendationHostnames } from './seed-data/recommendation-hostnames.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
@@ -167,6 +168,7 @@ async function main() {
   await seedViewDrivenIdentity()
   await seedClassifierHumanVoteComparison()
   await seedRelationVoteReads()
+  await seedRecommendationHostnames()
   await runAnalyze()
   await refreshMaterializedView('mv_rss_feed_crawl_tiers')
   await refreshMaterializedView('mv_platform_stats')

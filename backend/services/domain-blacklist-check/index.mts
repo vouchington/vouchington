@@ -7,11 +7,16 @@ import {
 } from '@services/urls-domains-blacklist/domains'
 import { assertUrlsAllowedByWebRisk, parseWebRiskUrl } from '@services/web-risk/check'
 
+type HostnamePolicies = Awaited<ReturnType<typeof getHostnamePolicies>>
+
 /**
  * One batched policy read covers the display domains and the hostnames Web Risk will check, so
  * neither the per-domain blocklist check nor the per-URL check queries again.
  */
-async function assertDomainsAndUrlsAllowed(domains: string[], urls: string[]): Promise<void> {
+async function assertDomainsAndUrlsAllowed(
+  domains: string[],
+  urls: string[],
+): Promise<HostnamePolicies> {
   const webRiskHostnames = urls.flatMap(url => parseWebRiskUrl(url)?.hostname ?? [])
   const policies = await getHostnamePolicies([...domains, ...webRiskHostnames])
   for (const domain of domains) {
@@ -19,6 +24,7 @@ async function assertDomainsAndUrlsAllowed(domains: string[], urls: string[]): P
     assert(!blocked, 400, `Domain is blocked: ${domain}`)
   }
   await assertUrlsAllowedByWebRisk(urls, { policies })
+  return policies
 }
 
 export async function assertNoBlockedDomains(markdown: string): Promise<void> {
@@ -39,4 +45,11 @@ export async function assertUrlNotBlocked(url: string): Promise<void> {
   const domain = extractDomain(url)
   if (domain === 'unknown') return
   await assertDomainsAndUrlsAllowed([domain], [url])
+}
+
+/** Validates the URL and returns the same policy snapshot for subsequent URL persistence. */
+export async function loadAllowedUrlHostnamePolicies(url: string): Promise<HostnamePolicies> {
+  const domain = extractDomain(url)
+  if (domain === 'unknown') return new Map()
+  return assertDomainsAndUrlsAllowed([domain], [url])
 }

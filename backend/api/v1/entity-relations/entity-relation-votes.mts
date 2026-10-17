@@ -1,5 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
+import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqueues/types-elections'
 import {
   createVoteClearHandler,
   createVoteHandler,
@@ -39,28 +40,38 @@ async function getEntityRelationElectionForRoute(id: string) {
   const target = await resolveEntityRelationElectionTargetById(id)
   if (!target) return null
   const [election] = await getEntityRelationElectionByTargetCachedBatch([target])
-  return election ?? null
+  return election ? { ...election, target } : null
 }
+
+async function getEntityRelationElectionForVoteRoute(id: string) {
+  const election = await getEntityRelationElectionForRoute(id)
+  if (!election) return null
+  const userTagRelation = await getUserTagRelationById(election.id)
+  return { ...election, userTagRelation }
+}
+
+type EntityRelationVoteRouteEntity = NonNullable<
+  Awaited<ReturnType<typeof getEntityRelationElectionForVoteRoute>>
+>
 
 const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   rateLimitPrefix: ENTITY_RELATION_VOTE_RATE_LIMIT_PREFIX,
   routeKey: 'PUT:/api/v1/entity-relations/:id/vote',
   requestContractOperation: 'PUT:/api/v1/entity-relations/:id/vote',
   entityType: 'entity_relation',
-  getEntity: getEntityRelationElectionForRoute,
+  getEntity: getEntityRelationElectionForVoteRoute,
   entityNotFoundMessage: 'Entity relation not found',
   votePolicy: 'relation',
   getCurrentVote: getEntityRelationElectionVote,
   upsertVotes: upsertEntityRelationVotesById,
-  shouldAllowOfficialAccount: async (currentUser, entity) => {
-    const userTagRelation = await getUserTagRelationById((entity as { id: string }).id)
+  shouldAllowOfficialAccount: (currentUser, entity) => {
+    const { userTagRelation } = entity as EntityRelationVoteRouteEntity
     return !userTagRelation || isAdminUser(currentUser)
   },
-  shouldBypassContributionGating: async (currentUser, entity) =>
-    isAdminUser(currentUser) &&
-    Boolean(await getUserTagRelationById((entity as { id: string }).id)),
+  shouldBypassContributionGating: (currentUser, entity) =>
+    isAdminUser(currentUser) && Boolean((entity as EntityRelationVoteRouteEntity).userTagRelation),
   assertAccess: async (_ctx, currentUser, entity) => {
-    const relation = await getUserTagRelationById((entity as { id: string }).id)
+    const relation = (entity as EntityRelationVoteRouteEntity).userTagRelation
     if (relation) {
       assertNotSuspended(currentUser)
       await assertUserTagAllowed(currentUser, relation.subject_id, relation.object_id)
@@ -71,13 +82,34 @@ const entityRelationVoteOptions: CreateVoteHandlerOptions = {
   onNoop: (_currentUser, relationId) => refreshVoteStatsAfterNoop(relationId),
 }
 
-const entityRelationVoteHandler = createVoteHandler(entityRelationVoteOptions)
+function createEntityRelationVoteHandler(isClear: boolean) {
+  return async (ctx: Context) => {
+    let resolvedTarget: EntityRelationElectionTarget | null | undefined
+    const options: CreateVoteHandlerOptions = {
+      ...entityRelationVoteOptions,
+      ...(isClear
+        ? {
+            routeKey: 'DELETE:/api/v1/entity-relations/:id/vote',
+            requestContractOperation: 'DELETE:/api/v1/entity-relations/:id/vote',
+          }
+        : {}),
+      getCurrentVote: async (userId, entityId) => {
+        // Resolve inside the request lock; the preflight lookup predates that boundary.
+        resolvedTarget = await resolveEntityRelationElectionTargetById(entityId)
+        return resolvedTarget
+          ? getEntityRelationElectionVote(userId, entityId, resolvedTarget)
+          : null
+      },
+      upsertVotes: (userId, votes, context) =>
+        upsertEntityRelationVotesById(userId, votes, context, resolvedTarget),
+    }
+    const handler = isClear ? createVoteClearHandler(options) : createVoteHandler(options)
+    await handler(ctx)
+  }
+}
 
-const clearEntityRelationVoteHandler = createVoteClearHandler({
-  ...entityRelationVoteOptions,
-  routeKey: 'DELETE:/api/v1/entity-relations/:id/vote',
-  requestContractOperation: 'DELETE:/api/v1/entity-relations/:id/vote',
-})
+const entityRelationVoteHandler = createEntityRelationVoteHandler(false)
+const clearEntityRelationVoteHandler = createEntityRelationVoteHandler(true)
 
 app.route('/api/v1/entity-relations/:id/vote').put(async ctx => {
   apiRequestContract<'PUT:/api/v1/entity-relations/:id/vote', ElectionVoteRequest<'relation'>>(
@@ -113,10 +145,16 @@ app.route('/api/v1/entity-relations/:id/votes').get(async (ctx: Context) => {
   ctx.assert(relation, 404, 'Entity relation not found')
 
   const collection = isAdminUser(currentUser)
-    ? await getEntityRelationElectionVotesByElectionId(ctx.params.id!, { limit, after })
-    : await getEntityRelationElectionVotesByUserForEntity(currentUser.id, ctx.params.id!, {
-        limit,
-        after,
-      })
+    ? await getEntityRelationElectionVotesByElectionId(
+        ctx.params.id!,
+        { limit, after },
+        relation.target,
+      )
+    : await getEntityRelationElectionVotesByUserForEntity(
+        currentUser.id,
+        ctx.params.id!,
+        { limit, after },
+        relation.target,
+      )
   ctx.json(collection)
 })

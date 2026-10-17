@@ -7,6 +7,27 @@ import { createUrlUpsert } from './upsert.mts'
 
 // URL persistence owns this real checker integration; importing URLs from Web Risk would cycle.
 describe('addUrl integrates with Google Web Risk blocking', () => {
+  it('retains blocking when a caller passes its already loaded hostname policies', async () => {
+    const fixture = createOwnedWebRiskFixture()
+    const domain = `precomputed-risk-${crypto.randomUUID()}.example.com`
+    const url = `https://${domain}/blocked`
+    const { addUrl } = createUrlUpsert(fixture.check)
+    try {
+      await expect(
+        fixture.own(
+          addUrl(null, url, {
+            webRiskOptions: {
+              policies: new Map([[domain, { is_blocked: true, should_skip_web_risk: false }]]),
+            },
+          }),
+        ),
+      ).rejects.toMatchObject({ status: 400 })
+      expect(await urlExistsForTest(url)).toBe(false)
+    } finally {
+      await fixture.cleanup()
+    }
+  })
+
   it('rejects risky URLs before writing URL rows', async () => {
     vi.stubEnv('GOOGLE_WEB_RISK_API_KEY', 'test-web-risk-key')
     let restoreConfig: (() => void) | undefined

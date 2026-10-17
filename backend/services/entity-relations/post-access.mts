@@ -8,6 +8,7 @@ import {
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import { postEligibilityFor, type EntityRelationViewer } from './viewer.mts'
+import { selectAccessiblePostIdsByRole } from './post-access-visibility.mts'
 
 /**
  * Whether object posts are listed (discovery rules, like feeds) or named by id (direct rules, like
@@ -81,35 +82,21 @@ export async function getRelatablePostIds(
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
 ): Promise<{ subjectIds: Set<string>; objectIds: Set<string> }> {
-  const [subjectIds, objectIds] = await Promise.all([
-    selectAccessiblePostIds(
-      posts.subjectIds,
-      buildSubjectPostAccessFilter('candidate_post', 'access_post', viewer),
-      options,
-    ),
-    selectAccessiblePostIds(
-      posts.objectIds,
-      buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named'),
-      options,
-    ),
-  ])
-  return { subjectIds, objectIds }
-}
-
-async function selectAccessiblePostIds(
-  postIds: readonly string[],
-  filter: SQLStatement | null,
-  options?: QueryOptions,
-): Promise<Set<string>> {
-  if (postIds.length === 0) return new Set()
-  const query = sql`/* getRelatablePostIds */
-    SELECT candidate_post.id
-    FROM posts candidate_post
-    JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-    WHERE candidate_post.id = ANY(${postIds}::uuid[])`
-  if (filter) query.append(sql` AND `).append(filter)
-  const { rows } = await write<{ id: string }>(query, options)
-  return new Set(rows.map(row => row.id))
+  return selectAccessiblePostIdsByRole(
+    [
+      {
+        role: 'subject',
+        ids: posts.subjectIds,
+        filter: buildSubjectPostAccessFilter('candidate_post', 'access_post', viewer),
+      },
+      {
+        role: 'object',
+        ids: posts.objectIds,
+        filter: buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named'),
+      },
+    ],
+    options,
+  )
 }
 
 /**
@@ -123,8 +110,10 @@ export async function assertPostMutationAccess(
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
   expectedRootIds?: ReadonlyMap<string, string>,
+  preflight?: Awaited<ReturnType<typeof getRelatablePostIds>>,
 ): Promise<Map<string, string>> {
-  await assertRelatablePostAccess(viewer, posts, options)
+  if (preflight) assertRelatablePostIds(posts, preflight)
+  else await assertRelatablePostAccess(viewer, posts, options)
   const postIds = [...new Set([...posts.subjectIds, ...posts.objectIds])]
   if (postIds.length === 0) return new Map()
   const snapshots = await getPostMutationAccessSnapshots(postIds, options)
@@ -156,12 +145,20 @@ export async function assertRelatablePostAccess(
   viewer: EntityRelationViewer,
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
-): Promise<void> {
+): Promise<Awaited<ReturnType<typeof getRelatablePostIds>>> {
   const identifiers = [...posts.subjectIds, ...posts.objectIds]
   if (!identifiers.every(isUUID)) {
     throw createHttpError(404, 'Not found')
   }
   const relatable = await getRelatablePostIds(viewer, posts, options)
+  assertRelatablePostIds(posts, relatable)
+  return relatable
+}
+
+function assertRelatablePostIds(
+  posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
+  relatable: Awaited<ReturnType<typeof getRelatablePostIds>>,
+): void {
   if (
     !posts.subjectIds.every(id => relatable.subjectIds.has(id)) ||
     !posts.objectIds.every(id => relatable.objectIds.has(id))

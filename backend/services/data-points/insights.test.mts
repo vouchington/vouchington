@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
-import { getTopicDataPointInsights } from './insights.mts'
+import { getTopicDataPointInsights, getTopicDataPointInsightsBatch } from './insights.mts'
 import type { PrivateUser } from '@services/users/types'
 import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
 
@@ -95,6 +95,41 @@ describe('getTopicDataPointInsights', () => {
     expect(insights.approval_rate).toBeNull()
     expect(insights.median_credit_limits).toEqual([])
     expect(insights.credit_score_distribution).toEqual({})
+  })
+
+  it('keeps populated and empty topic aggregates separate in a batch', async () => {
+    const emptyTopicId = await insertTestTopic({
+      name: `Batch Empty ${suffix}`,
+      slug: `batch-empty-${suffix}`,
+      createdById: user.id,
+    })
+    const results = await getTopicDataPointInsightsBatch([
+      emptyTopicId.toUpperCase(),
+      topicId,
+      topicId,
+    ])
+    expect(results.size).toBe(2)
+    expect(await getTopicDataPointInsights(`{${topicId.toUpperCase()}}`)).toEqual(
+      results.get(topicId),
+    )
+    expect(results.get(topicId)).toMatchObject({
+      total_count: 6,
+      approved_count: 3,
+      denied_count: 2,
+      pending_count: 1,
+      approval_rate: 0.5,
+      median_credit_limits: [{ amount: 1_000_000, currency: 'usd' }],
+      credit_score_distribution: { '670-739': 2, '740-799': 1, '580-669': 2, '800-850': 1 },
+    })
+    expect(results.get(emptyTopicId.toUpperCase())).toEqual({
+      total_count: 0,
+      approved_count: 0,
+      denied_count: 0,
+      pending_count: 0,
+      approval_rate: null,
+      median_credit_limits: [],
+      credit_score_distribution: {},
+    })
   })
 
   it('returns correct total, approved, denied, pending counts', async () => {

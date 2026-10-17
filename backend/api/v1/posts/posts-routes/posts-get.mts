@@ -2,19 +2,12 @@ import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 
 import { indexById } from '@modules/utils'
-import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
-import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
-import {
-  getPostByAnyCachedBatch,
-  getPostElectionByIdCachedBatch,
-  getPostMetricsByAnyCachedBatch,
-} from '@services/entity-fetch'
+import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
-import { searchPostModerationsByPostIds } from '@services/moderation'
 import { labelAndMaskPosts } from '@services/content-provenance'
 import { getPostIds, getPublicPostIds } from '@services/posts'
 import {
@@ -30,9 +23,9 @@ import app from '../../../app.mts'
 import { apiQuery } from '../../../response-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import {
-  getAgentModerationElectionsRecord,
+  getPostElectionSidecars,
   indexPostModerationsByPostId,
-  mergeElectionVotesWithAgentModerations,
+  getPostElectionVotesWithModerations,
 } from '../admin-moderation-data.mts'
 import type { PostsResponseInput } from './posts-response-types.mts'
 
@@ -104,12 +97,17 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }
 
+  const { moderations: moderationsPromise, elections: electionsPromise } = getPostElectionSidecars(
+    currentUser,
+    postIds,
+  )
   const output: PostsResponseInput = {
     results: result.results,
     page_info: result.page_info,
     posts: postsWithRootsPromise.then(indexById),
     posts_metrics: getPostMetricsByAnyCachedBatch(postIds).then(indexById),
-    post_elections: getPostElectionByIdCachedBatch(postIds)
+    post_elections: electionsPromise
+      .then(groups => groups.post)
       .then(indexById)
       .then(elections => maybeSanitizeElections(currentUser, elections)),
     markdown_to_html: postsPromise.then(async posts => {
@@ -162,25 +160,20 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
       }))
     })
 
-    const postElectionVotesPromise = postsPromise.then(async posts => {
-      const votablePostIds = posts.flatMap(p => (p != null ? [p.id] : []))
-
-      if (votablePostIds.length === 0) return {}
-
-      const votes = await getPostElectionVotesByUser(currentUser.id, votablePostIds)
-      const votesMap = new Map(votes.map(vote => [vote.entity_id, vote]))
-      return electionVotesMapToRecord(votesMap)
-    })
-
-    output.election_votes = postElectionVotesPromise
+    output.election_votes = Promise.all([postsPromise, moderationsPromise]).then(
+      ([posts, moderations]) =>
+        getPostElectionVotesWithModerations(
+          currentUser.id,
+          posts.flatMap(post => (post ? [post.id] : [])),
+          moderations,
+          'object',
+        ),
+    )
 
     if (isAdminUser(currentUser)) {
-      const moderationsPromise = searchPostModerationsByPostIds(postIds)
       output.post_moderations = moderationsPromise.then(indexPostModerationsByPostId)
-      output.agent_moderation_elections = moderationsPromise.then(getAgentModerationElectionsRecord)
-      output.election_votes = Promise.all([postElectionVotesPromise, moderationsPromise]).then(
-        ([baseVotes, moderations]) =>
-          mergeElectionVotesWithAgentModerations(currentUser.id, moderations, baseVotes),
+      output.agent_moderation_elections = electionsPromise.then(groups =>
+        indexById(groups.agent_moderation),
       )
     }
   }

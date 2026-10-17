@@ -2,7 +2,7 @@ import { beginTransaction, read } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { addUrl } from '@services/urls/upsert'
-import { assertUrlNotBlocked } from '@services/domain-blacklist-check'
+import { loadAllowedUrlHostnamePolicies } from '@services/domain-blacklist-check'
 import {
   lockImageAssetAdmission,
   lockUserProfileLinkImageOwners,
@@ -28,9 +28,10 @@ export const MAX_PROFILE_LINKS = 20
 async function resolveUrlId(
   userId: string,
   url: string | null | undefined,
+  policies?: Awaited<ReturnType<typeof loadAllowedUrlHostnamePolicies>>,
 ): Promise<string | null> {
   if (!url || typeof url !== 'string') return null
-  const result = await addUrl(userId, url)
+  const result = await addUrl(userId, url, { webRiskOptions: { policies } })
   return result?.id ?? null
 }
 export async function createProfileLink(
@@ -39,8 +40,8 @@ export async function createProfileLink(
 ): Promise<ProfileLink> {
   assertProfileLinkType(input.link_type)
   validateProfileLinkFields(input.link_type, input.url, input.handle)
-  if (input.url) await assertUrlNotBlocked(input.url)
-  const urlId = await resolveUrlId(userId, input.url)
+  const policies = input.url ? await loadAllowedUrlHostnamePolicies(input.url) : undefined
+  const urlId = await resolveUrlId(userId, input.url, policies)
   // Atomic INSERT: compute next sort_order and enforce per-user limit in one query.
   // HAVING COUNT(*) < MAX_PROFILE_LINKS prevents insert when at the limit.
   await using transaction = await beginTransaction()
@@ -91,9 +92,10 @@ export async function updateProfileLink(
   linkId: string,
   input: UpdateProfileLinkInput,
 ): Promise<ProfileLink> {
+  let policies: Awaited<ReturnType<typeof loadAllowedUrlHostnamePolicies>> | undefined
   if (typeof input.url === 'string' && input.url.length > 0) {
     validateProfileUrl(input.url)
-    await assertUrlNotBlocked(input.url)
+    policies = await loadAllowedUrlHostnamePolicies(input.url)
   }
   if (typeof input.handle === 'string' && input.handle.length > 0) {
     assert(
@@ -102,7 +104,8 @@ export async function updateProfileLink(
       'handle must only contain letters, numbers, underscores, and hyphens',
     )
   }
-  const urlId = input.url !== undefined ? await resolveUrlId(userId, input.url) : undefined
+  const urlId =
+    input.url !== undefined ? await resolveUrlId(userId, input.url, policies) : undefined
   // CASE WHEN preserves existing column values for fields not included in input
   await using transaction = await beginTransaction()
   await lockImageAssetAdmission(input.image_id ? [input.image_id] : [], transaction)

@@ -2,12 +2,11 @@ import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
+import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
-  'bloom-repair-window',
-  'bloom-repair-capped',
-  'bloom-repair-resumed',
+  ...(['bloom-repair-window', 'bloom-repair-capped', 'bloom-repair-resumed'] as const),
   'crawl-hostname-threshold-seek',
   'crawl-hostnames-due',
   'crawl-hostnames-due-capped',
@@ -46,6 +45,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'feed-posts-batch',
   'feed-shared-by-users-batch',
   'follow-context-votes',
+  ...RELATION_READ_BATCH_SCENARIO_IDS,
+  'relatable-post-access-batch',
   'friend-recommendations',
   'friend-trusted-hostnames',
   'individual-cards-page',

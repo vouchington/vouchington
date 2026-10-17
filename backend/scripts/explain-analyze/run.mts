@@ -1,3 +1,4 @@
+import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
 import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
 import { runBloomReconciliationScenarios } from './run-scenarios/bloom-reconciliation.mts'
@@ -64,6 +65,7 @@ async function main() {
     await runMediaDeliveryReplayScenarios()
     await runRoundTripShapeScenarios()
     await runUserProfileRoundTripScenarios()
+    await runRelationReadBatchScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

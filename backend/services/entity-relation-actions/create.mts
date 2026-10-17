@@ -67,14 +67,19 @@ export async function createEntityRelationAction(
   const viewer = entityRelationViewerFor(currentUser)
   const postIds = postParticipantIds(parsed.metadata, parsed.subjectId.id, parsed.objectIds)
   const membershipPlan = getLoadedMembershipPlan(currentUser)
-  // Ordinary visibility/existence comes first so private authorization never discloses a hidden post.
   // ast-grep-ignore: no-three-sequential-awaits -- preserve visibility, user-tag/community admission, relation quota, then delegated-private authorization error order.
-  await assertRelatablePostAccess(viewer, postIds)
+  const relatable = await assertRelatablePostAccess(viewer, postIds)
   const resolvedUserTagTargetId = await resolveUserTagTarget(currentUser, parsed, membershipPlan)
   await assertCommunityAuthorization(currentUser, parsed)
   await assertRelationLimit(currentUser, parsed, membershipPlan)
-  const postRootIds = await assertPostMutationAccess(viewer, authority, postIds)
-
+  const postRootIds = await assertPostMutationAccess(
+    viewer,
+    authority,
+    postIds,
+    undefined,
+    undefined,
+    relatable,
+  )
   const relations = await upsertEntityRelation(
     currentUser,
     parsed.metadata,
@@ -96,7 +101,6 @@ export async function createEntityRelationAction(
     },
   )
   assert(relations.length > 0, 500, 'Failed to create entity relation')
-
   if (parsed.metadata.subject_type === 'user') {
     await Promise.all(
       relations.flatMap(relation =>
