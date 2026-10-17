@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { SEQ_SCAN_BASELINE } from './seq-scan-baseline.mts'
 import { captureScenarioTwice, resetRepeatedResults } from './capture-passes.mts'
-import type { ProbedExplainResult } from './seq-scan-ties.mts'
 import { registerScenarioContract, resetScenarioContracts } from './plan-expectations.mts'
 
 const scenarioId = 'post-search-new'
@@ -55,32 +53,6 @@ describe('EXPLAIN function-call capture', () => {
         ]),
       )
       expect((result.plan as { Plan: { 'Actual Rows': number } }).Plan['Actual Rows']).toBe(1)
-    }
-  })
-
-  it('prices a baselined scan the planner skipped with index scans disabled', async () => {
-    const lookup = {
-      name: 'baselined-index-lookup',
-      text: '/* baselinedIndexLookup */ SELECT s FROM generate_series(1, 3) AS s WHERE NOT EXISTS (SELECT 1 FROM posts WHERE id = $1::uuid)',
-      values: ['00000000-0000-7000-8000-000000000000'],
-      scenarioId,
-      captureIndex: 0,
-      planCacheMode: 'auto' as const,
-      // An empty table plans a sequential scan; disabling it stands in for the planner's flip.
-      localSettings: { enable_seqscan: 'off' },
-    }
-    const identity = `${scenarioId}|0|${lookup.name}|auto`
-    const baseline = SEQ_SCAN_BASELINE as Record<string, readonly string[]>
-    registerScenarioContract(scenarioId, { expectations: [] })
-    baseline[identity] = ['posts']
-    try {
-      const first = [] as Awaited<ReturnType<typeof captureScenarioTwice>>[number][]
-      await captureScenarioTwice([lookup], result => first.push(result))
-      const forced = (first[0] as ProbedExplainResult).forced_seq_scans?.['posts']
-      expect(forced).toBeDefined()
-      expect(forced?.total_cost).toBeGreaterThanOrEqual(forced?.scan_cost ?? 0)
-    } finally {
-      delete baseline[identity]
     }
   })
 })

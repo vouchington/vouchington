@@ -13,7 +13,7 @@ import { getLargeTableRelations, getLargeTableSeqScanRelations } from './plan-wa
 import { getExplainResultIdentity, SEQ_SCAN_BASELINE } from './seq-scan-baseline.mts'
 import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
-type Capture = {
+export type Capture = {
   name: string
   text: string
   values: readonly unknown[]
@@ -53,16 +53,18 @@ async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResu
 // The mirror image: a baselined scan the planner skipped this run may only have lost a coin flip.
 // Plan the statement plan-only with every index path disabled; a forced scan priced within
 // SEQ_SCAN_TIE_RATIO of the chosen plan keeps the stale entry advisory.
-async function probeBaselinedScans(
+export async function probeBaselinedScans(
   input: Capture,
   result: ProbedExplainResult,
   scannedRelations: readonly string[],
+  plan: typeof explainAnalyze = explainAnalyze,
+  baseline: Readonly<Record<string, readonly string[]>> = SEQ_SCAN_BASELINE,
 ) {
-  const baselined = (SEQ_SCAN_BASELINE[getExplainResultIdentity(result)] ?? []).filter(
+  const baselined = (baseline[getExplainResultIdentity(result)] ?? []).filter(
     relation => !scannedRelations.includes(relation),
   )
   if (baselined.length === 0) return
-  const forced = await explainAnalyze(input.name, input.text, input.values, {
+  const forced = await plan(input.name, input.text, input.values, {
     localSettings: {
       ...input.localSettings,
       enable_indexscan: 'off',
