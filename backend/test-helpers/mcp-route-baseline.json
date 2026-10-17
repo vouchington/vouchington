@@ -1413,7 +1413,9 @@
     "I165": [["community", "itemId"]],
     "I166": [["after", "community", "limit", "window"]],
     "I167": [["idOrSlug"]],
-    "I168": [["noteId", "userId"]]
+    "I168": [["noteId", "userId"]],
+    "I169": [["community_id", "subject_user_id"]],
+    "I170": [["community_id", "conversationId", "text"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4168,8 +4170,8 @@
         "inputFields": "I059",
         "requestBodyFields": null,
         "operation": {
-          "tool": "join_community",
-          "option": null
+          "tool": "participate_in_community",
+          "option": "join"
         },
         "decision": false
       }
@@ -5753,6 +5755,38 @@
           "operation": {
             "tool": "remove_community_moderation",
             "option": "delete_mod_note"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/modmail": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F79",
+          "inputFields": "I169",
+          "requestBodyFields": ["subject_user_id"],
+          "operation": {
+            "tool": "participate_in_community",
+            "option": "open_modmail"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F79",
+          "inputFields": "I170",
+          "requestBodyFields": ["text"],
+          "operation": {
+            "tool": "participate_in_community",
+            "option": "reply_modmail"
           },
           "decision": false
         }

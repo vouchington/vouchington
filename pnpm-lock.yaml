@@ -1967,6 +1967,9 @@ importers:
       '@services/memberships':
         specifier: workspace:^
         version: link:../services/memberships
+      '@services/messaging':
+        specifier: workspace:^
+        version: link:../services/messaging
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../services/moderation-analytics

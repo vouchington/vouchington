@@ -58,9 +58,9 @@ const grants: {
 // Owner-approved mcp.all caps: compact UTF-16 sizes plus 1.5%, rounded up to 1,000.
 const caps = {
   mcp: {
-    all: { count: 78, list: 303000, core: 122000, output: 285000 },
+    all: { count: 78, list: 306000, core: 123000, output: 287000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
-    Plus: { count: 70, list: 217000, core: 110000, output: 240000 },
+    Plus: { count: 70, list: 222000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
   admin_mcp: {
@@ -271,7 +271,7 @@ describe('participation write discovery contract', () => {
         .toSorted(),
     ).toEqual(names.toSorted())
     expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
-      '4953dda201a18f9cb8621ef7080f53f523ef930ba5d98d29de680038f3158e55',
+      '7d00bb819569402e8845f86826441b47b4f90169394734f70d335733e85bb93b',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(

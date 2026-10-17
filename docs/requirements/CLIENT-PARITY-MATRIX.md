@@ -31,7 +31,8 @@ The four community moderation tools use exact `community-moderation:read` and
 grants cover neither. Web consent and credential selection provide localized descriptions.
 Post locks, ban-evasion confirmation, and moderator notes use options on these tools with the
 same REST authority. Post and note targets do not require an extra community argument. Native
-credential and MCP adoption is tracked in
+credential and MCP adoption, including the `participate_in_community` option envelope for joining
+and member modmail, is tracked in
 [clients #218](https://github.com/vouchington/vouchington-clients/issues/218); the producer lands
 first. The [scope module](../overview/architecture/backend/README.md) and
 [MCP catalog](../overview/architecture/mcp/catalog.md) own the current contract.

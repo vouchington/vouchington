@@ -10726,33 +10726,247 @@
         },
         {
           "tool": {
-            "name": "join_community",
-            "title": "Join Community",
-            "description": "Join a public community by UUID or slug. Private communities require an invitation or apply_to_community. Existing membership returns CONFLICT; archived or private communities, bans and approved-member limits return FORBIDDEN.",
+            "name": "participate_in_community",
+            "title": "Participate in Community",
+            "description": "join: Join a public community. Private communities require an invitation or apply_to_community.\nopen_modmail: Open modmail as a member; moderators may specify subject_user_id.\nreply_modmail: Reply to your modmail thread or one you moderate. Resolved threads reject replies.",
             "inputSchema": {
               "type": "object",
-              "properties": {
-                "community_id": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["join"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community_id": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["community_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["open_modmail"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "subject_user_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["community_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["reply_modmail"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "text": {
+                          "type": "string",
+                          "pattern": "\\S"
+                        },
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "minLength": 36,
+                          "maxLength": 36
+                        }
+                      },
+                      "required": ["community_id", "text", "conversationId"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
                   "type": "string",
                   "description": "Community UUID or slug"
                 }
-              },
-              "required": ["community_id"],
-              "additionalProperties": false
+              }
             },
             "outputSchema": {
               "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "community_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["success", "community_id"],
+                  "additionalProperties": false
                 },
-                "community_id": {
-                  "type": "string",
-                  "format": "uuid"
+                {
+                  "type": "object",
+                  "properties": {
+                    "thread": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "assigned_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "assigned_moderator_user_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "channel_type": {
+                          "const": "modmail"
+                        },
+                        "community_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "resolved_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "resolved_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "subject_user_id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "assigned_at",
+                        "assigned_moderator_user_id",
+                        "channel_type",
+                        "community_id",
+                        "created_at",
+                        "created_by_id",
+                        "id",
+                        "resolved_at",
+                        "resolved_by_id",
+                        "subject_user_id",
+                        "title",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["thread"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "body_text": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "deleted_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "sender_username": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "body_text",
+                        "conversation_id",
+                        "created_at",
+                        "created_by_id",
+                        "deleted_at",
+                        "id",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["message"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["success", "community_id"],
-              "additionalProperties": false
+              ],
+              "$defs": {
+                "S1": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
             },
             "annotations": {
               "readOnlyHint": false,
@@ -10760,7 +10974,12 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["communities:read", "communities:write"]
+              "voucha/requiredScopes": ["communities:read", "communities:write"],
+              "voucha/optionOutputPointers": {
+                "join": "#/anyOf/0",
+                "open_modmail": "#/anyOf/1",
+                "reply_modmail": "#/anyOf/2"
+              }
             }
           },
           "plan": "plus",
@@ -10769,6 +10988,14 @@
             {
               "method": "POST",
               "path": "/api/v1/communities/:idOrSlug/members"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/communities/:idOrSlug/modmail"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/communities/:idOrSlug/modmail/:conversationId/messages"
             }
           ]
         },
@@ -10824,7 +11051,7 @@
           "tool": {
             "name": "apply_to_community",
             "title": "Apply to Community",
-            "description": "Apply to a private community by UUID or slug. answers maps question ids to strings for short_text, long_text and single_select; string arrays for multi_select; booleans for checkbox. Send {} if there are no questions. message is an optional moderator note of at most 5000 characters. Unknown, missing or mistyped answers are INVALID_INPUT. Use join_community for public communities.",
+            "description": "Apply to a private community. answers maps question ids to strings (short_text, long_text, single_select), string arrays (multi_select), or booleans (checkbox). Send {} for no questions. message allows 5000 characters. Unknown, missing or mistyped answers are INVALID_INPUT. Use participate_in_community(join) for public communities.",
             "inputSchema": {
               "type": "object",
               "properties": {
