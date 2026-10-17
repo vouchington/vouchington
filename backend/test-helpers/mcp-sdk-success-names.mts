@@ -68,6 +68,12 @@ export const sdkMergedSuccessNames = {
     'submit_rss_feed',
     'start_discussion',
   ],
+  communityModerationFixture: [
+    'read_community_moderation',
+    'add_community_moderation',
+    'update_community_moderation',
+    'remove_community_moderation',
+  ],
   operationalFixture: ['run_operational_job'],
 } as const
 

@@ -56,7 +56,9 @@ function sample(schema: Record<string, unknown>, root = schema, depth = 0): unkn
   return Object.fromEntries(required.map(key => [key, sample(properties[key]!, root, depth + 1)]))
 }
 
-export function sampleMcpToolArguments(tool: Tool): Record<string, unknown> {
+export function sampleMcpToolArguments(tool: {
+  schema: Pick<Tool['schema'], 'name' | 'parameters'>
+}): Record<string, unknown> {
   const parameters = tool.schema.parameters as Record<string, unknown>
   const input =
     tool.schema.name === 'get_domain_ratings'

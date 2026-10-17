@@ -6065,6 +6065,8 @@
 {"id":"copy.oauth.consent.permissionsHeading","value":"Autorisations demandées"},
 {"id":"copy.oauth.consent.resourceHeading","value":"Ressource"},
 {"id":"copy.oauth.consent.title","value":"{clientName} demande l’accès à Voucha"},
+{"id":"copy.scopeDescription.communityModerationRead","value":"Lire les données de modération de la communauté, y compris les adresses e-mail des personnes invitées, les échanges privés avec la modération, les signalements, les demandes d’adhésion, les bannissements, les restrictions et l’historique de modération."},
+{"id":"copy.scopeDescription.communityModerationWrite","value":"Gérer la modération de la communauté : bannir ou retirer des membres, émettre des avertissements, examiner les demandes et les signalements, modifier les paramètres de modération et archiver la communauté. Certaines actions peuvent désépingler des publications ou dépublier des publications."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Lire votre fourchette de score de crédit, vos revenus déclarés, votre plafond total de crédit et vos années d’historique de crédit."},
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Modifier votre fourchette de score de crédit, vos revenus déclarés, votre plafond total de crédit et vos années d’historique de crédit."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Accès MCP complet pour les administrateurs"},

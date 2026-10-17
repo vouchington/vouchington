@@ -6065,6 +6065,8 @@
 {"id":"copy.oauth.consent.permissionsHeading","value":"Requested permissions"},
 {"id":"copy.oauth.consent.resourceHeading","value":"Resource"},
 {"id":"copy.oauth.consent.title","value":"{clientName} wants access to Voucha"},
+{"id":"copy.scopeDescription.communityModerationRead","value":"Read community moderation data, including invitee email addresses, private modmail, reports, member applications, bans, restrictions, and moderation history."},
+{"id":"copy.scopeDescription.communityModerationWrite","value":"Manage community moderation: ban or remove members, issue warnings, review applications and reports, change moderation settings, and archive the community. Some actions can remove pinned posts or unpublish posts."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Read your credit score range, stated income range, total credit limit and years of credit history."},
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Update your credit score range, stated income range, total credit limit and years of credit history."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Full administrator MCP access"},

@@ -5,6 +5,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import * as services from '../run-services.mts'
 import { runFeedRssScenarios } from './feed-rss.mts'
+import { runRssFeedSearchScenarios } from './rss-feed-search.mts'
 
 const {
   getCommentAncestorsByAny,
@@ -24,7 +25,6 @@ const {
   getUserMetricsByAnyBatch,
   listNotifications,
   POST_ELECTION_CONFIG,
-  searchRssFeeds,
   searchUrlHostnames,
   TOPIC_ELECTION_CONFIG,
   aggregateCommunityActivityDigestBatch,
@@ -38,29 +38,7 @@ export async function runFeedAndMetricScenarios() {
   })
   await runAndCapture('post-feed', () => getPostFeedIds(seedUser, { limit: 25, time_range: '1w' }))
   await runAndCapture('trending-topics', () => getTrendingTopics({ timeRange: 'week', limit: 25 }))
-  registerScenarioContract('rss-feed-search', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search', () => searchRssFeeds({ limit: 25 }))
-
-  registerScenarioContract('rss-feed-search-disabled', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search-disabled', () =>
-    searchRssFeeds({ is_enabled: false, limit: 25 }),
-  )
-  registerScenarioContract('rss-feed-search-all-enable-states', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search-all-enable-states', () =>
-    searchRssFeeds({ is_enabled: null, limit: 25 }),
-  )
-  registerScenarioContract('rss-feed-text-search', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-text-search', () =>
-    searchRssFeeds({ text_search_query: 'seed', limit: 25 }),
-  )
+  await runRssFeedSearchScenarios()
   await runAndCapture('friend-recommendations', () =>
     getFriendRecommendations(seedUser, { limit: 25 }),
   )

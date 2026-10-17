@@ -32650,6 +32650,12 @@
         "description_key": {
           "anyOf": [
             {
+              "const": "community_moderation_read"
+            },
+            {
+              "const": "community_moderation_write"
+            },
+            {
               "const": "financial_profile_read"
             },
             {

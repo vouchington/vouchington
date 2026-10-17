@@ -40,19 +40,12 @@ Use `interactive` mode in a human-attended session and `autonomous` mode in an a
 
 ## When the server is unavailable
 
-Search for `journal_append` by bare name before concluding the server is unavailable. A permission
-denial is not unavailability. Journal through the MCP server. When it is unavailable, an interactive
-agent tells the user the fix, remediation first. If it is not registered, run vouchington-machines'
-`./configure-agents.sh`, check with `./diagnose-agents.sh --repo <checkout>`, then reconnect (`/mcp`
-in Claude Code, or restart Codex). If it is registered but disconnected, reconnect. See
-[agent-blackboard.md](../../../docs/development/agent-blackboard.md#server-unavailable). An
-automated run follows Automated runs below.
-
-Last resort: the canonical `vouchington-workflow:blackboard` skill's CLI fallback is deprecated and
-being phased out. Use it only when the remediation above cannot restore the server, and tell the user
-(or the final report) that you fell back. Sandboxed Claude commands and Codex shell commands do not
-receive `AGENT_BLACKBOARD_TOKEN`, so the fallback cannot deliver there; never ask for an unsandboxed
-run just to get the token.
+Follow the canonical "When the server is unavailable" and "CLI fallback" sections. Vouchington
+remediation, told to an interactive user first: if the server is not registered, run
+vouchington-machines' `./configure-agents.sh`, check with `./diagnose-agents.sh --repo <checkout>`,
+then reconnect (`/mcp` in Claude Code, or restart Codex). If it is registered but disconnected,
+reconnect. See [agent-blackboard.md](../../../docs/development/agent-blackboard.md#server-unavailable).
+An automated run follows Automated runs below.
 
 ## Automated runs
 
@@ -136,38 +129,17 @@ need a concrete affected path, an observed contract mismatch, and evidence; dist
 
 ## Credential failures
 
-Never search shell profiles, `env`, or `.env*` files for a credential; never print, inline, export,
-or probe its value. Check presence only with `[ -n "${VAR+x}" ] && echo SET || echo UNSET`.
-A sandbox denial is expected and is not a recovery target. A missing or stale credential blocks
-hosted delivery. In interactive mode the writer retains sanitized feedback in its durable outbox,
-visibly pending: do not silently drop it or invent another fallback. Ask the user to refresh the
-connection when needed, then restart the MCP client or call `outbox_flush`. Saturation and
-persistence failure require reporting the concrete blocker. Never read, print, copy, or export the
-token to get around the sandbox. An automated run reports instead of
-asking (see Automated runs).
+Follow the canonical "Credential failures" section. An automated run reports instead of asking
+(see Automated runs).
 
 ## Reading journal entries back
 
-Call `journal_entries({ sessionId })`: it returns `{ sessionId, entries }`, every entry of the
-session with its envelope, oldest first. Filter `data.type === "journal"`. A zero-entry session is not an error. Do not replace validated
-retrospective persistence with `journal_append`.
+Use canonical `journal_entries` (policy item 7) and filter `data.type === "journal"`. Do not replace
+validated retrospective persistence with `journal_append`.
 
 ## Child identity for spawned agents
 
-Pass the parent's own session id in the assignment prompt at spawn time. A spawned child resolves
-its own session id from its runtime environment (for example `CODEX_THREAD_ID` for Codex,
-`CLAUDE_CODE_SESSION_ID` for Claude Code), as described above, and calls `session_ensure` with that resolved `sessionId`, the `parentSessionId` it
-was given, its own `agent` name, and its version before any blackboard-aware or substantive work.
-If the runtime environment supplies no session identity, or the ensure fails, the child stops and
-reports the blocker rather than guessing an ID or substituting its canonical task path. A resolved
-id must satisfy the shared plain-token grammar (`isValidSessionId` in
-`dev/agent-session-id/valid-id.mts`); never pass a path, URL, or synthesized value to
-`session_ensure`.
-
-A Claude Code Agent-tool subagent is the one exception: Claude Code does not expose a session id
-distinct from its parent's `CLAUDE_CODE_SESSION_ID`, so a subagent must never call `session_ensure`
-with that inherited id as if it were a new child session — doing so reuses the parent's id as both
-`sessionId` and `parentSessionId`, which the parent's already-ensured root session (`parentId:
-null`) rejects. Its activity is already captured under the parent's own session (as a sidechain
-transcript), so it journals only by asking the parent to append on its behalf, or treats this
-protocol as inapplicable.
+Follow the canonical "Child identity for spawned agents" section, including its Claude Code
+subagent exception. A spawned child resolves its session id from its runtime environment
+(`CODEX_THREAD_ID` for Codex, `CLAUDE_CODE_SESSION_ID` for Claude Code). A resolved id must
+satisfy `isValidSessionId` in `dev/agent-session-id/valid-id.mts`.

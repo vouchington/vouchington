@@ -46733,6 +46733,14 @@
                   "variants": [
                     {
                       "type": "literal",
+                      "value": "community_moderation_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "community_moderation_write"
+                    },
+                    {
+                      "type": "literal",
                       "value": "financial_profile_read"
                     },
                     {

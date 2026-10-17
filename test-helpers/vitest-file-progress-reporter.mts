@@ -1,4 +1,4 @@
-import { writeSync } from 'node:fs'
+import { appendFileSync, writeSync } from 'node:fs'
 import type { Reporter, TestModule } from 'vitest/node'
 
 export const BACKEND_UNIT_FILE_PROGRESS_PREFIX = '[backend-unit-file]'
@@ -45,6 +45,13 @@ class VitestFileProgressReporter implements Reporter {
 
 function writeProgressLine(chunk: string): void {
   writeSync(process.stdout.fd, chunk)
+}
+
+// Appends each event to a file so a quiet CI run keeps its start/finish history without logging it.
+export function createFileProgressWriter(filePath: string): WriteProgress {
+  return chunk => {
+    appendFileSync(filePath, chunk)
+  }
 }
 
 export function createVitestFileProgressReporter(

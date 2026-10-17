@@ -3,6 +3,7 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  removeTestCommunityMember,
   insertTestProxyFollowCommunity,
   insertTestProxyMuteCommunity,
   createRandomString,
@@ -101,6 +102,20 @@ describe('search (sort)', () => {
         for (const community of result.results) {
           expect(result.community_metrics![community.id]).toBeDefined()
         }
+
+        const remainingMember = await createTestUser()
+        await insertTestCommunityMember({
+          communityId: communityFew.id,
+          userId: remainingMember!.id,
+        })
+        await Promise.all(members.map(m => removeTestCommunityMember(communityMany.id, m!.id)))
+        const afterRemoval = await searchCommunities({ sort: 'members', limit: 100, search: rand })
+        const reorderedIds = afterRemoval.results.map(r => r.id)
+        expect(reorderedIds.indexOf(communityFew.id)).toBeLessThan(
+          reorderedIds.indexOf(communityMany.id),
+        )
+        expect(afterRemoval.community_metrics![communityFew.id]!.member_count).toBe(1)
+        expect(afterRemoval.community_metrics![communityMany.id]!.member_count).toBe(0)
       })
 
       it('paginates using score cursor', async () => {

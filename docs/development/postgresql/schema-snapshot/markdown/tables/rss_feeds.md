@@ -55,6 +55,7 @@ _none_
 
 - `idx_rss_feeds__canonical_rss_feed_id`: `CREATE INDEX idx_rss_feeds__canonical_rss_feed_id ON public.rss_feeds USING btree (canonical_rss_feed_id) WHERE (canonical_rss_feed_id IS NOT NULL)`
 - `idx_rss_feeds__created_via_oauth_client_id`: `CREATE INDEX idx_rss_feeds__created_via_oauth_client_id ON public.rss_feeds USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_rss_feeds__disabled`: `CREATE INDEX idx_rss_feeds__disabled ON public.rss_feeds USING btree (id DESC) WHERE ((is_enabled = false) AND (deleted_at IS NULL))`
 - `idx_rss_feeds__enabled__discoverable`: `CREATE INDEX idx_rss_feeds__enabled__discoverable ON public.rss_feeds USING btree (id) WHERE ((is_enabled = true) AND (is_discoverable = true) AND (deleted_at IS NULL))`
 - `idx_rss_feeds__feed_type`: `CREATE INDEX idx_rss_feeds__feed_type ON public.rss_feeds USING btree (feed_type) WHERE (deleted_at IS NULL)`
 - `idx_rss_feeds__is_enabled`: `CREATE INDEX idx_rss_feeds__is_enabled ON public.rss_feeds USING btree (id) WHERE ((is_enabled = true) AND (deleted_at IS NULL))`

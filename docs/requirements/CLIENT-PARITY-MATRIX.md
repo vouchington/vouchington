@@ -23,3 +23,13 @@ cross-repo contract with `vouchington/vouchington-clients`; this page explains h
 See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
+
+## Community moderation MCP handoff
+
+The four community moderation tools use exact `community-moderation:read` and
+`community-moderation:write` grants on API keys and OAuth; write requires read and user umbrella
+grants cover neither. Web consent and credential selection provide localized descriptions.
+Native credential and MCP adoption is tracked in
+[clients #218](https://github.com/vouchington/vouchington-clients/issues/218); the producer lands
+first. The [scope module](../overview/architecture/backend/modules/scopes/README.md) and
+[MCP catalog](../overview/architecture/mcp/catalog.md) own the current contract.

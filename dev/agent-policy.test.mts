@@ -11,6 +11,7 @@ import {
   type RetrospectivePolicyInput,
 } from './agent-policy.mts'
 import { isDirectUserRequestNoSourceBody } from './pr-description/direct-user-request.mts'
+import { extractPartialBatchSourceRef } from './pr-description/partial-batch.mts'
 import { isScheduledPromptNoSourceBody } from './pr-description/scheduled-no-source.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
@@ -211,6 +212,12 @@ describe('renderNoSourceIssue', () => {
   ])('renders the %s pair the body policy accepts', (reason, accepts, setup) => {
     const body = `## Related issues\n\n${renderNoSourceIssue({ reason })}\n\n${setup}`
     expect(accepts(body)).toBe(true)
+  })
+
+  it('renders the partial batch after its refs entry as the source the body policy reads', () => {
+    const statement = renderNoSourceIssue({ reason: 'partial batch' })
+    const body = `## Related issues\n\n- Refs #123 — Batch plan; later batches finish it.\n${statement}\n\n## Details\n`
+    expect(extractPartialBatchSourceRef(body)?.key).toBe('#123')
   })
 
   it('rejects any other reason before calling GitHub', async () => {

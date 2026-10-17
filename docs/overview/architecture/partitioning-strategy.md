@@ -143,6 +143,9 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   unpartitioned retained-owner families remain selective through UUID primary keys and bounded
   orphan cleanup; reconsider partitioning at the registry's documented growth threshold rather
   than introducing partition overhead before measurement.
+- Community search projection: `community_search_counts` has one row per community. Its indexed
+  member, virtual-subscription, and listed-item rankings select page IDs before keyed view reads;
+  revisit partitioning when community growth crosses the registry's measurement trigger.
 - Audit and workflow history: `admin_import_batches`, `admin_import_rows`,
   `activitypub_distribution_work_items`, `activitypub_inbox_activities`,
   `community_activity_digest_work_items`, `community_agent_prompt_revisions`,

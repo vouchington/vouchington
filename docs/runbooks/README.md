@@ -9,9 +9,8 @@ See also: [Moderation Policy Matrix](../requirements/moderation/MODERATION-POLIC
 
 - [Native TLS Pinning](./native-tls-pinning.md) — Cloudflare edge SPKI pin rollout, rotation, and
   failure handling for native API clients.
-- [Product-Safety / Recall Handling](./product-safety-recall.md) — Intake, triage, cross-functional
-  contacts, and communications for product-safety and recall reports. _Forward-looking: applies as
-  marketplace surfaces ship._
+- [Product-Safety / Recall Handling](./product-safety-recall.md) — Triage, containment, and
+  after-action for product-safety and recall reports.
 - [Media Delivery Reset and Restore](./media-delivery-reset-restore.md) — Coordinated PostgreSQL,
   edge-registry, and CDN-cache reset/restore workflows, prohibited partial restores, and the
   evidence required before media-delivery workers resume.
@@ -19,5 +18,4 @@ See also: [Moderation Policy Matrix](../requirements/moderation/MODERATION-POLIC
   procedure, coverage query, and checks for turning on registry publication, report mode, and then edge enforcement
   on in an environment.
 - [Copyright Notice Operations](./copyright-notices.md) — Legal intake triage, statutory deadline
-  recovery, hold handling, and incident escalation. Staffed coverage and designated-agent approval
-  remain activation gates.
+  recovery, hold handling, and incident escalation.

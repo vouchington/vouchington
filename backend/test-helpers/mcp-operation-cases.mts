@@ -1,3 +1,5 @@
+import type { ApiScope } from '../modules/scopes/index.mts'
+import { communityModerationGroups } from '../mcp/community-moderation-tools.mts'
 import { participationWriteGroups } from '../mcp/registry/participation-write-groups.mts'
 import userFixtures from './merged-user-options.json' with { type: 'json' }
 import { sampleMcpToolArguments } from './mcp-operation-sample.mts'
@@ -18,6 +20,7 @@ export type OperationCase = {
   option: string | null
   input: Record<string, unknown>
   routes: string[]
+  scopes?: readonly ApiScope[]
 }
 
 const userGroups = [
@@ -26,7 +29,9 @@ const userGroups = [
   ...userMergedAccountGroups,
 ]
 const userMergedNames = new Set(
-  [...userGroups, ...participationWriteGroups].map(group => group.name),
+  [...userGroups, ...participationWriteGroups, ...communityModerationGroups].map(
+    group => group.name,
+  ),
 )
 const adminMergedNames = new Set(adminMergedGroups.map(group => group.name))
 const userFixtureKeys = new Set(userFixtures.cases.map(row => `${row.target}.${row.option}`))
@@ -80,6 +85,35 @@ function mergedAdminCases(): OperationCase[] {
   )
 }
 
+function communityModerationCases(): OperationCase[] {
+  const cases = communityModerationGroups.flatMap(group =>
+    group.options.map(entry => {
+      const source = entry.source
+      const args = sampleMcpToolArguments({
+        schema: { name: group.name, parameters: source.schema.parameters },
+      })
+      const tool = ALL_TOOLS.find(candidate => candidate.schema.name === group.name)!
+      const input = { option: entry.option, arguments: args }
+      const violation = validateToolArguments(tool.schema.parameters, input)
+      if (violation) throw new Error(`${group.name}.${entry.option}: ${violation}`)
+      const scopes: ApiScope[] =
+        group.name === 'read_community_moderation'
+          ? ['community-moderation:read']
+          : ['community-moderation:read', 'community-moderation:write']
+      return {
+        surface: 'mcp' as const,
+        name: group.name,
+        option: entry.option,
+        input,
+        routes: toolRouteKeys(source.meta, args),
+        scopes,
+      }
+    }),
+  )
+  if (cases.length !== 54) throw new Error('community moderation option inventory drift')
+  return cases
+}
+
 function singleCases(surface: Surface, mergedNames: ReadonlySet<string>): OperationCase[] {
   return listToolsForSurface(surface, ALL_TOOLS).flatMap(tool => {
     if (!isToolMcpEligible(tool) || mergedNames.has(tool.schema.name)) return []
@@ -113,12 +147,17 @@ export function currentOperationCases(): OperationCase[] {
       }
     }),
   )
-  const user = [...mergedUserCases(), ...participation, ...singleCases('mcp', userMergedNames)]
+  const user = [
+    ...mergedUserCases(),
+    ...participation,
+    ...communityModerationCases(),
+    ...singleCases('mcp', userMergedNames),
+  ]
   const admin = [...mergedAdminCases(), ...singleCases('admin_mcp', adminMergedNames)]
-  if (user.length !== 133 || admin.length !== 106)
+  if (user.length !== 187 || admin.length !== 106)
     throw new Error(`case count: ${user.length}/${admin.length}`)
   if (
-    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 128 ||
+    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 182 ||
     new Set(admin.map(row => `${row.name}.${row.option ?? ''}`)).size !== 106
   )
     throw new Error('distinct operation inventory drift')

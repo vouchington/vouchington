@@ -1,5 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes } from '../plan-nodes.mts'
+import { collectPlanNodes, processedRows } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 // searchCommunities() (and the single-community getCommunityMetrics() read) used to pay for
@@ -33,6 +33,7 @@ const SEARCH_COMMUNITIES_SCENARIOS = new Set([
   'search-communities-virtual-subscriptions',
 ])
 const POSTS_COMMUNITY_ID_INDEX = 'posts__default_community_id_idx'
+const MAX_MEMBER_SEARCH_CANDIDATES = 2
 
 export function assertSearchCommunitiesEligibilityIsIndexed(result: ExplainResult): void {
   if (!result.scenario_id || !SEARCH_COMMUNITIES_SCENARIOS.has(result.scenario_id)) return
@@ -49,6 +50,25 @@ export function assertSearchCommunitiesEligibilityIsIndexed(result: ExplainResul
         'through indexed posts lookups, not a per-candidate rescan',
     )
   }
+}
+
+export function assertSearchCommunityMemberCandidates(result: ExplainResult): void {
+  if (result.scenario_id !== 'search-communities-member') return
+  const memberScans = collectPlanNodes(result.plan).filter(
+    node => baseRelationName(node) === 'community_members' && node['Alias'] !== 'cm',
+  )
+  const candidateReads = memberScans.filter(node =>
+    /\buser_id\b/.test(stringFromUnknown(node['Index Cond'] ?? '')),
+  )
+  const rows = candidateReads.reduce((total, node) => total + processedRows(node), 0)
+  if (
+    candidateReads.length === 0 ||
+    memberScans.some(node => !candidateReads.includes(node)) ||
+    rows > MAX_MEMBER_SEARCH_CANDIDATES
+  )
+    throw new Error(
+      `${result.name} must read matching member-community candidates through a user_id index at or below ${MAX_MEMBER_SEARCH_CANDIDATES} rows; observed ${rows}`,
+    )
 }
 
 type PlanNode = Record<string, unknown>

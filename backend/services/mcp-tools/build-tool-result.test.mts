@@ -1,3 +1,4 @@
+import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -216,6 +217,7 @@ describe('tool-local schema references', () => {
 describe('official SDK against the registered MCP catalogs', () => {
   it('accounts for a successful SDK call in every current merged group', () => {
     const current = [
+      ...communityModerationGroups,
       ...participationWriteGroups,
       ...userMergedReadingGroups,
       ...userMergedParticipationGroups,
@@ -223,8 +225,8 @@ describe('official SDK against the registered MCP catalogs', () => {
       ...adminMergedGroups,
     ].map(group => group.name)
     const covered = Object.values(sdkMergedSuccessNames).flat()
-    expect(current).toHaveLength(57)
-    expect(covered).toHaveLength(57)
+    expect(current).toHaveLength(61)
+    expect(covered).toHaveLength(61)
     expect([...covered].toSorted()).toEqual([...current].toSorted())
   })
 

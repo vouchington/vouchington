@@ -157,21 +157,6 @@ Attach these to the change record before workers resume, and again after.
 - Canary requests through the CDN: a purged or absent key is denied, a withheld key is denied, and
   a known-good allowed placement is served.
 
-## Validation
-
-[`restore-generation-fence.test.mts`](../../backend/services/media-delivery-safety/restore-generation-fence.test.mts)
-runs these against real PostgreSQL and a strict-generation edge double, using the same fence SQL
-with its reopen scoped to owned keys because the shared test database is parallel:
-
-- an edge record above a restored generation is never overwritten, and replay does not fix it
-- a tightened state publishes above the retained generation only after the fence
-- a held key keeps its edge denial only while paused, and a later fresh generation republishes the
-  restored allow over it
-- a held key stays withheld through republish once authority withholds it again
-- a rebuilt empty edge is written only after an explicit reopen
-- a retained pre-reset allow stays in force beside independent fresh keys, which is why workflow C
-  withholds it
-
 This repository ships no code that reads the edge inventory. The operator performs the inventory,
 classification, and edge-side writes through the private infrastructure procedure, and the fence
 above is the only PostgreSQL write this runbook requires.

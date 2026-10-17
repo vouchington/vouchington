@@ -10,6 +10,7 @@ import { mapCommunitySearchResult } from './search/result-mapper.mts'
 import { appendEligiblePostTypeFilter } from './search/eligible-post-type-filter.mts'
 import { parseCommunitySearchCursor } from './search/cursor.mts'
 import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
+import { startCommunityCandidates } from './search/candidate-query.mts'
 import { communityColumns } from './columns.mts'
 import type { CommunityRootPostType } from './post-type-settings.mts'
 import type {
@@ -46,53 +47,19 @@ export async function searchCommunities(
   assert(limit > 0 && limit <= 100, 422, 'limit must be between 1 and 100')
 
   const sort = options?.sort ?? 'name'
-  const needsMetrics = true
 
   const { cursorName, cursorId, cursorScore } = parseCommunitySearchCursor(options?.after, sort)
-
-  const searchQuery = sql`/* searchCommunities */
-    SELECT `
-    .append(communityColumns('c'))
-    .append(
-      ', u.id AS owner_id, u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type',
-    )
-
-  searchQuery.append(buildCommunityImagePlacementSelect())
-
-  if (needsMetrics) {
-    searchQuery.append(sql`,
-      vm.member_count,
-      vm.post_count,
-      vm.list_item_count,
-      vm.proxy_follow_count,
-      vm.proxy_mute_count,
-      vm.virtual_subscription_count`)
-  }
-
-  searchQuery.append(sql`
-    FROM communities c
-    LEFT JOIN users u ON u.id = c.created_by_id`)
-
-  if (needsMetrics) {
-    searchQuery.append(sql`
-    JOIN view_community_metrics vm ON vm.id = c.id`)
-  }
-
-  searchQuery.append(sql`
-    WHERE c.deleted_at IS NULL`)
+  const listedVirtual = !!options?.hasListItems && sort === 'virtual_subscriptions'
+  const searchQuery = startCommunityCandidates(
+    sort,
+    !!options?.hasListItems,
+    limit,
+    options?.search,
+    options?.memberUserId,
+  )
 
   appendEligiblePostTypeFilter(searchQuery, options?.currentUser, options?.eligiblePostType)
   if (options?.hashtagHasNoMatches) searchQuery.append(sql` AND FALSE`)
-
-  if (options?.memberUserId) {
-    searchQuery.append(sql`
-      AND EXISTS (
-        SELECT 1 FROM community_members cm
-        WHERE cm.community_id = c.id
-          AND cm.user_id = ${options.memberUserId}
-          AND cm.removed_at IS NULL
-      )`)
-  }
 
   if (options?.listScope === 'mine') {
     assert(options.currentUser, 401, 'Unauthorized')
@@ -141,12 +108,6 @@ export async function searchCommunities(
     }
   }
 
-  if (options?.search) {
-    searchQuery.append(
-      sql` AND c.search_vector @@ websearch_to_tsquery('voucha_english', ${options.search})`,
-    )
-  }
-
   if (options?.listType) {
     searchQuery.append(sql` AND c.list_type = ${options.listType}`)
   }
@@ -156,7 +117,7 @@ export async function searchCommunities(
   }
 
   if (options?.hasListItems) {
-    searchQuery.append(sql` AND vm.list_item_count > 0`)
+    searchQuery.append(sql` AND counts.list_item_count > 0`)
   }
 
   appendFeedCategoryFilter(searchQuery, options?.feedCategory)
@@ -170,24 +131,51 @@ export async function searchCommunities(
     LIMIT ${limit + 1}`)
   } else if (sort === 'members') {
     if (cursorScore !== undefined && cursorId !== undefined) {
-      searchQuery.append(sql` AND (vm.member_count, c.id) < (${cursorScore}, ${cursorId})`)
+      searchQuery.append(sql` AND (counts.member_count, c.id) < (${cursorScore}, ${cursorId})`)
     }
     searchQuery.append(sql`
-    ORDER BY vm.member_count DESC, c.id DESC
+    ORDER BY counts.member_count DESC, c.id DESC
     LIMIT ${limit + 1}`)
   } else {
     // virtual_subscriptions
     if (cursorScore !== undefined && cursorId !== undefined) {
       searchQuery.append(
-        sql` AND (vm.virtual_subscription_count, c.id) < (${cursorScore}, ${cursorId})`,
+        sql` AND (counts.virtual_subscription_count, c.id) < (${cursorScore}, ${cursorId})`,
       )
     }
-    searchQuery.append(sql`
-    ORDER BY vm.virtual_subscription_count DESC, c.id DESC
-    LIMIT ${limit + 1}`)
+    searchQuery.append(sql` ORDER BY counts.virtual_subscription_count DESC, c.id DESC`)
+    if (listedVirtual) searchQuery.append(sql` LIMIT search_input.page_limit`)
+    else searchQuery.append(sql` LIMIT ${limit + 1}`)
   }
 
+  if (listedVirtual) searchQuery.append(sql` ) picked`)
+  searchQuery.append(sql`
+    )
+    SELECT `)
+  searchQuery.append(communityColumns('c'))
+  searchQuery.append(
+    ', u.id AS owner_id, u.username AS owner_username, (SELECT e.account_type FROM view_embedded_users e WHERE e.id = u.id) AS owner_account_type',
+  )
+  searchQuery.append(buildCommunityImagePlacementSelect())
+  searchQuery.append(sql`,
+      vm.member_count,
+      vm.post_count,
+      vm.list_item_count,
+      vm.proxy_follow_count,
+      vm.proxy_mute_count,
+      vm.virtual_subscription_count`)
+  searchQuery.append(sql`
+    FROM candidate_communities selected
+    JOIN communities c ON c.id = selected.id
+    LEFT JOIN users u ON u.id = c.created_by_id`)
+  searchQuery.append(sql` JOIN LATERAL (
+    WITH keyed_metrics AS MATERIALIZED (SELECT * FROM view_community_metrics WHERE id = selected.id)
+    SELECT * FROM keyed_metrics
+  ) vm ON TRUE`)
+  if (sort === 'name') searchQuery.append(sql` ORDER BY selected.name ASC, selected.id ASC`)
+  else if (sort === 'members')
+    searchQuery.append(sql` ORDER BY selected.member_count DESC, selected.id DESC`)
+  else searchQuery.append(sql` ORDER BY selected.virtual_subscription_count DESC, selected.id DESC`)
   const { rows } = await read(searchQuery, options)
-
-  return mapCommunitySearchResult(rows, { limit, needsMetrics: needsMetrics ?? false, sort })
+  return mapCommunitySearchResult(rows, { limit, needsMetrics: true, sort })
 }

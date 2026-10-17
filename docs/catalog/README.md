@@ -22,6 +22,5 @@ This focused index is directly linked from its owning `AGENTS.md`; select the do
 - [`requirements/user-flows/sources.md`](../requirements/user-flows/sources.md)
 - [`requirements/user-flows/topics.md`](../requirements/user-flows/topics.md)
 - [`operations/deployed-error-investigation.md`](../operations/deployed-error-investigation.md)
-- [`operations/review-succession-history-audit.md`](../operations/review-succession-history-audit.md)
 - [`operations/staging-turnstile-always-approve.md`](../operations/staging-turnstile-always-approve.md)
 - [`runbooks/product-safety-recall.md`](../runbooks/product-safety-recall.md)

@@ -16,7 +16,7 @@ import {
   parsePostType,
   parseSourceType,
   parseWindowHours,
-} from './automod-recent-actions-helpers.mts'
+} from '@services/moderation-training/route-input'
 
 app.route('/api/v1/communities/:idOrSlug/automod/recent-actions').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/communities/:idOrSlug/automod/recent-actions', communityAutomodActionsQuery)

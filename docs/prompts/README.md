@@ -27,14 +27,7 @@ diagnostics, or required scope means the run is incomplete,
 not a no-op. The shared [scheduled prompt template](automation/scheduled-prompt.md) defines the
 outcome report and validates scheduled no-source references before publication.
 
-These templates are Vitest fixtures, not docs-only markdown. `TEST_FIXTURE_DOCS` in
-[`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml) keeps a pull request that
-touches any markdown file under this whole tree (`docs/prompts/.+\.mdx?`) from being
-misclassified `docs-only`, which would otherwise skip `test-tooling` outright; and the `tooling`
-group in [`ci-path-filters.yml`](../../.github/ci-path-filters.yml) covers all of `docs/prompts/**`,
-so CI runs the full `test-tooling` suite (the `github-actions`, `ci-tools`, and `dev-tools` Vitest
-projects) for any change under this directory. See
-[area test suites](../development/ci.md#area-test-suites).
+These templates are Vitest fixtures, not docs-only markdown, so changes under this tree run the tooling test suites ([area test suites](../development/ci.md#area-test-suites)).
 
 ## Agent-Authored PR Feedback Loop
 

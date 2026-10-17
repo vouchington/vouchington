@@ -29,7 +29,7 @@ import {
   parseCommunityReportSort,
   redactCommunityBanEvasionContext,
   redactCommunityReport,
-} from './reports-helpers.mts'
+} from '@services/moderation-reports/community-helpers'
 
 const pendingReportsPaginationParser = createPaginationParser({
   cursor: { type: 'simple' },

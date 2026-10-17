@@ -13,6 +13,8 @@ export type PlanExpectation =
 
 export interface ScenarioPlanContract {
   expectations: readonly PlanExpectation[]
+  /** A negative-match probe can prove that indexed candidates skip a large nonmatching seed. */
+  allowEmptyResult?: boolean
   /** Seeded rows in each unbounded relation that this scenario reads. */
   seededRows?: Readonly<Record<string, number>>
   /** An intentional multi-leaf read requires a concrete reason. */

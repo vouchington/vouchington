@@ -2,8 +2,7 @@
 
 Use these recipes before changing a boundary that crosses packages, runtimes, or generated
 artifacts. Start with `no-mistakes`, then use the listed exact searches to cover Vouchington-specific
-joins that its graph does not model. The [archived generic recipes](https://github.com/jonathanong/filaments/blob/9c16169c0ef234bccd79aea5a50216505f0c8b7c/.agents/skills/no-mistakes/references/impact-recipes.md)
-remain the reference for React props, selectors, exports, and test deletion.
+joins that its graph does not model.
 
 Run commands from the repository root. Replace angle-bracket placeholders with literal paths or
 identifiers; quote search values that contain punctuation. Batch the initial analysis across every

@@ -115,6 +115,12 @@ CREATE INDEX IF NOT EXISTS idx_rss_feeds__is_enabled
 ON rss_feeds (id)
 WHERE is_enabled = TRUE AND deleted_at IS NULL;
 
+-- Keep the rare disabled-feed search page on an ordered partial index as feed volume grows.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_rss_feeds__disabled
+ON rss_feeds (id DESC)
+WHERE is_enabled = FALSE AND deleted_at IS NULL;
+
 -- for public feed queries that require both current-state gates
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_rss_feeds__enabled__discoverable

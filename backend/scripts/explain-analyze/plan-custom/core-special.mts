@@ -1,5 +1,5 @@
 import type { ExplainResult } from '@data-stores/psql'
-import { collectPlanNodes, baseRelationName } from '../plan-nodes.mts'
+import { collectPlanNodes, baseRelationName, processedRows } from '../plan-nodes.mts'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 export function assertCorePlanCheck(name: string, result: ExplainResult): void {
@@ -42,6 +42,45 @@ export function assertCorePlanCheck(name: string, result: ExplainResult): void {
           `${result.name} must read projected RSS state without lateral history scans`,
         )
       return
+    case 'rssTextCandidates': {
+      const indexes = new Set(nodes.map(node => node['Index Name']))
+      // Each indexed candidate read is capped at its measured matches plus 20%.
+      const candidateCap = result.scenario_id === 'rss-feed-text-search-broad' ? 3000 : 134
+      const candidateNodes = nodes.filter(
+        node =>
+          (baseRelationName(node) === 'rss_feeds' && node['Alias'] === 'rss_feeds') ||
+          node['Index Name'] === 'idx_rss_feeds__search_vector' ||
+          node['Index Name'] === 'idx_rss_feeds__title_trgm',
+      )
+      if (
+        nodes.some(
+          node => node['Node Type'] === 'Seq Scan' && baseRelationName(node) === 'rss_feeds',
+        ) ||
+        !indexes.has('idx_rss_feeds__search_vector') ||
+        !indexes.has('idx_rss_feeds__title_trgm') ||
+        candidateNodes.some(node => processedRows(node) > candidateCap)
+      )
+        throw new Error(
+          `${result.name} must read at most ${candidateCap} text candidates through both RSS search indexes`,
+        )
+      return
+    }
+    case 'communityTextCandidates': {
+      const candidateNodes = nodes.filter(
+        node =>
+          (baseRelationName(node) === 'communities' && node['Alias'] === 'communities') ||
+          node['Index Name'] === 'idx_communities__search',
+      )
+      if (
+        !candidateNodes.some(node => node['Index Name'] === 'idx_communities__search') ||
+        candidateNodes.some(node => processedRows(node) > 315) ||
+        nodes.some(
+          node => node['Node Type'] === 'Seq Scan' && baseRelationName(node) === 'communities',
+        )
+      )
+        throw new Error(`${result.name} must read at most 315 community text candidates via GIN`)
+      return
+    }
     case 'relationListingOrder':
       if (nodes.some(node => String(node['Node Type']).includes('Sort')))
         throw new Error(`${result.name} must use relation index order without an explicit Sort`)

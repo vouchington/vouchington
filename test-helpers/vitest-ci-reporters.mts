@@ -1,6 +1,9 @@
 import path, { relative } from 'node:path'
 import type { InlineConfig } from 'vitest/node'
-import { createVitestFileProgressReporter } from './vitest-file-progress-reporter.mts'
+import {
+  createFileProgressWriter,
+  createVitestFileProgressReporter,
+} from './vitest-file-progress-reporter.mts'
 import { createVitestTeardownOverrunReporter } from './vitest-teardown-overrun-reporter.mts'
 import { createVitestStorybookProgressReporter } from './vitest-storybook-progress-reporter.mts'
 
@@ -43,6 +46,18 @@ function githubActionsReporter(): VitestReporter {
   ]
 }
 
+// Streams file progress to stdout when diagnostics are on, and buffers it to
+// VITEST_FILE_PROGRESS_FILE when set. With neither, no progress reporter is added.
+function fileProgressReporters(): VitestReporter[] {
+  const progressFile = process.env.VITEST_FILE_PROGRESS_FILE
+  const toFile = progressFile ? createFileProgressWriter(progressFile) : undefined
+  const toStdout = process.env.VITEST_DIAGNOSTICS === '1'
+  if (!toFile && !toStdout) return []
+  if (!toFile) return [createVitestFileProgressReporter()]
+  if (!toStdout) return [createVitestFileProgressReporter(toFile)]
+  return [createVitestFileProgressReporter(), createVitestFileProgressReporter(toFile)]
+}
+
 export function ciReporters(): VitestReporters | undefined {
   switch (process.env.VITEST_CI_REPORTERS) {
     case undefined:
@@ -60,7 +75,7 @@ export function ciReporters(): VitestReporters | undefined {
         'junit',
         'hanging-process',
         createVitestTeardownOverrunReporter(),
-        ...(process.env.VITEST_DIAGNOSTICS === '1' ? [createVitestFileProgressReporter()] : []),
+        ...fileProgressReporters(),
       ]
     default:
       throw new Error(

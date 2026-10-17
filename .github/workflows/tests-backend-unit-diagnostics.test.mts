@@ -1,7 +1,10 @@
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { formatBackendUnitFileProgress } from '../../test-helpers/vitest-file-progress-reporter.mts'
 
 const workflow = load(readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')) as {
   jobs?: Record<string, { steps?: Array<{ name?: string; run?: string }> }>
@@ -54,4 +57,70 @@ describe('datastore workflow diagnostics opt-in', () => {
       )
     },
   )
+})
+
+describe('backend-unit deadline dump', () => {
+  type Step = {
+    name?: string
+    'timeout-minutes'?: number
+    env?: Record<string, string>
+    if?: string
+  }
+  const steps = (workflow.jobs?.['backend-tests']?.steps ?? []) as Step[]
+
+  it('fires 60 seconds before the step timeout and keeps the job cap below the step sum', () => {
+    const step = steps.find(candidate => candidate.name === 'Run backend tests')
+    expect(Number(step?.env?.DEADLINE_DUMP_AFTER_SECONDS)).toBe(
+      (step?.['timeout-minutes'] ?? 0) * 60 - 60,
+    )
+    const parsed = load(readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')) as {
+      jobs: Record<string, { 'timeout-minutes': number }>
+    }
+    const stepSum = steps.reduce((sum, candidate) => sum + (candidate['timeout-minutes'] ?? 0), 0)
+    expect(parsed.jobs['backend-tests']?.['timeout-minutes']).toBeLessThan(stepSum)
+  })
+
+  it('names the unfinished file and the largest processes when the deadline fires', () => {
+    const runScript = steps.find(candidate => candidate.name === 'Run backend tests') as
+      | { run?: string }
+      | undefined
+    const definitions = (runScript?.run ?? '').split('trap stop_samplers EXIT')[0]
+    const dir = mkdtempSync(path.join(tmpdir(), 'deadline-'))
+    const progress = path.join(dir, 'progress.log')
+    writeFileSync(progress, formatBackendUnitFileProgress('start', 'backend/hung.test.mts'))
+    const script = `${definitions}\nstart_deadline_dump\nwait`
+
+    const fired = spawnSync('bash', ['-c', script], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        VITEST_FILE_PROGRESS_FILE: progress,
+        DEADLINE_DUMP_AFTER_SECONDS: '0',
+      },
+    })
+    expect(fired.stdout).toContain('[backend-unit-deadline] unfinished backend/hung.test.mts')
+    expect(fired.stdout).toContain('[backend-unit-deadline] ps ')
+
+    const early = spawnSync(
+      'bash',
+      [
+        '-c',
+        `${definitions}\nstart_deadline_dump\nstop_samplers() { kill $sampler_pids; }\nstop_samplers; wait`,
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          VITEST_FILE_PROGRESS_FILE: progress,
+          DEADLINE_DUMP_AFTER_SECONDS: '600',
+        },
+      },
+    )
+    expect(early.stdout).toBe('')
+  })
+
+  it('uploads the progress file even when the test step is killed', () => {
+    const upload = steps.find(candidate => candidate.name?.includes('file progress'))
+    expect(upload?.if).toBe('always()')
+  })
 })

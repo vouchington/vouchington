@@ -11,6 +11,12 @@ const STATEMENTS = new Map([
     'scheduled prompt run',
     'No source issue; scheduled prompt run.\n<!-- related-issues-validation: no-source-scheduled-prompt -->',
   ],
+  // The tools render `refs` entries above this statement; partial-batch.mts reads the one
+  // directly above it as the batch's open source issue.
+  [
+    'partial batch',
+    'Partial batch; source issue remains open for remaining work.\n<!-- related-issues-validation: partial-batch -->',
+  ],
 ])
 
 export type NoSourceIssue = { reason: string }

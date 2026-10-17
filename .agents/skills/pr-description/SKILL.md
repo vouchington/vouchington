@@ -43,6 +43,8 @@ No source issue; direct user request.
 ```
 
 Use it only when that description is truthful. It requires no plan heading and is rejected when
-the trusted runtime is automation. The only other accepted reason is `scheduled prompt run`, for
-scheduled prompts. Existing
-scheduled-prompt and Fix Main exceptions keep their own representations and authority limits.
+the trusted runtime is automation. The other accepted reasons are `scheduled prompt run`, for
+scheduled prompts, and `partial batch`, for the
+[partial-batch representation](../../../docs/development/local-development/reference-pr-description-helper.md),
+whose single `refs` entry names the open source issue. A `relatedIssues` entry for another
+repository adds `repository: "owner/name"`.

@@ -25,21 +25,21 @@ Workspace setup: ./dev/initialize monorepo
 ${VALID_PROVENANCE_BLOCK}
 `
 
-/** Canonical Fix Main interim-classifier no-closing-ref PR body (see scheduled-no-source.mts). */
-export const VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY = `## Summary
+/** Canonical partial-batch PR body as pr_create renders it (see partial-batch.mts). */
+export const VALID_PARTIAL_BATCH_BODY = `## Summary
 
-Interim transient-retry classifier for a not-yet-durably-classified CI failure.
+First batch of a larger source issue.
 
 ## Impact
 
-CI operators can retry the narrowly classified failure while its root cause remains tracked.
+Developers receive the first batch while the rest of the source issue stays tracked.
 
 ## Related issues
 
-Refs #456
-No closing reference; root-cause issue tracked via the Refs entry above.
-<!-- related-issues-validation: no-closing-ref-fix-main-interim-classifier -->
+- Refs #456 — Source plan; later batches finish it.
+Partial batch; source issue remains open for remaining work.
+<!-- related-issues-validation: partial-batch -->
 
-Workspace setup: Automation fix-main run
+Workspace setup: ./dev/initialize monorepo
 ${VALID_PROVENANCE_BLOCK}
 `

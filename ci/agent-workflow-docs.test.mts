@@ -188,7 +188,9 @@ describe('agent workflow documentation', () => {
 
     expect(gitAndPrs).toContain('One worker per native stack owns Shepherd polling and Git writes')
     expect(gitAndPrs).not.toContain('the shepherd loop, the ownership view')
-    expect(stacked).toContain('One worker per native stack')
+    expect(stacked).toContain(
+      'vouchington-tooling/skills/stacked-prs/SKILL.md#ownership-and-workers',
+    )
     expect(stacked).toContain('pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status')
     expect(stacked).toContain('### Upper-only fast-forward')
     expect(stacked).not.toContain('the shepherd loop itself stays with this session')
@@ -207,11 +209,7 @@ describe('agent workflow documentation', () => {
     expect(gitAndPrs).toContain('run_in_background')
     expect(gitAndPrs).toContain('ScheduleWakeup')
     expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
-    expect(gitAndPrs).toContain('git rev-list --left-right --count HEAD...origin/<branch>')
-    expect(gitAndPrs).toContain('git cherry -v')
-    expect(gitAndPrs).toContain('git log --oneline --left-right')
-    expect(gitAndPrs).toContain('git range-diff')
-    expect(gitAndPrs).toContain('git rebase origin/<branch>')
+    expect(gitAndPrs).toContain('vouchington-tooling/skills/agent-workflow/references/four-refs.md')
     expect(gitAndPrs).toContain('./dev/rebase-onto-main --stack')
     expect(rerunReference).toContain('Ineffective rerun patterns')
   })

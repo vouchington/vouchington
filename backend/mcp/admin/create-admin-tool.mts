@@ -11,7 +11,7 @@ import type {
 } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from '../private-user.mts'
 import { findSchemaViolation } from '../schema-validator.mts'
-import { adminOutputSchema, wrapAdminOutput } from './untrusted-output.mts'
+import { adminOutputSchema, wrapAdminOutput } from '../untrusted-output.mts'
 
 type AdminToolConfig<TArgs> = {
   switch?: 'copyright.mcpDecisionTools'

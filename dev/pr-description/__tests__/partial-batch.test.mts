@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { extractPartialBatchSourceRef } from '../partial-batch.mts'
 import { validatePrBody, validatePrBodyWithIssueReferences } from '../validate.mts'
 import { VALID_PR_BODY } from '../../test-helpers/pr-description/valid-pr-body.mts'
 
-const PARTIAL = `Refs #123
+const REF = '- Refs #123 — Batch plan; later batches finish it.'
+const PARTIAL = `${REF}
 Partial batch; source issue remains open for remaining work.
 <!-- related-issues-validation: partial-batch -->`
 const BODY = VALID_PR_BODY.replace('Closes #123', PARTIAL)
 
 describe('partial batch descriptions', () => {
-  it('accepts an explicit partial batch with a standalone source reference', () => {
+  it('accepts the partial batch pr_create renders after its single refs entry', () => {
     expect(validatePrBody(BODY).ok).toBe(true)
   })
   it('resolves the source as an open issue without treating it as closed by this PR', async () => {
@@ -35,18 +37,21 @@ describe('partial batch descriptions', () => {
 
 describe('partial declaration constraints', () => {
   it.each([
-    PARTIAL.replace('Refs #123\n', ''),
+    PARTIAL.replace(`${REF}\n`, ''),
     PARTIAL.replace('Partial batch; source issue remains open for remaining work.\n', ''),
     PARTIAL.replace('<!-- related-issues-validation: partial-batch -->', ''),
-    PARTIAL.replace('Refs #123', '`Refs #123`'),
-    PARTIAL.replace('Refs #123', '    Refs #123'),
-    PARTIAL.replace('Refs #123', ' \tRefs #123'),
-    PARTIAL.replace('Refs #123', 'Refs #9007199254740992'),
-    PARTIAL.replace('Refs #123', 'Refs #123 with explanation'),
+    PARTIAL.replace(REF, 'Refs #123'),
+    PARTIAL.replace(REF, '- Refs #123'),
+    PARTIAL.replace(REF, `\`${REF}\``),
+    PARTIAL.replace(REF, `    ${REF}`),
+    PARTIAL.replace(REF, ` \t${REF}`),
+    PARTIAL.replace('#123', '#9007199254740992'),
+    `- Refs #999 — Unrelated context.\n${PARTIAL}`,
+    `${PARTIAL}\n${PARTIAL.split('\n').slice(1).join('\n')}`,
     `~~~md\n${PARTIAL}\n~~~`,
     `<!--\n${PARTIAL}\n-->`,
     `<pre>\n${PARTIAL}\n</pre>`,
-    `Refs #123\n<!-- decoy -->\n${PARTIAL.split('\n').slice(1).join('\n')}`,
+    `${REF}\n<!-- decoy -->\n${PARTIAL.split('\n').slice(1).join('\n')}`,
   ])('rejects incomplete or hidden partial declaration %s', declaration => {
     expect(validatePrBody(VALID_PR_BODY.replace('Closes #123', declaration)).ok).toBe(false)
   })
@@ -146,5 +151,16 @@ describe('partial declaration constraints', () => {
       expect.stringContaining('#456 contains at least one unchecked task: Issue.'),
     )
     expect(other.errors).not.toContain('A partial batch must not also close its source issue.')
+  })
+})
+
+describe('cross-repository partial batch', () => {
+  it('names a source issue in another repository', () => {
+    const body = VALID_PR_BODY.replace(
+      'Closes #123',
+      PARTIAL.replace('#123', 'vouchington/vouchington-tooling#45'),
+    )
+    expect(validatePrBody(body).ok).toBe(true)
+    expect(extractPartialBatchSourceRef(body)?.key).toBe('vouchington/vouchington-tooling#45')
   })
 })

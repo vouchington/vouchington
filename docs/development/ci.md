@@ -10,6 +10,10 @@ The [EXPLAIN ANALYZE seed guide](postgresql/explain-analyze/README.md#1-seed-tes
 describes the incremental post-seed timing, PostgreSQL observer, and host/container resource files
 retained by the failed-run artifact. Use those records to locate a seed-step timeout before
 changing the seed workload or its bound.
+A backend-unit shard killed by its step timeout leaves its evidence in the log and a one-day
+`backend-file-progress-shard-N` artifact: a `[backend-unit-deadline]` dump 60 seconds before the
+deadline names the unfinished test files and the largest processes (see
+[Vitest CI mapping](ci/workflows/VITEST.md)). Default logs stay quiet.
 The `pnpm run explain:coverage` report is local-only analysis of completed EXPLAIN results;
 Nightly produces the artifact, while Tooling CI runs its classifier and artifact-validation
 tests. See the [EXPLAIN coverage guide](postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario).

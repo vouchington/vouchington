@@ -38,6 +38,16 @@ export async function insertTestCommunityListItem(
   }
 }
 
+export async function removeTestCommunityListItem(
+  item: Pick<CommunityListItem, 'id' | 'item_type'>,
+): Promise<void> {
+  const { table } = getCommunityListItemStorageConfig(item.item_type)
+  await write(
+    `/* removeTestCommunityListItem */ UPDATE ${table} SET removed_at = NOW() WHERE id = $1`,
+    [item.id],
+  )
+}
+
 export async function insertTestProxyFollowCommunity(
   userId: string,
   communityId: string,

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { hasEveryScope, SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
+import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
@@ -53,11 +54,11 @@ const grants: {
   },
 ]
 
-// #2961: Plus is umbrella-only; all caps have ~1.5% headroom, rounded up to 1,000.
-// Sizes are compact UTF-16 code units.
+// Plus is umbrella-only; Reader and Plus caps are inherited from main.
+// Owner-approved mcp.all caps: compact UTF-16 sizes plus 1.5%, rounded up to 1,000.
 const caps = {
   mcp: {
-    all: { count: 74, list: 227000, core: 94000, output: 211000 },
+    all: { count: 78, list: 299000, core: 119000, output: 281000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
     Plus: { count: 70, list: 217000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
@@ -150,6 +151,7 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
       ...userMergedParticipationGroups,
       ...participationWriteGroups,
       ...adminMergedGroups,
+      ...communityModerationGroups,
     ]
     const mergedNames = new Set(groups.map(group => group.name))
     const descriptions = [
@@ -241,7 +243,9 @@ const names = [
   'submit_rss_feed',
   'start_discussion',
 ]
-const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
+const scopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
+  scope => !scope.startsWith('community-moderation:'),
+)
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const caller = { id: 'participation-listing', roles: [], membership_plan: null }
 

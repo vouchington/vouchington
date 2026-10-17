@@ -1,15 +1,12 @@
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
+import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
 import {
   seedAnchorPostReviewTopicRating,
   seedComments,
-  seedCommunities,
-  seedCommunityListItemTopic,
-  seedCommunityPosts,
-  seedCommunityProxyFollowsAndMutes,
   seedCrawlChunks,
   seedCrawls,
   seedHostnameVoteAggregation,
@@ -22,7 +19,6 @@ import {
   seedRecentlyViewedTopics,
   seedRelatedUrlPostRelations,
   seedTopicAliases,
-  seedTrendingCommunityPostIds,
   seedVoteAggregation,
   seedVotes,
 } from './seed-data/engagement.mts'
@@ -81,9 +77,6 @@ import {
   seedUserAgentStrings,
 } from './seed-data/round-trip-shapes.mts'
 import { seedTopHashtags } from './seed-data/top-hashtags.mts'
-import { seedViewDrivenCommunityPosts } from './seed-data/view-driven-community-posts.mts'
-import { seedViewDrivenLists } from './seed-data/view-driven-lists.mts'
-import { seedViewDrivenPrompts } from './seed-data/view-driven-prompts.mts'
 import { seedViewDrivenOAuth } from './seed-data/view-driven-oauth.mts'
 import { seedViewDrivenIdentity } from './seed-data/view-driven-identity.mts'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
@@ -94,7 +87,6 @@ import {
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
-import { seedModerationSummaryRecipient } from './seed-data/view-driven-reads.mts'
 
 async function main() {
   await seedUsers(20_000)
@@ -160,15 +152,7 @@ async function main() {
   await seedTopHashtags()
   await seedFollowerDistributions()
   await seedProfileLinks(1000)
-  await seedCommunities(5, 200)
-  await seedModerationSummaryRecipient()
-  await seedViewDrivenLists()
-  await seedViewDrivenPrompts()
-  await seedCommunityListItemTopic()
-  await seedCommunityPosts()
-  await seedTrendingCommunityPostIds()
-  await seedViewDrivenCommunityPosts()
-  await seedCommunityProxyFollowsAndMutes()
+  await seedCommunitySearchFixtures()
   await seedConversationPaginationRows(1000)
   await seedPostDataPointTopics(1000)
   await seedPostReviewTopicRatings(1000)

@@ -11,12 +11,16 @@ import { assertRemoteFollowerPagePlanShapeIfApplicable } from './plan-custom/rem
 import { assertReviewSuccessionCandidatePlanIfApplicable } from './plan-custom/review-succession.mts'
 import { assertRssFeedCandidatesAreSetBased } from './plan-custom/rss-feed-candidates.mts'
 import { assertRssRecencyLateCursorPlan } from './plan-custom/rss-recency-cursor.mts'
-import { assertSearchCommunitiesEligibilityIsIndexed } from './plan-custom/search-communities.mts'
+import {
+  assertSearchCommunitiesEligibilityIsIndexed,
+  assertSearchCommunityMemberCandidates,
+} from './plan-custom/search-communities.mts'
 import { assertSemanticPostCandidatePlan } from './plan-custom/semantic-post.mts'
 import { assertStoryMemberPagePlan } from './plan-custom/story-member-pages.mts'
 import { assertTopicViewerCountsDiscussionsUsesCandidateBind } from './plan-custom/topic-viewer-counts.mts'
 import { assertTrendingCommunitiesIsCandidateBounded } from './plan-custom/trending-communities.mts'
 import { assertCorePlanCheck } from './plan-custom/core-special.mts'
+import { assertUsernamePrefixCandidates } from './plan-custom/username-prefix.mts'
 
 const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = {
   mediaDeliveryReplay: assertMediaDeliveryReplayPlan,
@@ -32,12 +36,16 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   rssFeedCandidates: assertRssFeedCandidatesAreSetBased,
   rssRecencyCursor: assertRssRecencyLateCursorPlan,
   searchCommunitiesEligibility: assertSearchCommunitiesEligibilityIsIndexed,
+  searchCommunityMemberCandidates: assertSearchCommunityMemberCandidates,
   semanticPost: assertSemanticPostCandidatePlan,
   storyMemberPages: assertStoryMemberPagePlan,
   topicViewerCandidateBind: assertTopicViewerCountsDiscussionsUsesCandidateBind,
   trendingCommunities: assertTrendingCommunitiesIsCandidateBounded,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
+  rssTextCandidates: result => assertCorePlanCheck('rssTextCandidates', result),
+  communityTextCandidates: result => assertCorePlanCheck('communityTextCandidates', result),
+  usernamePrefixCandidates: assertUsernamePrefixCandidates,
   relationListingOrder: result => assertCorePlanCheck('relationListingOrder', result),
   entityRelationVotes: result => assertCorePlanCheck('entityRelationVotes', result),
   userRemovedPosts: result => assertCorePlanCheck('userRemovedPosts', result),

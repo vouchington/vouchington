@@ -5,6 +5,7 @@ import {
   insertTestCommunityMember,
   removeTestCommunityMember,
   insertTestCommunityListItem,
+  removeTestCommunityListItem,
   insertTestTopic,
   createRandomString,
 } from '@voucha/test-helpers'
@@ -120,7 +121,7 @@ describe('search (filters)', () => {
           slug: `search-topic-${rand}`,
           createdById: user.id,
         })
-        await insertTestCommunityListItem({
+        const item = await insertTestCommunityListItem({
           communityId: withItems.id,
           itemType: 'topic',
           entityId: topicId,
@@ -130,6 +131,19 @@ describe('search (filters)', () => {
         const ids = result.results.map(r => r.id)
         expect(ids).toContain(withItems.id)
         expect(ids).not.toContain(withoutItems.id)
+
+        const ranked = await searchCommunities({
+          hasListItems: true,
+          sort: 'virtual_subscriptions',
+          search: rand,
+        })
+        const rankedIds = ranked.results.map(community => community.id)
+        expect(rankedIds).toContain(withItems.id)
+        expect(rankedIds).not.toContain(withoutItems.id)
+
+        await removeTestCommunityListItem(item)
+        const afterRemoval = await searchCommunities({ hasListItems: true, search: rand })
+        expect(afterRemoval.results.map(community => community.id)).not.toContain(withItems.id)
       })
     })
 

@@ -131,6 +131,7 @@ type CreateTestModmailThreadOptions = {
   communityId: string
   subjectUserId: string
   modUserId: string
+  title?: string
   lastActivityAt?: string
 }
 
@@ -141,7 +142,7 @@ export async function createTestModmailThread(options: CreateTestModmailThreadOp
           channel_type, title, community_id, subject_user_id, created_by_id, last_activity_at
         )
         VALUES (
-          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}, ${options.lastActivityAt}
+          'modmail', ${options.title ?? ''}, ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}, ${options.lastActivityAt}
         )
         RETURNING id`
     : sql`/* createTestModmailThread */
@@ -149,7 +150,7 @@ export async function createTestModmailThread(options: CreateTestModmailThreadOp
           channel_type, title, community_id, subject_user_id, created_by_id
         )
         VALUES (
-          'modmail', '', ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}
+          'modmail', ${options.title ?? ''}, ${options.communityId}, ${options.subjectUserId}, ${options.subjectUserId}
         )
         RETURNING id`
   const { rows: convRows } = await write(insert)
