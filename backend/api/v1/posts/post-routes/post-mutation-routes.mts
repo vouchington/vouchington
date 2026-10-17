@@ -3,14 +3,11 @@ import { getCommunityMember } from '@services/communities/members/get'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCached } from '@services/entity-fetch'
-import { invalidate } from '@services/entity-cache/invalidate'
+import { setPostLock } from '@services/posts/lock-action'
 import {
   canViewPost,
   currentUserCanUpdatePost,
-  currentUserCanLockPost,
   deletePost,
-  lockPost,
-  unlockPost,
   updatePost,
   type UpdatePostChanges,
 } from '@services/posts'
@@ -94,20 +91,7 @@ app.route('/api/v1/posts/:idOrSlug/lock').post(async (ctx: Context) => {
   assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/lock', { path: ctx.params })
 
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
-  ctx.assert(post, 404, 'Post not found')
-  ctx.assert(!post.deleted_at, 404, 'Post not found')
-  const privacyPost = await getRouteAccessPost(post)
-  ctx.assert(privacyPost, 404, 'Post not found')
-  ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
-
-  const communityMemberRole: CommunityMemberRole | null = post.community_id
-    ? ((await getCommunityMember(post.community_id, currentUser.id))?.role ?? null)
-    : null
-
-  ctx.assert(currentUserCanLockPost(currentUser, post, { communityMemberRole }), 403, 'Forbidden')
-  await lockPost(post.id, currentUser.id)
-  await invalidate.posts(post.id)
+  await setPostLock(currentUser, ctx.params.idOrSlug!, true)
   ctx.setStatus(204)
 })
 
@@ -116,19 +100,6 @@ app.route('/api/v1/posts/:idOrSlug/lock').delete(async (ctx: Context) => {
   assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'DELETE:/api/v1/posts/:idOrSlug/lock', { path: ctx.params })
 
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
-  ctx.assert(post, 404, 'Post not found')
-  ctx.assert(!post.deleted_at, 404, 'Post not found')
-  const privacyPost = await getRouteAccessPost(post)
-  ctx.assert(privacyPost, 404, 'Post not found')
-  ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
-
-  const communityMemberRole: CommunityMemberRole | null = post.community_id
-    ? ((await getCommunityMember(post.community_id, currentUser.id))?.role ?? null)
-    : null
-
-  ctx.assert(currentUserCanLockPost(currentUser, post, { communityMemberRole }), 403, 'Forbidden')
-  await unlockPost(post.id, currentUser.id)
-  await invalidate.posts(post.id)
+  await setPostLock(currentUser, ctx.params.idOrSlug!, false)
   ctx.setStatus(204)
 })

@@ -12,7 +12,18 @@ import {
   revokeInvite,
   type CommunityRestrictionType,
 } from '@services/communities'
-import { dismissBanEvasionFlag } from '@services/communities/ban-evasion'
+import {
+  confirmBanEvasion,
+  dismissBanEvasionFlag,
+  getBanEvasionCommunity,
+} from '@services/communities/ban-evasion'
+import { setPostLock } from '@services/posts/lock-action'
+import {
+  assertCanAccessUserModNotes,
+  createUserModNote,
+  deleteUserModNote,
+  parseCreateUserModNoteInput,
+} from '@services/user-mod-notes'
 import { clearMyCommunityVacation } from '@services/community-member-vacations'
 import { createSavedReply, deleteSavedReply } from '@services/modmail'
 import {
@@ -28,6 +39,33 @@ import {
 import { communityWithGuard, staffOrModeratorCommunity } from './community-moderation-guards.mts'
 
 export const communityModerationOtherWrites: Record<string, CommunityModerationHandler> = {
+  async lock_post(user, args) {
+    await setPostLock(user, args.idOrSlug as string, true)
+    return communityModerationNoContent()
+  },
+  async unlock_post(user, args) {
+    await setPostLock(user, args.idOrSlug as string, false)
+    return communityModerationNoContent()
+  },
+  async confirm_ban_evasion(user, args) {
+    const community = await getBanEvasionCommunity(args.community)
+    await confirmBanEvasion(user, community.id, args.userId as string)
+    return communityModerationNoContent()
+  },
+  async create_mod_note(user, args) {
+    await assertCanAccessUserModNotes(user)
+    const input = parseCreateUserModNoteInput({
+      targetUserId: args.userId,
+      communityId: args.community_id,
+      body: args.body,
+    })
+    return { note: await createUserModNote(user, input) }
+  },
+  async delete_mod_note(user, args) {
+    await assertCanAccessUserModNotes(user)
+    await deleteUserModNote(user, args.noteId as string, args.userId as string)
+    return { ok: true }
+  },
   async ban_user(user, args) {
     const { community } = await communityWithGuard(user, args.community, 'bans')
     assert(!community.archived_at, 403, 'Community is archived')
@@ -55,8 +93,7 @@ export const communityModerationOtherWrites: Record<string, CommunityModerationH
     return communityModerationNoContent()
   },
   async dismiss_ban_evasion(user, args) {
-    const community = await getCommunityOrThrow(args.community)
-    assert(!community.archived_at, 403, 'Community is archived')
+    const community = await getBanEvasionCommunity(args.community)
     await dismissBanEvasionFlag(user, community.id, args.userId as string)
     return communityModerationNoContent()
   },

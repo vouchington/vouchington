@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import { banUserFromCommunity } from '@services/communities/bans/create'
 import { getPublicUserByAny } from '@services/users/get'
 import { isModerationStaff } from '@services/users/authorization'
+import { getCommunityOrThrow } from '../get.mts'
 import { resolveBanEvasionSystemReports } from './resolve-system-report.mts'
 
 export async function confirmBanEvasion(
@@ -67,4 +68,11 @@ export async function confirmBanEvasion(
   }
 
   await resolveBanEvasionSystemReports(currentUser.id, communityId, userId, 'actioned')
+}
+
+/** Shared archive guard for community ban-evasion actions. */
+export async function getBanEvasionCommunity(idOrSlug: string) {
+  const community = await getCommunityOrThrow(idOrSlug)
+  assert(!community.archived_at, 403, 'Community is archived')
+  return community
 }

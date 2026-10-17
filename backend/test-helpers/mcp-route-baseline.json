@@ -1411,7 +1411,11 @@
     "I163": [["community", "userId"]],
     "I164": [["community", "id"]],
     "I165": [["community", "itemId"]],
-    "I166": [["after", "community", "limit", "window"]]
+    "I166": [["after", "community", "limit", "window"]],
+    "I167": [["idOrSlug"]],
+    "I168": [["noteId", "userId"]],
+    "I169": [["community_id", "subject_user_id"]],
+    "I170": [["community_id", "conversationId", "text"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4166,8 +4170,8 @@
         "inputFields": "I059",
         "requestBodyFields": null,
         "operation": {
-          "tool": "join_community",
-          "option": null
+          "tool": "participate_in_community",
+          "option": "join"
         },
         "decision": false
       }
@@ -5673,6 +5677,118 @@
           "decision": false,
           "inputFields": "I001",
           "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/lock": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I167",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "lock_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:idOrSlug/lock": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I167",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "unlock_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I163",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "confirm_ban_evasion"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/users/:userId/mod-notes": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I053",
+          "requestBodyFields": ["body", "community_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "create_mod_note"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/users/:userId/mod-notes/:noteId": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I168",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "delete_mod_note"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/modmail": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F79",
+          "inputFields": "I169",
+          "requestBodyFields": ["subject_user_id"],
+          "operation": {
+            "tool": "participate_in_community",
+            "option": "open_modmail"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F79",
+          "inputFields": "I170",
+          "requestBodyFields": ["text"],
+          "operation": {
+            "tool": "participate_in_community",
+            "option": "reply_modmail"
+          },
+          "decision": false
         }
       ]
     }

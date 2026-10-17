@@ -62,6 +62,7 @@ export const sdkMergedSuccessNames = {
     'replay_copyright_intent',
   ],
   participationFixture: [
+    'participate_in_community',
     'vote',
     'set_rss_feed_item_read',
     'share_rss_feed_item',

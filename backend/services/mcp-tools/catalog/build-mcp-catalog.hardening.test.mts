@@ -17,14 +17,14 @@ const names = [
   'update_community_moderation',
   'remove_community_moderation',
 ]
-// Pin #2545 listings after main's approved schema, description and option-pointer updates.
+// Pin listings with the approved community participation options.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  '401a6fde95e330d7fe2d9d7bfae3e3fdbb1abe64afd72650910663df867bde7f'
-const UMBRELLA_ONLY_DIGEST = '2b3614724eb8fd9cc422649965063d0610b913a7c8f22b38366c5f285e7b758b'
+  '3ff4ea5e81c320df4c7f875a951fca59d81a4a4c57de7d44dbd802d7a0bd2379'
+const UMBRELLA_ONLY_DIGEST = '2992ea8823835c07779f639996cfc5af83b108c28ce7ee9f0ce1f1160f97806b'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
-  it('keeps the existing Plus listing byte-identical without moderation grants', () => {
+  it('pins the community participation Plus listing without moderation grants', () => {
     const tools = listMcpToolsForUser(plus, nonModerationScopes, USER_MCP_SERVER_CONFIG)
     expect(tools).toHaveLength(74)
     expect(digest(tools)).toBe(PLUS_WITHOUT_MODERATION_DIGEST)
