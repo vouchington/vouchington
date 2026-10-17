@@ -1336,14 +1336,11 @@
     "fn_project_capture_notification_push_intent()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO notification_push_intents (user_id, notification_id)\n  VALUES (NEW.user_id, NEW.id)\n  ON CONFLICT (user_id, notification_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_project_community_active_count()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_active_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  is_member BOOLEAN := TG_TABLE_NAME = 'community_members';\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET\n        member_count = member_count - CASE WHEN is_member THEN 1 ELSE 0 END,\n        list_item_count = list_item_count - CASE WHEN is_member THEN 0 ELSE 1 END\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET\n        member_count = member_count + CASE WHEN is_member THEN 1 ELSE 0 END,\n        list_item_count = list_item_count + CASE WHEN is_member THEN 0 ELSE 1 END\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_project_community_image_placements()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_project_community_list_item_count()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_list_item_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET list_item_count = list_item_count - 1\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET list_item_count = list_item_count + 1\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
-    },
-    "fn_project_community_member_count()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_member_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET member_count = member_count - 1\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET member_count = member_count + 1\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_community_virtual_subscription_count()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_virtual_subscription_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.deleted_at IS NULL THEN\n      UPDATE community_search_counts\n        SET virtual_subscription_count = virtual_subscription_count - 1\n      WHERE community_id = OLD.object_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.deleted_at IS NULL THEN\n      UPDATE community_search_counts\n        SET virtual_subscription_count = virtual_subscription_count + 1\n      WHERE community_id = NEW.object_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -17671,7 +17668,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_project_community_list_posts_count": {
-          "definition": "CREATE TRIGGER trigger_project_community_list_posts_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_posts FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+          "definition": "CREATE TRIGGER trigger_project_community_list_posts_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_posts FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         }
       },
       "uniqueConstraints": {}
@@ -17905,7 +17902,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_project_community_list_rss_feeds_count": {
-          "definition": "CREATE TRIGGER trigger_project_community_list_rss_feeds_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+          "definition": "CREATE TRIGGER trigger_project_community_list_rss_feeds_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         }
       },
       "uniqueConstraints": {}
@@ -18139,7 +18136,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_project_community_list_topics_count": {
-          "definition": "CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+          "definition": "CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         }
       },
       "uniqueConstraints": {}
@@ -18373,7 +18370,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_project_community_list_url_hostnames_count": {
-          "definition": "CREATE TRIGGER trigger_project_community_list_url_hostnames_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+          "definition": "CREATE TRIGGER trigger_project_community_list_url_hostnames_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         }
       },
       "uniqueConstraints": {}
@@ -18607,7 +18604,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_project_community_list_urls_count": {
-          "definition": "CREATE TRIGGER trigger_project_community_list_urls_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_urls FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+          "definition": "CREATE TRIGGER trigger_project_community_list_urls_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_urls FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         }
       },
       "uniqueConstraints": {}
@@ -19210,7 +19207,7 @@
           "definition": "CREATE TRIGGER trigger_community_members_updated_at BEFORE UPDATE ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         },
         "trigger_project_community_member_count": {
-          "definition": "CREATE TRIGGER trigger_project_community_member_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_project_community_member_count()"
+          "definition": "CREATE TRIGGER trigger_project_community_member_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
         }
       },
       "uniqueConstraints": {}

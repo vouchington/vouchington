@@ -299,26 +299,18 @@ CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_community_active_count`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_community_active_count()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_community_image_placements`
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_community_list_item_count`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_community_list_item_count()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
-## `fn_project_community_member_count`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_project_community_member_count()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

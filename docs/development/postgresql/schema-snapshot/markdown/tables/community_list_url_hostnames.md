@@ -41,4 +41,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_project_community_list_url_hostnames_count`: `CREATE TRIGGER trigger_project_community_list_url_hostnames_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()`
+- `trigger_project_community_list_url_hostnames_count`: `CREATE TRIGGER trigger_project_community_list_url_hostnames_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()`
