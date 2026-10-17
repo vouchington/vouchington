@@ -10,6 +10,7 @@ import {
   getTestCommunityActivityDigestWorkItems,
   insertTestCommunityActivityDigestWorkItem,
   readNextTestCommunityActivityDigestWindowStart,
+  readTestCommunityActivityDigestWorkItem,
   withTestCommunityActivityDigestLock,
 } from '@voucha/test-helpers'
 import {
@@ -73,12 +74,25 @@ describe('community activity digest work items', () => {
         expect(
           stored.find(row => row.window_starts_at.toISOString() === foreignStart.toISOString()),
         ).toMatchObject({ lease_token: null, completed_at: null, attempt_count: 0 })
+        await expect(readTestCommunityActivityDigestWorkItem(windowStart)).resolves.toMatchObject({
+          lease_token: null,
+          completed_at: null,
+          attempt_count: 1,
+        })
+        await expect(readTestCommunityActivityDigestWorkItem(foreignStart)).resolves.toMatchObject({
+          lease_token: null,
+          completed_at: null,
+          attempt_count: 0,
+        })
         const successor = await claimCommunityActivityDigestWorkItem(windowStart)
         expect(successor).toBeTypeOf('string')
         if (!successor) throw new Error('Expected released digest work to be immediately claimable')
         await expect(completeCommunityActivityDigestWorkItem(windowStart, successor)).resolves.toBe(
           true,
         )
+        const durable = await readTestCommunityActivityDigestWorkItem(windowStart)
+        expect(durable?.completed_at).toBeInstanceOf(Date)
+        expect(durable).toMatchObject({ lease_token: null, attempt_count: 2 })
       } finally {
         await cleanup()
       }

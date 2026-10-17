@@ -1,7 +1,16 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { write } from '@data-stores/psql'
+import { advisoryLockPool, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
+
+export type TestCommunityActivityDigestWorkItem = {
+  window_starts_at: Date
+  window_ends_at: Date
+  lease_token: string | null
+  lease_expires_at: Date | null
+  completed_at: Date | null
+  attempt_count: number
+}
 
 const DIGEST_LOCK_NAMESPACE = 2_135_042
 const DIGEST_LOCK_KEY = 1
@@ -17,6 +26,17 @@ export async function withTestCommunityActivityDigestLock<T>(run: () => Promise<
   } finally {
     await lock.release()
   }
+}
+
+export async function addTestCommunityActivityDigestWeeks(
+  start: Date,
+  weeks: number,
+): Promise<Date> {
+  const { rows } = await write<{ window_starts_at: Date }>(sql`
+    /* addTestCommunityActivityDigestWeeks */
+    SELECT ${start}::timestamptz + (${weeks} * INTERVAL '7 days') AS window_starts_at
+  `)
+  return rows[0]!.window_starts_at
 }
 
 export async function readNextTestCommunityActivityDigestWindowStart(): Promise<Date> {
@@ -40,24 +60,35 @@ export async function insertTestCommunityActivityDigestWorkItem(windowStart: Dat
   `)
 }
 
+export async function readTestCommunityActivityDigestWorkItem(
+  windowStart: Date,
+): Promise<TestCommunityActivityDigestWorkItem | null> {
+  const { rows } = await advisoryLockPool.query<TestCommunityActivityDigestWorkItem>(sql`
+    /* readTestCommunityActivityDigestWorkItem */
+    SELECT window_starts_at, window_ends_at, lease_token, lease_expires_at, completed_at, attempt_count
+    FROM community_activity_digest_work_items
+    WHERE window_starts_at = ${windowStart}
+  `)
+  return rows[0] ?? null
+}
+
+export async function deleteOwnedTestCommunityActivityDigestWorkItem(
+  windowStart: Date,
+): Promise<boolean> {
+  const { rowCount } = await write(sql`
+    /* deleteOwnedTestCommunityActivityDigestWorkItem */
+    DELETE FROM community_activity_digest_work_items
+    WHERE window_starts_at = ${windowStart}
+      AND completed_at IS NULL
+      AND lease_token IS NULL
+  `)
+  return rowCount === 1
+}
+
 export async function getTestCommunityActivityDigestWorkItems(): Promise<
-  Array<{
-    window_starts_at: Date
-    window_ends_at: Date
-    lease_token: string | null
-    lease_expires_at: Date | null
-    completed_at: Date | null
-    attempt_count: number
-  }>
+  TestCommunityActivityDigestWorkItem[]
 > {
-  const { rows } = await write<{
-    window_starts_at: Date
-    window_ends_at: Date
-    lease_token: string | null
-    lease_expires_at: Date | null
-    completed_at: Date | null
-    attempt_count: number
-  }>(
+  const { rows } = await write<TestCommunityActivityDigestWorkItem>(
     allowUnannotatedQuery(sql`
     SELECT window_starts_at, window_ends_at, lease_token, lease_expires_at, completed_at, attempt_count
     FROM community_activity_digest_work_items
