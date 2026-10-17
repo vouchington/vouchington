@@ -91,6 +91,7 @@ export async function ensureUserSuspendedInTransaction(
 export async function unsuspendUser(
   currentUser: PrivateUser | null,
   userId: string,
+  transactionOptions: Parameters<typeof beginTransaction>[0] = {},
 ): Promise<PrivateUser> {
   if (!isAdminUser(currentUser)) throw createHttpError(403, 'Forbidden')
 
@@ -98,7 +99,7 @@ export async function unsuspendUser(
   if (!user) throw createHttpError(404, 'User not found')
   if (!user.suspended_at) throw createCodedError(409, 'User is not suspended', CONFLICT)
 
-  await using query = await beginTransaction()
+  await using query = await beginTransaction(transactionOptions)
   await lockAuthorPublicationLifecycle(query, userId)
 
   const { rows: check } = await query(sql`/* unsuspendUser:checkLocked */

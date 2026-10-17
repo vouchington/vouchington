@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
+import { createTestUser, createTestUserDirect, softDeleteUser } from '@voucha/test-helpers'
 import {
-  confirmTestRepeatInfringerNoticesConcurrently,
   createTestRepeatInfringerNotice,
   readTestRepeatInfringerOpenReviewIds,
 } from '@voucha/test-helpers/copyright-repeat-infringer'
 import type { PrivateUser } from '@services/users/types'
+import { confirmTestRepeatInfringerNoticesConcurrently } from '@voucha/test-helpers/copyright-repeat-infringer-concurrency'
 import {
   createCopyrightAppeal,
   reviewCopyrightAppeal,
@@ -17,15 +17,15 @@ import {
   recordCopyrightRepeatInfringerDisposition,
 } from './repeat-infringer-incidents.mts'
 async function createActors() {
-  const [poster, otherPoster, moderatorRecord] = await Promise.all([
+  const [poster, otherPoster, moderator] = await Promise.all([
     createTestUserDirect(),
     createTestUserDirect(),
-    createTestUserDirect(),
+    createTestUser({ administrator: true }),
   ])
   return {
     poster,
     otherPoster,
-    moderator: { ...moderatorRecord, roles: ['administrator'] } as PrivateUser,
+    moderator,
   }
 }
 describe('copyright effective incident authority', () => {
@@ -36,8 +36,8 @@ describe('copyright effective incident authority', () => {
       createTestRepeatInfringerNotice([poster.id], moderator),
     ])
     await confirmTestRepeatInfringerNoticesConcurrently(poster.id, [
-      () => confirmTestRepeatInfringerRestriction(first, moderator),
-      () => confirmTestRepeatInfringerRestriction(second, moderator),
+      connection => confirmTestRepeatInfringerRestriction(first, moderator, 0, connection),
+      connection => confirmTestRepeatInfringerRestriction(second, moderator, 0, connection),
     ])
     const account = await getCopyrightRepeatInfringerAccount(poster.id)
     expect(account.incidents.filter(row => row.is_operative)).toHaveLength(2)
@@ -226,15 +226,19 @@ async function confirmTestRepeatInfringerRestriction(
   fixture: Awaited<ReturnType<typeof createTestRepeatInfringerNotice>>,
   moderator: PrivateUser,
   index = 0,
+  transactionOptions: Parameters<typeof completeCopyrightMandatoryHumanReview>[1] = {},
 ) {
-  return completeCopyrightMandatoryHumanReview({
-    currentUser: moderator,
-    noticeId: fixture.noticeId,
-    restrictionId: fixture.restrictions[index]!.id,
-    action: 'confirm',
-    rationale: 'The reviewed restriction is appropriate.',
-    reviewedAt: new Date(),
-  })
+  return completeCopyrightMandatoryHumanReview(
+    {
+      currentUser: moderator,
+      noticeId: fixture.noticeId,
+      restrictionId: fixture.restrictions[index]!.id,
+      action: 'confirm',
+      rationale: 'The reviewed restriction is appropriate.',
+      reviewedAt: new Date(),
+    },
+    transactionOptions,
+  )
 }
 
 async function reviewTestRepeatInfringerAppeal(
