@@ -5,11 +5,11 @@ import { navigateTo } from '../../helpers/navigate-to.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { requireTestValue } from '../../helpers/assertions.mts'
 import { chooseVote, voteTrigger } from '../../helpers/semantic-vote.mts'
+import { createEmailVerificationToken } from '../../../backend/services/my/email-address-verification.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   connectTestOAuthAccount,
   createTestUserWithAge,
-  getLatestEmailAddressLoginTokenHash,
   insertTestOAuthAccount,
 } from '../../../backend/test-helpers/index.mts'
 
@@ -50,11 +50,13 @@ test.describe('Email verification recovery', () => {
         response.request().method() === 'POST',
     )
     await recoveryDialog.getByRole('button', { name: 'Send verification code' }).click()
-    await requestCompleted
+    expect((await requestCompleted).ok()).toBe(true)
 
-    const verificationToken = requireTestValue(
-      await getLatestEmailAddressLoginTokenHash(emailAddress),
-      'Email verification token was not created',
+    // The sent code is deliberately unavailable from token storage. Replace the
+    // pending code through the same service so this browser flow can enter a raw code.
+    const { token: verificationToken } = await createEmailVerificationToken(
+      oauthUser.id,
+      emailAddress,
     )
 
     const verificationCompleted = page.waitForResponse(

@@ -1,3 +1,4 @@
+import { makeCommunityInvite as makeInvite } from '@/test-helpers/api-responses/communities'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
@@ -42,23 +43,6 @@ import type { CommunityInvite, CommunityInvitesResponseBody } from '@/types/api-
 const mockSendInvite = vi.mocked(sendInvite)
 const mockRevokeInvite = vi.mocked(revokeInvite)
 const mockNav = createNavMock()
-
-function makeInvite(overrides: Partial<CommunityInvite> = {}): CommunityInvite {
-  return {
-    __entity_type: 'community_invite',
-    id: 'invite-1',
-    community_id: 'community-1',
-    invited_user_id: null,
-    invited_email: 'tests+a@voucha.ai',
-    invited_by_id: 'user-1',
-    accepted_at: null,
-    accepted_by_id: null,
-    declined_at: null,
-    revoked_at: null,
-    created_at: '2026-05-24T00:00:00.000Z',
-    ...overrides,
-  }
-}
 
 const baseData: CommunityInvitesResponseBody = {
   results: [],

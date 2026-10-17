@@ -1,24 +1,7 @@
+import { makeCommunityInvite as makeInvite } from '@/test-helpers/api-responses/communities'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { InviteItem } from '../invite-item'
-import type { CommunityInvite } from '@/types/api-responses/pagination-and-entities'
-
-function makeInvite(overrides: Partial<CommunityInvite>): CommunityInvite {
-  return {
-    id: 'invite-1',
-    community_id: 'community-1',
-    created_at: '2026-05-24T00:00:00.000Z',
-    __entity_type: 'community_invite',
-    invited_by_id: 'user-1',
-    accepted_by_id: null,
-    invited_email: 'tests+a@voucha.ai',
-    invited_user_id: null,
-    accepted_at: null,
-    declined_at: null,
-    revoked_at: null,
-    ...overrides,
-  }
-}
 
 describe('InviteItem', () => {
   it('renders pending invites with a revoke action', () => {
