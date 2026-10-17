@@ -34,7 +34,7 @@
     "@voucha/types": "workspace:^",
     "gray-matter": "^4.0.3",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.9.0"
+    "valkyries": "^0.10.0"
   },
   "devDependencies": {
     "@services/markdown": "workspace:^",

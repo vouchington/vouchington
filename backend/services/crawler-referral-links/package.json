@@ -28,7 +28,7 @@
     "@services/urls-domains-robots": "workspace:^",
     "@voucha/config": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.9.0"
+    "valkyries": "^0.10.0"
   },
   "devDependencies": {
     "@services/urls": "workspace:^",

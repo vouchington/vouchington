@@ -41,7 +41,7 @@
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.9.0"
+    "valkyries": "^0.10.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

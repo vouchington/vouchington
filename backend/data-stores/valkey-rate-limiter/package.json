@@ -25,6 +25,6 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-core": "workspace:^",
-    "valkyries": "^0.9.0"
+    "valkyries": "^0.10.0"
   }
 }

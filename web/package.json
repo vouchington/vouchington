@@ -64,8 +64,8 @@
     "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/localization": "^0.2.0",
-    "@vouchington/utils": "^0.5.3",
+    "@vouchington/localization": "^0.2.1",
+    "@vouchington/utils": "^0.7.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -101,11 +101,11 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^30.1.2",
-    "no-mistakes": "^0.91.2",
+    "no-mistakes": "^0.91.3",
     "storybook": "^10.6.2",
     "tailwindcss": "^4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vite": "^8.3.4",
-    "vouchington-tooling": "^0.47.0"
+    "vouchington-tooling": "^0.48.0"
   }
 }

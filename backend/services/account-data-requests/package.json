@@ -31,7 +31,7 @@
     "@voucha/types": "workspace:^",
     "csv-stringify": "^6.9.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.9.0",
+    "valkyries": "^0.10.0",
     "yazl": "^3.3.1"
   },
   "devDependencies": {

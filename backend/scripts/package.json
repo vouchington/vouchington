@@ -93,7 +93,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.0.15",
+    "@vouchington/postgres": "^0.0.16",
     "@vouchington/rss-parser": "^0.1.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
