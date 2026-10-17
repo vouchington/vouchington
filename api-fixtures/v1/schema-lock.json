@@ -504,6 +504,10 @@
       "fixtureIds": ["web.admin.mq.queues.default"],
       "hash": "2acc9cc094683657c87399dfae18b265d2f092725732ed086bd96d04ce9b28d8"
     },
+    "GET:/api/v1/mq/queues/:name/domains": {
+      "fixtureIds": ["web.admin.mq.queues.domains.default"],
+      "hash": "7acb69b3437a596c6bde6e15d4b586ef260711546d3365fa74efc33ed9175f00"
+    },
     "GET:/api/v1/mq/scheduled-jobs": {
       "fixtureIds": ["web.admin.mq.scheduled-jobs.default"],
       "hash": "cb11c715d25f665842d4b84350722645de3538dd3626547878071d12fa5176f7"
@@ -1256,6 +1260,18 @@
     "POST:/api/v1/mq/backfills/:id/runs": {
       "fixtureIds": ["web.admin.mq.backfills.trigger.default"],
       "hash": "49e1a2e09265339d850ff110b5f0360d3b497490f5126f58940ba12ae9eaec3d"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": {
+      "fixtureIds": ["web.admin.mq.queues.domains.pause.default"],
+      "hash": "49e1a2e09265339d850ff110b5f0360d3b497490f5126f58940ba12ae9eaec3d"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": {
+      "fixtureIds": ["web.admin.mq.queues.domains.resume.default"],
+      "hash": "49e1a2e09265339d850ff110b5f0360d3b497490f5126f58940ba12ae9eaec3d"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": {
+      "fixtureIds": ["web.admin.mq.queues.domains.retry-failed.default"],
+      "hash": "86297abb87ffc7c2e66e3d302e9613791c3448f7fde0f239cad693c8782ef16c"
     },
     "POST:/api/v1/mq/queues/:name/pause": {
       "fixtureIds": ["web.admin.mq.queues.pause.default"],
@@ -2706,6 +2722,22 @@
     "web.admin.mq.queues.default": {
       "fixtureIds": ["web.admin.mq.queues.default"],
       "hash": "80b425f2e7ad038c57b66fa2c5682d9c2b102b6f21c76ff24cd92e19eb051d71"
+    },
+    "web.admin.mq.queues.domains.default": {
+      "fixtureIds": ["web.admin.mq.queues.domains.default"],
+      "hash": "3ba8707ec5b8a99251989fe142185e2a933c325dac42fda1a9eeecdc17096edc"
+    },
+    "web.admin.mq.queues.domains.pause.default": {
+      "fixtureIds": ["web.admin.mq.queues.domains.pause.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.mq.queues.domains.resume.default": {
+      "fixtureIds": ["web.admin.mq.queues.domains.resume.default"],
+      "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46"
+    },
+    "web.admin.mq.queues.domains.retry-failed.default": {
+      "fixtureIds": ["web.admin.mq.queues.domains.retry-failed.default"],
+      "hash": "a965c43c08f4fde4599eada16c2577d598fe71a7dd1432de26243237c9d07caf"
     },
     "web.admin.mq.queues.pause.default": {
       "fixtureIds": ["web.admin.mq.queues.pause.default"],

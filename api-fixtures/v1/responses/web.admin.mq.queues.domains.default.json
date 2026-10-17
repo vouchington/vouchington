@@ -1,0 +1,58 @@
+{
+  "domains": [
+    {
+      "active": {
+        "complete": true,
+        "count": 1
+      },
+      "completed": {
+        "complete": true,
+        "count": 8
+      },
+      "delayed": {
+        "complete": true,
+        "count": 2
+      },
+      "domain": "openai-moderation",
+      "failed": {
+        "complete": false,
+        "count": 0
+      },
+      "paused": true,
+      "paused_at": "2026-01-01T00:00:00.000Z",
+      "paused_by": "00000000-0000-7000-8000-000000000001",
+      "reason": "Maintenance",
+      "waiting": {
+        "complete": false,
+        "count": 4
+      }
+    },
+    {
+      "active": {
+        "complete": true,
+        "count": 1
+      },
+      "completed": {
+        "complete": true,
+        "count": 8
+      },
+      "delayed": {
+        "complete": true,
+        "count": 2
+      },
+      "domain": "ses-inbound",
+      "failed": {
+        "complete": false,
+        "count": 0
+      },
+      "paused": false,
+      "paused_at": null,
+      "paused_by": null,
+      "reason": null,
+      "waiting": {
+        "complete": false,
+        "count": 4
+      }
+    }
+  ]
+}

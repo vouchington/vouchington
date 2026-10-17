@@ -3393,5 +3393,73 @@
       "user_suspension_id": null,
       "user_warning_id": null
     }
+  },
+  "web.admin.mq.queues.domains.default": {
+    "domains": [
+      {
+        "domain": "openai-moderation",
+        "paused": true,
+        "paused_at": "2026-01-01T00:00:00.000Z",
+        "paused_by": "00000000-0000-7000-8000-000000000001",
+        "reason": "Maintenance",
+        "waiting": {
+          "count": 4,
+          "complete": false
+        },
+        "active": {
+          "count": 1,
+          "complete": true
+        },
+        "delayed": {
+          "count": 2,
+          "complete": true
+        },
+        "failed": {
+          "count": 0,
+          "complete": false
+        },
+        "completed": {
+          "count": 8,
+          "complete": true
+        }
+      },
+      {
+        "domain": "ses-inbound",
+        "paused": false,
+        "paused_at": null,
+        "paused_by": null,
+        "reason": null,
+        "waiting": {
+          "count": 4,
+          "complete": false
+        },
+        "active": {
+          "count": 1,
+          "complete": true
+        },
+        "delayed": {
+          "count": 2,
+          "complete": true
+        },
+        "failed": {
+          "count": 0,
+          "complete": false
+        },
+        "completed": {
+          "count": 8,
+          "complete": true
+        }
+      }
+    ]
+  },
+  "web.admin.mq.queues.domains.pause.default": {
+    "success": true
+  },
+  "web.admin.mq.queues.domains.resume.default": {
+    "success": true
+  },
+  "web.admin.mq.queues.domains.retry-failed.default": {
+    "success": true,
+    "retried": 2
   }
 }
