@@ -29,7 +29,7 @@ header vocabulary and compatibility catalog through its stable local adapter.
 The `request-client-info` Dynamic Config namespace starts with `enforcement_enabled: false`.
 Observe mode logs sanitized validation failures and continues with a session origin but no client
 information; content-creating routes still reject such a request with the same `400` (see
-[content provenance](../../requirements/content/content-provenance.md#unclassified-session-writes-fail-closed)).
+[content provenance](../../requirements/content/content-provenance.md)).
 Enforce mode returns HTTP 400 with `code: INVALID_CLIENT_INFO` and includes `request_id` when the
 request supplied one. Enable enforcement only after all producers have deployed and production
 observe logs are clean.
@@ -116,7 +116,7 @@ request arrived:
 - No REST route accepts an API key or OAuth token for writes yet, so a `rest` origin with either
   credential has no producer.
 
-[Content provenance](../../requirements/content/content-provenance.md#recording) maps the origin to
+[Content provenance](../../requirements/content/content-provenance.md) maps the origin to
 the channel that new content records. Inside a request, `onError` tags Sentry events with
 `request_interface`, `request_credential` and, for OAuth, `oauth_client_id`, beside the client tags.
 

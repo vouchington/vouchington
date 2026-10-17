@@ -103,5 +103,4 @@ exception does not authorize an unbounded caller-controlled limit.
 
 ## Related
 
-- [docs/requirements/content/COMMENTS.md](../../../../requirements/content/COMMENTS.md)
 - [Posts Search](../posts/search/README.md)

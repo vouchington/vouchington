@@ -3,8 +3,7 @@ language: Tsx
 severity: error
 message: >-
   raw community pending-post query contracts are banned; use
-  communityPendingPostsHref() from web/lib/links/entity-href.ts and follow
-  docs/requirements/navigation/ROUTES.md#route-relocation-audit
+  communityPendingPostsHref() from web/lib/links/entity-href.ts
 files:
   - web/**/*.ts
   - web/**/*.mts

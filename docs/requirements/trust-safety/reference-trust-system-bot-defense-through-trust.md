@@ -10,7 +10,7 @@ The trust system is inherently anti-bot. Bot accounts fail to accumulate trust t
 | ------------------------ | ---------------------------------------------------------------------------------------- |
 | **Low vote accuracy**    | Bots vote randomly or in coordinated patterns that diverge from moderator consensus      |
 | **No social graph**      | Bot accounts aren't followed by real users, so their referral links never rank highly    |
-| **Contribution gating**  | 7-day posting/rating wait and initial review queue delay bot operations                  |
+| **Contribution gating**  | Posting/rating wait and initial review queue delay bot operations                        |
 | **Behavioral detection** | Non-human submission patterns (velocity, timing, data consistency) trigger reduced trust |
 | **Community flagging**   | Real users flag suspicious accounts; trust-weighted flags are more effective             |
 

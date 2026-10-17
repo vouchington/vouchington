@@ -109,7 +109,7 @@ DMCA work; they are not classifiers or part of Epic C. See the
 [agent package inventory](ai-agents/README.md) and
 [queue processor inventory](queues/ai-agents/README.md) for current exported entrypoints and jobs.
 Native conversation transcripts follow their own [storage contract](conversations.md). Public
-support contact is the [email link](../../requirements/reference-support.md). Topic discovery uses
+support contact is the email link. Topic discovery uses
 freeform hashtags and the retained topic-recommendation service rather than an automated Wikipedia
 recommender.
 

@@ -1,6 +1,6 @@
 # Entity Relations
 
-See also: [Entity × Action Matrix](../../requirements/ENTITY-ACTION-MATRIX.md) — how predicates map to UI actions on every surface. [Entity × Lifecycle Flow Matrix](../../requirements/ENTITY-LIFECYCLE-MATRIX.md) — lifecycle flows per entity with authorization tiers. [User Relation Matrix](../../requirements/users/USER-RELATION-MATRIX.md) — user profile management surfaces for bookmark relations.
+See also: Entity × Action Matrix — how predicates map to UI actions on every surface. Entity × Lifecycle Flow Matrix — lifecycle flows per entity with authorization tiers. User Relation Matrix — user profile management surfaces for bookmark relations.
 
 A config-driven system for managing many-to-many and one-to-many relationships between entities as a directed weighted graph. Each relation type gets its own PostgreSQL table, generated automatically from configuration.
 
@@ -77,4 +77,3 @@ relations such as follow, mute, and block remain bookmark API concerns.
 - [docs/overview/architecture/services/entity-relations/README.md](services/entity-relations/README.md) -- config, upsert, delete, query logic
 - [docs/overview/architecture/services/bookmarks/README.md](services/bookmarks/README.md) -- bookmark operations built on entity relations
 - [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md) -- feed filtering using follow/mute/block relations
-- [docs/requirements/api/v1/entity-relations/README.md](../../requirements/api/v1/entity-relations/README.md) -- API endpoints

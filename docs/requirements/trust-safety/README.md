@@ -1,19 +1,16 @@
 # Trust & Safety
 
-Trust system design, vote integrity, and platform-wide contribution limits and penalties.
+Trust system design and the rationale behind it.
 
 ## Documents
 
-| File                                                                | Description                                                                               |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [Trust System](./trust-system.md)                                   | Phased trust/reputation design, vote weight calibration, contribution gating, bot defense |
-| [Contribution Limits](./CONTRIBUTION-LIMITS.md)                     | Trust-tier contribution limits for content creation, configurable via DynamicConfig       |
-| [Penalties](./PENALTIES.md)                                         | Vote-weight and report-abuse penalty semantics                                            |
-| [Platform-account writer audit](./platform-account-writer-audit.md) | Non-HTTP vote and relation writers run as official, system, and AI agent accounts         |
+| File                              | Description                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| [Trust System](./trust-system.md) | Phased trust/reputation design, vote weight calibration, contribution gating, bot defense |
 
 ## Sync Rule
 
-When trust tiers, vote weight formulas, or contribution limits change, update the relevant doc
+When trust tiers or vote weight formulas change, update the relevant doc
 here and cross-link from `docs/overview/architecture/` and `backend/services/`.
 
 ## Reference index
@@ -21,4 +18,3 @@ here and cross-link from `docs/overview/architecture/` and `backend/services/`.
 - [Trust System reference](reference-trust-system-bot-defense-through-trust.md)
 - [Trust System reference](reference-trust-system-contribution-gating.md)
 - [Trust System reference](reference-trust-system-official-accounts-and-material-connections.md)
-- [Trust System reference](reference-trust-system-phase-3-scale-ml-based-trust.md)

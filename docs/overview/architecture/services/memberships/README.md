@@ -39,7 +39,7 @@ Business logic for user memberships (plans, billing, admin grants).
 `@ts-shared/utils/membership-benefit-catalog` owns `GET /api/v1/memberships/plans` `benefit_catalog`. It delegates generic
 catalog validation to `@vouchington/memberships` while retaining Vouchington's benefit IDs, values, and
 public JSON shape. Catalog data never authorizes a request; domain services remain authoritative. See
-[Membership plans and entitlements](../../../../requirements/users/reference-memberships-plans.md).
+Membership plans and entitlements.
 
 ## Key Functions
 
@@ -281,7 +281,6 @@ creates a fresh append-only projection and reactivation outbox.
 
 ## Related
 
-- Status derivation: [../../../docs/requirements/users/reference-memberships-membership-statuses.md](../../../../requirements/users/reference-memberships-membership-statuses.md)
 - Entitlement helpers: [../../modules/membership-helpers/README.md](../../backend/modules/membership-helpers/README.md)
 - Job queue: [../../queues/memberships/README.md](../../queues/memberships/README.md)
 - Stripe: [../stripe/README.md](../stripe/README.md)

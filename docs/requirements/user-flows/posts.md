@@ -2,7 +2,7 @@
 
 [← User Flows](./README.md)
 
-Authorization: tiered — Author (24 h content-edit window, `POST_CONTENT_EDIT_WINDOW_EXPIRED`) → Signed-in users → CM/CO (lock, unpublish, pin, community mod queue) → SA (site review queue, any post).
+Authorization: tiered — Author (time-boxed content-edit window, `POST_CONTENT_EDIT_WINDOW_EXPIRED`) → Signed-in users → CM/CO (lock, unpublish, pin, community mod queue) → SA (site review queue, any post).
 
 All 4 personas diverge meaningfully. No draft state — all created posts publish immediately.
 
@@ -20,8 +20,8 @@ Spec paths relative to `playwright/tests/`.
 | Vouch / Disavow vote                              | Anon, RU                | `voting/existing-vote-state.spec.mts`, `posts/post-detail.spec.mts`                | 🟡 vouch click covered; disavow not exercised (P6)                                                |
 | Comment (top-level + nested reply)                | Anon, RU                | `posts/comments.spec.mts`, `posts/post-detail.spec.mts`                            | ✅                                                                                                |
 | Comment vote                                      | Anon, RU                | `posts/comments.spec.mts`                                                          | ✅                                                                                                |
-| Edit post (author 24 h window)                    | Author, SA              | `posts/post-edit.spec.mts`, `posts/post-edit-window.spec.mts`                      | ✅                                                                                                |
-| Edit post after 24 h (window expired)             | Author, SA              | `posts/post-edit-window.spec.mts`                                                  | ✅                                                                                                |
+| Edit post (author edit window)                    | Author, SA              | `posts/post-edit.spec.mts`, `posts/post-edit-window.spec.mts`                      | ✅                                                                                                |
+| Edit post after the edit window                   | Author, SA              | `posts/post-edit-window.spec.mts`                                                  | ✅                                                                                                |
 | Delete post                                       | Author, Anon(neg), SA   | `posts/post-delete.spec.mts`                                                       | ✅                                                                                                |
 | Save / Unsave post                                | Anon, RU                | `posts/post-save.spec.mts`                                                         | ✅                                                                                                |
 | Hide / Unhide post                                | Anon, RU                | `posts/post-hide.spec.mts`                                                         | ✅                                                                                                |

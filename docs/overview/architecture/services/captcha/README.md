@@ -102,4 +102,3 @@ Forms posting to a Turnstile-gated endpoint use the shared `useTurnstileToken()`
 - [Honeypot Service](../honeypot/README.md)
 - [Local env var matrix](../../../../development/local-env-vars.md)
 - [Staging Turnstile always-approve](../../../../operations/staging-turnstile-always-approve.md)
-- [Captcha config API](../../../../requirements/api/v1/captcha-config/README.md)

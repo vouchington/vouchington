@@ -12,8 +12,7 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
 - **So make the API and MCP the easiest path, and show users when it was used.**
   - Discovery documents name the MCP server and how to authenticate to it.
   - Content created through the API or MCP carries
-    [provenance](../content/content-provenance.md) that other users can see
-    ([#237](https://github.com/vouchington/vouchington/issues/237)).
+    [provenance](../content/content-provenance.md) that other users can see.
 
 ## Discovery
 
@@ -40,7 +39,7 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
   audit log before it runs; see the
   [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
 - The admin MCP server never appears in public discovery. Staff docs own it, in the
-  [admin API README](../api/v1/admin/README.md#mcp-clients). It accepts OAuth access tokens only, never
+  admin API README. It accepts OAuth access tokens only, never
   API keys, and audits every call.
 - Discovery documents never contain credentials or URLs that carry credentials.
 
@@ -79,6 +78,4 @@ same replay retention. See
 ## Related
 
 - [SEO machine-readable discovery](../seo/SEO.md#machine-readable-discovery)
-- [Website specifications](../seo/WEBSITE-SPECIFICATIONS.md#agent-and-machine-discovery)
-- [MCP server API](../api/v1/mcp/README.md)
 - [API keys](../users/api-keys.md)

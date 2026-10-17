@@ -1,6 +1,6 @@
 # Content Security Policy (CF Worker)
 
-[Back to Security Architecture reference](reference-security-response-headers.md#content-security-policy-cf-worker)
+[Back to Security Architecture](SECURITY.md)
 
 Set by `cloudflare-worker/src/csp.mts` via `addSecurityHeaders()`. Web-targeted routes receive the
 nonce policy below. Backend routes normally receive no CSP because they serve APIs, except the

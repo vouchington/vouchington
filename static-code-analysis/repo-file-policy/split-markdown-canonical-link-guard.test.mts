@@ -40,7 +40,7 @@ describe('split Markdown canonical link guard', () => {
 
   it('rejects a fragment-only canonical child in a #8738 split parent', () => {
     const errors = check({
-      'docs/requirements/ADMIN-NAVIGATION-MATRIX.md':
+      'docs/requirements/security/SECURITY.md':
         '- <a id="admin-navigation-staff"></a>[Admin navigation staff](reference-admin-navigation.md#staff)',
     })
 

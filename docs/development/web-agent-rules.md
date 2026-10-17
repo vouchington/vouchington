@@ -11,7 +11,7 @@ reference implementations. `PostList` is the documented exception because it own
 pagination and merges complete server- and client-fetched response pages.
 
 - Dynamic `[param]` segments are only for dynamic values. Finite topic/post types use explicit route dirs from `web/lib/routes/`; no `[topicType]`/`[postType]` catch-alls.
-- Entity-scoped admin pages live under entity routes such as `/topics/create`, not `/admin/**`, and must gate with `requireAdmin()`. Before route moves, run the [route relocation audit](../requirements/navigation/ROUTES.md#route-relocation-audit); once the legacy surface is gone, remove migration-only redirects, tests, and static-analysis rules unless they still protect an active compatibility contract or invariant.
+- Entity-scoped admin pages live under entity routes such as `/topics/create`, not `/admin/**`, and must gate with `requireAdmin()`. Before route moves, run the route relocation audit; once the legacy surface is gone, remove migration-only redirects, tests, and static-analysis rules unless they still protect an active compatibility contract or invariant.
 - Logged-out pages use full SSR. Logged-in pages may stream supplementary content such as asides/social proof, but main content is awaited. See [Dynamic Rendering](../requirements/navigation/DYNAMIC-RENDERING.md).
 - Every server-component page exports `export const dynamic = 'force-dynamic'`; layouts that read request context do too. Client components are exempt.
 - List-route pages with no descendant `notFound()`/`redirect()` need `loading.tsx` skeletons wrapped in `<PageWithAside>`, passing `aside={AsideSkeleton}` when applicable.
@@ -23,7 +23,7 @@ pagination and merges complete server- and client-fetched response pages.
 
 - **Breadcrumbs**: server components use `buildBreadcrumbsForPath(canonicalPath, { isAuthenticated, tail })` from `@/lib/navigation/breadcrumbs`; client components use `useResolvedBreadcrumbs({ tail })` from `@/lib/navigation/use-resolved-breadcrumbs`. Never call `buildBreadcrumbs` directly — it is internal to `web/lib/navigation/**`. `intentCrumbOverride` is sanctioned in five callers only; new overrides require a documented reason. Source detail breadcrumb/sidebar intent derive from `feed_type` via `feedTypeNav()`; client override flows through `SetNavIntent` → `useResolvedIntent`. See [Navigation](../requirements/navigation/NAVIGATION.md).
 - **Cmd+K shortcuts** derive from `NAV_INTENTS`; add searchable pages there. Pages without a sidebar entry go in `SUPPLEMENTAL_PAGE_SHORTCUTS` (`web/lib/navigation/derive-page-shortcuts.ts`). `comingSoon` items are excluded. Parity guard: `web/lib/navigation/__tests__/derive-page-shortcuts.test.ts`.
-- **Bookmark relation pages** at `/my/<entity>/<listType>` render in place (not redirect to `/user/<me>/...`) to preserve the correct sidebar intent. See [Bookmarks Catalog](../requirements/content/BOOKMARKS-CATALOG.md).
+- **Bookmark relation pages** at `/my/<entity>/<listType>` render in place (not redirect to `/user/<me>/...`) to preserve the correct sidebar intent. See Bookmarks Catalog.
 - **Find Friends** lives at `/my/friend-recommendations` with route-based Suggestions/Dismissed tabs under the Users & Friends intent. `/my/users/dismissed-recommendations` redirects to `/my/friend-recommendations/dismissed`.
 - **Recommended Topics aside** renders on Topics-intent list pages (scoped via `getActiveIntent`), wires `GET /api/v1/recommended-topics`, and is the entry point to `/my/topics/dismissed-recommendations` (no sidebar link; Cmd+K shortcut available via `SUPPLEMENTAL_PAGE_SHORTCUTS`).
 
@@ -94,4 +94,4 @@ complement the generic preflight in
 - Storybook stories live in `web/storybook/` as `*.stories.@(ts|tsx)`. Document intentional story-local a11y exceptions next to the story.
 - Tests use typed `vi.mock(import('specifier'), ...)`. API response mocks use `@/test-helpers/api-responses` factories.
 - Web tests follow the [suite rules](tests.md#test-suite-rules). `findBy*` may wait on the rendered DOM. Do not use `vi.waitFor`, `vi.waitUntil`, or `expect.poll`. Do not skip a test in CI.
-- Components reading `document.cookie`, `localStorage`, or `sessionStorage` at render time must follow [Browser API Hydration Safety](../requirements/navigation/reference-components-patterns.md#browser-api-hydration-safety).
+- Components reading `document.cookie`, `localStorage`, or `sessionStorage` at render time must follow [Browser API Hydration Safety](../requirements/navigation/reference-components-patterns.md).

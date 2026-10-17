@@ -164,7 +164,7 @@ and UK notices and restrictions, without reading jurisdiction approval. Its off-
 `dsaTransparencyReports` switch gates both record and export routes. Shared attribution and
 automation predicates drive aggregates; only immutable completed-withhold intents drive action
 medians. No personal data or explanation text leaves the report boundary. See the
-[report API contract](../../../../requirements/api/v1/copyright-notices/README.md#dsa-transparency-report). Each notice-child row carries `jurisdiction` and a composite
+report API contract. Each notice-child row carries `jurisdiction` and a composite
 foreign key to `copyright_notices (id, jurisdiction)`, a redress request references the decision on
 its own notice, and an escalation names exactly one source. The `eu-*` and `uk-*` files are
 wrappers that pass the jurisdiction as a value to the shared flows in

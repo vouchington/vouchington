@@ -123,5 +123,4 @@ another minute.
 ## Related
 
 - [Backend queue checklist](../../../../../checklists/backend-queues.md)
-- [Message Queue API](../../../../../requirements/api/v1/mq/README.md)
 - [Worker queue inventory](../worker-queue-inventory/README.md)

@@ -12,7 +12,7 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
 - Only one active export request is allowed at a time for each requester.
 - Export is prepared as a background job and may take a few minutes.
 - The web UI receives export status through a server-sent event stream and fetches the latest request
-  after each event. If a ready export lacks a download link, it retries fetching the link every 5 seconds.
+  after each event. If a ready export lacks a download link, it retries fetching the link on a short interval.
 - When the user switches accounts or requests or leaves the page, pending refreshes and retries
   from the old stream cannot change the displayed request or error; an active stream still reconnects
   after a temporary connection failure.
@@ -34,7 +34,7 @@ satisfies GDPR "Right to Data Portability" and CCPA "Right to Know" requirements
     [Copyright records](#copyright-records))
 - The [Privacy Policy](../../../articles/privacy-policy.md) lists these files by category for users; update it whenever this list changes.
 - Boolean fields in export CSVs use `true`/`false`; unset values remain empty.
-- Download link expires after 7 days.
+- The download link expires.
 - Users can request a new export at any time after the previous one has expired, failed, or is ready.
 - Admins can request exports on behalf of any user. The account holder never sees those exports (see
   [Administrator-requested exports](#administrator-requested-exports)).
@@ -65,9 +65,7 @@ account holder, so it stays invisible to them.
 
 The export carries the user's own copyright records, because the right to know covers them. The rule
 is deliberately conservative: the export reveals nothing the user cannot already see in the app,
-except the user's own submissions. The owner approves it as part of the copyright launch readiness
-work in [#1230](https://github.com/vouchington/vouchington/issues/1230), after AI advisor review
-(not a legal determination).
+except the user's own submissions. The owner approves it after AI advisor review (not a legal determination).
 
 - **Own filings, decrypted in full.** `copyright-notices-filed.csv` holds each notice the user filed
   while signed in: claimant name, contact, work description, statements, signature, and target

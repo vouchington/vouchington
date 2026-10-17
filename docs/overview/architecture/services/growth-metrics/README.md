@@ -65,5 +65,4 @@ Analytics metrics are best-effort — if the query fails, the field returns `nul
 
 ## Related
 
-- [Growth Dashboard Requirements](../../../../requirements/admin/GROWTH-DASHBOARD.md)
 - [Landing Page Analytics Service](../landing-page-analytics/README.md)

@@ -99,4 +99,3 @@ owns sampling and persisted moderation history queries.
 - Agent: [`backend/agents/community-moderation/classifier-run.mts`](../../../../../backend/agents/community-moderation/classifier-run.mts)
 - Moderation results: [`backend/services/community-agent-prompts/moderations.mts`](../../../../../backend/services/community-agent-prompts/moderations.mts)
 - API routes: [`backend/api/v1/communities/agent-prompts.mts`](../../../../../backend/api/v1/communities/agent-prompts.mts)
-- Full spec: [docs/requirements/moderation/community-moderation.md](../../../../requirements/moderation/community-moderation.md)

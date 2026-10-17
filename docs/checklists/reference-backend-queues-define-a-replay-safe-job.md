@@ -48,7 +48,7 @@
   This guarantees each trigger is enqueued once, not that it runs. If it fails permanently,
   `removeOnFail: 100` retains it and re-adding the same id returns `null`; retrying it requires the
   reactivation option above. See [Job Replayability § Rules for New
-  Jobs](../requirements/platform/reference-job-replayability-rules-for-new-jobs.md#rules-for-new-jobs).
+  Jobs](../requirements/platform/JOB-REPLAYABILITY.md#rules-for-new-jobs).
 - Choose deduplication by semantics: `throttle` for dispatchers, `debounce` only for delay-reset work
   without ordering keys, and `simple` for one-shot suppression. Deduplication never replaces
   processor idempotency.

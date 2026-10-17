@@ -152,5 +152,3 @@ model call.
 - System: [docs/overview/architecture/queues/ai-agents/README.md](../../queues/ai-agents/README.md) — `classifier-run-dispatcher` and `classifier-run` jobs that run clustering
 - Agent (clustering): [`backend/agents/story-clustering/`](../../../../../backend/agents/story-clustering/) — Choice classifier input builder and provider client
 - Agent (story post): [`backend/agents/story-post/`](../../../../../backend/agents/story-post/) — LLM title + `ai_summary_markdown` generation
-- API: [docs/requirements/api/v1/stories/README.md](../../../../requirements/api/v1/stories/README.md), [`backend/api/v1/stories/`](../../../../../backend/api/v1/stories/)
-- Docs: [docs/requirements/content/stories.md](../../../../requirements/content/stories.md)

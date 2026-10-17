@@ -153,5 +153,5 @@ RSS feed item notifications store the external article URL in PostgreSQL, but th
 
 - Browser push delivery: [../notifications-push/README.md](../notifications-push/README.md)
 - System: [../../queues/notifications/README.md](../../queues/notifications/README.md)
-- API: [../../api/v1/my/README.md](../../../../requirements/api/v1/my/README.md)
+- API: ../../api/v1/my/README.md
 - Web requirements: [../../../docs/requirements/navigation/NOTIFICATIONS.md](../../../../requirements/navigation/NOTIFICATIONS.md)

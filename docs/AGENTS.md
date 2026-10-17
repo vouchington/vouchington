@@ -45,9 +45,8 @@ do not repeat those inventories in [docs/README.md](README.md) or the
 
 ### Product and API requirements
 
-- [Requirements](requirements/README.md) · [Admin](requirements/admin/README.md) · [Entity anatomy](requirements/anatomy/README.md)
-- [API](requirements/api/README.md) · [ActivityPub](requirements/api/activitypub/README.md) · [Bluesky](requirements/api/bluesky/README.md) · [OAuth](requirements/api/oauth/README.md)
-- [API catalog](requirements/api/catalog/README.md) · [Community](requirements/community/README.md) · [Content](requirements/content/README.md) · [Articles](requirements/content/articles/README.md)
+- [Requirements](requirements/README.md) · Admin · Entity anatomy
+- [API](requirements/api/README.md) · ActivityPub · Bluesky · OAuth
 - [Moderation](requirements/moderation/README.md) · [Navigation](requirements/navigation/README.md) · [Platform](requirements/platform/README.md)
 - [Security](requirements/security/README.md) · [SEO](requirements/seo/README.md) · [Trust and safety](requirements/trust-safety/README.md)
 - [User flows](requirements/user-flows/README.md) · [Users](requirements/users/README.md)

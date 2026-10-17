@@ -122,7 +122,7 @@ public post base as `read_posts`, plus the required proposed-topic/status/review
 REST POST/PATCH and the web mutation client use that contract too. Internal post columns,
 rendered HTML, language detection, clearance details, author stubs, and edit permissions are
 excluded; MCP still sanitizes all retained free text and fences Markdown and review messages.
-See the [topic-recommendations API](../../../../requirements/api/v1/topic-recommendations/README.md).
+See the topic-recommendations API.
 
 **Tool-local schema factoring.** The generated MCP catalog factors exactly repeated subschemas
 within each tool's input or output schema into that schema's root `$defs`, referenced only by
@@ -231,7 +231,7 @@ even for a developer. See the
 Email approval and correspondence admission construct their REST-validated inputs from the
 latest stored recommendation. They accept no caller contact or reply fields; rejection uses fixed
 reply text and queues no reply without a parsed sender. Staff decision outputs retain their REST
-shapes. The [admin API page](../../../../requirements/api/v1/admin/README.md#mcp-clients)
+shapes. The admin API page
 owns the supported and excluded decision groups.
 
 ## MCP audit log

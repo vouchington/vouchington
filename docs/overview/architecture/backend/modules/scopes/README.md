@@ -21,7 +21,7 @@ Consent and scope pickers consume the generated scope catalog rather than a sepa
 permission list.
 
 `listScopeCatalog()` projects the catalogue into the wire shape served by
-[`GET /api/v1/scopes`](../../../../../requirements/api/v1/scopes/README.md), so clients build pickers from data. Its
+`GET /api/v1/scopes`, so clients build pickers from data. Its
 nullable `description_key` is stable presentation metadata, not server-owned display text.
 `mcp_user_full_access` and `mcp_admin_full_access` distinguish the two MCP umbrella meanings;
 Financial profile and spending entries carry distinct read/write description identifiers; other entries return `null`. Each client maps recognized identifiers through its own typed

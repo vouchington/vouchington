@@ -10,7 +10,6 @@
 - [Post Update Pipeline](reference-post-lifecycle-comment-specific-behavior.md#post-update-pipeline)
 - [Community Moderation Pipeline](reference-post-lifecycle-community-moderation-pipeline.md#community-moderation-pipeline)
 - [Clearance Gate](reference-post-lifecycle-post-creation-pipeline.md#clearance-gate)
-- [Review Succession](../../requirements/content/reference-post-lifecycle-review-succession.md)
 - [Notification Reconciliation](reference-post-lifecycle-community-moderation-pipeline.md#notification-reconciliation)
 
 ---

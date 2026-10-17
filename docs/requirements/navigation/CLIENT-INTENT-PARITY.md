@@ -44,5 +44,4 @@ the [client feature parity contract](../client-feature-parity.json).
 - [Client feature parity contract](../client-feature-parity.json) — machine-readable capability
   status, evidence, and active shared gap ownership
 - [Navigation](NAVIGATION.md)
-- [App Navigation](APP-NAVIGATION.md)
 - [Signed-out Actions](SIGNED_OUT_ACTIONS.md)

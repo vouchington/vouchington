@@ -68,7 +68,7 @@ Web ApiError
 ```
 
 Routes that catch errors to change the response shape, such as
-[`GET /api/v1/auth/bluesky/callback`](../../requirements/api/v1/auth/README.md#get-apiv1authblueskycallback),
+`GET /api/v1/auth/bluesky/callback`,
 must still call `onError` from `@modules/on-error`. A user-facing 302 with `bluesky_error` does not
 replace reporting: `onError` ignores 4xx and captures 5xx and unstatused failures.
 

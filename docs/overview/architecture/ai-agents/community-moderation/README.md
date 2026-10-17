@@ -27,7 +27,7 @@ in the AI usage ledger under the `community-moderation-dry-run` workload.
 
 The simulate response carries one `flagged` verdict per sampled post plus a `simulation` summary
 that names the action a real flag would take; the
-[simulate reference](../../../../requirements/moderation/reference-post-api-v1-communities-slug-automod-simulate.md)
+simulate reference
 owns the full shape. The test-runs response is `{ "flagged": boolean }`. Neither carries a `reason`,
 because the classifier returns a probability, not an explanation.
 

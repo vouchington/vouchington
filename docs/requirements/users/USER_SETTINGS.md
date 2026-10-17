@@ -27,7 +27,7 @@ Allow users to connect or disconnect other accounts:
 - Microsoft
 - GitHub
 
-OAuth connect buttons use proper provider branding (see [OAuth provider buttons](../navigation/reference-components-patterns.md#oauth-provider-buttons)).
+OAuth connect buttons use proper provider branding (see [OAuth provider buttons](../navigation/reference-components-patterns.md)).
 
 Facebook, X, GitHub, and LinkedIn use the same server-begun broker contract on web, Swift, and .NET when the
 corresponding advertised client-mode capability is enabled. Web completes with a path-scoped
@@ -120,7 +120,7 @@ settings page does not satisfy the route.
   [scale-six point-valuation contract](../../overview/architecture/monetary-values.md#public-types),
   and note is optional.
 - Both workflows use owner-scoped cursor pagination in ascending row-ID order, with a default page
-  size of 25 and a maximum of 100. The point-valuation API reads and writes
+  size and a maximum. The point-valuation API reads and writes
   `{ amount, currency, scale: 6 }`; clients parse human input exactly and format values for the
   selected currency without forced trailing zeroes. See the
   [cross-surface pagination contract](../../overview/architecture/pagination.md).

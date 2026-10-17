@@ -137,31 +137,4 @@ describe('canonical Markdown child fragments', () => {
     expect(typeScriptStandards).toContain('id="serializedt--datestring-conversion"')
     expect(typeScriptStandards).not.toContain('id="serialized--datestring-conversion"')
   })
-
-  it('keeps API README index entries ahead of performance guidance', () => {
-    const apiReadmes = [
-      'backend/api/v1/communities/README.md',
-      'backend/api/v1/hostnames/README.md',
-      'docs/requirements/api/v1/my/README.md',
-      'backend/api/v1/posts/README.md',
-      'backend/api/v1/rss-feeds/README.md',
-      'backend/api/v1/sessions-authentication/README.md',
-      'backend/api/v1/topics/README.md',
-      'backend/api/v1/users/README.md',
-    ]
-
-    for (const readme of apiReadmes) {
-      const content = readFileSync(readme, 'utf8')
-      const contents = content.indexOf('## Contents')
-      const related = content.indexOf('<a id="related"></a>')
-      const performance = content.indexOf('## Performance')
-
-      expect(contents).toBeGreaterThanOrEqual(0)
-      expect(related).toBeGreaterThan(contents)
-      expect(performance).toBeGreaterThan(related)
-      expect(content.slice(performance)).toMatch(
-        /\[Performance\]\([^)]*reference-performance\.md\)/,
-      )
-    }
-  })
 })

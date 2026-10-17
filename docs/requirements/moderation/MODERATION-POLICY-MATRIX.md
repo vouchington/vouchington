@@ -46,8 +46,7 @@ Four action enums are now first-class exports of the policy registry:
 | `MODERATION_JUDGEMENT_ACTIONS` | `no_action`, `warn`, `remove`, `escalate` | `moderation_report_judgements.recommended_action` |
 | `MODERATION_APPEAL_ACTIONS`    | `accept`, `deny`, `reduce`                | `moderation_appeals.resolution_action`            |
 
-`recommendedAction` on each policy entry is advisory only. Runtime auto-dispatch wiring is Phase 4
-(#5673).
+`recommendedAction` on each policy entry is advisory only. Nothing auto-dispatches from it.
 
 ## Severity Levels
 
@@ -65,24 +64,14 @@ Severity values are PROPOSED pending product sign-off.
 Operational procedures for incidents that require legal action or cross-functional coordination. These
 are staff-only documents; see [Operational Runbooks](../../runbooks/README.md) for the index.
 
-| Runbook                                                                     | Relevant rows                       | Notes                                                                                                     |
-| --------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| CSAM / Child-Safety Escalation                                              | `illegal_content`, `sexual_content` | Covers CSAM and any `sexual_content` incident involving a minor. Legal reporting obligations (US §2258A). |
-| [Product-Safety / Recall Handling](../../runbooks/product-safety-recall.md) | _(no row yet — forward-looking)_    | Applies as marketplace surfaces ship; no `product_safety` entry exists in the matrix today.               |
-
-Note: "CSAM" is not a literal policy row — it is described under `illegal_content` ("including CSAM,
-fraud, or incitement"). There is no `recall` row; that runbook is anticipatory.
+| Runbook                        | Relevant rows                       | Notes                                                                                                     |
+| ------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| CSAM / Child-Safety Escalation | `illegal_content`, `sexual_content` | Covers CSAM and any `sexual_content` incident involving a minor. Legal reporting obligations (US §2258A). |
 
 ## Maintenance
 
 - Edit `ts-shared/utils/moderation-policy.mts` as the source of truth.
 - Update this table to match any registry changes.
 - Keep ToS §4 and `articles/how-moderation-works.md` in sync with both.
-- Paid transparency aggregates are not policy entries. Their 48-hour delay, cohort suppression,
+- Paid transparency aggregates are not policy entries. Their delay, cohort suppression,
   and rounding boundary is defined in [Moderation Analytics](./MODERATION-ANALYTICS.md).
-
-## Related Issues
-
-- Phase 1 (#5561) — shipped
-- This document: Phase 3 (#5672)
-- Phase 4 — runtime auto-dispatch (#5673)

@@ -2,7 +2,7 @@
 
 Reference for all LLM tool definitions registered in `backend/mcp/registry/`. Tools are
 the callable primitives exposed to server-side agents and MCP clients. Native agents connect
-to the user MCP server over OAuth, as described in [OAuth](../../../requirements/api/oauth/README.md).
+to the user MCP server over OAuth, as described in OAuth.
 
 See also:
 
@@ -70,7 +70,7 @@ every mutating user-MCP tool requires Plus, and a Free member's in-app agent get
 only. There is no native exception. Consent always applies. Direct REST routes and internal-agent
 calls are outside this MCP gate. First-party native OAuth clients use the client IDs
 `<site origin>/api/v1/oauth/native-clients/ios`, `/macos`, and `/windows`; see the
-[OAuth documentation](../../../requirements/api/oauth/README.md) for redirects and authorization.
+OAuth documentation for redirects and authorization.
 
 The plan must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
 field cannot express separate per-surface plans, so a mutating tool cannot share the `mcp`
@@ -110,7 +110,7 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
   mirror a REST request body (such as `manage_my_cards.card_topic_id`) take what that body takes.
 - **Search queries** — a tool with a REST equivalent names its query after the REST parameter
   (`q`, `text_search_query`, `semantic_search_query`) and pages like it (`after`, `limit`,
-  `page_info`; see [Paged results](../../../requirements/api/v1/mcp/README.md#paged-results)).
+  `page_info`; see Paged results).
 - **Post types** — a `post_type` enum accepts the same values as its REST equivalent:
   `VALID_FILTERABLE_POST_TYPES` for `GET /api/v1/posts` and `VALID_TRENDING_POST_TYPES` for
   `GET /api/v1/trending-posts` (both in `ts-shared/feed-capabilities`).
@@ -137,7 +137,7 @@ REST supplies first-party authority; MCP receives verified delegated credential 
 relations retain ordinary scope policy. Effectively private post work also requires the exact
 `post-relations.owned-private:write` grant and matching credential ownership of the candidate and
 effective root. Its `add_tag` branch adds one authored `#tag` through the locked PATCH-equivalent
-category path described in [Tags](../../../requirements/content/TAGS.md). Its relation result always
+category path described in Tags. Its relation result always
 returns the canonical subject/predicate/object tuple; `relation_id` is included only for relation
 tables that persist a row identifier.
 

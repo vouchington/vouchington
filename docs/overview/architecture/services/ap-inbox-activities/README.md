@@ -92,7 +92,7 @@ durable accept/enqueue acknowledgement. `accept` still mints an `unverified` row
 actors; when the API already verified a cached signer it checkpoints `sender-allowed` at insert
 time. `processDurableActivityPubInboxDelivery` owns allowlist recheck, actor lookup for unknown
 signers, received-time signature verification, sender admission when not already checkpointed,
-and dispatch. See the [API adapter](../../../../requirements/api/activitypub/README.md),
+and dispatch. See the API adapter,
 [queue](../../queues/activitypub-inbox/README.md), and
 [worker](../../queues/workers/activitypub-inbox/README.md).
 

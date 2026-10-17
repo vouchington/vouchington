@@ -17,4 +17,3 @@ feeds, topics and hostnames.
 ## Related
 
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
-- [docs/requirements/api/v1/platform-stats/README.md](../../../../requirements/api/v1/platform-stats/README.md)

@@ -31,7 +31,7 @@ path as the durable reference and the test name as best-effort detail; update th
 the rename when you notice it.
 
 This complements, not replaces, the queue-level
-[Queue Replayability Matrix](../requirements/platform/JOB-REPLAYABILITY.md#queue-replayability-matrix):
+[Queue Replayability Matrix](../requirements/platform/JOB-REPLAYABILITY.md):
 that table answers "can a backfill or reconciler re-derive this job from Postgres," while this matrix
 answers what happens at each point an effectful job can fail.
 

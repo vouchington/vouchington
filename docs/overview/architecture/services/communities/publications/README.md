@@ -36,7 +36,7 @@ the flag on the review row. When it is `review_queue`, the community records a c
 for the post-content version it was raised on, until a moderator dismisses it
 (`automod_dismissed_at`, `automod_dismissed_by_id`) or the post leaves the approved state. The
 open-flag definition and the dismissal route live in the
-[community moderation reference](../../../../../requirements/moderation/reference-community-moderation-moderation-queue.md#automod-review-queue).
+community moderation reference.
 
 ## Status Model
 

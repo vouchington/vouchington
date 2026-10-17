@@ -79,7 +79,7 @@ converts a thrown rate-limit signal into the same two deferrals. Real-GlideMQ te
 Resuming needs no wakeup: deferred jobs re-check on their next activation.
 
 Operators read and control domains through
-[`GET /api/v1/mq/queues/background/domains`](../../../../requirements/api/v1/mq/reference-domain-routes.md)
+`GET /api/v1/mq/queues/background/domains`
 and the matching MCP options. Whole-queue pause and whole-queue retry are rejected for `background`.
 Retrying failed jobs filters by the domain's job names.
 

@@ -38,4 +38,4 @@ overlapping processor batches remain idempotent without serializing the queue. S
 
 - Queue: [../../queues/follower-distributions](../../../../../backend/queues/follower-distributions)
 - Worker: [../../workers/follower-distributions](../../../../../backend/workers/follower-distributions)
-- API docs: [../../api/v1/posts/README.md](../../../../../backend/api/v1/posts/README.md), [../../api/v1/rss-feed-items/README.md](../../../../requirements/api/v1/rss-feed-items/README.md)
+- API docs: [../../api/v1/posts/README.md](../../../../../backend/api/v1/posts/README.md), ../../api/v1/rss-feed-items/README.md

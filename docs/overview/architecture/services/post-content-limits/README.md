@@ -21,6 +21,6 @@ const { data_point_topic_ids_max_items } = getPostContentLimitsConfig()
 
 ## Related
 
-- API: [../../api/v1/dynamic-config/](../../../../requirements/api/v1/dynamic-config/README.md) namespace `post-content-limits-config`
+- API: ../../api/v1/dynamic-config/ namespace `post-content-limits-config`
 - Dynamic config audit: [../dynamic-config-audit/](../dynamic-config-audit/README.md)
 - Posts service: [../posts/](../posts/README.md)

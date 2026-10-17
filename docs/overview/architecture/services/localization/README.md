@@ -28,11 +28,11 @@ then sets `LOCALIZATION_SQLITE_PATH`; `serve.mts` compiles on `PLAYWRIGHT_TEST` 
 file is missing. Web-integration calls `compileCatalogForProcess()`.
 Agents change rows only through `pnpm run localization:catalog --` and resolve merge conflicts
 through its `conflict-resolve` command; see the
-[catalog authoring guide](../../../../requirements/users/LOCALIZATION.md#catalog-authoring-and-conflicts).
+[catalog authoring guide](../../../../requirements/users/LOCALIZATION.md).
 
 ## Related
 
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
-- API: [../../api/v1/localization/README.md](../../../../requirements/api/v1/localization/README.md)
+- API: ../../api/v1/localization/README.md
 - Runtime: [`@vouchington/localization`](https://www.npmjs.com/package/@vouchington/localization)
 - Compiler: [`@vouchington/localization-compiler`](https://www.npmjs.com/package/@vouchington/localization-compiler)
