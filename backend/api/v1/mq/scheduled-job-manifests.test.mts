@@ -49,6 +49,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'heartbeat/publish-glidemq-stats',
   'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
   'background/kagi-smallweb-sync',
+  'background/imports-recover-stalled',
   'memberships/dispatchMembershipPauseCollection',
   'memberships/dispatchMembershipRefundReconciliation',
   'memberships/membershipEntitlementEffects',
@@ -153,7 +154,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(73)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(74)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

@@ -77,6 +77,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           status: 'pending',
         },
       ],
+      page_info: { has_next_page: false, start_cursor: firstRowId, end_cursor: secondRowId },
     },
   },
   {
@@ -113,6 +114,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           error: 'No RSS or Atom feed was found.',
         },
       ],
+      page_info: { has_next_page: false, start_cursor: firstRowId, end_cursor: secondRowId },
     },
   },
   {

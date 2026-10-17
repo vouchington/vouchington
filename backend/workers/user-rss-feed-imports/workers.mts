@@ -2,7 +2,10 @@ import { backgroundHandler } from '@queues/background/enqueues/define-handler'
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
 } from '@queues/background/enqueues/imports-jobs'
+import { recoverStalledAdminTopicImports } from '@services/admin-imports/recover-stalled'
+import { recoverStalledUserRssFeedImports } from '@services/user-import-export/rss-feed-import-recovery'
 import { dispatchUserRssFeedImport } from '@services/user-import-export/rss-feed-import-dispatch'
 import { processRssFeedImportRow } from '@services/user-import-export/rss-feed-imports'
 
@@ -23,5 +26,10 @@ export const userRssFeedImportsHandlers = [
     return processRssFeedImportRow(importId, rowId, {
       isFinalAttempt: job.attemptsMade + 1 >= ROW_ATTEMPTS,
     })
+  }),
+  // Both import kinds share one sweep: an import whose dispatcher failed every attempt is
+  // dispatched again from its first pending row.
+  backgroundHandler(IMPORTS_RECOVER_STALLED_JOB, async () => {
+    await Promise.all([recoverStalledUserRssFeedImports(), recoverStalledAdminTopicImports()])
   }),
 ]

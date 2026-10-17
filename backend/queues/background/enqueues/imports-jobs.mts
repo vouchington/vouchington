@@ -56,9 +56,29 @@ export const IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB =
     ...DEFAULTS,
   })
 
+/** An unfinished import that made no progress for this long has lost its dispatcher. */
+export const IMPORT_RECOVERY_STALE_MS = 15 * 60 * 1000
+
+/** Imports one recovery sweep re-dispatches; the next sweep takes the rest. */
+export const IMPORT_RECOVERY_BATCH_SIZE = 100
+
+export const IMPORT_RECOVERY_CRON = '*/5 * * * *'
+
+/** Re-dispatches imports whose dispatcher failed every attempt; see `recoverStalledImports`. */
+export const IMPORTS_RECOVER_STALLED_JOB = defineBackgroundJob<Record<string, never>>(
+  IMPORTS_DOMAIN,
+  {
+    name: 'recoverStalledImports',
+    priority: PRIORITY_DISPATCH,
+    backoff: ADMIN_BACKOFF,
+    ...DEFAULTS,
+  },
+)
+
 export const IMPORTS_JOBS = [
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
   IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB,
   IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
 ] as const

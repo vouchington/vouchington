@@ -1299,6 +1299,43 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Re-dispatch imports whose dispatcher failed",
+        "id": "imports-recover-stalled",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "imports-recover-stalled",
+    "template": {
+      "data": {},
+      "name": "imports.recoverStalledImports",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 2000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 10,
+          "key": "imports",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Copy reusable topic embeddings from the centralized table",
         "id": "reconcile_existing_topics",
         "kind": "scheduled-jobs",
@@ -3118,6 +3155,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "background",
     "schedule": "0 5 * * *",
     "triggerName": "enqueueKagiSmallWebSync",
+  },
+  {
+    "description": "Re-dispatch imports whose dispatcher failed",
+    "id": "imports-recover-stalled",
+    "job_name": "imports.recoverStalledImports",
+    "queue_name": "background",
+    "schedule": "*/5 * * * *",
+    "triggerName": "enqueueRecoverStalledImports",
   },
   {
     "description": "Dispatch "find your friends" social matching",

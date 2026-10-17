@@ -1808,6 +1808,9 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -3314,6 +3317,9 @@ importers:
 
   backend/queues/user-rss-feed-imports:
     dependencies:
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
       '@queues/background':
         specifier: workspace:^
         version: link:../background
@@ -9161,6 +9167,9 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -11034,6 +11043,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
@@ -13632,6 +13644,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@services/admin-imports':
+        specifier: workspace:^
+        version: link:../../services/admin-imports
       '@services/user-import-export':
         specifier: workspace:^
         version: link:../../services/user-import-export

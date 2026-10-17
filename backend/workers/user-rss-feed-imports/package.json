@@ -18,6 +18,7 @@
   "scripts": {},
   "dependencies": {
     "@queues/background": "workspace:^",
+    "@services/admin-imports": "workspace:^",
     "@services/user-import-export": "workspace:^"
   }
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
 } from '@queues/background/enqueues/imports-jobs'
 import { userRssFeedImportsHandlers } from './workers.mts'
 
@@ -13,10 +14,11 @@ function handlerFor(name: string) {
 }
 
 describe('userRssFeedImportsHandlers', () => {
-  it('registers one handler for each job of the user half of the imports domain', () => {
+  it('registers one handler for each job of the user half of the imports domain and the sweep', () => {
     expect(userRssFeedImportsHandlers.map(handler => handler.job.name).toSorted()).toEqual([
       IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.name,
       IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB.name,
+      IMPORTS_RECOVER_STALLED_JOB.name,
     ])
   })
 

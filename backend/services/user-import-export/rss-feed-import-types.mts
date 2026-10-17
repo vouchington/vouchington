@@ -2,6 +2,7 @@ import type {
   ContentCreationChannel,
   ContentProvenance,
 } from '@voucha/types/entities/content-provenance'
+import type { PageInfo } from '@voucha/types/pagination'
 import type { ImportRssFeedStatus } from './import-rss-feeds.mts'
 
 export type UserRssFeedImportSummary = {
@@ -24,7 +25,9 @@ export type UserRssFeedImportRowResult = {
 
 export type UserRssFeedImport = {
   import: UserRssFeedImportSummary
+  /** One page of rows in input order. */
   rows: UserRssFeedImportRowResult[]
+  page_info: PageInfo
 }
 
 export type UserRssFeedImportBatchRow = {

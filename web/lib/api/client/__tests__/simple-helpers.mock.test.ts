@@ -87,6 +87,14 @@ describe('simple client api helpers', () => {
     expect(mockGet).toHaveBeenCalledWith('/api/v1/my/import/rss-feeds/import-1')
   })
 
+  it('requests the next page of an import status with its cursor', async () => {
+    mockGet.mockResolvedValueOnce({ import: { id: 'import-1' }, rows: [] })
+
+    await getRssFeedImport('import-1', { after: 'a b' })
+
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/my/import/rss-feeds/import-1?after=a%20b')
+  })
+
   it('searches RSS feeds and returns results array', async () => {
     const feeds = [{ id: 'feed-1', title: 'Test Feed' }]
     mockGet.mockResolvedValueOnce({ results: feeds })

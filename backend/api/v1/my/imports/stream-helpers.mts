@@ -1,6 +1,6 @@
 import type { ApiSseEvent } from '../../../response-contract.mts'
 import type { ImportProgressSubscription, ImportProgressChunk } from '@data-stores/valkey-pubsub'
-import { getRssFeedImport } from '@services/user-import-export/rss-feed-imports'
+import { getRssFeedImportSummary } from '@services/user-import-export/rss-feed-imports'
 
 export type ImportStreamEvent =
   | ApiSseEvent<'progress', ImportProgressChunk>
@@ -13,26 +13,26 @@ const RSS_IMPORT_POLL_INTERVAL_MS = 2_000
 export async function pipeUserRssFeedImportProgressToSSE(options: {
   batchId: string
   userId: string
-  initialImport: NonNullable<Awaited<ReturnType<typeof getRssFeedImport>>>
+  initialImport: NonNullable<Awaited<ReturnType<typeof getRssFeedImportSummary>>>
   emit: (event: ImportStreamEvent) => void
   disconnectSignal: AbortSignal
   pollIntervalMs?: number
-  readImport?: typeof getRssFeedImport
+  readImport?: typeof getRssFeedImportSummary
 }): Promise<void> {
   const pollIntervalMs = options.pollIntervalMs ?? RSS_IMPORT_POLL_INTERVAL_MS
-  const readImport = options.readImport ?? getRssFeedImport
+  const readImport = options.readImport ?? getRssFeedImportSummary
 
   async function poll(
-    current: NonNullable<Awaited<ReturnType<typeof getRssFeedImport>>>,
+    current: NonNullable<Awaited<ReturnType<typeof getRssFeedImportSummary>>>,
   ): Promise<void> {
     if (options.disconnectSignal.aborted) return
 
     const chunk = {
       batchId: options.batchId,
-      completed: current.import.completed_rows,
-      failed: current.import.failed_rows,
-      total: current.import.total_rows,
-      done: current.import.pending_rows === 0 || current.import.completed_at !== null,
+      completed: current.completed_rows,
+      failed: current.failed_rows,
+      total: current.total_rows,
+      done: current.pending_rows === 0 || current.completed_at !== null,
     }
 
     options.emit({ event: 'progress', data: chunk })

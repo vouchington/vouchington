@@ -2,6 +2,7 @@ import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/ba
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
   type UserRssFeedImportRowData,
 } from '@queues/background/enqueues/imports-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
@@ -49,3 +50,10 @@ export const enqueueBulkUserRssFeedImportRows = createBackgroundBulkEnqueue(
     } satisfies Partial<JobOptions>,
   }),
 )
+
+const enqueueRecovery = createBackgroundEnqueue(IMPORTS_RECOVER_STALLED_JOB)
+
+/** Runs one sweep that re-dispatches imports left without a dispatcher. */
+export function enqueueRecoverStalledImports(): EnqueueReturnType {
+  return enqueueRecovery({})
+}

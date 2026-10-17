@@ -45,6 +45,7 @@ describe('RSS feed import batches', () => {
 
     expect(countCapturedQueriesByAnnotation(creation.queries, 'createRssFeedImport')).toBe(1)
     expect(countCapturedQueriesByAnnotation(lookup.queries, 'getRssFeedImport')).toBe(1)
+    expect(countCapturedQueriesByAnnotation(lookup.queries, 'getRssFeedImportRows')).toBe(1)
     await expect(getRssFeedImportRowIds(created.import.id)).resolves.toHaveLength(2)
     expect(status?.import).toMatchObject({
       id: created.import.id,
