@@ -1381,6 +1381,7 @@ rules:
             file: backend/services/user-import-export/import-topics.mts,
             callee: 'admitImportedTopicRecommendation',
           }
+        - { file: backend/services/user-import-export/rss-feed-import-records.mts, callee: 'write' }
         - {
             file: backend/services/users/delete-entity-relation-votes.mts,
             callee: 'recordPostTopicRelationPublicationChanges',

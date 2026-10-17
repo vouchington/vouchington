@@ -1,4 +1,4 @@
-import { createQueue } from '@data-stores/valkey-glide-mq'
-import { QUEUE_NAME } from './config.mts'
+import { background } from '@queues/background/queues'
 
-export const adminImports = createQueue(QUEUE_NAME, { priorityKind: 'ranked' })
+// The domain's queue is the shared `background` queue; this names it for the domain's own code.
+export const adminImports = background

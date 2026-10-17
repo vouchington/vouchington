@@ -31,7 +31,7 @@ _none_
 - `user_rss_feed_import_batches_completed_rows_check`: `CHECK ((completed_rows >= 0))`
 - `user_rss_feed_import_batches_created_via_oauth_client_id_check`: `CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))`
 - `user_rss_feed_import_batches_failed_rows_check`: `CHECK ((failed_rows >= 0))`
-- `user_rss_feed_import_batches_total_rows_check`: `CHECK (((total_rows > 0) AND (total_rows <= 500)))`
+- `user_rss_feed_import_batches_total_rows_check`: `CHECK ((total_rows > 0))`
 
 **Foreign keys:**
 
@@ -41,6 +41,7 @@ _none_
 **Indexes:**
 
 - `idx_user_rss_feed_import_batches__created_via_oauth_client_id`: `CREATE INDEX idx_user_rss_feed_import_batches__created_via_oauth_client_id ON public.user_rss_feed_import_batches USING btree (created_via_oauth_client_id) WHERE (created_via_oauth_client_id IS NOT NULL)`
+- `idx_user_rss_feed_import_batches__unfinished_updated_at`: `CREATE INDEX idx_user_rss_feed_import_batches__unfinished_updated_at ON public.user_rss_feed_import_batches USING btree (updated_at) WHERE (completed_at IS NULL)`
 - `idx_user_rss_feed_import_batches__user_id__id_desc`: `CREATE INDEX idx_user_rss_feed_import_batches__user_id__id_desc ON public.user_rss_feed_import_batches USING btree (user_id, id DESC)`
 - `user_rss_feed_import_batches_pkey`: `CREATE UNIQUE INDEX user_rss_feed_import_batches_pkey ON public.user_rss_feed_import_batches USING btree (id)`
 

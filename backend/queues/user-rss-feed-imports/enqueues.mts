@@ -1,42 +1,86 @@
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
+  IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
+  type UserRssFeedImportRowData,
+} from '@queues/background/enqueues/imports-jobs'
+import { background } from '@queues/background/queues'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT, QUEUE_NAME, USER_RSS_FEED_IMPORTS_DEFAULTS } from './config.mts'
-import { userRssFeedImports } from './queues.mts'
-import type { UserRssFeedImportJobs, UserRssFeedImportRowJob } from './types.mts'
+import {
+  USER_RSS_FEED_IMPORT_DISPATCH_ID_PREFIX,
+  USER_RSS_FEED_IMPORT_ROW_DEDUP_PREFIX,
+} from './config.mts'
 
-const JOB_NAME: UserRssFeedImportJobs = 'processImportRow'
+const enqueueDispatch = createBackgroundEnqueue(IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB)
 
-const enqueueBulkImportRowJobs = createBulkEnqueueFunction<
-  UserRssFeedImportRowJob,
-  UserRssFeedImportRowJob,
-  UserRssFeedImportJobs
->({
-  queue: userRssFeedImports,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-  defaults: {
-    attempts: USER_RSS_FEED_IMPORTS_DEFAULTS.attempts,
-    backoff: USER_RSS_FEED_IMPORTS_DEFAULTS.backoff,
-    removeOnComplete: USER_RSS_FEED_IMPORTS_DEFAULTS.removeOnComplete,
-    removeOnFail: USER_RSS_FEED_IMPORTS_DEFAULTS.removeOnFail,
-  },
-  buildJob: job => ({
-    data: job,
+// Each page is its own job: a dispatcher cannot re-add itself under the job id it is running
+// with, because GlideMQ drops an add whose id is still claimed. The id carries the import and the
+// cursor, so a retried page cannot enqueue a second continuation, and `removeOnComplete` and
+// `removeOnFail` release the id once the page has run.
+const dispatchJobId = (importId: string, cursor: number | undefined) =>
+  `${USER_RSS_FEED_IMPORT_DISPATCH_ID_PREFIX}__${importId}__${cursor ?? 'start'}`
+const dispatchOptions = (importId: string, cursor: number | undefined) =>
+  ({
+    jobId: dispatchJobId(importId, cursor),
+    removeOnComplete: true,
+    removeOnFail: true,
+  }) satisfies Partial<JobOptions>
+
+/** Starts an import's dispatcher at its first pending row. */
+export function enqueueUserRssFeedImportDispatch(importId: string): EnqueueReturnType {
+  return enqueueDispatch({ importId }, dispatchOptions(importId, undefined))
+}
+
+type DispatchInput = { importId: string; cursor?: number }
+
+const enqueueBulkDispatch = createBackgroundBulkEnqueue(
+  IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
+  (input: DispatchInput) => ({
+    data: input,
+    opts: dispatchOptions(input.importId, input.cursor),
+  }),
+)
+
+// A dispatcher that stalled past its limit stays in the failed set under its job id whatever
+// `removeOnFail` says, so a start or continuation id is released before it is added again.
+function enqueueDispatchesReactivating(inputs: DispatchInput[]) {
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs,
+    jobIdOf: input => dispatchJobId(input.importId, input.cursor),
+    enqueueBulk: enqueueBulkDispatch,
+  })
+}
+
+/** Continues an import's dispatcher after the page that ended at `cursor`. */
+export function enqueueUserRssFeedImportDispatchContinuation(importId: string, cursor: number) {
+  return enqueueDispatchesReactivating([{ importId, cursor }])
+}
+
+/** Starts the dispatchers of several imports at their first pending row. */
+export function enqueueUserRssFeedImportDispatches(importIds: string[]) {
+  return enqueueDispatchesReactivating(importIds.map(importId => ({ importId })))
+}
+
+export const enqueueBulkUserRssFeedImportRows = createBackgroundBulkEnqueue(
+  IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  (row: UserRssFeedImportRowData) => ({
+    data: row,
     opts: {
       deduplication: {
-        id: `${JOB_NAME}__${job.rowId}`,
-        mode: 'debounce' as const,
-        ttl: USER_RSS_FEED_IMPORTS_DEFAULTS.deduplicationTtlMs,
+        id: `${USER_RSS_FEED_IMPORT_ROW_DEDUP_PREFIX}__${row.rowId}`,
+        mode: 'simple' as const,
       },
-    },
+    } satisfies Partial<JobOptions>,
   }),
-})
+)
 
-export function enqueueBulkUserRssFeedImportRows(
-  jobs: UserRssFeedImportRowJob[],
-): EnqueueReturnType {
-  return enqueueBulkImportRowJobs(jobs, {
-    priority: PRIORITY_DEFAULT,
-  } satisfies Partial<JobOptions>)
+const enqueueRecovery = createBackgroundEnqueue(IMPORTS_RECOVER_STALLED_JOB)
+
+/** Runs one sweep that re-dispatches imports left without a dispatcher. */
+export function enqueueRecoverStalledImports(): EnqueueReturnType {
+  return enqueueRecovery({})
 }

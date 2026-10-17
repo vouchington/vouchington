@@ -1,0 +1,48 @@
+import { write } from '@data-stores/psql'
+import { getAdminImportsWorkLimit, IMPORT_RECOVERY_STALE_MS } from '@queues/admin-imports/config'
+import { enqueueAdminTopicImportDispatches } from '@queues/admin-imports/enqueues'
+import sql from 'sql-template-strings'
+
+type RecoveryOptions = {
+  /** How long an unfinished batch may make no progress before it is re-dispatched. */
+  staleAfterMs?: number
+  enqueueDispatches?: (batchIds: string[]) => Promise<unknown>
+}
+
+/**
+ * Re-dispatches unfinished topic import batches whose progress stopped, for example because their
+ * dispatcher failed every attempt and was removed. See `recoverStalledUserRssFeedImports`, which
+ * works the same way. Returns how many batches it re-dispatched.
+ */
+export async function recoverStalledAdminTopicImports(
+  options: RecoveryOptions = {},
+): Promise<number> {
+  const { staleAfterMs = IMPORT_RECOVERY_STALE_MS, enqueueDispatches } = options
+  const enqueue = enqueueDispatches ?? enqueueAdminTopicImportDispatches
+
+  const { rows } = await write<{ id: string }>(
+    sql`/* readStalledAdminTopicImports */
+      SELECT id
+      FROM admin_import_batches
+      WHERE import_type = 'topic'
+        AND completed_at IS NULL
+        AND updated_at < CURRENT_TIMESTAMP - make_interval(secs => ${staleAfterMs / 1000})
+      ORDER BY updated_at
+      LIMIT ${getAdminImportsWorkLimit('recovery_batch_size')}
+    `,
+  )
+  if (rows.length === 0) return 0
+
+  const ids = rows.map(row => row.id)
+  await enqueue(ids)
+  // The no-op write fires the `updated_at` trigger, which marks the batch as just touched.
+  await write(
+    sql`/* markStalledAdminTopicImportsRecovered */
+      UPDATE admin_import_batches
+      SET total_rows = total_rows
+      WHERE id = ANY(${ids}::uuid[])
+        AND completed_at IS NULL
+    `,
+  )
+  return ids.length
+}

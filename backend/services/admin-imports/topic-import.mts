@@ -1,6 +1,7 @@
 import assert from 'http-assert'
 import { parseCsvRows } from '@modules/csv'
-import { enqueueBulkImportRows } from '@queues/admin-imports/enqueues'
+import onError from '@modules/on-error'
+import { enqueueAdminTopicImportDispatch } from '@queues/admin-imports/enqueues'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import { createImportBatch } from './create-batch.mts'
@@ -35,8 +36,10 @@ export async function importAdminTopics(
   }
   const validation = validateTopicRows(rows)
   if (!validation.valid) return { valid: false as const, validation }
-  const { batch, rowIds } = await createImportBatch(currentUser, 'topic', rows)
-  await enqueueBulkImportRows(rowIds.map(rowId => ({ batchId: batch.id, rowId })))
+  const { batch } = await createImportBatch(currentUser, 'topic', rows)
+  // The batch is committed, so a failed enqueue is reported and the recovery sweep dispatches it;
+  // the caller gets the batch instead of an error that would invite a duplicate submission.
+  await enqueueAdminTopicImportDispatch(batch.id).catch(onError)
   return {
     valid: true as const,
     batch: {

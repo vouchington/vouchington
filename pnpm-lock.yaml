@@ -1808,12 +1808,12 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
-      '@workers/admin-imports':
-        specifier: workspace:^
-        version: link:../../workers/admin-imports
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
@@ -1856,9 +1856,6 @@ importers:
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
-      '@workers/user-rss-feed-imports':
-        specifier: workspace:^
-        version: link:../../workers/user-rss-feed-imports
 
   backend/mcp:
     dependencies:
@@ -2696,6 +2693,12 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -3323,6 +3326,12 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3764,6 +3773,9 @@ importers:
       '@modules/csv':
         specifier: workspace:^
         version: link:../../modules/csv
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
@@ -3794,9 +3806,6 @@ importers:
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../urls-hostnames
-      '@services/user-import-export':
-        specifier: workspace:^
-        version: link:../user-import-export
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -9086,9 +9095,6 @@ importers:
       '@queues/activitypub':
         specifier: workspace:^
         version: link:../../queues/activitypub
-      '@queues/admin-imports':
-        specifier: workspace:^
-        version: link:../../queues/admin-imports
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -11070,12 +11076,18 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../bookmarks
@@ -11103,6 +11115,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -11935,33 +11950,24 @@ importers:
 
   backend/workers/admin-imports:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@data-stores/valkey-pubsub':
         specifier: workspace:^
         version: link:../../data-stores/valkey-pubsub
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
-      '@queues/admin-imports':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/admin-imports
+        version: link:../../queues/background
       '@services/admin-imports':
         specifier: workspace:^
         version: link:../../services/admin-imports
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12189,6 +12195,9 @@ importers:
       '@workers/activitypub':
         specifier: workspace:^
         version: link:../activitypub
+      '@workers/admin-imports':
+        specifier: workspace:^
+        version: link:../admin-imports
       '@workers/article-sync':
         specifier: workspace:^
         version: link:../article-sync
@@ -12240,6 +12249,9 @@ importers:
       '@workers/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../urls-domains-blacklist
+      '@workers/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../user-rss-feed-imports
       '@workers/vote-aggregation':
         specifier: workspace:^
         version: link:../vote-aggregation
@@ -12253,6 +12265,9 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
+      '@queues/admin-imports':
+        specifier: workspace:^
+        version: link:../../queues/admin-imports
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
@@ -12268,9 +12283,15 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@services/activitypub-delivery':
         specifier: workspace:^
         version: link:../../services/activitypub-delivery
+      '@services/admin-imports':
+        specifier: workspace:^
+        version: link:../../services/admin-imports
       '@services/ap-actor-keys':
         specifier: workspace:^
         version: link:../../services/ap-actor-keys
@@ -12295,6 +12316,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
+      '@services/user-import-export':
+        specifier: workspace:^
+        version: link:../../services/user-import-export
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -13653,21 +13677,15 @@ importers:
 
   backend/workers/user-rss-feed-imports:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
+        version: link:../../queues/background
+      '@services/admin-imports':
         specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/user-rss-feed-imports':
-        specifier: workspace:^
-        version: link:../../queues/user-rss-feed-imports
+        version: link:../../services/admin-imports
       '@services/user-import-export':
         specifier: workspace:^
         version: link:../../services/user-import-export
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/vote-aggregation:
     dependencies:

@@ -32,6 +32,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'data-retention-cleanup-daily',
   'reconcile-vote-drift',
   'kagi-smallweb-sync',
+  'imports-recover-stalled',
   'dispatchFindYourFriends',
   'membershipEntitlementEffects',
   'membershipGrantExpiry',

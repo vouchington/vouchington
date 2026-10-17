@@ -44,7 +44,8 @@ export const backgroundWorkEntries3 = [
     maxValues: adminImportsWorkMaxValues,
     descriptions: {
       insert_chunk_size: 'Insert chunk size for admin imports processing.',
-      enqueue_chunk_size: 'Enqueue chunk size for admin imports processing.',
+      dispatch_page_size: 'Pending rows one admin import dispatcher page puts on the queue.',
+      recovery_batch_size: 'Stalled admin import batches one recovery sweep re-dispatches.',
     },
   }),
   defineBoundedWorkNamespace({

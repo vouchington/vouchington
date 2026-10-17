@@ -92,26 +92,20 @@ describe('import/export client helpers', () => {
     })
   })
 
-  it('rejects more than 500 URL rows before sending the request', async () => {
-    const mockFetch = vi.fn<VitestLooseMock>()
-    vi.stubGlobal('fetch', mockFetch)
-
-    await expect(
-      importRssFeeds({
-        urls: Array.from({ length: 501 }, (_, index) => `https://example.com/${index}.xml`),
-        should_follow_imported_feeds: true,
+  it('sends more than 500 URL rows: only the server bounds the body', async () => {
+    const mockFetch = vi.fn<VitestLooseMock>().mockResolvedValue(
+      new Response(JSON.stringify({ import: { id: 'import-1' }, status_url: '/x' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
       }),
-    ).rejects.toThrow('Maximum 500 URLs per import')
-    expect(mockFetch).not.toHaveBeenCalled()
-  })
-
-  it('rejects an encoded OPML JSON body larger than 2 MiB before sending the request', async () => {
-    const mockFetch = vi.fn<VitestLooseMock>()
+    )
     vi.stubGlobal('fetch', mockFetch)
 
-    await expect(
-      importRssFeeds({ opml: '"'.repeat(1024 * 1024 + 1), should_follow_imported_feeds: true }),
-    ).rejects.toThrow('2 MiB')
-    expect(mockFetch).not.toHaveBeenCalled()
+    await importRssFeeds({
+      urls: Array.from({ length: 501 }, (_, index) => `https://example.com/${index}.xml`),
+      should_follow_imported_feeds: true,
+    })
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })

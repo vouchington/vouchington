@@ -1,5 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import {
+  getFirstRssFeedImportRowId,
+  getRssFeedImportRowIds,
+} from '@voucha/test-helpers/rss-feed-import-rows'
 import { createTestUser, insertTestRssFeedDirect, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { softDeleteUser } from '@voucha/test-helpers/entities/users-lifecycle'
 import {
@@ -41,7 +45,7 @@ describe('RSS feed import batches', () => {
 
     expect(countCapturedQueriesByAnnotation(creation.queries, 'createRssFeedImport')).toBe(1)
     expect(countCapturedQueriesByAnnotation(lookup.queries, 'getRssFeedImport')).toBe(1)
-    expect(created.rowIds).toHaveLength(2)
+    await expect(getRssFeedImportRowIds(created.import.id)).resolves.toHaveLength(2)
     expect(status?.import).toMatchObject({
       id: created.import.id,
       total_rows: 2,
@@ -52,34 +56,6 @@ describe('RSS feed import batches', () => {
     expect(status?.rows.map(row => row.status)).toEqual(['pending', 'pending'])
   })
 
-  it('rejects imports above the per-import cap', async () => {
-    await expect(
-      submitRssFeedImport(
-        user,
-        WEB_PROVENANCE,
-        Array.from({ length: 501 }, (_, index) => `https://too-many-${index}.example.com/rss`),
-      ),
-    ).rejects.toThrow('Maximum 500 URLs per import')
-  })
-
-  it('stores a maximum-size import in one batch while preserving row order', async () => {
-    const suffix = Date.now()
-    const urls = Array.from(
-      { length: 500 },
-      (_, index) => `https://scale-import-${suffix}-${index}.example.com/rss`,
-    )
-
-    const created = await submitRssFeedImport(user, WEB_PROVENANCE, urls, {
-      should_follow_imported_feeds: false,
-    })
-    const status = await getRssFeedImport(user.id, created.import.id)
-
-    expect(created.rowIds).toHaveLength(500)
-    expect(status?.import).toMatchObject({ total_rows: 500, pending_rows: 500 })
-    expect(status?.rows).toHaveLength(500)
-    expect(status?.rows.map(row => row.input)).toEqual(urls)
-  })
-
   it('rejects rows that do not belong to the requested import', async () => {
     const first = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://wrong-import-a-${Date.now()}.example.com/rss`,
@@ -88,9 +64,9 @@ describe('RSS feed import batches', () => {
       `https://wrong-import-b-${Date.now()}.example.com/rss`,
     ])
 
-    await expect(processRssFeedImportRow(first.import.id, second.rowIds[0]!)).rejects.toThrow(
-      `belongs to import ${second.import.id}`,
-    )
+    await expect(
+      processRssFeedImportRow(first.import.id, await getFirstRssFeedImportRowId(second.import.id)),
+    ).rejects.toThrow(`belongs to import ${second.import.id}`)
   })
 
   it('marks rows failed when the import user is no longer available', async () => {
@@ -100,7 +76,10 @@ describe('RSS feed import batches', () => {
     ])
     await softDeleteUser(transientUser.id)
 
-    await processRssFeedImportRow(created.import.id, created.rowIds[0]!)
+    await processRssFeedImportRow(
+      created.import.id,
+      await getFirstRssFeedImportRowId(created.import.id),
+    )
 
     const status = await getRssFeedImport(transientUser.id, created.import.id)
     expect(status?.import).toMatchObject({
@@ -119,7 +98,10 @@ describe('RSS feed import batches', () => {
     const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl })
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
-    await processRssFeedImportRow(created.import.id, created.rowIds[0]!)
+    await processRssFeedImportRow(
+      created.import.id,
+      await getFirstRssFeedImportRowId(created.import.id),
+    )
 
     const status = await getRssFeedImport(user.id, created.import.id)
     expect(status?.import).toMatchObject({
@@ -145,9 +127,13 @@ describe('RSS feed import batches', () => {
     })
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
-    await processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
-      createSourceFromUrlImpl,
-    })
+    await processRssFeedImportRow(
+      created.import.id,
+      await getFirstRssFeedImportRowId(created.import.id),
+      {
+        createSourceFromUrlImpl,
+      },
+    )
 
     expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
       expect.objectContaining({ id: user.id }),
@@ -166,7 +152,10 @@ describe('RSS feed import batches', () => {
   it('records invalid URL rows as errors without calling source creation', async () => {
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, ['not-a-url'])
 
-    await processRssFeedImportRow(created.import.id, created.rowIds[0]!)
+    await processRssFeedImportRow(
+      created.import.id,
+      await getFirstRssFeedImportRowId(created.import.id),
+    )
 
     const status = await getRssFeedImport(user.id, created.import.id)
     expect(status?.import).toMatchObject({
@@ -189,10 +178,14 @@ describe('RSS feed import batches', () => {
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await expect(
-      processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
-        isFinalAttempt: false,
-        createSourceFromUrlImpl,
-      }),
+      processRssFeedImportRow(
+        created.import.id,
+        await getFirstRssFeedImportRowId(created.import.id),
+        {
+          isFinalAttempt: false,
+          createSourceFromUrlImpl,
+        },
+      ),
     ).rejects.toThrow('temporary failure')
 
     const status = await getRssFeedImport(user.id, created.import.id)
@@ -211,9 +204,13 @@ describe('RSS feed import batches', () => {
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await expect(
-      processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
-        createSourceFromUrlImpl,
-      }),
+      processRssFeedImportRow(
+        created.import.id,
+        await getFirstRssFeedImportRowId(created.import.id),
+        {
+          createSourceFromUrlImpl,
+        },
+      ),
     ).rejects.toThrow('terminal failure')
 
     const rssFeed = await insertTestRssFeedDirect({})
@@ -224,9 +221,13 @@ describe('RSS feed import batches', () => {
       rss_feed_id: rssFeed.id,
     })
 
-    await processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
-      createSourceFromUrlImpl,
-    })
+    await processRssFeedImportRow(
+      created.import.id,
+      await getFirstRssFeedImportRowId(created.import.id),
+      {
+        createSourceFromUrlImpl,
+      },
+    )
 
     const status = await getRssFeedImport(user.id, created.import.id)
     expect(createSourceFromUrlImpl).toHaveBeenCalledTimes(1)
@@ -245,7 +246,7 @@ describe('RSS feed import batches', () => {
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://duplicate-failure-import-${Date.now()}.example.com/feed.xml`,
     ])
-    const rowId = created.rowIds[0]!
+    const rowId = await getFirstRssFeedImportRowId(created.import.id)
 
     await updateRssFeedImportRowFailed(rowId, 'terminal failure', { isFinalAttempt: true })
     await updateRssFeedImportRowFailed(rowId, 'duplicate failure', { isFinalAttempt: true })
@@ -267,7 +268,7 @@ describe('RSS feed import batches', () => {
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [
       `https://stale-success-import-${Date.now()}.example.com/feed.xml`,
     ])
-    const rowId = created.rowIds[0]!
+    const rowId = await getFirstRssFeedImportRowId(created.import.id)
 
     await updateRssFeedImportRowFailed(rowId, 'terminal failure', { isFinalAttempt: true })
     await updateRssFeedImportRowCompleted(rowId, 'source_created', rssFeed.id)

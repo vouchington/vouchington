@@ -5,7 +5,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import assert from 'http-assert'
 import { createRssFeedUrlId } from './rss-feed-url-id.mts'
-import { buildSourceTopicName, type FeedClassification } from './validate.mts'
+import { buildSourceTopicName } from './validate.mts'
 import { setCanonicalUrl, CircularCanonicalReferenceError } from '@services/urls/set-canonical'
 import { safeResolveUrl } from '@services/crawls/crawl-url-utils'
 import onError from '@modules/on-error'
@@ -14,26 +14,24 @@ import { findExistingFeedByUrlId, findExistingFeedByUrl } from './find-existing-
 import { resolveProtocolAndClassify } from './resolve-protocol.mts'
 import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
 import { isPublicRssFeedUrl } from './url-validation.mts'
+import type { CreateSourceOptions, CreateSourceResult } from './create-source-types.mts'
+import { assertWithinFeedBudget, raceFeedBudget } from './feed-budget.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 
 const MAX_REDIRECT_HOPS = 5
 
-export type CreateSourceResult = {
-  status: 'created' | 'upvoted'
-  rss_feed_id: string
-  topic_id: string
-  topic_slug: string
+export type { CreateSourceResult } from './create-source-types.mts'
+
+export function createSourceFromUrl(
+  currentUser: BasicUser,
+  provenance: ContentProvenance,
+  rssFeedUrl: string,
+  options: CreateSourceOptions = {},
+): Promise<CreateSourceResult> {
+  return createSource(currentUser, provenance, rssFeedUrl, options)
 }
 
-type CreateSourceOptions = {
-  assertContributionLimit?: () => Promise<void>
-  follow?: boolean
-  hopCount?: number
-  originalUrl?: string
-  fetchAndClassifyFeedImpl?: (rssFeedUrl: string) => Promise<FeedClassification>
-}
-
-export async function createSourceFromUrl(
+async function createSource(
   currentUser: BasicUser,
   provenance: ContentProvenance,
   rssFeedUrl: string,
@@ -43,17 +41,18 @@ export async function createSourceFromUrl(
     hopCount = 0,
     originalUrl,
     fetchAndClassifyFeedImpl,
-  }: CreateSourceOptions = {},
+    signal,
+  }: CreateSourceOptions,
 ): Promise<CreateSourceResult> {
   assert(isPublicRssFeedUrl(rssFeedUrl), 422, 'rss_feed_url must be a valid URL')
   assert(hopCount <= MAX_REDIRECT_HOPS, 422, 'Too many redirects while resolving RSS feed URL')
-  await assertUrlAllowedByWebRisk(rssFeedUrl)
+  await raceFeedBudget(signal, assertUrlAllowedByWebRisk(rssFeedUrl, { signal }))
 
   if (new URL(rssFeedUrl).protocol === 'http:') {
     const httpsUrl = normalizeUrlForUrlTable(rssFeedUrl).href
     const httpUrl = normalizeUrlForUrlTable(rssFeedUrl, { preserveHttp: true }).href
     const existingHttps = await findExistingFeedByUrl(httpsUrl)
-    if (existingHttps) await assertUrlAllowedByWebRisk(httpsUrl)
+    if (existingHttps) await raceFeedBudget(signal, assertUrlAllowedByWebRisk(httpsUrl, { signal }))
     const existing = existingHttps ?? (await findExistingFeedByUrl(httpUrl))
     if (existing) {
       await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
@@ -73,16 +72,20 @@ export async function createSourceFromUrl(
 
   // Resolve the effective URL (prefer https, fall back to http) and classify the feed
   let firstAttempt = true
-  const { resolvedUrl, classification } = await resolveProtocolAndClassify(rssFeedUrl, {
-    beforeFetch: url => {
-      const alreadyChecked = firstAttempt && url === rssFeedUrl
-      firstAttempt = false
-      // Reuse only this attempt's initial proof; protocol fallback and later hops revalidate.
-      return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url)
-    },
-    fetchAndClassifyFeedImpl,
-  })
-  await assertUrlAllowedByWebRisk(resolvedUrl)
+  const { resolvedUrl, classification } = await raceFeedBudget(
+    signal,
+    resolveProtocolAndClassify(rssFeedUrl, {
+      beforeFetch: url => {
+        const alreadyChecked = firstAttempt && url === rssFeedUrl
+        firstAttempt = false
+        // Reuse only this attempt's initial proof; protocol fallback and later hops revalidate.
+        return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url, { signal })
+      },
+      fetchAndClassifyFeedImpl,
+      signal,
+    }),
+  )
+  await raceFeedBudget(signal, assertUrlAllowedByWebRisk(resolvedUrl, { signal }))
   const isHttpUrl = new URL(resolvedUrl).protocol === 'http:'
 
   if (classification.kind === 'redirect') {
@@ -106,12 +109,13 @@ export async function createSourceFromUrl(
       })
     }
 
-    return createSourceFromUrl(currentUser, provenance, resolvedRedirectUrl, {
+    return createSource(currentUser, provenance, resolvedRedirectUrl, {
       assertContributionLimit,
       follow,
       hopCount: hopCount + 1,
       originalUrl: originalUrl ?? rssFeedUrl,
       fetchAndClassifyFeedImpl,
+      signal,
     })
   }
 
@@ -140,8 +144,11 @@ export async function createSourceFromUrl(
     }
   }
 
+  // The budget races remote work only; it is checked before the writes, never during them.
+  assertWithinFeedBudget(signal)
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertContributionLimit?.()
+  assertWithinFeedBudget(signal)
 
   const rssFeedUrlId = await createRssFeedUrlId(resolvedUrl, { preserveHttp: isHttpUrl })
   const hostnameId = await resolveHostname(currentUser.id, rawHostname)

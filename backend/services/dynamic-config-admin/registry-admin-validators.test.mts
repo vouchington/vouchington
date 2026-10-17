@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { getDynamicConfigRegistryEntry } from './registry.mts'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
 import { RSS_FEED_CRAWL_MAX_VALUES } from '@services/rss-feeds/crawl-config'
+import { DEFAULT_USER_IMPORT_EXPORT_CONFIG } from '@services/user-import-export/config'
+
+const VALID_USER_IMPORT_EXPORT_FIELDS = { ...DEFAULT_USER_IMPORT_EXPORT_CONFIG }
 
 const VALID_RSS_FEED_CRAWL_FIELDS = {
   should_ignore_robots_txt: true,
@@ -162,20 +165,26 @@ describe('dynamic-config-admin registry validators', () => {
   it('rejects out-of-range user import/export limits', () => {
     const entry = getDynamicConfigRegistryEntry('user-import-export-config')
 
-    expect(() => entry?.validate?.({ sync_export_max_items: 0 })).toThrow(
-      'Field sync_export_max_items must be an integer between 1 and 50000',
-    )
-    expect(() => entry?.validate?.({ sync_export_max_items: 50_001 })).toThrow(
-      'Field sync_export_max_items must be an integer between 1 and 50000',
-    )
+    expect(() =>
+      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, sync_export_max_items: 0 }),
+    ).toThrow('Field sync_export_max_items must be an integer between 1 and 50000')
+    expect(() =>
+      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, sync_export_max_items: 50_001 }),
+    ).toThrow('Field sync_export_max_items must be an integer between 1 and 50000')
+    expect(() =>
+      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, rss_feed_import_budget_ms: 25_001 }),
+    ).toThrow('Field rss_feed_import_budget_ms must be an integer between 1000 and 25000')
+    expect(() =>
+      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, import_dispatch_page_size: 0 }),
+    ).toThrow('Field import_dispatch_page_size must be an integer between 1 and 1000')
   })
 
   it('rejects non-number user import/export limits', () => {
     const entry = getDynamicConfigRegistryEntry('user-import-export-config')
 
-    expect(() => entry?.validate?.({ sync_export_max_items: true })).toThrow(
-      'Field sync_export_max_items must be an integer between 1 and 50000',
-    )
+    expect(() =>
+      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, sync_export_max_items: true }),
+    ).toThrow('Field sync_export_max_items must be an integer between 1 and 50000')
   })
 })
 

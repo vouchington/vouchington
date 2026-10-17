@@ -10,15 +10,12 @@ import {
   preflightExport,
   type RssFeedContentType,
 } from '@/lib/api/client/import-export'
-import {
-  MAX_RSS_FEED_IMPORT_BODY_BYTES,
-  RssFeedImportValidationError,
-  validateRssFeedImportBody,
-} from '@/lib/api/client/rss-feed-import-validation'
 import { streamImportProgress } from '@/lib/api/client/import-stream'
 import onError, { onSuccess } from '@/lib/on-error'
-import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Action, State } from './import-export-state'
+
+// The API's absolute ceiling for `import_max_body_bytes`.
+const MAX_IMPORT_FILE_BYTES = 16 * 1024 * 1024
 
 interface Options {
   isTopics: boolean
@@ -28,7 +25,6 @@ interface Options {
 }
 
 export function useImportExportActions({ isTopics, selectedType, state, dispatch }: Options) {
-  const t = useTranslations()
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => abortControllerRef.current?.abort(), [])
@@ -116,8 +112,9 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
     const isCsv = file.name.toLowerCase().endsWith('.csv')
     dispatch({ importingFeeds: true, importProgress: null })
     try {
-      if (file.size > MAX_RSS_FEED_IMPORT_BODY_BYTES) {
-        toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
+      // The server enforces the configured limit; this only keeps a huge file from being buffered.
+      if (file.size > MAX_IMPORT_FILE_BYTES) {
+        toast.error('File is too large to import')
         dispatch({ importingFeeds: false })
         return
       }
@@ -125,16 +122,6 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
       const body = isCsv
         ? { csv: contents, should_follow_imported_feeds: true as const }
         : { opml: contents, should_follow_imported_feeds: true as const }
-      try {
-        validateRssFeedImportBody(body)
-      } catch (err) {
-        if (err instanceof RssFeedImportValidationError && err.code === 'body_too_large') {
-          toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
-          dispatch({ importingFeeds: false })
-          return
-        }
-        throw err
-      }
       const data = await importRssFeeds(body)
       await startImportStream(data.import.id, data.import.total_rows)
     } catch (err) {

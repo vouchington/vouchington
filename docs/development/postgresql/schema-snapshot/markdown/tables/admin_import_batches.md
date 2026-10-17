@@ -39,6 +39,7 @@ _none_
 
 - `admin_import_batches_pkey`: `CREATE UNIQUE INDEX admin_import_batches_pkey ON public.admin_import_batches USING btree (id)`
 - `idx_admin_import_batches__created_by`: `CREATE INDEX idx_admin_import_batches__created_by ON public.admin_import_batches USING btree (created_by_id)`
+- `idx_admin_import_batches__unfinished_updated_at`: `CREATE INDEX idx_admin_import_batches__unfinished_updated_at ON public.admin_import_batches USING btree (updated_at) WHERE (completed_at IS NULL)`
 
 **Triggers:**
 

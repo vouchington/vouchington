@@ -26,6 +26,7 @@ import { scheduledJobManifest as sitemaps } from '@queues/sitemaps/enqueues/sche
 import { scheduledJobManifest as storyPostRelatedUrlProjections } from '@queues/story-post-related-url-projections/enqueues/schedules'
 import { scheduledJobManifest as unfurlReferralLinks } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/enqueues/schedules'
+import { scheduledJobManifest as userRssFeedImports } from '@queues/user-rss-feed-imports/enqueues/schedules'
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
 
 // Background domains register through one combined manifest, so the catalog lists that manifest.
@@ -45,6 +46,7 @@ const background = combineBackgroundManifests([
   sitemaps,
   kagiSmallweb,
   emailDigests,
+  userRssFeedImports,
 ])
 
 export const SCHEDULED_JOB_MANIFESTS = [

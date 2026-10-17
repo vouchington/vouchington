@@ -32959,13 +32959,53 @@
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "bodyKind": "content",
-      "hash": "13169d796ee0ecd32ebaeb4d1df5f6f49f3c0637fa6b6f40fac680f988b9c440",
+      "hash": "c5f468c62f7abaffe9c0615e093f8f16ac9526540804d27756f5a2154bcbfaf2",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
       "routeTemplate": "/api/v1/my/import/rss-feeds/:importId",
       "schema": {
         "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
           "UserRssFeedImport": {
             "additionalProperties": false,
             "properties": {
@@ -32973,6 +33013,13 @@
                 "required": true,
                 "schema": {
                   "name": "UserRssFeedImportSummary",
+                  "type": "ref"
+                }
+              },
+              "page_info": {
+                "required": true,
+                "schema": {
+                  "name": "PageInfo",
                   "type": "ref"
                 }
               },
@@ -95926,7 +95973,7 @@
       "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001",
       "responseSchema": {
-        "hash": "20cdf10dc909c98451adb305c066e817cf36eb004c3765da188d63482c6087f6",
+        "hash": "7d5187de7b9a1627a5b8bf6fd0f6cb83ce072abd1acb15843112d5b0bb39cf0b",
         "key": "native.import-export.rss-feeds.status.retrying"
       },
       "route": {
@@ -95950,7 +95997,7 @@
       "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001",
       "responseSchema": {
-        "hash": "c50e3bd2cadecad9f93fdd708dca6cab35afcfcfd676d5dab6d8773e9f52c0af",
+        "hash": "3edf8f24534b4b3b8c3305f9aa893642f21854ffe75b94ce483ffc08890c9ca5",
         "key": "native.import-export.rss-feeds.status.partial"
       },
       "route": {

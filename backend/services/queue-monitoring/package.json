@@ -29,7 +29,6 @@
     "@modules/worker-queue-inventory": "workspace:^",
     "@queues/account-lifecycle": "workspace:^",
     "@queues/activitypub": "workspace:^",
-    "@queues/admin-imports": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/ban-evasion": "workspace:^",

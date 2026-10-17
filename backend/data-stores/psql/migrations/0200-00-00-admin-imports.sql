@@ -48,6 +48,11 @@ CREATE TRIGGER trigger_admin_import_batches_guard_import_type
 CREATE INDEX IF NOT EXISTS idx_admin_import_batches__created_by
   ON admin_import_batches (created_by_id);
 
+-- Recovery finds unfinished imports whose progress has stopped, oldest first.
+CREATE INDEX IF NOT EXISTS idx_admin_import_batches__unfinished_updated_at
+  ON admin_import_batches (updated_at)
+  WHERE completed_at IS NULL;
+
 COMMENT ON TABLE admin_import_batches IS 'Tracks bulk import operations initiated by admins, with progress counters.';
 COMMENT ON COLUMN admin_import_batches.import_type IS 'The type of entities being imported: topic or RSS feed.';
 COMMENT ON COLUMN admin_import_batches.total_rows IS 'Total number of rows in this import batch (max 50000).';

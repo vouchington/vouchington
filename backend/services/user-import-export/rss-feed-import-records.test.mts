@@ -1,16 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { getRssFeedImportRowIds } from '@voucha/test-helpers/rss-feed-import-rows'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   deleteRssFeedImportBatchWithoutRowsForTest,
   insertRssFeedImportBatchWithoutRowsForTest,
 } from '@voucha/test-helpers/sql-rss-feeds'
 import type { PrivateUser } from '@services/users/types'
-import {
-  createRssFeedImport,
-  getRssFeedImport,
-  getRssFeedImportRowWithBatch,
-} from './rss-feed-import-records.mts'
+import { createRssFeedImport, getRssFeedImportRowWithBatch } from './rss-feed-import-records.mts'
+import { getRssFeedImport } from './rss-feed-import-status.mts'
 
 describe('RSS feed import records', () => {
   let user: PrivateUser
@@ -27,7 +25,11 @@ describe('RSS feed import records', () => {
     const created = await createRssFeedImport(user.id, WEB_PROVENANCE, urls, false)
 
     await expect(
-      Promise.all(created.rowIds.map(id => getRssFeedImportRowWithBatch(id))),
+      Promise.all(
+        (await getRssFeedImportRowIds(created.import.id)).map(id =>
+          getRssFeedImportRowWithBatch(id),
+        ),
+      ),
     ).resolves.toMatchObject(urls.map(input_url => ({ row: { input_url } })))
   })
 

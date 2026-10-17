@@ -1,28 +1,24 @@
-import type { Job } from 'glide-mq'
-import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { backgroundHandler } from '@queues/background/enqueues/define-handler'
+import {
+  IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB,
+  IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB,
+} from '@queues/background/enqueues/imports-jobs'
+import { dispatchAdminTopicImport } from '@services/admin-imports/dispatch-batch'
 import { processImportRow } from './processors.mts'
-import { ADMIN_IMPORTS_DEFAULTS, QUEUE_NAME } from '@queues/admin-imports/config'
-import type { AdminImportJobs } from '@queues/admin-imports/types'
 
-export const adminImports = createWorker(
-  QUEUE_NAME,
-  (job: Job) => {
-    switch (job.name as AdminImportJobs) {
-      case 'processImportRow': {
-        const data = job.data as { batchId?: string; rowId?: string } | null
-        if (!data?.batchId) throw new Error('Admin import job .batchId is required')
-        if (!data?.rowId) throw new Error('Admin import job .rowId is required')
-        const maxAttempts = ADMIN_IMPORTS_DEFAULTS.attempts ?? 3
-        const isFinalAttempt = job.attemptsMade + 1 >= maxAttempts
-        return processImportRow(data.batchId, data.rowId, { isFinalAttempt })
-      }
-      default:
-        throw new Error(`Unknown admin import job: ${job.name}`)
-    }
-  },
-  {
-    dedicatedCommandClient: true,
-    concurrency: getWorkerConcurrency('adminImports', { baseline: 5 }),
-  },
-)
+const ROW_ATTEMPTS = IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB.options.attempts ?? 1
+
+export const adminImportsHandlers = [
+  backgroundHandler(IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB, job => {
+    if (!job.data?.batchId) throw new Error('Admin import dispatch job .batchId is required')
+    return dispatchAdminTopicImport(job.data)
+  }),
+  backgroundHandler(IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB, job => {
+    const { batchId, rowId } = job.data ?? {}
+    if (!batchId) throw new Error('Admin import job .batchId is required')
+    if (!rowId) throw new Error('Admin import job .rowId is required')
+    return processImportRow(batchId, rowId, {
+      isFinalAttempt: job.attemptsMade + 1 >= ROW_ATTEMPTS,
+    })
+  }),
+]
