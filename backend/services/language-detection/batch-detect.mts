@@ -76,14 +76,13 @@ export async function detectRssFeedItemLanguageBatch(
              FROM rss_feed_item_sources rfis
              JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
              JOIN topics t ON t.id = rf.topic_id
-             JOIN view_rss_feed_current_states current_state ON current_state.rss_feed_id = rf.id
              WHERE rfis.rss_feed_item_id = rfi.id
                AND rf.deleted_at IS NULL
                AND t.deleted_at IS NULL
                AND t.merged_into_topic_id IS NULL
              ORDER BY
-               current_state.is_enabled DESC,
-               current_state.is_discoverable DESC,
+               rf.is_enabled DESC,
+               rf.is_discoverable DESC,
                t.votes_score_net DESC NULLS LAST,
                rfis.created_at ASC
              LIMIT 1

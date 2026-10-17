@@ -21,9 +21,10 @@ export async function searchPendingPosts(
   const { limit, cursorId } = resolveCommunityIdCursorPage(options)
 
   const query = sql`/* searchPendingPosts */
-    SELECT p.*, cpr.escalated_at, cpr.escalated_by_id
+    WITH candidate_posts AS MATERIALIZED (
+    SELECT p.id, cpr.escalated_at, cpr.escalated_by_id
     FROM community_post_reviews cpr
-    JOIN view_posts p ON p.id = cpr.post_id
+    JOIN posts p ON p.id = cpr.post_id
     WHERE cpr.community_id = ${communityId}
       AND p.community_id = ${communityId}
       AND p.deleted_at IS NULL
@@ -39,6 +40,11 @@ export async function searchPendingPosts(
   query.append(sql`
     ORDER BY p.id ASC
     LIMIT ${limit + 1}
+    )
+    SELECT hydrated.*, candidates.escalated_at, candidates.escalated_by_id
+    FROM candidate_posts candidates
+    JOIN view_posts hydrated ON hydrated.id = candidates.id
+    ORDER BY candidates.id ASC
   `)
 
   const { rows } = await read(query, options)

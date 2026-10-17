@@ -118,13 +118,11 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     FROM rss_feed_item_sources rfis
     JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
     JOIN topics t ON t.id = rf.topic_id
-    JOIN view_rss_feed_current_states current_state
-      ON current_state.rss_feed_id = rf.id
     WHERE rfis.rss_feed_item_id = rss_feed_items.id
       AND rf.deleted_at IS NULL
     ORDER BY
-      current_state.is_enabled DESC,
-      current_state.is_discoverable DESC,
+      rf.is_enabled DESC,
+      rf.is_discoverable DESC,
       t.votes_score_net DESC NULLS LAST,
       rfis.created_at ASC
     LIMIT 1
@@ -136,8 +134,8 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     SELECT json_agg(
       ROW_TO_JSON(vrf.*)
       ORDER BY
-        vrf.is_enabled DESC,
-        vrf.is_discoverable DESC,
+        rf2.is_enabled DESC,
+        rf2.is_discoverable DESC,
         t2.votes_score_net DESC NULLS LAST,
         rfis2.created_at ASC
     ) AS rss_feed_sources

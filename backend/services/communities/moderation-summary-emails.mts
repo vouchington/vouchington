@@ -203,14 +203,16 @@ async function getModerationSummaryRecipients(now: Date): Promise<ModerationReci
   const { rows } = await read(sql`/* getModerationSummaryRecipients */
     SELECT DISTINCT
       u.id,
-      u.email_address,
+      email.email_address,
       u.username,
       u.ui_locale,
       u.moderation_email_cadence,
       u.moderation_email_days_of_week,
       u.moderation_email_time_of_day,
       COALESCE(u.moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone
-    FROM view_users_private u
+    FROM users u
+    JOIN user_email_addresses email
+      ON email.user_id = u.id AND email.is_primary = TRUE
     JOIN community_members cm
       ON cm.user_id = u.id
       AND cm.removed_at IS NULL
@@ -237,9 +239,12 @@ async function getModerationSummaryRecipients(now: Date): Promise<ModerationReci
           'America/Los_Angeles'
         ) AS local_now
     ) moderation_email_schedule
-    WHERE u.email_address IS NOT NULL
+    WHERE email.email_address IS NOT NULL
       AND u.is_moderation_emails_enabled = TRUE
-      AND u.suspended_at IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM user_suspensions suspension
+        WHERE suspension.user_id = u.id AND suspension.lifted_at IS NULL
+      )
       AND u.moderation_email_time_of_day <=
         to_char(moderation_email_schedule.local_now, 'HH24:MI')
       AND (

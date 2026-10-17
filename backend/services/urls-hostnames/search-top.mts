@@ -43,10 +43,15 @@ export async function searchTopHostnames(
 
   const { rows } = await read(
     `/* searchTopHostnames */
-    SELECT * FROM view_url_hostnames
+    WITH candidate_hostnames AS MATERIALIZED (
+    SELECT id, votes_score_net FROM url_hostnames
     ${where}
     ORDER BY votes_score_net DESC, id DESC
-    LIMIT $${values.length}`,
+    LIMIT $${values.length}
+    )
+    SELECT hydrated.* FROM candidate_hostnames candidate
+    JOIN view_url_hostnames hydrated ON hydrated.id = candidate.id
+    ORDER BY candidate.votes_score_net DESC, candidate.id DESC`,
     values,
   )
 

@@ -17,12 +17,12 @@ export async function importCommunityList(
   const { rowCount: postsCount } = await write(
     `/* importCommunityList:posts */
     INSERT INTO user_list_posts (user_list_id, post_id)
-    SELECT $1::uuid, vcli.entity_id::uuid
-    FROM view_community_list_items vcli
-    JOIN posts p ON p.id = vcli.entity_id::uuid AND p.deleted_at IS NULL
-    WHERE vcli.community_id = $2
-      AND vcli.item_type = 'post'
-    ORDER BY $1::uuid, vcli.entity_id::uuid
+    SELECT $1::uuid, p.id
+    FROM community_list_posts item
+    JOIN posts p ON p.id = item.post_id AND p.deleted_at IS NULL
+    WHERE item.community_id = $2
+      AND item.removed_at IS NULL
+    ORDER BY $1::uuid, p.id
     ON CONFLICT (user_list_id, post_id) WHERE removed_at IS NULL
     DO NOTHING`,
     [targetListId, communityId],
@@ -32,20 +32,20 @@ export async function importCommunityList(
     `/* importCommunityList:feed-items */
     INSERT INTO user_list_rss_feed_items (user_list_id, rss_feed_item_id)
     SELECT $1::uuid, rfi.id
-    FROM view_community_list_items vcli
-    JOIN rss_feeds rf ON rf.id = vcli.entity_id::uuid
+    FROM community_list_rss_feeds item
+    JOIN rss_feeds rf ON rf.id = item.rss_feed_id
       AND rf.deleted_at IS NULL
       AND rf.is_enabled = true
     JOIN LATERAL (
       SELECT rfi2.id
       FROM rss_feed_item_sources rfis
       JOIN rss_feed_items rfi2 ON rfi2.id = rfis.rss_feed_item_id AND rfi2.deleted_at IS NULL
-      WHERE rfis.rss_feed_id = vcli.entity_id::uuid
+      WHERE rfis.rss_feed_id = item.rss_feed_id
       ORDER BY rfi2.published_at DESC
       LIMIT $3
     ) rfi ON true
-    WHERE vcli.community_id = $2
-      AND vcli.item_type = 'rss_feed'
+    WHERE item.community_id = $2
+      AND item.removed_at IS NULL
     ORDER BY $1::uuid, rfi.id
     ON CONFLICT (user_list_id, rss_feed_item_id) WHERE removed_at IS NULL
     DO NOTHING`,

@@ -2,7 +2,8 @@
 CREATE OR REPLACE VIEW view_current_paid_memberships AS
   SELECT DISTINCT ON (m.user_id)
     m.user_id,
-    product.plan
+    product.plan,
+    m.id AS membership_id
   FROM memberships m
   INNER JOIN membership_products product ON product.id = m.membership_product_id
   INNER JOIN membership_sources source ON source.id = m.membership_source_id

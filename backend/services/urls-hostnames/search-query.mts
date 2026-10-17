@@ -13,12 +13,15 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
 
   if (effectiveTopicIds.length > 0 && include_descendants) {
     searchQuery.append(sql`WITH RECURSIVE `)
-    appendTopicDescendantsCte(searchQuery, effectiveTopicIds, { trailingComma: false })
+    appendTopicDescendantsCte(searchQuery, effectiveTopicIds)
+  } else {
+    searchQuery.append(sql`WITH `)
   }
 
   searchQuery.append(sql`
-    SELECT view_url_hostnames.*
-    FROM view_url_hostnames
+    candidate_hostnames AS MATERIALIZED (
+    SELECT h.id, h.hostname, h.votes_score_net
+    FROM url_hostnames h
   `)
 
   appendWhereClause(searchQuery, filters)
@@ -27,6 +30,17 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
     sort === 'trust' ? sql`votes_score_net DESC, id DESC` : sql`hostname ASC, id ASC`,
   )
   searchQuery.append(sql` LIMIT ${effectiveLimit + 1}`)
+  searchQuery.append(sql`
+    )
+    SELECT hydrated.*
+    FROM candidate_hostnames candidate
+    JOIN view_url_hostnames hydrated ON hydrated.id = candidate.id
+    ORDER BY `)
+  searchQuery.append(
+    sort === 'trust'
+      ? sql`candidate.votes_score_net DESC, candidate.id DESC`
+      : sql`candidate.hostname ASC, candidate.id ASC`,
+  )
 
   return { effectiveLimit, searchQuery }
 }
@@ -81,13 +95,13 @@ function appendTopicFilters(
     filters.push(sql`(
       SELECT COUNT(DISTINCT topic_descendants.root_post_id)
       FROM topic_descendants
-      WHERE topic_descendants.topic_id = view_url_hostnames.topic_id
+      WHERE topic_descendants.topic_id = h.topic_id
     ) = ${effectiveTopicIds.length}`)
   } else {
     filters.push(sql`EXISTS (
       SELECT 1
       FROM topic_descendants
-      WHERE topic_descendants.topic_id = view_url_hostnames.topic_id
+      WHERE topic_descendants.topic_id = h.topic_id
     )`)
   }
 }

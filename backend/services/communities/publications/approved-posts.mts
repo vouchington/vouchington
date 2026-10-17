@@ -56,7 +56,8 @@ export async function searchCommunityPosts(
     predicate: 'mute',
   })
   const query = sql`/* searchCommunityPosts */
-    SELECT posts.*`
+    WITH candidate_posts AS MATERIALIZED (
+    SELECT posts.id`
   if (sort === 'hot') {
     query.append(sql`,\n      `)
     query.append(buildCommunityPostHotScoreExpression())
@@ -64,7 +65,7 @@ export async function searchCommunityPosts(
   }
   query.append(sql`
     FROM community_post_reviews cpr
-    JOIN view_posts posts ON posts.id = cpr.post_id
+    JOIN posts ON posts.id = cpr.post_id
     JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
   `)
   if (sort === 'hot') {
@@ -167,6 +168,18 @@ export async function searchCommunityPosts(
     `)
   }
 
+  query.append(sql`
+    )
+    SELECT hydrated.*`)
+  if (sort === 'hot') query.append(sql`, candidates.hot_score`)
+  query.append(sql`
+    FROM candidate_posts candidates
+    JOIN view_posts hydrated ON hydrated.id = candidates.id`)
+  if (sort === 'hot') {
+    query.append(sql` ORDER BY candidates.hot_score DESC, candidates.id DESC`)
+  } else {
+    query.append(sql` ORDER BY candidates.id DESC`)
+  }
   const { rows } = await read(query, options)
 
   const hasNextPage = rows.length > limit

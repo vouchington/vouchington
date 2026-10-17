@@ -36,8 +36,12 @@ export async function grantIdentityVerificationAttempt(
             )
         )
         AND NOT EXISTS (
-          SELECT 1 FROM view_memberships
-          WHERE user_id = ${userId} AND status IN ('active', 'past_due') AND plan IN ('plus', 'pro')
+          SELECT 1 FROM memberships membership
+          JOIN view_memberships projection ON projection.id = membership.id
+          WHERE membership.user_id = ${userId}
+            AND membership.projection_ended_at IS NULL
+            AND projection.status IN ('active', 'past_due')
+            AND projection.plan IN ('plus', 'pro')
         )
     `)
     rowCount = insertedRows ?? 0
