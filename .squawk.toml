@@ -11,7 +11,7 @@ excluded_rules = [
   # Fixed migrations and their ledger rows are wrapped atomically by migration-session.mts.
   "prefer-robust-stmts",
   # Voucha intentionally uses bounded INT/SMALLINT columns for small counters,
-  # ordinals, and lookup identities. See backend/data-stores/psql/README.md.
+  # ordinals, and lookup identities.
   "prefer-bigint-over-smallint",
   "prefer-bigint-over-int",
   # Enum declaration order is not a semantic contract in this repo; new values

@@ -110,7 +110,7 @@ export function disconnectOAuthAccount(provider: string): Promise<void> {
 
 // Bluesky account linking is a full-page redirect dance (AT Protocol OAuth has no client-side
 // token flow), not a single request/response like connectOAuthAccount above — the caller must
-// navigate to the returned redirect_url. See backend/services/bluesky-accounts/README.md.
+// navigate to the returned redirect_url.
 export function beginBlueskyAccountLink(handle: string): Promise<{ redirect_url: string }> {
   return clientApi.post<{ redirect_url: string }>('/api/v1/auth/bluesky/link', { handle })
 }

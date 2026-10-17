@@ -12,7 +12,7 @@ import type {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `backend/services/landing-page-analytics/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export async function getLandingPageAnalytics(
   currentUserId: string,
