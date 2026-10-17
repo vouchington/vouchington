@@ -715,7 +715,7 @@ CREATE TABLE IF NOT EXISTS facebook_accounts (
 
   friends_synced_at TIMESTAMPTZ,
 
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
