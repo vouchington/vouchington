@@ -404,8 +404,10 @@ Community activity metrics for authorized community reads.
          SELECT (count(*))::integer AS count
            FROM ((keyed_posts p
              JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))
-             JOIN community_post_reviews cpr ON (((cpr.post_id = p.id) AND (cpr.community_id = c.id))))
-          WHERE ((cpr.approved_at IS NOT NULL) AND (cpr.unpublished_at IS NULL) AND (cpr.rejected_at IS NULL))) AS post_count,
+             JOIN LATERAL ( SELECT 1 AS "?column?"
+                   FROM community_post_reviews cpr
+                  WHERE ((cpr.post_id = p.id) AND (cpr.community_id = c.id) AND (cpr.approved_at IS NOT NULL) AND (cpr.unpublished_at IS NULL) AND (cpr.rejected_at IS NULL))
+                 LIMIT 1) approved_review ON (true))) AS post_count,
     ( SELECT (count(*))::integer AS count
            FROM view_community_list_items vcli
           WHERE (vcli.community_id = c.id)) AS list_item_count,
