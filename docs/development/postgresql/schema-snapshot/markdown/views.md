@@ -703,7 +703,8 @@ Current OAuth lifecycle and active exchange projected from timestamp facts and i
            FROM oauth_authorization_exchange_attempts attempt
           WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,
     linkedin_account_id,
-    microsoft_account_id
+    microsoft_account_id,
+    google_account_id
    FROM oauth_authorizations flow;
 ```
 
