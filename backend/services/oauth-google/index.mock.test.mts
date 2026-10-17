@@ -122,6 +122,9 @@ describe('google oauth', () => {
             email: 'unverified@example.test',
             email_verified: false,
             name: 'Google Broker User',
+            picture: 'https://example.com/google-user.png',
+            given_name: 'Google',
+            family_name: 'Broker User',
           }),
       } as Awaited<ReturnType<typeof undiciFetch>>)
 
@@ -133,6 +136,13 @@ describe('google oauth', () => {
     )
     expect(account.provider_user_id).toBe(googleUserId)
     expect(account.provider_user_email_address).toBeNull()
+    expect(account.provider_user_data).toMatchObject({
+      name: 'Google Broker User',
+      email: 'unverified@example.test',
+      picture: 'https://example.com/google-user.png',
+      given_name: 'Google',
+      family_name: 'Broker User',
+    })
     expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
       status: 'completion_ready',
       google_account_id: account.account_id,
