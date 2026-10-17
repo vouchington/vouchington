@@ -86,12 +86,15 @@ export function createMergedTool(
   const outputBranches: Record<string, unknown>[] = []
   const outputDefinitions: Record<string, unknown> = {}
   const definitionByBody = new Map<string, string>()
-  const seenOutputSchemas = new Set<string>()
-  for (const [index, { source }] of options.entries()) {
+  const seenOutputSchemas = new Map<string, number>()
+  const optionOutputIndexes = new Map<string, number>()
+  for (const [index, { option, source }] of options.entries()) {
     const outputSchema = source.meta!.outputSchema!
     const schemaKey = JSON.stringify(outputSchema)
-    if (seenOutputSchemas.has(schemaKey)) continue
-    seenOutputSchemas.add(schemaKey)
+    const existing = seenOutputSchemas.get(schemaKey)
+    optionOutputIndexes.set(option, existing ?? outputBranches.length)
+    if (existing !== undefined) continue
+    seenOutputSchemas.set(schemaKey, outputBranches.length)
     const scoped = scopedSchema(outputSchema, index)
     const replacements = new Map<string, string>()
     for (const [name, definition] of Object.entries(scoped.definitions)) {
@@ -149,6 +152,12 @@ export function createMergedTool(
       title,
       surfaces: [...new Set(options.flatMap(({ source }) => source.meta!.surfaces))],
       api: api.length ? api : null,
+      optionOutputPointers: Object.fromEntries(
+        [...optionOutputIndexes].map(([option, index]) => [
+          option,
+          outputBranches.length === 1 ? '#' : `#/anyOf/${index}`,
+        ]),
+      ),
       outputSchema: factorToolSchema({
         ...(outputBranches.length === 1
           ? outputBranches[0]

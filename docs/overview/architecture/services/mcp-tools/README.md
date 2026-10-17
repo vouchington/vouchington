@@ -83,6 +83,17 @@ server boundary and that SDK path; external-client findings and the consolidatio
 [#2431](https://github.com/vouchington/vouchington/issues/2431). Production tool consolidation and
 schema factoring follow that gate.
 
+**Selected member output contracts.** Consolidated member tools publish
+`_meta["voucha/optionOutputPointers"]`: every literal input option maps to a local JSON pointer in
+that tool's complete `outputSchema`. Shared outputs may map to the same branch. A single deduplicated
+output uses `#`; otherwise pointers address `#/anyOf/N`. The builder records correspondence before
+deduplication, and discovery verifies complete option coverage and pointer targets after factoring.
+A client validates the selected branch while retaining the output root's `$defs`, independently
+of input definitions; it must not zip input and output branch indexes. Kept tools use their ordinary
+output schema. Admin discovery is unchanged. The generated
+[`mcp-results.json`](../../../../../api-fixtures/v1/mcp-results.json) fixtures cover disjoint,
+shared and collapsed option outputs with their actual input envelopes.
+
 **One source of truth.** The checked-in `api-fixtures/v1/request-contracts.json` carries a
 `responses` map with the response schema of every route whose 200 body is a named response type,
 keyed like `operations`, and a `components` map of every named type. `route-response-schema.mts` in

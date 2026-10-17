@@ -1,3 +1,5 @@
+import { optionMcpResultCases } from './native-mcp-option-result-cases.mts'
+
 /** Structured MCP results consumed by native clients. The catalog validates each case. */
 export type McpResultFixtureCase = {
   id: string
@@ -38,3 +40,5 @@ export const financialMcpResultCases: readonly McpResultFixtureCase[] = [
     },
   },
 ]
+
+export const nativeMcpResultCases = [...financialMcpResultCases, ...optionMcpResultCases]

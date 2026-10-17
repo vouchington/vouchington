@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { financialMcpResultCases } from '@voucha/test-helpers/native-mcp-result-cases'
+import { optionMcpResultCases } from '@voucha/test-helpers/native-mcp-option-result-cases'
+import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import getMyFinancialProfileTool from '../../../mcp/get-my-financial-profile.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
@@ -11,6 +13,26 @@ import { buildMcpResultFixtures } from './mcp-result-cases.mts'
 
 describe('MCP result catalog generation', () => {
   const catalog = buildMcpCatalog([getMyFinancialProfileTool as unknown as Tool])
+
+  it('validates every member option fixture against its selected contract', () => {
+    const complete = buildMcpCatalog(ALL_TOOLS)
+    expect(buildMcpResultFixtures(complete, optionMcpResultCases).cases).toEqual(
+      optionMcpResultCases,
+    )
+    const bio = optionMcpResultCases.find(fixture => fixture.id.endsWith('read-my-profile.bio'))!
+    const links = optionMcpResultCases.find(fixture =>
+      fixture.id.endsWith('read-my-profile.links'),
+    )!
+    expect(() =>
+      buildMcpResultFixtures(complete, [{ ...bio, structuredContent: links.structuredContent }]),
+    ).toThrow('structuredContent')
+    const datedFeed = structuredClone(
+      optionMcpResultCases.find(fixture => fixture.id.endsWith('read-feed.posts'))!,
+    )
+    const results = datedFeed.structuredContent['results'] as Record<string, unknown>[]
+    results[0]!['shared_at'] = 'not-a-date'
+    expect(() => buildMcpResultFixtures(complete, [datedFeed])).toThrow('structuredContent')
+  })
 
   it('rejects a case for a tool absent from the exported catalog', () => {
     expect(() =>

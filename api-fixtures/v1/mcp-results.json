@@ -41,6 +41,157 @@
           }
         }
       }
+    },
+    {
+      "id": "native.mcp.read-my-profile.bio",
+      "tool": "read_my_profile",
+      "arguments": {
+        "option": "bio",
+        "arguments": {}
+      },
+      "structuredContent": {
+        "success": true,
+        "profile": {
+          "id": "0198ffff-0000-7000-8000-000000000001",
+          "markdown": "Example bio"
+        }
+      }
+    },
+    {
+      "id": "native.mcp.read-my-profile.links",
+      "tool": "read_my_profile",
+      "arguments": {
+        "option": "links",
+        "arguments": {}
+      },
+      "structuredContent": {
+        "success": true,
+        "results": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000002",
+            "user_id": "0198ffff-0000-7000-8000-000000000001",
+            "link_type": "github",
+            "handle": "example",
+            "name": null,
+            "url": null,
+            "url_id": null,
+            "image_id": null,
+            "image_placement": null,
+            "sort_order": 0,
+            "created_at": "2026-10-09T00:00:00.000Z",
+            "updated_at": "2026-10-09T00:00:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "native.mcp.read-feed.posts",
+      "tool": "read_feed",
+      "arguments": {
+        "option": "posts",
+        "arguments": {
+          "feed_type": "follow_users"
+        }
+      },
+      "structuredContent": {
+        "success": true,
+        "results": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000002",
+            "entity_id": "0198ffff-0000-7000-8000-000000000002",
+            "delivery_type": "share",
+            "shared_by_id": "0198ffff-0000-7000-8000-000000000001",
+            "shared_at": "2026-10-09T00:00:00.000Z"
+          }
+        ],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
+      }
+    },
+    {
+      "id": "native.mcp.read-feed.rss-items",
+      "tool": "read_feed",
+      "arguments": {
+        "option": "rss_items",
+        "arguments": {
+          "feed_type": "follow_rss_feeds"
+        }
+      },
+      "structuredContent": {
+        "success": true,
+        "results": [
+          {
+            "id": "0198ffff-0000-7000-8000-000000000002",
+            "entity_id": "0198ffff-0000-7000-8000-000000000002",
+            "delivery_type": "share",
+            "shared_by_id": "0198ffff-0000-7000-8000-000000000001",
+            "shared_at": "2026-10-09T00:00:00.000Z"
+          }
+        ],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
+      }
+    },
+    {
+      "id": "native.mcp.read-feed.referral-links",
+      "tool": "read_feed",
+      "arguments": {
+        "option": "referral_links",
+        "arguments": {
+          "feed_type": "follow_users"
+        }
+      },
+      "structuredContent": {
+        "success": true,
+        "results": [],
+        "page_info": {
+          "has_next_page": false,
+          "start_cursor": null,
+          "end_cursor": null
+        }
+      }
+    },
+    {
+      "id": "native.mcp.manage-bookmark.set",
+      "tool": "manage_bookmark",
+      "arguments": {
+        "option": "set",
+        "arguments": {
+          "entity_type": "topic",
+          "entity_id": "0198ffff-0000-7000-8000-000000000002",
+          "predicate": "follow"
+        }
+      },
+      "structuredContent": {
+        "success": true,
+        "bookmark": {
+          "subject_id": "0198ffff-0000-7000-8000-000000000001",
+          "object_id": "0198ffff-0000-7000-8000-000000000002",
+          "created_at": "2026-10-09T00:00:00.000Z",
+          "created_by_id": "0198ffff-0000-7000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "id": "native.mcp.manage-bookmark.remove",
+      "tool": "manage_bookmark",
+      "arguments": {
+        "option": "remove",
+        "arguments": {
+          "entity_type": "topic",
+          "entity_id": "0198ffff-0000-7000-8000-000000000002",
+          "predicate": "follow"
+        }
+      },
+      "structuredContent": {
+        "success": true
+      }
     }
   ]
 }

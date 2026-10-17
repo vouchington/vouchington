@@ -789,7 +789,15 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["communities:read"]
+              "voucha/requiredScopes": ["communities:read"],
+              "voucha/optionOutputPointers": {
+                "list_item_counts": "#/anyOf/0",
+                "list_items": "#/anyOf/1",
+                "members": "#/anyOf/2",
+                "pinned_posts": "#/anyOf/3",
+                "posts": "#/anyOf/4",
+                "details": "#/anyOf/5"
+              }
             }
           },
           "plan": "free",
@@ -1383,7 +1391,13 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["reference-data:read"]
+              "voucha/requiredScopes": ["reference-data:read"],
+              "voucha/optionOutputPointers": {
+                "membership_plans": "#/anyOf/0",
+                "platform_stats": "#/anyOf/1",
+                "countries": "#/anyOf/2",
+                "currencies": "#/anyOf/3"
+              }
             }
           },
           "plan": "free",
@@ -1977,7 +1991,13 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["topics:read"]
+              "voucha/requiredScopes": ["topics:read"],
+              "voucha/optionOutputPointers": {
+                "referral_program": "#/anyOf/0",
+                "compare": "#/anyOf/1",
+                "details": "#/anyOf/2",
+                "metrics": "#/anyOf/3"
+              }
             }
           },
           "plan": "free",
@@ -2429,7 +2449,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["communities:read"]
+              "voucha/requiredScopes": ["communities:read"],
+              "voucha/optionOutputPointers": {
+                "trending": "#/anyOf/0",
+                "search": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -2815,7 +2839,12 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["topics:read"]
+              "voucha/requiredScopes": ["topics:read"],
+              "voucha/optionOutputPointers": {
+                "trending_referral_programs": "#/anyOf/0",
+                "trending": "#/anyOf/1",
+                "search": "#/anyOf/2"
+              }
             }
           },
           "plan": "free",
@@ -3249,7 +3278,12 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["rss-feeds:read"]
+              "voucha/requiredScopes": ["rss-feeds:read"],
+              "voucha/optionOutputPointers": {
+                "search": "#/anyOf/0",
+                "trending": "#/anyOf/1",
+                "recommended": "#/anyOf/2"
+              }
             }
           },
           "plan": "free",
@@ -3614,7 +3648,12 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["rss-feeds:read"]
+              "voucha/requiredScopes": ["rss-feeds:read"],
+              "voucha/optionOutputPointers": {
+                "details": "#/anyOf/0",
+                "crawls": "#/anyOf/1",
+                "crawl": "#/anyOf/2"
+              }
             }
           },
           "plan": "free",
@@ -4072,7 +4111,13 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["rss-feed-items:read"]
+              "voucha/requiredScopes": ["rss-feed-items:read"],
+              "voucha/optionOutputPointers": {
+                "list": "#/anyOf/0",
+                "details": "#/anyOf/1",
+                "follow_context": "#/anyOf/2",
+                "votes": "#/anyOf/3"
+              }
             }
           },
           "plan": "free",
@@ -4464,7 +4509,12 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["feeds:read"]
+              "voucha/requiredScopes": ["feeds:read"],
+              "voucha/optionOutputPointers": {
+                "posts": "#/anyOf/0",
+                "rss_items": "#/anyOf/0",
+                "referral_links": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -5145,7 +5195,14 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["posts:read"]
+              "voucha/requiredScopes": ["posts:read"],
+              "voucha/optionOutputPointers": {
+                "ancestors": "#/anyOf/0",
+                "descendants": "#/anyOf/1",
+                "details": "#/anyOf/2",
+                "trending": "#/anyOf/3",
+                "search": "#/anyOf/4"
+              }
             }
           },
           "plan": "free",
@@ -5384,7 +5441,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["hostnames:read"]
+              "voucha/requiredScopes": ["hostnames:read"],
+              "voucha/optionOutputPointers": {
+                "top": "#",
+                "search": "#"
+              }
             }
           },
           "plan": "free",
@@ -5643,7 +5704,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["data-points:read"]
+              "voucha/requiredScopes": ["data-points:read"],
+              "voucha/optionOutputPointers": {
+                "topic_insights": "#/anyOf/0",
+                "search": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -5915,7 +5980,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["users:read"]
+              "voucha/requiredScopes": ["users:read"],
+              "voucha/optionOutputPointers": {
+                "details": "#/anyOf/0",
+                "search": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -6179,7 +6248,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["disputes:read"]
+              "voucha/requiredScopes": ["disputes:read"],
+              "voucha/optionOutputPointers": {
+                "list": "#/anyOf/0",
+                "get": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -6455,7 +6528,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["appeals:read"]
+              "voucha/requiredScopes": ["appeals:read"],
+              "voucha/optionOutputPointers": {
+                "list": "#/anyOf/0",
+                "get": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -6901,7 +6978,13 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["lists:read"]
+              "voucha/requiredScopes": ["lists:read"],
+              "voucha/optionOutputPointers": {
+                "containing": "#/anyOf/0",
+                "items": "#/anyOf/1",
+                "get": "#/anyOf/2",
+                "list": "#/anyOf/3"
+              }
             }
           },
           "plan": "free",
@@ -7389,7 +7472,12 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["profile:read"]
+              "voucha/requiredScopes": ["profile:read"],
+              "voucha/optionOutputPointers": {
+                "bio": "#/anyOf/0",
+                "links": "#/anyOf/1",
+                "overview": "#/anyOf/2"
+              }
             }
           },
           "plan": "free",
@@ -7612,7 +7700,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["preferences:read"]
+              "voucha/requiredScopes": ["preferences:read"],
+              "voucha/optionOutputPointers": {
+                "email": "#/anyOf/0",
+                "general": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -8076,7 +8168,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["notifications:read"]
+              "voucha/requiredScopes": ["notifications:read"],
+              "voucha/optionOutputPointers": {
+                "list": "#/anyOf/0",
+                "unread": "#/anyOf/1"
+              }
             }
           },
           "plan": "free",
@@ -8175,7 +8271,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["lists:read", "lists:write"]
+              "voucha/requiredScopes": ["lists:read", "lists:write"],
+              "voucha/optionOutputPointers": {
+                "list": "#",
+                "item": "#"
+              }
             }
           },
           "plan": "plus",
@@ -8372,7 +8472,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"]
+              "voucha/requiredScopes": ["referral-links:read", "referral-links:write"],
+              "voucha/optionOutputPointers": {
+                "activation": "#/anyOf/0",
+                "link": "#/anyOf/1"
+              }
             }
           },
           "plan": "plus",
@@ -8471,7 +8575,11 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["notifications:read", "notifications:write"]
+              "voucha/requiredScopes": ["notifications:read", "notifications:write"],
+              "voucha/optionOutputPointers": {
+                "all": "#/anyOf/0",
+                "one": "#/anyOf/1"
+              }
             }
           },
           "plan": "plus",
@@ -8609,7 +8717,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["bookmarks:read", "bookmarks:write"]
+              "voucha/requiredScopes": ["bookmarks:read", "bookmarks:write"],
+              "voucha/optionOutputPointers": {
+                "remove": "#/anyOf/0",
+                "set": "#/anyOf/1"
+              }
             }
           },
           "plan": "plus",
@@ -8951,7 +9063,12 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["profile:read", "profile:write"]
+              "voucha/requiredScopes": ["profile:read", "profile:write"],
+              "voucha/optionOutputPointers": {
+                "bio": "#/anyOf/0",
+                "display_identity": "#/anyOf/1",
+                "link": "#/anyOf/2"
+              }
             }
           },
           "plan": "plus",
@@ -9285,7 +9402,11 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["preferences:read", "preferences:write"]
+              "voucha/requiredScopes": ["preferences:read", "preferences:write"],
+              "voucha/optionOutputPointers": {
+                "email": "#/anyOf/0",
+                "general": "#/anyOf/1"
+              }
             }
           },
           "plan": "plus",
@@ -10932,7 +11053,15 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["votes:write"]
+              "voucha/requiredScopes": ["votes:write"],
+              "voucha/optionOutputPointers": {
+                "set_post": "#",
+                "clear_post": "#",
+                "set_topic": "#",
+                "clear_topic": "#",
+                "set_rss_feed_item": "#",
+                "clear_rss_feed_item": "#"
+              }
             }
           },
           "plan": "plus",
@@ -11779,7 +11908,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["rss-feed-items:read", "rss-feed-items:write"]
+              "voucha/requiredScopes": ["rss-feed-items:read", "rss-feed-items:write"],
+              "voucha/optionOutputPointers": {
+                "read": "#",
+                "unread": "#"
+              }
             }
           },
           "plan": "plus",
@@ -11900,7 +12033,11 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["rss-feed-items:read", "rss-feed-items:write"]
+              "voucha/requiredScopes": ["rss-feed-items:read", "rss-feed-items:write"],
+              "voucha/optionOutputPointers": {
+                "share": "#",
+                "send": "#"
+              }
             }
           },
           "plan": "plus",
@@ -11977,7 +12114,10 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"]
+              "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"],
+              "voucha/optionOutputPointers": {
+                "submit": "#"
+              }
             }
           },
           "plan": "plus",
@@ -12201,7 +12341,11 @@
               "idempotentHint": true
             },
             "_meta": {
-              "voucha/requiredScopes": ["posts:read", "posts:write"]
+              "voucha/requiredScopes": ["posts:read", "posts:write"],
+              "voucha/optionOutputPointers": {
+                "rss_feed_item": "#",
+                "story": "#"
+              }
             }
           },
           "plan": "plus",

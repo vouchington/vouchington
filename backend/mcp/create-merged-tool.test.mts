@@ -5,6 +5,8 @@ import {
 } from '../services/mcp-tools/build-tool-result.mts'
 import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
+import { toolToMcpTool } from './registry/adapters.mts'
+import { findSchemaViolation } from './schema-validator.mts'
 
 const routeA = { method: 'GET' as const, path: '/api/v1/examples/:id' }
 const routeB = { method: 'GET' as const, path: '/api/v1/examples' }
@@ -107,6 +109,54 @@ describe('createMergedTool', () => {
         merged.meta?.selectOutputSchema?.(args),
       ),
     ).toThrow(McpToolOutputMismatchError)
+  })
+
+  it('publishes selected output pointers after deduplicating shared source contracts', () => {
+    const tool = createMergedTool('read_dedup', 'Read Dedup', [
+      { option: 'first', source: source('get') },
+      { option: 'shared', source: source('get') },
+      { option: 'last', source: source('list') },
+    ])
+    const pointers = { first: '#/anyOf/0', shared: '#/anyOf/0', last: '#/anyOf/1' }
+    expect(tool.meta).toMatchObject({ optionOutputPointers: pointers })
+    const advertised = toolToMcpTool(tool)
+    expect(advertised['_meta']?.['voucha/optionOutputPointers']).toEqual(pointers)
+    const output = advertised.outputSchema!
+    const branches = output['anyOf'] as Record<string, unknown>[]
+    const selected = { ...branches[0], $defs: output['$defs'] }
+    expect(findSchemaViolation(selected, { success: true, get: { id: 'one' } })).toBeNull()
+    expect(
+      findSchemaViolation(selected, { success: true, list: { after: 'cursor' } }),
+    ).not.toBeNull()
+    expect(output['$defs']).toHaveProperty('Option0_Result')
+    expect(output['$defs']).not.toHaveProperty('Option0_Id')
+  })
+
+  it.each([
+    { get: '#/anyOf/0' },
+    { get: '#/anyOf/0', list: '#/anyOf/1', extra: '#' },
+    { get: '#/anyOf/0', list: '#/anyOf/9' },
+    { get: '#/anyOf/0', list: 'https://example.test/schema' },
+  ])('refuses to publish incomplete or invalid selected output pointers: %j', pointers => {
+    const tool = createMergedTool('read_invalid', 'Read Invalid', [
+      { option: 'get', source: source('get') },
+      { option: 'list', source: source('list') },
+    ])
+    expect(() =>
+      toolToMcpTool({ ...tool, meta: { ...tool.meta!, optionOutputPointers: pointers } }),
+    ).toThrow('selected output pointer')
+  })
+
+  it('points shared and single-option outputs at their complete output root', () => {
+    const shared = createMergedTool('read_shared', 'Read Shared', [
+      { option: 'first', source: source('get') },
+      { option: 'shared', source: source('get') },
+    ])
+    expect(shared.meta).toMatchObject({ optionOutputPointers: { first: '#', shared: '#' } })
+    const single = createMergedTool('read_single', 'Read Single', [
+      { option: 'get', source: source('get') },
+    ])
+    expect(single.meta).toMatchObject({ optionOutputPointers: { get: '#' } })
   })
 
   it('supports one closed option and refuses an empty group', async () => {
