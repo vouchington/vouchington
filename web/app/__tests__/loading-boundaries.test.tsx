@@ -6,6 +6,7 @@ import PodcastsLoading from '@/app/(podcasts)/podcasts/loading'
 import PostsLoading from '@/app/(posts)/posts/loading'
 import StoriesLoading from '@/app/(posts)/stories/loading'
 import CardsLoading from '@/app/(topics)/cards/loading'
+import DomainsLoading from '@/app/(topics)/domains/loading'
 import InstancesLoading from '@/app/(topics)/instances/loading'
 import ReferralProgramsLoading from '@/app/(topics)/referral-programs/loading'
 import RewardsProgramStatusesLoading from '@/app/(topics)/rewards-program-statuses/loading'
@@ -19,6 +20,7 @@ import NewsLoading from '@/app/news/loading'
 import NewsSourcesLoading from '@/app/news-sources/loading'
 import { AsideSkeleton } from '@/components/asides/aside-skeleton'
 import { CommunitiesListSkeleton } from '@/components/communities/communities-list-skeleton'
+import { DomainListSkeleton } from '@/components/domains/domain-list-skeleton'
 import { FeedSkeleton } from '@/components/feed/feed-skeleton'
 import { SettingsPageSkeleton } from '@/components/my/settings-page-skeleton'
 import { NewsListSkeleton } from '@/components/news/news-list-skeleton'
@@ -57,6 +59,12 @@ const loadingBoundaries: Array<{
   { aside: AsideSkeleton, loading: PostsLoading, name: 'posts', skeleton: PostListSkeleton },
   { aside: AsideSkeleton, loading: StoriesLoading, name: 'stories', skeleton: PostListSkeleton },
   { aside: AsideSkeleton, loading: CardsLoading, name: 'cards', skeleton: TopicListSkeleton },
+  {
+    loading: DomainsLoading,
+    name: 'domains',
+    showFooter: false,
+    skeleton: DomainListSkeleton,
+  },
   {
     aside: AsideSkeleton,
     loading: InstancesLoading,
@@ -106,6 +114,7 @@ const skeletons: Array<{
 }> = [
   { component: AsideSkeleton, count: 4, name: 'aside' },
   { component: CommunitiesListSkeleton, count: 7, name: 'communities list' },
+  { component: DomainListSkeleton, count: 14, name: 'domain list' },
   { component: FeedSkeleton, count: 6, name: 'feed' },
   { component: SettingsPageSkeleton, count: 6, name: 'settings page' },
   { component: NewsListSkeleton, count: 22, name: 'news list' },
