@@ -102,6 +102,8 @@ rule:
                   $$$OPTIONS)
               - pattern: execFileSync('git', ['remote', '-v'], $$$OPTIONS)
               - pattern: >-
+                  execFileSync('git', ['rev-parse', '--verify', '--quiet', $REF], $$$OPTIONS)
+              - pattern: >-
                   execFileSync('git', ['config', '--get-regexp', '^remote\\..+\\.gh-resolved$'],
                   $$$OPTIONS)
               - pattern: execFileSync('git', ['show', $HEAD_PATH], $$$OPTIONS)
@@ -237,6 +239,7 @@ examples:
   - code: |
       import { execFileSync, spawnSync } from 'node:child_process'
       execFileSync('git', ['remote', '-v'], { cwd })
+      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { cwd })
       execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], { cwd })
       spawnSync('grep', ['-rlF', '--', value, 'playwright/tests'], { cwd })
       spawnSync(join(cwd, 'node_modules', '.bin', 'oxfmt'), [filePath], { cwd })
