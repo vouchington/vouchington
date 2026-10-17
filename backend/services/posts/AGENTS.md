@@ -7,4 +7,4 @@
 - Keep `topic_recommendation` out of generic/public routes/tools; embeddings include rationale and proposed topic payload.
 - Lists use `buildPrivacyFilter()`; direct reads use `canViewPost()` and return 404 when unauthorized.
 - Authorization lives in `authorization.mts`. Review ratings use individual CRUD, never bulk replacement through post PATCH.
-- `post_type` changes follow [the enum ripple checklist](../../../docs/development/finite-enum-ripple-checklist.md); use [API](../../api/v1/posts/README.md) and [search](../../../docs/overview/architecture/services/README.md) contracts.
+- `post_type` changes follow [the enum ripple checklist](../../../docs/development/finite-enum-ripple-checklist.md); use the [search](../../../docs/overview/architecture/services/README.md) contracts.

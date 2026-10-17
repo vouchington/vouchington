@@ -1,7 +1,5 @@
 # EXPLAIN ANALYZE Framework
 
-Source entrypoint: [backend/scripts/explain-analyze/README.md](../../../../backend/scripts/explain-analyze/README.md)
-
 A development and CI tool that profiles SQL query plans for key service queries.
 [Suite rule R4](../../tests.md#test-suite-rules) puts realistic data sizes, query plans, wall time,
 heap, and pool checks here; unit tests cross the same boundary with the smallest fixture. Commands

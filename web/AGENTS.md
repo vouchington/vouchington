@@ -7,7 +7,7 @@
 - Server components use `getCurrentUser()`; clients use `useAuth()` without `currentUser` crossing RSC/client boundaries. GET helpers are already React-cached; follow [server API rules](lib/api/server/AGENTS.md).
 - Mutations call client API helpers, never inline `'use server'` proxies. Entity URLs use [canonical link helpers](lib/links/AGENTS.md), never hand-built templates.
 - External images use `/sideload/` through `ProxiedImage`, never bare `next/image` URLs.
-- Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build args; follow [public config](../docs/overview/infrastructure/reference-environment-variables-web-build-time-and-runtime-public-config.md).
+- Browser config uses runtime public bootstrap (`IMAGE_ORIGIN` pattern), never new Docker build args.
 - Production test IDs use `data-pw`, never `data-testid`. React Compiler is enabled; avoid identity-only memoization under [pure component contracts](../docs/requirements/navigation/reference-components-patterns.md).
 - Load [web Vitest authoring](../.agents/skills/web-vitest-test-authoring/SKILL.md) for tests/fixtures/mocks. API changes update fixtures and Swift/.NET tests under the root client-parity contract.
 - Web tests follow the [suite rules](../docs/development/tests.md#test-suite-rules).

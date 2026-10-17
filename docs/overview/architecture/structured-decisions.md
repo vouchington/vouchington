@@ -138,7 +138,6 @@ ordinary convenience wrapper that prepares once and calls classifier persistence
 ## Related
 
 - [AI agents](ai-agents.md)
-- [Environment variables](../infrastructure/reference-environment-variables-ai-ml.md)
 - Structured-decision module
 - Classifier call layer
 - Classifier persistence service

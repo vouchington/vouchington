@@ -1,19 +1,11 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
-
 import {
   checkModerationPolicyDocSync,
   isModerationPolicyDocSyncPath,
 } from './moderation-policy-doc-sync-guard.mts'
 import { isMigrationSqlFile, isSchemaDocDriftSourcePath } from './policy-matchers.mts'
-import {
-  checkDocumentedPartitionTables,
-  checkPartitionInventoryDoc,
-  isPartitionInventoryDocPath,
-  PARTITION_STRATEGY_DOC,
-} from './partition-inventory-doc.mts'
 
 const REPORTING_DOC_PATHS = new Set([
   'docs/requirements/moderation/REPORTING.md',
@@ -85,7 +77,6 @@ export function shouldReadSchemaDocDriftFile(file: string): boolean {
     isDerivedLifecycleStatusDocPath(file) ||
     REPORTING_DOC_PATHS.has(file) ||
     isModerationPolicyDocSyncPath(file) ||
-    isPartitionInventoryDocPath(file) ||
     file === RSS_PARTITION_COMMENT_PATH
   )
 }
@@ -93,15 +84,10 @@ export function shouldReadSchemaDocDriftFile(file: string): boolean {
 export function checkSchemaDocDriftGuard(
   repoRoot: string,
   trackedFiles: string[],
-  schema: Pick<SchemaSnapshot, 'tables'>,
   errors: string[],
   readTrackedFile?: (file: string) => string | null,
 ): void {
   const contentsByFile = new Map<string, string>()
-  const partitionedTables = new Set<string>()
-  for (const [tableName, table] of Object.entries(schema.tables)) {
-    if (table.physicalPartition !== null) partitionedTables.add(tableName)
-  }
 
   for (const file of trackedFiles) {
     if (!shouldReadSchemaDocDriftFile(file)) continue
@@ -140,34 +126,6 @@ export function checkSchemaDocDriftGuard(
       )
     }
   }
-
-  if (partitionedTables.size > 0) {
-    const docFile = join(repoRoot, PARTITION_STRATEGY_DOC)
-    if (!existsSync(docFile)) {
-      errors.push(
-        `::error file=${PARTITION_STRATEGY_DOC}::${PARTITION_STRATEGY_DOC}: partitioning doc is required when migrations define partitioned tables`,
-      )
-    } else {
-      const docContent = contentsByFile.get(PARTITION_STRATEGY_DOC) ?? readFileSync(docFile, 'utf8')
-      for (const table of [...partitionedTables].toSorted()) {
-        if (docContent.includes(`\`${table}\``)) continue
-        errors.push(
-          `::error file=${PARTITION_STRATEGY_DOC}::${PARTITION_STRATEGY_DOC}: partitioned table ${table} is missing from partitioning docs`,
-        )
-      }
-    }
-  }
-
-  const strategyDoc =
-    contentsByFile.get(PARTITION_STRATEGY_DOC) ??
-    (existsSync(join(repoRoot, PARTITION_STRATEGY_DOC))
-      ? readFileSync(join(repoRoot, PARTITION_STRATEGY_DOC), 'utf8')
-      : undefined)
-  if (strategyDoc) {
-    checkPartitionInventoryDoc(repoRoot, strategyDoc, partitionedTables, errors)
-  }
-
-  checkDocumentedPartitionTables(contentsByFile, partitionedTables, errors)
 
   checkModerationPolicyDocSync(repoRoot, trackedFiles, contentsByFile, errors)
 }

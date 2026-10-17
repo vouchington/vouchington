@@ -107,8 +107,6 @@ binary.
 
 ## Reference index
 
-- [Test Helpers](../../backend/test-helpers/README.md)
-- [API Fixtures](../../backend/test-helpers/api-fixtures/README.md)
 - [Harness Engineering — Agent Observability](harness-engineering.md)
 - [Merge Authority](merge-authority.md)
 - [OpenTelemetry — Local Tracing](opentelemetry.md)
@@ -131,5 +129,6 @@ binary.
 - [Vitest Mock Typing](reference-tests-vitest-mock-typing.md)
 - [Vitest Projects](reference-tests-vitest-projects.md)
 - [Glide-MQ Testing with TestQueue and TestWorker](testing/backend/glide-mq-testing.md)
+- [API Fixtures](testing/backend/api-fixtures.md)
 - [Translation catalog and locale checks](reference-tests-translation-catalog-and-locale-checks.md)
 - [Public post eligibility](../overview/architecture/reference-post-lifecycle-public-eligibility.md)
