@@ -4901,12 +4901,6 @@ rules:
         ]
       allowEnumTypes: true
       allow:
-        - object: 'constraint:bluesky_follow_records.fk_blue_foll_reco__follower_bluesky_did__follower_authorization'
-          reason: 'replaced by #2512'
-        - object: 'constraint:bluesky_link_completions.bluesky_link_completions_bluesky_did_authorization_id_fkey'
-          reason: 'replaced by #2512'
-        - object: 'constraint:bluesky_linked_accounts.bluesky_linked_accounts_pkey'
-          reason: 'replaced by #2512'
         - object: 'constraint:migrations.migrations_pkey'
           reason: 'owned by the migration runner'
 

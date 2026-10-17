@@ -58,7 +58,10 @@ export async function finalizeNativeBlueskyAccountLink(
 
 async function findCompletion(flowId: string): Promise<{ bluesky_did: string } | undefined> {
   const { rows } = await read<{ bluesky_did: string }>(sql`/* findNativeBlueskyLinkCompletion */
-    SELECT bluesky_did FROM bluesky_link_completions WHERE authorization_id = ${flowId}`)
+    SELECT account.bluesky_did
+    FROM bluesky_link_completions completion
+    JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.authorization_id
+    WHERE completion.authorization_id = ${flowId}`)
   return rows[0]
 }
 
@@ -68,10 +71,12 @@ async function getLockedCompletion(
 ): Promise<CompletionRow> {
   const { rows } = await read<CompletionRow>(
     sql`/* getLockedNativeBlueskyLinkCompletion */
-      SELECT authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
-      FROM bluesky_link_completions
-      WHERE authorization_id = ${flowId}
-      FOR UPDATE`,
+      SELECT completion.authorization_id, completion.user_id, account.bluesky_did,
+             completion.handle, completion.token_hash, completion.expires_at
+      FROM bluesky_link_completions completion
+      JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.authorization_id
+      WHERE completion.authorization_id = ${flowId}
+      FOR UPDATE OF completion`,
     { query },
   )
   const completion = rows[0]

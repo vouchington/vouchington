@@ -68,10 +68,9 @@ export async function resolveNativeBlueskyCallbackFailure(
       const expiresAt = new Date(Date.now() + COMPLETION_TTL_MS)
       const { rowCount } = await query(sql`/* resolveNativeBlueskyCallbackFailure:persist */
         INSERT INTO bluesky_link_completions (
-          authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
+          authorization_id, user_id, handle, token_hash, expires_at
         )
-        SELECT ${flowId}, ${authorization.user_id}, ${authorization.claimed_did},
-               ${authorization.handle}, ${tokenHash}, ${expiresAt}
+        SELECT ${flowId}, ${authorization.user_id}, ${authorization.handle}, ${tokenHash}, ${expiresAt}
         WHERE EXISTS (
           SELECT 1 FROM bluesky_linked_accounts account
           WHERE account.bluesky_did = ${authorization.claimed_did}

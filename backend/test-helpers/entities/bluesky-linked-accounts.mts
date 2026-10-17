@@ -142,11 +142,10 @@ export async function insertTestBlueskyLinkCompletion(options: {
   }
   await write(sql`/* insertTestBlueskyLinkCompletion */
     INSERT INTO bluesky_link_completions (
-      authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
+      authorization_id, user_id, handle, token_hash, expires_at
     ) VALUES (
       ${options.flowId},
       ${options.userId},
-      ${options.did},
       ${options.handle ?? `${v7()}.bsky.social`},
       ${tokenHash},
       ${options.expiresAt ?? new Date(Date.now() + 10 * 60 * 1000)}

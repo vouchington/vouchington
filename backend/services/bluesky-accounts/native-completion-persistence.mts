@@ -97,9 +97,9 @@ export async function persistNativeBlueskyLinkCompletion(
         -- One authorization_id is supplied per native completion; the SELECT can yield at most one row.
         /* no-mistakes: deadlock-safe */
         INSERT INTO bluesky_link_completions (
-          authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
+          authorization_id, user_id, handle, token_hash, expires_at
         )
-        SELECT ${input.flowId}, ${input.userId}, ${input.did}, ${input.handle}, ${input.tokenHash}, ${expiresAt}
+        SELECT ${input.flowId}, ${input.userId}, ${input.handle}, ${input.tokenHash}, ${expiresAt}
         FROM bluesky_link_authorizations link_auth
         WHERE link_auth.id = ${input.flowId}
           AND link_auth.user_id = ${input.userId}
@@ -116,7 +116,6 @@ export async function persistNativeBlueskyLinkCompletion(
         ON CONFLICT (authorization_id) DO UPDATE
         SET token_hash = EXCLUDED.token_hash
         WHERE bluesky_link_completions.user_id = EXCLUDED.user_id
-          AND bluesky_link_completions.bluesky_did = EXCLUDED.bluesky_did
           AND bluesky_link_completions.token_hash = EXCLUDED.token_hash`,
         { query },
       )

@@ -8,13 +8,11 @@ export async function insertTestBlueskyFollowReceipt(
 ): Promise<void> {
   await write(sql`/* insertTestBlueskyFollowReceipt */
     INSERT INTO bluesky_follow_records (
-      follower_user_id, followee_user_id, follower_bluesky_did,
-      follower_authorization_id, record_uri
+      follower_user_id, followee_user_id, follower_authorization_id, record_uri
     )
     SELECT
       ${followerUserId},
       ${followeeUserId},
-      bluesky_did,
       link_authorization_id,
       ${`at://did:plc:test/app.bsky.graph.follow/${v7().replaceAll('-', '')}`}
     FROM bluesky_linked_accounts

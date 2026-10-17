@@ -10,8 +10,12 @@ export async function deleteBlueskyDataForUserBatch(
     authorization_id: string
     bluesky_did: string
   }>(sql`/* deleteBlueskyDataForUserBatch:completions */
-    SELECT authorization_id, bluesky_did FROM bluesky_link_completions
-    WHERE user_id = ${userId} ORDER BY authorization_id LIMIT ${batchSize}`)
+    SELECT completion.authorization_id, account.bluesky_did
+    FROM bluesky_link_completions completion
+    JOIN bluesky_linked_accounts account
+      ON account.link_authorization_id = completion.authorization_id
+    WHERE completion.user_id = ${userId}
+    ORDER BY completion.authorization_id LIMIT ${batchSize}`)
   if (completions.length > 0) {
     await lockBlueskyDids(
       completions.map(row => row.bluesky_did),
