@@ -45,6 +45,7 @@ describe('backend-unit file progress reporter', () => {
   it('appends the reporter only when diagnostics are enabled', () => {
     vi.stubEnv('VITEST_CI_REPORTERS', 'run')
     vi.stubEnv('VITEST_STORYBOOK_BROWSER', '')
+    vi.stubEnv('VITEST_FILE_PROGRESS_FILE', undefined)
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     const baseline = ciReporters()
     vi.stubEnv('VITEST_DIAGNOSTICS', '0')

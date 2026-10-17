@@ -17,10 +17,10 @@ export function unfinishedFiles(progress: string): string[] {
   return [...open]
 }
 
-export function formatDeadlineReport(progress: string): string {
+export function formatDeadlineReport(progress: string, label = 'backend-unit-deadline'): string {
   const files = unfinishedFiles(progress)
-  const lines = [`[backend-unit-deadline] ${files.length} test file(s) started and not finished`]
-  for (const file of files) lines.push(`[backend-unit-deadline] unfinished ${file}`)
+  const lines = [`[${label}] ${files.length} test file(s) started and not finished`]
+  for (const file of files) lines.push(`[${label}] unfinished ${file}`)
   return `${lines.join('\n')}\n`
 }
 

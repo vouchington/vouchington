@@ -53,6 +53,8 @@ jobs:
         env:
           VITEST_CI_REPORTERS: run
           VITEST_JUNIT_OUTPUT_FILE: tooling-test-report.junit.xml
+          # The runner's 7-minute wall clock names unfinished files from this file before the step timeout.
+          VITEST_FILE_PROGRESS_FILE: ${{ github.workspace }}/tooling-file-progress.log
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: node ci/tooling-test-runner.mts --workflow-projects --bail=3
         timeout-minutes: 8

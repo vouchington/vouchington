@@ -1,4 +1,7 @@
 import { EventEmitter } from 'node:events'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 import {
@@ -8,6 +11,7 @@ import {
 import { TOOLING_HANG_GRACE_MS } from './tooling-test-hang-watchdog.mts'
 import {
   buildToolingVitestArgs,
+  reportToolingUnfinished,
   runToolingTests,
   runToolingTestsWatched,
   toolingCoverageEnabled,
@@ -107,5 +111,26 @@ describe('tooling test runner', () => {
     interval?.()
     expect(killed).toEqual([{ pid: 42, signal: 'SIGKILL' }])
     await expect(run).resolves.toEqual({ code: null, signal: 'SIGKILL' })
+  })
+
+  it('reports unfinished files and top processes from the progress file', () => {
+    const file = path.join(mkdtempSync(path.join(tmpdir(), 'tooling-progress-')), 'progress.log')
+    writeFileSync(
+      file,
+      '[backend-unit-file] event=start module="a.test.mts"\n' +
+        '[backend-unit-file] event=start module="b.test.mts"\n' +
+        '[backend-unit-file] event=finish module="a.test.mts" state=passed\n',
+    )
+    const report = reportToolingUnfinished(file, () => 'PID RSS\n1 2\n')
+    expect(report).toContain('[tooling-deadline] 1 test file(s) started and not finished')
+    expect(report).toContain('[tooling-deadline] unfinished b.test.mts')
+    expect(report).toContain('[tooling-deadline] ps 1 2')
+  })
+
+  it('reports when no progress file was recorded', () => {
+    expect(reportToolingUnfinished(undefined, () => '')).toContain('[tooling-deadline] 0 test')
+    expect(reportToolingUnfinished('/nonexistent/progress.log', () => '')).toBe(
+      '[tooling-deadline] no file progress was recorded\n',
+    )
   })
 })

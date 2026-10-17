@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 
 import {
   toolingTestProjectNames,
   toolingWorkflowProjectNames,
 } from '../test-helpers/vitest-config/tooling-project-registry.mts'
+import { formatDeadlineReport } from './backend-unit-unfinished-files.mts'
 import { propagateVitestChildCompletion } from './run-vitest-project-group.mts'
 import {
   startToolingHangWatchdog,
@@ -25,7 +27,7 @@ export type ToolingTestResult = {
 
 export type ToolingWatchedRunDeps = Pick<
   ToolingHangWatchdogDeps,
-  'clearInterval' | 'killProcessGroup' | 'now' | 'setInterval' | 'stderr'
+  'clearInterval' | 'killProcessGroup' | 'now' | 'reportUnfinished' | 'setInterval' | 'stderr'
 > & {
   offParentSignal: (signal: NodeJS.Signals, listener: () => void) => void
   onParentSignal: (signal: NodeJS.Signals, listener: () => void) => void
@@ -43,6 +45,32 @@ export function buildToolingVitestArgs(args: string[]): string[] {
   const projects = workflowProjects ? toolingWorkflowProjectNames : toolingTestProjectNames
 
   return ['vitest', 'run', ...projects.flatMap(project => ['--project', project]), ...vitestArgs]
+}
+
+/** Names the files the progress reporter saw start but not finish, plus the largest processes. */
+export function reportToolingUnfinished(
+  progressFile: string | undefined,
+  topProcesses: () => string = () =>
+    (
+      spawnSync('ps', ['-eo', 'pid,rss,pmem,etime,args', '--sort=-rss'], { encoding: 'utf8' })
+        .stdout ?? ''
+    )
+      .split('\n')
+      .slice(0, 15)
+      .join('\n'),
+): string {
+  let progress = ''
+  try {
+    progress = progressFile ? readFileSync(progressFile, 'utf8') : ''
+  } catch {
+    return '[tooling-deadline] no file progress was recorded\n'
+  }
+  const processes = topProcesses()
+    .split('\n')
+    .filter(Boolean)
+    .map(line => `[tooling-deadline] ps ${line}\n`)
+    .join('')
+  return `${formatDeadlineReport(progress, 'tooling-deadline')}${processes}`
 }
 
 function killProcessGroup(pid: number, signal: NodeJS.Signals): void {
@@ -101,6 +129,7 @@ export async function runToolingTestsWatched(
     setInterval: (callback, ms) => setInterval(callback, ms),
     clearInterval: handle => clearInterval(handle as NodeJS.Timeout),
     killProcessGroup,
+    reportUnfinished: () => reportToolingUnfinished(baseEnv.VITEST_FILE_PROGRESS_FILE),
     onParentSignal: (signal, listener) => process.on(signal, listener),
     offParentSignal: (signal, listener) => process.off(signal, listener),
     stderr: process.stderr,

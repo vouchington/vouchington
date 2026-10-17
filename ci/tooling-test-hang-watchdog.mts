@@ -3,8 +3,11 @@ import { formatTeardownOverrunDiagnostics } from '../test-helpers/vitest-teardow
 /** Root vitest.config.mts teardownTimeout. */
 export const TOOLING_TEARDOWN_TIMEOUT_MS = 20_000
 export const TOOLING_HANG_GRACE_MS = 10_000
-/** Well under tests-tooling.yml's 16-minute step. Local runs omit this cap. */
-export const TOOLING_HANG_WALL_CLOCK_MS = 12 * 60_000
+/**
+ * One minute under tests-tooling.yml's 8-minute "Run tooling tests" step, so the kill and its
+ * diagnostics land before the step timeout cancels the runner with no output. Local runs omit it.
+ */
+export const TOOLING_HANG_WALL_CLOCK_MS = 7 * 60_000
 const PENDING_LIMIT = 512
 
 export const WORKER_TERMINATE_PATTERN = /Timeout terminating (?:threads|forks) worker/
@@ -26,6 +29,8 @@ export type ToolingHangWatchdogDeps = {
   clearInterval: (handle: unknown) => void
   killProcessGroup: (pid: number, signal: NodeJS.Signals) => void
   now: () => number
+  /** Extra kill-time diagnostics, such as the test files that never finished. */
+  reportUnfinished?: () => string
   setInterval: (callback: () => void, ms: number) => unknown
   stderr: Pick<NodeJS.WriteStream, 'write'>
 }
@@ -88,8 +93,13 @@ export function startToolingHangWatchdog(
   const timer = deps.setInterval(() => {
     if (killed || !shouldKillToolingHang(state, deps.now())) return
     killed = true
-    deps.stderr.write(formatTeardownOverrunDiagnostics())
-    deps.killProcessGroup(pid, 'SIGKILL')
+    try {
+      deps.stderr.write(formatTeardownOverrunDiagnostics())
+      const unfinished = deps.reportUnfinished?.()
+      if (unfinished) deps.stderr.write(unfinished)
+    } finally {
+      deps.killProcessGroup(pid, 'SIGKILL')
+    }
   }, 1000)
   return {
     onOutput: (chunk, stream) => {
