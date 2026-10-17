@@ -10,6 +10,7 @@ import {
   type FeatureFlags,
 } from '@ts-shared/feature-flags'
 import { getBrowserRuntimePublicConfig } from '@/lib/runtime-public-config'
+import { featureFlagCookieMaxLengthFromEnv } from './cookie-max-length'
 
 const featureFlagCookieCodec: FeatureFlagCookieCodec = {
   encodeBase64: value => btoa(String.fromCodePoint(...new TextEncoder().encode(value))),
@@ -19,19 +20,20 @@ const featureFlagCookieCodec: FeatureFlagCookieCodec = {
 
 function getFeatureFlagCookieOptions(): FeatureFlagCookieOptions {
   const runtimePublicConfig = getBrowserRuntimePublicConfig()
-  const fallbackMaxCookieLength =
-    typeof window === 'undefined'
-      ? (process.env.NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH ??
-        process.env.FEATURE_FLAG_COOKIE_MAX_LENGTH)
-      : undefined
-  return {
-    maxCookieLength: parseFeatureFlagCookieMaxLength(
-      runtimePublicConfig.featureFlagCookieMaxLength === undefined
-        ? fallbackMaxCookieLength
-        : String(runtimePublicConfig.featureFlagCookieMaxLength),
-      DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-    ),
+  if (runtimePublicConfig.featureFlagCookieMaxLength !== undefined) {
+    return {
+      maxCookieLength: parseFeatureFlagCookieMaxLength(
+        String(runtimePublicConfig.featureFlagCookieMaxLength),
+        DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
+      ),
+    }
   }
+  // Browser reads keep the default until the runtime-public bootstrap arrives. Server
+  // reads, including safe cookie forwarding, use the same resolution as that bootstrap.
+  if (typeof window === 'undefined') {
+    return { maxCookieLength: featureFlagCookieMaxLengthFromEnv() }
+  }
+  return { maxCookieLength: DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH }
 }
 
 export { FF_COOKIE, type FeatureFlags }

@@ -66,6 +66,16 @@ describe('feature flag cookie helpers', () => {
     expect(parseFeatureFlagCookie(encoded)).toEqual({})
   })
 
+  it('uses the runtime feature-flag length when the public length is an SSM placeholder', () => {
+    const encoded = encodeFeatureFlagCookie({ memberships: true })
+    vi.stubGlobal('window', undefined)
+    vi.stubEnv('NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH', 'PLACEHOLDER')
+    vi.stubEnv('FEATURE_FLAG_COOKIE_MAX_LENGTH', String(encoded.length - 1))
+
+    expect(parseFeatureFlagCookie(encoded)).toEqual({})
+    expect(safeFeatureFlagCookiePart(encoded)).toBeNull()
+  })
+
   it('builds only safe ff cookie parts', () => {
     const encoded = encodeFeatureFlagCookie({ memberships: true })
 

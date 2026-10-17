@@ -64,7 +64,9 @@ describe('runtime public config server helpers', () => {
   it('ignores SSM placeholder values before serializing runtime public config', () => {
     const config = getServerRuntimePublicConfig(
       {
+        FEATURE_FLAG_COOKIE_MAX_LENGTH: '2048',
         NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 'PLACEHOLDER',
+        NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH: 'PLACEHOLDER',
         NEXT_PUBLIC_GITHUB_CLIENT_ID: 'PLACEHOLDER',
         NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY: 'PLACEHOLDER',
         NODE_ENV: 'production',
@@ -72,6 +74,7 @@ describe('runtime public config server helpers', () => {
       { allowTurnstileTestKey: true },
     )
 
+    expect(config.featureFlagCookieMaxLength).toBe(2048)
     expect(config.githubClientId).toBeUndefined()
     expect(config.turnstileSiteKey).toBe(TURNSTILE_TEST_SITE_KEY)
     expect(config.webPushPublicKey).toBeUndefined()

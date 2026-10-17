@@ -1,10 +1,7 @@
 import 'server-only'
 
-import {
-  DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-  parseFeatureFlagCookieMaxLength,
-} from '@ts-shared/feature-flags'
 import { getSentryDsnConfig } from '@ts-shared/utils/sentry-deployment-gate'
+import { featureFlagCookieMaxLengthFromEnv } from './feature-flags/cookie-max-length'
 import { TURNSTILE_TEST_SITE_KEY, TURNSTILE_TEST_SITE_KEYS } from './turnstile-config'
 import { escapeInlineScriptJson } from './utils/inline-script-json'
 import {
@@ -40,13 +37,7 @@ export function getServerRuntimePublicConfig(
     appleClientId: firstClean(env.NEXT_PUBLIC_APPLE_CLIENT_ID, env.APPLE_CLIENT_ID),
     environment: clean(env.ENVIRONMENT),
     facebookAppId: firstClean(env.NEXT_PUBLIC_FACEBOOK_APP_ID, env.FACEBOOK_APP_ID),
-    featureFlagCookieMaxLength: parseFeatureFlagCookieMaxLength(
-      firstClean(
-        env.NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-        env.FEATURE_FLAG_COOKIE_MAX_LENGTH,
-      ),
-      DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-    ),
+    featureFlagCookieMaxLength: featureFlagCookieMaxLengthFromEnv(env),
     githubClientId: firstClean(env.NEXT_PUBLIC_GITHUB_CLIENT_ID, env.GITHUB_CLIENT_ID),
     googleClientId: firstClean(env.NEXT_PUBLIC_GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_ID),
     gtmId: firstClean(env.NEXT_PUBLIC_GTM_ID, env.GTM_ID),
