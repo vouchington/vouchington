@@ -441,8 +441,8 @@
   },
   {
     "annotation": "getPrivateUserByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Self profile and collection preambles reuse the authenticated user; unresolved repeats remain in identity, moderation, relation, MCP, and user mutation flows (#3113)",
+    "issue": 3113
   },
   {
     "annotation": "getPublicUserByAny",

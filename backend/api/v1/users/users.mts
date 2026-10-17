@@ -2,7 +2,6 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   getPublicUserByAny,
-  getPrivateUserByAny,
   isAdminUser,
   searchAdminUsers,
   searchUsers,
@@ -88,9 +87,7 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
 
   // Check if searching for self to return private view
   const isSelf = currentUser?.username?.toLowerCase() === validatedUsername.toLowerCase()
-  const user = isSelf
-    ? await getPrivateUserByAny(validatedUsername)
-    : await getPublicUserByAny(validatedUsername)
+  const user = isSelf ? currentUser : await getPublicUserByAny(validatedUsername)
 
   ctx.assert(user, 404, 'User not found')
 

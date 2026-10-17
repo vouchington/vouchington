@@ -46,7 +46,10 @@ app.route('/api/v1/users/:idOrSlug/data-request').post(async (ctx: Context) => {
   )
   validateRequestContract(ctx, 'POST:/api/v1/users/:idOrSlug/data-request', { path: ctx.params })
 
-  const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
+  const idOrSlug = ctx.params.idOrSlug!
+  const isSelf =
+    currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+  const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   ctx.assert(user, 404, 'User not found')
   if (currentUser.id !== user.id) assertNotSuspended(currentUser)
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')
@@ -74,7 +77,10 @@ app.route('/api/v1/users/:idOrSlug/data-request').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:idOrSlug/data-request')
   validateRequestContract(ctx, 'GET:/api/v1/users/:idOrSlug/data-request', { path: ctx.params })
 
-  const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
+  const idOrSlug = ctx.params.idOrSlug!
+  const isSelf =
+    currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+  const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   ctx.assert(user, 404, 'User not found')
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')
 
@@ -104,7 +110,10 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
     path: ctx.params,
   })
 
-  const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
+  const idOrSlug = ctx.params.idOrSlug!
+  const isSelf =
+    currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+  const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   ctx.assert(user, 404, 'User not found')
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')
 

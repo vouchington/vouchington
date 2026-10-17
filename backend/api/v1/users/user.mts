@@ -55,7 +55,7 @@ app
       currentUser?.id === idOrSlug ||
       (currentUser?.username && idOrSlug.toLowerCase() === currentUser.username.toLowerCase())
 
-    const selfUser = isSelf ? await getPrivateUserByIdOrSlug(idOrSlug) : null
+    const selfUser = isSelf ? currentUser : null
     let resolvedUser
     if (isSelf) {
       ctx.assert(selfUser, 404, 'User not found')
@@ -115,7 +115,10 @@ app
       'DELETE:/api/v1/users/:idOrSlug',
     )
     validateRequestContract(ctx, 'DELETE:/api/v1/users/:idOrSlug', { path: ctx.params })
-    const user = await getPrivateUserByIdOrSlug(ctx.params.idOrSlug!)
+    const idOrSlug = ctx.params.idOrSlug!
+    const isSelf =
+      currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+    const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
     ctx.assert(user, 404, 'User not found')
     if (currentUser.id !== user.id) assertNotSuspended(currentUser)
     await deleteUser(currentUser, user)

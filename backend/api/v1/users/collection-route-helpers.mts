@@ -45,9 +45,11 @@ export async function resolveTargetUser(
   }
 
   const target =
-    options.privateCollection || isSelf
-      ? await getPrivateUserByIdOrSlug(idOrSlug)
-      : await getPublicUserByIdOrSlug(idOrSlug)
+    isSelf && currentUser
+      ? currentUser
+      : options.privateCollection
+        ? await getPrivateUserByIdOrSlug(idOrSlug)
+        : await getPublicUserByIdOrSlug(idOrSlug)
 
   ctx.assert(target, 404, 'User not found')
   const targetUser = target
