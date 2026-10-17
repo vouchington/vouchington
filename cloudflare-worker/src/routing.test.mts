@@ -35,7 +35,7 @@ describe('routing', () => {
     }
   })
 
-  it.each(['facebook', 'x', 'github', 'linkedin', 'microsoft'])(
+  it.each(['facebook', 'x', 'github', 'google', 'linkedin', 'microsoft'])(
     'routes the %s OAuth broker callback to its canonical backend path',
     provider => {
       const pathname = `/auth/callback/${provider}/broker`
@@ -52,10 +52,10 @@ describe('routing', () => {
   })
 
   it.each([
-    '/auth/callback/google/broker',
     '/auth/callback/github/brokered',
     '/auth/callback/github/broker/extra',
     '/auth/callback/github',
+    '/auth/callback/google/brokered',
   ])('keeps OAuth broker callback near miss %s on the web origin', pathname => {
     expect(getRouteTarget(pathname)).toBe('web')
     expect(getOriginPathOverride(pathname)).toBeNull()

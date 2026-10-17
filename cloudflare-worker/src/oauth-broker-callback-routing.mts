@@ -1,5 +1,5 @@
 const OAUTH_BROKER_CALLBACK_ROUTE_RE =
-  /^\/auth\/callback\/(facebook|x|github|linkedin|microsoft)\/broker\/?$/i
+  /^\/auth\/callback\/(facebook|x|github|google|linkedin|microsoft)\/broker\/?$/i
 
 export const getOAuthBrokerCallbackOriginPath = (pathname: string): string | null => {
   const match = pathname.match(OAUTH_BROKER_CALLBACK_ROUTE_RE)

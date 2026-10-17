@@ -226,6 +226,7 @@ function completionRow(overrides: Partial<CompletionRow> = {}): CompletionRow {
     github_account_id: 'github-user',
     linkedin_account_id: null,
     microsoft_account_id: null,
+    google_account_id: null,
     result_kind: null,
     result_user_id: null,
     result_device_id: null,

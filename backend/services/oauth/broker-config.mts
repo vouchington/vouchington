@@ -2,8 +2,16 @@ import { DynamicConfig } from '@data-stores/valkey'
 import createHttpError from 'http-errors'
 import { getConfiguredOAuthProviders } from './config.mts'
 import type { OAuthProvider } from './providers.mts'
+import { readGoogleClientSecret } from '@voucha/config'
 
-export const BROKER_OAUTH_PROVIDERS = ['facebook', 'x', 'github', 'linkedin', 'microsoft'] as const
+export const BROKER_OAUTH_PROVIDERS = [
+  'facebook',
+  'x',
+  'github',
+  'linkedin',
+  'microsoft',
+  'google',
+] as const
 export const BROKER_CALLBACK_MODES = ['web', 'native'] as const
 export const BROKER_PURPOSES = ['authenticate', 'connect'] as const
 
@@ -24,6 +32,8 @@ const fieldTypes = {
   linkedin_native_enabled: 'boolean',
   microsoft_web_enabled: 'boolean',
   microsoft_native_enabled: 'boolean',
+  google_web_enabled: 'boolean',
+  google_native_enabled: 'boolean',
 } as const
 
 const defaultFields = {
@@ -37,6 +47,8 @@ const defaultFields = {
   linkedin_native_enabled: false,
   microsoft_web_enabled: false,
   microsoft_native_enabled: false,
+  google_web_enabled: false,
+  google_native_enabled: false,
 } as const satisfies Record<BrokerFlagKey, false>
 
 export const oauthAuthorizationBrokerConfig = new DynamicConfig({
@@ -53,7 +65,8 @@ export function isOAuthAuthorizationBrokerEnabled(
   const key: BrokerFlagKey = `${provider}_${callbackMode}_enabled`
   return (
     oauthAuthorizationBrokerConfig.getFields()[key] === true &&
-    configuredProviders.includes(provider)
+    configuredProviders.includes(provider) &&
+    (provider !== 'google' || Boolean(readGoogleClientSecret()))
   )
 }
 

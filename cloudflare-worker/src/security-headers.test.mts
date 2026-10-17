@@ -183,7 +183,7 @@ describe('addSecurityHeaders', () => {
 })
 
 describe('shouldPreserveOriginNoReferrer', () => {
-  it.each(['facebook', 'x', 'github', 'linkedin', 'microsoft'])(
+  it.each(['facebook', 'x', 'github', 'google', 'linkedin', 'microsoft'])(
     'returns true for the %s OAuth broker callback',
     provider => {
       expect(
@@ -195,10 +195,11 @@ describe('shouldPreserveOriginNoReferrer', () => {
   )
 
   it.each([
-    '/auth/callback/google/broker',
     '/auth/callback/github/brokered',
     '/auth/callback/github/broker/extra',
     '/auth/callback/github',
+    '/auth/callback/google/brokered',
+    '/auth/callback/google/broker/extra',
   ])('returns false for callback near miss %s', pathname => {
     expect(shouldPreserveOriginNoReferrer(new URL(`https://voucha.ai${pathname}`))).toBe(false)
   })

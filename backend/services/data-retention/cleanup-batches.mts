@@ -15,6 +15,7 @@ const oauthAuthorizationProviderUserIdColumnByAccountTable = new Map([
   ['linkedin_accounts', 'linkedin_account_id'],
   ['x_accounts', 'x_account_id'],
   ['microsoft_accounts', 'microsoft_account_id'],
+  ['google_accounts', 'google_account_id'],
 ])
 const oauthAccountIdColumnByTable = new Map([
   ['facebook_accounts', 'id'],
@@ -22,6 +23,7 @@ const oauthAccountIdColumnByTable = new Map([
   ['linkedin_accounts', 'id'],
   ['x_accounts', 'id'],
   ['microsoft_accounts', 'id'],
+  ['google_accounts', 'id'],
 ])
 const allowedOAuthAccountIdIdentifiers = new Set([...allowedOAuthCleanupIdentifiers, 'id'])
 export async function cleanupSoftDeletedUserBatch(

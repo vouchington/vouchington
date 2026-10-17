@@ -5642,7 +5642,7 @@
     },
     "GET:/api/v1/auth/oauth/providers": {
       "bodyKind": "content",
-      "hash": "5332f343ae4805f080d906078e50dad1627a5bd82a63ca3d9c880c23900b06f4",
+      "hash": "c5ae4764362ff8e984ac39e29d904b95e498fcbfb4c7a6721bf5ee20f1606f5e",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -5682,7 +5682,7 @@
               }
             ]
           },
-          "Record<\"facebook\" | \"x\" | \"github\" | \"linkedin\" | \"microsoft\",{ version: 1; modes: Record<\"web\" | \"native\", boolean>; purposes: readonly (\"authenticate\" | \"connect\")[]; }>": {
+          "Record<\"facebook\" | \"x\" | \"github\" | \"linkedin\" | \"microsoft\" | \"google\",{ version: 1; modes: Record<\"web\" | \"native\", boolean>; purposes: readonly (\"authenticate\" | \"connect\")[]; }>": {
             "additionalProperties": false,
             "properties": {
               "facebook": {
@@ -5728,6 +5728,48 @@
                 }
               },
               "github": {
+                "required": true,
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "modes": {
+                      "required": true,
+                      "schema": {
+                        "name": "Record<\"web\" | \"native\",boolean>",
+                        "type": "ref"
+                      }
+                    },
+                    "purposes": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "type": "literal",
+                              "value": "authenticate"
+                            },
+                            {
+                              "type": "literal",
+                              "value": "connect"
+                            }
+                          ]
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "version": {
+                      "required": true,
+                      "schema": {
+                        "type": "literal",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "google": {
                 "required": true,
                 "schema": {
                   "additionalProperties": false,
@@ -5923,7 +5965,7 @@
             "broker_capabilities": {
               "required": true,
               "schema": {
-                "name": "Record<\"facebook\" | \"x\" | \"github\" | \"linkedin\" | \"microsoft\",{ version: 1; modes: Record<\"web\" | \"native\", boolean>; purposes: readonly (\"authenticate\" | \"connect\")[]; }>",
+                "name": "Record<\"facebook\" | \"x\" | \"github\" | \"linkedin\" | \"microsoft\" | \"google\",{ version: 1; modes: Record<\"web\" | \"native\", boolean>; purposes: readonly (\"authenticate\" | \"connect\")[]; }>",
                 "type": "ref"
               }
             },
@@ -88907,7 +88949,7 @@
       "migratedFrom": [],
       "path": "/api/v1/auth/oauth/providers",
       "responseSchema": {
-        "hash": "ab0a229cb7c51a1bc2b224139d901391f51f83ccb73970fcdaa5688e0e88fe8f",
+        "hash": "c225a330ea6aa04e3e1714786830d16970a8d855e5cd2453a0c10af1093f4fbd",
         "key": "native.oauth.providers.broker-capabilities"
       },
       "route": {

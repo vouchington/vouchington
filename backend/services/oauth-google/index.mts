@@ -133,6 +133,8 @@ export async function upsertGoogleAccount(credential: string): Promise<OAuthAcco
   )
 }
 
+export { upsertGoogleAuthorizationCodeAccount } from './authorization-code.mts'
+
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
  * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.

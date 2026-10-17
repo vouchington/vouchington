@@ -58,6 +58,15 @@ export function buildProviderAuthorizationUrl(options: {
           code_challenge_method: 'S256',
         },
       )
+    case 'google':
+      return withQuery('https://accounts.google.com/o/oauth2/v2/auth', {
+        ...shared,
+        client_id: options.clientId,
+        scope: 'openid profile email',
+        access_type: 'online',
+        code_challenge: options.codeChallenge,
+        code_challenge_method: 'S256',
+      })
   }
 }
 

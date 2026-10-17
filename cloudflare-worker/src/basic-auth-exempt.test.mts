@@ -26,13 +26,14 @@ describe('isBasicAuthExemptRequest', () => {
   })
 
   it('exempts only GET requests to supported OAuth broker callbacks', () => {
-    for (const provider of ['facebook', 'x', 'github', 'linkedin', 'microsoft']) {
+    for (const provider of ['facebook', 'x', 'github', 'google', 'linkedin', 'microsoft']) {
       expect(isBasicAuthExemptRequest('GET', `/auth/callback/${provider}/broker`)).toBe(true)
       expect(isBasicAuthExemptRequest('GET', `/auth/callback/${provider}/broker/`)).toBe(true)
       expect(isBasicAuthExemptRequest('POST', `/auth/callback/${provider}/broker`)).toBe(false)
       expect(isBasicAuthExemptRequest('HEAD', `/auth/callback/${provider}/broker`)).toBe(false)
     }
-    expect(isBasicAuthExemptRequest('GET', '/auth/callback/google/broker')).toBe(false)
+    expect(isBasicAuthExemptRequest('GET', '/auth/callback/google/brokered')).toBe(false)
+    expect(isBasicAuthExemptRequest('GET', '/auth/callback/google/broker/extra')).toBe(false)
     expect(isBasicAuthExemptRequest('GET', '/auth/callback/linkedin/brokered')).toBe(false)
     expect(isBasicAuthExemptRequest('GET', '/auth/callback/linkedin/broker/extra')).toBe(false)
     expect(isBasicAuthExemptRequest('POST', '/auth/callback/microsoft/broker')).toBe(false)

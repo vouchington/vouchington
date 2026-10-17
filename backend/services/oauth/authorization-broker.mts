@@ -4,6 +4,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import {
   FACEBOOK_APP_ID,
   GITHUB_CLIENT_ID,
+  GOOGLE_CLIENT_ID,
   LINKEDIN_CLIENT_ID,
   MICROSOFT_CLIENT_ID,
   X_CLIENT_ID,
@@ -186,6 +187,7 @@ function getProviderClientId(provider: BrokerOAuthProvider): string {
     github: GITHUB_CLIENT_ID,
     linkedin: LINKEDIN_CLIENT_ID,
     microsoft: MICROSOFT_CLIENT_ID,
+    google: GOOGLE_CLIENT_ID,
   }
   const clientId = clientIds[provider]
   if (!clientId) throw new Error(`${provider} OAuth client ID is not configured`)

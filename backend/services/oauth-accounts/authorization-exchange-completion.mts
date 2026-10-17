@@ -11,6 +11,7 @@ export async function completeOAuthAuthorizationExchange(
 ): Promise<void> {
   if (
     provider !== 'facebook' &&
+    provider !== 'google' &&
     provider !== 'x' &&
     provider !== 'github' &&
     provider !== 'linkedin' &&
@@ -20,6 +21,7 @@ export async function completeOAuthAuthorizationExchange(
   }
   const providerIdColumn = {
     facebook: 'facebook_account_id',
+    google: 'google_account_id',
     x: 'x_account_id',
     github: 'github_account_id',
     linkedin: 'linkedin_account_id',

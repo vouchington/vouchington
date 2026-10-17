@@ -44,6 +44,12 @@ export const externalProxyDynamicConfigRegistryEntries = [
       microsoft_native_enabled: {
         description: 'Allow new Microsoft native authorization broker flows.',
       },
+      google_web_enabled: {
+        description: 'Allow new Google web authorization broker flows.',
+      },
+      google_native_enabled: {
+        description: 'Allow new Google native authorization broker flows.',
+      },
     },
   }),
   defineDynamicConfigNamespace({

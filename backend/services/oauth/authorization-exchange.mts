@@ -13,6 +13,7 @@ import { upsertGithubAccount } from '@services/oauth-github'
 import { upsertLinkedInAccount } from '@services/oauth-linkedin'
 import { upsertMicrosoftAccount } from '@services/oauth-microsoft'
 import { upsertXAccount } from '@services/oauth-x'
+import { upsertGoogleAuthorizationCodeAccount } from '@services/oauth-google'
 import {
   decryptOAuthAuthorizationCode,
   decryptOAuthAuthorizationPkceVerifier,
@@ -42,6 +43,7 @@ const defaultDependencies: OAuthAuthorizationExchangeDependencies = {
   upsertLinkedIn: upsertLinkedInAccount,
   upsertMicrosoft: upsertMicrosoftAccount,
   upsertX: upsertXAccount,
+  upsertGoogle: upsertGoogleAuthorizationCodeAccount,
   rejectExhausted: rejectExhaustedOAuthAuthorizationExchange,
   releaseClaim: releaseOAuthAuthorizationExchangeClaim,
 }

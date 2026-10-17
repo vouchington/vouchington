@@ -7,6 +7,7 @@ export async function deleteTestOAuthAuthorizationFixtures(fixtures: {
   xUserIds?: string[]
   linkedinUserIds?: string[]
   microsoftUserIds?: string[]
+  googleUserIds?: string[]
   userIds?: string[]
 }): Promise<void> {
   await deleteRowsByIds('oauth_authorizations', 'id', fixtures.authorizationIds)
@@ -15,6 +16,7 @@ export async function deleteTestOAuthAuthorizationFixtures(fixtures: {
   await deleteRowsByIds('x_accounts', 'x_user_id', fixtures.xUserIds)
   await deleteRowsByIds('linkedin_accounts', 'linkedin_user_id', fixtures.linkedinUserIds)
   await deleteRowsByIds('microsoft_accounts', 'microsoft_user_id', fixtures.microsoftUserIds)
+  await deleteRowsByIds('google_accounts', 'google_user_id', fixtures.googleUserIds)
   await deleteRowsByIds('users', 'id', fixtures.userIds)
 }
 
@@ -25,6 +27,7 @@ async function deleteRowsByIds(
     | 'github_accounts'
     | 'linkedin_accounts'
     | 'microsoft_accounts'
+    | 'google_accounts'
     | 'users'
     | 'x_accounts',
   column:
@@ -32,6 +35,7 @@ async function deleteRowsByIds(
     | 'github_user_id'
     | 'linkedin_user_id'
     | 'microsoft_user_id'
+    | 'google_user_id'
     | 'id'
     | 'x_user_id',
   ids: string[] | undefined,

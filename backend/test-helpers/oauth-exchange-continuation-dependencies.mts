@@ -14,6 +14,7 @@ import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebo
 import { upsertGithubAccount } from '../services/oauth-github/index.mts'
 import { upsertLinkedInAccount } from '../services/oauth-linkedin/index.mts'
 import { upsertMicrosoftAccount } from '../services/oauth-microsoft/index.mts'
+import { upsertGoogleAuthorizationCodeAccount } from '../services/oauth-google/index.mts'
 import { upsertXAccount } from '../services/oauth-x/index.mts'
 
 export type OAuthContinuationFault =
@@ -73,6 +74,10 @@ export function createTestOAuthContinuationDependencies(
     upsertMicrosoft(...args) {
       metrics.providerCalls += 1
       return owner.run(() => upsertMicrosoftAccount(...args))
+    },
+    upsertGoogle(...args) {
+      metrics.providerCalls += 1
+      return owner.run(() => upsertGoogleAuthorizationCodeAccount(...args))
     },
     upsertX(...args) {
       metrics.providerCalls += 1

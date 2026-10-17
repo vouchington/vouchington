@@ -48,6 +48,25 @@ describe('OAuth authorization broker callback', () => {
     expect(row?.completion_token_ciphertext).not.toContain(first.completionToken)
   })
 
+  it('accepts and replays a Google broker callback against the durable provider state', async () => {
+    const cleanup = registerCleanup()
+    const state = randomBytes(32).toString('base64url')
+    const flowId = await insertTestOAuthAuthorization({ provider: 'google', state })
+    cleanup.authorizationIds.push(flowId)
+    const code = `google-code-${randomUUID()}`
+
+    const first = await receiveOAuthAuthorizationCallback({ provider: 'google', state, code })
+    const replay = await receiveOAuthAuthorizationCallback({ provider: 'google', state, code })
+
+    expect(first).toMatchObject({ flowId, callbackMode: 'web', exchangeRequired: true })
+    expect(replay).toEqual(first)
+    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+      status: 'callback_received',
+      callback_code_ciphertext: expect.any(String),
+    })
+    expect((await getTestOAuthAuthorization(flowId))?.callback_code_ciphertext).not.toContain(code)
+  })
+
   it('uses exact provider scopes and PKCE only where the provider supports it', () => {
     const expectations = {
       facebook: { scope: 'email,user_friends', pkce: false },
@@ -55,6 +74,7 @@ describe('OAuth authorization broker callback', () => {
       github: { scope: 'read:user user:email', pkce: true },
       linkedin: { scope: 'openid profile email', pkce: false },
       microsoft: { scope: 'openid profile email User.Read', pkce: true },
+      google: { scope: 'openid profile email', pkce: true },
     } as const
 
     for (const [provider, expected] of Object.entries(expectations)) {
@@ -100,6 +120,32 @@ describe('OAuth authorization broker callback', () => {
     }).toEqual({
       status: 'rejected',
       callback_error: 'access_denied_by_user',
+    })
+  })
+
+  it('persists and replays Google user cancellation without scheduling exchange', async () => {
+    const cleanup = registerCleanup()
+    const state = randomBytes(32).toString('base64url')
+    const flowId = await insertTestOAuthAuthorization({ provider: 'google', state })
+    cleanup.authorizationIds.push(flowId)
+
+    const result = await receiveOAuthAuthorizationCallback({
+      provider: 'google',
+      state,
+      error: 'access_denied',
+    })
+    const replay = await receiveOAuthAuthorizationCallback({
+      provider: 'google',
+      state,
+      error: 'access_denied',
+    })
+
+    expect(result).toMatchObject({ flowId, callbackMode: 'web', exchangeRequired: false })
+    expect(replay).toEqual(result)
+    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+      status: 'rejected',
+      callback_error: 'access_denied',
+      callback_code_ciphertext: null,
     })
   })
 
@@ -202,6 +248,7 @@ type BrokerTestCleanup = {
   authorizationIds: string[]
   githubUserIds: string[]
   linkedinUserIds: string[]
+  googleUserIds: string[]
 }
 
 function registerCleanup(): BrokerTestCleanup {
@@ -209,6 +256,7 @@ function registerCleanup(): BrokerTestCleanup {
     authorizationIds: [],
     githubUserIds: [],
     linkedinUserIds: [],
+    googleUserIds: [],
   }
   onTestFinished(async () => {
     await deleteTestOAuthAuthorizationFixtures(cleanup)

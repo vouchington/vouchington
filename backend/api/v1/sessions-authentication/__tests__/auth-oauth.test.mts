@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { readFileSync } from 'node:fs'
+import { validateResponseContract } from '../../../../test-helpers/api-fixtures/contract-schema.mts'
+import type { ApiFixtureManifest } from '../../../../test-helpers/api-fixtures/types.mts'
 import {
   createTestUser,
   insertTestOAuthAccount,
@@ -9,11 +12,17 @@ import {
 import type { PrivateUser } from '@services/users/types'
 
 const providers = ['facebook', 'apple', 'google', 'x', 'linkedin', 'microsoft'] as const
+const apiManifest = JSON.parse(
+  readFileSync(new URL('../../../../../api-fixtures/v1/manifest.json', import.meta.url), 'utf8'),
+) as ApiFixtureManifest
+const providerResponseContract =
+  apiManifest.backendResponseContracts['GET:/api/v1/auth/oauth/providers']!
 
 describe('OAuth Authentication Routes', () => {
   it('returns configured OAuth providers without requiring auth', async () => {
     const request = createRequest()
     const response = await request.get('/api/v1/auth/oauth/providers').expect(200)
+    expect(validateResponseContract(providerResponseContract.schema, response.body)).toEqual([])
 
     expect(response.body).toEqual({
       providers: expect.any(Array),
@@ -39,6 +48,11 @@ describe('OAuth Authentication Routes', () => {
           purposes: ['authenticate', 'connect'],
         },
         microsoft: {
+          version: 1,
+          modes: { web: false, native: false },
+          purposes: ['authenticate', 'connect'],
+        },
+        google: {
           version: 1,
           modes: { web: false, native: false },
           purposes: ['authenticate', 'connect'],

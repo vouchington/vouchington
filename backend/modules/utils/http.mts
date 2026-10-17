@@ -157,7 +157,7 @@ export interface HandleHttpErrorsOptions {
   url: string
 }
 
-export function cancelResponseBody(response: Partial<Pick<Response, 'body'>>): void {
+export function cancelResponseBody(response: { body?: { cancel(): Promise<void> } | null }): void {
   const cancellation = response.body?.cancel()
   if (cancellation) {
     // Cancellation is best-effort cleanup; preserve the HTTP error outcome.
