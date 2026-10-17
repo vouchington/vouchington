@@ -82,10 +82,4 @@ flowchart LR
 - [Backend README](../../../../backend/services/README.md) and [AGENTS.md](../../../../backend/services/AGENTS.md)
 - [Queues map](../queues/README.md) and [AI platform](../ai-platform.md)
 - [MCP tools](../mcp/README.md) and [API conventions](../../../../backend/api/AGENTS.md)
-- Requirements behind the services: membership plans,
-  membership statuses,
-  feature limits,
-  Stripe integration,
-  API key lifecycle,
-  [trust system](../../../requirements/trust-safety/reference-trust-system-overview.md),
-  community moderation routes
+- Requirements behind the services: [trust system](../../../requirements/trust-safety/reference-trust-system-overview.md)
