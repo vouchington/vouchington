@@ -1,12 +1,11 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
 
-export const VOTE_WEIGHT_DISPATCH_SEED_COUNT = 1_200
+export const VOTE_WEIGHT_DISPATCH_SEED_COUNT = 2_400
 export const VOTE_WEIGHT_DISPATCH_ANCHOR_MS = postSeedTimestampMs(0)
 export const VOTE_WEIGHT_DISPATCH_WINDOW_START = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 60_000)
 export const VOTE_WEIGHT_DISPATCH_WINDOW_END = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS + 60_000)
-
-// The measured window deliberately mixes direct and family expirations and rejections.
+// The mixed window spans multiple 500-row family pages for stable range plans.
 // This makes an index range with a post-scan source-kind filter visibly expensive.
 export async function seedVoteWeightDispatch(): Promise<void> {
   await seedAgeMilestoneUsers()
@@ -15,7 +14,6 @@ export async function seedVoteWeightDispatch(): Promise<void> {
     '/* seedVoteWeightDispatch */ ANALYZE users, membership_provider_observations, membership_provider_lineages, membership_provider_evidence_records, membership_sources, membership_source_states, memberships',
   )
 }
-
 async function seedAgeMilestoneUsers(): Promise<void> {
   const rows: string[] = []
   const values: unknown[] = []
@@ -54,7 +52,6 @@ async function seedMembershipSignals(): Promise<void> {
   )
   const productId = product.rows[0]!.id
   const providerProductId = product.rows[0]!.provider_product_id
-
   for (let start = 0; start < VOTE_WEIGHT_DISPATCH_SEED_COUNT; start += 200) {
     const rows: string[] = []
     const values: unknown[] = []
@@ -64,8 +61,10 @@ async function seedMembershipSignals(): Promise<void> {
       index++
     ) {
       const sourceKind = index % 2 === 0 ? 'family' : 'direct'
-      const eventAt = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS + (index - 600) * 80)
-      const effectiveAt = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 50_000)
+      const eventAt = new Date(
+        VOTE_WEIGHT_DISPATCH_ANCHOR_MS + (index - VOTE_WEIGHT_DISPATCH_SEED_COUNT / 2) * 80,
+      )
+      const effectiveAt = new Date(eventAt.getTime() - 1_000)
       values.push(
         seedUuid(index, 'a1'),
         seedUuid(index, 'a2'),
@@ -153,26 +152,29 @@ async function seedMembershipSignals(): Promise<void> {
     )
     await transaction.commit()
   }
-
   // One family observation can back several recipients. A rejected-evidence
   // continuation must be able to resume inside this source fanout.
   const sharedRows: string[] = []
   const sharedValues: unknown[] = []
   for (let index = 0; index < 6; index++) {
-    sharedValues.push(seedUuid(index, 'a6'), seedUuid(index, 'a7'), seedUuid(3_000 + index, '01'))
+    sharedValues.push(seedUuid(index, 'a6'), seedUuid(index, 'a7'), seedUuid(5_000 + index, '01'))
     const offset = sharedValues.length - 2
     sharedRows.push(`($${offset}::uuid, $${offset + 1}::uuid, $${offset + 2}::uuid)`)
   }
   const requested = `WITH requested (source_id, membership_id, user_id) AS (VALUES ${sharedRows.join(', ')})`
-  const effectiveAt = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 50_000)
-  const expiresAt = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 48_000)
+  // Index 450 is the first (family) evidence event in the measured window.
+  const sharedObservationIndex = 450
+  const lineageId = seedUuid(sharedObservationIndex, 'a1')
+  const observationId = seedUuid(sharedObservationIndex, 'a5')
+  const effectiveAt = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 61_000)
+  const expiresAt = VOTE_WEIGHT_DISPATCH_WINDOW_START
   await using transaction = await beginTransaction()
   await transaction(
     `/* seedVoteWeightDispatch */ ${requested}
      INSERT INTO membership_sources (id, user_id, source_kind, membership_provider_lineage_id)
      SELECT source_id, user_id, 'family', $${sharedValues.length + 1}::uuid FROM requested
      ON CONFLICT (id) DO NOTHING`,
-    [...sharedValues, seedUuid(0, 'a1')],
+    [...sharedValues, lineageId],
   )
   await transaction(
     `/* seedVoteWeightDispatch */ ${requested}
@@ -183,7 +185,7 @@ async function seedMembershipSignals(): Promise<void> {
        $${sharedValues.length + 2}::uuid, $${sharedValues.length + 3}::uuid,
        $${sharedValues.length + 4}::timestamptz, $${sharedValues.length + 5}::timestamptz
      FROM requested ON CONFLICT (membership_source_id) DO NOTHING`,
-    [...sharedValues, seedUuid(0, 'a1'), seedUuid(0, 'a5'), productId, effectiveAt, expiresAt],
+    [...sharedValues, lineageId, observationId, productId, effectiveAt, expiresAt],
   )
   await transaction(
     `/* seedVoteWeightDispatch */ ${requested}

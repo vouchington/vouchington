@@ -17,11 +17,11 @@ const window = {
 const familyBranches = ['updated_at', 'effective_at', 'expires_at', 'rejected_at'] as const
 const seededRows = {
   users: 20_244,
-  memberships: 1_506,
-  membership_sources: 1_506,
-  membership_source_states: 1_506,
-  membership_provider_observations: 1_200,
-  membership_provider_evidence_records: 1_200,
+  memberships: 2_706,
+  membership_sources: 2_706,
+  membership_source_states: 2_706,
+  membership_provider_observations: 2_400,
+  membership_provider_evidence_records: 2_400,
 }
 
 export async function runVoteWeightDispatchScenarios(): Promise<void> {
