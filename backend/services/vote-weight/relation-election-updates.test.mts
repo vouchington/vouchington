@@ -1,3 +1,4 @@
+import { createTestUser, softDeleteUser } from '@voucha/test-helpers/entities/users'
 import { toEntityRelationElectionTable } from '@services/elections-votes/entity-relation/target'
 import { describe, expect, it } from 'vitest'
 import { createSameIdElectionRelations } from '@voucha/test-helpers/entities/entity-relation-election-collisions'
@@ -64,12 +65,14 @@ describe('relation election fanout', () => {
     ).resolves.toEqual(before)
   })
 
-  it('recovers active users through an ordered bounded cursor page', async () => {
-    const first = await findUsersForElectionVoteReplay(null, 1)
-    expect(first.userIds).toHaveLength(1)
-    expect(first.nextCursor).toBe(first.userIds[0])
-    const second = await findUsersForElectionVoteReplay(first.nextCursor, 1)
-    expect(second.userIds).toHaveLength(1)
-    expect(second.userIds[0]! > first.userIds[0]!).toBe(true)
+  it('continues past a deleted-only page to its active fixture without expanding the read', async () => {
+    const ids = (await Promise.all([createTestUser(), createTestUser(), createTestUser()]))
+      .map(user => user.id)
+      .toSorted()
+    await softDeleteUser(ids[1]!)
+    const deletedPage = await findUsersForElectionVoteReplay(ids[0]!, 1)
+    expect(deletedPage).toEqual({ userIds: [], nextCursor: ids[1] })
+    const activePage = await findUsersForElectionVoteReplay(deletedPage.nextCursor, 1)
+    expect(activePage).toEqual({ userIds: [ids[2]], nextCursor: ids[2] })
   })
 })
