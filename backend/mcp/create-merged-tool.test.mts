@@ -132,7 +132,7 @@ describe('createMergedTool', () => {
     expect(output['$defs']).not.toHaveProperty('Option0_Id')
   })
 
-  it.each([
+  it.each<Readonly<Record<string, string>>>([
     { get: '#/anyOf/0' },
     { get: '#/anyOf/0', list: '#/anyOf/1', extra: '#' },
     { get: '#/anyOf/0', list: '#/anyOf/9' },

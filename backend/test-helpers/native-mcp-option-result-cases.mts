@@ -1,4 +1,10 @@
-import type { McpResultFixtureCase } from './native-mcp-result-cases.mts'
+/** Structured MCP results consumed by native clients. The catalog validates each case. */
+export type McpResultFixtureCase = {
+  id: string
+  tool: string
+  arguments: Record<string, unknown>
+  structuredContent: Record<string, unknown>
+}
 
 const userId = '0198ffff-0000-7000-8000-000000000001'
 const entityId = '0198ffff-0000-7000-8000-000000000002'
