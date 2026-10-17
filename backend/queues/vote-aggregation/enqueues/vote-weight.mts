@@ -12,16 +12,18 @@ import type { ProcessRecalculateUserVoteWeightData } from './types-vote-weight.m
 
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 type DispatcherOptions = {
+  replayElectionsOnly?: boolean
   deduplicationId?: string
 }
 
 function buildRecalculateUserVoteWeightOptions(
   userId: string,
   forceRecalculate?: boolean,
+  replayElectionsOnly?: boolean,
 ): Partial<JobOptions> {
   return {
     deduplication: {
-      id: `processRecalculateUserVoteWeight__${userId}${forceRecalculate ? '__force' : ''}`,
+      id: `processRecalculateUserVoteWeight__${userId}${forceRecalculate ? '__force' : ''}${replayElectionsOnly ? '__replay' : ''}`,
       mode: 'debounce',
       ttl: VOTE_WEIGHT_DEDUPLICATION_TTL_MS,
     },
@@ -36,7 +38,11 @@ const enqueueBulkRecalculateUserVoteWeightJobs = createBackgroundBulkEnqueue(
   VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
   (data: ProcessRecalculateUserVoteWeightData) => ({
     data,
-    opts: buildRecalculateUserVoteWeightOptions(data.userId, data.forceRecalculate),
+    opts: buildRecalculateUserVoteWeightOptions(
+      data.userId,
+      data.forceRecalculate,
+      data.replayElectionsOnly,
+    ),
   }),
 )
 
@@ -72,7 +78,7 @@ export function enqueueRecalculateVoteWeightDispatcher(
   options?: DispatcherOptions,
 ): EnqueueReturnType {
   return enqueueRecalculateVoteWeightDispatcherJob(
-    { afterId },
+    { afterId, replayElectionsOnly: options?.replayElectionsOnly },
     options?.deduplicationId
       ? {
           deduplication: {
@@ -99,5 +105,12 @@ export function enqueueUserElectionFanOut(
     cursor
       ? { jobId: `userElectionFanOut__${userId}__${cursor.lane}__${cursor.afterId}` }
       : undefined,
+  )
+}
+
+/** Replays election targets without changing saved weights or administrator overrides. */
+export function enqueueBulkElectionUpdateReplay(userIds: string[]): EnqueueReturnType {
+  return enqueueBulkRecalculateUserVoteWeightJobs(
+    userIds.map(userId => ({ userId, replayElectionsOnly: true })),
   )
 }

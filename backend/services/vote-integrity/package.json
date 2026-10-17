@@ -24,6 +24,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
+    "@services/elections-votes": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",

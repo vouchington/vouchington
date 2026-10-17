@@ -43,6 +43,7 @@ _none_
 - `idx_rela__rss_fee_ite__cat__topi_alia__vote__relation__user__id`: `CREATE INDEX idx_rela__rss_fee_ite__cat__topi_alia__vote__relation__user__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (entity_relation_id, user_id, id DESC)`
 - `idx_rela__rss_fee_ite__cat__topi_alia__vote__user__relation__id`: `CREATE INDEX idx_rela__rss_fee_ite__cat__topi_alia__vote__user__relation__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (user_id, entity_relation_id, id DESC)`
 - `idx_rela__rss_feed_item__cate__topic_alias__votes__relation__id`: `CREATE INDEX idx_rela__rss_feed_item__cate__topic_alias__votes__relation__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (entity_relation_id, id)`
+- `idx_relati__rss_feed_item__catego__topic_alias__votes__user__id`: `CREATE INDEX idx_relati__rss_feed_item__catego__topic_alias__votes__user__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (user_id, id)`
 - `relation__rss_feed_item__category__topic_alias__votes_pkey`: `CREATE UNIQUE INDEX relation__rss_feed_item__category__topic_alias__votes_pkey ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (entity_relation_id, id)`
 
 **Triggers:**

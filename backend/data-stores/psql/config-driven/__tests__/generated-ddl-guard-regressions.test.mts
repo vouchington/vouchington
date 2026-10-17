@@ -6,12 +6,12 @@ import { findFirstGeneratedDdlViolation } from '../../../../test-helpers/data-st
 
 describe('config-driven generated DDL guard regressions', () => {
   beforeAll(() => Promise.all([loadSqlParserModule(), initSqlAst()]))
-  it('permits only the reviewed replaceable metadata-derived relation vote view', async () => {
+  it('rejects views from config-driven generators', async () => {
     expect(
       await findFirstGeneratedDdlViolation(
         'DO $$ BEGIN NULL; END $$; CREATE OR REPLACE VIEW view_entity_relation_votes AS SELECT 1;',
       ),
-    ).toBeNull()
+    ).toBe('config-driven generators must not emit CREATE VIEW')
     expect(
       await findFirstGeneratedDdlViolation('CREATE OR REPLACE VIEW other_votes AS SELECT 1;'),
     ).toBe('config-driven generators must not emit CREATE VIEW')

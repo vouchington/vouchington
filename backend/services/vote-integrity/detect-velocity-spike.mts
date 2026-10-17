@@ -9,7 +9,7 @@ import {
   VELOCITY_SPIKE_THRESHOLD,
   VELOCITY_SPIKE_WINDOW_MINUTES,
   YOUNG_ACCOUNT_AGE_DAYS,
-  ENTITY_VOTE_TABLES,
+  resolveEntityVoteTableConfig,
 } from './config.mts'
 
 type VelocitySpikeResult = {
@@ -26,7 +26,7 @@ export async function detectVelocitySpike(
   entityType: string,
   entityId: string,
 ): Promise<VelocitySpikeResult> {
-  const tableConfig = ENTITY_VOTE_TABLES[entityType]
+  const tableConfig = await resolveEntityVoteTableConfig(entityType, entityId)
   if (!tableConfig) {
     return {
       flagged: false,

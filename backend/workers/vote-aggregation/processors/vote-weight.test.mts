@@ -1,10 +1,24 @@
+import { adminSetVoteWeight } from '@services/vote-weight/admin-set'
+import { readAdminWorkflowVoteWeight } from '@voucha/test-helpers/admin-workflow-fixtures'
 import { describe, expect, it } from 'vitest'
 import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
 import { VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
-import { processRecalculateVoteWeightDispatcher } from './vote-weight.mts'
+import {
+  processRecalculateUserVoteWeight,
+  processRecalculateVoteWeightDispatcher,
+} from './vote-weight.mts'
 
 describe('vote weight dispatcher processor', () => {
+  it('replays election targets without clearing an administrator weight override', async () => {
+    const user = await createTestUser()
+    await adminSetVoteWeight(user.id, user.id, 7.25)
+    const before = await readAdminWorkflowVoteWeight(user.id)
+    expect(before.vote_weight_admin_set_at).not.toBeNull()
+    await processRecalculateUserVoteWeight({ userId: user.id, replayElectionsOnly: true })
+    await expect(readAdminWorkflowVoteWeight(user.id)).resolves.toEqual(before)
+  })
+
   it('enqueues users needing vote-weight recalculation before returning', async () => {
     // The dispatcher scans users by id ASC in batches of 500, re-enqueueing itself for the
     // rest. UUIDv7 ids are time-ordered, so on a populated test DB a cursor-less dispatch

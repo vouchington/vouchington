@@ -12,10 +12,13 @@ import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation
 import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import type { BloomFilterEntityType } from '@queues/bloom-filters/types'
 
-function createVoteWeightTrigger(): () => Promise<unknown> {
+function createVoteWeightTrigger(replayElectionsOnly = false): () => Promise<unknown> {
   return async () =>
     enqueueRecalculateVoteWeightDispatcher(undefined, {
-      deduplicationId: 'backfill:vote-weight-dispatch',
+      deduplicationId: replayElectionsOnly
+        ? 'backfill:relation-election-updates'
+        : 'backfill:vote-weight-dispatch',
+      replayElectionsOnly,
     })
 }
 
@@ -74,6 +77,14 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     description: 'Backfill RSS feed item entity-cache bloom filters',
     source_table: 'rss_feed_items',
     trigger: createBloomFilterTrigger('rss_feed_items'),
+  },
+  {
+    id: 'relation-election-updates',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB.name,
+    description: 'Replay relation election updates from all users and concrete vote ledgers',
+    source_table: 'users',
+    trigger: createVoteWeightTrigger(true),
   },
   {
     id: 'vote-weight-dispatch',

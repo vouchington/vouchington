@@ -27,6 +27,7 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'bloom-filters-communities',
   'bloom-filters-rss-feed-items',
   'vote-weight-dispatch',
+  'relation-election-updates',
   'find-your-friends-dispatch',
   'oauth-authorization-exchange-dispatch',
   'kagi-smallweb-sync',
@@ -140,6 +141,17 @@ describe('BACKFILL_REGISTRY', () => {
     if (isDeduplicatedEnqueue(enqueued)) return
     await expect(readEnqueuedJob(activitypub, enqueued)).resolves.toMatchObject({
       name: 'activitypub.rearmFailedDeliveries',
+    })
+  })
+
+  it('recovers relation tally pages even when saved user weights are unchanged', async () => {
+    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'relation-election-updates')
+    if (!entry) throw new Error('Relation election backfill missing')
+    const enqueued = await entry.trigger()
+    if (isDeduplicatedEnqueue(enqueued)) return
+    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
+      name: 'vote-aggregation.processRecalculateVoteWeightDispatcher',
+      data: { replayElectionsOnly: true },
     })
   })
 

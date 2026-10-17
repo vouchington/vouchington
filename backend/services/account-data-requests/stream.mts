@@ -1,3 +1,4 @@
+import { mergeVoteStreams, streamRelationVotes } from './stream-relation-votes.mts'
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -54,9 +55,9 @@ export function streamPosts(userId: string) {
 }
 
 /** Streams all votes for the given user. */
-export function streamVotes(userId: string) {
-  return createAsyncGeneratorFromCursor(sql`/* streamVotes */
-    SELECT entity_type, entity_id, choice, created_at FROM (
+export async function* streamVotes(userId: string) {
+  const otherVotes = createAsyncGeneratorFromCursor(sql`/* streamVotes */
+    SELECT sort_id, entity_type, entity_id, choice, created_at FROM (
     SELECT pv.id AS sort_id, 'post' AS entity_type, pv.post_id AS entity_id,
       CASE WHEN pv.score IS NULL THEN 'clear'
         WHEN pv.score = 0 AND NOT pv.score_is_neutral THEN 'clear'
@@ -86,9 +87,6 @@ export function streamVotes(userId: string) {
     WHERE user_id = ${userId}
       AND (score IN (-2, 2) AND NOT score_is_semantic) IS NOT TRUE
     UNION ALL
-    SELECT id AS sort_id, 'entity_relation' AS entity_type, entity_relation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'confirm' ELSE 'dispute' END AS choice, created_at
-    FROM view_entity_relation_votes WHERE user_id = ${userId}
-    UNION ALL
     SELECT id AS sort_id, 'agent_moderation' AS entity_type, agent_moderation_id AS entity_id, CASE WHEN score IS NULL OR score = 0 THEN 'clear' WHEN score = 1 THEN 'accurate' ELSE 'inaccurate' END AS choice, created_at
     FROM agent_moderation_votes WHERE user_id = ${userId}
     UNION ALL
@@ -99,6 +97,12 @@ export function streamVotes(userId: string) {
     ) votes
     ORDER BY sort_id ASC
   `)
+  for await (const { sort_id: _sortId, ...row } of mergeVoteStreams(
+    otherVotes,
+    streamRelationVotes(userId),
+  )) {
+    yield row
+  }
 }
 
 /** Streams email address rows for the given user. */

@@ -29,7 +29,7 @@ export type ElectionJobData =
     }
   | { electionId: string; orderingKey: 'entity_relation'; relationTable: string }
 
-/** Where a user's election fan-out resumes: the last row of the previous page. */
+/** Last ballot cursor: base lanes use target ids; concrete relation lanes use event ids. */
 export type UserElectionFanOutCursor = { lane: number; afterId: string }
 export type UserElectionFanOutData = { userId: string; cursor: UserElectionFanOutCursor | null }
 
@@ -50,9 +50,11 @@ export const VOTE_AGGREGATION_UPDATE_ELECTION_JOB = defineBackgroundJob<Election
 export const VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB = defineBackgroundJob<{
   userId: string
   forceRecalculate?: boolean
+  replayElectionsOnly?: boolean
 }>(VOTE_AGGREGATION_DOMAIN, { name: 'processRecalculateUserVoteWeight', priority: PRIORITY_TASK })
 export const VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB = defineBackgroundJob<{
   afterId?: string | null
+  replayElectionsOnly?: boolean
 }>(VOTE_AGGREGATION_DOMAIN, {
   name: 'processRecalculateVoteWeightDispatcher',
   priority: PRIORITY_DISPATCH,

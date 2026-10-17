@@ -104,8 +104,8 @@ export async function getTestStoryPostRelatedUrlVoteState(
     FROM relation__post__related__url relation
     LEFT JOIN LATERAL (
       SELECT user_id, score
-      FROM view_entity_relation_votes
-      WHERE entity_relation_id = relation.id
+      FROM relation__post__related__url__votes
+      WHERE subject_id = relation.subject_id AND entity_relation_id = relation.id
       ORDER BY id DESC
       LIMIT 1
     ) vote ON TRUE

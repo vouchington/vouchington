@@ -12,6 +12,7 @@ import {
 } from './utils/election-vote-table-sql.mts'
 import {
   getElectionConstraintClause,
+  getElectionIndexName,
   getElectionForeignKeyName,
 } from './utils/election-sql-identifiers.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
@@ -21,17 +22,13 @@ import { createRetainedEntityRelationImpacts } from './utils/retained-entity-rel
 export default function generateEntityRelationSchemaSql(): string {
   const tableCreation = entityRelationMetadatum.map(createEntityRelationTable).join('\n\n')
   const electionRelations = entityRelationMetadatum.filter(metadata => metadata.election)
-  const relationVoteView = createEntityRelationVoteView(electionRelations)
+  const relationType = createElectedEntityRelationType(electionRelations)
   const relationVoteTables = electionRelations.map(createEntityRelationVoteTable).join('\n\n')
   const integrityTargets = createEntityRelationVoteIntegrityTargets(electionRelations)
   const retainedImpacts = createRetainedEntityRelationImpacts(electionRelations)
-  return [
-    tableCreation,
-    relationVoteTables,
-    relationVoteView,
-    integrityTargets,
-    retainedImpacts,
-  ].join('\n\n')
+  return [tableCreation, relationVoteTables, relationType, integrityTargets, retainedImpacts].join(
+    '\n\n',
+  )
 }
 
 function createEntityRelationTable(metadata: EntityRelationMetadata) {
@@ -133,6 +130,9 @@ ${createVoteDefaultPartitionSql(voteTable)}
 
 ${createVoteIndexesSql(voteTable, 'entity_relation_id')}
 
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, 'user__id')}
+ON ${voteTable} (user_id, id);
+
 COMMENT ON COLUMN ${voteTable}.user_id IS 'User who cast this concrete relation ballot event.';
 COMMENT ON TABLE ${voteTable} IS 'Append-only votes for the concrete ${metadata.table_name} elected relation.';
 COMMENT ON COLUMN ${voteTable}.score_is_neutral IS 'Explicit neutral provenance; binary relation vote producers leave this false.';
@@ -146,22 +146,11 @@ COMMENT ON COLUMN ${voteTable}.subject_id IS 'Authoritative subject paired with 
 COMMENT ON COLUMN ${voteTable}.entity_relation_id IS 'Concrete elected relation identifier and UUIDv7 partition key.';`
 }
 
-function createEntityRelationVoteView(relations: EntityRelationMetadata[]): string {
+function createElectedEntityRelationType(relations: EntityRelationMetadata[]): string {
   return `DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'elected_entity_relations') THEN
     CREATE TYPE elected_entity_relations AS ENUM (${relations.map(metadata => `'${metadata.table_name}'`).join(', ')});
   END IF;
-END $$;
-
-CREATE OR REPLACE VIEW view_entity_relation_votes AS
-${relations
-  .map(
-    metadata => `SELECT '${metadata.table_name}'::elected_entity_relations AS entity_relation,
-  user_id, subject_id, entity_relation_id, id, score, score_is_neutral, score_is_semantic, ip_address, device_id, session_id, user_agent_string_id, created_at
-FROM ${getEntityRelationVoteTableName(metadata)}`,
-  )
-  .join('\nUNION ALL\n')};
-
-COMMENT ON VIEW view_entity_relation_votes IS 'Current concrete relation vote ledgers combined for cross-family reads; writes target each concrete table.';`
+END $$;`
 }

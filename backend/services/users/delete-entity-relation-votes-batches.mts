@@ -1,3 +1,4 @@
+import { getRelationVoteCandidates } from './get-relation-vote-candidates.mts'
 import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
@@ -51,15 +52,7 @@ async function getEntityRelationVoteBatch(
   userId: string,
   batchSize: number,
 ): Promise<EntityRelationVoteBatch> {
-  const { rows: candidates } = await query<{
-    id: string
-    entity_relation: string
-    subject_id: string
-    entity_relation_id: string
-  }>(sql`/* deleteUserEntityRelationVotesBatch:candidates */
-    SELECT id, entity_relation, subject_id, entity_relation_id FROM view_entity_relation_votes
-    WHERE user_id = ${userId} ORDER BY id LIMIT ${batchSize}
-  `)
+  const candidates = await getRelationVoteCandidates(query, userId, batchSize)
   const targets = candidates.map(candidate => ({
     relationTable: candidate.entity_relation,
     subjectId: candidate.subject_id,

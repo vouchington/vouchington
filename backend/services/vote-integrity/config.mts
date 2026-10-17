@@ -1,3 +1,5 @@
+import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
+import { resolveEntityRelationElectionTargetById } from '@services/elections-votes/entity-relation/resolve-election-target'
 // Velocity spike detection thresholds
 export const VELOCITY_SPIKE_THRESHOLD = 20
 export const VELOCITY_SPIKE_WINDOW_MINUTES = 5
@@ -30,10 +32,6 @@ export const ENTITY_VOTE_TABLES: Record<string, EntityVoteTableConfig> = {
   topic: { voteTable: 'topic_votes', entityIdColumn: 'topic_id' },
   hostname: { voteTable: 'hostname_votes', entityIdColumn: 'hostname_id' },
   rss_feed_item: { voteTable: 'rss_feed_item_votes', entityIdColumn: 'rss_feed_item_id' },
-  entity_relation: {
-    voteTable: 'view_entity_relation_votes',
-    entityIdColumn: 'entity_relation_id',
-  },
   agent_moderation: {
     voteTable: 'agent_moderation_votes',
     entityIdColumn: 'agent_moderation_id',
@@ -57,3 +55,15 @@ export const FLAG_ENTITY_FK_COLUMNS = [
   'entity_relation_id',
   'agent_moderation_id',
 ] as const
+
+/** A bare relation id must resolve uniquely before a detector selects its ledger. */
+export async function resolveEntityVoteTableConfig(entityType: string, entityId: string) {
+  if (entityType !== 'entity_relation') return ENTITY_VOTE_TABLES[entityType]
+  const target = await resolveEntityRelationElectionTargetById(entityId)
+  return target
+    ? {
+        voteTable: getEntityRelationVoteTableIdentifier(target.relationTable),
+        entityIdColumn: 'entity_relation_id',
+      }
+    : undefined
+}

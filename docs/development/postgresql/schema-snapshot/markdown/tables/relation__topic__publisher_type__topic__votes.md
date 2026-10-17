@@ -43,6 +43,7 @@ _none_
 - `idx_relat__topic__publis_type__topic__votes__relation__user__id`: `CREATE INDEX idx_relat__topic__publis_type__topic__votes__relation__user__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, user_id, id DESC)`
 - `idx_relat__topic__publis_type__topic__votes__user__relation__id`: `CREATE INDEX idx_relat__topic__publis_type__topic__votes__user__relation__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (user_id, entity_relation_id, id DESC)`
 - `idx_relation__topic__publisher_type__topic__votes__relation__id`: `CREATE INDEX idx_relation__topic__publisher_type__topic__votes__relation__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, id)`
+- `idx_relation__topic__publisher_type__topic__votes__user__id`: `CREATE INDEX idx_relation__topic__publisher_type__topic__votes__user__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (user_id, id)`
 - `relation__topic__publisher_type__topic__votes_pkey`: `CREATE UNIQUE INDEX relation__topic__publisher_type__topic__votes_pkey ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, id)`
 
 **Triggers:**
