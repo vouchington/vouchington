@@ -79,8 +79,12 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/create-partitions-monthly',
   'psql/data-retention-cleanup-daily',
   'psql/reconcile-vote-drift',
+  'psql/refresh-platform-stats',
+  'psql/refresh-revenue-changes',
+  'psql/refresh-revenue-memberships',
   'psql/refresh-rss-feed-crawl-tiers',
   'psql/refresh-top-hashtags',
+  'psql/refresh-trending-rss-feeds',
   'rss-feeds/dispatchRssFeeds',
   'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
   'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
@@ -99,7 +103,7 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 18 manifests and 75 live jobs', () => {
+  it('imports the exact 18 manifests and 79 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(18)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -149,7 +153,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(69)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(73)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

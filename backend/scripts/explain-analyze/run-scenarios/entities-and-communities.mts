@@ -94,6 +94,9 @@ export async function runEntityAndCommunityScenarios() {
   await runAndCapture('trending-communities', () => getTrendingCommunities({ limit: 25 }))
 
   // Trending RSS feeds — 3 CTEs with aggregations across follows and items
+  registerScenarioContract('trending-rss-feeds', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'mv_trending_rss_feeds', max: 26 }],
+  })
   await runAndCapture('trending-rss-feeds', () =>
     getTrendingRssFeeds({ timeRange: 'week', limit: 25 }),
   )

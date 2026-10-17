@@ -1,5 +1,4 @@
 import { read } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { MONEY_SCALE, type CurrencyCode, type ScaledMoneyAggregate } from '@ts-shared/money'
 import sql from 'sql-template-strings'
 import type { GrowthRange, Revenue, MembershipsByTier } from './types.mts'
@@ -28,69 +27,38 @@ type RevenueQueryRow = {
 type RevenueScope = { userIds: readonly string[] }
 
 export async function getRevenue(
-  _range: GrowthRange,
-  periodStart: Date,
+  range: GrowthRange,
+  _periodStart: Date,
   scope?: RevenueScope,
   context: StripeMembershipApplicationContext = DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
 ): Promise<Revenue> {
-  const periodStartUuid = getMinUUIDv7ForDate(periodStart)
-  const isScoped = scope !== undefined
-  const scopedUserIds = scope?.userIds ?? []
+  const scopeIds = scope?.userIds ?? ['00000000-0000-0000-0000-000000000000']
   const { rows } = await read<RevenueQueryRow>(sql`/* getRevenue */
     WITH active_membership_counts AS (
-      SELECT product.plan AS tier, COUNT(*)::INT AS membership_count
-      FROM memberships m
-      JOIN view_current_paid_memberships current_paid ON current_paid.user_id = m.user_id
-      JOIN membership_products product ON product.id = m.membership_product_id
-      WHERE m.projection_ended_at IS NULL
-        AND m.cancelled_at IS NULL
-        AND m.expired_at IS NULL
-        AND m.past_due_at IS NULL
-        AND m.paused_at IS NULL
-        AND (NOT ${isScoped} OR m.user_id = ANY(${scopedUserIds}::uuid[]))
-      GROUP BY product.plan
+      SELECT tier, SUM(membership_count)::INT AS membership_count
+      FROM mv_revenue_memberships
+      WHERE scope_id = ANY(${scopeIds}::text[])
+        AND application_id = ''
+      GROUP BY tier
     ),
     membership_revenue AS (
       SELECT
-        product.plan AS tier,
-        product.billing_interval AS interval,
-        observation.observed_price_currency_code AS currency_code,
-        currency.minor_unit_exponent,
-        COUNT(*)::INT AS membership_count,
-        SUM(observation.observed_price_minor_units)::TEXT AS total_minor_units
-      FROM memberships m
-      JOIN view_current_paid_memberships current_paid ON current_paid.user_id = m.user_id
-      JOIN membership_products product ON product.id = m.membership_product_id
-      JOIN membership_sources source
-        ON source.id = m.membership_source_id
-        AND source.source_kind = 'direct'
-      JOIN membership_source_states source_state
-        ON source_state.membership_source_id = source.id
-        AND source_state.membership_product_id = m.membership_product_id
-      JOIN membership_provider_observations observation
-        ON observation.id = source_state.membership_provider_observation_id
-      JOIN membership_provider_contexts provider_context
-        ON provider_context.id = observation.membership_provider_context_id
-        AND provider_context.provider = 'stripe'
-        AND provider_context.environment = 'production'
-        AND provider_context.application_id = ${context.applicationId}
-      JOIN currencies currency ON currency.code = observation.observed_price_currency_code
-      WHERE m.projection_ended_at IS NULL
-        AND m.cancelled_at IS NULL
-        AND m.expired_at IS NULL
-        AND m.past_due_at IS NULL
-        AND m.paused_at IS NULL
-        AND (NOT ${isScoped} OR m.user_id = ANY(${scopedUserIds}::uuid[]))
-      GROUP BY product.plan, product.billing_interval, observation.observed_price_currency_code, currency.minor_unit_exponent
+        tier, interval, currency_code, minor_unit_exponent,
+        SUM(membership_count)::INT AS membership_count,
+        SUM(total_minor_units)::TEXT AS total_minor_units
+      FROM mv_revenue_memberships
+      WHERE scope_id = ANY(${scopeIds}::text[])
+        AND application_id = ${context.applicationId}
+      GROUP BY tier, interval, currency_code, minor_unit_exponent
     ),
     change_counts AS (
       SELECT
-        COUNT(*) FILTER (WHERE change_type = 'upgrade')::INT AS upgrades,
-        COUNT(*) FILTER (WHERE change_type = 'downgrade')::INT AS downgrades,
-        COUNT(*) FILTER (WHERE change_type = 'cancellation')::INT AS cancellations
-      FROM membership_changes
-      WHERE id > ${periodStartUuid}
-        AND (NOT ${isScoped} OR user_id = ANY(${scopedUserIds}::uuid[]))
+        COALESCE(SUM(upgrades), 0)::INT AS upgrades,
+        COALESCE(SUM(downgrades), 0)::INT AS downgrades,
+        COALESCE(SUM(cancellations), 0)::INT AS cancellations
+      FROM mv_revenue_changes
+      WHERE window_name = ${range}
+        AND scope_id = ANY(${scopeIds}::text[])
     )
     SELECT
       COALESCE(

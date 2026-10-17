@@ -7,6 +7,12 @@ import {
   createTestUser,
 } from '@voucha/test-helpers'
 import { getRevenue } from '../get-revenue.mts'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
+
+async function refreshRevenue(): Promise<void> {
+  await refreshMaterializedViewForTest('mv_revenue_memberships')
+  await refreshMaterializedViewForTest('mv_revenue_changes')
+}
 
 describe('growth revenue provider observations', () => {
   it('attributes MRR to the subscription observation instead of a newer catalog price', async () => {
@@ -41,6 +47,8 @@ describe('growth revenue provider observations', () => {
       provider_application_id: applicationId,
     })
 
+    await refreshRevenue()
+
     const result = await getRevenue('all', new Date(0), scope, context)
     const usdBefore = before.mrr_by_currency.find(row => row.currency === 'usd')?.amount ?? '0'
     const usdAfter = result.mrr_by_currency.find(row => row.currency === 'usd')?.amount ?? '0'
@@ -65,6 +73,8 @@ describe('growth revenue provider observations', () => {
       membershipProviderProductId: sku.membership_provider_product_id,
       userId: user.id,
     })
+
+    await refreshRevenue()
 
     const result = await getRevenue('all', new Date(0), scope, context)
     expect(result.active_memberships).toBe(before.active_memberships + 1)

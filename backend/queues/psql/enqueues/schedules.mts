@@ -21,6 +21,18 @@ import {
   REFRESH_TOP_HASHTAGS_SCHEDULER_ID,
   REFRESH_TOP_HASHTAGS_CRON,
   TOP_HASHTAGS_VIEW,
+  PLATFORM_STATS_VIEW,
+  TRENDING_RSS_FEEDS_VIEW,
+  REVENUE_MEMBERSHIPS_VIEW,
+  REVENUE_CHANGES_VIEW,
+  REFRESH_PLATFORM_STATS_SCHEDULER_ID,
+  REFRESH_TRENDING_RSS_FEEDS_SCHEDULER_ID,
+  REFRESH_REVENUE_MEMBERSHIPS_SCHEDULER_ID,
+  REFRESH_REVENUE_CHANGES_SCHEDULER_ID,
+  REFRESH_PLATFORM_STATS_CRON,
+  REFRESH_TRENDING_RSS_FEEDS_CRON,
+  REFRESH_REVENUE_MEMBERSHIPS_CRON,
+  REFRESH_REVENUE_CHANGES_CRON,
   RECONCILE_VOTE_DRIFT_JOB_NAME,
   RECONCILE_VOTE_DRIFT_SCHEDULER_ID,
   RECONCILE_VOTE_DRIFT_CRON,
@@ -53,6 +65,39 @@ const MATERIALIZED_VIEW_SCHEDULE_OPTS = {
 } satisfies JobOptions
 
 export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+  ...(
+    [
+      [REFRESH_PLATFORM_STATS_SCHEDULER_ID, REFRESH_PLATFORM_STATS_CRON, PLATFORM_STATS_VIEW],
+      [
+        REFRESH_TRENDING_RSS_FEEDS_SCHEDULER_ID,
+        REFRESH_TRENDING_RSS_FEEDS_CRON,
+        TRENDING_RSS_FEEDS_VIEW,
+      ],
+      [
+        REFRESH_REVENUE_MEMBERSHIPS_SCHEDULER_ID,
+        REFRESH_REVENUE_MEMBERSHIPS_CRON,
+        REVENUE_MEMBERSHIPS_VIEW,
+      ],
+      [REFRESH_REVENUE_CHANGES_SCHEDULER_ID, REFRESH_REVENUE_CHANGES_CRON, REVENUE_CHANGES_VIEW],
+    ] as const
+  ).map(([schedulerId, pattern, viewName]) => ({
+    schedulerId,
+    repeat: { pattern },
+    template: {
+      name: REFRESH_MATERIALIZED_VIEW_JOB_NAME,
+      data: { viewName },
+      opts: MATERIALIZED_VIEW_SCHEDULE_OPTS,
+    },
+    operatorSurfaces: [
+      {
+        kind: 'scheduled-jobs' as const,
+        id: schedulerId,
+        schedule: pattern,
+        description: `Refresh ${viewName} materialized view (every five minutes)`,
+        trigger: () => enqueueRefreshMaterializedView(viewName),
+      },
+    ] as const,
+  })),
   {
     schedulerId: CREATE_PARTITIONS_SCHEDULER_ID,
     repeat: { pattern: CREATE_PARTITIONS_CRON },

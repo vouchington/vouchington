@@ -8,6 +8,7 @@ const {
   getConversationsByCreatedById,
   getMyDirectConversations,
   getPlatformStats,
+  getRevenue,
   getTopicDataPointInsights,
   getUserBookmarkCounts,
   listUserRemovedPosts,
@@ -101,5 +102,25 @@ export async function runEntityTailScenarios(): Promise<void> {
   )
 
   // Platform stats — 6 scalar COUNT subqueries
+  registerScenarioContract('platform-stats', {
+    expectations: [{ kind: 'maxProcessedRows', relation: 'mv_platform_stats', max: 1 }],
+  })
   await runAndCapture('platform-stats', () => getPlatformStats())
+  registerScenarioContract('revenue-global', {
+    expectations: [
+      // The 302-row fixture is small enough for two sequential scans (2 × 302, plus 20%).
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_memberships', max: 725 },
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_changes', max: 12 },
+    ],
+  })
+  await runAndCapture('revenue-global', () => getRevenue('7d', new Date(Date.now() - 7 * 86400000)))
+  registerScenarioContract('revenue-scoped', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_memberships', max: 725 },
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_changes', max: 12 },
+    ],
+  })
+  await runAndCapture('revenue-scoped', () =>
+    getRevenue('7d', new Date(Date.now() - 7 * 86400000), { userIds: [seedUser.id] }),
+  )
 }

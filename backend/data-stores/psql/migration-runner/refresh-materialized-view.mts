@@ -4,7 +4,14 @@ import onError from '@modules/on-error'
 // Materialized views that may be refreshed via the psql `refreshMaterializedView` job.
 // REFRESH MATERIALIZED VIEW is DDL and cannot use bind params, so the view name is
 // validated against this allowlist before interpolation to prevent SQL injection.
-const REFRESHABLE_MATERIALIZED_VIEWS = new Set(['mv_rss_feed_crawl_tiers', 'mv_top_hashtags'])
+const REFRESHABLE_MATERIALIZED_VIEWS = new Set([
+  'mv_rss_feed_crawl_tiers',
+  'mv_top_hashtags',
+  'mv_platform_stats',
+  'mv_trending_rss_feeds',
+  'mv_revenue_memberships',
+  'mv_revenue_changes',
+])
 
 const MATERIALIZED_VIEW_ADVISORY_LOCK = 'refresh-materialized-view'
 

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { valkeyEvents } from 'valkyries'
-import { stableSerialize } from '@services/entity-cache/search-cache'
+import { invalidateSearchCache, stableSerialize } from '@services/entity-cache/search-cache'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   countCapturedQueriesByAnnotation,
@@ -14,9 +14,18 @@ import {
   stopTestQueryCapture,
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
+import { getPlatformStatsReference } from '@voucha/test-helpers/platform-stats-reference'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
 
 describe('platform-stats', () => {
   afterAll(() => cacheValkeyClient.close())
+
+  it('matches the former live aggregate after refresh', async () => {
+    await refreshMaterializedViewForTest('mv_platform_stats')
+    const response = await createRequest().get('/api/v1/platform-stats').expect(200)
+    expect(response.body).toEqual(await getPlatformStatsReference())
+    await invalidateSearchCache('platform_stats_anon')
+  })
 
   it('shares one cold platform aggregate with two authenticated viewers and preserves HTTP headers', async () => {
     const anonymous = createRequest()

@@ -10,6 +10,7 @@ import { encodeCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { updateRssFeedById } from '@services/rss-feeds'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
 
 describe('trending-rss-feeds', () => {
   let admin: PrivateUser
@@ -50,6 +51,7 @@ describe('trending-rss-feeds', () => {
     for (const feedId of [trendingFeedId, secondaryTrendingFeedId, hiddenTrendingFeedId]) {
       await insertEntityRelation('relation__user__follow__rss_feed', admin.id, feedId)
     }
+    await refreshMaterializedViewForTest('mv_trending_rss_feeds')
     const boundaries = [trendingFeedId, secondaryTrendingFeedId, hiddenTrendingFeedId].map(
       feedId => {
         const hex = (BigInt(`0x${feedId.replaceAll('-', '')}`) + 1n).toString(16).padStart(32, '0')
@@ -66,7 +68,7 @@ describe('trending-rss-feeds', () => {
     ownedBoundary = boundaries[0]!
     secondaryBoundary = boundaries[1]!
     hiddenBoundary = boundaries[2]!
-  }, 5000)
+  })
 
   describe('GET /api/v1/rss-feeds/trending', () => {
     it.each([

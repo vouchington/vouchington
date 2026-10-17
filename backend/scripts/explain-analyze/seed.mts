@@ -88,6 +88,7 @@ import {
   seedMemberships,
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
+import { seedMembershipChange } from './seed-data/membership-changes.mts'
 
 async function main() {
   await seedUsers(20_000)
@@ -95,6 +96,7 @@ async function main() {
   await seedTopicImportAttempts()
   await seedMembershipProducts()
   await seedMemberships()
+  await seedMembershipChange()
   await seedMembershipRefunds()
   await checkpointSeed('memberships')
   await seedHostnames()
@@ -171,6 +173,10 @@ async function main() {
   await seedRelationVoteReads()
   await runAnalyze()
   await refreshMaterializedView('mv_rss_feed_crawl_tiers')
+  await refreshMaterializedView('mv_platform_stats')
+  await refreshMaterializedView('mv_trending_rss_feeds')
+  await refreshMaterializedView('mv_revenue_memberships')
+  await refreshMaterializedView('mv_revenue_changes')
   await printRowCounts()
   console.log('\nSeed complete.')
   process.exit(0)

@@ -7,6 +7,10 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
   for (const [scenarioId, view] of [
     ['mv-top-hashtags-refresh', 'mv_top_hashtags'],
     ['mv-rss-feed-crawl-tiers-refresh', 'mv_rss_feed_crawl_tiers'],
+    ['mv-platform-stats-refresh', 'mv_platform_stats'],
+    ['mv-trending-rss-feeds-refresh', 'mv_trending_rss_feeds'],
+    ['mv-revenue-memberships-refresh', 'mv_revenue_memberships'],
+    ['mv-revenue-changes-refresh', 'mv_revenue_changes'],
   ] as const) {
     const { rows } = await read<{ definition: string }>(
       `/* explainMaterializedViewDefinition */ SELECT pg_get_viewdef($1::regclass) AS definition`,
@@ -17,7 +21,8 @@ export async function runMaterializedViewRefreshScenarios(): Promise<void> {
     // no-mistakes-disable-next-line query-reached-per-item: two fixed materialized-view EXPLAIN scenarios pair captures around bounded ANALYZE
     await runAndCapture(scenarioId, async () => {
       const result = await read(`/* ${scenarioId} */ ${definition}`)
-      if (result.rows.length === 0) throw new Error(`Empty ${view} defining query`)
+      if (result.rows.length === 0 && view !== 'mv_revenue_changes')
+        throw new Error(`Empty ${view} defining query`)
       if (
         view === 'mv_top_hashtags' &&
         !result.rows.some(
@@ -66,4 +71,30 @@ registerScenarioContract('rss-feeds-to-fetch-tiered', {
     { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 3089 },
     { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 3089 },
   ],
+})
+registerScenarioContract('mv-platform-stats-refresh', {
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'posts', max: 250000 },
+    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 4000 },
+    { kind: 'maxProcessedRows', relation: 'topics', max: 6000 },
+  ],
+  crossPartition: { posts: 'The snapshot counts all public posts.' },
+})
+registerScenarioContract('mv-trending-rss-feeds-refresh', {
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'rss_feed_items', max: 220000 },
+    { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: 220000 },
+    { kind: 'maxProcessedRows', relation: 'relation__user__follow__rss_feed', max: 12000 },
+  ],
+  crossPartition: { rss_feed_items: 'Publication date defines each rolling trend window.' },
+})
+registerScenarioContract('mv-revenue-memberships-refresh', {
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'memberships', max: 1000 },
+    { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 1000 },
+  ],
+})
+registerScenarioContract('mv-revenue-changes-refresh', {
+  expectations: [{ kind: 'maxProcessedRows', relation: 'membership_changes', max: 3000 }],
+  seededRows: { membership_changes: 1 },
 })

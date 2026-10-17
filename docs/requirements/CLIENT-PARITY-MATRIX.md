@@ -55,6 +55,14 @@ See also:
 - <a id="table-b--domain-surfaces"></a>[Table B — Domain Surfaces](reference-client-parity-matrix-table-b-domain-surfaces.md)
 - <a id="table-c--active-gaps-and-synchronization-rule"></a>[Table C — Active Gaps and Synchronization rule](reference-client-parity-matrix-table-c-active-gaps.md)
 
+## Platform stats snapshot freshness
+
+`GET /api/v1/platform-stats` now serves one server-side snapshot refreshed every five minutes.
+Web, Swift, and .NET callers receive the same aggregate fields and server-side refresh cadence;
+the existing Valkey and anonymous HTTP caches can add their short TTLs. This changes no client
+request, response, or rendering contract, so no client implementation or fixture handoff is needed.
+The [API contract](api/v1/platform-stats/README.md#performance) owns the refresh and cache details.
+
 ## Bounded story article handoff
 
 Vouchington stages `story_member_pages` in feed, search, and community responses and the
