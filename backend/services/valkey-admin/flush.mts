@@ -1,6 +1,6 @@
 import type { GlideClient } from '@valkey/valkey-glide'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
-import { scanAndUnlinkKeys } from 'valkyries'
+import { scanAndUnlinkKeyPrefixes } from 'valkyries'
 import {
   bloomValkeyClient,
   cacheValkeyClient,
@@ -22,65 +22,26 @@ export type FlushResult = {
 
 export type ScanBasedConcern = 'recently-viewed' | 'blooms' | 'dynamic-config' | 'sessions'
 
-// Client + key pattern(s) for every concern whose removal mechanism is a plain SCAN+UNLINK, shared
-// with the read-only diagnostic target registry so removal and diagnosis cannot drift apart.
-const SCAN_BASED_CONCERN_PATTERNS: Record<
+// Client + literal key prefixes for every concern whose removal mechanism is a plain SCAN+UNLINK,
+// shared with the read-only diagnostic target registry so removal and diagnosis cannot drift apart.
+// `scanAndUnlinkKeyPrefixes` already reports each failing prefix through valkyries' error handler
+// (routed to onError by app-integration), so callers must not report again. It attempts every
+// prefix unless cancellation arrives, rethrows a single failure as-is, and combines 2+ failures
+// into an `AggregateError`.
+const SCAN_BASED_CONCERN_TARGETS: Record<
   ScanBasedConcern,
-  { client: GlideClient; patterns: string[] }
+  { client: GlideClient; prefixes: readonly string[] }
 > = {
   'recently-viewed': {
     client: cacheValkeyClient,
-    patterns: SERVICE_FLUSH_TARGET_PREFIXES['recently-viewed'].map(prefix => `${prefix}*`),
+    prefixes: SERVICE_FLUSH_TARGET_PREFIXES['recently-viewed'],
   },
-  blooms: {
-    client: bloomValkeyClient,
-    patterns: SERVICE_FLUSH_TARGET_PREFIXES.blooms.map(prefix => `${prefix}*`),
-  },
+  blooms: { client: bloomValkeyClient, prefixes: SERVICE_FLUSH_TARGET_PREFIXES.blooms },
   'dynamic-config': {
     client: dynamicConfigValkeyClient,
-    patterns: SERVICE_FLUSH_TARGET_PREFIXES['dynamic-config'].map(prefix => `${prefix}*`),
+    prefixes: SERVICE_FLUSH_TARGET_PREFIXES['dynamic-config'],
   },
-  sessions: {
-    client: sessionValkeyClient,
-    patterns: SERVICE_FLUSH_TARGET_PREFIXES.sessions.map(prefix => `${prefix}*`),
-  },
-}
-
-/**
- * Every pattern's `scanAndUnlinkKeys()` already reports its own failure via `handleValkeyError`
- * before rethrowing, so callers must not wrap this in a second `onError` report.
- * A failure on one pattern (e.g. one of `sessions`' 9 prefixes) doesn't discard the key counts
- * already removed by the others: every pattern is still attempted unless cancellation requests
- * that no additional destructive work begin. When exactly one pattern fails, that error is
- * rethrown as-is; when 2+ fail, they're combined into an `AggregateError`.
- */
-async function sumUnlinkedKeys(
-  client: GlideClient,
-  patterns: string[],
-  signal?: AbortSignal,
-): Promise<number> {
-  let removed = 0
-  const failures: unknown[] = []
-  for (const pattern of patterns) {
-    signal?.throwIfAborted()
-    try {
-      // oxlint-disable-next-line no-await-in-loop -- serial dispatch prevents cancellation from starting additional destructive prefix scans
-      const { unlinkedKeys } = await scanAndUnlinkKeys(client, pattern, { signal })
-      removed += unlinkedKeys
-      signal?.throwIfAborted()
-    } catch (err) {
-      if (signal?.aborted && err === signal.reason) throw err
-      failures.push(err)
-    }
-  }
-
-  if (failures.length === 0) return removed
-  if (failures.length === 1) throw failures[0]
-
-  throw new AggregateError(
-    failures,
-    `${failures.length}/${patterns.length} key patterns failed to flush (${removed} keys removed from the rest)`,
-  )
+  sessions: { client: sessionValkeyClient, prefixes: SERVICE_FLUSH_TARGET_PREFIXES.sessions },
 }
 
 /**
@@ -107,8 +68,10 @@ export async function flushConcern(
     case 'recently-viewed':
     case 'blooms':
     case 'dynamic-config': {
-      const { client, patterns } = SCAN_BASED_CONCERN_PATTERNS[concern]
-      const keysRemoved = await sumUnlinkedKeys(client, patterns, opts?.signal)
+      const { client, prefixes } = SCAN_BASED_CONCERN_TARGETS[concern]
+      const { unlinkedKeys: keysRemoved } = await scanAndUnlinkKeyPrefixes(client, prefixes, {
+        signal: opts?.signal,
+      })
       return { concern, keysRemoved }
     }
 
@@ -121,8 +84,10 @@ export async function flushConcern(
 
     case 'sessions': {
       if (!opts?.force) throw createHttpError(400, 'Flushing sessions requires force: true')
-      const { client, patterns } = SCAN_BASED_CONCERN_PATTERNS.sessions
-      const keysRemoved = await sumUnlinkedKeys(client, patterns, opts.signal)
+      const { client, prefixes } = SCAN_BASED_CONCERN_TARGETS.sessions
+      const { unlinkedKeys: keysRemoved } = await scanAndUnlinkKeyPrefixes(client, prefixes, {
+        signal: opts.signal,
+      })
       return { concern, keysRemoved }
     }
 

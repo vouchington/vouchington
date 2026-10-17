@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { closeValkeyClients } from 'valkyries'
 
-const mockCloseValkeyClients = vi.fn<() => Promise<void>>(() => Promise.resolve())
-const mockDynamicConfig = { close: vi.fn<() => Promise<void>>(() => Promise.resolve()) }
+const mockCloseValkeyClients = vi.fn<typeof closeValkeyClients>(() => Promise.resolve())
 const mockGlideMqInstance = { close: vi.fn<() => Promise<void>>(() => Promise.resolve()) }
 const mockCloseSharedCommandClient = vi.fn<() => Promise<void>>(() => Promise.resolve())
 
 async function createShutdown() {
   const { createGracefulShutdown } = await import('./shutdown.mts')
   return createGracefulShutdown({
-    dynamicConfigs: new Set([mockDynamicConfig]),
     getGlideMQInstances: () => [mockGlideMqInstance],
     closeValkeyClients: mockCloseValkeyClients,
     closeSharedCommandClientFromRegistry: mockCloseSharedCommandClient,
@@ -20,8 +19,6 @@ describe('valkey shutdown facade', () => {
     vi.clearAllMocks()
     mockCloseValkeyClients.mockReset()
     mockCloseValkeyClients.mockResolvedValue(undefined)
-    mockDynamicConfig.close.mockReset()
-    mockDynamicConfig.close.mockResolvedValue(undefined)
     mockGlideMqInstance.close.mockReset()
     mockGlideMqInstance.close.mockResolvedValue(undefined)
     mockCloseSharedCommandClient.mockReset()
@@ -72,21 +69,15 @@ describe('valkey shutdown facade', () => {
     ).resolves.toBeUndefined()
   })
 
-  it('closes dynamic configs before GlideMQ instances and valkyries clients once', async () => {
+  it('closes GlideMQ instances and valkyries clients once, failing on client close errors', async () => {
     const onGracefulShutdown = await createShutdown()
 
     await onGracefulShutdown()
     await onGracefulShutdown()
 
-    expect(mockDynamicConfig.close).toHaveBeenCalledTimes(1)
     expect(mockGlideMqInstance.close).toHaveBeenCalledTimes(1)
     expect(mockCloseValkeyClients).toHaveBeenCalledTimes(1)
-    expect(mockDynamicConfig.close.mock.invocationCallOrder[0]).toBeLessThan(
-      mockGlideMqInstance.close.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
-    )
-    expect(mockDynamicConfig.close.mock.invocationCallOrder[0]).toBeLessThan(
-      mockCloseValkeyClients.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
-    )
+    expect(mockCloseValkeyClients).toHaveBeenCalledWith({ throwOnError: true })
   })
 
   it('does not close the shared command client before GlideMQ drain resolves', async () => {
@@ -117,15 +108,17 @@ describe('valkey shutdown facade', () => {
     )
   })
 
-  it('propagates dynamic config close failures after closing clients', async () => {
-    const error = new Error('dynamic config close failed')
-    mockDynamicConfig.close.mockRejectedValueOnce(error)
+  it('surfaces a valkyries client close failure after closing everything else', async () => {
+    const clientFailure = new AggregateError(
+      [new Error('client close failed')],
+      'Valkey shutdown failed',
+    )
+    mockCloseValkeyClients.mockRejectedValueOnce(clientFailure)
     const onGracefulShutdown = await createShutdown()
 
-    await expect(onGracefulShutdown()).rejects.toMatchObject({ errors: [error] })
+    await expect(onGracefulShutdown()).rejects.toMatchObject({ errors: [clientFailure] })
 
     expect(mockGlideMqInstance.close).toHaveBeenCalledTimes(1)
-    expect(mockCloseValkeyClients).toHaveBeenCalledTimes(1)
     expect(mockCloseSharedCommandClient).toHaveBeenCalledTimes(1)
   })
 
@@ -138,21 +131,18 @@ describe('valkey shutdown facade', () => {
   })
 
   it('attempts every close and propagates all cleanup failures', async () => {
-    const dynamicConfigError = new Error('dynamic config close failed')
     const glideError = new Error('glide close failed')
     const valkyriesError = new Error('valkyries close failed')
     const sharedClientError = new Error('shared client close failed')
-    mockDynamicConfig.close.mockRejectedValueOnce(dynamicConfigError)
     mockGlideMqInstance.close.mockRejectedValueOnce(glideError)
     mockCloseValkeyClients.mockRejectedValueOnce(valkyriesError)
     mockCloseSharedCommandClient.mockRejectedValueOnce(sharedClientError)
     const onGracefulShutdown = await createShutdown()
 
     await expect(onGracefulShutdown()).rejects.toMatchObject({
-      errors: [dynamicConfigError, glideError, valkyriesError, sharedClientError],
+      errors: [glideError, valkyriesError, sharedClientError],
     })
 
-    expect(mockDynamicConfig.close).toHaveBeenCalledTimes(1)
     expect(mockGlideMqInstance.close).toHaveBeenCalledTimes(1)
     expect(mockCloseValkeyClients).toHaveBeenCalledTimes(1)
     expect(mockCloseSharedCommandClient).toHaveBeenCalledTimes(1)

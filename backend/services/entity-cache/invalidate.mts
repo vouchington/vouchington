@@ -15,7 +15,7 @@ import {
   getCacheKeys,
 } from './keys.mts'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { retryCacheSaturation } from '@data-stores/valkey/retry-saturation'
+import { retrySaturationError } from 'valkyries'
 import { caches } from './caches.mts'
 import onError from '@modules/on-error'
 import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
@@ -167,7 +167,7 @@ export async function deleteFromCachesInChunks(groups: CacheDeleteGroups): Promi
   const maxKeys = Math.max(0, ...groups.map(group => group.keys.length))
   async function deleteNextChunk(start: number): Promise<void> {
     if (start >= maxKeys) return
-    await retryCacheSaturation(() =>
+    await retrySaturationError(() =>
       ValkeyCache.deleteFromCaches(
         groups.map(({ cache, keys }) => ({
           cache,

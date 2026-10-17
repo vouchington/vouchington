@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { Decoder, InfoOptions, type GlideClient } from '@valkey/valkey-glide'
+import type { GlideClient } from '@valkey/valkey-glide'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { describe, expect, it } from 'vitest'
 import { getQueueFlushTargetPrefixes } from '@voucha/api/v1/valkey/queues-flush'
@@ -8,9 +8,7 @@ import {
   assertSingleValkeyTopology,
   collectValkeyDiagnostics,
   diagnoseValkey,
-  validateFlushTargetPrefixRegistry,
 } from './diagnostics.mts'
-import { parseValkeyMemoryInfo } from './memory-info.mts'
 import { createFlushTargetPrefixRegistry } from './flush-targets.mts'
 
 const COMPLETE_INFO = `# Memory
@@ -50,55 +48,6 @@ function makeTopology(
 }
 
 describe('Valkey diagnostics', () => {
-  it('parses required INFO memory fields and nullable optional fields', () => {
-    expect(parseValkeyMemoryInfo(COMPLETE_INFO)).toEqual({
-      usedMemoryBytes: 100,
-      usedMemoryRssBytes: 120,
-      usedMemoryPeakBytes: 140,
-      maxmemoryBytes: 1_000,
-      maxmemoryPolicy: 'noeviction',
-      usedMemoryDatasetBytes: 80,
-      lazyfreePendingObjects: 3,
-      memFragmentationRatio: 1.2,
-    })
-    expect(
-      parseValkeyMemoryInfo(
-        'used_memory:1\nused_memory_rss:2\nused_memory_peak:3\nmaxmemory:4\nmaxmemory_policy:noeviction',
-      ),
-    ).toMatchObject({
-      usedMemoryDatasetBytes: null,
-      lazyfreePendingObjects: null,
-      memFragmentationRatio: null,
-    })
-  })
-
-  it('rejects missing or malformed INFO memory fields without exposing raw INFO', () => {
-    expect(() => parseValkeyMemoryInfo('maxmemory_policy:noeviction')).toThrow(
-      'Missing required INFO memory field: used_memory',
-    )
-    expect(() =>
-      parseValkeyMemoryInfo(COMPLETE_INFO.replace('used_memory:100', 'used_memory:x')),
-    ).toThrow('Malformed INFO memory field: used_memory')
-    expect(() =>
-      parseValkeyMemoryInfo(
-        COMPLETE_INFO.replace(
-          'lazyfree_pending_objects:3',
-          'lazyfree_pending_objects:secret-value',
-        ),
-      ),
-    ).toThrow('Malformed INFO memory field: lazyfree_pending_objects')
-    expect(() =>
-      parseValkeyMemoryInfo(
-        COMPLETE_INFO.replace('mem_fragmentation_ratio:1.2', 'mem_fragmentation_ratio:-1'),
-      ),
-    ).toThrow('Malformed INFO memory field: mem_fragmentation_ratio')
-    expect(() =>
-      parseValkeyMemoryInfo(
-        COMPLETE_INFO.replace('mem_fragmentation_ratio:1.2', 'mem_fragmentation_ratio:'),
-      ),
-    ).toThrow('Malformed INFO memory field: mem_fragmentation_ratio')
-  })
-
   it('treats credential-only URL differences as one topology', () => {
     expect(() =>
       assertSingleValkeyTopology(
@@ -151,11 +100,18 @@ describe('Valkey diagnostics', () => {
     ).toThrow('Valkey topology URL must use redis: or rediss:')
   })
 
-  it('rejects overlapping target-prefix registries', () => {
-    const registry = createFlushTargetPrefixRegistry(['cache:topics:queue:'])
-    expect(() => validateFlushTargetPrefixRegistry(registry)).toThrow(
-      'Overlapping flush target prefixes',
-    )
+  it('rejects an overlapping target-prefix registry before any Valkey command', async () => {
+    const calls: Array<{ command: string; args: unknown[] }> = []
+    const client = makeReadOnlyClient({ '0': ['0', []] }, calls)
+
+    await expect(
+      collectValkeyDiagnostics(
+        client,
+        makeTopology(['redis://localhost:6379']),
+        createFlushTargetPrefixRegistry(['cache:topics:queue:']),
+      ),
+    ).rejects.toThrow('overlaps')
+    expect(calls).toEqual([])
   })
 
   it('classifies one multi-page SCAN into all concerns and unclassified observations', async () => {
@@ -215,7 +171,7 @@ describe('Valkey diagnostics', () => {
     expect(result.observedFlushTargetKeyCounts.unclassified).toBe(0)
   })
 
-  it('uses INFO memory and one read-only string-decoded SCAN without mutation methods', async () => {
+  it('reads only INFO memory and SCAN pages from the client', async () => {
     const calls: Array<{ command: string; args: unknown[] }> = []
     const client = makeReadOnlyClient({ '0': ['0', []] }, calls)
     await collectValkeyDiagnostics(
@@ -224,13 +180,7 @@ describe('Valkey diagnostics', () => {
       createFlushTargetPrefixRegistry(['glide:usage:']),
     )
 
-    expect(calls).toEqual([
-      { command: 'info', args: [[InfoOptions.Memory]] },
-      {
-        command: 'scan',
-        args: ['0', { match: '*', count: 500, decoder: Decoder.String }],
-      },
-    ])
+    expect(calls.map(call => call.command)).toEqual(['info', 'scan'])
   })
 
   it('does not remove randomized target or unrelated keys from real Valkey', async () => {

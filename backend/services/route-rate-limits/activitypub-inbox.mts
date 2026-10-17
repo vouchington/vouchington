@@ -3,8 +3,8 @@ import {
   RateLimiter,
   rateLimiterValkeyClient,
   registerScript,
-  retryRateLimiterSaturation,
 } from '@data-stores/valkey-rate-limiter'
+import { retrySaturationError } from 'valkyries'
 import onError from '@modules/on-error'
 import {
   getActivityPubInboxAttemptMaxRequests,
@@ -117,7 +117,7 @@ export async function recordActivityPubInboxSenderDeliveryOnce(
   dependencies: Pick<ActivityPubInboxRateLimitDependencies, 'reportError'> = defaultDependencies,
 ): Promise<boolean> {
   try {
-    const result = await retryRateLimiterSaturation(() =>
+    const result = await retrySaturationError(() =>
       rateLimiterValkeyClient.invokeScript(activityPubInboxSenderAddOnceScript, {
         keys: [activityPubInboxRateLimiter.getKey(senderHostname)],
         args: [
