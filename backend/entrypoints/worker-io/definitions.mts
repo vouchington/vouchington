@@ -16,6 +16,10 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/oauth-authorization-exchange/enqueues/schedules'),
         import('@queues/notifications/enqueues/schedules'),
         import('@queues/activitypub/enqueues/schedules'),
+        import('@queues/rss-feeds/enqueues/schedules'),
+        import('@queues/urls-domains-blacklist/enqueues/schedules'),
+        import('@queues/sitemaps/enqueues/schedules'),
+        import('@queues/kagi-smallweb/enqueues/schedules'),
       ])
       return async () => {
         await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
@@ -23,16 +27,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     },
   },
   {
-    queueName: 'urls-domains-blacklist',
+    queueName: 'find-your-friends',
     load: () =>
-      import('@queues/urls-domains-blacklist/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
-    queueName: 'rss-feeds',
-    load: () =>
-      import('@queues/rss-feeds/enqueues/schedules').then(module => module.upsertSchedules),
+      import('@queues/find-your-friends/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'rss-feed-maintenance',
@@ -40,11 +37,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/rss-feed-maintenance/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
-  },
-  {
-    queueName: 'find-your-friends',
-    load: () =>
-      import('@queues/find-your-friends/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'emails',
@@ -60,18 +52,8 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/bloom-filters/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'sitemaps',
-    load: () =>
-      import('@queues/sitemaps/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
     queueName: 'memberships',
     load: () =>
       import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'kagi-smallweb',
-    load: () =>
-      import('@queues/kagi-smallweb/enqueues/schedules').then(module => module.upsertSchedules),
   },
 ]

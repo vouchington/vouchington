@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import { rss_feeds } from '@queues/rss-feeds/queues'
+import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import { createTestUser } from '@voucha/test-helpers'
 import { refreshRssFeedAsCurrentUser } from './refresh.mts'
 
@@ -14,7 +15,10 @@ describe('refreshRssFeedAsCurrentUser', () => {
     await refreshRssFeedAsCurrentUser(administrator, rssFeedId)
     await refreshRssFeedAsCurrentUser(administrator, rssFeedId)
 
-    const jobs = await rss_feeds.searchJobs({ name: 'fetchRssFeed', data: { rssFeedId } })
+    const jobs = await rssFeedsQueue.searchJobs({
+      name: RSS_FEEDS_FETCH_JOB.name,
+      data: { rssFeedId },
+    })
     expect(jobs).toHaveLength(2)
     expect(jobs).toEqual(
       expect.arrayContaining([
@@ -43,7 +47,10 @@ describe('refreshRssFeedAsCurrentUser', () => {
     await refreshRssFeedAsCurrentUser(administrator, rssFeedId, true)
     await refreshRssFeedAsCurrentUser(administrator, rssFeedId, true)
 
-    const jobs = await rss_feeds.searchJobs({ name: 'fetchRssFeed', data: { rssFeedId } })
+    const jobs = await rssFeedsQueue.searchJobs({
+      name: RSS_FEEDS_FETCH_JOB.name,
+      data: { rssFeedId },
+    })
     expect(jobs).toHaveLength(2)
     expect(jobs.map(job => job.data)).toEqual([
       { rssFeedId, ttl: 0 },

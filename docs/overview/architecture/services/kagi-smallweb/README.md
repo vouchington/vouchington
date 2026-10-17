@@ -6,8 +6,8 @@ Syncs RSS feeds from Kagi Small Web feed lists — fetches multiple sources in p
 
 ## Key exports
 
-- `syncKagiSmallWeb(): Promise<SyncResult>` — fetches Kagi Small Web feed lists, identifies new RSS feeds not yet in the database, and enqueues them for crawling
-- `SyncResult` — `{ total, added, skipped }`
+- `dispatchKagiSmallWeb(cursor?): Promise<DispatchKagiSmallWebResult>` — fetches Kagi Small Web feed lists and enqueues one bounded page of new RSS feeds after `cursor`, continuing with a cursor job when more remain
+- `DispatchKagiSmallWebResult` — `{ disabled?, skipped?, enqueued, total, hasMore? }`
 
 ## Related
 

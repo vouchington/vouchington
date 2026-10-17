@@ -27,6 +27,11 @@ export const BACKGROUND_DOMAINS = [
   'activitypub',
   'follower-distributions',
   'bluesky-follow-propagation',
+  'rss-feeds',
+  'urls-domains-blacklist',
+  'sitemaps',
+  'cache-purge',
+  'kagi-smallweb',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]

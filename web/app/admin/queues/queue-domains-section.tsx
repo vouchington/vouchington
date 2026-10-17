@@ -13,6 +13,7 @@ import {
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { BACKGROUND_QUEUE } from './domains-model'
 import type { DomainAction } from './domain-actions'
+import { notifyDomainsChanged, useDomainsVersion } from './domains-sync'
 import { DomainsTable, type DomainsTableLabels } from './domains-table'
 
 type Translate = ReturnType<typeof useTranslations>
@@ -67,15 +68,23 @@ function failureMessage(t: Translate, domain: string, action: DomainAction): str
   return t('extracted.queues.domainsSection.failedToRetryDomain_b8ac9e18', { domain })
 }
 
-async function loadDomains(
+/** Returns a cancel function; a cancelled load is stale and never writes state. */
+function loadDomains(
   setDomains: (domains: QueueDomain[]) => void,
   setFetchError: (failed: boolean) => void,
-): Promise<void> {
-  try {
-    const { domains } = await fetchQueueDomains(BACKGROUND_QUEUE)
-    setDomains(domains)
-  } catch {
-    setFetchError(true)
+): () => void {
+  let stale = false
+  fetchQueueDomains(BACKGROUND_QUEUE)
+    .then(({ domains }) => {
+      if (stale) return
+      setDomains(domains)
+      setFetchError(false)
+    })
+    .catch(() => {
+      if (!stale) setFetchError(true)
+    })
+  return () => {
+    stale = true
   }
 }
 
@@ -85,18 +94,17 @@ export function QueueDomainsSection() {
   const [fetchError, setFetchError] = useState(false)
   const [busy, setBusy] = useState<Record<string, boolean>>({})
 
-  function load(): Promise<void> {
-    return loadDomains(setDomains, setFetchError)
-  }
+  const [retries, setRetries] = useState(0)
 
+  const domainsVersion = useDomainsVersion()
   useEffect(() => {
-    void loadDomains(setDomains, setFetchError)
-  }, [])
+    return loadDomains(setDomains, setFetchError)
+  }, [domainsVersion, retries])
 
   function handleRetryLoad() {
     setFetchError(false)
     setDomains(null)
-    void load()
+    setRetries(count => count + 1)
   }
 
   async function handleAction(domain: string, action: DomainAction) {
@@ -109,7 +117,8 @@ export function QueueDomainsSection() {
         tags: { form: `admin-queue-domain-${action}` },
       })
     }
-    await load()
+    // Reloads this table and any other control of the same domains.
+    notifyDomainsChanged()
     setBusy(current => ({ ...current, [domain]: false }))
   }
 

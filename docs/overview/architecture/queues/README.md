@@ -27,9 +27,8 @@ and unblock writers enqueue changed hostname IDs in PostgreSQL.
 
 [`background`](background/README.md) is the shared IO queue for background domains of the same
 shape, served by one [worker](workers/background/README.md) that dispatches by `<domain>.<name>`
-through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-inbound`,
-`openai-moderation`, `post-mentions`, `story-post-related-url-projections`, `post-publication`, `vote-aggregation`, `entity-listeners`, `account-lifecycle`, `article-sync`, `memberships`, `oauth-authorization-exchange`, and `notifications`; the remaining io queues follow under
-[#2855](https://github.com/vouchington/vouchington/issues/2855).
+through a registry. Pause, retry, and stats are per domain. Its page lists the domains it
+carries.
 
 ## Vote aggregation
 

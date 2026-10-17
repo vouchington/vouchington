@@ -123,7 +123,7 @@ test.describe('Queue Dashboard', () => {
     expect(['Enable AI Agents', 'Disable AI Agents']).toContain(label?.trim())
   })
 
-  test('displays Kagi Smallweb section with toggle button reflecting live queue state', async ({
+  test('displays Kagi Smallweb section with toggle button reflecting live domain state', async ({
     page,
   }) => {
     const section = page.getByTestId('kagi-section')
@@ -170,8 +170,8 @@ test.describe('Queue Dashboard — kill switch error states', () => {
     await expect(page.getByTestId('ai-agents-retry')).toBeVisible({ timeout: 10_000 })
   })
 
-  test('shows retry button for Kagi section when queue stats endpoint fails', async ({ page }) => {
-    await page.route('**/api/v1/mq/queues', route => route.abort('aborted'))
+  test('shows retry button for Kagi section when the domains endpoint fails', async ({ page }) => {
+    await page.route('**/api/v1/mq/queues/background/domains', route => route.abort('aborted'))
     await navigateTo(page, '/admin/queues')
     await expect(page.getByTestId('kagi-retry')).toBeVisible({ timeout: 10_000 })
   })

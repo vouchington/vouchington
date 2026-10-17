@@ -43,6 +43,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@queues/background": "workspace:^",
     "@queues/cache-purge": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

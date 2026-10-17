@@ -43,26 +43,15 @@ import { scheduledJobManifest as openAiModerationManifest } from '@queues/openai
 import { scheduledJobManifest as postPublicationManifest } from '@queues/post-publication/enqueues/schedules'
 import { scheduledJobManifest as sesInboundManifest } from '@queues/ses-inbound/enqueues/schedules'
 import { scheduledJobManifest as storyProjectionManifest } from '@queues/story-post-related-url-projections/enqueues/schedules'
-import {
-  scheduledJobManifest as kagiManifest,
-  upsertSchedules as registerKagi,
-} from '@queues/kagi-smallweb/enqueues/schedules'
-import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
-import {
-  scheduledJobManifest as sitemapsManifest,
-  upsertSchedules as registerSitemaps,
-} from '@queues/sitemaps/enqueues/schedules'
-import { sitemaps } from '@queues/sitemaps/queues'
+import { scheduledJobManifest as kagiManifest } from '@queues/kagi-smallweb/enqueues/schedules'
+import { scheduledJobManifest as rssFeedsManifest } from '@queues/rss-feeds/enqueues/schedules'
+import { scheduledJobManifest as sitemapsManifest } from '@queues/sitemaps/enqueues/schedules'
 import {
   scheduledJobManifest as unfurlManifest,
   upsertSchedules as registerUnfurl,
 } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
-import {
-  scheduledJobManifest as blacklistManifest,
-  upsertSchedules as registerBlacklist,
-} from '@queues/urls-domains-blacklist/enqueues/schedules'
-import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
+import { scheduledJobManifest as blacklistManifest } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as voteWeightManifest } from '@queues/vote-aggregation/enqueues/schedules'
 
 const BACKGROUND_MANIFESTS = [
@@ -71,6 +60,10 @@ const BACKGROUND_MANIFESTS = [
   storyProjectionManifest,
   postPublicationManifest,
   voteWeightManifest,
+  rssFeedsManifest,
+  sitemapsManifest,
+  kagiManifest,
+  blacklistManifest,
 ]
 const registerBackground = () => upsertBackgroundSchedules(BACKGROUND_MANIFESTS)
 
@@ -83,10 +76,7 @@ const REGISTRATIONS = [
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
   [registerContentAnalysis, contentAnalysisQueue, contentAnalysisManifest],
   [registerBackground, background, combineBackgroundManifests(BACKGROUND_MANIFESTS)],
-  [registerKagi, kagiSmallWeb, kagiManifest],
-  [registerSitemaps, sitemaps, sitemapsManifest],
   [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],
-  [registerBlacklist, urlsDomainsBlacklist, blacklistManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {

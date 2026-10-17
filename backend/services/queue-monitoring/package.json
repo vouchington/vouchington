@@ -37,7 +37,6 @@
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
-    "@queues/cache-purge": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/crawl-browser": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",

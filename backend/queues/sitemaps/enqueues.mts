@@ -1,76 +1,43 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  type SitemapArchiveBackfillData,
+  SITEMAPS_FAMILY_JOB,
+  SITEMAPS_MONTHLY_BACKFILL_JOB,
+  SITEMAPS_NIGHTLY_BACKFILL_JOB,
+  SITEMAPS_POSTS_INDEX_JOB,
+  SITEMAPS_POST_DAY_JOB,
+  SITEMAPS_POST_TYPE_INDEX_JOB,
+  SITEMAPS_ROOT_INDEX_JOB,
+  SITEMAPS_WEEKLY_BACKFILL_JOB,
+} from '@queues/background/enqueues/sitemaps-jobs'
+import type { BackgroundJobDefinition } from '@queues/background/types'
 import type { SitemapPostType } from '@services/sitemaps/types'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   getSitemapsOrderingKeyForDay,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
   SITEMAPS_DEDUPLICATION_TTL_MS,
   SITEMAPS_ORDERING,
 } from './config.mts'
-import { sitemaps } from './queues.mts'
-import type {
-  PostDayJobData,
-  PostTypeIndexJobData,
-  SitemapFamilyJobData,
-  SitemapDispatcherJobs,
-  SitemapIndexJobs,
-  SitemapPostDayJobs,
-} from './types.mts'
+import type { PostDayJobData, SitemapFamilyJobData } from './types.mts'
 
-const POST_DAY_JOB_NAME: SitemapPostDayJobs = 'processUpdatePostDaySitemap'
 type SitemapDispatcherOptions = {
   deduplicationId?: string
 }
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 
-const enqueueBulkUpdatePostDaySitemapJobs = createBulkEnqueueFunction<
-  PostDayJobData,
-  PostDayJobData,
-  SitemapPostDayJobs
->({
-  queue: sitemaps,
-  queueName: QUEUE_NAME,
-  jobName: POST_DAY_JOB_NAME,
-  buildJob: entry => ({
-    data: entry,
-    opts: postDayJobOptions(entry, PRIORITY_DEFAULT),
-  }),
-})
-
-const enqueueUpdatePostTypeIndexJob = createEnqueueFunction<PostTypeIndexJobData, SitemapIndexJobs>(
-  {
-    queue: sitemaps,
-    queueName: QUEUE_NAME,
-    jobName: 'processUpdatePostTypeIndex',
-  },
+const enqueueBulkUpdatePostDaySitemapJobs = createBackgroundBulkEnqueue(
+  SITEMAPS_POST_DAY_JOB,
+  (entry: PostDayJobData) => ({ data: entry, opts: postDayJobOptions(entry) }),
 )
 
-const enqueueUpdatePostsIndexJob = createEnqueueFunction<Record<string, never>, SitemapIndexJobs>({
-  queue: sitemaps,
-  queueName: QUEUE_NAME,
-  jobName: 'processUpdatePostsIndex',
-})
+const enqueueUpdatePostTypeIndexJob = createBackgroundEnqueue(SITEMAPS_POST_TYPE_INDEX_JOB)
+const enqueueUpdatePostsIndexJob = createBackgroundEnqueue(SITEMAPS_POSTS_INDEX_JOB)
+const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
+const enqueueUpdateRootIndexJob = createBackgroundEnqueue(SITEMAPS_ROOT_INDEX_JOB)
 
-const enqueueUpdateFamilySitemapJob = createEnqueueFunction<SitemapFamilyJobData, SitemapIndexJobs>(
-  {
-    queue: sitemaps,
-    queueName: QUEUE_NAME,
-    jobName: 'processUpdateFamilySitemap',
-  },
-)
-
-const enqueueUpdateRootIndexJob = createEnqueueFunction<Record<string, never>, SitemapIndexJobs>({
-  queue: sitemaps,
-  queueName: QUEUE_NAME,
-  jobName: 'processUpdateRootIndex',
-})
-
-function postDayJobOptions(entry: PostDayJobData, priority: number): Partial<JobOptions> {
+function postDayJobOptions(entry: PostDayJobData): Partial<JobOptions> {
   return {
-    priority,
     ordering: SITEMAPS_ORDERING[getSitemapsOrderingKeyForDay(entry.day)],
     deduplication: {
       id: `post-day__${entry.postType}__${entry.day}`,
@@ -80,21 +47,9 @@ function postDayJobOptions(entry: PostDayJobData, priority: number): Partial<Job
   }
 }
 
-function postTypeIndexOptions(postType: SitemapPostType, priority: number): Partial<JobOptions> {
+function indexOptions(deduplicationId: string, priority?: number): Partial<JobOptions> {
   return {
-    priority,
-    ordering: SITEMAPS_ORDERING.indexes,
-    deduplication: {
-      id: `type-index__${postType}`,
-      mode: 'throttle' as const,
-      ttl: SITEMAPS_DEDUPLICATION_TTL_MS,
-    },
-  }
-}
-
-function indexOptions(deduplicationId: string, priority: number): Partial<JobOptions> {
-  return {
-    priority,
+    ...(priority === undefined ? {} : { priority }),
     ordering: SITEMAPS_ORDERING.indexes,
     deduplication: {
       id: deduplicationId,
@@ -104,18 +59,15 @@ function indexOptions(deduplicationId: string, priority: number): Partial<JobOpt
   }
 }
 
-function createDispatcherEnqueue(jobName: SitemapDispatcherJobs) {
-  const enqueue = createEnqueueFunction<Record<string, never>, SitemapDispatcherJobs>({
-    queue: sitemaps,
-    queueName: QUEUE_NAME,
-    jobName,
-  })
+function createDispatcherEnqueue(
+  job: BackgroundJobDefinition<Record<string, never> | SitemapArchiveBackfillData>,
+) {
+  const enqueue = createBackgroundEnqueue(job)
 
   return (options?: SitemapDispatcherOptions): EnqueueReturnType => {
     return enqueue(
       {},
       {
-        priority: PRIORITY_DISPATCHER,
         ordering: SITEMAPS_ORDERING.dispatcher,
         ...(options?.deduplicationId && {
           deduplication: {
@@ -136,28 +88,31 @@ export {
 
 export const enqueueBulkUpdatePostDaySitemaps = (
   entries: Array<{ postType: SitemapPostType; day: string }>,
-  priority = PRIORITY_DEFAULT,
+  priority?: number,
 ): EnqueueReturnType => {
   return enqueueBulkUpdatePostDaySitemapJobs(
     entries.map(entry => entry satisfies PostDayJobData),
-    { priority },
+    priority === undefined ? {} : { priority },
   )
 }
 
 export const enqueueUpdatePostTypeIndex = (
   postType: SitemapPostType,
-  priority = PRIORITY_DEFAULT,
+  priority?: number,
 ): EnqueueReturnType => {
-  return enqueueUpdatePostTypeIndexJob({ postType }, postTypeIndexOptions(postType, priority))
+  return enqueueUpdatePostTypeIndexJob(
+    { postType },
+    indexOptions(`type-index__${postType}`, priority),
+  )
 }
 
-export const enqueueUpdatePostsIndex = (priority = PRIORITY_DEFAULT): EnqueueReturnType => {
-  return enqueueUpdatePostsIndexJob({}, indexOptions('posts-index', priority))
+export const enqueueUpdatePostsIndex = (priority?: number): EnqueueReturnType => {
+  return enqueueUpdatePostsIndexJob({}, indexOptions('sitemaps:posts-index', priority))
 }
 
 export const enqueueUpdateFamilySitemap = (
   family: SitemapFamilyJobData['family'],
-  priority = PRIORITY_DEFAULT,
+  priority?: number,
 ): EnqueueReturnType => {
   return enqueueUpdateFamilySitemapJob(
     { family },
@@ -165,16 +120,32 @@ export const enqueueUpdateFamilySitemap = (
   )
 }
 
-export const enqueueUpdateRootIndex = (priority = PRIORITY_DEFAULT): EnqueueReturnType => {
-  return enqueueUpdateRootIndexJob({}, indexOptions('root-index', priority))
+export const enqueueUpdateRootIndex = (priority?: number): EnqueueReturnType => {
+  return enqueueUpdateRootIndexJob({}, indexOptions('sitemaps:root-index', priority))
 }
 
 export const enqueueNightlyBackfillWeekDispatcher = createDispatcherEnqueue(
-  'processNightlyBackfillWeekDispatcher',
+  SITEMAPS_NIGHTLY_BACKFILL_JOB,
 )
 export const enqueueWeeklyBackfillMonthDispatcher = createDispatcherEnqueue(
-  'processWeeklyBackfillMonthDispatcher',
+  SITEMAPS_WEEKLY_BACKFILL_JOB,
 )
 export const enqueueMonthlyBackfillArchiveDispatcher = createDispatcherEnqueue(
-  'processMonthlyBackfillArchiveDispatcher',
+  SITEMAPS_MONTHLY_BACKFILL_JOB,
 )
+
+const enqueueMonthlyBackfillArchiveJob = createBackgroundEnqueue(SITEMAPS_MONTHLY_BACKFILL_JOB)
+
+// The id names the cursor, so a retried page cannot enqueue a second continuation while one is
+// queued, and a finished record releases the id.
+/** Chains the next bounded page of the archive backfill from the last day of this one. */
+export const enqueueMonthlyBackfillArchiveContinuation = (afterDay: string): EnqueueReturnType =>
+  enqueueMonthlyBackfillArchiveJob(
+    { afterDay },
+    {
+      jobId: `${SITEMAPS_MONTHLY_BACKFILL_JOB.name}__${afterDay}`,
+      ordering: SITEMAPS_ORDERING.dispatcher,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )

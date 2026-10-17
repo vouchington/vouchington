@@ -48,7 +48,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
   'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
-  'kagi-smallweb/kagi-smallweb-sync',
+  'background/kagi-smallweb-sync',
   'memberships/dispatchMembershipPauseCollection',
   'memberships/dispatchMembershipRefundReconciliation',
   'memberships/membershipEntitlementEffects',
@@ -63,6 +63,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'memberships/renewalNotificationCheck',
   'memberships/stripeCatalogReconciliation',
   'memberships/stripeEventRecovery',
+  'background/hostnameCacheInvalidationSweep',
   'background/community-activity-digest-weekly',
   'background/media-delivery-registry-reconciliation',
   'background/copyright-action-reconciliation',
@@ -85,17 +86,16 @@ const EXPECTED_SCHEDULED_JOBS = [
   'psql/refresh-rss-feed-crawl-tiers',
   'psql/refresh-top-hashtags',
   'psql/refresh-trending-rss-feeds',
-  'rss-feeds/dispatchRssFeeds',
+  'background/dispatchRssFeeds',
   'rss-feed-maintenance/reconcileRssFeedItemCategorySnapshots',
   'rss-feed-maintenance/reconcileTopicAliasCategoryMappings',
   'background/ses-inbound-reconciliation',
-  'sitemaps/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
-  'sitemaps/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
-  'sitemaps/sitemaps-backfill-processWeeklyBackfillMonthDispatcher',
+  'background/sitemaps-backfill-processMonthlyBackfillArchiveDispatcher',
+  'background/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
+  'background/sitemaps-backfill-processWeeklyBackfillMonthDispatcher',
   'background/reconcileStoryPostRelatedUrlProjections',
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
-  'urls-domains-blacklist/blacklistDispatcher',
-  'urls-domains-blacklist/hostnameCacheInvalidationSweep',
+  'background/blacklistDispatcher',
   'background/userDeletionRecovery',
   'background/dailyVoteWeightRecalculation',
 ].toSorted()
@@ -103,8 +103,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 18 manifests and 79 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(18)
+  it('imports the exact 14 manifests and 79 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(14)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

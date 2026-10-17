@@ -28,7 +28,7 @@ flowchart TD
   spam --> clearance
   listener --> comments[Refresh ancestor metrics for comments]
   listener --> reviews[Update topic rating stats for reviews]
-  listener --> sitemap[sitemaps queue]
+  listener --> sitemap[sitemaps background domain]
   listener --> cache[Invalidate post cache]
   listener --> metrics[vote-aggregation queue]
 ```

@@ -87,6 +87,7 @@
     "@services/route-rate-limits": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
+    "@services/sitemaps": "workspace:^",
     "@services/stories": "workspace:^",
     "@services/stripe": "workspace:^",
     "@services/tag-limits": "workspace:^",

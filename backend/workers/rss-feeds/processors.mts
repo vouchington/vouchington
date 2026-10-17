@@ -1,5 +1,4 @@
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import type { RssFeedDispatcherJobs, RssFeedsJobs } from '@queues/rss-feeds/types'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import {
   fetchRssFeed,
@@ -7,7 +6,6 @@ import {
   getTierSlaMs,
   type RssFeedCrawlTier,
 } from '@services/rss-feeds'
-import type { Job } from 'glide-mq'
 
 type RssFeedsDispatcherDependencies = {
   enqueueBulkFetchRssFeeds: typeof enqueueBulkFetchRssFeeds
@@ -16,10 +14,6 @@ type RssFeedsDispatcherDependencies = {
 }
 type FetchRssFeedDependencies = {
   fetchRssFeed: typeof fetchRssFeed
-}
-type RssFeedsJobDependencies = {
-  processFetchRssFeed: typeof processFetchRssFeed
-  processRssFeedsDispatcher: typeof processRssFeedsDispatcher
 }
 
 /**
@@ -80,37 +74,4 @@ export async function processFetchRssFeed(
   const deps = { fetchRssFeed, ...dependencies }
   const items = await deps.fetchRssFeed(rssFeedId, ttl)
   return { rss_feed_id: rssFeedId, item_count: items.length }
-}
-
-export async function processRssFeedsJob(
-  job: Job,
-  dependencies?: Partial<RssFeedsJobDependencies>,
-): Promise<unknown> {
-  const deps = { processFetchRssFeed, processRssFeedsDispatcher, ...dependencies }
-  const orderingKey = job.opts?.ordering?.key
-
-  switch (orderingKey) {
-    case 'dispatcher': {
-      switch (job.name as RssFeedDispatcherJobs) {
-        case 'dispatchRssFeeds':
-          return deps.processRssFeedsDispatcher()
-        default:
-          throw new Error(`RSS feed dispatcher job ${job.name} not found`)
-      }
-    }
-    case 'fetch': {
-      switch (job.name as RssFeedsJobs) {
-        case 'fetchRssFeed': {
-          const rssFeedId = job.data?.rssFeedId
-          const ttl = job.data?.ttl
-          if (!rssFeedId) throw new Error('RSS feed job .rssFeedId is required')
-          return deps.processFetchRssFeed(rssFeedId, typeof ttl === 'number' ? ttl : undefined)
-        }
-        default:
-          throw new Error(`RSS feed job ${job.name} not found`)
-      }
-    }
-    default:
-      throw new Error(`Unknown ordering key: ${orderingKey}`)
-  }
 }

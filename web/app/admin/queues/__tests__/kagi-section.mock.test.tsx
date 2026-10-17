@@ -1,7 +1,7 @@
 import { describe, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import { KagiSection } from '../kagi-section'
-import { fetchQueues, pauseQueue, resumeQueue } from '@/lib/api/client/mq'
+import { fetchQueueDomains, pauseQueueDomain, resumeQueueDomain } from '@/lib/api/client/mq'
 import { registerQueueToggleTests } from '@/test-helpers/admin/queue-toggle-section'
 
 const { toastMock } = vi.hoisted(() => {
@@ -31,19 +31,20 @@ vi.mock(import('@/lib/on-error'), () => ({
 }))
 
 vi.mock(import('@/lib/api/client/mq'), () => ({
-  fetchQueues: vi.fn<VitestLooseMock>(),
-  pauseQueue: vi.fn<VitestLooseMock>(),
-  resumeQueue: vi.fn<VitestLooseMock>(),
+  fetchQueueDomains: vi.fn<VitestLooseMock>(),
+  pauseQueueDomain: vi.fn<VitestLooseMock>(),
+  resumeQueueDomain: vi.fn<VitestLooseMock>(),
 }))
 
 describe('KagiSection', () => {
   registerQueueToggleTests({
-    queueName: 'kagi-smallweb',
+    queueName: 'background',
+    domain: 'kagi-smallweb',
     productLabel: 'Kagi Smallweb',
     renderSection: () => render(<KagiSection />),
-    fetchQueues: vi.mocked(fetchQueues),
-    pauseQueue: vi.mocked(pauseQueue),
-    resumeQueue: vi.mocked(resumeQueue),
+    fetchQueues: vi.mocked(fetchQueueDomains),
+    pauseQueue: vi.mocked(pauseQueueDomain),
+    resumeQueue: vi.mocked(resumeQueueDomain),
     toast: toastMock,
   })
 })

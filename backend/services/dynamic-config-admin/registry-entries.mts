@@ -48,6 +48,7 @@ const REGISTRY_ORDER = [
   'vote-weight-work-config',
   'crawl-boilerplate-removal-work-config',
   'find-your-friends-work-config',
+  'sitemaps-work-config',
   'stripe-work-config',
   'recommended-topics-work-config',
   'engagement-emails-work-config',

@@ -15,7 +15,8 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
-import { rss_feeds } from '@queues/rss-feeds/queues'
+import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import { CrawlerHttpClientError } from '@modules/on-error/errors'
 
 const mockXml = Buffer.from(
@@ -214,8 +215,8 @@ describe('fetch.redirect', () => {
     expect(updatedSource?.canonical_rss_feed_id).toBe(canonicalFeed.id)
 
     // The canonical feed's immediate re-fetch is a requested fetch, not a dispatcher backlog job.
-    const canonicalJobs = await rss_feeds.searchJobs({
-      name: 'fetchRssFeed',
+    const canonicalJobs = await rssFeedsQueue.searchJobs({
+      name: RSS_FEEDS_FETCH_JOB.name,
       data: { rssFeedId: canonicalFeed.id },
     })
     expect(canonicalJobs.map(job => job.opts.deduplication?.id)).toContain(

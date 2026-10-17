@@ -1,34 +1,23 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import { kagiSmallWeb } from '../queues.mts'
-import {
-  KAGI_SMALLWEB_CRON,
-  KAGI_SMALLWEB_DEFAULTS,
-  KAGI_SMALLWEB_ORDERING,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
-import type { KagiSmallWebDispatcherJobs } from '../types.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { KAGI_SMALLWEB_SYNC_JOB } from '@queues/background/enqueues/kagi-smallweb-jobs'
+import { KAGI_SMALLWEB_CRON, KAGI_SMALLWEB_ORDERING } from '../config.mts'
 import { enqueueKagiSmallWebSync } from '../enqueues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'kagi-smallweb-sync',
     repeat: { pattern: KAGI_SMALLWEB_CRON },
     template: {
-      name: 'sync' as KagiSmallWebDispatcherJobs,
+      name: KAGI_SMALLWEB_SYNC_JOB.name,
       data: {},
-      opts: {
-        attempts: KAGI_SMALLWEB_DEFAULTS.attempts,
-        backoff: KAGI_SMALLWEB_DEFAULTS.backoff,
-        removeOnComplete: KAGI_SMALLWEB_DEFAULTS.removeOnComplete,
-        removeOnFail: KAGI_SMALLWEB_DEFAULTS.removeOnFail,
-        priority: PRIORITY_DISPATCHER,
+      opts: toSchedulerTemplateOptions({
+        ...KAGI_SMALLWEB_SYNC_JOB.options,
         ordering: KAGI_SMALLWEB_ORDERING.dispatcher,
-      } satisfies JobOptions,
+      }),
     },
     operatorSurfaces: [
       {
@@ -42,7 +31,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(kagiSmallWeb, scheduledJobManifest)
-}

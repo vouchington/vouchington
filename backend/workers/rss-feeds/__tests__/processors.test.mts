@@ -2,12 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
 import type { getRssFeedsToFetch, getTierSlaMs, RssFeedToFetch } from '@services/rss-feeds'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
-import {
-  processFetchRssFeed,
-  processRssFeedsDispatcher,
-  processRssFeedsJob,
-} from '../processors.mts'
-import type { Job } from 'glide-mq'
+import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
 
 const mockEnqueueBulkFetchRssFeeds = vi.fn<typeof enqueueBulkFetchRssFeeds>()
 const mockGetRssFeedsToFetch = vi.fn<typeof getRssFeedsToFetch>()
@@ -157,92 +152,5 @@ describe('processFetchRssFeed', () => {
 
     expect(fetchRssFeed).toHaveBeenCalledWith('feed-1', 0)
     expect(result).toEqual({ rss_feed_id: 'feed-1', item_count: 2 })
-  })
-})
-
-describe('processRssFeedsJob', () => {
-  const processFetchRssFeedMock = vi.fn<typeof processFetchRssFeed>()
-  const processRssFeedsDispatcherMock = vi.fn<typeof processRssFeedsDispatcher>()
-
-  beforeEach(() => {
-    processFetchRssFeedMock.mockResolvedValue({ rss_feed_id: 'feed-1', item_count: 3 })
-    processRssFeedsDispatcherMock.mockResolvedValue({ count: 4 })
-  })
-
-  function runRssFeedsJob(job: Job): Promise<unknown> {
-    return processRssFeedsJob(job, {
-      processFetchRssFeed: processFetchRssFeedMock,
-      processRssFeedsDispatcher: processRssFeedsDispatcherMock,
-    })
-  }
-
-  it('dispatches dispatcher jobs', async () => {
-    await expect(
-      runRssFeedsJob({
-        name: 'dispatchRssFeeds',
-        data: {},
-        opts: { ordering: { key: 'dispatcher' } },
-      } as Job),
-    ).resolves.toEqual({ count: 4 })
-
-    expect(processRssFeedsDispatcherMock).toHaveBeenCalled()
-  })
-
-  it('dispatches fetch jobs with numeric ttl', async () => {
-    await expect(
-      runRssFeedsJob({
-        name: 'fetchRssFeed',
-        data: { rssFeedId: 'feed-1', ttl: 0 },
-        opts: { ordering: { key: 'fetch' } },
-      } as Job),
-    ).resolves.toEqual({ rss_feed_id: 'feed-1', item_count: 3 })
-
-    expect(processFetchRssFeedMock).toHaveBeenCalledWith('feed-1', 0)
-  })
-
-  it('dispatches fetch jobs without a non-numeric ttl', async () => {
-    await runRssFeedsJob({
-      name: 'fetchRssFeed',
-      data: { rssFeedId: 'feed-1', ttl: 'skip' },
-      opts: { ordering: { key: 'fetch' } },
-    } as Job)
-
-    expect(processFetchRssFeedMock).toHaveBeenCalledWith('feed-1', undefined)
-  })
-
-  it('validates fetch job payloads before processing', async () => {
-    await expect(
-      runRssFeedsJob({
-        name: 'fetchRssFeed',
-        data: {},
-        opts: { ordering: { key: 'fetch' } },
-      } as Job),
-    ).rejects.toThrow('RSS feed job .rssFeedId is required')
-  })
-
-  it('rejects unknown dispatcher jobs', async () => {
-    await expect(
-      runRssFeedsJob({
-        name: 'unknown',
-        data: {},
-        opts: { ordering: { key: 'dispatcher' } },
-      } as Job),
-    ).rejects.toThrow('RSS feed dispatcher job unknown not found')
-  })
-
-  it('rejects unknown fetch jobs', async () => {
-    await expect(
-      runRssFeedsJob({ name: 'unknown', data: {}, opts: { ordering: { key: 'fetch' } } } as Job),
-    ).rejects.toThrow('RSS feed job unknown not found')
-  })
-
-  it('rejects unknown ordering keys', async () => {
-    await expect(
-      runRssFeedsJob({
-        name: 'fetchRssFeed',
-        data: {},
-        opts: { ordering: { key: 'other' } },
-      } as Job),
-    ).rejects.toThrow('Unknown ordering key: other')
   })
 })

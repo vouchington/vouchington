@@ -1,19 +1,22 @@
-import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
-import { QUEUE_NAME } from '@queues/urls-domains-blacklist/config'
-import * as processors from './processors.mts'
-import type { ProcessorJobs } from '@queues/urls-domains-blacklist/types'
-import type { Job } from 'glide-mq'
+import {
+  backgroundDataHandler,
+  backgroundHandler,
+} from '@queues/background/enqueues/define-handler'
+import {
+  URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB,
+  URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB,
+  URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB,
+} from '@queues/background/enqueues/urls-domains-blacklist-jobs'
+import {
+  drainHostnameCacheInvalidationWork,
+  processBlacklistDispatcher,
+  processBlacklistSourceSync,
+} from './processors.mts'
 
-export const urlsDomainsBlacklist = createWorker(
-  QUEUE_NAME,
-  (job: Job) => {
-    const fn = processors[job.name as ProcessorJobs]
-    if (!fn) throw new Error(`Job ${job.name} not found`)
-    return fn(job.data)
-  },
-  {
-    dedicatedCommandClient: true,
-    concurrency: getWorkerConcurrency('urlsDomainsBlacklist', { baseline: 5 }),
-  },
-)
+export const urlsDomainsBlacklistHandlers = [
+  backgroundDataHandler(URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB, processBlacklistDispatcher),
+  backgroundDataHandler(URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB, processBlacklistSourceSync),
+  backgroundHandler(URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB, () =>
+    drainHostnameCacheInvalidationWork(),
+  ),
+]

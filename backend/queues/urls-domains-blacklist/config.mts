@@ -1,16 +1,11 @@
-export const QUEUE_NAME = 'urls-domains-blacklist'
-export const PRIORITY_DEFAULT = 10
-export const PRIORITY_DISPATCHER = 100
+import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 
+// Namespaced singleton lanes outside the domain group of five source syncs: one dispatcher at a
+// time and one cache-invalidation drain at a time.
 export const URLS_DOMAINS_BLACKLIST_ORDERING = {
-  dispatcher: { key: 'dispatcher', concurrency: 1 },
-  sync: { key: 'sync', concurrency: 5 },
-  cacheInvalidation: { key: 'cache-invalidation', concurrency: 1 },
+  dispatcher: { key: entityOrderingKey('urls-domains-blacklist', 'dispatcher'), concurrency: 1 },
+  cacheInvalidation: {
+    key: entityOrderingKey('urls-domains-blacklist', 'cache-invalidation'),
+    concurrency: 1,
+  },
 } as const
-
-export const URLS_DOMAINS_BLACKLIST_DEFAULTS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-}

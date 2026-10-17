@@ -17,9 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@queues/background": "workspace:^",
     "@ts-shared/cache": "workspace:^",
-    "@voucha/types": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "@voucha/types": "workspace:^"
   }
 }

@@ -1,47 +1,23 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createHash } from 'node:crypto'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  KAGI_SMALLWEB_PROCESS_FEED_JOB,
+  KAGI_SMALLWEB_SYNC_JOB,
+  type KagiFeedJobData,
+} from '@queues/background/enqueues/kagi-smallweb-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  KAGI_SMALLWEB_DEFAULTS,
-  KAGI_SMALLWEB_ORDERING,
-  KAGI_SMALLWEB_PROCESS_DEDUP_TTL_MS,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from './config.mts'
-import { kagiSmallWeb } from './queues.mts'
-import type {
-  KagiFeedJobData,
-  KagiSmallWebDispatcherJobs,
-  KagiSmallWebProcessJobs,
-} from './types.mts'
+import { KAGI_SMALLWEB_ORDERING, KAGI_SMALLWEB_PROCESS_DEDUP_TTL_MS } from './config.mts'
 
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 
-const enqueueKagiSmallWebSyncJob = createEnqueueFunction<
-  Record<string, never>,
-  KagiSmallWebDispatcherJobs
->({
-  queue: kagiSmallWeb,
-  queueName: QUEUE_NAME,
-  jobName: 'sync',
-  defaults: KAGI_SMALLWEB_DEFAULTS,
-})
+const enqueueKagiSmallWebSyncJob = createBackgroundEnqueue(KAGI_SMALLWEB_SYNC_JOB)
 
-const enqueueBulkProcessKagiFeedsJob = createBulkEnqueueFunction<
-  KagiFeedJobData,
-  KagiFeedJobData,
-  KagiSmallWebProcessJobs
->({
-  queue: kagiSmallWeb,
-  queueName: QUEUE_NAME,
-  jobName: 'processFeed',
-  defaults: KAGI_SMALLWEB_DEFAULTS,
-  buildJob: entry => ({
+export const enqueueBulkProcessKagiFeeds = createBackgroundBulkEnqueue(
+  KAGI_SMALLWEB_PROCESS_FEED_JOB,
+  (entry: KagiFeedJobData) => ({
     data: entry,
     opts: {
-      priority: PRIORITY_DEFAULT,
-      ordering: KAGI_SMALLWEB_ORDERING.process,
       deduplication: {
         id: `kagi_process_feed__${entry.feedUrl}`,
         mode: 'throttle' as const,
@@ -49,7 +25,7 @@ const enqueueBulkProcessKagiFeedsJob = createBulkEnqueueFunction<
       },
     } satisfies Partial<JobOptions>,
   }),
-})
+)
 
 type KagiSmallWebSyncOptions = {
   deduplicationId?: string
@@ -57,7 +33,6 @@ type KagiSmallWebSyncOptions = {
 
 export function enqueueKagiSmallWebSync(options?: KagiSmallWebSyncOptions): EnqueueReturnType {
   return enqueueKagiSmallWebSyncJob({}, {
-    priority: PRIORITY_DISPATCHER,
     ordering: KAGI_SMALLWEB_ORDERING.dispatcher,
     ...(options?.deduplicationId && {
       deduplication: {
@@ -69,6 +44,16 @@ export function enqueueKagiSmallWebSync(options?: KagiSmallWebSyncOptions): Enqu
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueBulkProcessKagiFeeds(entries: KagiFeedJobData[]): EnqueueReturnType {
-  return enqueueBulkProcessKagiFeedsJob(entries, { priority: PRIORITY_DEFAULT })
+// A continuation carries the last feed URL of the page before it. Its job id is a digest of that
+// cursor, so a retried sync cannot enqueue a second continuation, and a finished record releases it.
+export function enqueueKagiSmallWebSyncContinuation(cursor: string): EnqueueReturnType {
+  return enqueueKagiSmallWebSyncJob(
+    { cursor },
+    {
+      jobId: `kagi_smallweb_sync__${createHash('sha256').update(cursor).digest('hex')}`,
+      ordering: KAGI_SMALLWEB_ORDERING.dispatcher,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
 }

@@ -1,7 +1,6 @@
-export const QUEUE_NAME = 'rss-feeds'
-export const PRIORITY_DEFAULT = 10
-export const PRIORITY_DISPATCHER = 100
+import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 
+/** A feed's crawl tier maps to the job priority it is enqueued with; tier 1 runs first. */
 export const TIER_PRIORITY: Record<number, number> = {
   1: 1,
   2: 3,
@@ -10,14 +9,8 @@ export const TIER_PRIORITY: Record<number, number> = {
   5: 20,
 }
 
+// Namespaced so no other domain shares the lane: one dispatcher at a time, outside the domain group
+// of five fetches.
 export const RSS_FEEDS_ORDERING = {
-  dispatcher: { key: 'dispatcher', concurrency: 1 },
-  fetch: { key: 'fetch', concurrency: 5 },
+  dispatcher: { key: entityOrderingKey('rss-feeds', 'dispatcher'), concurrency: 1 },
 } as const
-
-export const RSS_FEEDS_DEFAULTS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-}

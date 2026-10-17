@@ -1,89 +1,44 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-  URLS_DOMAINS_BLACKLIST_DEFAULTS,
-  URLS_DOMAINS_BLACKLIST_ORDERING,
-} from './config.mts'
-import { urlsDomainsBlacklist } from './queues.mts'
-import type { BlacklistDispatcherData, BlacklistSourceSyncData, ProcessorJobs } from './types.mts'
+  URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB,
+  URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB,
+  URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB,
+} from '@queues/background/enqueues/urls-domains-blacklist-jobs'
+import type { EnqueueReturnType } from '@voucha/types'
+import { URLS_DOMAINS_BLACKLIST_ORDERING } from './config.mts'
+import type { BlacklistSourceSyncData } from './types.mts'
 
-const DISPATCHER_JOB_NAME: ProcessorJobs = 'processBlacklistDispatcher'
-const SYNC_JOB_NAME: ProcessorJobs = 'processBlacklistSourceSync'
-const CACHE_INVALIDATION_JOB_NAME: ProcessorJobs = 'drainHostnameCacheInvalidationWork'
+const enqueueBlacklistDispatcherJob = createBackgroundEnqueue(URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB)
 
-const defaults = {
-  attempts: URLS_DOMAINS_BLACKLIST_DEFAULTS.attempts,
-  backoff: URLS_DOMAINS_BLACKLIST_DEFAULTS.backoff,
-  removeOnComplete: URLS_DOMAINS_BLACKLIST_DEFAULTS.removeOnComplete,
-  removeOnFail: URLS_DOMAINS_BLACKLIST_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
+const enqueueSourceSyncJob = createBackgroundEnqueue(URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB)
 
-const enqueueBlacklistDispatcherJob = createEnqueueFunction<BlacklistDispatcherData, ProcessorJobs>(
-  {
-    queue: urlsDomainsBlacklist,
-    queueName: QUEUE_NAME,
-    jobName: DISPATCHER_JOB_NAME,
-    defaults,
-  },
+const enqueueHostnameCacheInvalidationSweepJob = createBackgroundEnqueue(
+  URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB,
 )
 
-const enqueueSourceSyncJob = createEnqueueFunction<BlacklistSourceSyncData, ProcessorJobs>({
-  queue: urlsDomainsBlacklist,
-  queueName: QUEUE_NAME,
-  jobName: SYNC_JOB_NAME,
-  defaults,
-})
-
-const enqueueHostnameCacheInvalidationSweepJob = createEnqueueFunction<
-  Record<string, never>,
-  ProcessorJobs
->({
-  queue: urlsDomainsBlacklist,
-  queueName: QUEUE_NAME,
-  jobName: CACHE_INVALIDATION_JOB_NAME,
-  defaults,
-})
-
-export const enqueueHostnameCacheInvalidationSweep = (): EnqueueReturnType =>
-  enqueueHostnameCacheInvalidationSweepJob(
-    {},
-    {
-      priority: PRIORITY_DEFAULT,
-      ordering: URLS_DOMAINS_BLACKLIST_ORDERING.cacheInvalidation,
-    },
-  )
-
-const enqueueBulkSourceSyncJobs = createBulkEnqueueFunction<
-  BlacklistSourceSyncData & { delayMs: number },
-  BlacklistSourceSyncData,
-  ProcessorJobs
->({
-  queue: urlsDomainsBlacklist,
-  queueName: QUEUE_NAME,
-  jobName: SYNC_JOB_NAME,
-  defaults,
-  buildJob: ({ delayMs, ...data }) => ({
+const enqueueBulkSourceSyncJobs = createBackgroundBulkEnqueue(
+  URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB,
+  ({ delayMs, ...data }: BlacklistSourceSyncData & { delayMs: number }) => ({
     data,
-    opts: {
-      delay: delayMs,
-      ordering: URLS_DOMAINS_BLACKLIST_ORDERING.sync,
-    },
+    opts: { delay: delayMs },
   }),
-})
+)
 
 export const enqueueBlacklistDispatcher = (priority?: number): EnqueueReturnType => {
   return enqueueBlacklistDispatcherJob(
     {},
     {
-      priority: priority ?? PRIORITY_DISPATCHER,
+      ...(priority === undefined ? {} : { priority }),
       ordering: URLS_DOMAINS_BLACKLIST_ORDERING.dispatcher,
     },
   )
 }
+
+export const enqueueHostnameCacheInvalidationSweep = (): EnqueueReturnType =>
+  enqueueHostnameCacheInvalidationSweepJob(
+    {},
+    { ordering: URLS_DOMAINS_BLACKLIST_ORDERING.cacheInvalidation },
+  )
 
 export const enqueueSourceSync = (
   data: BlacklistSourceSyncData,
@@ -92,9 +47,8 @@ export const enqueueSourceSync = (
 ): EnqueueReturnType => {
   // NOTE: no BULLMQ_INLINE_MODE support because it makes external HTTP requests
   return enqueueSourceSyncJob(data, {
-    priority: priority ?? PRIORITY_DEFAULT,
+    ...(priority === undefined ? {} : { priority }),
     delay: delayMs,
-    ordering: URLS_DOMAINS_BLACKLIST_ORDERING.sync,
   })
 }
 
@@ -107,6 +61,6 @@ export const enqueueBulkSourceSyncs = (
   // NOTE: no BULLMQ_INLINE_MODE support because it makes external HTTP requests
   return enqueueBulkSourceSyncJobs(
     dataList.map((data, index) => ({ ...data, delayMs: index * 60 * 60 * 1000 })),
-    { priority: priority ?? PRIORITY_DEFAULT },
+    priority === undefined ? {} : { priority },
   )
 }

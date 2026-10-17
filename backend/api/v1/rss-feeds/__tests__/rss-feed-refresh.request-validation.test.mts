@@ -1,18 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  createTestUser,
-  insertTestRssFeed,
-  insertTestTopic,
-  readAllQueueJobs,
-} from '@voucha/test-helpers'
-import { rss_feeds } from '@queues/rss-feeds/queues'
+import { createTestUser, insertTestRssFeed, insertTestTopic } from '@voucha/test-helpers'
+import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { rssFeedsQueue } from '@queues/rss-feeds/queues'
+
+const readFetchJobs = (rssFeedId: string) =>
+  rssFeedsQueue.searchJobs({ name: RSS_FEEDS_FETCH_JOB.name, data: { rssFeedId } })
 
 describe('RSS feed refresh request validation', () => {
-  beforeEach(async () => {
-    await rss_feeds.obliterate({ force: true })
-  })
-
   it.each([
     [true, true],
     ['TRUE', true],
@@ -43,7 +38,7 @@ describe('RSS feed refresh request validation', () => {
     async force => {
       const { request, feedId } = await createAdminFeed()
       await request.post(`/api/v1/rss-feeds/${feedId}/refreshes`).send({ force }).expect(422)
-      await expect(readAllQueueJobs(rss_feeds)).resolves.toHaveLength(0)
+      await expect(readFetchJobs(feedId)).resolves.toHaveLength(0)
     },
   )
 
@@ -53,7 +48,7 @@ describe('RSS feed refresh request validation', () => {
       .post(`/api/v1/rss-feeds/${feedId}/refreshes`)
       .send({ force: false, extra: 'unexpected' })
       .expect(422)
-    await expect(readAllQueueJobs(rss_feeds)).resolves.toHaveLength(0)
+    await expect(readFetchJobs(feedId)).resolves.toHaveLength(0)
   })
 
   it('rejects a parsed JSON body over 1mb without enqueueing', async () => {
@@ -62,7 +57,7 @@ describe('RSS feed refresh request validation', () => {
       .post(`/api/v1/rss-feeds/${feedId}/refreshes`)
       .send({ force: false, padding: 'x'.repeat(1_100_000) })
       .expect(413)
-    await expect(readAllQueueJobs(rss_feeds)).resolves.toHaveLength(0)
+    await expect(readFetchJobs(feedId)).resolves.toHaveLength(0)
   })
 
   it('masks a missing feed before query or body diagnostics', async () => {
@@ -72,7 +67,7 @@ describe('RSS feed refresh request validation', () => {
     const missing = crypto.randomUUID()
     await request.post(`/api/v1/rss-feeds/${missing}/refreshes?force=bad`).expect(404)
     await request.post(`/api/v1/rss-feeds/${missing}/refreshes`).send({ force: null }).expect(404)
-    await expect(readAllQueueJobs(rss_feeds)).resolves.toHaveLength(0)
+    await expect(readFetchJobs(missing)).resolves.toHaveLength(0)
   })
 
   it('lets query force win over malformed JSON, while retaining transport errors', async () => {
@@ -83,7 +78,7 @@ describe('RSS feed refresh request validation', () => {
       .send('{')
       .expect(200)
     expect(response.body.force).toBe(true)
-    const jobs = await readAllQueueJobs(rss_feeds)
+    const jobs = await readFetchJobs(feedId)
     expect(jobs).toHaveLength(1)
     expect(jobs[0]?.data).toMatchObject({ rssFeedId: feedId, ttl: 0 })
     await request

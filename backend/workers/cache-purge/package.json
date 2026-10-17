@@ -17,10 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
-    "@queues/cache-purge": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "glide-mq": "^0.18.0"
   }

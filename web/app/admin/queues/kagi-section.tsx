@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { QueuePauseSection } from './queue-pause-section'
 
-const KAGI_SMALLWEB_QUEUE = 'kagi-smallweb'
+const KAGI_SMALLWEB_QUEUE = 'background'
+const KAGI_SMALLWEB_DOMAIN = 'kagi-smallweb'
 
 function kagiCopy(t: ReturnType<typeof useTranslations>) {
   return {
@@ -73,6 +74,7 @@ export function KagiSection() {
   return (
     <QueuePauseSection
       copy={kagiCopy(t)}
+      domain={KAGI_SMALLWEB_DOMAIN}
       errorForm='admin-kagi-smallweb-toggle'
       queueName={KAGI_SMALLWEB_QUEUE}
       renderFrame={renderKagiFrame}

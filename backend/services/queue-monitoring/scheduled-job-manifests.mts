@@ -40,6 +40,10 @@ const background = combineBackgroundManifests([
   oauthAuthorizationExchange,
   notifications,
   activitypub,
+  rssFeeds,
+  urlsDomainsBlacklist,
+  sitemaps,
+  kagiSmallweb,
 ])
 
 export const SCHEDULED_JOB_MANIFESTS = [
@@ -53,12 +57,8 @@ export const SCHEDULED_JOB_MANIFESTS = [
   findYourFriends,
   heartbeat,
   contentAnalysis,
-  kagiSmallweb,
   memberships,
   psql,
-  rssFeeds,
   rssFeedMaintenance,
-  sitemaps,
   unfurlReferralLinks,
-  urlsDomainsBlacklist,
 ] satisfies readonly ScheduledJobManifest[]

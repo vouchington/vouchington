@@ -7,18 +7,21 @@ For RSS feed business logic and acceptance criteria, see [../../services/rss-fee
 
 ## Queue Configuration
 
-### Queue: `rss-feeds`
+### Domain: `rss-feeds`
 
-One queue with two ordering groups:
+Domain `rss-feeds` of the shared [`background` queue](../background/README.md); job names are
+`rss-feeds.<name>`. The fetches share a domain-wide group of 5 (the old worker concurrency); the dispatcher runs in
+its own singleton lane `rss-feeds:dispatcher`, outside the group. It adds a worker baseline of five.
+`WORKER_CONCURRENCY_RSS_FEEDS` no longer exists.
 
-- **`dispatcher` ordering group** (`dispatchRssFeeds` job)
-  - Scheduled every minute; searches for RSS feeds to update and bulk enqueues `fetchRssFeed` jobs into the same queue.
-  - Global concurrency of 1 via `ordering.concurrency`.
-  - Worker local concurrency is 10, so effective dispatcher concurrency remains 1.
-- **`fetch` ordering group** (`fetchRssFeed` job)
-  - A job for fetching RSS Feeds by ID.
-  - Global concurrency of 5 via `ordering.concurrency`.
-  - Worker local concurrency is 10, so effective fetch concurrency remains 5. No rate limit.
+- **`rss-feeds.dispatchRssFeeds`** (lane `rss-feeds:dispatcher`, concurrency 1, priority 100)
+  - Scheduled every minute; reads one page of due RSS feeds and bulk enqueues `rss-feeds.fetchRssFeed` jobs.
+  - The page is already bounded: `getRssFeedsToFetch` reads at most the `rss-feed-crawl-config`
+    `capacity_budget` feeds (default 100, ceiling 10,000), ordered by SLA deadline, so one run never
+    fans out more than one budget and needs no continuation. Feeds still due run on the next tick.
+- **`rss-feeds.fetchRssFeed`** (domain group `rss-feeds`, concurrency 5, no rate limit, default priority 10)
+  - A job for fetching RSS Feeds by ID. A dispatcher fetch is enqueued at its feed's crawl tier priority
+    (tier 1 to 5 map to priorities 1, 3, 7, 12, and 20), so a due tier-1 feed runs ahead of a backlog.
   - Dispatcher/background fetches use a `simple` dedup key per feed (`rss-feed__<rssFeedId>`): a feed whose fetch job is still waiting, active, or retrying is not queued again, and it is admitted again once that job completes or fails. A backlogged feed is therefore queued once, not once per dispatch tick. A fetch someone requests now (a non-forced administrator refresh, a redirect's canonical feed, a newly created feed) uses its own `rss-feed-request__<rssFeedId>` key, so a low-priority backlog job never swallows it.
   - Forced/manual refreshes skip that dedup key, so a recently queued normal fetch cannot suppress the caller's explicit refresh.
   - **Permanent errors** (parse failure, invalid content type, persistent 4xx) soft-delete the feed inline and rethrow; transient errors retry via `attempts: 3` with exponential backoff. Classification in [`services/rss-feeds/is-permanent-fetch-error.mts`](../../../../../backend/services/rss-feeds/is-permanent-fetch-error.mts).

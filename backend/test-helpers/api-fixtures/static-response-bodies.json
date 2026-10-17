@@ -2938,8 +2938,8 @@
       {
         "description": "Sync Kagi Small Web data",
         "id": "kagi-smallweb-sync",
-        "job_name": "sync",
-        "queue_name": "kagi-smallweb",
+        "job_name": "kagi-smallweb.sync",
+        "queue_name": "background",
         "schedule": "0 5 * * *"
       },
       {

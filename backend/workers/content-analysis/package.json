@@ -17,6 +17,7 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/images": "workspace:^",

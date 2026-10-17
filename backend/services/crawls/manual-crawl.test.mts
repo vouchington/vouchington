@@ -1,7 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { crawlUrls } from '@queues/crawler/queues'
-import { rss_feeds } from '@queues/rss-feeds/queues'
+import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import { enqueueManualUrlCrawlAsCurrentUser } from './manual-crawl.mts'
 import type { PrivateUser } from '@services/users/types'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
@@ -25,7 +26,6 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
     await Promise.all([
       crawlReferralLinksQueue.obliterate({ force: true }),
       crawlUrls.obliterate({ force: true }),
-      rss_feeds.obliterate({ force: true }),
     ])
   })
 
@@ -40,12 +40,12 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
       rss_feed_id: feed.id,
     })
     const [rssJobs, htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(rss_feeds),
+      rssFeedsQueue.searchJobs({ name: RSS_FEEDS_FETCH_JOB.name, data: { rssFeedId: feed.id } }),
       readAllQueueJobs(crawlUrls),
       readAllQueueJobs(crawlReferralLinksQueue),
     ])
     expect(rssJobs).toHaveLength(1)
-    expect(rssJobs[0]?.name).toBe('fetchRssFeed')
+    expect(rssJobs[0]?.name).toBe(RSS_FEEDS_FETCH_JOB.name)
     expect(rssJobs[0]?.data).toMatchObject({ rssFeedId: feed.id, ttl: 0 })
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(0)
@@ -72,12 +72,10 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
     const result = await enqueueManualUrlCrawlAsCurrentUser(admin, url!.id)
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 1 })
-    const [rssJobs, htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(rss_feeds),
+    const [htmlJobs, referralJobs] = await Promise.all([
       readAllQueueJobs(crawlUrls),
       readAllQueueJobs(crawlReferralLinksQueue),
     ])
-    expect(rssJobs).toHaveLength(0)
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(1)
     expect(referralJobs[0]?.name).toBe('crawl_referral_link')
@@ -138,12 +136,10 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
     const result = await enqueueManualUrlCrawlAsCurrentUser(admin, url!.id)
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 0 })
-    const [rssJobs, htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(rss_feeds),
+    const [htmlJobs, referralJobs] = await Promise.all([
       readAllQueueJobs(crawlUrls),
       readAllQueueJobs(crawlReferralLinksQueue),
     ])
-    expect(rssJobs).toHaveLength(0)
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(0)
   })
@@ -159,12 +155,10 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
     const result = await enqueueManualUrlCrawlAsCurrentUser(admin, url!.id)
 
     expect(result).toEqual({ target: 'html_url', enqueued_count: 1 })
-    const [rssJobs, htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(rss_feeds),
+    const [htmlJobs, referralJobs] = await Promise.all([
       readAllQueueJobs(crawlUrls),
       readAllQueueJobs(crawlReferralLinksQueue),
     ])
-    expect(rssJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(0)
     expect(htmlJobs).toHaveLength(1)
     expect(htmlJobs[0]?.name).toBe('crawl_url')

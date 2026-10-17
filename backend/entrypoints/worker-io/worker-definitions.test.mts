@@ -1,11 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { cachePurge } from '@workers/cache-purge/workers'
-import { crawlEmbeds } from '@workers/crawl-embeds/workers'
+import { describe, expect, it } from 'vitest'
 import { WORKER_DEFINITIONS } from './worker-definitions.mts'
-
-async function closeIdentityLoadedWorkers() {
-  await Promise.all([cachePurge.close(), crawlEmbeds.close()])
-}
 
 function expectLazyImport(
   loadSource: string,
@@ -19,28 +13,20 @@ function expectLazyImport(
 }
 
 describe('worker-io WORKER_DEFINITIONS load functions', () => {
-  beforeAll(closeIdentityLoadedWorkers)
-  afterAll(closeIdentityLoadedWorkers)
-
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
       ['background', 'background', 'createBackgroundWorker'],
-      ['cache-purge', 'cache-purge', 'cachePurge'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
-      ['emails', 'emails', 'emails'],
-      ['urls-domains-blacklist', 'urls-domains-blacklist', 'urlsDomainsBlacklist'],
-      ['rss-feeds', 'rss-feeds', 'rss_feeds'],
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
+      ['emails', 'emails', 'emails'],
       ['psql', 'psql', 'psql'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
-      ['sitemaps', 'sitemaps', 'sitemaps'],
       ['memberships', 'memberships', 'memberships'],
       ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
       ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],
       ['admin-imports', 'admin-imports', 'adminImports'],
       ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
-      ['kagi-smallweb', 'kagi-smallweb', 'kagiSmallWeb'],
     ] as const
     const byQueue = (name: string) =>
       WORKER_DEFINITIONS.find(definition => definition.queueName === name)!
@@ -63,29 +49,18 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     }
   })
 
-  it('cache-purge definition load resolves to the cachePurge worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'cache-purge')!
-    const worker = await definition.load()
-    try {
-      expect(worker).toBe(cachePurge)
-    } finally {
-      await worker.close()
-    }
-  })
-
-  it('serves post-publication and story URL projections only through the background definition', () => {
+  it('serves every moved domain only through the background definition', () => {
     const queueNames = WORKER_DEFINITIONS.map(definition => definition.queueName)
-    expect(queueNames).not.toContain('post-publication')
-    expect(queueNames).not.toContain('story-post-related-url-projections')
-  })
-
-  it('crawl-embeds definition load resolves to the crawlEmbeds worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'crawl_embeds')!
-    const worker = await definition.load()
-    try {
-      expect(worker).toBe(crawlEmbeds)
-    } finally {
-      await worker.close()
+    for (const moved of [
+      'post-publication',
+      'story-post-related-url-projections',
+      'rss-feeds',
+      'urls-domains-blacklist',
+      'sitemaps',
+      'cache-purge',
+      'kagi-smallweb',
+    ]) {
+      expect(queueNames).not.toContain(moved)
     }
   })
 })

@@ -15,8 +15,8 @@ Queue system for OpenAI omni moderation jobs.
 | `background` | `openai-moderation.reconcile_post_moderation`          | `openai-moderation` (10 starts per second) | 100              |
 
 These are the `openai-moderation` domain of the [background queue](../background/README.md). The
-domain group's `rateLimit` replaces the old queue-wide `limiter`, and the domain can be paused from
-the operator API.
+domain group runs at most 5 jobs at once (the old worker concurrency), its `rateLimit` of 10 starts
+per second replaces the old queue-wide `limiter`, and the domain can be paused from the operator API.
 
 ## Responsibilities
 

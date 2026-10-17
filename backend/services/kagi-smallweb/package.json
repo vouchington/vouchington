@@ -24,6 +24,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/kagi-smallweb": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
@@ -31,6 +32,7 @@
     "undici": "^8.11.2"
   },
   "devDependencies": {
-    "@services/topics": "workspace:^"
+    "@services/topics": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
   }
 }

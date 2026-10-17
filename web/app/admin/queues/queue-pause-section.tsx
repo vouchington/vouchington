@@ -1,8 +1,16 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
-import { fetchQueues, pauseQueue, resumeQueue } from '@/lib/api/client/mq'
+import {
+  fetchQueueDomains,
+  fetchQueues,
+  pauseQueue,
+  pauseQueueDomain,
+  resumeQueue,
+  resumeQueueDomain,
+} from '@/lib/api/client/mq'
+import { notifyDomainsChanged, useDomainsVersion } from './domains-sync'
 
 type QueuePauseCopy = {
   disableLabel: string
@@ -29,18 +37,44 @@ type QueuePauseToggle = {
   variant: 'default' | 'destructive'
 }
 
+/** A whole queue, or one domain of a shared queue such as `background`. */
+type QueuePauseTarget = { queueName: string; domain?: string }
+
+/** Returns a cancel function; a cancelled load is stale and never writes state. */
 function loadQueuePaused(
-  queueName: string,
+  { queueName, domain }: QueuePauseTarget,
   setPaused: (paused: boolean | null) => void,
   setFetchError: (failed: boolean) => void,
-): void {
-  fetchQueues()
-    .then(({ queues }) => {
-      setPaused(queues.find(queue => queue.name === queueName)?.paused ?? null)
+): () => void {
+  let stale = false
+  const load =
+    domain === undefined
+      ? fetchQueues().then(
+          ({ queues }) => queues.find(queue => queue.name === queueName)?.paused ?? null,
+        )
+      : fetchQueueDomains(queueName).then(
+          ({ domains }) => domains.find(entry => entry.domain === domain)?.paused ?? null,
+        )
+  load
+    .then(value => {
+      if (stale) return
+      setPaused(value)
+      setFetchError(false)
     })
     .catch(() => {
-      setFetchError(true)
+      if (!stale) setFetchError(true)
     })
+  return () => {
+    stale = true
+  }
+}
+
+function pauseTarget({ queueName, domain }: QueuePauseTarget) {
+  return domain === undefined ? pauseQueue(queueName) : pauseQueueDomain(queueName, domain)
+}
+
+function resumeTarget({ queueName, domain }: QueuePauseTarget) {
+  return domain === undefined ? resumeQueue(queueName) : resumeQueueDomain(queueName, domain)
 }
 
 function statusLabel(paused: boolean | null, copy: QueuePauseCopy): string {
@@ -51,6 +85,7 @@ function statusLabel(paused: boolean | null, copy: QueuePauseCopy): string {
 
 export function QueuePauseSection({
   copy,
+  domain,
   errorForm,
   queueName,
   renderFrame,
@@ -58,38 +93,47 @@ export function QueuePauseSection({
   renderToggle,
 }: {
   copy: QueuePauseCopy
+  /** Pauses only this domain of `queueName` instead of the whole queue. */
+  domain?: string
   errorForm: string
   queueName: string
   renderFrame: (children: ReactNode) => ReactNode
   renderRetry: (action: QueuePauseRetry) => ReactNode
   renderToggle: (action: QueuePauseToggle) => ReactNode
 }) {
+  const target = useMemo<QueuePauseTarget>(
+    () => (domain === undefined ? { queueName } : { queueName, domain }),
+    [queueName, domain],
+  )
   const [paused, setPaused] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState(false)
+  const [retries, setRetries] = useState(0)
 
   function handleRetry() {
     setFetchError(false)
     setPaused(null)
-    loadQueuePaused(queueName, setPaused, setFetchError)
+    setRetries(count => count + 1)
   }
 
+  const domainsVersion = useDomainsVersion()
   useEffect(() => {
-    loadQueuePaused(queueName, setPaused, setFetchError)
-  }, [queueName])
+    return loadQueuePaused(target, setPaused, setFetchError)
+  }, [target, domainsVersion, retries])
 
   async function handleToggle() {
     setLoading(true)
     try {
       if (paused) {
-        await resumeQueue(queueName)
+        await resumeTarget(target)
         setPaused(false)
         onSuccess(copy.enabledMessage)
       } else {
-        await pauseQueue(queueName)
+        await pauseTarget(target)
         setPaused(true)
         onSuccess(copy.disabledMessage)
       }
+      if (target.domain !== undefined) notifyDomainsChanged()
     } catch (err) {
       onError(err, {
         fallback: copy.errorFallback,

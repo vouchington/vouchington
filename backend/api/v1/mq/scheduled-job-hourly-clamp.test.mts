@@ -32,7 +32,7 @@ describe('staging hourly wake alignment', () => {
   it('aligns the off-minute, interval and sub-hourly jobs onto the shared hourly wake', async () => {
     const staging = await captureRegisteredRepeats({ ENVIRONMENT: 'staging' })
     expect(staging.get('heartbeat/publish-glidemq-stats')).toEqual({ pattern: '0 * * * *' })
-    expect(staging.get('urls-domains-blacklist/hostnameCacheInvalidationSweep')).toEqual({
+    expect(staging.get('background/hostnameCacheInvalidationSweep')).toEqual({
       pattern: '0 * * * *',
     })
     expect(

@@ -8,7 +8,8 @@ whose inline eviction failed or whose lease expired.
 
 ## Exports
 
-- `urlsDomainsBlacklist` - worker instance for the `urls-domains-blacklist` queue.
+- `urlsDomainsBlacklistHandlers` - the domain's handlers for the shared
+  [background worker](../background/README.md); there is no per-queue `Worker`.
 
 ## Related
 

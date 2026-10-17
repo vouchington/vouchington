@@ -17,10 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/rss-feeds": "workspace:^",
-    "@services/rss-feeds": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "@services/rss-feeds": "workspace:^"
   }
 }

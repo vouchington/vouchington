@@ -6,7 +6,9 @@ Worker package for sitemap index, post-day sitemap, and historical backfill jobs
 
 ## Exports
 
-- `sitemaps` - worker instance for the `sitemaps` queue.
+- `sitemapsHandlers` - the domain's handlers for the shared
+  [background worker](../background/README.md); there is no per-queue `Worker`.
+  `createSitemapsHandlers(processors)` builds them over substitute processors for tests.
 
 ## Related
 

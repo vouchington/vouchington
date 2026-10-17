@@ -4,6 +4,8 @@ import { beforeEach, expect, test, vi, type Mock } from 'vitest'
 
 type QueueToggleSectionOptions = {
   queueName: string
+  /** Set when the section controls one domain of `queueName`; the mocks are then the domain API. */
+  domain?: string
   productLabel: string
   renderSection: () => ReturnType<typeof render>
   fetchQueues: Mock
@@ -13,12 +15,22 @@ type QueueToggleSectionOptions = {
 }
 
 export function registerQueueToggleTests(options: QueueToggleSectionOptions): void {
-  const { queueName, productLabel, renderSection, fetchQueues, pauseQueue, resumeQueue, toast } =
-    options
+  const {
+    queueName,
+    domain,
+    productLabel,
+    renderSection,
+    fetchQueues,
+    pauseQueue,
+    resumeQueue,
+    toast,
+  } = options
+  const target = domain === undefined ? [queueName] : [queueName, domain]
   const disableLabel = `Disable ${productLabel}`
   const enableLabel = `Enable ${productLabel}`
 
   function queueResponse(paused: boolean) {
+    if (domain !== undefined) return { domains: [{ domain, paused }] }
     return {
       queues: [
         { name: queueName, waiting: 0, active: 0, delayed: 0, completed: 0, failed: 0, paused },
@@ -30,8 +42,15 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
   beforeEach(() => {
     vi.clearAllMocks()
     fetchQueues.mockResolvedValue(queueResponse(false))
-    pauseQueue.mockResolvedValue({ success: true })
-    resumeQueue.mockResolvedValue({ success: true })
+    // A mutation changes what the next status read returns, as the real API does.
+    pauseQueue.mockImplementation(async () => {
+      fetchQueues.mockResolvedValue(queueResponse(true))
+      return { success: true }
+    })
+    resumeQueue.mockImplementation(async () => {
+      fetchQueues.mockResolvedValue(queueResponse(false))
+      return { success: true }
+    })
   })
 
   test('shows loading state and disabled button while queue state loads', () => {
@@ -59,7 +78,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
   })
 
   test('stays in loading state when the queue is absent from the list', async () => {
-    fetchQueues.mockResolvedValue({ queues: [], total: 0 })
+    fetchQueues.mockResolvedValue(domain === undefined ? { queues: [], total: 0 } : { domains: [] })
     renderSection()
     await act(async () => {
       await Promise.resolve()
@@ -88,7 +107,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     await waitFor(() => expect(screen.getByText('Enabled')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: disableLabel }))
     await waitFor(() => {
-      expect(pauseQueue).toHaveBeenCalledWith(queueName)
+      expect(pauseQueue).toHaveBeenCalledWith(...target)
       expect(toast.success).toHaveBeenCalledWith(`${productLabel} disabled`)
     })
     expect(screen.getByText('Disabled')).toBeInTheDocument()
@@ -101,7 +120,7 @@ export function registerQueueToggleTests(options: QueueToggleSectionOptions): vo
     await waitFor(() => expect(screen.getByText('Disabled')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: enableLabel }))
     await waitFor(() => {
-      expect(resumeQueue).toHaveBeenCalledWith(queueName)
+      expect(resumeQueue).toHaveBeenCalledWith(...target)
       expect(toast.success).toHaveBeenCalledWith(`${productLabel} enabled`)
     })
     expect(screen.getByText('Enabled')).toBeInTheDocument()

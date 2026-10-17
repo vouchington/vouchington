@@ -14,19 +14,26 @@ full cached HTML page on every vote would fight the point of caching. See
 
 ## Queue Configuration
 
-### `cache-purge` (concurrency: 5, worker rate limit: 4 req/min)
+### Domain: `cache-purge`
 
-- `processPurgeCacheTag` — POSTs up to `MAX_TAGS_PER_REQUEST` (30, see
+Domain `cache-purge` of the shared [`background` queue](../background/README.md); job names are
+`cache-purge.<name>`. The domain is capped as a whole: one `domain` group of concurrency 5 and a
+rate limit of 4 starts per 60 seconds, shared by every worker replica through the ordering key
+`cache-purge`. Its jobs carry no other ordering key. It adds a worker baseline of five.
+`WORKER_CONCURRENCY_CACHE_PURGE` and the old queue no longer exist.
+
+- `cache-purge.processPurgeCacheTag` — POSTs up to `MAX_TAGS_PER_REQUEST` (30, see
   [`ts-shared/cache/purge.mts`](../../../../../ts-shared/cache/purge.mts)) Cache-Tags per job to the
   worker's `/infra/cache-purge` route via `@services/entity-cache/purge.mts`'s `purgeCacheTags`.
   `enqueueBulkPurgeCacheTags` chunks its input into `<=30`-tag groups before enqueueing — one job
   per chunk, one outbound HTTP call per job — instead of one job per tag. This exists because
   Cloudflare Workers Cache `ctx.cache.purge()` always uses Free-tier limits (5 req/min, burst 25)
   regardless of zone plan — not the zone Pro 5/s cap. Exploding every tag into its own job let a
-  burst of content mutations empty that bucket. The worker additionally sets `CACHE_PURGE_LIMITER`
-  (`4` req/min; see [workers.mts](../../../../../backend/workers/cache-purge/workers.mts)) as the actual
-  cross-instance throttle — GlideMQ's limiter is Valkey-keyed by queue name, so it caps the
-  aggregate outbound rate across every worker replica, not per-instance.
+  burst of content mutations empty that bucket. The domain's `CACHE_PURGE_RATE_LIMIT`
+  (`4` req/min; see [`cache-purge-jobs.mts`](../../../../../backend/queues/background/enqueues/cache-purge-jobs.mts))
+  is the actual cross-instance throttle, replacing the old queue's worker `limiter`: GlideMQ's
+  group rate limit is Valkey-keyed, so it caps the aggregate outbound rate across every worker
+  replica, not per-instance. A deferred job waits in its group without spending an attempt.
 - Debounced per-chunk (5s TTL): a repeat enqueue only collapses into the same job when it produces
   the exact same sorted chunk of tags, narrower than the old per-tag dedup (an overlapping-but-
   not-identical chunk no longer collapses). This is an accepted, minor regression in dedup
