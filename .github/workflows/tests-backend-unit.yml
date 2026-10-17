@@ -183,15 +183,25 @@ jobs:
               prefix_lines '[backend-unit-deadline] ps'
           }
           sampler_pids=
+          # Runs inside a sampler subshell. Sleeps $1 seconds and returns 1 when stopped first. A stop
+          # that lands before `sleep_pid` is assigned is only flagged, then honored right after the
+          # assignment; otherwise the sleep is orphaned and keeps this step's output pipe open.
+          sleep_unless_stopped() {
+            [ -z "${stopped}" ] || return 1
+            sleep "$1" &
+            sleep_pid=$!
+            if [ -z "${stopped}" ]; then wait "${sleep_pid}" || true; else kill "${sleep_pid}" 2>/dev/null || true; fi
+            sleep_pid=
+            [ -z "${stopped}" ]
+          }
           start_deadline_dump() {
             (
               set +e
               set +o pipefail
+              stopped=
               sleep_pid=
-              trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
-              sleep "$DEADLINE_DUMP_AFTER_SECONDS" &
-              sleep_pid=$!
-              wait "${sleep_pid}" && dump_deadline_state
+              trap 'stopped=1; if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi' TERM INT
+              sleep_unless_stopped "$DEADLINE_DUMP_AFTER_SECONDS" && dump_deadline_state
             ) &
             sampler_pids="${sampler_pids} $!"
           }
@@ -199,20 +209,18 @@ jobs:
             (
               set +e
               set +o pipefail
+              stopped=
               sleep_pid=
-              trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
-              while true; do
+              trap 'stopped=1; if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi' TERM INT
+              while [ -z "${stopped}" ]; do
                 "$1"
-                sleep "$2" &
-                sleep_pid=$!
-                wait "${sleep_pid}"
-                sleep_pid=
+                sleep_unless_stopped "$2" || break
               done
             ) &
             sampler_pids="${sampler_pids} $!"
           }
           stop_samplers() {
-            # TERM hits each sampler shell, which stops its sleep child before exiting.
+            # TERM hits each sampler shell, whose trap flags the stop and kills its sleep.
             for sampler_pid in ${sampler_pids}; do
               kill -TERM "${sampler_pid}" 2>/dev/null || true
             done
