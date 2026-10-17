@@ -15,6 +15,10 @@ import type {
   ProcessSendPostReferralLinkEmailVariables,
 } from '@queues/background/enqueues/email-digests-domain'
 import type { EnqueueReturnType } from '@voucha/types'
+import {
+  ENGAGEMENT_DISPATCH_DEDUP_TTL_MS,
+  MODERATION_SUMMARY_DISPATCH_DEDUP_TTL_MS,
+} from './config.mts'
 
 export {
   enqueueBulkSendApiKeyExpiryReminders,
@@ -65,7 +69,7 @@ export function enqueueDispatchEngagementEmails(): EnqueueReturnType {
       deduplication: {
         id: 'email-digests:dispatch-engagement',
         mode: 'throttle',
-        ttl: 3_600_000,
+        ttl: ENGAGEMENT_DISPATCH_DEDUP_TTL_MS,
       },
     },
   )
@@ -78,7 +82,7 @@ export function enqueueDispatchCommunityModerationSummaryEmails(): EnqueueReturn
       deduplication: {
         id: 'email-digests:dispatch-moderation-summary',
         mode: 'throttle',
-        ttl: 55_000,
+        ttl: MODERATION_SUMMARY_DISPATCH_DEDUP_TTL_MS,
       },
     },
   )

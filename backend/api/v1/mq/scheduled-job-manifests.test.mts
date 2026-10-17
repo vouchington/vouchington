@@ -41,9 +41,9 @@ const EXPECTED_SCHEDULED_JOBS = [
   'crawl-dispatch/crawl_tier2_dispatcher',
   'crawl-dispatch/refresh_hostname_crawler_dispatcher',
   'crawl_referral_links/crawl_referral_links_dispatcher',
-  'emails/dispatchApiKeyExpiryReminders',
-  'emails/dispatchCommunityModerationSummaryEmails',
-  'emails/dispatchEngagementEmails',
+  'background/email-digests-api-key-expiry',
+  'background/email-digests-moderation-summary',
+  'background/email-digests-engagement',
   'background/entityListenerReconciliation',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
@@ -103,8 +103,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 14 manifests and 79 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(14)
+  it('imports the exact 13 manifests and 79 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(13)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

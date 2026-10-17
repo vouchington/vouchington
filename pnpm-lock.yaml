@@ -2951,10 +2951,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/emails:
     dependencies:

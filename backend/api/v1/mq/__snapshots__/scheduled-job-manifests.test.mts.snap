@@ -1188,6 +1188,117 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Dispatch API key expiry reminders",
+        "id": "email-digests-api-key-expiry",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "email-digests-api-key-expiry",
+    "template": {
+      "data": {},
+      "name": "email-digests.dispatchApiKeyExpiryReminders",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 5,
+          "key": "email-digests",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch engagement onboarding emails",
+        "id": "email-digests-engagement",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "email-digests-engagement",
+    "template": {
+      "data": {},
+      "name": "email-digests.dispatchEngagementEmails",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 5,
+          "key": "email-digests",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch moderation summary emails",
+        "id": "email-digests-moderation-summary",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "email-digests-moderation-summary",
+    "template": {
+      "data": {},
+      "name": "email-digests.dispatchCommunityModerationSummaryEmails",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 5,
+          "key": "email-digests",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Copy reusable topic embeddings from the centralized table",
         "id": "reconcile_existing_topics",
         "kind": "scheduled-jobs",
@@ -1728,105 +1839,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "attempts": 3,
         "backoff": {
           "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch API key expiry reminders",
-        "id": "dispatchApiKeyExpiryReminders",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "emails",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "dispatchApiKeyExpiryReminders",
-    "template": {
-      "data": {},
-      "name": "dispatchApiKeyExpiryReminders",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch engagement onboarding emails",
-        "id": "dispatchEngagementEmails",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "emails",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "dispatchEngagementEmails",
-    "template": {
-      "data": {},
-      "name": "dispatchEngagementEmails",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch moderation summary emails",
-        "id": "dispatchCommunityModerationSummaryEmails",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "emails",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "dispatchCommunityModerationSummaryEmails",
-    "template": {
-      "data": {},
-      "name": "dispatchCommunityModerationSummaryEmails",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -2877,9 +2889,9 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
 [
   {
     "description": "Dispatch API key expiry reminders",
-    "id": "dispatchApiKeyExpiryReminders",
-    "job_name": "dispatchApiKeyExpiryReminders",
-    "queue_name": "emails",
+    "id": "email-digests-api-key-expiry",
+    "job_name": "email-digests.dispatchApiKeyExpiryReminders",
+    "queue_name": "background",
     "schedule": "0 * * * *",
     "triggerName": "enqueueDispatchApiKeyExpiryReminders",
   },
@@ -3029,17 +3041,17 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   },
   {
     "description": "Dispatch engagement onboarding emails",
-    "id": "dispatchEngagementEmails",
-    "job_name": "dispatchEngagementEmails",
-    "queue_name": "emails",
+    "id": "email-digests-engagement",
+    "job_name": "email-digests.dispatchEngagementEmails",
+    "queue_name": "background",
     "schedule": "0 * * * *",
     "triggerName": "enqueueDispatchEngagementEmails",
   },
   {
     "description": "Dispatch moderation summary emails",
-    "id": "dispatchCommunityModerationSummaryEmails",
-    "job_name": "dispatchCommunityModerationSummaryEmails",
-    "queue_name": "emails",
+    "id": "email-digests-moderation-summary",
+    "job_name": "email-digests.dispatchCommunityModerationSummaryEmails",
+    "queue_name": "background",
     "schedule": "* * * * *",
     "triggerName": "enqueueDispatchCommunityModerationSummaryEmails",
   },
