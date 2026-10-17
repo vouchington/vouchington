@@ -77,8 +77,7 @@ export async function* mergeVoteStreams(left: VoteStream, right: VoteStream): Vo
       }
     }
   } finally {
-    await left.return(undefined)
-    await right.return(undefined)
+    await Promise.all([left.return(undefined), right.return(undefined)])
   }
   return undefined
 }

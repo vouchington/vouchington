@@ -1,3 +1,5 @@
+import { createSameIdElectionRelations } from '@voucha/test-helpers/entities/entity-relation-election-collisions'
+import { insertTestEntityRelationVote } from '@voucha/test-helpers/entities/entity-relation-votes'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { randomBytes } from 'node:crypto'
@@ -80,6 +82,34 @@ describe('apply-ring-penalty', () => {
         resolved_at: expect.any(Date),
         resolved_by_id: adminUser.id,
       })
+    })
+
+    it('penalizes only the concrete flagged family when target UUIDs collide', async () => {
+      const fixture = await createSameIdElectionRelations({
+        postCategory: 3,
+        topicRelated: 7,
+        viewerVotes: { postCategory: 1, topicRelated: -1 },
+      })
+      const otherFamilyVoter = await createTestUserDirect({ username: randomUsername() })
+      await insertTestEntityRelationVote({
+        relationTable: fixture.topicRelated.relationTable,
+        relationId: fixture.id,
+        subjectId: fixture.topicRelated.subjectId,
+        userId: otherFamilyVoter.id,
+        score: 1,
+      })
+      // Flag creation orders the fixed catalog; post/category precedes topic/related.
+      const flag = await createVoteIntegrityFlag(
+        'entity_relation',
+        fixture.id,
+        'ip_correlation',
+        {},
+      )
+      if (!flag) throw new Error('Expected relation integrity flag')
+      const result = await applyVoteRingPenalty(flag.id, adminUser.id)
+      expect(result.penalized_user_count).toBe(1)
+      const penalties = await getTestPenaltiesByFlagId(flag.id)
+      expect(penalties.map(penalty => penalty.user_id)).toEqual([fixture.viewer.id])
     })
 
     it('returns penalized_user_count=0 when no upvoters exist', async () => {

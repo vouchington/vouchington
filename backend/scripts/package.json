@@ -31,6 +31,7 @@
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
+    "@services/account-data-requests": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/bookmarks": "workspace:^",

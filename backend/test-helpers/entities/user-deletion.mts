@@ -75,7 +75,12 @@ export async function withTestDeletionCandidateCascade<T>(
   const query = Object.assign(
     async (sqlInput: Parameters<TransactionQuery>[0], values?: Parameters<TransactionQuery>[1]) => {
       const result = await transaction(sqlInput, values)
-      if (!cascaded && typeof sqlInput !== 'string' && sqlInput.text.includes(candidateSqlMarker)) {
+      if (
+        !cascaded &&
+        result.rows.length > 0 &&
+        typeof sqlInput !== 'string' &&
+        sqlInput.text.includes(candidateSqlMarker)
+      ) {
         cascaded = true
         await cascade()
       }

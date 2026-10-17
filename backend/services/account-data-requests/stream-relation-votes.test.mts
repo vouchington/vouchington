@@ -44,4 +44,20 @@ describe('relation vote export', () => {
       ordered.push(row)
     expect(ordered.map(row => row.sort_id)).toEqual(['01', '02', '03', '04'])
   })
+  it('closes both sources when one source rejects cancellation', async () => {
+    const closed: string[] = []
+    async function* source(name: string, sortId: string, rejectClose: boolean) {
+      try {
+        yield { sort_id: sortId }
+      } finally {
+        closed.push(name)
+        // oxlint-disable-next-line no-unsafe-finally -- model an external cursor rejecting cancellation.
+        if (rejectClose) throw new Error('source close failed')
+      }
+    }
+    const merged = mergeVoteStreams(source('left', '01', true), source('right', '02', false))
+    await merged.next()
+    await expect(merged.return(undefined)).rejects.toThrow('source close failed')
+    expect(closed.toSorted()).toEqual(['left', 'right'])
+  })
 })

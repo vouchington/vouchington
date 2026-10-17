@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { streamRelationVotes } from '../../../services/account-data-requests/stream-relation-votes.mts'
+import { streamRelationVotes } from '@services/account-data-requests/stream-relation-votes'
 import { getRelationVoteCandidates } from '@services/users/get-relation-vote-candidates'
 import { getEntityRelationElectionConfig } from '@services/elections-votes/entity-relation/config'
 import { toEntityRelationElectionTable } from '@services/elections-votes/entity-relation/target'
