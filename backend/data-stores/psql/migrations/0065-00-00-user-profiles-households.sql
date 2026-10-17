@@ -502,10 +502,11 @@ COMMENT ON COLUMN github_accounts.friends_synced_at IS 'When the user''s GitHub 
 -- GitHub friends
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS github_friends (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   github_account_id UUID NOT NULL REFERENCES github_accounts(id) ON DELETE CASCADE,
   github_friend_id TEXT NOT NULL,
   friend_github_account_id UUID REFERENCES github_accounts(id) ON DELETE SET NULL,
-  PRIMARY KEY (github_account_id, github_friend_id),
+  UNIQUE (github_account_id, github_friend_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -526,6 +527,7 @@ ON github_friends (friend_github_account_id)
 WHERE friend_github_account_id IS NOT NULL;
 
 COMMENT ON TABLE github_friends IS 'GitHub follower/following relationships for friend recommendations.';
+COMMENT ON COLUMN github_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
 COMMENT ON COLUMN github_friends.github_account_id IS 'Source GitHub account whose following list contains this entry.';
 COMMENT ON COLUMN github_friends.github_friend_id IS 'External GitHub user ID of the friend, who may not have an account here.';
 COMMENT ON COLUMN github_friends.friend_github_account_id IS 'Matching local GitHub account when the friend has signed in.';
