@@ -10,14 +10,18 @@ CREATE OR REPLACE VIEW view_community_metrics AS
         AND cm.removed_at IS NULL
     ) AS member_count,
     (
+      WITH keyed_posts AS MATERIALIZED (
+        SELECT id
+        FROM posts
+        WHERE community_id = c.id
+      )
       SELECT COUNT(*)::int
-      FROM posts p
+      FROM keyed_posts p
       JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id
       JOIN community_post_reviews cpr
         ON cpr.post_id = p.id
         AND cpr.community_id = c.id
-      WHERE p.community_id = c.id
-        AND cpr.approved_at IS NOT NULL
+      WHERE cpr.approved_at IS NOT NULL
         AND cpr.unpublished_at IS NULL
         AND cpr.rejected_at IS NULL
     ) AS post_count,
