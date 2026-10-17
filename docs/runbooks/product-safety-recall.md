@@ -4,8 +4,7 @@ Handling for content that promotes, sells, or links to a product that has been o
 poses a verified safety risk: official recalls (CPSC, FDA, NHTSA, USDA, or equivalent), manufacturer or
 consumer-safety alerts, and user reports of serious injury or illness. General misinformation about
 product quality follows the standard [Moderation Flows](../requirements/moderation/MODERATION-FLOWS.md).
-Reports arrive through the `illegal_content` or `other` report reasons under the
-[Moderation Policy Matrix](../requirements/moderation/MODERATION-POLICY-MATRIX.md).
+Reports arrive through the `illegal_content` or `other` report reasons.
 
 ## Triage
 

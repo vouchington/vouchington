@@ -5,7 +5,7 @@ code is the source of truth for headers, limits, and routes.
 
 - **Edge is authoritative.** The Cloudflare Worker sets security headers on every response and
   strips client-supplied auth headers, so browser authority is cookie-only. Backend routes serve
-  APIs and normally carry no CSP. See [Content Security Policy](reference-content-security-policy-cf-worker.md).
+  APIs and normally carry no CSP.
 - **CSRF.** No tokens; layered defenses make a forged request impossible to construct. See
   [CSRF](./CSRF.md).
 - **Authentication.** Cookie sessions for browsers, bearer credentials for native and server

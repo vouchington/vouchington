@@ -1,3 +1,5 @@
 # moderation-reports
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/moderation-reports/README.md).
+User-submitted moderation reports. Product rules are in
+[REPORTING.md](../../../docs/requirements/moderation/REPORTING.md); the report entity and reason
+registry is `ts-shared/utils/moderation-policy.mts`.

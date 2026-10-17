@@ -24,13 +24,6 @@ Navigation policy, UI rules, and accessibility.
 When navigation intents or UI rules change, update the relevant doc here and cross-link from
 `web/AGENTS.md` and the relevant page or component.
 
-## Guard-pinned files
-
-[ACTIONS.md](./ACTIONS.md) is validated by `static-code-analysis/repo-file-policy/moderation-policy-doc-sync-guard.mts`:
-its report-entity list and reason list must stay in sync with the moderation policy docs
-(`../moderation/`).
-
 ## Reference index
 
 - [RSC boundary view models](reference-components-rsc-boundary-view-models.md)
-- [UI component patterns](reference-components-patterns.md)

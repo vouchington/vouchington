@@ -3,8 +3,6 @@
 Internal procedures for high-severity safety and compliance incidents. These runbooks are staff-only
 documents and are **not** surfaced in public-facing help content.
 
-See also: [Moderation Policy Matrix](../requirements/moderation/MODERATION-POLICY-MATRIX.md)
-
 ## Runbooks
 
 - [Native TLS Pinning](./native-tls-pinning.md) — Cloudflare edge SPKI pin rollout, rotation, and

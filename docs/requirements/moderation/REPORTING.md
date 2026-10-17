@@ -11,7 +11,7 @@ See also:
 - [Signed-out Actions](../navigation/SIGNED_OUT_ACTIONS.md) — Report is auth-only
 - [Moderation Flows](./MODERATION-FLOWS.md) — the automated pipeline around user reports
 - [How Moderation Works](../../../articles/how-moderation-works.md) — public-facing overview
-- [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md) — the policy registry report reasons derive from
+- `ts-shared/utils/moderation-policy.mts` — the policy registry report reasons derive from
 
 ## Reporter privacy
 
@@ -20,8 +20,3 @@ See also:
   without reporter identity, reporter notes, or note-derived AI judgements.
 - Pending queues hide reports whose target was deleted, and deleting a post or comment dismisses its
   pending reports.
-
-## Contents
-
-- <a id="reportable-entities"></a>[Reportable entities](reference-reporting-reportable-entities.md)
-- <a id="report-reasons-submission-flow-and-idempotency"></a>[Report Reasons and Idempotency](reference-reporting-report-reasons.md)

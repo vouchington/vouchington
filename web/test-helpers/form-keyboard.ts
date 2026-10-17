@@ -12,7 +12,7 @@ import { expect, type Mock } from 'vitest'
  * Each form vitest test should call the relevant helpers so the rule stays
  * regression-proof site-wide.
  *
- * Spec: docs/requirements/navigation/reference-components-patterns.md#form-keyboard-behavior
+ * Implementation: `web/components/ui/textarea.tsx` and `web/lib/form-submit.ts`.
  */
 
 // Wide enough to accept any vi.fn() including narrowly-typed mocks like
