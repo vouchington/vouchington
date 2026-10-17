@@ -10,15 +10,19 @@ export type VoteWeightRejectedEvidenceKeyset = VoteWeightTimestampKeyset & {
   afterSourceId?: string
 }
 export type VoteWeightAgeMilestonesData = {
+  /** Operator backfills scan all eligible users; scheduled runs resume the durable cursor. */
+  fullReplay?: boolean
   window?: VoteWeightDispatchWindow
   milestoneIndex?: number
   afterId?: string
 }
 export type VoteWeightMembershipExpirationsData = {
+  fullReplay?: boolean
   window?: VoteWeightDispatchWindow
   after?: VoteWeightTimestampKeyset
 }
 export type VoteWeightFamilySourceChangesData = {
+  fullReplay?: boolean
   window?: VoteWeightDispatchWindow
   branches?: Partial<
     Record<
@@ -28,6 +32,7 @@ export type VoteWeightFamilySourceChangesData = {
   >
 }
 export type VoteWeightDispatchEvent = { userId: string; jobId: string }
+export type VoteWeightDirtyMarkersData = { afterId?: string }
 export type VoteWeightDispatchPage<T> = {
   window: VoteWeightDispatchWindow
   events: VoteWeightDispatchEvent[]

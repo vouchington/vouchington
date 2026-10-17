@@ -31,6 +31,7 @@ export const SCHEDULED_JOB_API_ORDER = [
   'voteWeightAgeMilestones',
   'voteWeightMembershipExpirations',
   'voteWeightFamilySourceChanges',
+  'voteWeightDirtyMarkers',
   'data-retention-cleanup-daily',
   'reconcile-vote-drift',
   'kagi-smallweb-sync',

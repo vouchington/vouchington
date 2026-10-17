@@ -10,7 +10,11 @@ import { getVoteWeightDispatchBatchSize } from './work-limits.mts'
 export async function dispatchVoteWeightMembershipExpirations(
   data: VoteWeightMembershipExpirationsData = {},
 ): Promise<VoteWeightDispatchPage<VoteWeightMembershipExpirationsData>> {
-  const window = data.window ?? (await beginVoteWeightDispatch('membership_expirations'))
+  const window =
+    data.window ??
+    (await beginVoteWeightDispatch('membership_expirations', new Date(), {
+      fullReplay: data.fullReplay,
+    }))
   const cap = getVoteWeightDispatchBatchSize()
   const query = sql`/* dispatchVoteWeightMembershipExpirations */
     SELECT expires_at::text AS at, id, user_id FROM memberships

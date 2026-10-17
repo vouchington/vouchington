@@ -78,8 +78,15 @@ family sources. The
 position advances with compare-and-set only after all child enqueues succeed. An overlap catches
 late commits while event-keyed job ids identify repeated reads of the same trigger.
 
-Source writers enqueue after commit. Replaying an event can reactivate its retained completed or
-failed queue record; a waiting or running record keeps its claim. Election replay has its own
+OAuth linking also leaves a durable dirty marker in the account transaction. A separate indexed
+recovery pass selects unrecalculated live accounts without administrator overrides. Successful
+recalculation removes them from that set, so this pass needs no persisted timestamp cursor.
+
+Source writers enqueue after commit. Operator backfills replay the full signal history through
+bounded pages, independently of the scheduled overlap. The age backfill also recalculates every
+eligible live user, recovering current weights even when the original membership signal has ended.
+Replaying an event can reactivate its retained completed or failed queue record; a waiting or
+running record keeps its claim. Election replay has its own
 bounded dispatcher and does not recalculate weights or change administrator overrides.
 
 ## Where to look by domain

@@ -2,6 +2,7 @@ import type {
   VoteWeightAgeMilestonesData,
   VoteWeightMembershipExpirationsData,
   VoteWeightFamilySourceChangesData,
+  VoteWeightDirtyMarkersData,
 } from './vote-weight-dispatch-types.mts'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
@@ -92,6 +93,10 @@ export const VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB =
     name: 'processVoteWeightFamilySourceChanges',
     ...VOTE_WEIGHT_DISPATCH_OPTIONS,
   })
+export const VOTE_AGGREGATION_DIRTY_MARKERS_JOB = defineBackgroundJob<VoteWeightDirtyMarkersData>(
+  VOTE_AGGREGATION_DOMAIN,
+  { name: 'processVoteWeightDirtyMarkers', ...VOTE_WEIGHT_DISPATCH_OPTIONS },
+)
 /** One bounded page of a user's votes becomes election recomputes, then continues from its cursor. */
 export const VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB =
   defineBackgroundJob<UserElectionFanOutData>(VOTE_AGGREGATION_DOMAIN, {
@@ -141,6 +146,7 @@ export const VOTE_AGGREGATION_JOBS = [
   VOTE_AGGREGATION_AGE_MILESTONES_JOB,
   VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
   VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
   VOTE_AGGREGATION_VOTE_INTEGRITY_JOB,
   VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB,

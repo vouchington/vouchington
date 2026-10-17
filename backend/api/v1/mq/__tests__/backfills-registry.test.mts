@@ -29,6 +29,7 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'vote-weight-age-milestones',
   'vote-weight-membership-expirations',
   'vote-weight-family-source-changes',
+  'vote-weight-dirty-markers',
   'relation-election-updates',
   'find-your-friends-dispatch',
   'oauth-authorization-exchange-dispatch',
@@ -168,6 +169,18 @@ describe('BACKFILL_REGISTRY', () => {
     if (isDeduplicatedEnqueue(enqueued)) return
     await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
       name: `vote-aggregation.${jobName}`,
+      data: { fullReplay: true },
+    })
+  })
+
+  it('starts the dirty-marker recovery backfill', async () => {
+    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'vote-weight-dirty-markers')
+    if (!entry) throw new Error('Dirty-marker backfill missing')
+    const enqueued = await entry.trigger()
+    if (isDeduplicatedEnqueue(enqueued)) return
+    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
+      name: 'vote-aggregation.processVoteWeightDirtyMarkers',
+      data: {},
     })
   })
 })

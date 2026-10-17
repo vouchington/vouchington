@@ -5,6 +5,7 @@ import { enqueueElectionUpdatesForUser } from '@services/vote-weight/enqueue-ele
 import { dispatchVoteWeightAgeMilestones } from '@services/vote-weight/dispatch-age-milestones'
 import { dispatchVoteWeightMembershipExpirations } from '@services/vote-weight/dispatch-membership-expirations'
 import { dispatchVoteWeightFamilySourceChanges } from '@services/vote-weight/dispatch-family-source-changes'
+import { dispatchVoteWeightDirtyMarkers } from '@services/vote-weight/dispatch-dirty-markers'
 import { completeVoteWeightDispatch } from '@services/vote-weight/dispatch-cursor'
 import {
   enqueueBulkElectionUpdateReplay,
@@ -13,12 +14,14 @@ import {
   enqueueVoteWeightAgeMilestones,
   enqueueVoteWeightMembershipExpirations,
   enqueueVoteWeightFamilySourceChanges,
+  enqueueVoteWeightDirtyMarkers,
 } from '@queues/vote-aggregation/enqueues/vote-weight'
 import type {
   VoteWeightAgeMilestonesData,
   VoteWeightMembershipExpirationsData,
   VoteWeightFamilySourceChangesData,
   VoteWeightDispatchPage,
+  VoteWeightDirtyMarkersData,
 } from '@queues/vote-aggregation/enqueues/types-dispatch'
 import type {
   ProcessRecalculateUserVoteWeightData,
@@ -100,4 +103,12 @@ async function dispatchPage<T>(
     return
   }
   await completeVoteWeightDispatch(dispatcher, page.window)
+}
+
+export async function processVoteWeightDirtyMarkers(
+  data: VoteWeightDirtyMarkersData,
+): Promise<void> {
+  const page = await dispatchVoteWeightDirtyMarkers(data)
+  if (page.events.length > 0) await enqueueRecalculateVoteWeightEvents(page.events)
+  if (page.continuation) await enqueueVoteWeightDirtyMarkers(page.continuation)
 }

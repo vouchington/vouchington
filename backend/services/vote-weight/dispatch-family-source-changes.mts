@@ -17,7 +17,11 @@ type Row = { at: string; id: string; user_id: string | null; changed_at_epoch_ms
 export async function dispatchVoteWeightFamilySourceChanges(
   data: VoteWeightFamilySourceChangesData = {},
 ): Promise<VoteWeightDispatchPage<VoteWeightFamilySourceChangesData>> {
-  const window = data.window ?? (await beginVoteWeightDispatch('family_source_changes'))
+  const window =
+    data.window ??
+    (await beginVoteWeightDispatch('family_source_changes', new Date(), {
+      fullReplay: data.fullReplay,
+    }))
   const cap = getVoteWeightDispatchBatchSize()
   const branches = { ...data.branches }
   const events = []

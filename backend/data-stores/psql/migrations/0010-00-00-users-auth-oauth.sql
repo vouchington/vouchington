@@ -291,6 +291,13 @@ CREATE INDEX IF NOT EXISTS idx_users__vote_weight_age_milestone
   ON users (id)
   WHERE deleted_at IS NULL AND vote_weight_admin_set_at IS NULL;
 
+-- Unrecalculated users, including OAuth links whose post-commit enqueue failed.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_users__vote_weight_dirty_marker
+  ON users (id)
+  WHERE vote_weight_recalculated_at IS NULL
+    AND deleted_at IS NULL AND vote_weight_admin_set_at IS NULL;
+
 -- find users pending language detection (bio)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_users__lingua_rs_pending

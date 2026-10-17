@@ -101,6 +101,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/voteWeightAgeMilestones',
   'background/voteWeightMembershipExpirations',
   'background/voteWeightFamilySourceChanges',
+  'background/voteWeightDirtyMarkers',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {

@@ -6,6 +6,7 @@ import {
   VOTE_AGGREGATION_AGE_MILESTONES_JOB,
   VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
   VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
   VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
@@ -149,6 +150,9 @@ export function enqueueVoteWeightFamilySourceChanges(
 ) {
   return enqueueFamilySourceChangesJob(data)
 }
+export const enqueueVoteWeightDirtyMarkers = createBackgroundEnqueue(
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
+)
 
 /**
  * Starts (cursor null) or continues one user's election fan-out. A start carries no job id, so a

@@ -11,11 +11,13 @@ export type VoteWeightDispatcher =
 export async function beginVoteWeightDispatch(
   dispatcher: VoteWeightDispatcher,
   now = new Date(),
+  options: { fullReplay?: boolean; query?: QueryExecutor } = {},
 ): Promise<VoteWeightDispatchWindow> {
-  await write(sql`/* ensureVoteWeightDispatchCursor */
+  const query = options.query ?? write
+  await query(sql`/* ensureVoteWeightDispatchCursor */
     INSERT INTO vote_weight_recalculation_cursors (dispatcher)
     VALUES (${dispatcher}) ON CONFLICT DO NOTHING`)
-  const { rows } = await write<{
+  const { rows } = await query<{
     previous_through_at: string | null
     window_start: string | null
   }>(sql`/* beginVoteWeightDispatch */
@@ -24,7 +26,7 @@ export async function beginVoteWeightDispatch(
     FROM vote_weight_recalculation_cursors WHERE dispatcher = ${dispatcher}`)
   return {
     previousThroughAt: rows[0]?.previous_through_at ?? null,
-    windowStart: rows[0]?.window_start ?? null,
+    windowStart: options.fullReplay ? null : (rows[0]?.window_start ?? null),
     windowEnd: now.toISOString(),
   }
 }

@@ -365,6 +365,45 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Recover vote-weight recalculation dirty markers",
+        "id": "voteWeightDirtyMarkers",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "vote-weight-dirty-markers",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "voteWeightDirtyMarkers",
+    "template": {
+      "name": "vote-aggregation.processVoteWeightDirtyMarkers",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 10,
+          "key": "vote-aggregation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Dispatch vote-weight age milestones",
         "id": "voteWeightAgeMilestones",
         "kind": "scheduled-jobs",
@@ -3224,6 +3263,14 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "queue_name": "background",
     "schedule": "0 4 * * *",
     "triggerName": "enqueueVoteWeightFamilySourceChanges",
+  },
+  {
+    "description": "Recover vote-weight recalculation dirty markers",
+    "id": "voteWeightDirtyMarkers",
+    "job_name": "vote-aggregation.processVoteWeightDirtyMarkers",
+    "queue_name": "background",
+    "schedule": "0 4 * * *",
+    "triggerName": "trigger",
   },
   {
     "description": "Enforce database and local analytics retention policies",

@@ -1,14 +1,15 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { postSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from './common.mts'
+import { seedVoteWeightDirtyMarkers } from './vote-weight-dirty-markers.mts'
 
 export const VOTE_WEIGHT_DISPATCH_SEED_COUNT = 2_400
 export const VOTE_WEIGHT_DISPATCH_ANCHOR_MS = postSeedTimestampMs(0)
 export const VOTE_WEIGHT_DISPATCH_WINDOW_START = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS - 60_000)
 export const VOTE_WEIGHT_DISPATCH_WINDOW_END = new Date(VOTE_WEIGHT_DISPATCH_ANCHOR_MS + 60_000)
-// The mixed window spans multiple 500-row family pages for stable range plans.
-// This makes an index range with a post-scan source-kind filter visibly expensive.
+// Mixed 500-row family pages expose expensive post-scan source-kind filtering.
 export async function seedVoteWeightDispatch(): Promise<void> {
   await seedAgeMilestoneUsers()
+  await seedVoteWeightDirtyMarkers()
   await seedMembershipSignals()
   await write(
     '/* seedVoteWeightDispatch */ ANALYZE users, membership_provider_observations, membership_provider_lineages, membership_provider_evidence_records, membership_sources, membership_source_states, memberships',
@@ -152,8 +153,7 @@ async function seedMembershipSignals(): Promise<void> {
     )
     await transaction.commit()
   }
-  // One family observation can back several recipients. A rejected-evidence
-  // continuation must be able to resume inside this source fanout.
+  // Rejected-evidence continuations resume within one observation's shared recipients.
   const sharedRows: string[] = []
   const sharedValues: unknown[] = []
   for (let index = 0; index < 6; index++) {

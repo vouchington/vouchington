@@ -13,12 +13,14 @@ import {
   VOTE_AGGREGATION_AGE_MILESTONES_JOB,
   VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
 import {
   enqueueRecalculateVoteWeightDispatcher,
   enqueueVoteWeightAgeMilestones,
   enqueueVoteWeightMembershipExpirations,
   enqueueVoteWeightFamilySourceChanges,
+  enqueueVoteWeightDirtyMarkers,
 } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import type { BloomFilterEntityType } from '@queues/bloom-filters/types'
@@ -101,7 +103,7 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     job_name: VOTE_AGGREGATION_AGE_MILESTONES_JOB.name,
     description: 'Dispatch vote-weight age milestones from users',
     source_table: 'users',
-    trigger: enqueueVoteWeightAgeMilestones,
+    trigger: () => enqueueVoteWeightAgeMilestones({ fullReplay: true }),
   },
   {
     id: 'vote-weight-membership-expirations',
@@ -109,7 +111,7 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     job_name: VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB.name,
     description: 'Dispatch vote-weight membership expirations',
     source_table: 'memberships',
-    trigger: enqueueVoteWeightMembershipExpirations,
+    trigger: () => enqueueVoteWeightMembershipExpirations({ fullReplay: true }),
   },
   {
     id: 'vote-weight-family-source-changes',
@@ -117,7 +119,15 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     job_name: VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB.name,
     description: 'Dispatch vote-weight family source changes',
     source_table: 'membership_source_states, membership_provider_evidence_records',
-    trigger: enqueueVoteWeightFamilySourceChanges,
+    trigger: () => enqueueVoteWeightFamilySourceChanges({ fullReplay: true }),
+  },
+  {
+    id: 'vote-weight-dirty-markers',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_DIRTY_MARKERS_JOB.name,
+    description: 'Recover vote-weight recalculation dirty markers',
+    source_table: 'users',
+    trigger: () => enqueueVoteWeightDirtyMarkers({}),
   },
   {
     id: 'find-your-friends-dispatch',

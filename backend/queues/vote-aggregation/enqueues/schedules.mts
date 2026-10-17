@@ -8,14 +8,23 @@ import {
   VOTE_AGGREGATION_AGE_MILESTONES_JOB,
   VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
 import {
   enqueueVoteWeightAgeMilestones,
   enqueueVoteWeightMembershipExpirations,
   enqueueVoteWeightFamilySourceChanges,
+  enqueueVoteWeightDirtyMarkers,
 } from './vote-weight.mts'
 
 const DISPATCHERS = [
+  {
+    id: 'voteWeightDirtyMarkers',
+    backfillId: 'vote-weight-dirty-markers',
+    description: 'Recover vote-weight recalculation dirty markers',
+    job: VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
+    trigger: () => enqueueVoteWeightDirtyMarkers({}),
+  },
   {
     id: 'voteWeightAgeMilestones',
     backfillId: 'vote-weight-age-milestones',
