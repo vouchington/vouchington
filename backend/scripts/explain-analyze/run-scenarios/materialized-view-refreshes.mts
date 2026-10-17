@@ -1,4 +1,3 @@
-import { seededRowScanBudget } from '../plan-seeded-rows.mts'
 import { read } from '@data-stores/psql'
 import { getRssFeedsToFetch } from '@services/rss-feeds/get-to-fetch'
 import { runAndCapture } from '../run-support.mts'
@@ -59,14 +58,12 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
     rss_feeds: 3089,
     relation__user__follow__rss_feed: 3239,
     topics: 5259,
-    memberships: seededRowScanBudget('memberships'),
+    memberships: 360,
     membership_products: 5,
-    membership_sources: seededRowScanBudget('membership_sources'),
-    membership_source_states: seededRowScanBudget('membership_source_states'),
-    membership_provider_observations: seededRowScanBudget('membership_provider_observations'),
-    membership_provider_evidence_records: seededRowScanBudget(
-      'membership_provider_evidence_records',
-    ),
+    membership_sources: 360,
+    membership_source_states: 360,
+    membership_provider_observations: 0,
+    membership_provider_evidence_records: 0,
   }).map(([relation, max]) => ({ kind: 'maxProcessedRows' as const, relation, max })),
 })
 registerScenarioContract('rss-feeds-to-fetch-tiered', {
@@ -91,19 +88,10 @@ registerScenarioContract('mv-trending-rss-feeds-refresh', {
   ],
   crossPartition: { rss_feed_items: 'Publication date defines each rolling trend window.' },
 })
-// Eligible membership hydration scans each relation twice; retain the measured pass count.
 registerScenarioContract('mv-revenue-memberships-refresh', {
   expectations: [
-    {
-      kind: 'maxProcessedRows',
-      relation: 'memberships',
-      max: seededRowScanBudget('memberships', 2),
-    },
-    {
-      kind: 'maxProcessedRows',
-      relation: 'membership_source_states',
-      max: seededRowScanBudget('membership_source_states', 2),
-    },
+    { kind: 'maxProcessedRows', relation: 'memberships', max: 1000 },
+    { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 1000 },
   ],
 })
 registerScenarioContract('mv-revenue-changes-refresh', {

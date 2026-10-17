@@ -15,9 +15,18 @@ const window = {
 }
 
 const familyBranches = ['updated_at', 'effective_at', 'expires_at', 'rejected_at'] as const
+const seededRows = {
+  users: 20_244,
+  memberships: 1_506,
+  membership_sources: 1_506,
+  membership_source_states: 1_506,
+  membership_provider_observations: 1_200,
+  membership_provider_evidence_records: 1_200,
+}
 
 export async function runVoteWeightDispatchScenarios(): Promise<void> {
   registerScenarioContract('vote-weight-age-milestones', {
+    seededRows,
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_users__vote_weight_age_milestone'], noSort: true },
       { kind: 'maxProcessedRows', relation: 'users', max: 200 },
@@ -31,6 +40,7 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
   )
 
   registerScenarioContract('vote-weight-membership-expirations', {
+    seededRows,
     expectations: [
       { kind: 'usesIndexes', indexes: ['idx_memberships__vote_weight_expiry'], noSort: true },
       { kind: 'maxProcessedRows', relation: 'memberships', max: 520 },
@@ -46,6 +56,7 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
   for (const branch of familyBranches.filter(branch => branch !== 'rejected_at')) {
     const scenarioId = `vote-weight-family-source-${branch}`
     registerScenarioContract(scenarioId, {
+      seededRows,
       expectations: [
         {
           kind: 'usesIndexes',
@@ -76,6 +87,7 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
   for (const part of ['evidence', 'sources'] as const) {
     const scenarioId = `vote-weight-family-source-rejected_at-${part}`
     registerScenarioContract(scenarioId, {
+      seededRows,
       expectations:
         part === 'evidence'
           ? [
