@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
+import { write } from '@data-stores/psql'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { CRAWL_EMBEDS_DEFAULTS } from '@queues/crawl-embeds/config'
+import { getPendingCrawlEmbed } from '@services/crawl-embeds/get-pending'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
 import { createTestUrlWithHostname } from '@voucha/test-helpers/entities/urls'
 import { processCrawlEmbedsJob } from '../processors.mts'
@@ -12,7 +14,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 
 describe('crawl embeds policy denial through real GlideMQ', () => {
-  it('fails a denied oEmbed URL after exactly one attempt', async () => {
+  it('completes a denied oEmbed URL once and drops it from backfill', async () => {
     const articleUrl = 'https://example.test/article'
     const urlId = await createTestUrlWithHostname()
     const crawl = await insertTestCrawl({
@@ -45,9 +47,10 @@ describe('crawl embeds policy denial through real GlideMQ', () => {
       },
       { ...connection, blockTimeout: 1000 },
     )
-    const failed = Promise.withResolvers<Job | undefined>()
+    const settled = Promise.withResolvers<{ job: Job | undefined; outcome: string }>()
     worker.on('error', () => undefined)
-    worker.on('failed', job => failed.resolve(job))
+    worker.on('completed', job => settled.resolve({ job, outcome: 'completed' }))
+    worker.on('failed', job => settled.resolve({ job, outcome: 'failed' }))
     try {
       await worker.waitUntilReady()
       const job = await queue.add(
@@ -57,11 +60,24 @@ describe('crawl embeds policy denial through real GlideMQ', () => {
       )
       if (!job) throw new Error('Expected a queued resolve_crawl_oembed job')
 
-      const settled = await failed.promise
-      expect(settled?.id).toBe(job.id)
-      expect(settled?.failedReason).toContain('Embed policy denied oembed URL')
+      const { job: finished, outcome } = await settled.promise
+      expect(outcome).toBe('completed')
+      expect(finished?.id).toBe(job.id)
       expect(attempts).toBe(1)
-      expect(await (await queue.getJob(job.id))?.getState()).toBe('failed')
+      expect(await (await queue.getJob(job.id))?.getState()).toBe('completed')
+
+      // The backfill selects rows with a persisted endpoint and no resolved marker; this row has one.
+      expect(await getPendingCrawlEmbed(crawl.id)).toBeNull()
+      const { rows } = await write(
+        `/* policyDenialBackfillCandidate */
+        SELECT id FROM crawls
+        WHERE id = $1
+          AND embed_metadata IS NOT NULL
+          AND embed_oembed_url IS NOT NULL
+          AND embed_oembed_resolved_at IS NULL`,
+        [crawl.id],
+      )
+      expect(rows).toEqual([])
     } finally {
       await worker.close()
       await queue.obliterate({ force: true })
