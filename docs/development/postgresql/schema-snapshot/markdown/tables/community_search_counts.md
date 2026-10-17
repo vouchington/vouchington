@@ -20,13 +20,13 @@ _none_
 
 **Check constraints:**
 
-- `community_search_counts_list_item_count_check`: `CHECK ((list_item_count >= 0))`
-- `community_search_counts_member_count_check`: `CHECK ((member_count >= 0))`
-- `community_search_counts_virtual_subscription_count_check`: `CHECK ((virtual_subscription_count >= 0))`
+- `community_search_counts_list_item_nonnegative_check`: `CHECK ((list_item_count >= 0))`
+- `community_search_counts_member_nonnegative_check`: `CHECK ((member_count >= 0))`
+- `community_search_counts_virtual_subscription_nonnegative_check`: `CHECK ((virtual_subscription_count >= 0))`
 
 **Foreign keys:**
 
-- `community_search_counts_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
+- `community_search_counts_community_foreign_key`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
 
 **Indexes:**
 

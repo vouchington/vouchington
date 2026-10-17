@@ -21177,15 +21177,15 @@
     },
     "community_search_counts": {
       "checkConstraints": {
-        "community_search_counts_list_item_count_check": {
+        "community_search_counts_list_item_nonnegative_check": {
           "definition": "CHECK ((list_item_count >= 0))",
           "validated": true
         },
-        "community_search_counts_member_count_check": {
+        "community_search_counts_member_nonnegative_check": {
           "definition": "CHECK ((member_count >= 0))",
           "validated": true
         },
-        "community_search_counts_virtual_subscription_count_check": {
+        "community_search_counts_virtual_subscription_nonnegative_check": {
           "definition": "CHECK ((virtual_subscription_count >= 0))",
           "validated": true
         }
@@ -21234,7 +21234,7 @@
       },
       "comment": "Transactionally maintained counts used to select indexed community search pages before hydrating metrics.",
       "foreignKeys": {
-        "community_search_counts_community_id_fkey": {
+        "community_search_counts_community_foreign_key": {
           "columns": ["community_id"],
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
