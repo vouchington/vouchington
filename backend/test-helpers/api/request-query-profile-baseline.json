@@ -525,6 +525,16 @@
     "issue": 2612
   },
   {
+    "annotation": "getTopicsByAnyBatch",
+    "reason": "Post creation rechecks active topic state on the primary execution transaction after CAPTCHA/admission; link title resolution also rechecks categories after URL writes",
+    "issue": 3113
+  },
+  {
+    "annotation": "getUrlById",
+    "reason": "Stored URL existence is checked again in the intentional execution transaction after CAPTCHA and the separately committed capacity transaction (contribution-gating/admission.mts:69-79), so removed URLs reject before the post insert",
+    "issue": 3113
+  },
+  {
     "annotation": "getUrlsByIds",
     "reason": "Root URL creation hydrates URLs after their upserts in the shared approval transaction before writing each ordered relation",
     "issue": 3113

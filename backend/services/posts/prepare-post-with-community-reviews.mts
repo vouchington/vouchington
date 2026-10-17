@@ -26,17 +26,18 @@ import {
 } from './authorization.mts'
 import { lockDelegatedPostThread, lockDelegatedPostCommunity } from './delegated-write-locks.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
-import type { PostPreparationOptions } from './create/preparation-options.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
   provenance: ContentProvenance,
   input: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan = null,
-  options: PostPreparationOptions = {},
+  options: { query?: TransactionQuery; delegated?: boolean } = {},
 ) => {
   const isAdminCreator = creator.roles.includes('administrator')
-  const defaults =
-    options.validatedDefaults ?? (await validateCreatePostInput(creator, input, membershipPlan))
+  const defaults = await validateCreatePostInput(creator, input, membershipPlan, {
+    query: options.query,
+    readOnly: false,
+  })
   const shouldValidateResolvedLinkCategories = defaults.postType === 'link' && !input.title?.trim()
   let communityReviews: CommunityPostReview[] = []
   let resolvedUrlStrings: string[] = []
@@ -125,11 +126,10 @@ export const preparePostWithCommunityReviews = async (
       updates = { ...updates, title: updates.title.slice(0, 255).trim() }
     }
     if (shouldValidateResolvedLinkCategories) {
-      const categoryOptions = { loadedTopics: defaults.loadedTopics }
-      await validatePostCategories(creator, membershipPlan, updates, categoryOptions)
+      await validatePostCategories(creator, membershipPlan, updates, { queryOptions: options })
     }
-    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
     const scopeInput = { creator, defaults, options, updates }
+    // ast-grep-ignore: no-three-sequential-awaits -- scope validation, insert and source URL relation depend on each other inside the same transaction
     const scope = await resolvePostScope({ ...scopeInput, communityLockHeld: delegated })
     const insertedPost = await insertPost({
       creator,

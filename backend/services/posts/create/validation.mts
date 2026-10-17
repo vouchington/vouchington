@@ -13,14 +13,13 @@ import { getUrlById } from '@services/urls'
 import { isUUID } from '@modules/utils'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { assertCanCreateAdminOnlyPostType } from './admin-only-post-type.mts'
 import { validatePostCategories } from './validation-categories.mts'
 
 export { validatePostCategories } from './validation-categories.mts'
 
 export type CreatePostDefaults = {
-  /** Topic rows validated before this admission attempt's topic-dependent mutations. */
-  loadedTopics?: ReadonlyMap<string, Topic | null | undefined>
   broadcast: NonNullable<CreatePostInput['broadcast']>
   isAnonymous: boolean
   postType: NonNullable<CreatePostInput['post_type']>
@@ -47,6 +46,7 @@ export async function validateCreatePostInput(
   creator: PrivateUser,
   updates: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan,
+  options: QueryOptions = {},
 ): Promise<CreatePostDefaults> {
   assert(creator, 422, 'Creator is required')
   updates.post_type ||= 'discussion'
@@ -63,7 +63,7 @@ export async function validateCreatePostInput(
     )
     if (updates.url_id != null) {
       assert(isUUID(updates.url_id), 422, 'url_id must be a valid UUID')
-      const existingUrl = await getUrlById(updates.url_id)
+      const existingUrl = await getUrlById(updates.url_id, options)
       assert(existingUrl != null, 422, 'url_id does not exist')
     }
     if (updates.url != null) {
@@ -82,6 +82,7 @@ export async function validateCreatePostInput(
   const { topicIds: dataPointTopicIds, loadedTopics } = await validateStructuredData(
     updates,
     postType,
+    options,
   )
   const defaults = getAudienceDefaults(creator, updates, postType)
   assertValidPostAudience(defaults.broadcast, defaults.privacy)
@@ -95,9 +96,10 @@ export async function validateCreatePostInput(
   if (postType === 'review' && !creator.roles.includes('administrator')) {
     assertValidReviewContent(updates.markdown ?? '')
   }
-  const validatedTopics = await validatePostCategories(creator, membershipPlan, updates, {
+  await validatePostCategories(creator, membershipPlan, updates, {
     dataPointTopicIds,
     loadedTopics,
+    queryOptions: options,
   })
   const removedCommunityIds = (updates as { community_ids?: unknown }).community_ids
   assert(removedCommunityIds === undefined, 422, 'community_ids is no longer supported')
@@ -106,12 +108,13 @@ export async function validateCreatePostInput(
     422,
     'declared_language must be a string or null',
   )
-  return { ...defaults, loadedTopics: validatedTopics }
+  return defaults
 }
 
 async function validateStructuredData(
   updates: CreatePostInput,
   postType: NonNullable<CreatePostInput['post_type']>,
+  options: QueryOptions,
 ): Promise<{
   topicIds: ReadonlySet<string>
   loadedTopics: ReadonlyMap<string, Topic | null | undefined>
@@ -155,7 +158,7 @@ async function validateStructuredData(
       )
     : []
   const lookupIds = [...new Set([...topicIds, ...categoryIds])]
-  const topics = await getTopicsByAnyBatch(lookupIds)
+  const topics = await getTopicsByAnyBatch(lookupIds, options)
   const loadedTopics = new Map(lookupIds.map((id, index) => [id, topics[index]]))
   for (const [i, topicId] of topicIds.entries()) {
     const topic = loadedTopics.get(topicId)

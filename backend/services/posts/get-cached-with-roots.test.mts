@@ -1,12 +1,60 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { createTestUser, insertTestPost } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
 import { getPostsByAnyBatch } from '@services/posts/get-batch'
 import { updatePost } from '@services/posts/update'
 import { getPostsWithRootsByAnyCached } from './get-cached-with-roots.mts'
+import { getPostsWithRootsByAnyBatch } from './get-with-roots-batch.mts'
+import type { Post } from './types.mts'
+import { valkeyEvents } from 'valkyries'
 
 describe('getPostsWithRootsByAnyCached', () => {
+  it('fences a prefetched root invalidated before a later cache fill begins', async () => {
+    const user = await createTestUser({ administrator: true })
+    const rootId = await insertTestPost({
+      createdById: user.id,
+      title: 'Before invalidation',
+      slug: `fenced-root-${randomUUID()}`,
+      markdown: 'Root content',
+    })
+    const commentId = await insertTestPost({
+      createdById: user.id,
+      postType: 'comment',
+      rootId,
+      parentId: rootId,
+      title: 'Child',
+      slug: `fenced-child-${randomUUID()}`,
+      markdown: 'Child content',
+    })
+    const prefetched = await getPostsWithRootsByAnyBatch([commentId])
+    const root = prefetched.get(rootId)
+    if (!root) throw new Error('Expected root')
+    await updatePost(user, root, { title: 'After invalidation' })
+    const skipped = Promise.withResolvers<void>()
+    const observe = (event: { cacheName: string; keys: string[] }) => {
+      if (event.cacheName === caches.posts.prefix && event.keys.includes(rootId)) skipped.resolve()
+    }
+    valkeyEvents.on('cache:set-skipped', observe)
+    const close = () => {
+      valkeyEvents.off('cache:set-skipped', observe)
+    }
+    onTestFinished(close)
+    try {
+      // Reproduce the review's ordering: the cache operation begins after invalidation,
+      // then its miss callback supplies the earlier SQL snapshot.
+      const getRoots = caches.posts.cacheGetByAnyBatch<Post>(async ids =>
+        ids.map(id => prefetched.get(id) ?? null),
+      )
+      expect(await getRoots([rootId])).toMatchObject([{ title: 'Before invalidation' }])
+      await skipped.promise
+      expect(await caches.posts.getBatch([rootId])).toEqual([null])
+      const current = await getPostsWithRootsByAnyCached([commentId])
+      expect(current.roots).toMatchObject([{ id: rootId, title: 'After invalidation' }])
+    } finally {
+      close()
+    }
+  })
   it('invalidates warmed slug and id entries after a canonical post update', async () => {
     const user = await createTestUser({ administrator: true })
     const slug = `root-cache-before-${randomUUID()}`

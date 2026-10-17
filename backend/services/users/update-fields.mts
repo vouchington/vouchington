@@ -57,7 +57,6 @@ export async function updateUserFields(
     direct_messages_audience,
     is_fediverse_federation_enabled,
   } = options
-  let previousUsername: string | null | undefined
   let validatedUsername: string | undefined
 
   if (!hasUserFieldUpdates(options)) return
@@ -65,7 +64,6 @@ export async function updateUserFields(
   if (typeof username === 'string' && username !== '') {
     const existingUser = loadedUser ?? (await getPrivateUserByAny(userId))
     assert(existingUser, 404, 'User not found')
-    previousUsername = existingUser.username
   }
 
   const query = sql`/* updateUserFields */ UPDATE users SET`
@@ -130,9 +128,14 @@ export async function updateUserFields(
 
   if (!hasSet) return
 
-  query.append(sql` WHERE id = ${userId} AND deleted_at IS NULL`)
+  query.append(sql`
+    WHERE id = ${userId} AND deleted_at IS NULL
+    RETURNING WITH (OLD AS prior) prior.username AS previous_username
+  `)
 
-  await write(query)
+  // An authenticated row can predate another rename; invalidate the version this UPDATE replaced.
+  const { rows } = await write<{ previous_username: string | null }>(query)
+  const previousUsername = typeof username === 'string' ? rows[0]?.previous_username : undefined
 
   if (typeof username === 'string') {
     void addEntityBloomKeys('users', [normalizeKey(username)])

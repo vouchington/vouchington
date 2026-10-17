@@ -129,7 +129,6 @@ export async function dispatchMcpRequest(
 
       return handleMcpHttpRequest({
         user,
-        initialPrivateUser: owner,
         permissions: scopes,
         request: new Request(`http://localhost${config.routePath}`, {
           method: 'POST',

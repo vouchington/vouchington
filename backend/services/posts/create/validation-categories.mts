@@ -9,6 +9,7 @@ import { assertWithinStandingTagLimit, assertWithinTagAddLimit } from '@services
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import { getPostHashtagKeys } from '../hashtags.mts'
 import { normalizeHashtag } from '@ts-shared/utils'
+import type { QueryOptions } from '@data-stores/psql/types'
 
 export async function validatePostCategories(
   creator: PrivateUser,
@@ -18,8 +19,9 @@ export async function validatePostCategories(
     dataPointTopicIds?: ReadonlySet<string>
     loadedTopics?: ReadonlyMap<string, Topic | null | undefined>
     standingCounts?: { existing: number; final: number }
+    queryOptions?: QueryOptions
   } = {},
-): Promise<ReadonlyMap<string, Topic | null | undefined>> {
+): Promise<void> {
   if (updates.categories !== undefined) {
     assert(Array.isArray(updates.categories), 422, 'categories must be an array')
   }
@@ -45,7 +47,7 @@ export async function validatePostCategories(
   }
   const topicIdArray = [...topicIds]
   const missingTopicIds = topicIdArray.filter(id => !options.loadedTopics?.has(id))
-  const activeTopics = await getTopicsByAnyBatch(missingTopicIds)
+  const activeTopics = await getTopicsByAnyBatch(missingTopicIds, options.queryOptions)
   const loadedTopics = new Map(options.loadedTopics)
   for (const [index, topicId] of missingTopicIds.entries()) {
     loadedTopics.set(topicId, activeTopics[index])
@@ -69,7 +71,7 @@ export async function validatePostCategories(
       options.standingCounts.existing,
       options.standingCounts.final,
     )
-    return loadedTopics
+    return
   }
   await assertWithinTagAddLimit(
     creator,
@@ -79,5 +81,4 @@ export async function validatePostCategories(
     new Set([...topicIds, ...(options.dataPointTopicIds ?? [])]).size +
       getPostHashtagKeys(updates).length,
   )
-  return loadedTopics
 }
