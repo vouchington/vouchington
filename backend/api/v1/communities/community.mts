@@ -112,7 +112,7 @@ app
         membership,
       )
     } else if (archive === undefined) {
-      updated = await updateCommunity(currentUser, community.id, input, membership)
+      updated = await updateCommunity(currentUser, community.id, input, membership, { community })
     } else {
       updated = await setCommunityArchiveState(
         currentUser,

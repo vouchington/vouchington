@@ -14,8 +14,7 @@ export async function finalizeClaimedTopicAliases(
   const aliases = claimedAliases.map(alias => alias.alias)
   void addEntityBloomKeys('topics', aliases.map(normalizeKey))
   await Promise.all([
-    invalidate.topics(topicId, aliases),
-    invalidate.topic_metrics(topicId),
+    invalidate.topicsWithMetrics(topicId, aliases),
     invalidatePostsForTopicAliases(claimedAliases.map(alias => alias.id)),
   ])
   void enqueueBulkTopicAliasesUpdate([topicId])

@@ -94,8 +94,7 @@ export async function linkTopicAlias(
     void addEntityBloomKeys('topics', [normalizeKey(linkedAlias.alias)])
     const affectedTopicIds = previousTopicId ? [...new Set([previousTopicId, topicId])] : [topicId]
     await Promise.all([
-      ...affectedTopicIds.map(id => invalidate.topics(id, linkedAlias.alias)),
-      invalidate.topic_metrics(...affectedTopicIds),
+      invalidate.topicsWithMetrics(affectedTopicIds, linkedAlias.alias),
       invalidatePostsForTopicAliases([linkedAlias.id]),
     ])
     void enqueueBulkTopicAliasesUpdate(affectedTopicIds)

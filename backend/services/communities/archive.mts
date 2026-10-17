@@ -126,6 +126,7 @@ export async function updateCommunityAndSetArchiveState(
   assert(currentCommunity, 404, 'Community not found')
   const community = await updateCommunity(currentUser, communityId, input, membership, {
     query: transaction,
+    community: currentCommunity,
   })
   const updated = await setCommunityArchiveState(
     currentUser,

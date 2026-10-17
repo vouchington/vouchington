@@ -3,7 +3,11 @@ import { createTestUser, suspendTestUser, unsuspendTestUser } from '@voucha/test
 import { describe, expect, it } from 'vitest'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@services/users/types'
-import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
+import {
+  createToolUserWithLoadedPrivateUser,
+  requireActiveToolUser,
+  requirePrivateToolUser,
+} from './private-user.mts'
 
 describe('requirePrivateToolUser', () => {
   it('hydrates from the primary user store to avoid replica-lag false negatives', async () => {
@@ -32,11 +36,21 @@ describe('requireActiveToolUser', () => {
   it('returns an active user and refuses a suspended one before any write', async () => {
     const currentUser = await createTestUser()
 
-    expect((await requireActiveToolUser(currentUser)).id).toBe(currentUser.id)
+    const toolUser = createToolUserWithLoadedPrivateUser(
+      {
+        __entity_type: 'user',
+        account_type: currentUser.account_type,
+        id: currentUser.id,
+        roles: currentUser.roles,
+      },
+      currentUser,
+    )
+    expect(JSON.stringify(toolUser)).not.toContain(currentUser.email_address)
+    expect((await requireActiveToolUser(toolUser)).id).toBe(currentUser.id)
 
     await suspendTestUser(currentUser.id)
     try {
-      await expect(requireActiveToolUser(currentUser)).rejects.toMatchObject({
+      await expect(requireActiveToolUser(toolUser)).rejects.toMatchObject({
         status: 403,
         code: ACCOUNT_SUSPENDED,
       })

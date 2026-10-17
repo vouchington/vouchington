@@ -7,7 +7,8 @@ import { callMcpTool } from './call-tool.mts'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { validateRegisteredMcpRequest } from './validate-registered-request.mts'
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
-import type { BasicUser } from '@services/users/types'
+import type { BasicUser, PrivateUser } from '@services/users/types'
+import { createToolUserWithLoadedPrivateUser } from '@voucha/mcp/private-user'
 import type { McpServerConfig } from './config.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { McpHttpResponse } from './http-response.mts'
@@ -18,6 +19,7 @@ type McpRequestContext = {
     membership_plan: 'plus' | 'pro' | null
     suspended?: boolean
   }
+  initialPrivateUser?: PrivateUser
   permissions: readonly ApiScope[]
   request: Request
   parsedBody: unknown
@@ -81,10 +83,14 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
           ? (resolution.tool.meta?.auditOption?.(request.params.arguments ?? {}) ?? undefined)
           : undefined
       let rateLimited = false
+      const currentUser =
+        messages.length === 1 && ctx.initialPrivateUser
+          ? createToolUserWithLoadedPrivateUser(ctx.user, ctx.initialPrivateUser)
+          : ctx.user
       const result = await callMcpTool(
         request.params.name,
         request.params.arguments ?? {},
-        ctx.user,
+        currentUser,
         ctx.permissions,
         ctx.config,
         ctx.copyrightDecisionToolsEnabled,

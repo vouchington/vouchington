@@ -24,11 +24,11 @@ export async function updateCommunity(
   communityId: string,
   input: UpdateCommunityInput,
   membership?: CommunityMember | null,
-  options?: QueryOptions,
+  options?: QueryOptions & { community?: CommunityWithOwner },
 ): Promise<CommunityWithOwner> {
   const invalidatesMemberMetrics =
     input.visibility !== undefined || input.member_roster_visibility !== undefined
-  const community = await getCommunity(communityId, options)
+  const community = options?.community ?? (await getCommunity(communityId, options))
   assert(community, 404, 'Community not found')
   assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 

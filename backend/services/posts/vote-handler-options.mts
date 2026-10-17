@@ -51,7 +51,7 @@ export const postVoteOptions: CreateVoteHandlerOptions<
     ctx.assert(
       accessPost &&
         (await canViewPost(currentUser, targetPost)) &&
-        (await canViewPost(currentUser, accessPost)),
+        (accessPost.id === targetPost.id || (await canViewPost(currentUser, accessPost))),
       404,
       'Post not found',
     )
@@ -92,7 +92,8 @@ export const postVoteOptions: CreateVoteHandlerOptions<
       const votedPost = await getPostByAnyCached(entityId)
       if (!votedPost || !(await canViewPost(null, votedPost))) return
       const rootPost = await getRouteAccessPost(votedPost)
-      if (!rootPost || !(await canViewPost(null, rootPost))) return
+      if (!rootPost || (rootPost.id !== votedPost.id && !(await canViewPost(null, rootPost))))
+        return
       if (!vote.id) throw new Error('Post vote event is missing its durable identity')
       const activityId = isLike ? vote.outbound_activitypub_like_activity_id : vote.id
       const originalActivityId = vote.previous_outbound_ap_like_activity_id

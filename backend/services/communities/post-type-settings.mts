@@ -32,8 +32,9 @@ export async function updateCommunityPostTypeSettings(
   communityId: string,
   input: UpdateCommunityPostTypeSettingsInput,
   membership?: CommunityMember | null,
+  loadedCommunity?: CommunityWithOwner,
 ): Promise<CommunityWithOwner> {
-  const community = await getCommunity(communityId)
+  const community = loadedCommunity ?? (await getCommunity(communityId))
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Cannot update archived community')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')

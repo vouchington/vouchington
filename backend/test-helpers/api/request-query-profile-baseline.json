@@ -30,14 +30,14 @@
     "issue": 2612
   },
   {
-    "annotation": "assertReportablePost",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
-  },
-  {
     "annotation": "assertReferralProgramExists",
     "reason": "The create-and-link transaction rechecks the program after inserting the new link-validation row, so it sees the write and rejects a program merged or deleted before the relation is added (backend/services/referral-program-link-validations/create-and-link.mts:76-79, backend/services/topics/validation.mts:126-150)",
     "issue": 3120
+  },
+  {
+    "annotation": "assertReportablePost",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
   },
   {
     "annotation": "assertUrlsHaveNoBlockedHostnames",
@@ -336,13 +336,13 @@
   },
   {
     "annotation": "getCommunityById",
-    "reason": "Community re-fetch; #2544 covers only part of the routes",
-    "issue": 2614
+    "reason": "Community update and archive flows reload the row after each write to return current settings and archive state",
+    "issue": 3113
   },
   {
     "annotation": "getCommunityMember",
-    "reason": "Community re-fetch; #2544 covers only part of the routes",
-    "issue": 2614
+    "reason": "Membership authority is read after pair advisory locks; bans recheck target membership after the kick UPDATE to reject concurrent role promotion",
+    "issue": 3113
   },
   {
     "annotation": "getCommunityWithViewerById",
@@ -446,8 +446,8 @@
   },
   {
     "annotation": "getPublicUserByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Follow commits before its independent best-effort trust vote checks the target; ban-evasion flag claiming and banning have separate committed retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "getPublicUsersByAnyBatch",
@@ -526,8 +526,8 @@
   },
   {
     "annotation": "getTopicCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Alias mutation invalidation resolves final alias and redirect keys after writes; independent RSS source and category transactions invalidate their own committed identities",
+    "issue": 3113
   },
   {
     "annotation": "getTopicDataPointInsights",
@@ -546,13 +546,8 @@
   },
   {
     "annotation": "getUrlsByIds",
-    "reason": "Root URL creation loads the inserted URL for each approved hostname",
-    "issue": 2612
-  },
-  {
-    "annotation": "getUserCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Root URL creation hydrates URLs after their upserts in the shared approval transaction before writing each ordered relation",
+    "issue": 3113
   },
   {
     "annotation": "getUserTagRelationById",

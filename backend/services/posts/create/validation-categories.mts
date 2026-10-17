@@ -4,6 +4,7 @@ import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
+import type { Topic } from '@services/topics/types'
 import { assertWithinStandingTagLimit, assertWithinTagAddLimit } from '@services/tag-limits'
 import type { ContributionLimitMembershipPlan } from '@services/contribution-gating/limit-types'
 import { getPostHashtagKeys } from '../hashtags.mts'
@@ -15,6 +16,7 @@ export async function validatePostCategories(
   updates: CreatePostInput,
   options: {
     dataPointTopicIds?: ReadonlySet<string>
+    loadedTopics?: ReadonlyMap<string, Topic | null | undefined>
     standingCounts?: { existing: number; final: number }
   } = {},
 ): Promise<void> {
@@ -42,10 +44,18 @@ export async function validatePostCategories(
     }
   }
   const topicIdArray = [...topicIds]
-  const activeTopics = await getTopicsByAnyBatch(topicIdArray)
-  for (const [index, topic] of activeTopics.entries()) {
-    const topicId = topicIdArray[index]!
-    assert(topic?.id === topicId, 422, 'Topic category must reference an active topic')
+  const missingTopicIds = topicIdArray.filter(id => !options.loadedTopics?.has(id))
+  const activeTopics = await getTopicsByAnyBatch(missingTopicIds)
+  const loadedTopics = new Map(options.loadedTopics)
+  for (const [index, topicId] of missingTopicIds.entries()) {
+    loadedTopics.set(topicId, activeTopics[index])
+  }
+  for (const topicId of topicIdArray) {
+    assert(
+      loadedTopics.get(topicId)?.id === topicId,
+      422,
+      'Topic category must reference an active topic',
+    )
   }
   const relation = getEntityRelationMetadataOrThrow({
     subjectType: 'post',

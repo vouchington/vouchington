@@ -3,6 +3,7 @@ import type { CreatePostInput, PostType } from '../types.mts'
 import assert from 'http-assert'
 import { assertValidStructuredData } from '@services/data-points'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
+import type { Topic } from '@services/topics/types'
 import { getPostContentLimitsConfig } from '@services/post-content-limits'
 import { validatePostImageInputs } from '../image-input-validation.mts'
 import { assertValidPostAudience } from '../audience.mts'
@@ -76,7 +77,10 @@ export async function validateCreatePostInput(
     assert(updates.url == null, 422, 'url is only allowed for link posts')
   }
   assertOfficialAccountCanCreatePost(creator, postType)
-  const dataPointTopicIds = await validateStructuredData(updates, postType)
+  const { topicIds: dataPointTopicIds, loadedTopics } = await validateStructuredData(
+    updates,
+    postType,
+  )
   const defaults = getAudienceDefaults(creator, updates, postType)
   assertValidPostAudience(defaults.broadcast, defaults.privacy)
   if (updates.images?.length) {
@@ -89,7 +93,10 @@ export async function validateCreatePostInput(
   if (postType === 'review' && !creator.roles.includes('administrator')) {
     assertValidReviewContent(updates.markdown ?? '')
   }
-  await validatePostCategories(creator, membershipPlan, updates, { dataPointTopicIds })
+  await validatePostCategories(creator, membershipPlan, updates, {
+    dataPointTopicIds,
+    loadedTopics,
+  })
   const removedCommunityIds = (updates as { community_ids?: unknown }).community_ids
   assert(removedCommunityIds === undefined, 422, 'community_ids is no longer supported')
   assert(
@@ -103,7 +110,10 @@ export async function validateCreatePostInput(
 async function validateStructuredData(
   updates: CreatePostInput,
   postType: NonNullable<CreatePostInput['post_type']>,
-): Promise<ReadonlySet<string>> {
+): Promise<{
+  topicIds: ReadonlySet<string>
+  loadedTopics: ReadonlyMap<string, Topic | null | undefined>
+}> {
   if (postType !== 'data_point') {
     assert(
       updates.data_point_vertical === undefined,
@@ -115,7 +125,7 @@ async function validateStructuredData(
       422,
       'structured_data is only allowed for data_point posts',
     )
-    return new Set()
+    return { topicIds: new Set(), loadedTopics: new Map() }
   }
   assert(
     typeof updates.data_point_vertical === 'string',
@@ -133,8 +143,20 @@ async function validateStructuredData(
   })
   const topicIds = (updates.structured_data as { topic_ids: string[] }).topic_ids
   const expectedTopicType = updates.data_point_vertical === 'credit_card' ? 'card' : 'bank_account'
-  const topics = await getTopicsByAnyBatch(topicIds)
-  for (const [i, topic] of topics.entries()) {
+  // Read valid category identifiers alongside data-point topics without moving category errors
+  // ahead of structured-data, audience, image, or review validation.
+  const categoryIds = Array.isArray(updates.categories)
+    ? updates.categories.flatMap(category =>
+        category && category.type === 'topic' && isUUID(category.topic_id)
+          ? [category.topic_id]
+          : [],
+      )
+    : []
+  const lookupIds = [...new Set([...topicIds, ...categoryIds])]
+  const topics = await getTopicsByAnyBatch(lookupIds)
+  const loadedTopics = new Map(lookupIds.map((id, index) => [id, topics[index]]))
+  for (const [i, topicId] of topicIds.entries()) {
+    const topic = loadedTopics.get(topicId)
     assert(topic, 422, `Topic not found: ${topicIds[i]}`)
     assert(
       topic.topic_type === expectedTopicType,
@@ -143,7 +165,7 @@ async function validateStructuredData(
     )
   }
 
-  return new Set(topicIds)
+  return { topicIds: new Set(topicIds), loadedTopics }
 }
 
 function getAudienceDefaults(
