@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/workers/moderation-signals/README.md](../../../../../../backend/workers/moderation-signals/README.md)
 
-Handlers for the `moderation-signals` domain of the shared [`background` worker](../background/README.md).
+Handlers for the `moderation-signals` domain of the shared `background` worker.
 
 ## Exports
 
