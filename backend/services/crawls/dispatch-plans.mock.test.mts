@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, onTestFinished } from 'vitest'
 import {
   createTestUser,
   createTestPost,
@@ -7,16 +7,7 @@ import {
   insertTestPostRelatedUrlBatch,
   setTestRobotsTxtCache,
 } from '@voucha/test-helpers'
-import {
-  insertTestCrawlDispatchPlanUrls,
-  analyzeTestCrawlDispatchPlanTables,
-} from '@voucha/test-helpers/entities/crawl-dispatch-plans'
-import {
-  definePlanStatisticsRefresh,
-  explainCapturedTestQuery,
-  collectPlanNodes,
-  planIndexNames,
-} from '@voucha/test-helpers/query-plans'
+import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
@@ -44,13 +35,13 @@ describe('crawl dispatch indexed work selection', () => {
       `https://unrelated-${suffix}.example.com/base`,
     ))!
     await insertTestCrawlDispatchPlanUrls({
-      ids: Array.from({ length: 10000 }, () => mintUUIDv7()),
+      ids: Array.from({ length: 3 }, () => mintUUIDv7()),
       hostname: unrelated.hostname.hostname,
       hostnameId: unrelated.hostname.id,
       actorId: actor.id,
     })
     const post = await createTestPost({ user: actor })
-    const eligibleIds = Array.from({ length: 10 }, () => mintUUIDv7())
+    const eligibleIds = Array.from({ length: 2 }, () => mintUUIDv7())
     await insertTestPostRelatedUrlBatch({
       postIds: eligibleIds.map(() => post.id),
       urlIds: eligibleIds,
@@ -58,7 +49,7 @@ describe('crawl dispatch indexed work selection', () => {
       hostnameId: target.hostname.id,
       createdById: actor.id,
     })
-    const tier2Ids = Array.from({ length: 10 }, () => mintUUIDv7())
+    const tier2Ids = Array.from({ length: 2 }, () => mintUUIDv7())
     await insertTestPostRelatedUrlBatch({
       postIds: tier2Ids.map(() => post.id),
       urlIds: tier2Ids,
@@ -67,36 +58,25 @@ describe('crawl dispatch indexed work selection', () => {
       createdById: actor.id,
       votesScoreUp: 0,
     })
-    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { batch_size: 1, max_rows_per_run: 1 })
-    const captured = await withCapturedTestQueries(async () => {
-      await dispatchCrawlUrlsPerHostname(target.hostname.id)
-      await dispatchTier1CrawlUrls()
-      await dispatchTier2CrawlUrls()
-    })
-    for (const [index, name] of [
-      'dispatchCrawlUrlsPerHostname',
-      'dispatchTier1CrawlUrls',
-      'dispatchTier2CrawlUrls',
-    ].entries()) {
-      const query =
-        index === 0
-          ? captured.queries.find(query =>
-              query.text.startsWith('/* dispatchCrawlUrlsPerHostname */'),
-            )!
-          : captured.queries.filter(query => query.text.startsWith('/* dispatchTierCrawlUrls */'))[
-              index - 1
-            ]!
-      expect(query).toBeDefined()
-      const plan = await explainCapturedTestQuery(
-        name,
-        query,
-        'force_custom_plan',
-        definePlanStatisticsRefresh(analyzeTestCrawlDispatchPlanTables),
-      )
-      const urlNodes = collectPlanNodes(plan).filter(node => node['Relation Name'] === 'urls')
-      expect(urlNodes.length).toBeGreaterThan(0)
-      expect(urlNodes.every(node => node['Node Type'] !== 'Seq Scan')).toBe(true)
-      expect(planIndexNames(plan).some(index => index.includes('urls'))).toBe(true)
-    }
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+        batch_size: 1,
+        max_rows_per_run: 1,
+      }),
+    )
+    const captured = await withCapturedTestQueries(async () => ({
+      hostname: await dispatchCrawlUrlsPerHostname(target.hostname.id),
+      tier1: await dispatchTier1CrawlUrls(),
+      tier2: await dispatchTier2CrawlUrls(),
+    }))
+    expect(captured.result.hostname.count).toBe(1)
+    expect(captured.result.tier1.count).toBe(1)
+    expect(captured.result.tier2.count).toBe(1)
+    expect(
+      captured.queries.some(query => query.text.startsWith('/* dispatchCrawlUrlsPerHostname */')),
+    ).toBe(true)
+    expect(
+      captured.queries.filter(query => query.text.startsWith('/* dispatchTierCrawlUrls */')),
+    ).toHaveLength(2)
   })
 })

@@ -3,13 +3,11 @@ import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
+import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
-  ...(['bloom-repair-window', 'bloom-repair-capped', 'bloom-repair-resumed'] as const),
-  'crawl-hostname-threshold-seek',
-  'crawl-hostnames-due',
-  'crawl-hostnames-due-capped',
+  ...BOUNDED_WORK_SCENARIOS,
   'url-blocklist-hostnames',
   'hostname-cache-invalidation-claim',
   'mv-top-hashtags-refresh',

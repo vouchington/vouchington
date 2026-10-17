@@ -6,6 +6,7 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { getS3DeleteBatchSize } from '@modules/aws/s3-delete-work-limits'
 import { S3Buckets, S3ImagesClient } from '@modules/aws'
 
 const ONE_HOUR_SECONDS = 3600
@@ -61,10 +62,11 @@ export async function deleteExportFromS3(s3Key: string): Promise<void> {
 }
 
 /* no-mistakes: integration=aws */
-export async function deleteExportsFromS3(s3Keys: string[]): Promise<void> {
+export async function deleteExportsFromS3(s3Keys: string[], batchSize = 1000): Promise<void> {
+  const limit = getS3DeleteBatchSize(batchSize)
   const errors: Error[] = []
-  for (let offset = 0; offset < s3Keys.length; offset += 1000) {
-    const chunk = s3Keys.slice(offset, offset + 1000)
+  for (let offset = 0; offset < s3Keys.length; offset += limit) {
+    const chunk = s3Keys.slice(offset, offset + limit)
     try {
       // oxlint-disable-next-line no-await-in-loop -- S3 deletion chunks are serial so every bounded provider request is attempted without an unbounded fan-out.
       const result = await S3ImagesClient.send(

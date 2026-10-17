@@ -3436,6 +3436,9 @@ importers:
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../services/copyright-notices
+      '@services/crawler-referral-links':
+        specifier: workspace:^
+        version: link:../services/crawler-referral-links
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
@@ -3532,6 +3535,9 @@ importers:
       '@services/recommended-topics':
         specifier: workspace:^
         version: link:../services/recommended-topics
+      '@services/referral-link-unfurl':
+        specifier: workspace:^
+        version: link:../services/referral-link-unfurl
       '@services/remote-actors':
         specifier: workspace:^
         version: link:../services/remote-actors

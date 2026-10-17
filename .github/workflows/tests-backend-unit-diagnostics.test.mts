@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { parse as load } from 'yaml'
@@ -103,10 +103,7 @@ describe('backend-unit deadline dump', () => {
 
     const early = spawnSync(
       'bash',
-      [
-        '-c',
-        `${definitions}\nstart_deadline_dump\nstop_samplers() { kill $sampler_pids; }\nstop_samplers; wait`,
-      ],
+      ['-c', `${definitions}\nstart_deadline_dump\nstop_samplers; wait`],
       {
         encoding: 'utf8',
         env: {
@@ -117,6 +114,46 @@ describe('backend-unit deadline dump', () => {
       },
     )
     expect(early.stdout).toBe('')
+  })
+
+  it('reaps the deadline sleep if interrupted before its PID is recorded', () => {
+    const runScript = steps.find(candidate => candidate.name === 'Run backend tests') as
+      | { run?: string }
+      | undefined
+    const definitions = (runScript?.run ?? '').split('trap stop_samplers EXIT')[0]
+    const racePoint = 'sleep "$DEADLINE_DUMP_AFTER_SECONDS" &\n    sleep_pid=$!'
+    expect(definitions).toContain(racePoint)
+    const interrupted = definitions.replace(
+      racePoint,
+      'sleep "$DEADLINE_DUMP_AFTER_SECONDS" &\n    printf "%s\\n" "$!" > "$SLEEP_PID_FILE"\n    sh -c \'kill -TERM "$PPID"\'\n    sleep_pid=$!',
+    )
+    const dir = mkdtempSync(path.join(tmpdir(), 'deadline-race-'))
+    const sleepPidFile = path.join(dir, 'sleep.pid')
+    try {
+      const result = spawnSync(
+        'bash',
+        [
+          '-c',
+          `${interrupted}\nstart_deadline_dump\nwait\nif kill -0 "$(cat "$SLEEP_PID_FILE")" 2>/dev/null; then exit 1; fi`,
+        ],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            DEADLINE_DUMP_AFTER_SECONDS: '600',
+            SLEEP_PID_FILE: sleepPidFile,
+            VITEST_FILE_PROGRESS_FILE: path.join(dir, 'progress.log'),
+          },
+        },
+      )
+      expect(result.status).toBe(0)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toBe('')
+      const sleepPid = Number(readFileSync(sleepPidFile, 'utf8').trim())
+      expect(Number.isSafeInteger(sleepPid)).toBe(true)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('uploads the progress file even when the test step is killed', () => {

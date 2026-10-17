@@ -1,3 +1,4 @@
+import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { describe, it, expect, beforeAll } from 'vitest'
 import { randomBytes, randomUUID } from 'node:crypto'
 import {
@@ -158,25 +159,32 @@ describe('recordModeratorAction', () => {
     expect(await getModeratorActionRowsForTest({ communityId: missingCommunity.id })).toEqual([])
   })
 
-  it('records large action batches without exceeding PostgreSQL parameter limits', async () => {
+  it('records action batches with one PostgreSQL bind parameter', async () => {
     const batchActor = await createTestUser()
     const batchCommunity = await insertTestCommunity({ createdById: batchActor.id })
     const suffix = randomBytes(4).toString('hex')
 
-    await recordModeratorActions(
-      batchActor.id,
-      Array.from({ length: 6000 }, (_, i) => ({
-        actionType: 'dismiss_report',
-        communityId: batchCommunity.id,
-        reason: `bulk dismiss ${suffix} ${i}`,
-      })),
+    const captured = await withCapturedTestQueries(() =>
+      recordModeratorActions(
+        batchActor.id,
+        Array.from({ length: 3 }, (_, i) => ({
+          actionType: 'dismiss_report',
+          communityId: batchCommunity.id,
+          reason: `bulk dismiss ${suffix} ${i}`,
+        })),
+      ),
     )
+    const insert = captured.queries.find(query =>
+      query.text.startsWith('/* recordModeratorActions */'),
+    )!
+    expect(insert.values).toHaveLength(1)
+    expect(JSON.parse(String(insert.values[0]))).toHaveLength(3)
 
     const rows = await getModeratorActionRowsForTest({
       actorId: batchActor.id,
       communityId: batchCommunity.id,
     })
-    expect(rows).toHaveLength(6000)
+    expect(rows).toHaveLength(3)
     expect(rows).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -185,7 +193,7 @@ describe('recordModeratorAction', () => {
         }),
         expect.objectContaining({
           action_type: 'dismiss_report',
-          reason: `bulk dismiss ${suffix} 5999`,
+          reason: `bulk dismiss ${suffix} 2`,
         }),
       ]),
     )

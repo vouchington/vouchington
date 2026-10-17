@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { adminImportsWorkConfig } from '@queues/admin-imports/config'
 import { createImportBatch } from './create-batch.mts'
 import { getImportBatch, getImportRowsByBatchId } from './get-batch.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -77,19 +79,25 @@ describe('create-batch', () => {
       expect(fetchedRows[0].input_data).toMatchObject({ slug: `retrieve-${suffix}` })
     })
 
-    it('handles more than 1000 rows without error (chunked insert)', async () => {
-      const suffix = randomSuffix()
-      const inputRows = Array.from({ length: 1001 }, (_, i) => ({
-        url: `https://feed-${suffix}-${i}.example.com/rss`,
-      }))
+    it('inserts rows across configured chunks', async () => {
+      const restoreChunkSize = overrideDynamicConfigFieldsForTest(adminImportsWorkConfig, {
+        insert_chunk_size: 2,
+      })
+      try {
+        const suffix = randomSuffix()
+        const inputRows = Array.from({ length: 3 }, (_, i) => ({
+          url: `https://feed-${suffix}-${i}.example.com/rss`,
+        }))
 
-      const { batch, rows, rowIds } = await createImportBatch(admin, 'rss_feed', inputRows)
+        const { batch, rows, rowIds } = await createImportBatch(admin, 'rss_feed', inputRows)
 
-      expect(batch.total_rows).toBe(1001)
-      expect(rows).toHaveLength(1001)
-      expect(rowIds).toHaveLength(1001)
-      expect(rows[0].row_index).toBe(0)
-      expect(rows[1000].row_index).toBe(1000)
+        expect(batch.total_rows).toBe(3)
+        expect(rows).toHaveLength(3)
+        expect(rowIds).toHaveLength(3)
+        expect(rows.map(row => row.row_index)).toEqual([0, 1, 2])
+      } finally {
+        restoreChunkSize()
+      }
     })
   })
 })

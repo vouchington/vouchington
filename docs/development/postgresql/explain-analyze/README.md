@@ -10,6 +10,10 @@ are `pnpm run explain:seed`, `explain:run`, `explain:analyze`, `explain:coverage
 environment: initialize the backend first and pass its isolated `DATABASE_URL` and `VALKEY_URL`
 inline, after running the dev seed (the copyright scenarios need its notice and target).
 
+A small functional fixture cannot establish a selective large-table plan. Dispatch scenarios keep
+realistic noise in this standalone runner while unit tests cross bounded page boundaries, so plan
+regressions remain distinguishable from batching and cursor failures.
+
 ## How it works
 
 - **Capture.** Service functions run under query capture, which records annotated SQL with bound

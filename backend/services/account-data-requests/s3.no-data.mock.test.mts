@@ -111,15 +111,15 @@ describe('deleteExportFromS3', () => {
     vi.clearAllMocks()
   })
 
-  it('deletes 1001 exports in serial chunks and continues after partial failures', async () => {
+  it('deletes exports in serial chunks and continues after partial failures', async () => {
     const transportError = new Error('transport failed')
     mockS3Send.mockRejectedValueOnce(transportError).mockResolvedValueOnce({
-      Errors: [{ Key: 'export-1000.zip', Code: 'AccessDenied' }],
+      Errors: [{ Key: 'export-2.zip', Code: 'AccessDenied' }],
     } as never)
     const { deleteExportsFromS3 } = await import('./s3.mts')
-    const keys = Array.from({ length: 1001 }, (_, index) => `export-${index}.zip`)
+    const keys = Array.from({ length: 3 }, (_, index) => `export-${index}.zip`)
 
-    const error = await deleteExportsFromS3(keys).catch((err: unknown) => err)
+    const error = await deleteExportsFromS3(keys, 2).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(AggregateError)
     expect((error as AggregateError).errors).toHaveLength(2)
@@ -127,9 +127,33 @@ describe('deleteExportFromS3', () => {
     type DeleteInput = { input: { Delete: { Objects: { Key: string }[] } } }
     const first = mockS3Send.mock.calls[0]![0] as unknown as DeleteInput
     const second = mockS3Send.mock.calls[1]![0] as unknown as DeleteInput
-    expect(first.input.Delete.Objects).toHaveLength(1000)
-    expect(second.input.Delete.Objects).toEqual([{ Key: 'export-1000.zip' }])
+    expect(first.input.Delete.Objects).toHaveLength(2)
+    expect(second.input.Delete.Objects).toEqual([{ Key: 'export-2.zip' }])
   })
+
+  it('keeps the normal provider batch size when no bound is supplied', async () => {
+    mockS3Send.mockResolvedValue({})
+    const { deleteExportsFromS3 } = await import('./s3.mts')
+    await deleteExportsFromS3(['first.zip', 'second.zip', 'third.zip'])
+    expect(mockS3Send).toHaveBeenCalledOnce()
+    const command = mockS3Send.mock.calls[0]![0] as unknown as {
+      input: { Delete: { Objects: { Key: string }[] } }
+    }
+    expect(command.input.Delete.Objects).toEqual([
+      { Key: 'first.zip' },
+      { Key: 'second.zip' },
+      { Key: 'third.zip' },
+    ])
+  })
+
+  it.each([0, 1001, 1.5])(
+    'rejects invalid export batch size %s before sending',
+    async batchSize => {
+      const { deleteExportsFromS3 } = await import('./s3.mts')
+      await expect(deleteExportsFromS3(['owned.zip'], batchSize)).rejects.toThrow(RangeError)
+      expect(mockS3Send).not.toHaveBeenCalled()
+    },
+  )
 
   it('sends delete command with correct bucket and key', async () => {
     mockS3Send.mockResolvedValueOnce({} as never)

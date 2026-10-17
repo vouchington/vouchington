@@ -6,6 +6,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3EnvironmentKey, S3Buckets, S3ImagesClient } from '@modules/aws'
+import { getS3DeleteBatchSize } from '@modules/aws/s3-delete-work-limits'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 
 interface ImageRecord {
@@ -17,7 +18,8 @@ interface ImageRecord {
 }
 
 /* no-mistakes: integration=aws */
-export async function deleteImagesFromS3(images: ImageRecord[]): Promise<void> {
+export async function deleteImagesFromS3(images: ImageRecord[], batchSize = 1000): Promise<void> {
+  const limit = getS3DeleteBatchSize(batchSize)
   const objects = images.map(image => {
     const key = image.s3_key || (image.hash || image.sha_256)?.toString('hex')
     if (!key) throw new Error('No S3 key or hash provided for deletion')
@@ -26,8 +28,8 @@ export async function deleteImagesFromS3(images: ImageRecord[]): Promise<void> {
   if (objects.length === 0) return
 
   const errors: Error[] = []
-  for (let offset = 0; offset < objects.length; offset += 1000) {
-    const chunk = objects.slice(offset, offset + 1000)
+  for (let offset = 0; offset < objects.length; offset += limit) {
+    const chunk = objects.slice(offset, offset + limit)
     try {
       // oxlint-disable-next-line no-await-in-loop -- S3 accepts at most 1,000 objects per delete request, and every bounded chunk must be attempted.
       const result = await S3ImagesClient.send(
