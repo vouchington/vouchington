@@ -42,8 +42,8 @@ again. Add a row here in the same change that moves a page out, before merging.
 | `docs/overview/infrastructure/reference-networking-production-server-external-api-inventory.md`        | `reference-networking-production-server-external-api-inventory.md`      | topology         |
 | `docs/requirements/trust-safety/reference-trust-system-phase-2-post-launch-vote-weight-calibration.md` | `reference-trust-system-phase-2-post-launch-vote-weight-calibration.md` | abuse-threshold  |
 | `docs/requirements/trust-safety/reference-trust-system-vote-weight-system.md`                          | `reference-trust-system-vote-weight-system.md`                          | abuse-threshold  |
-| `docs/strategy/MESSAGING.md`                                                                           | `MESSAGING.md`                                                          | business         |
-| `docs/strategy/README.md`                                                                              | `README.md`                                                             | business         |
+| `docs/strategy/MESSAGING.md`                                                                           | `strategy-MESSAGING.md`                                                 | business         |
+| `docs/strategy/README.md`                                                                              | `strategy-README.md`                                                    | business         |
 | `docs/strategy/feedback-loops.md`                                                                      | `feedback-loops.md`                                                     | business         |
 | `docs/strategy/landing-pages-strategy.md`                                                              | `landing-pages-strategy.md`                                             | business         |
 | `docs/strategy/product-strategy.md`                                                                    | `product-strategy.md`                                                   | business         |
