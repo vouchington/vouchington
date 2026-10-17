@@ -148,18 +148,15 @@ describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => 
   const UPLOAD_CONDITION =
     "if: ${{ !cancelled() && (failure() || steps.run-playwright.outputs.retried == 'true') }}"
 
-  it('uploads JUnit, test-results, and wrangler logs on failure or a confirmed retry, never on a clean pass', () => {
+  it('uploads bulky traces and wrangler logs only on failure or a confirmed retry', () => {
     // A flaky test that fails then passes on retry makes the job exit 0, so a bare `failure()`
-    // guard never fires for these three steps and nothing gets uploaded. But a bare
-    // `!cancelled()` would upload on every clean run. Gating on
-    // `failure() || retried == 'true'` keeps failed and flaky-and-retried evidence
-    // while avoiding unnecessary clean-run uploads.
+    // guard never fires for these diagnostic bundles. The JUnit report is retained on every
+    // completed run for no-skip evidence; bulky traces and wrangler logs remain failure-only.
     const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
     expect(shardJob).not.toBeNull()
     const body = shardJob![0]
 
     for (const stepName of [
-      'Upload JUnit test results',
       'Upload Playwright test-results (traces, screenshots, videos)',
       'Upload wrangler logs',
     ]) {
@@ -167,6 +164,15 @@ describe('tests-playwright.yml diagnostic upload conditions (issue #51)', () => 
       expect(index).toBeGreaterThan(-1)
       expect(body.slice(index, index + 700)).toContain(UPLOAD_CONDITION)
     }
+  })
+
+  it('retains JUnit results on every non-cancelled run', () => {
+    const shardJob = workflow.match(/\n {2}playwright-tests:[\s\S]*?(?=\n {2}[a-zA-Z0-9_-]+:\n|$)/)
+    const body = shardJob![0]
+    const index = body.indexOf('name: Upload JUnit test results')
+
+    expect(body.slice(index, index + 700)).toContain('if: ${{ !cancelled() }}')
+    expect(body.slice(index, index + 700)).toContain('continue-on-error: true')
   })
 
   it('keeps retention-days at 1 for the diagnostic uploads', () => {

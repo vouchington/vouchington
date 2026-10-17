@@ -19,8 +19,13 @@ const KEEP_NAMES = [
   // them for their one-day retention instead of sweeping them after a successful run.
   'backend-junit-shard-2',
   'backend-modules-junit',
+  'lambdas-junit',
+  'postgres-schema-junit',
   'tooling-junit',
   'ts-shared-junit',
+  'storybook-browser-junit',
+  'web-api-junit-shard-2',
+  'web-integration-junit-shard-2',
   'web-test-report-shard-1',
   'playwright-junit-shard-2',
   'playwright-credentialed-junit',

@@ -12,5 +12,10 @@ sweep removes delete-classified artifacts only from successful or cancelled runs
 a failed run may need its same-run handoffs. Pull-request workflows get no `actions: write` for
 cleanup because their definitions are PR-controlled.
 
+JUnit reports produced by selected test jobs are uploaded as one-day artifacts on every
+non-cancelled completion, including successful runs. The report files are cleared before execution,
+and their artifact names are explicitly classified `keep`, so no-skip audits can inspect completed
+test counts without weakening test outcomes or retaining reports long term.
+
 Keep required producer-consumer handoffs visible to the workflow topology model, which resolves only
 same-run jobs, including local reusable workflows. Inspect the result with `pnpm run ci:topology`.

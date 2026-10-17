@@ -122,30 +122,13 @@ describe('tests-playwright-credentialed.yml retry/flake signal (issue #51)', () 
   })
 })
 
-describe('tests-playwright-credentialed.yml diagnostic upload condition (issue #51)', () => {
-  it('uploads JUnit results on failure or a confirmed retry, never on a clean pass', () => {
+describe('tests-playwright-credentialed.yml JUnit report retention', () => {
+  it('uploads JUnit results on every non-cancelled run without changing the test outcome', () => {
     const index = workflow.indexOf('name: Upload JUnit test results')
     expect(index).toBeGreaterThan(-1)
-    expect(workflow.slice(index, index + 700)).toContain(
-      "if: ${{ !cancelled() && (failure() || steps.run-playwright-credentialed.outputs.retried == 'true') }}",
-    )
-  })
-
-  it('keeps retention-days at 1 for the JUnit upload', () => {
-    const index = workflow.indexOf('name: Upload JUnit test results')
+    expect(workflow.slice(index, index + 700)).toContain('if: ${{ !cancelled() }}')
+    expect(workflow.slice(index, index + 700)).toContain('continue-on-error: true')
     expect(workflow.slice(index, index + 1000)).toContain('retention-days: 1')
-  })
-
-  it('references the run-playwright-credentialed step id exactly, so retried resolves', () => {
-    // steps.<id>.outputs.<name> only resolves when <id> matches a real step's `id:` in the
-    // same job -- a typo here would silently evaluate to an empty string (never 'true'),
-    // which would look identical to "never retried" instead of failing loudly.
-    expect(runStep?.id).toBe('run-playwright-credentialed')
-    const occurrences = workflow.match(/steps\.([a-zA-Z0-9_-]+)\.outputs\.retried/g) ?? []
-    expect(occurrences.length).toBeGreaterThan(0)
-    for (const occurrence of occurrences) {
-      expect(occurrence).toBe(`steps.${runStep?.id}.outputs.retried`)
-    }
   })
 })
 
