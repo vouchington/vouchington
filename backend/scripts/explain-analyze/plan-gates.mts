@@ -13,6 +13,7 @@ import {
 } from './plan-expectations.mts'
 import { assertCustomPlanCheck } from './plan-custom-checks.mts'
 import { assertFunctionCallCap } from './plan-function-calls.mts'
+import { assertUsesAnyIndex } from './plan-gates-index-alternatives.mts'
 export { assertScenarioFunctionCalls } from './plan-function-calls.mts'
 
 /** Above the current ~102k-post fixture; larger unbounded fixtures must use indexes. */
@@ -74,22 +75,9 @@ function evaluateExpectation(
         )
       return
     }
-    case 'usesAnyIndex': {
-      if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
-        return
-      const found = expectation.indexes.some(index =>
-        nodes.some(node => node['Index Name'] === index),
-      )
-      if (
-        !found ||
-        (expectation.noSort &&
-          nodes.some(node => stringFromUnknown(node['Node Type']).includes('Sort')))
-      )
-        throw new Error(
-          `${result.name} must use one of index(es) ${expectation.indexes.join(', ')}${expectation.noSort ? ' without an explicit Sort' : ''}`,
-        )
+    case 'usesAnyIndex':
+      assertUsesAnyIndex(result, nodes, expectation)
       return
-    }
     case 'queryBinds':
       if (!new RegExp(String.raw`\b${expectation.token}\b`).test(result.query_text))
         throw new Error(`${result.name} must constrain the query through ${expectation.token}`)
