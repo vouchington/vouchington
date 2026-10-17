@@ -15,8 +15,8 @@ describe('admin topic import dispatcher ids', () => {
 
     const ids = [
       getEnqueuedJobId(await enqueueAdminTopicImportDispatch(batchId)),
-      getEnqueuedJobId(await enqueueAdminTopicImportDispatchContinuation(batchId, 99)),
-      getEnqueuedJobId(await enqueueAdminTopicImportDispatchContinuation(batchId, 199)),
+      getEnqueuedJobId((await enqueueAdminTopicImportDispatchContinuation(batchId, 99))[0]),
+      getEnqueuedJobId((await enqueueAdminTopicImportDispatchContinuation(batchId, 199))[0]),
     ]
 
     expect(new Set(ids).size).toBe(3)

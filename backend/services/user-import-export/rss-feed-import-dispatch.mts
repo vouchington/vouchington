@@ -11,7 +11,7 @@ import { getUserImportExportConfig } from './config.mts'
 type PendingRow = { id: string; row_index: number }
 
 type DispatchDependencies = {
-  enqueueContinuation: typeof enqueueUserRssFeedImportDispatchContinuation
+  enqueueContinuation: (importId: string, cursor: number) => Promise<unknown>
   enqueueRows: typeof enqueueBulkUserRssFeedImportRows
 }
 

@@ -11,7 +11,7 @@ import sql from 'sql-template-strings'
 type PendingRow = { id: string; row_index: number }
 
 type DispatchAdminTopicImportDependencies = {
-  enqueueContinuation: typeof enqueueAdminTopicImportDispatchContinuation
+  enqueueContinuation: (batchId: string, cursor: number) => Promise<unknown>
   enqueueRows: typeof enqueueBulkAdminTopicImportRows
 }
 

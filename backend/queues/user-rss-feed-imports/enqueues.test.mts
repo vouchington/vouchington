@@ -19,8 +19,8 @@ describe('user RSS feed import dispatcher ids', () => {
 
     const ids = [
       getEnqueuedJobId(await enqueueUserRssFeedImportDispatch(importId)),
-      getEnqueuedJobId(await enqueueUserRssFeedImportDispatchContinuation(importId, 99)),
-      getEnqueuedJobId(await enqueueUserRssFeedImportDispatchContinuation(importId, 199)),
+      getEnqueuedJobId((await enqueueUserRssFeedImportDispatchContinuation(importId, 99))[0]),
+      getEnqueuedJobId((await enqueueUserRssFeedImportDispatchContinuation(importId, 199))[0]),
     ]
 
     expect(new Set(ids).size).toBe(3)
@@ -45,7 +45,7 @@ describe('user RSS feed import dispatcher ids', () => {
 
     await enqueueUserRssFeedImportDispatchContinuation(importId, 5)
 
-    await expect(enqueueUserRssFeedImportDispatchContinuation(importId, 5)).resolves.toBeNull()
+    await expect(enqueueUserRssFeedImportDispatchContinuation(importId, 5)).resolves.toEqual([])
   })
 
   it('ranks dispatchers behind the rows they enqueue', () => {

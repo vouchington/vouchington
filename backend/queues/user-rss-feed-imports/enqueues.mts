@@ -34,30 +34,35 @@ export function enqueueUserRssFeedImportDispatch(importId: string): EnqueueRetur
   return enqueueDispatch({ importId }, dispatchOptions(importId, undefined))
 }
 
-/** Continues an import's dispatcher after the page that ended at `cursor`. */
-export function enqueueUserRssFeedImportDispatchContinuation(
-  importId: string,
-  cursor: number,
-): EnqueueReturnType {
-  return enqueueDispatch({ importId, cursor }, dispatchOptions(importId, cursor))
-}
+type DispatchInput = { importId: string; cursor?: number }
 
 const enqueueBulkDispatch = createBackgroundBulkEnqueue(
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
-  (importId: string) => ({ data: { importId }, opts: dispatchOptions(importId, undefined) }),
+  (input: DispatchInput) => ({
+    data: input,
+    opts: dispatchOptions(input.importId, input.cursor),
+  }),
 )
 
-/**
- * Starts the dispatchers of several imports. A dispatcher that stalled past its limit stays in the
- * failed set under its job id whatever `removeOnFail` says, so the start id is released first.
- */
-export function enqueueUserRssFeedImportDispatches(importIds: string[]) {
+// A dispatcher that stalled past its limit stays in the failed set under its job id whatever
+// `removeOnFail` says, so a start or continuation id is released before it is added again.
+function enqueueDispatchesReactivating(inputs: DispatchInput[]) {
   return enqueueBulkReactivatingFinished({
     queue: background,
-    inputs: importIds,
-    jobIdOf: importId => dispatchJobId(importId, undefined),
+    inputs,
+    jobIdOf: input => dispatchJobId(input.importId, input.cursor),
     enqueueBulk: enqueueBulkDispatch,
   })
+}
+
+/** Continues an import's dispatcher after the page that ended at `cursor`. */
+export function enqueueUserRssFeedImportDispatchContinuation(importId: string, cursor: number) {
+  return enqueueDispatchesReactivating([{ importId, cursor }])
+}
+
+/** Starts the dispatchers of several imports at their first pending row. */
+export function enqueueUserRssFeedImportDispatches(importIds: string[]) {
+  return enqueueDispatchesReactivating(importIds.map(importId => ({ importId })))
 }
 
 export const enqueueBulkUserRssFeedImportRows = createBackgroundBulkEnqueue(

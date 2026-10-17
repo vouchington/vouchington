@@ -31,27 +31,35 @@ export function enqueueAdminTopicImportDispatch(batchId: string): EnqueueReturnT
   return enqueueDispatch({ batchId }, dispatchOptions(batchId, undefined))
 }
 
-/** Continues a batch's dispatcher after the page that ended at `cursor`. */
-export function enqueueAdminTopicImportDispatchContinuation(
-  batchId: string,
-  cursor: number,
-): EnqueueReturnType {
-  return enqueueDispatch({ batchId, cursor }, dispatchOptions(batchId, cursor))
-}
+type DispatchInput = { batchId: string; cursor?: number }
 
 const enqueueBulkDispatch = createBackgroundBulkEnqueue(
   IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB,
-  (batchId: string) => ({ data: { batchId }, opts: dispatchOptions(batchId, undefined) }),
+  (input: DispatchInput) => ({
+    data: input,
+    opts: dispatchOptions(input.batchId, input.cursor),
+  }),
 )
 
-/** Starts the dispatchers of several batches, releasing a start id held by a finished record. */
-export function enqueueAdminTopicImportDispatches(batchIds: string[]) {
+// A dispatcher that stalled past its limit stays in the failed set under its job id whatever
+// `removeOnFail` says, so a start or continuation id is released before it is added again.
+function enqueueDispatchesReactivating(inputs: DispatchInput[]) {
   return enqueueBulkReactivatingFinished({
     queue: background,
-    inputs: batchIds,
-    jobIdOf: batchId => dispatchJobId(batchId, undefined),
+    inputs,
+    jobIdOf: input => dispatchJobId(input.batchId, input.cursor),
     enqueueBulk: enqueueBulkDispatch,
   })
+}
+
+/** Continues a batch's dispatcher after the page that ended at `cursor`. */
+export function enqueueAdminTopicImportDispatchContinuation(batchId: string, cursor: number) {
+  return enqueueDispatchesReactivating([{ batchId, cursor }])
+}
+
+/** Starts the dispatchers of several batches at their first pending row. */
+export function enqueueAdminTopicImportDispatches(batchIds: string[]) {
+  return enqueueDispatchesReactivating(batchIds.map(batchId => ({ batchId })))
 }
 
 export const enqueueBulkAdminTopicImportRows = createBackgroundBulkEnqueue(
