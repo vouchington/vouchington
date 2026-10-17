@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
+import { read } from '@data-stores/psql'
 import {
   createRandomString,
   createTestRetentionWindow,
@@ -19,10 +20,16 @@ describe('GitHub orphan account cleanup', () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-github-${createRandomString(12)}`
     const unrelatedProviderId = `unrelated-github-${createRandomString(12)}`
-    const activeAccount = await insertTestOAuthAccount('github', activeProviderId)
+    await insertTestOAuthAccount('github', activeProviderId)
     await insertTestOAuthAccount('github', unrelatedProviderId)
     await setOAuthAccountCreatedAt('github', activeProviderId, window.firstEligibleDate)
     await setOAuthAccountCreatedAt('github', unrelatedProviderId, window.secondEligibleDate)
+    const { rows: activeAccountRows } = await read<{ id: string }>(
+      `/* getRetainedGithubAccountId */ SELECT id FROM github_accounts WHERE github_user_id = $1`,
+      [activeProviderId],
+    )
+    const activeAccountId = activeAccountRows[0]?.id
+    if (!activeAccountId) throw new Error('Retained GitHub account fixture is missing')
     const authorizationId = v7()
     onTestFinished(async () => {
       await deleteTestOAuthAuthorizationFixtures({
@@ -55,7 +62,7 @@ describe('GitHub orphan account cleanup', () => {
       false,
     )
     await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
-      github_account_id: activeAccount.account_id,
+      github_account_id: activeAccountId,
     })
   }, 30_000)
 })

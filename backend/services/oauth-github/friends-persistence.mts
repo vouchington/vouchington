@@ -55,7 +55,7 @@ async function persistGithubFriendBatch(
 
   await transaction(
     `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_account_id, github_friend_id, friend_github_account_id)
-     SELECT $1, friend_id, (SELECT id FROM github_accounts WHERE github_user_id = friend_id)
+     SELECT $1::uuid, friend_id, (SELECT id FROM github_accounts WHERE github_user_id = friend_id)
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (github_account_id, github_friend_id) DO UPDATE SET
