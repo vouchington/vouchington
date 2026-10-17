@@ -25,6 +25,7 @@ jobs:
     uses: ./.github/workflows/static-code-analysis.yml
     permissions:
       contents: read
+      issues: read
 
   static:
     name: static

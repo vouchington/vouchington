@@ -3,12 +3,72 @@ import {
   type RepeatedAnnotation,
 } from './request-query-profile-summary.mts'
 
-/** A known within-request repeat that API tests tolerate until `issue` removes it. */
-export interface RepeatBaselineEntry {
+/** A repeat tolerated until the open `issue` removes it. */
+export interface TemporaryBaselineEntry {
   annotation: string
   reason: string
-  /** Number of the GitHub issue that owns removing the repeat. */
+  /** Number of the open GitHub issue that owns removing the repeat. */
   issue: number
+}
+
+/** A repeat the code needs on purpose; the reason names the mechanism. */
+export interface PermanentBaselineEntry {
+  annotation: string
+  reason: string
+  permanent: true
+  /** `<repo path>:<line or symbol>` of the code that needs the repeat. */
+  code: string
+}
+
+export type RepeatBaselineEntry = TemporaryBaselineEntry | PermanentBaselineEntry
+
+const CODE_POINTER = /^[\w./-]+\.\w+:(?:\d+(?:-\d+)?|[A-Za-z_$][\w$.]*)$/
+
+function entryProblem(entry: unknown): string | undefined {
+  if (typeof entry !== 'object' || entry === null) return 'is not an object'
+  const { annotation, reason, ...rest } = entry as Record<string, unknown>
+  if (typeof annotation !== 'string' || annotation === '') return 'needs a non-empty annotation'
+  if (typeof reason !== 'string' || reason === '') return 'needs a non-empty reason'
+  const keys = Object.keys(rest).toSorted().join(',')
+  if (keys === 'issue') {
+    const { issue } = rest
+    if (typeof issue !== 'number' || !Number.isInteger(issue) || issue <= 0)
+      return 'needs `issue` to be a positive issue number'
+    return undefined
+  }
+  if (keys === 'code,permanent') {
+    if (rest.permanent !== true) return 'needs `permanent: true`'
+    if (typeof rest.code !== 'string' || !CODE_POINTER.test(rest.code))
+      return 'needs `code` as "<repo path>:<line or symbol>"'
+    return undefined
+  }
+  return 'must be temporary { annotation, reason, issue } or permanent { annotation, reason, permanent: true, code }'
+}
+
+/** Parsed baseline, or an error naming every malformed or duplicate entry. */
+export function parseRepeatBaseline(raw: unknown): RepeatBaselineEntry[] {
+  if (!Array.isArray(raw)) throw new Error('Query-profile baseline must be an array of entries')
+  const problems: string[] = []
+  const seen = new Set<unknown>()
+  raw.forEach((entry: unknown, index) => {
+    const problem = entryProblem(entry)
+    const name = (entry as { annotation?: unknown } | null)?.annotation
+    if (problem) problems.push(`entry ${index} (${JSON.stringify(name)}) ${problem}`)
+    else if (seen.has(name))
+      problems.push(`entry ${index} (${JSON.stringify(name)}) is a duplicate`)
+    seen.add(name)
+  })
+  if (problems.length > 0) {
+    throw new Error(`Malformed query-profile baseline:\n${problems.join('\n')}`)
+  }
+  return raw as RepeatBaselineEntry[]
+}
+
+/** Temporary entries, whose `issue` must stay open. */
+export function temporaryBaselineEntries(
+  baseline: readonly RepeatBaselineEntry[],
+): TemporaryBaselineEntry[] {
+  return baseline.filter((entry): entry is TemporaryBaselineEntry => 'issue' in entry)
 }
 
 /**
@@ -99,5 +159,24 @@ export function formatUnbaselinedRepeats(
   repeats: readonly RepeatedAnnotation[],
 ): string {
   const list = repeats.map(({ annotation, count }) => `${annotation} (x${count})`).join(', ')
-  return `Unbaselined repeated query in ${route}: ${list}. Remove the repeat, or baseline it in backend/test-helpers/api/request-query-profile-baseline.json with a reason and an issue.`
+  return `Unbaselined repeated query in ${route}: ${list}. Remove the repeat, or baseline it in backend/test-helpers/api/request-query-profile-baseline.json with a reason and an open issue (temporary), or a code pointer (permanent).`
+}
+
+/**
+ * Failure text for temporary entries whose issue is not open, one line per entry. `states` maps an
+ * issue number to its GitHub state; an issue missing from it counts as not found.
+ *
+ * @public used by the open-issue check in backend/test-helpers
+ */
+export function formatClosedBaselineIssues(
+  baseline: readonly RepeatBaselineEntry[],
+  states: ReadonlyMap<number, string>,
+): string[] {
+  return temporaryBaselineEntries(baseline).flatMap(({ annotation, issue }) => {
+    const state = states.get(issue)?.toLowerCase()
+    if (state === 'open') return []
+    return [
+      `Baseline entry ${annotation} points at #${issue}, which is ${state ?? 'not found'}. Remove the repeat, or re-point the entry at an open issue in "Query round-trip reductions"; a repeat the code needs on purpose becomes a permanent entry.`,
+    ]
+  })
 }

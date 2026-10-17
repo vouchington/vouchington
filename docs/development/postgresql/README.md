@@ -49,11 +49,22 @@ one stderr line per request.
 
 A repeated annotation within one API request that is not in
 [`request-query-profile-baseline.json`](../../../backend/test-helpers/api/request-query-profile-baseline.json)
-fails the test that made the request. Each entry is `{ annotation, reason, issue }` and is per
-annotation, not per route.
+fails the test that made the request. Entries are per annotation, not per route, and have one of two
+shapes; the test setup rejects an entry with neither.
+
+- **Temporary**: `{ annotation, reason, issue }`, where `issue` is an open issue that removes the
+  repeat.
+- **Permanent**: `{ annotation, reason, permanent: true, code }`, with no `issue`. The reason names
+  the mechanism that needs the repeat, such as a re-read after a lock that rejects a concurrent
+  change, and `code` is `<repo path>:<line or symbol>` of the code that needs it.
+
+`request-query-profile-open-issues.mts` fails when a temporary entry's issue is not open. Static
+Analysis runs it when a pull request or merge group changes the baseline, and the nightly run
+checks it every day, so an issue closed elsewhere is still caught. It skips locally when no token or
+`gh` login is available.
 
 - **Add an entry** only for a repeat that cannot be fixed in the same PR; prefer fixing it. Link an
-  issue that owns the area, or file one in the "Query round-trip reductions" milestone.
+  open issue that owns the removal, or make the entry permanent when the code needs the repeat.
 - **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
   PR never depends on landing order; deleting it keeps the repeat from returning.
 - **Find stale entries** over several complete runs, since a data-dependent repeat can be missing
