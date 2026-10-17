@@ -1,3 +1,7 @@
+import {
+  loadModmailReplyAccess,
+  admitModmailReplyParticipant,
+} from '@services/modmail/member-actions'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -6,11 +10,7 @@ import { getRequestContentProvenance } from '@modules/request-client-info/conten
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { loadCommunityWithViewer } from '@services/communities'
-import {
-  getModmailThread,
-  currentUserCanViewModmailThread,
-  upsertModmailStaffParticipant,
-} from '@services/modmail'
+import { getModmailThread, currentUserCanViewModmailThread } from '@services/modmail'
 import { createConversationMessage, getConversationMessages } from '@services/messaging'
 import {
   decodeUuidCursor,
@@ -86,22 +86,7 @@ app
       conversationId: string
     }
     ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
-    const [{ community, membership }, thread] = await Promise.all([
-      loadCommunityWithViewer(idOrSlug, currentUser.id),
-      getModmailThread(conversationId),
-    ])
-
-    ctx.assert(thread, 404, 'Modmail thread not found')
-    ctx.assert(thread.community_id === community.id, 404, 'Modmail thread not found')
-
-    const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
-    const isSubject = thread.subject_user_id === currentUser.id
-    ctx.assert(isMod || isSubject, 403, 'Access denied')
-    ctx.assert(
-      !thread.resolved_at,
-      409,
-      'Thread is resolved; resolve must be undone before replying',
-    )
+    const access = await loadModmailReplyAccess(currentUser, idOrSlug, conversationId)
 
     const body = (await ctx.request.json('10kb')) as Record<string, unknown>
     validateRequestContract(
@@ -109,11 +94,7 @@ app
       'POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',
       { path: ctx.params, body },
     )
-    // Ensure mod/staff callers have a participant row so createConversationMessage's
-    // participant guard succeeds — idempotent if they were added via openModmailThread.
-    if (isMod) {
-      await upsertModmailStaffParticipant(conversationId, currentUser.id)
-    }
+    await admitModmailReplyParticipant(currentUser, access)
 
     const message = await createConversationMessage(
       currentUser.id,

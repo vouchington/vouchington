@@ -11,8 +11,13 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+  optionArgs,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { listTestDelegatedCreateReservations } from '@voucha/test-helpers/mcp-write-tool-rows'
+import { createRequest } from '@voucha/test-helpers/api/server'
 
 const SCOPES = ['communities:read', 'communities:write'] as const
 
@@ -26,31 +31,63 @@ const errorOf = async (
   caller: Parameters<typeof callRejectedMcpTool>[0],
   tool: string,
   input: object,
-) => JSON.parse(await callRejectedMcpTool(caller, tool, input as never, SCOPES))
+) =>
+  JSON.parse(
+    await callRejectedMcpTool(
+      caller,
+      tool,
+      (tool === 'participate_in_community'
+        ? optionArgs('join', input as Record<string, unknown>)
+        : input) as never,
+      SCOPES,
+    ),
+  )
 
-describe('join_community — real store', () => {
-  const TOOL = 'join_community'
+describe('participate_in_community(join) — real store', () => {
+  const TOOL = 'participate_in_community'
 
   it('joins a public community by id or by slug and returns only the id', async () => {
     const { community } = await communityWithOwner()
     const byId = await createTestPlusMcpCaller()
     const bySlug = await createTestPlusMcpCaller()
 
-    expect(await callStructuredMcpTool(byId, TOOL, { community_id: community.id }, SCOPES)).toEqual(
-      { success: true, community_id: community.id },
-    )
     expect(
-      await callStructuredMcpTool(bySlug, TOOL, { community_id: community.slug }, SCOPES),
+      await callStructuredMcpTool(
+        byId,
+        TOOL,
+        optionArgs('join', { community_id: community.id }),
+        SCOPES,
+      ),
+    ).toEqual({ success: true, community_id: community.id })
+    expect(
+      await callStructuredMcpTool(
+        bySlug,
+        TOOL,
+        optionArgs('join', { community_id: community.slug }),
+        SCOPES,
+      ),
     ).toEqual({ success: true, community_id: community.id })
 
     expect(await getTestCommunityMember(community.id, byId.id)).toMatchObject({ role: 'member' })
     expect(await getTestCommunityMember(community.id, bySlug.id)).toMatchObject({ role: 'member' })
+    const restCaller = await createTestPlusMcpCaller()
+    const rest = createRequest()
+    await rest.authenticateAs(restCaller)
+    await rest.post(`/api/v1/communities/${community.slug}/members`).send({}).expect(201)
+    expect(await getTestCommunityMember(community.id, restCaller.id)).toMatchObject({
+      role: 'member',
+    })
   })
 
   it('refuses a second join and keeps the one membership', async () => {
     const { community } = await communityWithOwner()
     const caller = await createTestPlusMcpCaller()
-    await callStructuredMcpTool(caller, TOOL, { community_id: community.id }, SCOPES)
+    await callStructuredMcpTool(
+      caller,
+      TOOL,
+      optionArgs('join', { community_id: community.id }),
+      SCOPES,
+    )
     const joined = await getTestCommunityMember(community.id, caller.id)
 
     expect(await errorOf(caller, TOOL, { community_id: community.id })).toMatchObject({
@@ -102,15 +139,29 @@ describe('join_community — real store', () => {
     ['a non-string community', { community_id: 7 }],
   ])('refuses %s as invalid arguments', async (_label, input) => {
     const caller = await createTestPlusMcpCaller()
-    expect(await callRejectedMcpTool(caller, TOOL, input, SCOPES)).toContain(
+    expect(await callRejectedMcpTool(caller, TOOL, optionArgs('join', input), SCOPES)).toContain(
       'Invalid tool arguments',
     )
+  })
+
+  it('requires the option envelope and rejects cross-option fields', async () => {
+    const caller = await createTestPlusMcpCaller()
+    for (const input of [
+      { community_id: 'a-community' },
+      { option: 'join', arguments: { community_id: 'a-community' }, extra: true },
+      optionArgs('join', { community_id: 'a-community', subject_user_id: crypto.randomUUID() }),
+      optionArgs('apply', { community_id: 'a-community' }),
+    ]) {
+      expect(await callRejectedMcpTool(caller, TOOL, input, SCOPES)).toContain(
+        'Invalid tool arguments',
+      )
+    }
   })
 
   it('requires the write scope, the Plus plan and an unsuspended owner', async () => {
     const { community } = await communityWithOwner()
     const caller = await createTestPlusMcpCaller()
-    const input = { community_id: community.id }
+    const input = optionArgs('join', { community_id: community.id })
 
     expect(await callRejectedMcpTool(caller, TOOL, input, ['communities:read'])).toContain(
       'Tool requires scopes',

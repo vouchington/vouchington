@@ -1,3 +1,7 @@
+import {
+  loadModmailOpeningAccess,
+  openAuthorizedModmailThread,
+} from '@services/modmail/member-actions'
 import { loadCommunityWithViewer } from '@services/communities'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
@@ -5,10 +9,8 @@ import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
-import { getPrivateUserByAny } from '@services/users/get'
 import { getCommunityMember } from '@services/communities/members/get'
 import {
-  openModmailThread,
   getCommunityModmailInbox,
   getMyModmailThreads,
   getModmailThread,
@@ -17,7 +19,6 @@ import {
   resolveModmailThread,
   unresolveModmailThread,
   currentUserCanViewModmailThread,
-  currentUserCanOpenModmailThread,
 } from '@services/modmail'
 import {
   buildPageInfo,
@@ -74,10 +75,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail').post(async (ctx: Context) => 
   assertNotSuspended(currentUser)
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
-  const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
-
-  const canOpen = currentUserCanOpenModmailThread(currentUser, community, membership)
-  ctx.assert(canOpen, 403, 'You must be a community member to open a modmail thread')
+  const access = await loadModmailOpeningAccess(currentUser, idOrSlug)
 
   const body = (await ctx.request.json('10kb')) as Record<string, unknown>
   validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/modmail', {
@@ -85,22 +83,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail').post(async (ctx: Context) => 
     body,
   })
 
-  const isMod = currentUserCanViewModmailThread(currentUser, community, membership)
-  const rawSubjectUserId =
-    isMod && typeof body.subject_user_id === 'string' ? body.subject_user_id : currentUser.id
-
-  if (isMod && rawSubjectUserId !== currentUser.id) {
-    const subjectUser = await getPrivateUserByAny(rawSubjectUserId)
-    ctx.assert(subjectUser, 404, 'Subject user not found')
-    const subjectMembership = await getCommunityMember(community.id, rawSubjectUserId)
-    ctx.assert(
-      subjectMembership && !subjectMembership.removed_at,
-      422,
-      'Subject user is not an active community member',
-    )
-  }
-
-  const thread = await openModmailThread(currentUser.id, community.id, rawSubjectUserId)
+  const thread = await openAuthorizedModmailThread(currentUser, access, body.subject_user_id)
 
   ctx.setStatus(201)
   ctx.json({ thread })

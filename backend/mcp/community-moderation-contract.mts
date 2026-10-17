@@ -84,10 +84,11 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
   const key = `${endpoint.method}:${endpoint.path}`
   const operation = fixture.operations[key]
   if (!operation) throw new Error(`Missing REST operation ${key}`)
-  const properties: Record<string, unknown> = {
-    community: { type: 'string', minLength: 1, description: 'Community UUID or slug.' },
-  }
-  const required = new Set(['community'])
+  const communityScoped = endpoint.path.startsWith('/api/v1/communities/:idOrSlug')
+  const properties: Record<string, unknown> = communityScoped
+    ? { community: { type: 'string', minLength: 1, description: 'Community UUID or slug.' } }
+    : {}
+  const required = new Set(communityScoped ? ['community'] : [])
   const definitions: Record<string, unknown> = {}
   const option = communityModerationRoutes.find(
     route => route.method === endpoint.method && route.path === endpoint.path,
@@ -106,10 +107,10 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
       continue
     }
     for (const [name, field] of Object.entries(fields)) {
-      if (name !== 'idOrSlug') properties[name] = field
+      if (name !== 'idOrSlug' || !communityScoped) properties[name] = field
     }
     for (const name of (schema['required'] as string[] | undefined) ?? []) {
-      if (name !== 'idOrSlug') required.add(name)
+      if (name !== 'idOrSlug' || !communityScoped) required.add(name)
     }
   }
   const override = option ? bodyFieldOverrides[option] : undefined
@@ -118,7 +119,9 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
     for (const field of override.required ?? []) required.add(field)
   }
   const uuidField = option ? communityModerationUuidPaths[option] : undefined
-  if (uuidField) {
+  const uuidFields = uuidField ? [uuidField] : []
+  if (option === 'delete_mod_note') uuidFields.push('noteId')
+  for (const uuidField of uuidFields) {
     // REST accepts the 36-character path form; AJV's UUID format also permits URNs.
     properties[uuidField] = {
       ...(properties[uuidField] as Record<string, unknown>),

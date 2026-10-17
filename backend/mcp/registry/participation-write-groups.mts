@@ -1,3 +1,4 @@
+import { participateInCommunityGroup } from '../participate-in-community.mts'
 import { voteGroup } from '../vote.mts'
 import { rssReadStateGroup } from '../set-rss-feed-item-read.mts'
 import { shareRssFeedItemGroup } from '../share-rss-feed-item.mts'
@@ -10,4 +11,5 @@ export const participationWriteGroups = [
   shareRssFeedItemGroup,
   submitRssFeedGroup,
   startDiscussionGroup,
+  participateInCommunityGroup,
 ] as const

@@ -20,11 +20,8 @@ See also:
 Each tool declares one or more surfaces in `meta.surfaces`. The default when absent is
 `['internal']`.
 
-| Surface     | Description                                                                                         |
-| ----------- | --------------------------------------------------------------------------------------------------- |
-| `internal`  | Available only to server-side agents. Never exposed over any external protocol.                     |
-| `mcp`       | Exposed via the user-facing Model Context Protocol server. Accessible to MCP-connected LLM clients. |
-| `admin_mcp` | Exposed via the staff-only admin Model Context Protocol server. Restricted by role, not by plan.    |
+`internal` tools are available to server-side agents. The user-facing `mcp` surface serves
+MCP-connected clients; `admin_mcp` is restricted to staff by role.
 
 A tool may be on multiple surfaces simultaneously. Most user-facing tools carry `internal` and
 `mcp`; staff tools carry `admin_mcp` in place of `mcp`. A tool must not carry both
@@ -87,6 +84,21 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ---
 
+## Community moderator actions
+
+Exact community-moderation grants keep moderator capabilities out of umbrella-granted apps.
+Post locks, ban-evasion confirmation, and moderator notes share the existing moderator write
+tools because their scope, plan, and conservative hints agree. Each option retains its REST
+permissions: locking checks post visibility and the caller's community role; note access permits
+moderation staff or moderators of any community before applying the note's own community rules;
+ban-evasion confirmation remains staff-only. This avoids making MCP moderation stricter than REST.
+
+Member modmail shares `participate_in_community` with joining because those actions share scope,
+plan, and conservative hints. Its strict option envelope makes the action explicit while keeping
+`apply_to_community` separate for its different idempotency contract. Active members retain REST
+access in private or archived communities, and thread subjects retain reply access after membership
+removal. Moderator thread access and subject selection also follow REST.
+
 ## Generated Artifacts
 
 The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
@@ -127,14 +139,9 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
 Tools created with `createManageEntityTool()` dispatch on an `action` parameter rather than
 exposing separate tools per write operation. The mapping to REST verbs is:
 
-| `action` value | REST equivalent       |
-| -------------- | --------------------- |
-| `add`          | `POST /api/v1/my/…`   |
-| `update`       | `PATCH /api/v1/my/…`  |
-| `remove`       | `DELETE /api/v1/my/…` |
-
-The `id` parameter is required for `update` and `remove` actions; it is the row UUID
-returned by the matching `get_my_*` tool. `remove` returns only `{ id }`; see Structured tool results.
+The `add`, `update`, and `remove` actions correspond to POST, PATCH, and DELETE on
+`/api/v1/my/…`, respectively. The `id` parameter is required for update and remove; use the row
+UUID from the matching `get_my_*` tool. Remove returns only `{ id }`.
 
 `add_entity_relation` has no dedicated REST endpoint and uses the same relation command as the
 session REST route.

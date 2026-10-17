@@ -39,7 +39,7 @@ const tool: Tool<Args, Result> = {
     name: 'apply_to_community',
     type: 'function',
     description:
-      'Apply to a private community by UUID or slug. answers maps question ids to strings for short_text, long_text and single_select; string arrays for multi_select; booleans for checkbox. Send {} if there are no questions. message is an optional moderator note of at most 5000 characters. Unknown, missing or mistyped answers are INVALID_INPUT. Use join_community for public communities.',
+      'Apply to a private community. answers maps question ids to strings (short_text, long_text, single_select), string arrays (multi_select), or booleans (checkbox). Send {} for no questions. message allows 5000 characters. Unknown, missing or mistyped answers are INVALID_INPUT. Use participate_in_community(join) for public communities.',
     parameters: {
       type: 'object',
       properties: {

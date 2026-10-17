@@ -114,7 +114,7 @@ function communityModerationCases(): OperationCase[] {
       }
     }),
   )
-  if (cases.length !== 54) throw new Error('community moderation option inventory drift')
+  if (cases.length !== 59) throw new Error('community moderation option inventory drift')
   return cases
 }
 
@@ -158,10 +158,10 @@ export function currentOperationCases(): OperationCase[] {
     ...singleCases('mcp', userMergedNames),
   ]
   const admin = [...mergedAdminCases(), ...singleCases('admin_mcp', adminMergedNames)]
-  if (user.length !== 200 || admin.length !== 106)
+  if (user.length !== 207 || admin.length !== 106)
     throw new Error(`case count: ${user.length}/${admin.length}`)
   if (
-    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 195 ||
+    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 202 ||
     new Set(admin.map(row => `${row.name}.${row.option ?? ''}`)).size !== 106
   )
     throw new Error('distinct operation inventory drift')
