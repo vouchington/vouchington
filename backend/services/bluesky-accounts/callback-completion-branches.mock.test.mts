@@ -7,8 +7,9 @@ import {
   getTestBlueskyLinkedAccountRow,
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
-import type { NodeOAuthClient, OAuthSession } from '@modules/bluesky-oauth'
+import type { NodeOAuthClient, NodeSavedState, OAuthSession } from '@modules/bluesky-oauth'
 import { v7 } from 'uuid'
+import { BlueskyStateStore } from './state-store.mts'
 
 const completeBlueskyCallbackMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 const createBlueskyOAuthClientMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -29,6 +30,41 @@ import {
 
 describe('durable Bluesky callback rejection branches', () => {
   beforeEach(() => completeBlueskyCallbackMock.mockReset())
+
+  it('checks a different state authorization before invoking the provider', async () => {
+    const user = await createTestUserDirect()
+    const requestedFlowId = v7()
+    const nativeFlowId = v7()
+    const stateKey = v7()
+    await ensureTestBlueskyLinkAuthorization({
+      authorizationId: requestedFlowId,
+      userId: user.id,
+    })
+    await ensureTestBlueskyLinkAuthorization({
+      authorizationId: nativeFlowId,
+      userId: user.id,
+      callbackMode: 'native',
+    })
+    await new BlueskyStateStore().set(stateKey, {
+      iss: 'https://bsky.social',
+      authMethod: 'none',
+      verifier: 'verifier',
+      appState: JSON.stringify({ authorizationId: nativeFlowId }),
+      dpopJwk: { kty: 'EC', crv: 'P-256', x: 'x', y: 'y', d: 'd' },
+    } as unknown as NodeSavedState)
+
+    await expect(
+      completeWebBlueskyAccountLinkDurably({
+        params: new URLSearchParams({ code: 'abc', state: stateKey }).toString(),
+        flowId: requestedFlowId,
+        currentUserId: user.id,
+      }),
+    ).rejects.toMatchObject({ status: 400, message: 'Invalid Bluesky OAuth state' })
+    expect(completeBlueskyCallbackMock).not.toHaveBeenCalled()
+    expect(await getTestBlueskyLinkAuthorizationRow(nativeFlowId)).toMatchObject({
+      status: 'pending',
+    })
+  })
 
   it('deletes a returned web generation when it differs from the requested flow', async () => {
     const user = await createTestUserDirect()
