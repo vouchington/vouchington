@@ -72,8 +72,8 @@ WITH friends AS (
         'x'::TEXT AS provider,
         COALESCE(xa.x_user_data->>'name', xa.x_user_data->>'username', '') AS provider_friend_name
       FROM x_friends xf
-      JOIN x_accounts my_xa ON my_xa.x_user_id = xf.x_user_id
-      JOIN x_accounts xa ON xa.x_user_id = xf.x_friend_id
+      JOIN x_accounts my_xa ON my_xa.id = xf.x_account_id
+      JOIN x_accounts xa ON xa.id = xf.friend_x_account_id
       JOIN users u ON u.id = xa.user_id
       WHERE my_xa.user_id = $1
         AND u.deleted_at IS NULL

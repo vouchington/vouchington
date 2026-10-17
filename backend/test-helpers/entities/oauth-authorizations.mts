@@ -4,6 +4,7 @@ import { read, write } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { seedTestOAuthExchangeAttempts } from './oauth-exchange-attempts.mts'
+import { getTestAuthorizationAccountId } from './oauth-authorization-account-id.mts'
 export { deleteTestOAuthAuthorizationFixtures } from './oauth-authorization-fixture-cleanup.mts'
 
 type TestOAuthAuthorizationProvider = 'facebook' | 'github' | 'x' | 'linkedin' | 'microsoft'
@@ -28,7 +29,7 @@ export type TestOAuthAuthorizationRow = {
   exchange_claim_id: string | null
   facebook_account_id: string | null
   github_user_id: string | null
-  x_user_id: string | null
+  x_account_id: string | null
   linkedin_account_id: string | null
   microsoft_account_id: string | null
   result_kind: string | null
@@ -77,7 +78,11 @@ export async function insertTestOAuthAuthorization(
       : null
   const facebookAccountId =
     provider === 'facebook' && options.providerUserId
-      ? await getFacebookAccountId(options.providerUserId)
+      ? await getTestAuthorizationAccountId('facebook', options.providerUserId)
+      : null
+  const xAccountId =
+    provider === 'x' && options.providerUserId
+      ? await getTestAuthorizationAccountId('x', options.providerUserId)
       : null
   const completionTokenHash = options.completionToken
     ? hashToken(`oauth-authorization-broker:completion:${id}`, options.completionToken)
@@ -89,7 +94,7 @@ export async function insertTestOAuthAuthorization(
        pkce_verifier_ciphertext, callback_code_ciphertext, callback_received_at,
        exchange_started_at, exchange_claim_id, completion_proof_challenge,
        completion_token_hash, completion_token_ciphertext, facebook_account_id,
-       github_user_id, x_user_id, result_kind, result_user_id, result_device_id,
+       github_user_id, x_account_id, result_kind, result_user_id, result_device_id,
        result_session_id, completion_ready_at, completed_at, expires_at, updated_at,
        linkedin_account_id, microsoft_account_id
      )
@@ -123,7 +128,7 @@ export async function insertTestOAuthAuthorization(
       options.completionTokenCiphertext ?? null,
       facebookAccountId,
       provider === 'github' ? (options.providerUserId ?? null) : null,
-      provider === 'x' ? (options.providerUserId ?? null) : null,
+      xAccountId,
       options.resultKind ?? null,
       options.resultUserId ?? null,
       options.resultDeviceId ?? (options.resultKind === 'authenticated' ? uuidv7() : null),
@@ -147,7 +152,7 @@ export async function getTestOAuthAuthorization(
     `/* getTestOAuthAuthorization */ SELECT
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_account_id,
-       github_user_id, x_user_id, linkedin_account_id, microsoft_account_id, result_kind, result_user_id, result_device_id, result_session_id
+       github_user_id, x_account_id, linkedin_account_id, microsoft_account_id, result_kind, result_user_id, result_device_id, result_session_id
      FROM view_oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],
@@ -161,15 +166,6 @@ async function getLinkedInAccountId(providerUserId: string): Promise<string> {
     [providerUserId],
   )
   if (!rows[0]) throw new Error('LinkedIn test account must exist before authorization fixture')
-  return rows[0].id
-}
-
-async function getFacebookAccountId(providerUserId: string): Promise<string> {
-  const { rows } = await read<{ id: string }>(
-    `/* getTestFacebookAccountId */ SELECT id FROM facebook_accounts WHERE facebook_user_id = $1`,
-    [providerUserId],
-  )
-  if (!rows[0]) throw new Error('Facebook test account must exist before authorization fixture')
   return rows[0].id
 }
 

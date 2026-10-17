@@ -14,7 +14,8 @@ const authorizationAccountIdentifiers = {
   x: {
     table: 'x_accounts',
     providerUserIdColumn: 'x_user_id',
-    authorizationAccountColumn: 'x_user_id',
+    accountIdColumn: 'id',
+    authorizationAccountColumn: 'x_account_id',
     emailColumn: 'x_user_email_address',
     dataColumn: 'x_user_data',
   },

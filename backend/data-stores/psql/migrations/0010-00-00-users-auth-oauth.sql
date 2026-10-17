@@ -996,8 +996,9 @@ COMMENT ON COLUMN google_accounts.google_user_data IS 'Raw JSONB profile data fr
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS x_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
-  x_user_id TEXT PRIMARY KEY,
+  x_user_id TEXT NOT NULL UNIQUE,
   x_user_email_address TEXT,
   x_user_data JSONB NOT NULL,
   access_token_ciphertext TEXT,
@@ -1030,8 +1031,9 @@ ON x_accounts (friends_synced_at)
 WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 
 COMMENT ON TABLE x_accounts IS 'X (Twitter) OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.';
+COMMENT ON COLUMN x_accounts.id IS 'Internal UUIDv7 identity of the X account.';
 COMMENT ON COLUMN x_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
-COMMENT ON COLUMN x_accounts.x_user_id IS 'X''s unique user identifier (primary key).';
+COMMENT ON COLUMN x_accounts.x_user_id IS 'X''s unique external user identifier.';
 COMMENT ON COLUMN x_accounts.x_user_email_address IS 'Email address from the X profile.';
 COMMENT ON COLUMN x_accounts.x_user_data IS 'Raw JSONB profile data from X OAuth.';
 COMMENT ON COLUMN x_accounts.access_token_ciphertext IS 'Encrypted OAuth 2.0 access token ciphertext for X API calls.';
@@ -1221,7 +1223,7 @@ WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_accounts__orphan_retention_cleanup
-ON x_accounts (created_at, x_user_id)
+ON x_accounts (created_at, id)
 WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

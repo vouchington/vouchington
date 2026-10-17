@@ -4,6 +4,7 @@ import { encryptSecret } from '@modules/token-secrets'
 import { getOAuthTokenPurpose } from '@services/oauth-accounts/upsert'
 
 export type XSyncAccount = {
+  id: string
   userId: string | null
   accessTokenCiphertext: string
   refreshTokenCiphertext: string | null
@@ -20,6 +21,7 @@ export type XCredentialGeneration = {
 export async function getXSyncAccount(xUserId: string): Promise<XSyncAccount | undefined> {
   const { rows } = await read<XSyncAccount>(
     `/* getXSyncAccount */ SELECT
+       id,
        user_id AS "userId",
        access_token_ciphertext AS "accessTokenCiphertext",
        refresh_token_ciphertext AS "refreshTokenCiphertext",

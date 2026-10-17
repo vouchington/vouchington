@@ -525,9 +525,10 @@ COMMENT ON COLUMN github_friends.github_friend_id IS 'The GitHub user ID of the 
 -- X friends
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS x_friends (
-  x_user_id TEXT NOT NULL REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
+  x_account_id UUID NOT NULL REFERENCES x_accounts(id) ON DELETE CASCADE,
   x_friend_id TEXT NOT NULL,
-  PRIMARY KEY (x_user_id, x_friend_id),
+  friend_x_account_id UUID REFERENCES x_accounts(id) ON DELETE SET NULL,
+  PRIMARY KEY (x_account_id, x_friend_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -543,9 +544,14 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_x_friends__friend_id
 ON x_friends (x_friend_id);
 
+CREATE INDEX IF NOT EXISTS idx_x_friends__friend_x_account_id
+ON x_friends (friend_x_account_id)
+WHERE friend_x_account_id IS NOT NULL;
+
 COMMENT ON TABLE x_friends IS 'X (Twitter) follower/following relationships for friend recommendations.';
-COMMENT ON COLUMN x_friends.x_user_id IS 'The X user whose friends list this entry belongs to.';
-COMMENT ON COLUMN x_friends.x_friend_id IS 'The X user ID of the friend.';
+COMMENT ON COLUMN x_friends.x_account_id IS 'Source X account whose following list contains this entry.';
+COMMENT ON COLUMN x_friends.x_friend_id IS 'External X user ID of the friend, who may not have an account here.';
+COMMENT ON COLUMN x_friends.friend_x_account_id IS 'Matching local X account when the friend has signed in.';
 
 -- Sync status indexes for nightly dispatcher queries
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

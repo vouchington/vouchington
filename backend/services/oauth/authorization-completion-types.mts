@@ -37,7 +37,7 @@ export type CompletionRow = {
   completion_token_hash: string | null
   callback_error: string | null
   facebook_account_id: string | null
-  x_user_id: string | null
+  x_account_id: string | null
   github_user_id: string | null
   linkedin_account_id: string | null
   microsoft_account_id: string | null
