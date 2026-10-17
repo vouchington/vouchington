@@ -5,18 +5,20 @@ import {
   cacheValkeyClient,
   dynamicConfigValkeyClient,
   rateLimiterValkeyClient,
+  sessionValkeyClient,
 } from '@data-stores/valkey/clients'
 import * as clearCacheModule from './clear-cache.mts'
 import { FLUSH_CONCERNS } from './concerns.mts'
+import { SERVICE_FLUSH_TARGET_PREFIXES } from './flush-targets.mts'
 import { flushConcern, type FlushConcern } from './flush.mts'
 
-const { scanAndUnlinkKeysMock } = vi.hoisted(() => ({
-  scanAndUnlinkKeysMock: vi.fn<typeof import('valkyries').scanAndUnlinkKeys>(),
+const { scanAndUnlinkKeyPrefixesMock } = vi.hoisted(() => ({
+  scanAndUnlinkKeyPrefixesMock: vi.fn<typeof import('valkyries').scanAndUnlinkKeyPrefixes>(),
 }))
 
 vi.mock<typeof import('valkyries')>(import('valkyries'), async importOriginal => ({
   ...(await importOriginal()),
-  scanAndUnlinkKeys: scanAndUnlinkKeysMock,
+  scanAndUnlinkKeyPrefixes: scanAndUnlinkKeyPrefixesMock,
 }))
 
 const clearAllCachesMock = vi.spyOn(clearCacheModule, 'clearAllCaches')
@@ -61,7 +63,7 @@ describe('flushConcern', () => {
   describe('dispatch (mocked mechanisms)', () => {
     afterEach(() => {
       clearAllCachesMock.mockReset()
-      scanAndUnlinkKeysMock.mockReset()
+      scanAndUnlinkKeyPrefixesMock.mockReset()
       rateLimiterInvalidateMock.mockReset()
     })
 
@@ -101,55 +103,50 @@ describe('flushConcern', () => {
       expect(clearAllCachesMock).toHaveBeenCalledOnce()
     })
 
-    it('scans and unlinks the recently-viewed prefix on the cache client', async () => {
-      scanAndUnlinkKeysMock.mockResolvedValue({ scannedKeys: 3, matchedKeys: 3, unlinkedKeys: 3 })
+    it('unlinks the recently-viewed prefix on the cache client', async () => {
+      scanAndUnlinkKeyPrefixesMock.mockResolvedValue({ unlinkedKeys: 3 })
 
       const result = await flushConcern('recently-viewed')
 
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledTimes(1)
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledWith(cacheValkeyClient, 'recently-viewed:*', {
-        signal: undefined,
-      })
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledOnce()
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledWith(
+        cacheValkeyClient,
+        SERVICE_FLUSH_TARGET_PREFIXES['recently-viewed'],
+        { signal: undefined },
+      )
       expect(result).toEqual({ concern: 'recently-viewed', keysRemoved: 3 })
     })
 
-    it('scans and unlinks both the bloom-filter and bookmark-bloom-ready prefixes on the bloom client', async () => {
-      scanAndUnlinkKeysMock
-        .mockResolvedValueOnce({ scannedKeys: 5, matchedKeys: 5, unlinkedKeys: 5 })
-        .mockResolvedValueOnce({ scannedKeys: 2, matchedKeys: 2, unlinkedKeys: 2 })
+    it('unlinks both bloom prefixes on the bloom client in one call', async () => {
+      scanAndUnlinkKeyPrefixesMock.mockResolvedValue({ unlinkedKeys: 7 })
 
       const result = await flushConcern('blooms')
 
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledTimes(2)
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledWith(bloomValkeyClient, 'bloom-filter:*', {
-        signal: undefined,
-      })
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledWith(
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledOnce()
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledWith(
         bloomValkeyClient,
-        'bookmark-bloom-ready:*',
+        ['bloom-filter:', 'bookmark-bloom-ready:'],
         { signal: undefined },
       )
       expect(result).toEqual({ concern: 'blooms', keysRemoved: 7 })
     })
 
-    it('scans and unlinks the dynamic-config prefix on the dynamic-config client', async () => {
-      scanAndUnlinkKeysMock.mockResolvedValue({ scannedKeys: 2, matchedKeys: 2, unlinkedKeys: 2 })
+    it('unlinks the dynamic-config prefix on the dynamic-config client', async () => {
+      scanAndUnlinkKeyPrefixesMock.mockResolvedValue({ unlinkedKeys: 2 })
 
       const result = await flushConcern('dynamic-config')
 
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledWith(
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledWith(
         dynamicConfigValkeyClient,
-        'dynamic-config:*',
+        ['dynamic-config:'],
         { signal: undefined },
       )
       expect(result).toEqual({ concern: 'dynamic-config', keysRemoved: 2 })
     })
 
-    it('reports and rethrows a scan-based concern failure', async () => {
+    it('rethrows a scan-based concern failure without reporting it again', async () => {
       const error = new Error('scan boom')
-      scanAndUnlinkKeysMock
-        .mockRejectedValueOnce(error)
-        .mockResolvedValueOnce({ scannedKeys: 1, matchedKeys: 1, unlinkedKeys: 1 })
+      scanAndUnlinkKeyPrefixesMock.mockRejectedValueOnce(error)
 
       await expect(flushConcern('blooms')).rejects.toBe(error)
     })
@@ -180,43 +177,26 @@ describe('flushConcern', () => {
       expect(rateLimiterInvalidateMock).not.toHaveBeenCalled()
     })
 
-    it('scans and unlinks every session prefix when forced', async () => {
-      scanAndUnlinkKeysMock.mockResolvedValue({ scannedKeys: 1, matchedKeys: 1, unlinkedKeys: 1 })
+    it('unlinks every session prefix on the session client when forced', async () => {
+      const controller = new AbortController()
+      scanAndUnlinkKeyPrefixesMock.mockResolvedValue({ unlinkedKeys: 9 })
 
-      const result = await flushConcern('sessions', { force: true })
+      const result = await flushConcern('sessions', { force: true, signal: controller.signal })
 
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledTimes(9)
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledOnce()
+      expect(scanAndUnlinkKeyPrefixesMock).toHaveBeenCalledWith(
+        sessionValkeyClient,
+        SERVICE_FLUSH_TARGET_PREFIXES.sessions,
+        { signal: controller.signal },
+      )
       expect(result).toEqual({ concern: 'sessions', keysRemoved: 9 })
     })
 
-    it('combines 2+ session-prefix failures into an AggregateError without losing the successful counts', async () => {
-      const errorA = new Error('prefix A boom')
-      const errorB = new Error('prefix B boom')
-      scanAndUnlinkKeysMock
-        .mockResolvedValueOnce({ scannedKeys: 1, matchedKeys: 1, unlinkedKeys: 1 })
-        .mockRejectedValueOnce(errorA)
-        .mockResolvedValueOnce({ scannedKeys: 1, matchedKeys: 1, unlinkedKeys: 1 })
-        .mockRejectedValueOnce(errorB)
-        .mockResolvedValue({ scannedKeys: 1, matchedKeys: 1, unlinkedKeys: 1 })
+    it('propagates the aggregate of multiple session-prefix failures', async () => {
+      const aggregate = new AggregateError([new Error('A'), new Error('B')], 'prefix scans failed')
+      scanAndUnlinkKeyPrefixesMock.mockRejectedValueOnce(aggregate)
 
-      await expect(flushConcern('sessions', { force: true })).rejects.toMatchObject({
-        errors: [errorA, errorB],
-      })
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledTimes(9)
-    })
-
-    it('stops starting session-prefix deletion after cancellation', async () => {
-      const controller = new AbortController()
-      const reason = new Error('cancel session flush')
-      scanAndUnlinkKeysMock.mockImplementationOnce(async () => {
-        controller.abort(reason)
-        return { scannedKeys: 1, matchedKeys: 1, unlinkedKeys: 1 }
-      })
-
-      await expect(
-        flushConcern('sessions', { force: true, signal: controller.signal }),
-      ).rejects.toBe(reason)
-      expect(scanAndUnlinkKeysMock).toHaveBeenCalledOnce()
+      await expect(flushConcern('sessions', { force: true })).rejects.toBe(aggregate)
     })
   })
 })

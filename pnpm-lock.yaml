@@ -9654,6 +9654,9 @@ importers:
       '@ts-shared/session-jwt':
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

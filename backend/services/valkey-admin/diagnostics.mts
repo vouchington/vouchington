@@ -1,13 +1,14 @@
-import { Decoder, InfoOptions, type GlideClient, type GlideString } from '@valkey/valkey-glide'
+import type { GlideClient } from '@valkey/valkey-glide'
 import { config } from '@data-stores/valkey-core/config'
 import { buildWorkerQueueSettings } from '@data-stores/valkey-core/glide-mq-client'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
+import {
+  countKeysByPrefix,
+  getValkeyMemoryInfo,
+  validateKeyPrefixRegistry,
+  type ValkeyMemorySummary,
+} from 'valkyries'
 import type { FlushConcern, FlushTargetPrefixRegistry } from './concerns.mts'
-import { parseValkeyMemoryInfo, type ValkeyMemorySummary } from './memory-info.mts'
-
-export { type ValkeyMemorySummary } from './memory-info.mts'
-
-const SCAN_COUNT = 500
 
 export type ObservedFlushTargetKeyCounts = Record<FlushConcern | 'unclassified', number>
 
@@ -36,24 +37,6 @@ export function assertSingleValkeyTopology(topology: ValkeyDiagnosticTopology): 
   }
 }
 
-export function validateFlushTargetPrefixRegistry(registry: FlushTargetPrefixRegistry): void {
-  const targets = Object.entries(registry).flatMap(([concern, prefixes]) =>
-    prefixes.map(prefix => ({ concern, prefix })),
-  )
-  for (let index = 0; index < targets.length; index += 1) {
-    const target = targets[index]!
-    if (target.prefix === '') throw new Error(`Empty flush target prefix for ${target.concern}`)
-    for (let otherIndex = index + 1; otherIndex < targets.length; otherIndex += 1) {
-      const other = targets[otherIndex]!
-      if (target.prefix.startsWith(other.prefix) || other.prefix.startsWith(target.prefix)) {
-        throw new Error(
-          `Overlapping flush target prefixes for ${target.concern} and ${other.concern}`,
-        )
-      }
-    }
-  }
-}
-
 export async function collectValkeyDiagnostics(
   client: ReadOnlyDiagnosticClient,
   topology: ValkeyDiagnosticTopology,
@@ -61,31 +44,10 @@ export async function collectValkeyDiagnostics(
   signal?: AbortSignal,
 ): Promise<ValkeyDiagnosticResult> {
   assertSingleValkeyTopology(topology)
-  validateFlushTargetPrefixRegistry(registry)
+  validateKeyPrefixRegistry(registry)
 
-  signal?.throwIfAborted()
-  const memoryInfo = await client.info([InfoOptions.Memory])
-  signal?.throwIfAborted()
-  const memory = parseValkeyMemoryInfo(memoryInfo)
-  const observedFlushTargetKeyCounts = createEmptyObservedCounts()
-  let cursor: GlideString = '0'
-  do {
-    signal?.throwIfAborted()
-    // oxlint-disable-next-line no-await-in-loop -- each SCAN advances the cursor for the next bounded page
-    const [nextCursor, keys] = await client.scan(cursor, {
-      match: '*',
-      count: SCAN_COUNT,
-      decoder: Decoder.String,
-    })
-    cursor = nextCursor
-    signal?.throwIfAborted()
-    for (const key of keys) {
-      if (typeof key !== 'string') throw new Error('Valkey SCAN returned a non-string key')
-      const concern = classifyKey(key, registry)
-      observedFlushTargetKeyCounts[concern ?? 'unclassified'] += 1
-    }
-  } while (cursor !== '0')
-
+  const memory = await getValkeyMemoryInfo(client, { signal })
+  const observedFlushTargetKeyCounts = await countKeysByPrefix(client, registry, { signal })
   return { memory, observedFlushTargetKeyCounts }
 }
 
@@ -129,26 +91,4 @@ function normalizeWorkerQueueEndpoint(value: string): string {
   const url = new URL(value)
   url.pathname = '/0'
   return normalizeValkeyEndpoint(url.toString())
-}
-
-function createEmptyObservedCounts(): ObservedFlushTargetKeyCounts {
-  return {
-    caches: 0,
-    'recently-viewed': 0,
-    blooms: 0,
-    'rate-limiter': 0,
-    'dynamic-config': 0,
-    sessions: 0,
-    queues: 0,
-    unclassified: 0,
-  }
-}
-
-function classifyKey(key: string, registry: FlushTargetPrefixRegistry): FlushConcern | undefined {
-  for (const [concern, prefixes] of Object.entries(registry) as Array<
-    [FlushConcern, readonly string[]]
-  >) {
-    if (prefixes.some(prefix => key.startsWith(prefix))) return concern
-  }
-  return undefined
 }

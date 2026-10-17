@@ -6,14 +6,12 @@ import { dynamicConfigs } from 'valkyries/dynamic-config'
 import { closeSharedCommandClientFromRegistry, getGlideMQInstances } from './glide-mq-registry.mts'
 
 type ShutdownDeps = {
-  dynamicConfigs: Iterable<{ close(): Promise<void> }>
   getGlideMQInstances: () => Array<{ close(): Promise<void> }>
   closeValkeyClients: typeof closeValkeyClients
   closeSharedCommandClientFromRegistry: typeof closeSharedCommandClientFromRegistry
 }
 
 const defaultShutdownDeps: ShutdownDeps = {
-  dynamicConfigs,
   getGlideMQInstances,
   closeValkeyClients,
   closeSharedCommandClientFromRegistry,
@@ -28,18 +26,12 @@ export function createGracefulShutdown(
     if (shutdown) return
     shutdown = true
 
-    const errors = collectErrors(
-      await Promise.allSettled(
-        [...deps.dynamicConfigs].map(config => Promise.resolve().then(() => config.close())),
-      ),
-    )
-
+    // closeValkeyClients closes every live DynamicConfig before the clients it owns.
     const results = await Promise.allSettled([
       ...deps.getGlideMQInstances().map(instance => Promise.resolve().then(() => instance.close())),
-      // closeValkeyClients accepts optional options. Promise.then would pass void.
-      Promise.resolve().then(() => deps.closeValkeyClients()),
+      Promise.resolve().then(() => deps.closeValkeyClients({ throwOnError: true })),
     ])
-    errors.push(...collectErrors(results))
+    const errors = collectErrors(results)
 
     const sharedCommandClientResult = await Promise.allSettled([
       Promise.resolve().then(deps.closeSharedCommandClientFromRegistry),
