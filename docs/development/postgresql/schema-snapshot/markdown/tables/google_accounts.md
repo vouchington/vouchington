@@ -6,20 +6,22 @@ Google OAuth accounts linked to users. Stores Google profile data.
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| --------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `user_id`                   | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet. |
-| `google_user_id`            | `text`                     | no       |                     |          |           |           | Google's unique user identifier (primary key).                      |
-| `google_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Google profile.                              |
-| `email_domain_hostname_id`  | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
-| `google_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Google OAuth.                           |
-| `created_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
-| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
+| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
+| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Google account.                     |
+| `user_id`                   | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet. |
+| `google_user_id`            | `text`                     | no       |                              |          |           |           | Google's unique external user identifier.                           |
+| `google_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Google profile.                              |
+| `email_domain_hostname_id`  | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
+| `google_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Google OAuth.                           |
+| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                     |
+| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
 
-**Primary key:** `PRIMARY KEY (google_user_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `google_accounts_google_user_id_key`: `UNIQUE (google_user_id)`
 
 **Check constraints:**
 _none_
@@ -31,7 +33,8 @@ _none_
 
 **Indexes:**
 
-- `google_accounts_pkey`: `CREATE UNIQUE INDEX google_accounts_pkey ON public.google_accounts USING btree (google_user_id)`
+- `google_accounts_google_user_id_key`: `CREATE UNIQUE INDEX google_accounts_google_user_id_key ON public.google_accounts USING btree (google_user_id)`
+- `google_accounts_pkey`: `CREATE UNIQUE INDEX google_accounts_pkey ON public.google_accounts USING btree (id)`
 - `idx_google_accounts__email`: `CREATE INDEX idx_google_accounts__email ON public.google_accounts USING btree (google_user_email_address) WHERE (google_user_email_address IS NOT NULL)`
 - `idx_google_accounts__email_domain_hostname_id`: `CREATE INDEX idx_google_accounts__email_domain_hostname_id ON public.google_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_google_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_google_accounts__orphan_retention_cleanup ON public.google_accounts USING btree (created_at, google_user_id) WHERE (user_id IS NULL)`

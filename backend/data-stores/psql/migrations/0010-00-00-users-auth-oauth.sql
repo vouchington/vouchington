@@ -948,12 +948,13 @@ COMMENT ON COLUMN apple_accounts.apple_user_data IS 'Raw JSONB profile data from
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS google_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
-  google_user_id TEXT PRIMARY KEY,
+  google_user_id TEXT NOT NULL UNIQUE,
   google_user_email_address TEXT,
   email_domain_hostname_id UUID,
   google_user_data JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -974,8 +975,9 @@ ON google_accounts (google_user_email_address)
 WHERE google_user_email_address IS NOT NULL;
 
 COMMENT ON TABLE google_accounts IS 'Google OAuth accounts linked to users. Stores Google profile data.';
+COMMENT ON COLUMN google_accounts.id IS 'Internal UUIDv7 identity of the Google account.';
 COMMENT ON COLUMN google_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
-COMMENT ON COLUMN google_accounts.google_user_id IS 'Google''s unique user identifier (primary key).';
+COMMENT ON COLUMN google_accounts.google_user_id IS 'Google''s unique external user identifier.';
 COMMENT ON COLUMN google_accounts.google_user_email_address IS 'Email address from the Google profile.';
 COMMENT ON COLUMN google_accounts.google_user_data IS 'Raw JSONB profile data from Google OAuth.';
 
