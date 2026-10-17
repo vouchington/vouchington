@@ -108,12 +108,14 @@ export async function runEntityAndCommunityScenarios() {
 
   await runViewDrivenPostScenarios()
 
-  // Community search — JOIN with metrics view, sorted by members
+  // Community search — JOIN with metrics view, sorted by members. Review caps
+  // are the maximum indexed reads in both compare modes and repeat passes +20%.
+  // Broad pages: 2,003 → 2,404; selective pages: 403 → 484.
   registerScenarioContract('search-communities', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
       { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 39 },
-      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 3600 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 2404 },
       { kind: 'maxProcessedRows', relation: 'communities', max: 1295 },
     ],
   })
@@ -126,7 +128,7 @@ export async function runEntityAndCommunityScenarios() {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
       { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 39 },
-      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 3600 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 2404 },
       { kind: 'maxProcessedRows', relation: 'communities', max: 1295 },
     ],
   })
@@ -139,7 +141,7 @@ export async function runEntityAndCommunityScenarios() {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
       { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 348 },
-      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 720 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 484 },
       { kind: 'maxProcessedRows', relation: 'communities', max: 249 },
     ],
   })
@@ -170,7 +172,7 @@ export async function runEntityAndCommunityScenarios() {
   registerScenarioContract('search-communities-member', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 720 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 484 },
       { kind: 'maxProcessedRows', relation: 'communities', max: 245 },
     ],
   })

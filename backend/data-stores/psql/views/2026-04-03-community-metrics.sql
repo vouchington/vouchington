@@ -18,12 +18,18 @@ CREATE OR REPLACE VIEW view_community_metrics AS
       SELECT COUNT(*)::int
       FROM keyed_posts p
       JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id
-      JOIN community_post_reviews cpr
-        ON cpr.post_id = p.id
-        AND cpr.community_id = c.id
-      WHERE cpr.approved_at IS NOT NULL
-        AND cpr.unpublished_at IS NULL
-        AND cpr.rejected_at IS NULL
+      -- The review is unique by post_id. Keep its lookup correlated to each keyed
+      -- post so the planner cannot re-scan reviews before the selected page is known.
+      JOIN LATERAL (
+        SELECT 1
+        FROM community_post_reviews cpr
+        WHERE cpr.post_id = p.id
+          AND cpr.community_id = c.id
+          AND cpr.approved_at IS NOT NULL
+          AND cpr.unpublished_at IS NULL
+          AND cpr.rejected_at IS NULL
+        LIMIT 1
+      ) approved_review ON TRUE
     ) AS post_count,
     (
       SELECT COUNT(*)::int
