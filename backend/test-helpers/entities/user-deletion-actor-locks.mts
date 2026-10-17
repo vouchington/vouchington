@@ -1,6 +1,5 @@
 import { beginTransaction, write, type QueryInput, type TransactionQuery } from '@data-stores/psql'
-import { createUserDeletionRequest } from '@services/user-deletions'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 import { startPausedTestUserDeletionWriter } from './user-deletion.mts'
 
@@ -76,46 +75,46 @@ export async function lockTestRetainedUserIdentityKeyShareNowait(userId: string)
   await query.commit()
 }
 
-function isSqlStatement(statement: QueryInput): statement is SQLStatement {
-  return typeof statement === 'object' && Array.isArray(statement.strings)
-}
-
-function rewriteRetainedIdentityKeyShare(statement: SQLStatement): void {
-  const index = statement.strings.findIndex(part => part.includes('FOR KEY SHARE OF identity'))
-  const fragment = statement.strings[index]
-  if (index < 0 || fragment === undefined) {
-    throw new Error('Deletion request validation no longer takes FOR KEY SHARE OF identity')
+function retainedIdentityKeyShareNowait(
+  statement: QueryInput,
+): { text: string; values: ReadonlyArray<unknown> } | undefined {
+  if (
+    typeof statement === 'string' ||
+    !statement.text.includes('/* createUserDeletionRequest:validateUsers */')
+  ) {
+    return undefined
   }
-  statement.strings[index] = fragment.replace(
+  const rewritten = statement.text.replace(
     'FOR KEY SHARE OF identity',
     'FOR KEY SHARE OF identity NOWAIT',
   )
+  if (rewritten === statement.text) {
+    throw new Error('Deletion request validation no longer takes FOR KEY SHARE OF identity')
+  }
+  return { text: rewritten, values: statement.values }
 }
 
 /**
- * Runs the real deletion-request producer. Its retained-identity `KEY SHARE` is `NOWAIT`, so a
+ * Runs a deletion-request producer whose retained-identity `KEY SHARE` is `NOWAIT`, so a
  * conflicting holder fails with `55P03` instead of waiting.
  */
-export async function createTestUserDeletionRequestWithoutWaiting(
-  userId: string,
-  requestedById: string,
+export async function withTestUserDeletionRequestKeyShareNowait(
+  run: (query: TransactionQuery) => Promise<unknown>,
 ): Promise<void> {
   await using query = await beginTransaction()
   let rewroteKeyShare = false
   const producer = Object.assign(
     async (statement: QueryInput, values?: ReadonlyArray<unknown>) => {
-      if (
-        isSqlStatement(statement) &&
-        statement.text.includes('/* createUserDeletionRequest:validateUsers */')
-      ) {
-        rewriteRetainedIdentityKeyShare(statement)
+      const rewritten = retainedIdentityKeyShareNowait(statement)
+      if (rewritten !== undefined) {
         rewroteKeyShare = true
+        return query(rewritten.text, rewritten.values)
       }
       return query(statement, values)
     },
     { client: query.client },
   ) as TransactionQuery
-  await createUserDeletionRequest(userId, requestedById, { query: producer })
+  await run(producer)
   if (!rewroteKeyShare) {
     throw new Error('Deletion request did not validate the retained identity')
   }

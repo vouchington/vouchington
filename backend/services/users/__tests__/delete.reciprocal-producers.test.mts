@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  createTestUserDeletionRequestWithoutWaiting,
   holdTestRetainedUserIdentityLocks,
   lockTestRetainedUserIdentityKeyShareNowait,
+  withTestUserDeletionRequestKeyShareNowait,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
 import { countUserDeletionRequestsForTest } from '@voucha/test-helpers/entities/user-deletion-request-counts'
 import { TestUserDeletionWriterAborted } from '@voucha/test-helpers/entities/user-deletion'
+import { createUserDeletionRequest } from '@services/user-deletions'
 
 describe('reciprocal deletion lock producers', () => {
   it('fails a key-share probe with lock_not_available while the holder is open', async () => {
@@ -46,7 +47,9 @@ describe('reciprocal deletion lock producers', () => {
     )
     try {
       await expect(
-        createTestUserDeletionRequestWithoutWaiting(target.id, actor.id),
+        withTestUserDeletionRequestKeyShareNowait(query =>
+          createUserDeletionRequest(target.id, actor.id, { query }),
+        ),
       ).rejects.toMatchObject({ code: '55P03' })
       await expect(countUserDeletionRequestsForTest(target.id)).resolves.toBe(0)
     } finally {
