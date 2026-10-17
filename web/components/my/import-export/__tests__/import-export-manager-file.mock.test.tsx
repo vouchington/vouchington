@@ -76,41 +76,9 @@ describe('ImportExportManager — file import and stream', () => {
     })
   })
 
-  it('rejects files whose encoded JSON request body exceeds 2 MiB', async () => {
-    const { toast } = await import('sonner')
+  it('sends a large file as is and leaves the size limit to the server', async () => {
     render(<ImportExportManager feedType='article' />)
-    const bigFile = new File(['"'.repeat(1024 * 1024 + 1)], 'big.opml', { type: 'text/xml' })
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    Object.defineProperty(input, 'files', { value: [bigFile] })
-    fireEvent.change(input)
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('2 MiB'))
-    })
-    expect(mockImportRssFeeds).not.toHaveBeenCalled()
-  })
-
-  it('rejects a raw file larger than 2 MiB without reading it', async () => {
-    const { toast } = await import('sonner')
-    render(<ImportExportManager feedType='article' />)
-    const bigFile = new File(['small'], 'big.opml', { type: 'text/xml' })
-    Object.defineProperty(bigFile, 'size', { value: 2 * 1024 * 1024 + 1 })
-    const text = vi.spyOn(bigFile, 'text')
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    Object.defineProperty(input, 'files', { value: [bigFile] })
-    fireEvent.change(input)
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('2 MiB'))
-    })
-    expect(text).not.toHaveBeenCalled()
-    expect(mockImportRssFeeds).not.toHaveBeenCalled()
-  })
-
-  it('accepts a file when its encoded JSON request body is exactly 2 MiB', async () => {
-    render(<ImportExportManager feedType='article' />)
-    const wrapperBytes = new TextEncoder().encode(
-      JSON.stringify({ opml: '', should_follow_imported_feeds: true }),
-    ).length
-    const fileContent = 'x'.repeat(2 * 1024 * 1024 - wrapperBytes)
+    const fileContent = 'x'.repeat(3 * 1024 * 1024)
     const file = new File([fileContent], 'feeds.xml', { type: 'text/xml' })
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     Object.defineProperty(input, 'files', { value: [file] })
@@ -121,6 +89,21 @@ describe('ImportExportManager — file import and stream', () => {
         should_follow_imported_feeds: true,
       })
     })
+  })
+
+  it('tells the user when the server refuses a file as too large', async () => {
+    const { toast } = await import('sonner')
+    const { ApiError } = await import('@/lib/api/error')
+    mockImportRssFeeds.mockRejectedValueOnce(new ApiError('request entity too large', 413))
+    render(<ImportExportManager feedType='article' />)
+    const file = new File(['<opml />'], 'feeds.xml', { type: 'text/xml' })
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    Object.defineProperty(input, 'files', { value: [file] })
+    fireEvent.change(input)
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('2 MiB'))
+    })
+    expect(mockOnError).not.toHaveBeenCalled()
   })
 
   it('invokes progress callback during stream', async () => {

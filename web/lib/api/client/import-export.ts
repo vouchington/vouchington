@@ -6,7 +6,14 @@ import { admissionIdempotency } from './admission-idempotency'
 import { clientFetch } from './raw-fetch'
 import { ApiError } from '../error'
 import { parseErrorResponseBody } from '../error-helpers'
-import { validateRssFeedImportBody, type RssFeedImportBody } from './rss-feed-import-validation'
+
+/** The server bounds the request body (`import_max_body_bytes`), so the client sends it as is. */
+export type RssFeedImportBody = {
+  urls?: string[]
+  opml?: string
+  csv?: string
+  should_follow_imported_feeds?: boolean
+}
 
 export type RssFeedContentType = 'article' | 'podcast' | 'video' | 'mixed'
 
@@ -63,7 +70,6 @@ export interface TopicImportResult {
 }
 
 export async function importRssFeeds(body: RssFeedImportBody): Promise<RssFeedImportSubmission> {
-  validateRssFeedImportBody(body)
   return clientApi.post<RssFeedImportSubmission>('/api/v1/my/import/rss-feeds', body)
 }
 

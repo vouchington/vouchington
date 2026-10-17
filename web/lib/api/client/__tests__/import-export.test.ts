@@ -92,7 +92,7 @@ describe('import/export client helpers', () => {
     })
   })
 
-  it('sends more than 500 URL rows: the body size is the only bound', async () => {
+  it('sends more than 500 URL rows: only the server bounds the body', async () => {
     const mockFetch = vi.fn<VitestLooseMock>().mockResolvedValue(
       new Response(JSON.stringify({ import: { id: 'import-1' }, status_url: '/x' }), {
         status: 201,
@@ -107,15 +107,5 @@ describe('import/export client helpers', () => {
     })
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('rejects an encoded OPML JSON body larger than 2 MiB before sending the request', async () => {
-    const mockFetch = vi.fn<VitestLooseMock>()
-    vi.stubGlobal('fetch', mockFetch)
-
-    await expect(
-      importRssFeeds({ opml: '"'.repeat(1024 * 1024 + 1), should_follow_imported_feeds: true }),
-    ).rejects.toThrow('2 MiB')
-    expect(mockFetch).not.toHaveBeenCalled()
   })
 })

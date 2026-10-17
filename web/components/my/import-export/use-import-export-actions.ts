@@ -10,11 +10,7 @@ import {
   preflightExport,
   type RssFeedContentType,
 } from '@/lib/api/client/import-export'
-import {
-  MAX_RSS_FEED_IMPORT_BODY_BYTES,
-  RssFeedImportValidationError,
-  validateRssFeedImportBody,
-} from '@/lib/api/client/rss-feed-import-validation'
+import { ApiError } from '@/lib/api/error'
 import { streamImportProgress } from '@/lib/api/client/import-stream'
 import onError, { onSuccess } from '@/lib/on-error'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -116,29 +112,19 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
     const isCsv = file.name.toLowerCase().endsWith('.csv')
     dispatch({ importingFeeds: true, importProgress: null })
     try {
-      if (file.size > MAX_RSS_FEED_IMPORT_BODY_BYTES) {
-        toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
-        dispatch({ importingFeeds: false })
-        return
-      }
       const contents = await file.text()
       const body = isCsv
         ? { csv: contents, should_follow_imported_feeds: true as const }
         : { opml: contents, should_follow_imported_feeds: true as const }
-      try {
-        validateRssFeedImportBody(body)
-      } catch (err) {
-        if (err instanceof RssFeedImportValidationError && err.code === 'body_too_large') {
-          toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
-          dispatch({ importingFeeds: false })
-          return
-        }
-        throw err
-      }
       const data = await importRssFeeds(body)
       await startImportStream(data.import.id, data.import.total_rows)
     } catch (err) {
-      onError(err, { fallback: `Failed to import ${isCsv ? 'CSV' : 'OPML'}` })
+      // The server bounds the body; its refusal is the only size check.
+      if (err instanceof ApiError && err.status === 413) {
+        toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
+      } else {
+        onError(err, { fallback: `Failed to import ${isCsv ? 'CSV' : 'OPML'}` })
+      }
       dispatch({ importingFeeds: false })
     }
   }
