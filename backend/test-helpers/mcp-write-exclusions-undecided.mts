@@ -68,6 +68,6 @@ export const undecidedExclusions = [
   ...exclusions(
     'undecided',
     'Guard admits site staff and any community moderator, not only staff; tool decision pending #208',
-    ['DELETE /users/:userId/mod-notes/:noteId'],
+    ['POST /users/:userId/mod-notes', 'DELETE /users/:userId/mod-notes/:noteId'],
   ),
 ]
