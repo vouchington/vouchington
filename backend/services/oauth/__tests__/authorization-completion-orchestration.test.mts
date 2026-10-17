@@ -151,12 +151,14 @@ describe('OAuth authorization completion orchestration', () => {
 
   it('runs connection effects exactly once for a newly completed connection', async () => {
     const userId = randomUUID()
+    const accountId = randomUUID()
     const dependencies = completionDependencies({
       kind: 'connected',
       userId,
       provider: 'github',
       newlyCompleted: true,
       account: {
+        account_id: accountId,
         user_id: userId,
         provider_user_id: 'github-user',
         provider_user_email_address: null,
@@ -172,17 +174,26 @@ describe('OAuth authorization completion orchestration', () => {
     })
 
     expect(dependencies.runConnectionEffects).toHaveBeenCalledWith(userId)
-    expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith('github', 'github-user')
+    expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith(
+      'github',
+      expect.objectContaining({
+        account_id: accountId,
+        provider_user_id: 'github-user',
+        user_id: userId,
+      }),
+    )
   })
 
   it('returns a durable connection when its immediate friend-sync enqueue fails', async () => {
     const userId = randomUUID()
+    const accountId = randomUUID()
     const dependencies = completionDependencies({
       kind: 'connected',
       userId,
       provider: 'github',
       newlyCompleted: true,
       account: {
+        account_id: accountId,
         user_id: userId,
         provider_user_id: 'github-user',
         provider_user_email_address: null,
@@ -206,12 +217,14 @@ describe('OAuth authorization completion orchestration', () => {
 
   it('returns a durable connection and continues friend sync when connection effects fail', async () => {
     const userId = randomUUID()
+    const accountId = randomUUID()
     const dependencies = completionDependencies({
       kind: 'connected',
       userId,
       provider: 'github',
       newlyCompleted: true,
       account: {
+        account_id: accountId,
         user_id: userId,
         provider_user_id: 'github-user',
         provider_user_email_address: null,
@@ -230,6 +243,13 @@ describe('OAuth authorization completion orchestration', () => {
       status: 'connected',
       account: { provider_user_id: 'github-user' },
     })
-    expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith('github', 'github-user')
+    expect(dependencies.enqueueFriendSync).toHaveBeenCalledWith(
+      'github',
+      expect.objectContaining({
+        account_id: accountId,
+        provider_user_id: 'github-user',
+        user_id: userId,
+      }),
+    )
   })
 })
