@@ -25,8 +25,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['memberships', 'memberships', 'memberships'],
       ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
       ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],
-      ['admin-imports', 'admin-imports', 'adminImports'],
-      ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
     ] as const
     const byQueue = (name: string) =>
       WORKER_DEFINITIONS.find(definition => definition.queueName === name)!

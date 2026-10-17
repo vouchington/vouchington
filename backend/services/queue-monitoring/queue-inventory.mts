@@ -2,7 +2,6 @@ import { background } from '@queues/background/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { emails } from '@queues/emails/queues'
-import { userRssFeedImports } from '@queues/user-rss-feed-imports/queues'
 import * as bedrockEmbeddingsQueues from '@queues/bedrock-embeddings/queues'
 import {
   bedrock_embeddings_batch,
@@ -12,7 +11,6 @@ import { psql } from '@queues/psql/queues'
 import * as crawlerQueues from '@queues/crawler/queues'
 import * as crawlDispatchQueues from '@queues/crawl-dispatch/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
-import { adminImports } from '@queues/admin-imports/queues'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
@@ -30,7 +28,6 @@ const allQueues = [
   crawlEmbedsQueue,
   rssFeedMaintenance,
   emails,
-  userRssFeedImports,
   psql,
   ...Object.values(crawlerQueues),
   ...Object.values(crawlDispatchQueues),
@@ -38,7 +35,6 @@ const allQueues = [
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
   bloomFilters,
-  adminImports,
   crawlReferralLinksQueue,
   findYourFriendsQueue,
   imageUploadsQueue,

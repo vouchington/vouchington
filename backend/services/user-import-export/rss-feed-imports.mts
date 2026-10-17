@@ -2,6 +2,7 @@ import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getPrivateUserByAny } from '@services/users/get'
 import { UnrecoverableError } from '@modules/queue-errors'
+import { getUserImportExportConfig } from './config.mts'
 import {
   importSingleRssFeed,
   type ImportRssFeedStatus,
@@ -16,10 +17,9 @@ import { getBatchProvenance, type CreateUserRssFeedImportResult } from './rss-fe
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 import { getUserActivePlan } from '@services/memberships'
 import { assertWithinContributionDailyLimit } from '@services/contribution-gating/limits'
-const MAX_IMPORT_ITEMS = 500
 type CompletedImportRssFeedStatus = Exclude<ImportRssFeedStatus, 'error'>
 
-export { getRssFeedImport } from './rss-feed-import-records.mts'
+export { getRssFeedImport, getRssFeedImportSummary } from './rss-feed-import-records.mts'
 
 export async function submitRssFeedImport(
   currentUser: BasicUser,
@@ -33,9 +33,6 @@ export async function submitRssFeedImport(
   })
   const totalRows = trimmedUrls.length
   if (totalRows === 0) throw new UnrecoverableError('At least one URL is required')
-  if (totalRows > MAX_IMPORT_ITEMS) {
-    throw new UnrecoverableError(`Maximum ${MAX_IMPORT_ITEMS} URLs per import`)
-  }
 
   const should_follow_imported_feeds = options.should_follow_imported_feeds !== false
 
@@ -45,10 +42,11 @@ export async function submitRssFeedImport(
 export async function processRssFeedImportRow(
   importId: string,
   rowId: string,
-  options: { isFinalAttempt?: boolean } & Pick<
-    ImportSingleRssFeedOptions,
-    'createSourceFromUrlImpl'
-  > = {},
+  options: {
+    isFinalAttempt?: boolean
+    /** The feed's time budget; defaults to `rss_feed_import_budget_ms`. */
+    budgetMs?: number
+  } & Pick<ImportSingleRssFeedOptions, 'createSourceFromUrlImpl'> = {},
 ): Promise<void> {
   const { isFinalAttempt = true } = options
   const rowWithBatch = await getRssFeedImportRowWithBatch(rowId)
@@ -83,6 +81,11 @@ export async function processRssFeedImportRow(
         assertWithinContributionDailyLimit(user, membershipPlan, 'rss_feed'),
       follow: batch.should_follow_imported_feeds,
       createSourceFromUrlImpl: options.createSourceFromUrlImpl,
+      // One deadline covers Web Risk and both protocol attempts. Running out is a plain error, so
+      // the job retries it.
+      signal: AbortSignal.timeout(
+        options.budgetMs ?? getUserImportExportConfig().rss_feed_import_budget_ms,
+      ),
     })
     await updateRssFeedImportRowCompleted(
       row.id,

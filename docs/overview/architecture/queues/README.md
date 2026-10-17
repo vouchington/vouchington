@@ -48,6 +48,12 @@ flowchart LR
   worker and one slow provider would stall unrelated domains.
 - **Fan-out is paged.** Dispatchers and backfills enqueue one bounded page and continue through a
   cursor, so no run reads unbounded rows and priority stays meaningful.
+- **A paged import survives a lost dispatcher.** User RSS and admin topic imports are the `imports`
+  domain of `background`: each import has its own dispatcher chain, so a large import never starves
+  a small one. A dispatcher that fails every attempt is removed, so a scheduled sweep
+  (`imports-recover-stalled`) re-dispatches unfinished imports whose progress stopped; the stable
+  dispatcher job id and the row deduplication ids make that safe to repeat. An import's status is
+  counters plus a keyset-paged row list, never every row at once, because imports have no row cap.
 - **Dispatchers rank below tasks.** Recovery and dispatch jobs use the lowest tier so ordinary work
   runs first when both are ready.
 - **Email cannot be exactly-once.** PostgreSQL and the mail provider do not share a transaction, so
@@ -65,6 +71,8 @@ flowchart LR
 
 - Content and publication: `post-publication`, `post-mentions`, `content-analysis`, `image-uploads`,
   `sitemaps`, `cache-purge`, `story-post-related-url-projections`.
+- Imports: the `imports` domain of `background` (user RSS feed imports and admin topic imports,
+  each with its own dispatcher chain, plus the `imports-recover-stalled` sweep).
 - Crawling: `crawler`, `crawl-*`, `rss-feed*`, `rss-feeds`, `kagi-smallweb`, `unfurl-referral-links`,
   `urls-domains-blacklist`.
 - AI: `ai-agents`, `openai-moderation`, `bedrock-embeddings*`. See the [AI platform](../ai-platform.md).

@@ -2,19 +2,22 @@ import { read, beginTransaction, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
+import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
+import { getUserImportExportConfig } from './config.mts'
 import {
   type CreateUserRssFeedImportResult,
   type UserRssFeedImport,
   type UserRssFeedImportBatchRow,
   type UserRssFeedImportRow,
+  type UserRssFeedImportSummary,
   toImportRowResult,
   toImportSummary,
 } from './rss-feed-import-types.mts'
 
 type ImportReadRow = Pick<
   UserRssFeedImportRow,
-  'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'
-> & { row_id: string | null }
+  'id' | 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'
+>
 
 export async function createRssFeedImport(
   userId: string,
@@ -22,87 +25,118 @@ export async function createRssFeedImport(
   urls: string[],
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
+  const chunkSize = getUserImportExportConfig().import_insert_chunk_size
   await using query = await beginTransaction()
   const { rows } = await write(
     sql`/* createRssFeedImport */
-      WITH inserted_batch AS (
-        INSERT INTO user_rss_feed_import_batches (
-          user_id,
-          created_via,
-          created_via_oauth_client_id,
-          should_follow_imported_feeds,
-          total_rows
-        )
-        VALUES (
-          ${userId},
-          ${provenance.createdVia},
-          ${provenance.oauthClientId},
-          ${should_follow_imported_feeds},
-          ${urls.length}
-        )
-        RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
-      ), inserted_rows AS (
-        INSERT INTO user_rss_feed_import_rows (
-          batch_id,
-          row_index,
-          input_url
-        )
-        SELECT inserted_batch.id, input.row_index, input.input_url
-        FROM inserted_batch
-        CROSS JOIN UNNEST(
-          ${urls.map((_, index) => index)}::int[],
-          ${urls}::text[]
-        ) AS input(row_index, input_url)
-        RETURNING id, row_index
+      INSERT INTO user_rss_feed_import_batches (
+        user_id,
+        created_via,
+        created_via_oauth_client_id,
+        should_follow_imported_feeds,
+        total_rows
       )
-      SELECT inserted_batch.id, inserted_batch.total_rows, inserted_batch.completed_rows,
-        inserted_batch.failed_rows, inserted_batch.completed_at, inserted_batch.created_at,
-        inserted_rows.id AS row_id
-      FROM inserted_batch
-      LEFT JOIN inserted_rows ON TRUE
-      ORDER BY inserted_rows.row_index
+      VALUES (
+        ${userId},
+        ${provenance.createdVia},
+        ${provenance.oauthClientId},
+        ${should_follow_imported_feeds},
+        ${urls.length}
+      )
+      RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
       `,
     { query },
   )
-
   const batch = rows[0] as UserRssFeedImportBatchRow
 
-  await query.commit()
-  return {
-    import: toImportSummary(batch),
-    rowIds: (rows as Array<{ row_id: string | null }>).flatMap(row =>
-      row.row_id === null ? [] : [row.row_id],
-    ),
+  // Bounded chunks keep one statement from carrying every URL of a large import.
+  for (let start = 0; start < urls.length; start += chunkSize) {
+    const chunk = urls.slice(start, start + chunkSize)
+    // oxlint-disable-next-line no-await-in-loop -- chunks of one transaction insert in row order
+    await write(
+      sql`/* createRssFeedImportRows */
+        INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
+        SELECT ${batch.id}, input.row_index, input.input_url
+        FROM UNNEST(
+          ${chunk.map((_, offset) => start + offset)}::int[],
+          ${chunk}::text[]
+        ) AS input(row_index, input_url)
+        `,
+      { query },
+    )
   }
+
+  await query.commit()
+  return { import: toImportSummary(batch) }
 }
 
+function importRowCursorScope(importId: string): string {
+  return `rss-feed-import-rows:${importId}:row-index-asc`
+}
+
+/** The import's counters alone: one row, however large the import is. */
+export async function getRssFeedImportSummary(
+  currentUserId: string,
+  importId: string,
+): Promise<UserRssFeedImportSummary | null> {
+  if (!isUUID(importId)) return null
+
+  const { rows } = await read<UserRssFeedImportBatchRow>(
+    sql`/* getRssFeedImport */
+      SELECT id, total_rows, completed_rows, failed_rows, completed_at, created_at
+      FROM user_rss_feed_import_batches
+      WHERE id = ${importId}
+        AND user_id = ${currentUserId}
+    `,
+  )
+  return rows[0] ? toImportSummary(rows[0]) : null
+}
+
+/**
+ * The import's counters plus one keyset page of its rows, in input order. The page size is the
+ * configured one; a smaller `limit` narrows it. `after` is the cursor of the previous page.
+ */
 export async function getRssFeedImport(
   currentUserId: string,
   importId: string,
+  options: { limit?: number; after?: string } = {},
 ): Promise<UserRssFeedImport | null> {
-  if (!isUUID(importId)) return null
+  const summary = await getRssFeedImportSummary(currentUserId, importId)
+  if (!summary) return null
 
-  const { rows } = await read(
-    sql`/* getRssFeedImport */
-      SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
-        batch.completed_at, batch.created_at, import_row.id AS row_id,
-        import_row.input_url, import_row.outcome, import_row.error_message,
-        import_row.rss_feed_id
-      FROM user_rss_feed_import_batches batch
-      LEFT JOIN user_rss_feed_import_rows import_row ON import_row.batch_id = batch.id
-      WHERE batch.id = ${importId}
-        AND batch.user_id = ${currentUserId}
-      ORDER BY import_row.row_index
-    `,
-  )
-  const batch = rows[0] as UserRssFeedImportBatchRow | undefined
-  if (!batch) return null
+  const pageSize = getUserImportExportConfig().import_status_page_size
+  const limit = Math.min(options.limit ?? pageSize, pageSize)
+  const scope = importRowCursorScope(importId)
+  const afterRowId = options.after
+    ? decodeScopedUuidCursor(options.after, scope, 'Invalid import cursor').id
+    : null
 
+  const query = sql`/* getRssFeedImportRows */
+    SELECT id, input_url, outcome, error_message, rss_feed_id
+    FROM user_rss_feed_import_rows
+    WHERE batch_id = ${importId}`
+  if (afterRowId) {
+    query.append(sql`
+      AND row_index > (
+        SELECT cursor_row.row_index
+        FROM user_rss_feed_import_rows cursor_row
+        WHERE cursor_row.id = ${afterRowId}
+          AND cursor_row.batch_id = ${importId}
+      )`)
+  }
+  query.append(sql`
+    ORDER BY row_index
+    LIMIT ${limit + 1}`)
+  const { rows } = await read<ImportReadRow>(query)
+
+  const results = rows.slice(0, limit).map(toImportRowResult)
   return {
-    import: toImportSummary(batch),
-    rows: (rows as ImportReadRow[]).flatMap(row =>
-      row.row_id === null ? [] : [toImportRowResult({ ...row, id: row.row_id })],
-    ),
+    import: summary,
+    rows: results,
+    page_info: buildPageInfo(results, {
+      hasNextPage: rows.length > limit,
+      getCursor: row => ({ id: row.id, scope }),
+    }),
   }
 }
 

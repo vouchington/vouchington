@@ -7,6 +7,9 @@ const secondRowId = '70000000-0000-7000-8000-000000000003'
 const feedId = '70000000-0000-7000-8000-000000000004'
 const topicId = '70000000-0000-7000-8000-000000000005'
 const recommendationId = '70000000-0000-7000-8000-000000000006'
+// Opaque cursors as the server issues them: scoped to this import, naming a row id.
+const firstRowCursor =
+  'eyJpZCI6IjcwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDAwMiIsInNjb3BlIjoicnNzLWZlZWQtaW1wb3J0LXJvd3M6NzAwMDAwMDAtMDAwMC03MDAwLTgwMDAtMDAwMDAwMDAwMDAxOnJvdy1pbmRleC1hc2MifQ'
 const createdAt = '2026-07-14T12:00:00.000Z'
 const exportedTopics = [
   { name: 'Local News', slug: 'local-news', topic_type: 'topic' },
@@ -77,6 +80,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           status: 'pending',
         },
       ],
+      page_info: { has_next_page: false, start_cursor: firstRowCursor, end_cursor: null },
     },
   },
   {
@@ -113,6 +117,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           error: 'No RSS or Atom feed was found.',
         },
       ],
+      page_info: { has_next_page: false, start_cursor: firstRowCursor, end_cursor: null },
     },
   },
   {

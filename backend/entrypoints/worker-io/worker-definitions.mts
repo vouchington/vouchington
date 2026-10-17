@@ -46,13 +46,4 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     queueName: 'ban_evasion',
     load: () => import('@workers/ban-evasion/workers').then(module => module.banEvasionWorker),
   },
-  {
-    queueName: 'admin-imports',
-    load: () => import('@workers/admin-imports/workers').then(module => module.adminImports),
-  },
-  {
-    queueName: 'user-rss-feed-imports',
-    load: () =>
-      import('@workers/user-rss-feed-imports/workers').then(module => module.userRssFeedImports),
-  },
 ]

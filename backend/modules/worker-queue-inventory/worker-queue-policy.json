@@ -24,8 +24,6 @@
     "memberships",
     "spam_detection",
     "ban_evasion",
-    "admin-imports",
-    "user-rss-feed-imports",
     "bedrock-batch-sqs",
     "ses-bounce-sqs",
     "ses-inbound-sqs",

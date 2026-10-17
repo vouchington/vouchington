@@ -1,31 +1,35 @@
-import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
-import { QUEUE_NAME, USER_RSS_FEED_IMPORTS_DEFAULTS } from '@queues/user-rss-feed-imports/config'
-import type {
-  UserRssFeedImportJobs,
-  UserRssFeedImportRowJob,
-} from '@queues/user-rss-feed-imports/types'
+import { backgroundHandler } from '@queues/background/enqueues/define-handler'
+import {
+  IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
+  IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
+} from '@queues/background/enqueues/imports-jobs'
+import { recoverStalledAdminTopicImports } from '@services/admin-imports/recover-stalled'
+import { recoverStalledUserRssFeedImports } from '@services/user-import-export/rss-feed-import-recovery'
+import { dispatchUserRssFeedImport } from '@services/user-import-export/rss-feed-import-dispatch'
 import { processRssFeedImportRow } from '@services/user-import-export/rss-feed-imports'
-import type { Job } from 'glide-mq'
 
-export const userRssFeedImports = createWorker(
-  QUEUE_NAME,
-  (job: Job<UserRssFeedImportRowJob>) => {
-    switch (job.name as UserRssFeedImportJobs) {
-      case 'processImportRow': {
-        const { importId, rowId } = job.data
-        if (!importId) throw new Error('User RSS feed import job .importId is required')
-        if (!rowId) throw new Error('User RSS feed import job .rowId is required')
-        const maxAttempts = USER_RSS_FEED_IMPORTS_DEFAULTS.attempts
-        const isFinalAttempt = job.attemptsMade + 1 >= maxAttempts
-        return processRssFeedImportRow(importId, rowId, { isFinalAttempt })
-      }
-      default:
-        throw new Error(`Unknown user RSS feed import job: ${job.name}`)
-    }
-  },
-  {
-    concurrency: getWorkerConcurrency('userRssFeedImports', { baseline: 5 }),
-    lockDuration: 120_000,
-  },
-)
+const ROW_ATTEMPTS = IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB.options.attempts ?? 1
+
+// A row runs under the worker's default lock: its own 15 second feed budget, not a longer lock,
+// bounds how long it can hold a slot.
+export const userRssFeedImportsHandlers = [
+  backgroundHandler(IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB, job => {
+    if (!job.data?.importId)
+      throw new Error('User RSS feed import dispatch job .importId is required')
+    return dispatchUserRssFeedImport(job.data)
+  }),
+  backgroundHandler(IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB, job => {
+    const { importId, rowId } = job.data ?? {}
+    if (!importId) throw new Error('User RSS feed import job .importId is required')
+    if (!rowId) throw new Error('User RSS feed import job .rowId is required')
+    return processRssFeedImportRow(importId, rowId, {
+      isFinalAttempt: job.attemptsMade + 1 >= ROW_ATTEMPTS,
+    })
+  }),
+  // Both import kinds share one sweep: an import whose dispatcher failed every attempt is
+  // dispatched again from its first pending row.
+  backgroundHandler(IMPORTS_RECOVER_STALLED_JOB, async () => {
+    await Promise.all([recoverStalledUserRssFeedImports(), recoverStalledAdminTopicImports()])
+  }),
+]

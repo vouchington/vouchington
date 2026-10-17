@@ -21,6 +21,7 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/sitemaps/enqueues/schedules'),
         import('@queues/kagi-smallweb/enqueues/schedules'),
         import('@queues/email-digests/enqueues/schedules'),
+        import('@queues/user-rss-feed-imports/enqueues/schedules'),
       ])
       return async () => {
         await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))

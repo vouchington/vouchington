@@ -1,0 +1,51 @@
+import { write } from '@data-stores/psql'
+import { IMPORT_RECOVERY_STALE_MS } from '@queues/user-rss-feed-imports/config'
+import { enqueueUserRssFeedImportDispatches } from '@queues/user-rss-feed-imports/enqueues'
+import sql from 'sql-template-strings'
+import { getUserImportExportConfig } from './config.mts'
+
+type RecoveryOptions = {
+  /** How long an unfinished import may make no progress before it is re-dispatched. */
+  staleAfterMs?: number
+  enqueueDispatches?: (importIds: string[]) => Promise<unknown>
+}
+
+/**
+ * Re-dispatches unfinished imports whose progress stopped, for example because their dispatcher
+ * failed every attempt and was removed. The dispatcher job id and the row deduplication ids make
+ * the re-dispatch safe to repeat. Every import it dispatches is marked as just touched, so the next
+ * sweep leaves it alone until it stalls again. Returns how many imports it re-dispatched.
+ */
+export async function recoverStalledUserRssFeedImports(
+  options: RecoveryOptions = {},
+): Promise<number> {
+  const { staleAfterMs = IMPORT_RECOVERY_STALE_MS, enqueueDispatches } = options
+  const enqueue = enqueueDispatches ?? enqueueUserRssFeedImportDispatches
+
+  // The primary: a lagging replica must not report an import stalled that just made progress.
+  const { rows } = await write<{ id: string }>(
+    sql`/* readStalledUserRssFeedImports */
+      SELECT id
+      FROM user_rss_feed_import_batches
+      WHERE completed_at IS NULL
+        AND updated_at < CURRENT_TIMESTAMP - make_interval(secs => ${staleAfterMs / 1000})
+      ORDER BY updated_at
+      LIMIT ${getUserImportExportConfig().import_recovery_batch_size}
+    `,
+  )
+  if (rows.length === 0) return 0
+
+  const ids = rows.map(row => row.id)
+  // The marker follows the enqueue: a crash between them only repeats an idempotent dispatch.
+  // The no-op write fires the `updated_at` trigger, which is what marks the import as just touched.
+  await enqueue(ids)
+  await write(
+    sql`/* markStalledUserRssFeedImportsRecovered */
+      UPDATE user_rss_feed_import_batches
+      SET total_rows = total_rows
+      WHERE id = ANY(${ids}::uuid[])
+        AND completed_at IS NULL
+    `,
+  )
+  return ids.length
+}

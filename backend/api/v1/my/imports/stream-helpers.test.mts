@@ -5,16 +5,13 @@ import { pipeImportProgressToSSE, pipeUserRssFeedImportProgressToSSE } from './s
 
 const FAKE_USER_ID = '01900000-0000-7000-0000-000000000001'
 const pendingImport = {
-  import: {
-    id: '01900000-0000-7000-8000-000000000123',
-    total_rows: 1,
-    completed_rows: 0,
-    failed_rows: 0,
-    pending_rows: 1,
-    completed_at: null,
-    created_at: new Date(),
-  },
-  rows: [],
+  id: '01900000-0000-7000-8000-000000000123',
+  total_rows: 1,
+  completed_rows: 0,
+  failed_rows: 0,
+  pending_rows: 1,
+  completed_at: null,
+  created_at: new Date(),
 }
 
 function makeMockSubscription(): {
@@ -205,7 +202,7 @@ describe('pipeUserRssFeedImportProgressToSSE', () => {
     const writes: string[] = []
 
     await pipeUserRssFeedImportProgressToSSE({
-      batchId: pendingImport.import.id,
+      batchId: pendingImport.id,
       userId: FAKE_USER_ID,
       initialImport: pendingImport,
       emit: event => {
@@ -226,7 +223,7 @@ describe('pipeUserRssFeedImportProgressToSSE', () => {
     const readImport = vi.fn<() => Promise<typeof pendingImport>>()
 
     await pipeUserRssFeedImportProgressToSSE({
-      batchId: pendingImport.import.id,
+      batchId: pendingImport.id,
       userId: FAKE_USER_ID,
       initialImport: pendingImport,
       emit: () => true,
@@ -242,17 +239,14 @@ describe('pipeUserRssFeedImportProgressToSSE', () => {
     const abortController = new AbortController()
     const chunks: string[] = []
     const doneImport = {
-      import: {
-        ...pendingImport.import,
-        completed_rows: 1,
-        pending_rows: 0,
-        completed_at: new Date(),
-      },
-      rows: [],
+      ...pendingImport,
+      completed_rows: 1,
+      pending_rows: 0,
+      completed_at: new Date(),
     }
 
     await pipeUserRssFeedImportProgressToSSE({
-      batchId: pendingImport.import.id,
+      batchId: pendingImport.id,
       userId: FAKE_USER_ID,
       initialImport: pendingImport,
       emit: event => {

@@ -30,8 +30,37 @@ describe('getUserImportExportConfig', () => {
   it('applies a valid sync export max override', () => {
     overrideDynamicConfigFieldsForTest(userImportExportConfig, { sync_export_max_items: 250 })
 
-    expect(getUserImportExportConfig()).toEqual({ sync_export_max_items: 250 })
+    expect(getUserImportExportConfig()).toEqual({
+      ...DEFAULT_USER_IMPORT_EXPORT_CONFIG,
+      sync_export_max_items: 250,
+    })
     expect(captureException).not.toHaveBeenCalled()
+  })
+
+  it('applies valid import limit overrides', () => {
+    overrideDynamicConfigFieldsForTest(userImportExportConfig, {
+      import_max_body_bytes: 4_096,
+      import_dispatch_page_size: 3,
+      import_insert_chunk_size: 7,
+      rss_feed_import_budget_ms: 2_000,
+    })
+
+    expect(getUserImportExportConfig()).toEqual({
+      ...DEFAULT_USER_IMPORT_EXPORT_CONFIG,
+      import_max_body_bytes: 4_096,
+      import_dispatch_page_size: 3,
+      import_insert_chunk_size: 7,
+      rss_feed_import_budget_ms: 2_000,
+    })
+  })
+
+  it('keeps the default and reports an import budget above the worker lock', () => {
+    overrideDynamicConfigFieldsForTest(userImportExportConfig, {
+      rss_feed_import_budget_ms: 60_000,
+    })
+
+    expect(getUserImportExportConfig()).toEqual(DEFAULT_USER_IMPORT_EXPORT_CONFIG)
+    expect(captureException).toHaveBeenCalledOnce()
   })
 
   it('keeps the default and reports invalid sync export max values', () => {
