@@ -35,13 +35,9 @@ export async function findRejectedEvidenceEvents(
 
   if (!evidence.observation_id) return { events: [], next: { at: evidence.at, id: evidence.id } }
   const sourceQuery = sql`/* dispatchVoteWeightFamilySourceChanges:rejected_at:sources */
-    SELECT source_state.membership_source_id, membership.user_id
+    SELECT source_state.membership_source_id, source.user_id
     FROM membership_source_states source_state
-    LEFT JOIN LATERAL (
-      SELECT user_id FROM memberships
-      WHERE membership_source_id = source_state.membership_source_id AND projection_ended_at IS NULL
-      LIMIT 1
-    ) membership ON true
+    INNER JOIN membership_sources source ON source.id = source_state.membership_source_id
     WHERE source_state.membership_provider_observation_id = ${evidence.observation_id}::uuid`
   if (after?.afterSourceId)
     sourceQuery.append(sql` AND source_state.membership_source_id > ${after.afterSourceId}::uuid`)

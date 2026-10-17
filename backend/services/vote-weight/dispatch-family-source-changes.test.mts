@@ -1,16 +1,65 @@
 import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { getTestMembershipRaw } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   addVoteWeightSharedFamilyRecipient,
   createVoteWeightDispatchFamily,
   createVoteWeightDispatchUser,
+  getVoteWeightEvidenceRejectedAtExact,
   rejectVoteWeightEvidenceExact,
 } from '@voucha/test-helpers/vote-weight-dispatch'
+import { rejectMembershipProviderEvidence } from '../memberships/invalidate-provider-evidence.mts'
 import { dispatchVoteWeightFamilySourceChanges } from './dispatch-family-source-changes.mts'
 import { voteWeightWorkConfig } from './work-limits.mts'
 
 describe('dispatchVoteWeightFamilySourceChanges', () => {
+  it('recovers rejected family evidence after the rejection retires its live projection', async () => {
+    const user = await createVoteWeightDispatchUser()
+    const family = await createVoteWeightDispatchFamily({
+      userId: user.id,
+      effectiveAt: new Date('2020-01-01T00:00:00.000Z'),
+      expiresAt: new Date('2090-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2020-01-01T00:00:00.000Z'),
+    })
+
+    await expect(
+      rejectMembershipProviderEvidence(family.evidenceId, 'Family evidence rejected'),
+    ).resolves.toEqual({ invalidated: true, membershipId: family.membershipId })
+    await expect(getTestMembershipRaw(family.membershipId)).resolves.toMatchObject({
+      projection_ended_at: expect.any(Date),
+    })
+
+    const at = await getVoteWeightEvidenceRejectedAtExact(family.evidenceId)
+    const window = { previousThroughAt: null, windowStart: at, windowEnd: at }
+    const restore = overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, {
+      dispatch_batch_size: 1,
+    })
+    try {
+      const page = await dispatchVoteWeightFamilySourceChanges({
+        window,
+        branches: {
+          updated_at: null,
+          effective_at: null,
+          expires_at: null,
+          rejected_at: {
+            at,
+            id: family.evidenceId,
+            afterSourceId: '00000000-0000-0000-0000-000000000000',
+          },
+        },
+      })
+      expect(page.events).toEqual([
+        {
+          userId: user.id,
+          jobId: `voteWeight__${user.id}__evidenceRejected__${family.evidenceId}`,
+        },
+      ])
+    } finally {
+      restore()
+    }
+  })
+
   it('keeps one continuation keyset per timestamp branch and stable overlap ids', async () => {
     const base = new Date(Date.UTC(2040, 7, 1) + randomInt(0, 30_000_000))
     const user = await createVoteWeightDispatchUser()

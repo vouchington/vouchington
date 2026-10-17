@@ -65,6 +65,14 @@ export async function rejectVoteWeightEvidenceExact(evidenceId: string, at: stri
     WHERE id = ${evidenceId}`)
 }
 
+export async function getVoteWeightEvidenceRejectedAtExact(evidenceId: string): Promise<string> {
+  const { rows } = await read<{ at: string }>(sql`/* getVoteWeightEvidenceRejectedAtExact */
+    SELECT rejected_at::text AS at FROM membership_provider_evidence_records
+    WHERE id = ${evidenceId} AND rejected_at IS NOT NULL`)
+  if (!rows[0]) throw new Error('Vote-weight family evidence was not rejected')
+  return rows[0].at
+}
+
 export async function getVoteWeightDispatchCursorForTest(
   dispatcher: string,
 ): Promise<string | null> {
