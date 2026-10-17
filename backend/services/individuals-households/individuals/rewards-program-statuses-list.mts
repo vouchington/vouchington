@@ -27,11 +27,12 @@ export async function getIndividualRewardsProgramStatuses(
   currentUser: PrivateUser | null,
   user: PrivateUser,
   options: GetIndividualRewardsProgramStatusesOptions = {},
+  loadIndividual?: () => Promise<{ id: string }>,
 ): Promise<IndividualRewardsProgramStatusPage> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
   const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
-  const individual = await getOrCreateIndividual(user)
+  const individual = await (loadIndividual?.() ?? getOrCreateIndividual(user))
   const scope = rewardsProgramStatusesCursorScope(individual.id)
   const cursorId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid rewards program status cursor').id

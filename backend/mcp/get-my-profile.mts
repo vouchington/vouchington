@@ -2,6 +2,7 @@ import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import {
+  getOrCreateIndividual,
   getIndividualCards,
   getIndividualRewardsProgramPointValuations,
   getIndividualRewardsProgramStatuses,
@@ -110,19 +111,36 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const privateUser = await requirePrivateToolUser(currentUser)
+      let individualPromise: ReturnType<typeof getOrCreateIndividual> | undefined
+      const loadIndividual = () => (individualPromise ??= getOrCreateIndividual(privateUser))
       const [cardPage, pointValuationPage, rewardsProgramStatuses] = await Promise.all([
-        getIndividualCards(privateUser, privateUser, {
-          after: args.cards_after,
-          limit: args.cards_limit,
-        }),
-        getIndividualRewardsProgramPointValuations(privateUser, privateUser, {
-          after: args.point_valuations_after,
-          limit: args.point_valuations_limit,
-        }),
-        getIndividualRewardsProgramStatuses(privateUser, privateUser, {
-          after: args.rewards_program_statuses_after,
-          limit: args.rewards_program_statuses_limit,
-        }),
+        getIndividualCards(
+          privateUser,
+          privateUser,
+          {
+            after: args.cards_after,
+            limit: args.cards_limit,
+          },
+          loadIndividual,
+        ),
+        getIndividualRewardsProgramPointValuations(
+          privateUser,
+          privateUser,
+          {
+            after: args.point_valuations_after,
+            limit: args.point_valuations_limit,
+          },
+          loadIndividual,
+        ),
+        getIndividualRewardsProgramStatuses(
+          privateUser,
+          privateUser,
+          {
+            after: args.rewards_program_statuses_after,
+            limit: args.rewards_program_statuses_limit,
+          },
+          loadIndividual,
+        ),
       ])
 
       return {

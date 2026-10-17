@@ -77,11 +77,12 @@ export async function getIndividualCards(
   currentUser: PrivateUser | null,
   user: PrivateUser,
   options: GetIndividualCardsOptions = {},
+  loadIndividual?: () => Promise<{ id: string }>,
 ): Promise<IndividualCardPage> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
   const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
-  const individual = await getOrCreateIndividual(user)
+  const individual = await (loadIndividual?.() ?? getOrCreateIndividual(user))
   const scope = cardCursorScope(individual.id)
   const cursorId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid card cursor').id
