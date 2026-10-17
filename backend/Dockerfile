@@ -116,15 +116,11 @@ FROM builder AS deploy-api
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \
     pnpm deploy --filter @entrypoints/api --prod /prod/api --legacy && \
     node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/api
-# Strip redundant @opentelemetry/semantic-conventions build formats. The package
-# ships src, esm, and esnext; Node resolves one via package.json exports. Drop
-# the two unused alternates to save ~8 MiB per image.
-RUN find /prod/api/node_modules/.pnpm -type d -name 'esm' \
-        -path '*/@opentelemetry/semantic-conventions/build/esm' \
-        -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find /prod/api/node_modules/.pnpm -type d -name 'esnext' \
-        -path '*/@opentelemetry/semantic-conventions/build/esnext' \
-        -prune -exec rm -rf {} + 2>/dev/null || true
+# OpenTelemetry packages ship src, esm, and esnext. Node resolves build/src.
+# Drop esm and esnext when no runtime export or src file points at them.
+# semantic-conventions is about 8 MiB of those alternate trees; api and core
+# add theirs when the deploy includes those packages.
+RUN node static-code-analysis/docker-deploy/prune-opentelemetry-alternate-builds.mts /prod/api
 # Node's native TypeScript loader refuses to strip types for files whose
 # resolved path is under node_modules. pnpm deploy copies workspace packages
 # into node_modules/.pnpm, so relocate each copy outside node_modules (leaving
@@ -141,12 +137,7 @@ FROM builder AS deploy-worker-cpu
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \
     pnpm deploy --filter @entrypoints/worker-cpu --prod /prod/worker-cpu --legacy && \
     node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/worker-cpu
-RUN find /prod/worker-cpu/node_modules/.pnpm -type d -name 'esm' \
-        -path '*/@opentelemetry/semantic-conventions/build/esm' \
-        -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find /prod/worker-cpu/node_modules/.pnpm -type d -name 'esnext' \
-        -path '*/@opentelemetry/semantic-conventions/build/esnext' \
-        -prune -exec rm -rf {} + 2>/dev/null || true
+RUN node static-code-analysis/docker-deploy/prune-opentelemetry-alternate-builds.mts /prod/worker-cpu
 RUN node static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/worker-cpu && \
     node static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/worker-cpu
 
@@ -155,12 +146,7 @@ FROM builder AS deploy-worker-io
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store,sharing=shared \
     pnpm deploy --filter @entrypoints/worker-io --prod /prod/worker-io --legacy && \
     node static-code-analysis/docker-deploy/prune-deployed-runtime-deps.mts /prod/worker-io
-RUN find /prod/worker-io/node_modules/.pnpm -type d -name 'esm' \
-        -path '*/@opentelemetry/semantic-conventions/build/esm' \
-        -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find /prod/worker-io/node_modules/.pnpm -type d -name 'esnext' \
-        -path '*/@opentelemetry/semantic-conventions/build/esnext' \
-        -prune -exec rm -rf {} + 2>/dev/null || true
+RUN node static-code-analysis/docker-deploy/prune-opentelemetry-alternate-builds.mts /prod/worker-io
 RUN node static-code-analysis/docker-deploy/restore-deployed-workspace-packages.mts /prod/worker-io && \
     node static-code-analysis/docker-deploy/normalize-deployed-layer.mts /prod/worker-io
 
