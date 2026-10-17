@@ -22,8 +22,6 @@ const {
   getTrendingPosts,
   getTrendingRssFeeds,
   POST_ELECTION_CONFIG,
-  searchCommunityPosts,
-  searchPendingPosts,
   TOPIC_ELECTION_CONFIG,
 } = services
 

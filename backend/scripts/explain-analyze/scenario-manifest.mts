@@ -150,7 +150,12 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-data-points',
   'search-pending-community-posts',
   ...(['search-top-hostnames', 'search-top-hostnames-by-topic'] as const),
-  ...(['search-topic-aliases', 'search-users', 'search-users-selective', 'search-users-missing'] as const),
+  ...([
+    'search-topic-aliases',
+    'search-users',
+    'search-users-selective',
+    'search-users-missing',
+  ] as const),
   'topic-by-slug',
   'topic-data-point-insights',
   'topic-import-attempts-retention',
