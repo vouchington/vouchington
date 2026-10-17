@@ -24,7 +24,7 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   or `tokenBucket` in place of a separate queue, `setGlobalConcurrency`, or a queue-wide
   `limiter`; per-job `lockDuration` and `timeout` in place of worker-level values.
 - **Operate per domain.** A shared queue needs pause, retry, and stats per domain, with pausing as a
-  domain-control database field, not `Queue.pause()`. The [background queue](../overview/architecture/queues/background/README.md)
+  domain-control database field, not `Queue.pause()`. The [background queue](../overview/architecture/queues/README.md)
   has them ([#2855](https://github.com/vouchington/vouchington/issues/2855)): register the domain in its
   registry rather than adding a queue, and never throw `RateLimitError` or call `worker.rateLimit()`
   from a shared worker, because either idles every domain on it. Defer the job with

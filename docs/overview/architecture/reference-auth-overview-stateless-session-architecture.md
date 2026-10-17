@@ -34,11 +34,11 @@ flowchart TD
   I --> N[Issue refreshed session]
 ```
 
-| Path     | Trigger                                                     | Valkey calls              | Action                                                |
-| -------- | ----------------------------------------------------------- | ------------------------- | ----------------------------------------------------- |
-| **Hot**  | defined `rca`, `now < rca`, and `now < sca`                 | 0 refresh calls           | Return existing session as-is                         |
-| **Warm** | `now < rca` and `now >= sca` (sca = 5 min interval)         | 1 script                  | Check revocation + staleness; preserve `rca`          |
-| **Cold** | missing/elapsed `rca` (rca = 30 min interval) OR stale flag | 1 script + 1 DB + 1 write | Reload user from DB, then re-issue with a fresh `rca` |
+| Path     | Trigger                                                      | Valkey calls              | Action                                                |
+| -------- | ------------------------------------------------------------ | ------------------------- | ----------------------------------------------------- |
+| **Hot**  | defined `rca`, `now < rca`, and `now < sca`                  | 0 refresh calls           | Return existing session as-is                         |
+| **Warm** | `now < rca` and `now >= sca` (sca = staleness interval)      | 1 script                  | Check revocation + staleness; preserve `rca`          |
+| **Cold** | missing/elapsed `rca` (rca = refresh interval) OR stale flag | 1 script + 1 DB + 1 write | Reload user from DB, then re-issue with a fresh `rca` |
 
 ### Staleness Invalidation
 

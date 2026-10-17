@@ -51,7 +51,7 @@ sequenceDiagram
 
 1. `POST /api/v1/auth/email-address/tokens` — generates an 8-character uppercase hex token, stores
    a purpose-bound HMAC-SHA256 hash in `email_address_login_tokens`, and enqueues an email to deliver the raw token.
-   Expires in 15 minutes. Rate-limited per email, IP, device, and session. The email includes both a CTA button and the
+   Short-lived. Rate-limited per email, IP, device, and session. The email includes both a CTA button and the
    full `/login?emailAddress=...&otp=...` URL as fallback text.
    Keep the backend token length in sync with the web login UI: `LoginCodeStep` renders eight OTP
    slots, `LoginForm` trims deep-link OTP values to eight characters, and Playwright covers a real

@@ -23,7 +23,7 @@ type LifecycleColumn =
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/bedrock-embeddings-batch/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function deriveBedrockBatchStatus(row: Lifecycle): BedrockBatchStatus {
   if (row.completed_at) return 'completed'

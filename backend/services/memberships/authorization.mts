@@ -3,7 +3,7 @@ import type { Membership } from './types.mts'
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function currentUserCanViewMembership(
   currentUser: PrivateUser | null,
@@ -17,7 +17,7 @@ export function currentUserCanViewMembership(
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ * Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function currentUserCanCancelMembership(
   currentUser: PrivateUser | null,

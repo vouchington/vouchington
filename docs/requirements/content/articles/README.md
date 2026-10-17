@@ -4,7 +4,7 @@ Source entrypoint: [articles/README.md](../../../../articles/README.md)
 
 Seed articles for blog publishing and public/site knowledge retrieval. The directory is the committed
 source of truth for article Markdown; frontmatter fields and the sync pipeline are read from
-`backend/scripts/seed/articles.mts` and [`@services/articles`](../../../overview/architecture/services/articles/README.md).
+`backend/scripts/seed/articles.mts` and [`@services/articles`](../../../overview/architecture/services/README.md).
 
 ## Linking Between Articles
 

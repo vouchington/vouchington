@@ -41,10 +41,10 @@ Account creation still requires email OTP or OAuth (the existing sign-up flow).
 | Layer                          | Mechanism                                                           |
 | ------------------------------ | ------------------------------------------------------------------- |
 | Rate limiting                  | Per-IP, per-email, per-device, per-session via Valkey `RateLimiter` |
-| Challenge replay               | Atomic Lua get-and-delete; 5-minute TTL on all challenges           |
+| Challenge replay               | Atomic Lua get-and-delete; short TTL on all challenges              |
 | Counter cloning                | `updatePasskeyCounter` detects replayed authenticator clones        |
 | JWT revocation                 | Valkey `jwt-revoked:{sid}` flag + staleness (`jwt-stale:{userId}`)  |
-| Re-auth on destructive actions | `MFA_REAUTH_REQUIRED` code; `re_auth_token` (5-min Valkey TTL)      |
+| Re-auth on destructive actions | `MFA_REAUTH_REQUIRED` code; `re_auth_token` (short Valkey TTL)      |
 | Session scoping                | `dt`/`st` pairing enforced; `did` mismatch → session invalid        |
 
 ### TOTP
@@ -91,6 +91,6 @@ suspended-user write policy.
 
 - [Backend rules](../../../backend/AGENTS.md) — service conventions and auth patterns
 - [Cloudflare Worker rules](../../../cloudflare-worker/AGENTS.md) — edge auth, cookie handling, and cache policy
-- [Session JWT service](services/jwt-session/README.md) — JWT signing, verification, cookie management
-- [Shared session JWT](typescript-shared/session-jwt/README.md) — Shared JWT types and helpers
-- [App Attest](app-attestation.md) — how a device earns the `dc: 'attested'` claim and its 30-day session
+- Session JWT service — JWT signing, verification, cookie management
+- Shared session JWT — Shared JWT types and helpers
+- [App Attest](app-attestation.md) — how a device earns the `dc: 'attested'` claim and its extended session

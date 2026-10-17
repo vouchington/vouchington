@@ -4,7 +4,7 @@ import type { Agent, AgentType, AgentModerator } from './types.mts'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/agents/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getAgentBySystemUserId(system_user_id: string): Promise<Agent | null> {
   const { rows } = await read<Agent>(sql`/* getAgentBySystemUserId */
@@ -30,7 +30,7 @@ export async function getAgentBySystemUserId(system_user_id: string): Promise<Ag
 
 /**
  * @public Retained provisionally under issue #1360 and documented in
- * `docs/overview/architecture/services/agents/README.md`; production use is unconfirmed and this
+ * `docs/overview/architecture/services/README.md`; production use is unconfirmed and this
  * export may be removed after intended-use review.
  */
 export async function getActiveAgentsByType(agent_type: AgentType): Promise<Agent[]> {

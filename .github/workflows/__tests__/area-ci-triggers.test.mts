@@ -166,7 +166,7 @@ describe('Area CI triggers', () => {
       'docs/prompts/automation/scheduled-prompt.md',
       'docs/prompts/scheduled/ci.md',
       'backend/agents/README.md',
-      'docs/overview/architecture/ai-agents/reference-tests.md',
+      'docs/overview/architecture/ai-agents/README.md',
       'backend/Dockerfile',
       'backend/package.json',
       'backend/entrypoints/api/package.json',

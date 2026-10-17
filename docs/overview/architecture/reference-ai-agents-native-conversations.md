@@ -22,7 +22,7 @@ conversation API contract for provider names,
 message identity and retry rules.
 
 The server separately generates a conversation title through one bounded title-generation operation in
-[`@agents/conversation-title`](ai-agents/conversation-title/README.md). That agent reads and
+`@agents/conversation-title`. That agent reads and
 sanitizes up to two recent messages, then records usage through the shared agent boundary. It does not
 generate assistant transcript turns. Retained classifiers and focused agents are mapped in the
 [agent package index](ai-agents/README.md).

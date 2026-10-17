@@ -2,18 +2,6 @@
 
 [Back to Post / Comment Creation Pipeline](post-lifecycle.md)
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Post Creation Pipeline](reference-post-lifecycle-post-creation-pipeline.md#post-creation-pipeline)
-- [Comment-Specific Behavior](reference-post-lifecycle-comment-specific-behavior.md#comment-specific-behavior)
-- [Post Update Pipeline](reference-post-lifecycle-comment-specific-behavior.md#post-update-pipeline)
-- [Community Moderation Pipeline](reference-post-lifecycle-community-moderation-pipeline.md#community-moderation-pipeline)
-- [Clearance Gate](reference-post-lifecycle-post-creation-pipeline.md#clearance-gate)
-- [Notification Reconciliation](reference-post-lifecycle-community-moderation-pipeline.md#notification-reconciliation)
-
----
-
 ## Overview
 
 Post creation is split into two phases:

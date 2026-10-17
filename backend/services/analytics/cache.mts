@@ -11,7 +11,7 @@ interface TrackCacheCallOptions {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/analytics/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function trackCacheCall({
   cacheName,

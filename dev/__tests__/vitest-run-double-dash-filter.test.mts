@@ -18,10 +18,10 @@ describe('backend focused-command docs stay pinned to supported filtering forms'
     const readme = repoFile('backend/agents/README.md')
 
     expect(readme).toContain(
-      '[Tests](../../docs/overview/architecture/ai-agents/reference-tests.md)',
+      '[Tests](../../docs/overview/architecture/ai-agents/README.md)',
     )
 
-    const referenceTests = repoFile('docs/overview/architecture/ai-agents/reference-tests.md')
+    const referenceTests = repoFile('docs/overview/architecture/ai-agents/README.md')
     const fencedBash = /```bash\n([\s\S]*?)```/.exec(referenceTests)
     expect(fencedBash).not.toBeNull()
     const commandBlock = fencedBash![1]

@@ -25,7 +25,7 @@ export function isClassifierChoiceKey(value: string): value is ClassifierChoiceK
 
 /**
  * @public Retained provisionally under issue #1360 and described in
- * `docs/overview/architecture/ai-agents/classifiers/README.md`; external production use is
+ * `docs/overview/architecture/ai-agents/README.md`; external production use is
  * unconfirmed and this export may be removed after intended-use review.
  */
 export async function sanitizeClassifierExternalContent(

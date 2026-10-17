@@ -23,5 +23,5 @@ read from the view SQL and the `rss-feed-crawl-config` DynamicConfig key.
 
 ## Related
 
-- [RSS feeds queue](../../overview/architecture/queues/rss-feeds/README.md)
+- [RSS feeds queue](../../overview/architecture/queues/README.md)
 - [Partition retention](../../overview/architecture/partitioning-strategy.md)

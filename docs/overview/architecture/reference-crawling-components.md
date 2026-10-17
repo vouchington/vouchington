@@ -27,7 +27,7 @@ For each URL crawl:
 
 1. **Guard checks** — skip if `hostname.is_blocked = true` or `hostname.is_crawlable = false`
 2. **Domain rate limit check** — skip (throw `CrawlerRateLimitError`) if domain has an active 429 lock in Valkey
-3. **robots.txt check** — skip if `isUrlCrawlable()` returns false. HTTP 4xx from robots.txt is ALLOW (RFC 9309 unavailable). Exhausted HTTP 5xx and network errors are complete disallow for 15 minutes (RFC 9309 unreachable) unless a cached robots.txt body is still valid. SSRF-rejected robots.txt targets are disallowed before the request. Unexpected runtime exceptions (for example parsing bugs) are disallowed.
+3. **robots.txt check** — skip if `isUrlCrawlable()` returns false. HTTP 4xx from robots.txt is ALLOW (RFC 9309 unavailable). Exhausted HTTP 5xx and network errors are complete disallow for a short period (RFC 9309 unreachable) unless a cached robots.txt body is still valid. SSRF-rejected robots.txt targets are disallowed before the request. Unexpected runtime exceptions (for example parsing bugs) are disallowed.
 4. **Crawler rule lookup** — fetch per-hostname rules (`css_selectors_to_remove`, `link_*_to_remove`)
 5. **Google Web Risk** — optional lookup runs only after local blocklist, rate-limit, robots, and crawler-rule checks pass. Provider failures/rate limits fail open; risky verdicts block the registrable domain locally.
 6. **Conditional HTTP fetch** — send `If-None-Match`/`If-Modified-Since` from last successful crawl
@@ -42,8 +42,8 @@ For each URL crawl:
     retries remote oEmbed, conditionally updates that exact crawl, and records
     `embed_oembed_resolved_at`. `html_snapshot_uploaded_at` records when the crawl actually writes a
     snapshot.
-11. **S3 upload** — raw HTML bodies are uploaded to 7-day S3 snapshots when the origin returns a body, including noindex pages; snapshot keys are hash-based (`hostname/urlId/htmlSha256`), so unchanged pages skip the PUT only while the previous snapshot is still inside the lifecycle window. Conditional request headers are also withheld after that window so stale snapshots force a full-body refresh.
-12. **Boilerplate extraction** — recent raw-body crawl HTML from S3 is the only input to nightly boilerplate removal; parsed crawl rows/history keep their existing DB retention and are not the source corpus for that pass, and the 7-day snapshot lifecycle remains safe because reads require a fresh `html_snapshot_uploaded_at`
+11. **S3 upload** — raw HTML bodies are uploaded to short-lived S3 snapshots when the origin returns a body, including noindex pages; snapshot keys are hash-based (`hostname/urlId/htmlSha256`), so unchanged pages skip the PUT only while the previous snapshot is still inside the lifecycle window. Conditional request headers are also withheld after that window so stale snapshots force a full-body refresh.
+12. **Boilerplate extraction** — recent raw-body crawl HTML from S3 is the only input to nightly boilerplate removal; parsed crawl rows/history keep their existing DB retention and are not the source corpus for that pass, and the snapshot lifecycle remains safe because reads require a fresh `html_snapshot_uploaded_at`
 13. **Canonical URL** — extract from `<link rel="canonical">`, create/link URL entry, and skip links that normalize to the current URL row
 14. **Embeddings** — chunk markdown via `@services/ai-chunking`, reuse existing embeddings by SHA256, enqueue OpenAI jobs for new chunks
 
@@ -59,7 +59,7 @@ Rate limiting operates at two levels:
 
 Computed by `computeHostnameRateLimitMs()` as `max(rps_delay, crawl_delay)`, capped at 60s:
 
-- `rps_delay` = `ceil(1000 / url_hostnames.requests_per_second_limit)` (default 1 RPS → 1000ms)
+- `rps_delay` = `ceil(1000 / url_hostnames.requests_per_second_limit)`
 - `crawl_delay` = `Crawl-delay` value from robots.txt for `voucha-bot` user-agent (in ms)
 
 Applied at job-queue level via `glide-mq` `ordering.rateLimit` — jobs for the same hostname are enqueued with a delay between them.

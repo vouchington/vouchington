@@ -11,7 +11,7 @@ export interface ApPostLikesTally {
 // so a null result means "zero", not an error.
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/ap-post-likes/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getApPostLikesTally(postId: string): Promise<ApPostLikesTally | null> {
   const { rows } = await read<ApPostLikesTally>(sql`/* getApPostLikesTally */

@@ -49,7 +49,7 @@ contracts. This page records only the decisions code cannot show.
 
 Each route directory keeps a short README that only points at the performance requirements, because
 a repository guard requires the `## Performance` heading. RSS XML is mounted outside `/api/v1`; see
-[RSS](../../overview/architecture/backend/rss/README.md).
+[RSS](../../overview/architecture/backend/README.md).
 
 - [README.md](../../../backend/api/README.md)
 - [activitypub/README.md](../../../backend/api/activitypub/README.md)

@@ -29,21 +29,21 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 
 - User-Agent: `voucha-bot https://voucha.ai/article/voucha-bot`
 - robots.txt groups match the `voucha-bot` product token, not the comment URL in that header
-- Robots.txt rules cached in Valkey for 24 hours
+- Robots.txt rules cached in Valkey
 - RFC 9309 unavailable rules file (HTTP 4xx, including 429) → ALLOW
-- RFC 9309 unreachable rules file (HTTP 5xx or a network error after 3 retries) → complete disallow for 15 minutes, unless a cached robots.txt body is still inside its 24-hour entry
+- RFC 9309 unreachable rules file (HTTP 5xx or a network error after retries) → complete disallow for a short period, unless a cached robots.txt body is still inside its cache entry
 - Blacklisted domain → DISALLOW (before fetch)
-- SSRF-rejected robots.txt target, including a private redirect, → DISALLOW before that request. See [robots.txt fetches](services/urls-domains-robots/README.md#notes)
+- SSRF-rejected robots.txt target, including a private redirect, → DISALLOW before that request. See robots.txt fetches
 
 ## Related
 
 - Workspace instructions: [backend/AGENTS.md](../../../backend/AGENTS.md)
 - Worker entry point: [backend/workers/crawler/workers.mts](../../../backend/workers/crawler/workers.mts)
-- [docs/overview/architecture/services/crawls/README.md](services/crawls/README.md) — error recording, embeddings workflow
+- docs/overview/architecture/services/README.md — error recording, embeddings workflow
 - [backend/AGENTS.md](../../../backend/AGENTS.md) — backend workspace conventions
 - [backend/services/crawler-html/index.mts](../../../backend/services/crawler-html/index.mts) — secure HTML fetch policy, upstream extraction, crawler error classification, and metrics
-- [docs/overview/architecture/services/crawler-html/README.md](services/crawler-html/README.md) — crawler HTML service ownership and contracts
-- [docs/overview/architecture/services/urls-domains-robots/README.md](services/urls-domains-robots/README.md) — bloom filter fast path, RFC 9309
-- [docs/overview/architecture/queues/crawler/README.md](queues/crawler/README.md) — job queue configuration, S3 storage
+- docs/overview/architecture/services/README.md — crawler HTML service ownership and contracts
+- docs/overview/architecture/services/README.md — bloom filter fast path, RFC 9309
+- docs/overview/architecture/queues/README.md — job queue configuration, S3 storage
 - [articles/voucha-bot.md](../../../articles/voucha-bot.md) — public-facing crawler documentation
 - [runtime-timeouts.md](../../development/runtime-timeouts.md#external-calls) — why per-fetch crawler timeouts are sized as they are

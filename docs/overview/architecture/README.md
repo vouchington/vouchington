@@ -11,7 +11,7 @@ System design, pipelines, and application-layer patterns for Voucha.
 | [Caching Strategy](./caching-strategy.md)                                               | 3-tier caching architecture (CloudFront, CF Worker, Valkey)                                       |
 | [Rate Limiting](./rate-limiting.md)                                                     | 3-layer rate limiting: edge IP, per-endpoint, and user-aware trust tier                           |
 | [CAPTCHA & Bot Protection](./captcha.md)                                                | Turnstile (hard gate) + reCAPTCHA Enterprise (invisible score) matrix                             |
-| [Analytics Pipeline](./analytics-pipeline.md)                                           | Local JSONL + DuckDB analytics, table registry, env vars, Phase 3 Firehose plan                   |
+| [Analytics Pipeline](./analytics-pipeline.md)                                           | Local JSONL + DuckDB analytics                                                                    |
 | [Content Rendering](./content-rendering.md)                                             | Post rendering rules, image proxying, mention parsing                                             |
 | [HTML & Markdown Rendering Passes](./html-markdown-rendering-passes.md)                 | Multi-pass rendering pipeline for safe HTML and Markdown output                                   |
 | [AI Platform](./ai-platform.md)                                                         | Shared classifier identity, execution, failure rules, provider boundaries and measurement         |
@@ -50,7 +50,8 @@ When architecture decisions change, update the relevant doc here and cross-link 
 
 ## Subsystem indexes
 
-- [Backend package catalogs](backend/catalogs/README.md) — agents, data stores, modules, queues, services, and workers
+- [Request client info](request-client-info.md) · [Structured decisions](structured-decisions.md) · [Design system](web/DESIGN-SYSTEM.md) · [First-party dependencies](../../development/first-party-dependencies.md) · [Stripe variant checklist](../../checklists/reference-financial-stripe-variant.md)
+
 - [AI agent architecture](ai-agents/README.md) · [Services](services/README.md) · [Queues](queues/README.md)
 - [Backend](backend/README.md) · [Web](web/README.md) · [Shared TypeScript](typescript-shared/README.md)
 
@@ -59,15 +60,15 @@ When architecture decisions change, update the relevant doc here and cross-link 
 - [App Attest](app-attestation.md)
 - [AI Agents reference](reference-ai-agents-content-moderation-pipeline.md)
 - [Native Conversation Sync](reference-ai-agents-native-conversations.md)
-- [AI Agents reference](reference-ai-agents-semantic-search-embeddings.md)
-- [AI Agents reference](reference-ai-agents-systems-overview.md)
-- [Analytics Pipeline reference](reference-analytics-pipeline-code-entry-points.md)
-- [Analytics Pipeline reference](reference-analytics-pipeline-environment-variables.md)
-- [Analytics Pipeline reference](reference-analytics-pipeline-retention.md)
-- [Analytics Pipeline reference](reference-analytics-pipeline-table-registry.md)
-- [App Attest reference](reference-app-attestation-configuration.md)
+- AI Agents reference
+- AI Agents reference
+- Analytics Pipeline reference
+- Analytics Pipeline reference
+- Analytics Pipeline reference
+- Analytics Pipeline reference
+- App Attest reference
 - [App Attest reference](reference-app-attestation-session-duration-the-dc-claim.md)
-- [App Attest reference](reference-app-attestation-supported-devices.md)
+- App Attest reference
 - [App Attest reference](reference-app-attestation-two-ceremonies.md)
 - [Authentication Overview reference](reference-auth-overview-login-flows.md)
 - [Authentication Overview reference](reference-auth-overview-multi-factor-authentication.md)
@@ -76,7 +77,7 @@ When architecture decisions change, update the relevant doc here and cross-link 
 - [Authentication Overview reference](reference-auth-overview-stateless-session-architecture.md)
 - [Authentication Overview reference](reference-auth-overview-valkey-state.md)
 - [Authentication Overview reference](reference-auth-overview-web-client-auth-boundary.md)
-- [Bot Tiers](reference-bot-tiers.md)
+- Bot Tiers
 - [Caching Strategy reference](reference-caching-strategy-architecture-overview.md)
 - [Caching Strategy reference](reference-caching-strategy-cache-tiers.md)
 - [Caching Strategy reference](reference-caching-strategy-client-side-personalization.md)
@@ -84,31 +85,31 @@ When architecture decisions change, update the relevant doc here and cross-link 
 - [Crawling Architecture reference](reference-crawling-error-handling.md)
 - [Crawling Architecture reference](reference-crawling-referral-link-crawling.md)
 - [Error Handling reference](reference-error-handling-client-side-onerror-web-lib-on-error.md)
-- [Error Handling reference](reference-error-handling-crawler-error-auto-disable.md)
+- Error Handling reference
 - [Error Handling reference](reference-error-handling-error-response-contract.md)
 - [Error Handling reference](reference-error-handling-precondition-errors-and-action-oriented-modals.md)
 - [Error Handling reference](reference-error-handling-server-side-error-boundaries.md)
 - [Fediverse Federation reference](reference-fediverse-federation-constraints-that-bind-every-phase.md)
-- [Fediverse Federation reference](reference-fediverse-federation-phase-c-outbound-activitypub-resurrect-the-removed-federation-server-shipped.md)
-- [Fediverse Federation reference](reference-fediverse-federation-phase-d-bluesky-account-linking-and-follow-propagation-shipped.md)
+- Fediverse Federation reference
+- Fediverse Federation reference
 - [Fediverse Federation reference](reference-fediverse-federation-protocol-reality.md)
 - [Native Client Strategy reference](reference-native-clients-spending-category-management.md)
-- [Navigation Performance](reference-navigation-performance.md)
+- Navigation Performance
 - [Origin and Browser `Vary` Boundaries](reference-origin-and-browser-vary-boundaries.md)
 - [Post / Comment Creation Pipeline reference](reference-post-lifecycle-comment-specific-behavior.md)
 - [Post / Comment Creation Pipeline reference](reference-post-lifecycle-community-moderation-pipeline.md)
-- [Post / Comment Creation Pipeline reference](reference-post-lifecycle-key-files.md)
+- Post / Comment Creation Pipeline reference
 - [Post / Comment Creation Pipeline reference](reference-post-lifecycle-post-creation-pipeline.md)
 - [Post / Comment Creation Pipeline reference](reference-post-lifecycle-story-post-behavior.md)
 - [Post / Comment Creation Pipeline reference](reference-post-lifecycle-table-of-contents.md)
-- [Rate Limiting reference](reference-rate-limiting-creation-gates.md)
+- Rate Limiting reference
 - [Rate Limiting reference](reference-rate-limiting-layer-1-cloudflare-worker-edge.md)
 - [Rate Limiting reference](reference-rate-limiting-layer-3-user-aware-trust-tier-backend.md)
 - [Rate Limiting reference](reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md)
 - [Rate Limiting reference](reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md)
 - [Rate Limiting reference](reference-rate-limiting-rest-usage-quota.md)
 - [Tier 1: CF Worker Edge Cache (Workers Cache)](reference-tier-1-cf-worker-edge-cache-workers-cache.md)
-- [Tier 2: Backend HTTP Cache-Control](reference-tier-2-backend-http-cache-control.md)
+- Tier 2: Backend HTTP Cache-Control
 - [Tier 3: Backend Valkey Cache](reference-tier-3-backend-valkey-cache.md)
 - [TypeScript Standards reference](reference-typescript-standards-encoding-invariants-structurally.md)
 - [TypeScript Standards reference](reference-typescript-standards-function-naming-prefixes.md)

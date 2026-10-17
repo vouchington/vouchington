@@ -33,8 +33,8 @@ flowchart TD
 ### Contents
 
 - <a id="tier-1-cf-worker-edge-cache-workers-cache"></a>[Tier 1: CF Worker Edge Cache (Workers Cache)](reference-tier-1-cf-worker-edge-cache-workers-cache.md)
-- <a id="bot-tiers"></a>[Bot Tiers](reference-bot-tiers.md)
+- <a id="bot-tiers"></a>Bot Tiers
 - <a id="origin-and-browser-vary-boundaries"></a>[Origin and Browser `Vary` Boundaries](reference-origin-and-browser-vary-boundaries.md)
-- <a id="navigation-performance"></a>[Navigation Performance](reference-navigation-performance.md)
-- <a id="tier-2-backend-http-cache-control"></a>[Tier 2: Backend HTTP Cache-Control](reference-tier-2-backend-http-cache-control.md)
+- <a id="navigation-performance"></a>Navigation Performance
+- <a id="tier-2-backend-http-cache-control"></a>Tier 2: Backend HTTP Cache-Control
 - <a id="tier-3-backend-valkey-cache"></a>[Tier 3: Backend Valkey Cache](reference-tier-3-backend-valkey-cache.md)

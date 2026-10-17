@@ -19,7 +19,7 @@ export const getIDsFromQuery = (query: string[] | string) => {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/utils/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export const getTypesFromQuery = (query: string[] | string, typesMap: Record<string, boolean>) => {
   if (!query) return []
@@ -55,7 +55,7 @@ export const getIdFromQuery = (query: string) => {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/utils/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export const createGetSearchParameters =
   ({ maxLimit = 100, defaultLimit = 25 }) =>

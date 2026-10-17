@@ -83,4 +83,4 @@ must restart from page one. See the route contract in
 
 - API: [`backend/api/v1/reports/`](../../../../requirements/api/v1/reports/README.md)
 - Report review is table-backed; asynchronous integrity checks use
-  [`backend/queues/vote-aggregation/`](../../queues/report-integrity/README.md).
+  `backend/queues/vote-aggregation/`.

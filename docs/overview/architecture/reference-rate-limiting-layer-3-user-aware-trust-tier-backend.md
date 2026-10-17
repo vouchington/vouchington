@@ -6,11 +6,11 @@
 
 General-purpose, user-aware rate limiting with thresholds that adjust based on user trust signals.
 
-### Trust Tier (0–5)
+### Trust Tier
 
-Computed by `computeTrustTier`; see the canonical [trust-tier definition](services/user-rate-limits/README.md#trust-tier) for scoring signals and penalties. Higher trust = higher rate limits.
+Computed by `computeTrustTier`; see the canonical trust-tier definition for scoring signals and penalties. Higher trust = higher rate limits.
 
-The [special cases](services/user-rate-limits/README.md#special-cases) define the new-account cooling period and administrator override.
+The special cases define the new-account cooling period and administrator override.
 
 ### Categories
 
@@ -29,27 +29,10 @@ All thresholds are runtime-configurable via DynamicConfig (Valkey-backed). Chang
 Public contribution creation limits are configured separately in DynamicConfig namespace
 `contribution-rate-limits`; see Contribution Limits.
 
-### Default Thresholds (per 60s)
-
-A request is blocked when the counter reaches the threshold, so threshold N allows N-1 requests through before blocking the Nth.
-
-| Tier | Read | Write | Sensitive |
-| ---- | ---- | ----- | --------- |
-| 0    | 180  | 15    | 5         |
-| 1    | 180  | 15    | 5         |
-| 2    | 300  | 30    | 5         |
-| 3    | 600  | 60    | 10        |
-| 4    | 1000 | 100   | 15        |
-| 5    | 1500 | 150   | 20        |
-
-### Response Headers
-
-- `X-RateLimit-Limit` — max requests per window
-- `X-RateLimit-Remaining` — requests remaining in window
-- `Retry-After` — window size in seconds; actual wait may be shorter with the sliding window (429 responses only)
+Thresholds are per tier and category and live in DynamicConfig defaults. A request is blocked when the counter reaches the threshold.
 
 ### Frontend Handling
 
-429 responses extract the `Retry-After` header and show a user-friendly toast: "Too many requests. Please wait N seconds and try again."
+429 responses surface a user-friendly toast built from `Retry-After`.
 
 **Files:** `backend/services/user-rate-limits/`, `web/lib/api/rate-limit-error.ts`

@@ -35,7 +35,7 @@ same browser URL is fetched as an authenticated variant and the Worker bypasses 
   a production origin. The worker forwards the tags to `CachedOrigin`'s `purge(tags)` RPC method,
   which calls `ctx.cache.purge({tags})` and throws if the cache binding is unavailable
   (fail-closed, rather than silently no-oping on a cache-correctness path). Cloudflare accepts
-  only printable ASCII excluding space and comma, at most 1024 bytes per tag, and fails the whole
+  only printable ASCII excluding space and comma, a bounded size per tag, and fails the whole
   batch on one bad tag, so `@vouchington/utils/cache-tags` percent-encodes every identifier into
   that alphabet (truncating on an escape boundary at the cap) and the purge route rejects a
   non-conforming batch with 400 rather than letting it surface as a retried 502. Votes/elections are
@@ -44,14 +44,14 @@ same browser URL is fetched as an authenticated variant and the Worker bypasses 
 
 ## What is NOT Cached
 
-Anonymous SSR HTML **is now cached** (previously bypassed) — see
+Anonymous SSR HTML is cached — see
 [Anonymous HTML edge caching vs. CSP nonces](./anon-html-edge-caching-csp.md) for why that's safe
 despite the per-request CSP nonce. What's still excluded from the edge cache:
 
 - **Authenticated responses**: CF Worker bypasses cache entirely for authenticated users
 - **RSC fetches**: `?_rsc=1` / `accept: text/x-component` navigations bypass the edge cache today,
   even for anonymous users — pending staging verification of RSC-navigation nonce consistency (see
-  the nonce doc's [RSC navigation](./anon-html-edge-caching-csp.md#whats-not-yet-covered-rsc-navigation)
+  the nonce doc's [RSC navigation](./anon-html-edge-caching-csp.md)
   section)
 - **Login page**: `/login` and `/login/` bypass the edge cache so Cloudflare Turnstile renders on
   every page load

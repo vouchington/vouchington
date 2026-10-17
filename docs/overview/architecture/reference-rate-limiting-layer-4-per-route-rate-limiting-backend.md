@@ -37,35 +37,21 @@ and `createVoteHandler()` vote endpoints have static drift tests for required ex
 
 **Anonymous users**: DynamicConfig `anon_{category}` thresholds × route `multiplier`.
 
-| Category         | Anon default | Use for                               |
-| ---------------- | ------------ | ------------------------------------- |
-| `read`           | 180/60s      | GET/HEAD endpoints                    |
-| `write`          | 15/60s       | POST/PUT/PATCH/DELETE                 |
-| `sensitive`      | 5/60s        | Auth, billing, account management     |
-| `oauth_callback` | 300/60s      | Shared provider callback ingress only |
+Categories are `read`, `write`, `sensitive`, and `oauth_callback` (shared provider callback ingress only); defaults live in DynamicConfig.
 
 The OAuth authorization completion POST is an explicit `read` exception. While an exchange is
-pending, clients follow its `Retry-After: 1` response for up to the ten-minute authorization
-lifecycle; the credential-bound, idempotent route therefore receives the 180/minute anonymous read
-quota. Authorization creation and other auth mutations remain `sensitive`. The provider broker
-callback instead uses a dedicated, dynamically configurable 300-per-60-second source-IP quota,
+pending, clients follow its `Retry-After` response for the whole authorization lifecycle; the credential-bound, idempotent route therefore receives the anonymous read quota. Authorization creation and other auth mutations remain `sensitive`. The provider broker
+callback instead uses a dedicated, dynamically configurable source-IP quota,
 independent of authenticated trust tiers and attestation multipliers. This avoids exhausting a
-shared five-request bucket for users behind one NAT while the random, single-use state remains the
+shared sensitive bucket for users behind one NAT while the random, single-use state remains the
 callback authentication boundary.
 
-### Admin API
-
-- `GET /api/v1/dynamic-config/namespaces/route-rate-limit-config` — view config (admin only)
-- `PATCH /api/v1/dynamic-config/namespaces/route-rate-limit-config` — update config fields (admin only)
-
 The same namespace owns the ActivityPub inbox's pre-verification attempt limits:
-`activitypub_inbox_attempt_max_requests` defaults to 300 structured attempts per trusted source IP
-and `activitypub_inbox_attempt_window_seconds` defaults to 60 seconds. After required headers and a
+`activitypub_inbox_attempt_*` limits structured attempts per trusted source IP. After required headers and a
 parseable claimed hostname, the route atomically charges this bucket before allowlist, body, actor
 fetch, or signature work. This prevents spoofed hostnames from creating independent unauthenticated
 buckets. It also owns the signature-authenticated sender limits:
-`activitypub_inbox_max_requests` defaults to 60 accepted deliveries per hostname and
-`activitypub_inbox_window_seconds` defaults to 60 seconds. Both take effect through DynamicConfig
+`activitypub_inbox_*` limits accepted deliveries per hostname. Both take effect through DynamicConfig
 without a deploy. The inbox checks an existing authenticated-hostname bucket before reading the
 body and increments it only after the HTTP signature verifies, so invalid signatures consume the
 attempt bucket but not the valid-delivery allowance. Both limiter scopes report failures and fail
@@ -76,16 +62,7 @@ exemption: the classifier requires the exact method and path, and the backend ch
 source-IP attempt bucket before expensive work, then charges the hostname delivery bucket only
 after signature verification succeeds.
 
-- **Kill switch**: `enabled` field (default: `true`). When `false`, all `applyRouteRateLimit` calls are no-ops. Malformed non-boolean values fall back to the enabled default.
-
-### Response Headers
-
-- `X-RateLimit-Limit` — max requests per window
-- `X-RateLimit-Remaining` — requests remaining
-- `Retry-After` — window size in seconds (429 only)
-
-The MCP routes (`POST /api/v1/mcp` and `POST /api/v1/admin/mcp`) do not emit `X-RateLimit-*`
-headers; their 429 responses carry an authoritative `Retry-After`.
+- **Kill switch**: `enabled` field. When `false`, all `applyRouteRateLimit` calls are no-ops. Malformed non-boolean values fall back to the enabled default.
 
 ### MCP usage quota
 
@@ -95,53 +72,30 @@ protection covers all traffic. The usage quota counts only requests the API serv
 never charged for a failure that was ours. Valkey is the only store: there is no usage table and no
 durable ledger.
 
-| Response status    | Units charged | Why                                                                 |
-| ------------------ | ------------- | ------------------------------------------------------------------- |
-| 2xx                | 1, or 0       | MCP charges 0 when every message was rate limited; otherwise served |
-| 4xx other than 429 | 1             | Served; the caller caused the error                                 |
-| 429                | 0             | Refused before it ran                                               |
-| 5xx                | 0             | The API's failure                                                   |
-
 - **Unit**: one HTTP request. A JSON-RPC batch is one unit.
 - **Settlement**: the quota is charged, and the usage event emitted, when the response closes,
   because only then is the real status known. A client that disconnects before any response header
   was sent has no status and is skipped.
-- **Bucket**: `rate-limiter:usage-quota:{<surface>:user:<userId>}`, a 15-minute sliding window per
+- **Bucket**: `rate-limiter:usage-quota:{<surface>:user:<userId>}`, a sliding window per
   owner and surface. Every API key and OAuth grant of one user draws on one allowance, so minting
   more credentials does not widen it. No key, token, or credential hash appears in the bucket id.
 - **Quota selection**: surface, plan, and scope class choose the limit from code constants in
   `usage-policy.mts`. A credential is write-class when any scope it holds has a `write` action,
   whatever resource it names. The plan is the owner's membership plan (`free` when none).
 
-  | Surface            | Read scopes | Write-capable scopes |
-  | ------------------ | ----------- | -------------------- |
-  | `mcp_user` (free)  | 900         | 450                  |
-  | `mcp_admin` (free) | 1800        | 900                  |
-
-  `plus` multiplies the limit by 2 and `pro` by 4. The values are provisional constants, not
+  `plus` and `pro` multiply the limit. The values are provisional constants, not
   DynamicConfig fields.
 
 - **Enforcement**: a read-only check runs before the call. An exhausted quota returns `429 Usage
-  quota exceeded` with `Retry-After` set to the full window (900 seconds), records an MCP audit
+  quota exceeded` with `Retry-After` set to the full window, records an MCP audit
   entry with outcome `rate_limited`, and is not charged. Because the charge happens after the
   response, concurrent in-flight requests can overshoot the limit by at most their own number. The
   check fails open on a Valkey error and reports it through `onError`. The `enabled` kill switch
   turns off enforcement and charging; the usage event is still emitted.
 - **Metrics**: each settled request emits one typed `api_usage` analytics event (see the
-  [table registry](reference-analytics-pipeline-table-registry.md)) carrying the validated user id,
+  table registry) carrying the validated user id,
   API key id or OAuth client id and grant id, plan, scope class, units, status, quota, and
   duration. The raw bearer token is never read by the metering code.
-- **Model requests**: no model call is made through MCP or the API today, so there are no token
-  counts and none are invented. Model request recording would reuse the existing redacted,
-  access-controlled object-recording path when such a call exists.
-- **Deferred**: per-OAuth-client buckets and the structured `RateLimit-Policy` / `RateLimit`
-  headers belong to the Public REST API milestone. REST requests are metered by the
-  [REST usage quota](reference-rate-limiting-rest-usage-quota.md).
-
-The Firehose stream and S3 Tables table for `api_usage` are provisioned in the infra repository
-([#1556](https://github.com/vouchington/vouchington/issues/1556)). Until they exist, the
-`firehose` backend reports a delivery error for each batch of `api_usage` rows; the `local`
-backend is unaffected.
 
 ### MCP tool calls and REST route limits
 
@@ -166,7 +120,3 @@ It never reaches the REST usage meter either.
 **Files:** `backend/services/route-rate-limits/`, `backend/api/context/rate-limit.mts`,
 `backend/api/mcp-usage-helpers.mts`, `backend/api/rest-usage-meter.mts`,
 `backend/api/usage-meter-helpers.mts`
-
-**CF Worker bindings**: staging declares the shared GET/HEAD, mutating, and nested Server Action
-bindings in the private Worker deployment manifest; Vouchington is not their source of
-truth.

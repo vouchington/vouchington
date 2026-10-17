@@ -63,5 +63,5 @@ need to subscribe to them; the destination tolerates them if Stripe sends them.
 ## See Also
 
 - Handler switch: [`backend/services/stripe-event-processing/event-handlers.mts`](../../backend/services/stripe-event-processing/event-handlers.mts)
-- Event ingestion: [`docs/overview/architecture/queues/workers/stripe-events-sqs/README.md`](../overview/architecture/queues/workers/stripe-events-sqs/README.md)
-- Stripe service: [`docs/overview/architecture/services/stripe/README.md`](../overview/architecture/services/stripe/README.md)
+- Event ingestion: [`docs/overview/architecture/queues/README.md`](../overview/architecture/queues/README.md)
+- Stripe service: [`docs/overview/architecture/services/README.md`](../overview/architecture/services/README.md)

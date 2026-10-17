@@ -24,13 +24,7 @@ once is still metered once per request.
   loads no user pays one extra read. A failed read costs the plan tier (the request is metered as
   `free`), never the request.
 
-  | Surface                      | Read-class routes | Write-class routes |
-  | ---------------------------- | ----------------- | ------------------ |
-  | `rest_user` (free)           | 3600              | 900                |
-  | `rest_anonymous` (reference) | 36000             | 9000               |
-
-  `plus` multiplies the `rest_user` limit by 2 and `pro` by 4. The values are provisional
-  constants in `usage-policy.mts`, not DynamicConfig fields.
+  `plus` and `pro` multiply the `rest_user` limit. The values are provisional constants in `usage-policy.mts`, not DynamicConfig fields.
 
 - **Enforcement for signed-in users**: a read-only check before the route runs. An exhausted
   quota returns the same `429 Usage quota exceeded` as MCP: `Retry-After` is the full window, no
@@ -44,25 +38,10 @@ once is still metered once per request.
   `credential: 'anonymous'` with no user id, IP, device id, or session id. The aggregate is
   reported and never enforced, because a shared cap would let a few clients lock every anonymous
   caller out; its `quota_limit` is a reference level only. Per-caller anonymous fairness stays with
-  the attempt-based limit, which keys on `ip`, `did`, and `sid` and is unchanged. The aggregate is
-  one hot key whose set holds a member per charged request of the last 15 minutes (each add trims
-  older ones), so it grows with anonymous traffic; revisit with sampling or a counter if volume
-  warrants.
+  the attempt-based limit, which keys on `ip`, `did`, and `sid` and is unchanged.
 - **Kill switch**: `enabled: false` makes `applyRouteRateLimit` a no-op, so REST metering is off
   entirely: nothing is charged and no event is emitted. MCP still emits its event.
 
 The meter is `backend/api/rest-usage-meter.mts`. It shares the settle-on-response-close hook in
 `backend/api/usage-meter-helpers.mts` with the MCP routes, and the quota, policy, and settlement
 code in `backend/services/route-rate-limits/`.
-
-The shared close hook exposes `onResponseUsageSettlement` before response close. Each receipt
-contains only the URL pathname (without query/fragment) and validated owner user ID (or null),
-never headers, cookies, body, socket, or the HTTP request object. It settles only after that response's quota charge and
-analytics enqueue finish (or a headerless disconnect is skipped). This is not analytics delivery
-or persistence: the analytics backend's flush owns that boundary. Observers register before the
-request, drain owned receipts before detaching, and must not persist correlation metadata. Observer
-failures cannot reject the HTTP response; raw settlement and observer/reporting failures remain
-available in the receipt. REST quota tests use unique route prefixes and these receipts instead
-of polling analytics or inferring completion from global response/limiter spies. A focused
-regression holds only its owned real limiter charge to prove that HTTP completion alone does
-not settle the receipt; foreign limiter calls delegate unchanged.

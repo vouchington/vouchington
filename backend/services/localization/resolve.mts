@@ -93,6 +93,6 @@ export function isLocalizationClientError(error: unknown): error is Error {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/localization/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export const resolveEmailLocalizationBatch = localizationResolver.resolveEmailLocalizationBatch

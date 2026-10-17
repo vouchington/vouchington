@@ -45,7 +45,7 @@ type WorkerLike = {
  * `entity_relation` election) `relationTable`. IDs can overlap across election kinds or tables.
  *
  * Recomputes are scheduled outside request latency; tests reading the aggregate after a vote
- * must wait here. See `docs/overview/architecture/services/elections-votes/README.md`.
+ * must wait here. See `docs/overview/architecture/services/README.md`.
  *
  * Unlike `onceEntityListenerCompleted` (`backend/test-helpers/workers/entity-listeners/test-support.mts`), this
  * helper does not short-circuit on `worker.isDrained`: elections enqueues are fire-and-forget, so the

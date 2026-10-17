@@ -111,7 +111,7 @@ export async function listSubscriptionInvoicesOperation(
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/stripe/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export async function createRefundOperation(
   payload: CreateRefundPayload,
@@ -129,7 +129,7 @@ export async function createRefundOperation(
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/backend/modules/stripe/README.md`.
+ * Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export async function cancelSubscriptionImmediatelyOperation(
   payload: CancelSubscriptionImmediatelyPayload,

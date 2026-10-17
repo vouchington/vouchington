@@ -5,7 +5,7 @@ import { searchRecentlyViewed } from './store.mts'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/recently-viewed/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getRecentlyViewedIds(
   sessionId: string,

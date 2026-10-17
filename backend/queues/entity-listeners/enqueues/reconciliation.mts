@@ -14,7 +14,7 @@ function logicalEntityJobId(data: ReconcileEntityData): string {
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/entity-listeners/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
  */
 export const enqueueBulkReconcileEntities = createBackgroundBulkEnqueue(
   ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,

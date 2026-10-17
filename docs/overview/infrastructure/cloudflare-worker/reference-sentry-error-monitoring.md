@@ -10,7 +10,7 @@ Sentry is initialized via [`src/sentry.mts`](../../../../cloudflare-worker/src/s
   the shared `resolveSentryDsnEnablement()` gate (`ts-shared/utils/sentry-deployment-gate.mts`). A
   missing or invalid deployed DSN disables reporting and emits one value-free warning per isolate;
   dev, CI, and test remain silent. This is independent of `PRODUCTION`, which only gates
-  HSTS/strict-mode; see [reference-production-mode.md](reference-production-mode.md).
+  HSTS/strict-mode; see reference-production-mode.md.
 - **Release:** `GIT_COMMIT` is set by the private deployment receiver.
 - **Error capture:** origin fetch failures (502s) via `captureWorkerException()` in the origin `fetch()` catch block, and `/infra/cache-purge` RPC throws or `success: false` rejections. Purge reports include the validated cache-tag batch and, for a rejection, the provider error code and message. Expected edge responses (geo-blocks=403, rate limits=429, WebSocket errors=400, and cache-purge auth or validation failures) return via `edgeErrorResponse()` and are not captured.
 - **Request-metadata scrubbing:** `beforeSend` and `beforeSendSpan` remove

@@ -59,7 +59,7 @@ deletes the source image or blocks another placement that uses it. Legal referen
 binding but retained identity alone never grants delivery. Application controls alone cannot
 revoke a warm CDN response, so complete enforcement also needs the edge registry and cache
 invalidation described in
-[media-delivery safety](../../overview/architecture/services/media-delivery-safety/README.md);
+[media-delivery safety](../../overview/architecture/services/README.md);
 intake stays off until those controls are verified. Image-similarity candidates are advisory and
 never expand a notice or apply a restriction.
 
