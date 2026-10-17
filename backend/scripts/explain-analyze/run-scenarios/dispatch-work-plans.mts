@@ -119,6 +119,10 @@ for (const id of [
 ]) {
   registerScenarioContract(id, {
     seededRows: { urls: 10026 },
+    crossPartition: {
+      crawls:
+        'URL-keyed recrawl eligibility checks embedding completion across crawl creation partitions; crawl IDs do not bound completion time.',
+    },
     expectations: [{ kind: 'custom', name: 'dispatchUrlSelectivity' }],
   })
 }
