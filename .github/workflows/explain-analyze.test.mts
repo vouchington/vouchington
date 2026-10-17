@@ -141,9 +141,7 @@ describe('native pruning coverage artifacts', () => {
     expect(pruning?.env?.NODE_V8_COVERAGE).toBe(
       '${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8',
     )
-    const converter = steps.find(
-      step => step.name === 'Convert native pruning coverage with published c8',
-    )
+    const converter = steps[stepIndexRunning(steps, 'node node_modules/c8/bin/c8.js report')]
     expect(converter?.run).toContain('node node_modules/c8/bin/c8.js report')
     expect(converter?.run).toContain('--reporter lcovonly')
     expect(converter?.run).toContain('--extension .mts')

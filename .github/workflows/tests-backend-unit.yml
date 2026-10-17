@@ -188,7 +188,8 @@ jobs:
               set +e
               set +o pipefail
               sleep_pid=
-              trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
+              # TERM can arrive after sleep starts but before sleep_pid=$! records it.
+              trap 'for child_pid in $(jobs -pr); do kill "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true; done; exit 0' TERM INT
               sleep "$DEADLINE_DUMP_AFTER_SECONDS" &
               sleep_pid=$!
               wait "${sleep_pid}" && dump_deadline_state
@@ -200,7 +201,7 @@ jobs:
               set +e
               set +o pipefail
               sleep_pid=
-              trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
+              trap 'for child_pid in $(jobs -pr); do kill "$child_pid" 2>/dev/null || true; wait "$child_pid" 2>/dev/null || true; done; exit 0' TERM INT
               while true; do
                 "$1"
                 sleep "$2" &

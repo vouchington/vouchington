@@ -57,24 +57,24 @@ describe('bounded publication receipt retention and reclamation', () => {
       workId: work.id,
       generation: work.generation,
       postId: candidate.id,
-      count: 20,
+      count: 3,
       abandoned: true,
     })
     await using lock = await beginTransaction()
     await lockTestPublicationSnapshots(lock, ids)
-    const lockedBound = await getTestPublicationCleanupTraversalBound(10)
+    const lockedBound = await getTestPublicationCleanupTraversalBound(2)
     for (let page = 0; page < lockedBound; page += 1) {
       const { result } = await captureCleanupCandidatePage()
-      expect(result.scanned).toBeLessThanOrEqual(10)
-      expect(result.snapshots).toBeLessThanOrEqual(10)
-      expect(result.keys).toBeLessThanOrEqual(10)
+      expect(result.scanned).toBeLessThanOrEqual(2)
+      expect(result.snapshots).toBeLessThanOrEqual(2)
+      expect(result.keys).toBeLessThanOrEqual(2)
     }
     expect(await readTestPublicationSnapshotIds(ids)).toEqual([...ids].toSorted())
     await lock.commit()
-    const bound = await getTestPublicationCleanupTraversalBound(10)
+    const bound = await getTestPublicationCleanupTraversalBound(2)
     let remaining = ids
     for (let page = 0; page < bound && remaining.length > 0; page += 1) {
-      await cleanupPostPublicationIdentitySnapshots(10)
+      await cleanupPostPublicationIdentitySnapshots(2)
       remaining = await readTestPublicationSnapshotIds(remaining)
     }
     expect(remaining).toEqual([])
@@ -107,7 +107,7 @@ describe('bounded publication receipt retention and reclamation', () => {
   it('checkpoints one prior receipt page per attempt and resumes with a replacement lease', async () => {
     const { work, candidate } = await createTestPublicationSnapshotWork()
     const oldSlugs = Array.from(
-      { length: 1001 },
+      { length: 3 },
       (_, index) => `prior-${candidate.id}-${index.toString().padStart(6, '0')}`,
     )
     await seedTestPublicationReceipt(candidate.id, 'previous-exact-snapshot', {
@@ -115,22 +115,22 @@ describe('bounded publication receipt retention and reclamation', () => {
       identityKeys: oldSlugs.map(value => ({ kind: 'post_slug', value })),
       sitemapTargets: [],
     })
-    const first = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
+    const first = await materializePostPublicationIdentitySnapshot(work, candidate, 2)
     expect(first.complete).toBe(false)
     expect((await readTestPublicationSnapshot(first.snapshotId)).keys).toHaveLength(0)
     expect(
       (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
-    ).toHaveLength(100)
+    ).toHaveLength(2)
     await expireTestPostPublicationDirtyWorkLease(work.id)
     const replacement = await claimPostPublicationDirtyWork(work, 120)
     if (!replacement) throw new Error('Expected replacement lease')
     let result = first
-    for (let page = 0; page < 20 && !result.complete; page += 1)
-      result = await materializePostPublicationIdentitySnapshot(replacement, candidate, 100)
+    for (let page = 0; page < 8 && !result.complete; page += 1)
+      result = await materializePostPublicationIdentitySnapshot(replacement, candidate, 2)
     expect(result).toEqual({ snapshotId: first.snapshotId, complete: true })
     expect(
       (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
-    ).toHaveLength(1001)
+    ).toHaveLength(3)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: expect.any(String),
       fingerprint: 'previous-exact-snapshot',
@@ -165,27 +165,27 @@ describe('bounded publication receipt retention and reclamation', () => {
 
   it('stages orphan receipt retention before exposing effects or deleting the receipt', async () => {
     const { work, candidate } = await createTestPublicationSnapshotWork()
-    const oldSlugs = Array.from({ length: 201 }, (_, index) => `orphan-${candidate.id}-${index}`)
+    const oldSlugs = Array.from({ length: 5 }, (_, index) => `orphan-${candidate.id}-${index}`)
     await seedTestPublicationReceipt(candidate.id, 'orphan-prior', {
       topicIds: [],
       identityKeys: oldSlugs.map(value => ({ kind: 'post_slug', value })),
       sitemapTargets: [],
     })
     await hardDeleteTestPost(candidate.id)
-    const first = await reconcilePostPublicationDirtyWork(work, 100)
+    const first = await reconcilePostPublicationDirtyWork(work, 2)
     expect(first.hasIncompleteSnapshots).toBe(true)
     expect(first.identityKeys).toHaveLength(0)
     expect(
       (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
-    ).toHaveLength(100)
-    const second = await reconcilePostPublicationDirtyWork(work, 100)
+    ).toHaveLength(2)
+    const second = await reconcilePostPublicationDirtyWork(work, 2)
     expect(second.hasIncompleteSnapshots).toBe(true)
-    const third = await reconcilePostPublicationDirtyWork(work, 100)
+    const third = await reconcilePostPublicationDirtyWork(work, 2)
     expect(third.hasIncompleteSnapshots).toBe(false)
     expect(third.hasMoreIdentityKeys).toBe(true)
     expect(
       (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
-    ).toHaveLength(201)
+    ).toHaveLength(5)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: expect.any(String),
       fingerprint: 'orphan-prior',
@@ -207,7 +207,7 @@ describe('bounded publication receipt retention and reclamation', () => {
     const before = await readTestPublicationSnapshot(accepted.snapshotId)
     expect((await cleanupPostPublicationIdentitySnapshots(1)).scanned).toBeLessThanOrEqual(1)
     expect(await readTestPublicationSnapshot(accepted.snapshotId)).toEqual(before)
-    await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 101)
+    await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 3)
     await using query = await beginTransaction()
     const pending = await recordPostPublicationChange(query, {
       scope: { type: 'post', postId: candidate.id },
@@ -216,9 +216,13 @@ describe('bounded publication receipt retention and reclamation', () => {
     await query.commit()
     const next = await claimPostPublicationDirtyWork(pending, 120)
     if (!next) throw new Error('Expected replacement generation')
-    const stale = await materializePostPublicationIdentitySnapshot(next, candidate, 100)
+    const snapshotPageSize = 2
+    let stale = await materializePostPublicationIdentitySnapshot(next, candidate, snapshotPageSize)
+    // Receipt retention finishes only on a short page, including an empty page after exact multiples.
+    for (let page = 0; page < Math.floor(before.keys.length / snapshotPageSize); page += 1)
+      stale = await materializePostPublicationIdentitySnapshot(next, candidate, snapshotPageSize)
     expect(stale.complete).toBe(false)
-    expect((await readTestPublicationSnapshot(stale.snapshotId)).keys).toHaveLength(100)
+    expect((await readTestPublicationSnapshot(stale.snapshotId)).keys).toHaveLength(2)
     await using replacement = await beginTransaction()
     const currentPending = await recordPostPublicationChange(replacement, {
       scope: { type: 'post', postId: candidate.id },
@@ -227,20 +231,26 @@ describe('bounded publication receipt retention and reclamation', () => {
     await replacement.commit()
     const current = await claimPostPublicationDirtyWork(currentPending, 120)
     if (!current) throw new Error('Expected current generation')
-    const incomplete = await materializePostPublicationIdentitySnapshot(current, candidate, 10)
+    const incomplete = await materializePostPublicationIdentitySnapshot(current, candidate, 1)
     expect(incomplete.complete).toBe(false)
     await expireTestPostPublicationDirtyWorkLease(current.id)
-    const traversalBound = await getTestPublicationCleanupTraversalBound(7)
+    const traversalBound = await getTestPublicationCleanupTraversalBound(1)
+    let sawPartiallyReclaimedStaleSnapshot = false
     for (
       let page = 0;
       page < traversalBound && (await hasTestPublicationSnapshot(stale.snapshotId));
       page += 1
     ) {
-      const reclaimed = await cleanupPostPublicationIdentitySnapshots(7)
-      expect(reclaimed.keys).toBeLessThanOrEqual(7)
-      expect(reclaimed.snapshots).toBeLessThanOrEqual(7)
-      expect(reclaimed.scanned).toBeLessThanOrEqual(7)
+      const reclaimed = await cleanupPostPublicationIdentitySnapshots(1)
+      expect(reclaimed.keys).toBeLessThanOrEqual(1)
+      expect(reclaimed.snapshots).toBeLessThanOrEqual(1)
+      expect(reclaimed.scanned).toBeLessThanOrEqual(1)
+      if (await hasTestPublicationSnapshot(stale.snapshotId)) {
+        const remainingKeys = (await readTestPublicationSnapshot(stale.snapshotId)).keys.length
+        if (remainingKeys === 1) sawPartiallyReclaimedStaleSnapshot = true
+      }
     }
+    expect(sawPartiallyReclaimedStaleSnapshot).toBe(true)
     expect(await hasTestPublicationSnapshot(stale.snapshotId)).toBe(false)
     expect(await hasTestPublicationSnapshot(incomplete.snapshotId)).toBe(true)
     const finalLease = await claimPostPublicationDirtyWork(currentPending, 120)
@@ -257,7 +267,7 @@ describe('bounded publication receipt retention and reclamation', () => {
       page < traversalBound && (await hasTestPublicationSnapshot(incomplete.snapshotId));
       page += 1
     )
-      await cleanupPostPublicationIdentitySnapshots(7)
+      await cleanupPostPublicationIdentitySnapshots(2)
     expect(await hasTestPublicationSnapshot(incomplete.snapshotId)).toBe(false)
     expect(await readTestPublicationSnapshot(accepted.snapshotId)).toEqual(before)
   })
@@ -268,7 +278,7 @@ async function captureCleanupCandidatePage() {
   let queries: CapturedTestQuery[] = []
   let result: Awaited<ReturnType<typeof cleanupPostPublicationIdentitySnapshots>>
   try {
-    result = await cleanupPostPublicationIdentitySnapshots(10)
+    result = await cleanupPostPublicationIdentitySnapshots(2)
   } finally {
     queries = stopTestQueryCapture()
   }

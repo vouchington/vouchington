@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       publish_coverage:
-        description: Collect and publish native migration LCOV for backend coverage
+        description: Collect and publish native EXPLAIN and migration LCOV for backend coverage
         required: false
         type: boolean
         default: false
@@ -129,6 +129,9 @@ jobs:
       - run: node backend/scripts/explain-analyze/run.mts
         timeout-minutes: 10
         env:
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          # Both canonical native runners append stock V8 records to the existing c8 input.
+          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
           EXPLAIN_PLAN_CACHE_MODE: compare
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
       - name: Enforce plan gates and write job summary
@@ -140,7 +143,7 @@ jobs:
           NODE_DISABLE_COMPILE_CACHE: '1'
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
         run: node backend/scripts/explain-analyze/pruning/run.mts
-      - name: Convert native pruning coverage with published c8
+      - name: Convert native EXPLAIN and pruning coverage with published c8
         timeout-minutes: 1
         # Use c8's declared public CLI entrypoint: Knip treats the bare c8 binary as a
         # child-command wrapper and otherwise mistakes its report subcommand for a binary.
@@ -152,6 +155,10 @@ jobs:
           --extension .mts --all --src backend
           --include 'backend/data-stores/psql/migration-runner/retire-monthly-partitions.mts'
           --include 'backend/data-stores/psql/migrate.mts'
+          --include 'backend/data-stores/psql/explain-analyze.mts'
+          --include 'backend/services/crawls/{dispatch-per-hostname,dispatch-tier-urls}.mts'
+          --include 'backend/services/crawler-referral-links/dispatch.mts'
+          --include 'backend/services/referral-link-unfurl/dispatch.mts'
           --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts'
       - name: Preserve full native migration LCOV
         if: ${{ inputs.publish_coverage }}
