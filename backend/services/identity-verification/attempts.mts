@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { IDENTITY_VERIFICATION_FEE_MINOR_UNITS } from '@voucha/config'
 import createHttpError from 'http-errors'
@@ -29,11 +29,16 @@ export async function reserveIdentityVerificationAttempt(
 ): Promise<IdentityVerificationAttempt> {
   const begin = dependencies?.beginTransaction ?? beginTransaction
   await using transaction = await begin()
-  async function reserveAttemptInTransaction(query: typeof transaction) {
+  async function reserveAttemptInTransaction(query: TransactionQuery) {
     const { rows: membershipRows } =
       await query(sql`/* reserveIdentityVerificationAttempt:membership */
-      SELECT plan FROM view_memberships
-      WHERE user_id = ${userId} AND status IN ('active', 'past_due') AND plan IN ('plus', 'pro')
+      WITH selected AS MATERIALIZED (
+        SELECT id FROM memberships WHERE user_id = ${userId} AND projection_ended_at IS NULL
+      )
+      SELECT membership.plan
+      FROM selected
+      JOIN view_memberships membership ON membership.id = selected.id
+      WHERE status IN ('active', 'past_due') AND plan IN ('plus', 'pro')
       LIMIT 1
     `)
     const eligibleForIncluded = membershipRows.length > 0

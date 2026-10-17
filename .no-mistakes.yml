@@ -4030,6 +4030,7 @@ rules:
       executorTypeNames:
         - TransactionQuery
         - QueryExecutor
+        - OwnedTransaction
       include:
         - backend/**/*.{ts,mts,js}
       exclude:
