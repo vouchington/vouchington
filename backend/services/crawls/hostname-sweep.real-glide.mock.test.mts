@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestUser,
   insertTestUrlDirect,
@@ -7,6 +7,7 @@ import {
   setTestRobotsTxtCache,
 } from '@voucha/test-helpers'
 import {
+  acquireTestHostnameSweepBucket,
   setTestHostnameCrawlSweep,
   getTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
@@ -28,6 +29,37 @@ const sweepStartedAt = '2099-01-15T00:00:00.000Z'
 describe('hostname sweep selection and completion', () => {
   afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
 
+  it('keeps a one-row dispatch when a shared-band url-less hostname already exists', async () => {
+    const bucket = await acquireTestHostnameSweepBucket()
+    onTestFinished(() => bucket.release())
+    expect(bucket.bucketDays).toBeLessThan(29000)
+    const decoy = await insertTestUrlHostname({
+      hostname: `shared-band-${randomUUID()}.example.com`,
+      is_crawlable: true,
+    })
+    await setTestHostnameCrawlSweep(decoy, 31000, null)
+    const owner = await createTestUser()
+    const hostname = `exclusive-${randomUUID()}.example.com`
+    const host = await insertTestUrlHostname({ hostname })
+    await insertTestUrlDirect(owner.id, `https://${hostname}/crawlable`)
+    await setTestHostnameCrawlSweep(host, bucket.bucketDays, null)
+    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      hostname_batch_size: 1,
+      hostname_max_rows_per_run: 1,
+    })
+    expect(
+      await dispatchCrawlHostnames(
+        {
+          sweepStartedAt,
+          rangeLimit: 1,
+          afterBucketDays: bucket.bucketDays - 1,
+          bucketDays: bucket.bucketDays,
+        },
+        async () => {},
+      ),
+    ).toEqual({ count: 1, hasMore: true })
+  })
+
   it('saves the threshold position when a one-row run budget is spent on its initial seek', async () => {
     await insertTestUrlHostname({ hostname: `initial-sweep-${randomUUID()}.example.com` })
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
@@ -45,9 +77,11 @@ describe('hostname sweep selection and completion', () => {
   })
 
   it('caps both due ranges, excludes recent completion, and resumes beyond queued hosts', async () => {
+    const bucket = await acquireTestHostnameSweepBucket()
+    onTestFinished(() => bucket.release())
     const owner = await createTestUser()
     const hosts: string[] = []
-    const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
+    const bucketDays = bucket.bucketDays
     for (const sweptAt of [
       null,
       null,
@@ -184,7 +218,9 @@ describe('hostname sweep selection and completion', () => {
   })
 
   it('advances past a due hostname that has no URL without enqueueing it', async () => {
-    const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
+    const bucket = await acquireTestHostnameSweepBucket()
+    onTestFinished(() => bucket.release())
+    const bucketDays = bucket.bucketDays
     const bare = await insertTestUrlHostname({
       hostname: `bare-${randomUUID()}.example.com`,
       is_crawlable: true,
