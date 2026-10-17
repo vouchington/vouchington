@@ -7,6 +7,11 @@ Cursor does not get a `.cursor/hooks.json`: both run the Claude hooks through Cl
 harness's setup quirks live in its [harness page](harnesses/README.md); sandbox and approval policy
 live in [Agent Sandbox](agent-sandbox.md).
 
+Codex worktrees need dependencies before a chat starts because repository hooks import workspace
+packages. The [local environment](../../.codex/environments/environment.toml) owns that bootstrap;
+putting installation in a session hook would let other startup hooks race it. Select this environment
+when creating a worktree in the desktop app; see [Codex local environments](https://learn.chatgpt.com/docs/environments/local-environment).
+
 ## Instruction loading
 
 - Codex assembles `AGENTS.md` from the repository root through its startup working directory.
