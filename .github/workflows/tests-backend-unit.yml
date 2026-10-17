@@ -122,6 +122,7 @@ jobs:
           if-no-files-found: error
       # Opt-in file progress and resource samples share this step's streamed log. A runner
       # shutdown keeps that log; the JUnit artifact is still skipped when the run is killed.
+      # File progress is always buffered to a file and dumped 60s before the step timeout.
       - name: Run backend tests
         env:
           GIT_COMMIT: ${{ github.sha }}
@@ -132,6 +133,9 @@ jobs:
           VITEST_DIAGNOSTICS: ${{ (inputs.diagnostics || vars.VITEST_DIAGNOSTICS == '1') && '1' || '0' }}
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: test-report.junit.xml
+          VITEST_FILE_PROGRESS_FILE: ${{ github.workspace }}/backend-unit-file-progress.log
+          # The step timeout minus 60 seconds; the workflow test pins the relationship.
+          DEADLINE_DUMP_AFTER_SECONDS: '540'
         run: |
           resource_prefix='[backend-unit-resources]'
           postgres_wait_prefix='[backend-unit-pg-waits]'
@@ -170,7 +174,27 @@ jobs:
               done
             } 2>&1 | tr '\n' ' ' | prefix_lines "$pressure_prefix"
           }
+          # Runs once, shortly before the step timeout kills this shell. The test run is then
+          # hung, so the log names the files it never finished and the largest processes.
+          dump_deadline_state() {
+            printf '[backend-unit-deadline] step deadline in 60s\n'
+            node ci/backend-unit-unfinished-files.mts "$VITEST_FILE_PROGRESS_FILE" || true
+            { ps -eo pid,rss,pmem,etime,args --sort=-rss | head -n 15 || true; } 2>&1 |
+              prefix_lines '[backend-unit-deadline] ps'
+          }
           sampler_pids=
+          start_deadline_dump() {
+            (
+              set +e
+              set +o pipefail
+              sleep_pid=
+              trap 'if [ -n "${sleep_pid}" ]; then kill "${sleep_pid}" 2>/dev/null || true; fi; exit 0' TERM INT
+              sleep "$DEADLINE_DUMP_AFTER_SECONDS" &
+              sleep_pid=$!
+              wait "${sleep_pid}" && dump_deadline_state
+            ) &
+            sampler_pids="${sampler_pids} $!"
+          }
           start_sampler() {
             (
               set +e
@@ -198,6 +222,7 @@ jobs:
             return 0
           }
           trap stop_samplers EXIT
+          start_deadline_dump
           if [ "$VITEST_DIAGNOSTICS" = 1 ]; then
             start_sampler sample_runner_resources 15
             start_sampler sample_postgres_waits 0.5
@@ -219,6 +244,18 @@ jobs:
           overwrite: true
           name: backend-junit-shard-${{ matrix.shard }}
           path: test-report.junit.xml
+          retention-days: 1
+          if-no-files-found: ignore
+      # The incremental file survives a step killed by its timeout, which writes no JUnit report.
+      - name: Upload backend-shard-${{ matrix.shard }} file progress
+        if: always()
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: backend-file-progress-shard-${{ matrix.shard }}
+          path: backend-unit-file-progress.log
           retention-days: 1
           if-no-files-found: ignore
       - name: Preserve full backend-shard-${{ matrix.shard }} LCOV

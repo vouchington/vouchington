@@ -2,6 +2,7 @@ backend:
   - '.github/ci-path-filters.yml'
   - 'ci/allocate-browser-safe-ports.py'
   - 'ci/backend-unit-pg-waits.sql'
+  - 'ci/backend-unit-unfinished-files.mts'
   - 'ci/check-live-mcp-catalog.mjs'
   - 'ci/package.json'
   - 'api-fixtures/**'

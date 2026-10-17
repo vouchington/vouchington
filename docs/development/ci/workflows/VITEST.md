@@ -48,10 +48,20 @@ Reporter policy:
   `vmstat` (user, system, idle, iowait and hypervisor steal) and the `/proc/pressure` averages every
   2 seconds. A test-database statement that stalls until the 20 second `statement_timeout`
   (`[pg-query-failed]`) is attributed from these lines, not from the final error.
+- The backend-unit step always buffers file start and finish events to
+  `backend-unit-file-progress.log` (`VITEST_FILE_PROGRESS_FILE`) without logging them, so the
+  default log stays quiet. About 60 seconds before the step timeout, the step prints
+  `[backend-unit-deadline]` lines: the files that started and never finished, from
+  [`ci/backend-unit-unfinished-files.mts`](../../../../ci/backend-unit-unfinished-files.mts), and the
+  largest processes by RSS. A shard that hangs until the timeout therefore names its stuck file
+  without `VITEST_DIAGNOSTICS`. `DEADLINE_DUMP_AFTER_SECONDS` stays 60 below the step's
+  `timeout-minutes`; a workflow test pins that.
 - The `github-actions` reporter must keep job summaries disabled and file links configured from GitHub environment variables.
 - `tests-backend-unit.yml` uploads each shard's JUnit report as the one-day `backend-junit-shard-N`
   artifact, so per-file durations can be aggregated across shards when auditing shard size. Vitest
   writes the report when the run finishes, so a shard killed by its step timeout uploads nothing.
+  An `if: always()` step uploads the incremental progress log as the one-day
+  `backend-file-progress-shard-N` artifact, which survives that kill.
 - `tests-web.yml` retains each shard's existing one-day `web-test-report-shard-N` JUnit artifact
   after successful or failed, non-cancelled runs. `tests-backend-modules.yml`, `tests-tooling.yml`,
   and `tests-ts-shared.yml` likewise retain their existing JUnit output files as one-day
