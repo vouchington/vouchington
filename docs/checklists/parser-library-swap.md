@@ -61,8 +61,8 @@ Prefer replacing or avoiding custom code in this order:
 - SQL static-analysis and replay guards: consume typed PostgreSQL facts from `no-mistakes` or
   `vouchington-tooling`. Unsupported executable SQL must retain the characterized failure behavior;
   parser recovery and AST projection belong upstream, rather than in local literal/comment fallbacks.
-- HTML raw-byte decoding: delegate to `@jongleberry/vurst-html` 0.3 or newer `decodeHtml`
-  (BOM > Content-Type > first-1024-byte meta prescan > UTF-8 > Windows-1252); do not reintroduce
+- HTML raw-byte decoding: delegate to `@jongleberry/vurst-html` `decodeHtml`
+  (BOM > Content-Type > bounded meta prescan > UTF-8 > Windows-1252); do not reintroduce
   local charset sniffing.
 - Shell command tokenization in Codex hooks: characterize policy behavior first, then evaluate a
   shell tokenizer package for word parsing while keeping heredoc handling explicit if needed.

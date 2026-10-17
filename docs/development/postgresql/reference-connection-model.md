@@ -1,83 +1,38 @@
 # Connection Model
 
-[Back to PostgreSQL Data Store](README.md#connection-model)
+[Back to PostgreSQL Data Store](README.md#contents)
 
-[setup.mts](../../../backend/data-stores/psql/setup.mts) delegates pool construction to `createPsql()` from
-`@vouchington/postgres`, which provides three `pg` pools:
+[setup.mts](../../../backend/data-stores/psql/setup.mts) builds three `pg` pools through
+`@vouchington/postgres`. Sizes and timeouts are configuration; the reasons are below.
 
-- `writePool` — primary database writes and transaction clients
-- `readPool` — read-only traffic when replica-safe
-- `advisoryLockPool` — dedicated primary connections for session advisory locks whose protected
-  work may need ordinary write clients; isolating them prevents lock holders from saturating
-  `writePool` and lets unrelated lock keys progress concurrently. Callers that hold one of those
-  locks across other pooled work share the [session advisory lock protocol](../../overview/architecture/services/session-advisory-lock/README.md)
-  and still pass their own lock SQL.
+- `writePool` takes primary writes and transaction clients; `readPool` takes replica-safe reads.
+- `advisoryLockPool` is a dedicated set of primary connections for session advisory locks whose
+  protected work may need ordinary write clients. Isolating them keeps lock holders from saturating
+  `writePool` and lets unrelated lock keys progress concurrently (see the
+  [session advisory lock protocol](../../overview/architecture/services/session-advisory-lock/README.md)).
+- Idle-client `error` events are routed to the adapter's `onError`. PostgreSQL can close an idle
+  connection during auto-pause or failover; the pool discards it, and an idle-client event alone
+  does not mean a concurrent query failed.
+- `pg-pool` reports a connection timeout and a queued-checkout timeout with different messages; the
+  `psql` and `memberships` workers treat both as bounded job deferrals. The second can also mean
+  pool saturation, so it does not by itself identify an Aurora resume.
+- Pool maxima are capacity ceilings; connections open lazily. The per-process worst case is
+  `readMax + writeMax + advisoryLockMax`.
 
-The shared runtime routes each pool's idle-client `error` event to this adapter's `onError`
-handler. PostgreSQL can close an idle connection during auto-pause or failover; the pool discards
-that client and can open another. A query using a terminated connection instead rejects its query
-promise. An idle-client event alone does not mean that a concurrent schema read failed.
+## CI connection budget
 
-Pool configuration includes:
-
-- `statement_timeout = 30s` (production/dev). DB-backed Vitest setup supplies a per-session
-  startup deadline through [connection URL options](../../../test-helpers/vitest-postgres-session-settings.mts),
-  preserving existing options and leaving database-wide defaults unchanged. It applies before
-  global setup and worker pools open, including primary and read URLs. A stuck statement fails
-  as an attributable `57014`; see [query telemetry](../../../backend/data-stores/psql/query-telemetry.mts)
-  and the [statement timeout test](../../../backend/data-stores/psql/__tests__/statement-timeout.test.mts).
-  Migrations and bounded transactions retain their explicit local deadlines.
-- `idle_in_transaction_session_timeout = 10s`
-- separate production read/write sizing via `PG_READ_POOL_MAX` and `PG_WRITE_POOL_MAX`, with
-  `PG_POOL_MAX` as the compatibility fallback
-- advisory-lock sizing via `PG_ADVISORY_LOCK_POOL_MAX`; its default is the smaller of four and the
-  configured write-pool maximum, and an explicit override may not exceed that write-pool ceiling
-- connection acquisition and establishment timeout via `PG_CONNECTION_TIMEOUT_MS`
-- `pg-pool` reports establishment timeout as `Connection terminated due to connection timeout`;
-  a queued checkout that cannot obtain a client before the same deadline reports
-  `timeout exceeded when trying to connect`. The `psql` and `memberships` workers treat these
-  exact failures as bounded job deferrals. The second message can also mean pool saturation; it
-  does not by itself identify an Aurora resume. API queries retain ordinary error behavior.
-- test pools keep the same default size as production (`PG_TEST_POOL_MAX`, default 20) but evict
-  idle clients after 100ms. Eviction calls `client.end()` and does not emit `error`. pg-pool
-  schedules that timer only while the pool is above its minimum size.
-
-All three pools participate in PostgreSQL graceful shutdown. Pool maxima are capacity ceilings, not
-eager reservations: connections open lazily. The per-process worst-case connection budget is
-`readMax + writeMax + advisoryLockMax`, while idle pools may hold far fewer connections.
-
-CI GitHub Actions postgres services set `max_connections=300` through `POSTGRES_INITDB_ARGS`. The
-default image value is 100, which cannot hold the Vitest fork budget: `(VITEST_MAX_WORKERS + 1
-globalSetup process) * (readMax + writeMax + advisoryLockMax)` plus PostgreSQL's reserved
-superuser slots. Backend CI workflows explicitly use three workers, so their normal budget is
-`(3 + 1) * (20 + 20 + 4) + 3 = 179`; the repository fallback is two workers. CI caps
-`VITEST_MAX_WORKERS` at 5, making the supported maximum
-`(5 + 1) * (20 + 20 + 4) + 3 = 267`. Exceeding the server cap fails tests with
-`FATAL 53300 sorry, too many clients already`. The
+Test forks each hold the full pool budget, so
+`(VITEST_MAX_WORKERS + 1 globalSetup) * (readMax + writeMax + advisoryLockMax)` plus reserved
+superuser slots must fit the CI Postgres `max_connections`. The image default cannot hold it,
+so CI services raise it, and exceeding it fails tests with `FATAL 53300`. The
 [`postgres-image-policy` test](../../../.github/workflows/postgres-image-policy.test.mts) keeps the
-service and initialize-smoke docker paths on that ceiling.
+docker paths on that ceiling. CI also sets `log_min_messages=log`: tests raise `ERROR`s on purpose
+and the client already receives each one, so the server copy only flooded the service log, while
+startup, checkpoint, crash, `FATAL`, and `PANIC` lines still print.
 
-The same `POSTGRES_INITDB_ARGS` set `log_min_messages=log`. Tests trigger `ERROR`s on purpose, and
-PostgreSQL already sends every `ERROR` to the client that caused it, so the server's copy and its
-`STATEMENT` line only flooded the runner's service-container log. In CI runs measured before and
-after the change, that log fell from 826–1,900 lines per job to 69–85.
-`LOG` ranks above `ERROR` in `log_min_messages`, so startup, shutdown, checkpoint, and
-"terminated by signal" crash lines, plus every `FATAL` and `PANIC`, still print.
+## Pipelining
 
-```mermaid
-flowchart LR
-  workers["Vitest forks + globalSetup"] --> pools["read + write + advisory maxima"]
-  pools --> postgres["CI postgres max_connections"]
-```
-
-Do not set `pipeline` on `getPsqlPoolConfiguration()` or the shared pool constructors. pg 8.23
-pipelining is a same-client submit, and `@vouchington/postgres` enables it only for two bounded
-batches, each on a checked-out client whose flag it restores before release:
-
-- `psql.pipelineBatch()`.
-- The start of a transaction that `beginTransaction()` or `beginBoundedTransaction()` opens on its
-  own pooled client. `BEGIN` (plus the bounded `statement_timeout`) shares the first statement's
-  round trip, so a `BEGIN` failure surfaces from that statement or from `commit()`. A transaction
-  on a caller-supplied `PoolClient` still sends `BEGIN` on its own.
-
-Pool-wide pipelining would also apply to every later transaction statement, cursors, and COPY.
+Do not set `pipeline` on the shared pool configuration. pg pipelining is a same-client submit and
+would also apply to every later transaction statement, cursor, and COPY. `@vouchington/postgres`
+enables it only for `psql.pipelineBatch()` and for the start of a self-owned transaction (`BEGIN`
+shares the first statement's round trip), restoring the flag before release.

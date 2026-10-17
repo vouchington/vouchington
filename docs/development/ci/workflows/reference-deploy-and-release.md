@@ -20,21 +20,8 @@ Trusted web image publication does not require `SENTRY_AUTH_TOKEN`. When that re
 present, the build creates a Sentry release and uploads source maps; otherwise it publishes the
 validated image without source maps. The image build, smoke test, and Trivy gate run in either case.
 
-The backend and web publish workflows read each `docker push` digest and attest that exact
-`ghcr.io/vouchington/<image>@<digest>` subject with `actions/attest@v4` after the smoke and Trivy
-gates. The attestation signer workflow is the reusable publish workflow itself: the corresponding
-`.github/workflows/publish-*-images.yml` identity at a `gh-readonly-queue/main/*` merge-group ref, or
-at `main` for a missing-target fallback, with the `main` source revision. Main runs verify that
-identity with `gh attestation verify` before reusing an image. Their build jobs inherit explicit
-read-only PR or write-enabled merge-group/main caller permissions; the resolver job declares only
-read scopes.
-Publication disables linked artifact storage records. The backend attests `api` and `worker-cpu` on
-every run and `worker-io` when the checked-in automation flag enables that image.
-
-The private `vouchington-infra` receiver copies the digest that `sha-<revision>` resolves to into
-ECR only for a revision whose matching `main-<area>.yml` push run succeeded on `main`. It does not
-yet verify the attestation before copying; that check is tracked in
-[#722](https://github.com/vouchington/vouchington/issues/722).
+Published images are attested after the smoke and Trivy gates, and main reuses an image only when its
+attestation verifies. The private receiver does not yet verify the attestation before copying.
 
 Vouchington has no production application-deployment workflow. The global CI apply workflow and its
 trust remain disabled; operator-controlled global applies use `vouchington-infra`'s separately

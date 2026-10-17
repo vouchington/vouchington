@@ -86,7 +86,6 @@ drift. See [`web/components/shared/time-ago.tsx`](../../../../web/components/sha
 - Vote components: [components/votes/README.md](components/votes/README.md)
 - Shared library catalog: [lib/README.md](lib/README.md)
 - Error handling helpers: [lib/on-error/README.md](lib/on-error/README.md)
-- API-response test helpers: [test-helpers/api-responses/README.md](../../../development/testing/web/api-responses.md)
 - Storybook: [AGENTS.md](../../../../web/storybook/AGENTS.md) / [README.md](../../../development/testing/storybook/README.md)
 - Entity link helpers: [AGENTS.md](../../../../web/lib/links/AGENTS.md) / [README.md](lib/links/README.md)
 - Route factories: [lib/routes/AGENTS.md](../../../../web/lib/routes/AGENTS.md)

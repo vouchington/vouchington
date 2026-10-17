@@ -1,6 +1,6 @@
 # Inline-workflow shell footguns (actionlint + shellcheck)
 
-[Back to CI Tooling](README.md)
+[Back to CI Documentation](../README.md)
 
 Several issues that have caused CI failures in inline `run:` blocks:
 

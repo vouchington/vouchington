@@ -1,6 +1,6 @@
 # Backend
 
-- Use [backend docs](../docs/overview/architecture/backend/README.md), [setup](../docs/development/BACKEND-SETUP.md), [auth/session architecture](../docs/overview/architecture/auth-overview.md), and [package inventories](../docs/overview/architecture/backend/catalogs/README.md). Commands belong in the [command catalog](../docs/overview/architecture/backend/README.md#commands).
+- Use [backend docs](../docs/overview/architecture/backend/README.md), [setup](../docs/development/README.md), [auth/session architecture](../docs/overview/architecture/auth-overview.md), and [package inventories](../docs/overview/architecture/backend/catalogs/README.md). Commands belong in the [command catalog](../docs/overview/architecture/backend/README.md#commands).
 - Load [package-json-checklist](../.agents/skills/package-json-checklist/SKILL.md) before creating services or changing manifests; load [backend Vitest authoring](../.agents/skills/backend-vitest-test-authoring/SKILL.md) for tests, fixtures, helpers, or mocks.
 - Check API fields against caller privileges (anonymous, user, owner, moderator, staff, admin); keep internal/admin fields out of lower-privilege responses.
 - Database lists use `@modules/pagination` cursor pagination and [the cross-surface contract](../docs/overview/architecture/pagination.md). Anonymous endpoints use `clampAnonLimit` (`ANON_MAX_LIMIT = 25`).

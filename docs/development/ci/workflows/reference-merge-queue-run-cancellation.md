@@ -47,17 +47,11 @@ Neither workflow here uses `merge_group: destroyed`. The Actions documentation l
 
 ## Two mechanisms
 
-| Case                               | Workflow                         | Trigger                          | Cancels                                                                                                      |
-| ---------------------------------- | -------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| C is rebuilt after B leaves        | Cancel Replaced Merge Group Runs | `merge_group` `checks_requested` | Active runs on older `pr-<N>-*` branches of the same pull request, once the new entry's checks are requested |
-| B leaves the queue without merging | Cancel Dequeued Merge Group Runs | `pull_request_target` `dequeued` | Active runs on `pr-<N>-*` branches of the dequeued pull request                                              |
-
-Both list `merge_group` runs in the `queued`, `in_progress`, `waiting`, `requested` and `pending`
-states across every workflow and match the pull request by branch prefix, with the trailing hyphen
-so that `pr-14-` never matches `pr-140-`, and skip runs whose id is not lower than their own. The replaced workflow also skips the new entry's own branch. A cancel request for a run that already completed returns
-HTTP 409, which both treat as success. A cancel request that returns HTTP 502, 503, or 504 is retried
-up to three attempts, one second apart. A gateway error that persists, and every other cancel error,
-is a warning; both workflows still process the remaining runs and then fail the job.
+Cancel Replaced Merge Group Runs triggers on `merge_group` `checks_requested` and cancels active
+runs on older `pr-<N>-*` branches of the same pull request. Cancel Dequeued Merge Group Runs triggers
+on `pull_request_target` `dequeued` and cancels active runs on the dequeued pull request's branches.
+Both match by branch prefix with the trailing hyphen so that `pr-14-` never matches `pr-140-`, and
+both skip runs whose id is not lower than their own.
 
 ## Dequeued pull requests
 
@@ -65,19 +59,10 @@ The dequeued workflow runs from `main`'s workflow file and checks out nothing. T
 number and the removal reason reach the script only through `env:`, and the token holds
 `actions: write` and `pull-requests: read` for this one job. Guards, in order:
 
-1. **Reason allowlist.** The `reason` field of the `dequeued` event is one of the values in the
-   `pull_request` section of GitHub's [webhook payload reference](https://docs.github.com/en/webhooks/webhook-events-and-payloads).
-   GitHub gives no description per value, so the split below is inferred from the names.
-
-   | Reason                                                                                                                                   | Action                               |
-   | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-   | `MANUAL`, `CI_FAILURE`, `MERGE_CONFLICT`, `QUEUE_CLEARED`, `ROLL_BACK`, `BRANCH_PROTECTIONS`, `GIT_TREE_INVALID`, `INVALID_MERGE_COMMIT` | Cancel                               |
-   | `MERGE`, `ALREADY_MERGED`, `UNKNOWN_REMOVAL_REASON`                                                                                      | Never act: merged or unexplained     |
-   | `CI_TIMEOUT`                                                                                                                             | Never act: the runs are the evidence |
-
-   The job condition and the script both carry the list, and a test keeps them equal. A reason
-   GitHub adds later is ignored until someone decides what it means.
-
+1. **Reason allowlist.** Only reasons that mean the entry will not merge cancel runs. `MERGE`,
+   `ALREADY_MERGED`, and unexplained reasons never act, and `CI_TIMEOUT` never acts because the
+   timed-out runs are the evidence. A reason GitHub adds later is ignored until someone decides
+   what it means.
 2. **Merged pull request.** The script reads the pull request through the API and does nothing when
    it is merged, because merge-group-only jobs such as image publishing must finish for a merged
    group. `ROLL_BACK` is the ambiguous reason; this guard makes acting on it safe either way.
@@ -94,18 +79,3 @@ number and the removal reason reach the script only through `env:`, and the toke
    re-enqueue follows the dequeue, so the new entry's runs get higher ids. The remaining race is a
    re-enqueue whose runs are created before the cancelling run is, which would cancel the new entry
    and eject it again; it is unlikely because the dequeue event starts the cancelling run first.
-
-The job summary lists every candidate run with its result: `cancelled`, `already completed`, `kept:
-holds a failed job` or `failed`. A run that could not be cancelled or inspected is a warning, the
-remaining runs are still processed, and the job then fails.
-
-## Verify
-
-After a pull request leaves the queue, its leftover runs and any replaced runs of the entries behind
-it show `cancelled` within about a minute, except a run that holds the failed job. Runs of the new
-entries are untouched. List them with:
-
-```bash
-gh api "repos/vouchington/vouchington/actions/runs?event=merge_group&per_page=100" \
-  --jq '.workflow_runs[] | [.id, .name, .status, .conclusion, .head_branch] | @tsv'
-```

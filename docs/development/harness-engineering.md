@@ -1,120 +1,35 @@
 # Harness Engineering — Agent Observability
 
-Harness engineering means building scaffolding around coding agents so they can
-iterate without waiting for a human to translate raw logs. For this repo, the
-first practical step is to turn local Playwright and opt-in CI diagnostics into
-queryable observability signals: Sentry for errors, OpenTelemetry for traces and
-logs, and MCP access for agent triage.
-
-## Ideal State
-
-The ideal harness is an ephemeral per-worktree observability stack. An agent
-starts a sandbox, runs the app and checks, then queries metrics, logs, and traces
-through MCP using LogQL/PromQL-style searches and trace search. It iterates until
-the acceptance criteria pass and attaches the relevant evidence to the PR.
-
-Staging and production telemetry should both be reachable through read-only MCP
-tools. Staging acts as the persistent pre-production source; production is used
-for real incidents and regression correlation. Until CloudWatch is exposed
+Harness engineering means building scaffolding around coding agents so they can iterate without a
+human translating raw logs. The goal is queryable observability signals: Sentry for errors,
+OpenTelemetry for traces and logs, and MCP access for agent triage. Until CloudWatch is exposed
 through MCP, agents hunt deployed errors with
-[Deployed Error Investigation](../operations/deployed-error-investigation.md).
-
-## Current State
-
-Staging is the preferred observability source once the environment is healthy.
-When staging is unavailable, the system falls back to local tracing or a manually requested CI diagnostic run:
-
-| Source               | Signals                                                               | Access pattern                                                      |
-| -------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Manual Playwright CI | Opt-in OTel traces/logs in short-lived GitHub debug artifacts         | Dispatch the Playwright workflow with `otel_enabled`                |
-| Local Playwright     | OTel traces to Jaeger and raw webServer logs under the temp directory | `./dev/otel-up`, Playwright run, Jaeger at `http://localhost:16686` |
-
-OTel export is opt-in for manual Playwright diagnostics. Area and main publication
-workflows leave the collector disabled.
+[Deployed Error Investigation](../operations/deployed-error-investigation.md). The explicit gap is a
+hosted queryable OTel backend.
 
 ## Sentry
 
-Sentry reports only from deployed environments — `ENVIRONMENT=staging` or
-`ENVIRONMENT=production` — enforced by a shared fail-closed helper,
-`resolveSentryEnablement()` in `ts-shared/utils/sentry-deployment-gate.mts`. Every
-init site resolves its own `environment` value and passes it to the helper, which
-enables the SDK only when it matches the allowlist; anything else (`test`,
-`development`, CI, unset, or an unrecognized value) stays disabled.
+Sentry reports only from deployed environments (`ENVIRONMENT=staging` or `production`), enforced by
+the shared fail-closed helper `resolveSentryEnablement()` in
+`ts-shared/utils/sentry-deployment-gate.mts`. Every init site passes its own `environment` to it;
+anything else (`test`, `development`, CI, unset, unrecognized) stays disabled. CI, local dev, and test
+runs never send Sentry events, and `OTEL_ENABLED=1` does not enable Sentry.
 
-The gated sites:
-
-- `backend/modules/on-error/sentry.mts`
-- `web/sentry-server-options.ts`
-- `web/sentry-edge-options.ts`
-- `web/sentry-client-options.ts`
-- `lambdas/shared/sentry.mts`
-- `cloudflare-worker/src/sentry.mts`
-
-CI, local dev, and test runs never send Sentry events — there is no CI opt-in
-mechanism; the former `SENTRY_ENABLE_IN_CI` / `environment:ci-main` reporting path
-has been removed entirely. `OTEL_ENABLED=1` does not enable Sentry: local OTel tracing is
-owned by the generic `dev/otel-register.mts` hook, independent of the Sentry SDK.
-
-Intentional errors must not reach Sentry from staging/production. The backend
-`onError` path and Sentry `beforeSend` filters drop status `<500`, `ECONNRESET`,
-`EPIPE`, expected crawler operational errors, and errors tagged with
-`tags.suppressLogging === true`. If a staging/production canary shows intentional
-noise, tag that exact error path with `suppressLogging` or model it as a `<500`
-expected error instead of adding broad message filters.
-
-Agent query entry points:
-
-```text
-environment:staging AND is:unresolved
-environment:production AND is:unresolved
-environment:staging AND release:<sha>
-```
+Intentional errors must not reach Sentry from staging or production. The backend `onError` path and
+the `beforeSend` filters drop status `<500`, `ECONNRESET`, `EPIPE`, expected crawler errors, and
+errors tagged `tags.suppressLogging === true`. If a canary shows intentional noise, tag that exact
+error path or model it as an expected `<500` instead of adding broad message filters.
 
 ## OpenTelemetry
 
-Local Playwright:
-
-```bash
-./dev/otel-up
-OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_LOGS_EXPORTER=otlp pnpm exec playwright test playwright/tests/auth/login.spec.mts
-```
-
-When `OTEL_ENABLED=1`, `dev/tmux` and the Playwright harness load the generic
-`dev/otel-register.mts` hook (`@opentelemetry/auto-instrumentations-node/register`) into
-the backend, worker, lambda, and Next.js processes. The hook owns the global
-TracerProvider and OTLP export to the OTel Collector; the Sentry SDK registers no provider
-(the web server sets `enableOpenTelemetrySetup: false` to that end). Cloudflare
+Local tracing is owned by the generic `dev/otel-register.mts` hook loaded when `OTEL_ENABLED=1`; it
+owns the global TracerProvider and OTLP export, and the Sentry SDK registers no provider. Manual
+Playwright CI diagnostics can upload OTel output as short-lived debug artifacts. Cloudflare
 Worker/workerd OTel is out of scope.
-
-When manually enabled, the sharded Playwright job starts an OTel Collector and
-uploads collector output and raw webServer logs as short-lived GitHub debug artifacts.
-Sentry stays disabled because CI is outside the deployed-environment allowlist.
 
 ## MCP
 
-No repository file registers a Sentry or other MCP server. vouchington-machines registers Sentry
-per machine in every harness: the `sentry@claude-plugins-official` plugin's hosted server for
-Claude and Grok, and the pinned local stdio `@sentry/mcp-server` for Codex, Cursor, and OpenCode.
-A headless or automated session has it only when its host's user configuration does.
-
-Required secret:
-
-- `SENTRY_ACCESS_TOKEN` injected by the environment, never committed
-- organization: `SENTRY_ORG` from the environment
-- scopes: read-only project/event/issue access sufficient for querying issues
-  and events
-
-Sentry DSNs in source are public write keys. They are not the same as the MCP
-access token.
-
-## Roadmap
-
-| Phase  | Work                                                                                                                                                                               |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Now    | Staging/production Sentry via the fail-closed deployed-environment gate; local Playwright OTel to Jaeger; opt-in manual CI Playwright OTel debug artifacts; Sentry MCP docs/config |
-| Next   | Richer trace/log correlation tags and helper scripts for fetching diagnostic artifacts                                                                                             |
-| Future | Add a hosted OTel backend such as Tempo/Grafana or vendor search, expose CloudWatch metrics through MCP, add replay and richer debug context                                       |
-
-The explicit current gap is a hosted queryable OTel backend. Until it exists,
-staging/production Sentry and local Playwright OTel are the harness observability
-sources; manually enabled CI diagnostics contribute OTel traces/logs only, never Sentry events.
+No repository file registers a Sentry or other MCP server; vouchington-machines registers Sentry per
+machine in every harness, and a headless session has it only when its host's user configuration
+does. The Sentry access token and organization come from the environment, never a committed file,
+with read-only issue and event scopes. Sentry DSNs in source are public write keys, not that token.

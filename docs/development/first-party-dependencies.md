@@ -53,55 +53,13 @@ First-party packages follow the same version rule as every other external depend
 and one version across all workspaces, enforced by Syncpack (see the
 [docs pinning policy](dependency-updates.md#docs-pinning-policy)).
 
-Vouchington declares `@vouchington/utils` in its direct consumers:
-`@modules/http-signatures`, `@modules/scopes`, `@modules/stripe`, `@modules/token-secrets`, `@modules/utils`,
-`@services/memberships`, `@services/moderation-reports`, `@services/oauth-github`,
-`@ts-shared/cache`, `@ts-shared/deploy-environment`, `@ts-shared/env-contract`, `@ts-shared/feature-flags`,
-`@ts-shared/languages`, `@ts-shared/money`, `@ts-shared/request-client-info`,
-`@ts-shared/session-jwt`, `@ts-shared/ui-messages`, `@ts-shared/url-signing`,
-`@ts-shared/utils`, `@ts-shared/utm`, and `@voucha/cloudflare-worker`.
-`@modules/scopes` compiles the product catalogue through `scopes`. `@ts-shared/cache` mints tags
-through `cache-tags`. The Cloudflare Worker reads tunnel envelopes through `sentry-envelope`.
-`@services/moderation-reports` uses the `moderation` subpath, and `@services/memberships` uses the
-package for bounded provider-operation concurrency.
-Vouchington declares `@vouchington/request-contract-validation` in
-`@services/runtime-request-validation`. That package compiles request carriers; this service injects
-the generated v1 bundle and keeps the fail-closed missing-operation error.
-Generic algorithms live in the platform package; these local packages retain Voucha import paths,
-product policy, runtime configuration, and HTTP error contracts.
-
-Remaining `@modules/*` and `@ts-shared/*` wrappers are not unextracted engines. Keep orchestration
-local: AWS clients, API egress-proxy routing, GlideMQ scheduled-job manifests, worker-queue
-inventory, session mint/cookies/env, request-client listeners, and ActivityPub HTTP signature
-policy. Isomorphic primitives belong in `@vouchington/utils`; Node-only
-helpers (`node:zlib`, `node:net`, `validator` plus `ssrf-guard`) do not. `@modules/token-secrets`
-delegates key parsing and AES-GCM to `@vouchington/utils/token-secrets` and must not remap kids or
-accept noncanonical ciphertext.
-
-Vouchington declares `@vouchington/localization` and `@vouchington/localization-compiler` in their
-direct consumer manifests. The runtime owns locale aliases, selector validation, and wire
-serialization; the compiler owns SQLite emission and the shared resolver. Vouchington retains catalog
-source, consumer membership, API bounds, Docker
-artifact coupling, and native/email product usage.
-
-Vouchington declares `@vouchington/uuid-v7` in `@modules/utils`. The platform package
-owns UUIDv7 minting, timestamp, bounds, and fixed random-suffix conversion; the local facade retains
-Voucha's UUID syntax and HTTP 422 validation boundary.
-
-Vouchington declares `@vouchington/html-utils` in `@ts-shared/utils`. The package owns
-HTML entity decode/escape, lexical tag checks, and inline-script JSON escaping.
-
-Vouchington declares `@vouchington/media` and `@vouchington/image-resize`. The public
-packages own media validation, streamed hashing and spooling, S3 primitives, format negotiation,
-and Sharp transformation. Vouchington retains upload orchestration, PostgreSQL transactions and
-states, buckets and signing policy, queue/retry behavior, cache keys and headers, HTTP errors, full
-metadata shape, and moderation policy.
-
-Vouchington declares `@vouchington/memberships` in its direct consumers: `@services/memberships`,
-`@services/stripe`, and `@ts-shared/utils`. The package owns benefit-catalog validation,
-SKU grouping, terminal-status detection, and membership-change classification utilities; Vouchington retains
-its product catalog data, SQL lifecycle projection, Stripe calls, refunds, portal, authorization, and
-side effects.
+Extraction boundary: generic algorithms live in the platform packages; the local `@modules/*`,
+`@services/*`, and `@ts-shared/*` wrappers keep Voucha import paths, product policy, runtime
+configuration, HTTP error contracts, orchestration (AWS clients, API egress-proxy routing, GlideMQ
+manifests, session mint/cookies, ActivityPub signature policy), SQL and transactions, and
+authorization. Isomorphic primitives belong in `@vouchington/utils`; Node-only helpers do not.
+`@modules/token-secrets` delegates key parsing and AES-GCM to the package and must not remap kids
+or accept noncanonical ciphertext.
 
 `glide-mq`, `@glidemq/dashboard`, and `@glidemq/speedkey` are heavily-used vendored dependencies authored by [avifenesh](https://github.com/avifenesh). They are not first-party, but are bundled with a skill and tracked closely.
 

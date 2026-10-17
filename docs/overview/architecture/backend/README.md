@@ -105,7 +105,6 @@ When working in backend/, follow the links below to read relevant context. Updat
 - **Valkey**: [data-stores/valkey/AGENTS.md](../../../../backend/data-stores/valkey/AGENTS.md)
 - **Reusable modules**: [modules/README.md](modules/README.md)
 - **Shared types**: [types/README.md](types/README.md)
-- **Test helpers**: [test-helpers/README.md](../../../development/testing/backend/helpers.md)
 
 ## Reference index
 

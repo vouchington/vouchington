@@ -1,21 +1,19 @@
 # Worker Performance
 
-How to size and tune the backend job-queue worker processes.
+Why worker processes are sized the way they are. Concurrency, thread-pool, and heap values live in
+code and the Dockerfile; queue placement lives in
+`backend/modules/worker-queue-inventory/worker-queue-policy.json`.
 
-The deployed backend uses one **`worker-cpu`** service for every queue. It runs Rust N-API (HTML
-sanitize, markdown render, chunking, AI), sharp (images), Lightpanda cloud browser crawling (a thin
-Playwright client over a CDP WebSocket — no local browser process), and the DB/Valkey/HTTP queues
-that can also run in `worker-io`. Local development deliberately keeps the
-`worker-cpu` process with every policy-managed queue. The worker has its own queue concurrency knob. Native
-addons also have their own thread pools, so this page documents the knobs that shape each process's
-resource envelope.
+- Every queue runs in exactly one worker process per deployed environment. `worker-cpu` runs the
+  native and CPU-bound queues (Rust N-API, sharp, cloud-browser crawling); `worker-io` may run the
+  DB, Valkey, and HTTP queues. Local development runs every queue in one process.
+- Thread pools stack inside one Node process: libuv, plus a separate Tokio and Rayon pool per
+  loaded native addon. Caps are per addon, not per process, so adding an addon multiplies the
+  footprint. Retune them together when changing baselines.
+- Shared Valkey clients hard-reject at their inflight limit and do not buffer, so a job burst fails
+  and retries rather than queueing. Bloom traffic has its own client so its rebuilds cannot starve
+  cache and rate-limiter calls.
+- Workers that serialize themselves or hit a rate-limited upstream opt out of the global
+  concurrency scale.
 
-## Contents
-
-- <a id="concurrency-model"></a>[Concurrency model](reference-worker-performance-concurrency-model.md)
-- <a id="native-thread-pools"></a>[Native thread pools](reference-worker-performance-native-thread-pools.md)
-- <a id="node-process-knobs"></a>[Node process knobs](reference-worker-performance-node-process-knobs.md)
-- <a id="profiling"></a>[Profiling](reference-worker-performance-profiling.md)
-- <a id="verifying-changes"></a>[Verifying changes](reference-worker-performance-verifying-changes.md)
-- <a id="valkey-inflight-saturation-issue-4717"></a>[Valkey Inflight Saturation (issue #4717)](reference-worker-performance-valkey-inflight-saturation-issue-4717.md)
-- <a id="related"></a>[Related](reference-worker-performance-related.md)
+See [Runtime Timeouts](runtime-timeouts.md) for worker deadlines.

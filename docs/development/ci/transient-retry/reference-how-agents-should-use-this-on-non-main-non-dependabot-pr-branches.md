@@ -14,5 +14,5 @@ Agents working on non-`main`, non-Dependabot PR branches should:
 ## Ineffective rerun patterns
 
 - A rerun replays the same head SHA against the same base merge. If a shard keeps failing identically and `origin/main` has moved, rerunning cannot pick up the fix — rebase onto `origin/main` and push instead.
-- Every `gh run rerun` creates a new run **attempt**; it is not idempotent (see [Standalone Workflow Checks](../../reference-ci-standalone-workflow-checks.md)). Do not start a rerun while one is already in progress, and do not rerun a run you just cancelled — overlapping attempts race and their recorded state can disagree.
+- Every `gh run rerun` creates a new run **attempt**; it is not idempotent. Do not start a rerun while one is already in progress, and do not rerun a run you just cancelled — overlapping attempts race and their recorded state can disagree.
 - Confirm the fingerprint with `node ci/transient-retry/rerun-known-transient.mts <run-id>` before rerunning at all; an unmatched failure is a real failure until a rule with a real-log fixture says otherwise.

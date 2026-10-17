@@ -35,26 +35,13 @@ The pnpm store cache on ephemeral GitHub-hosted runners is download reuse, not a
 resolution state. Its key includes the runner OS and architecture plus a content hash of
 `pnpm-lock.yaml`; the frozen lockfile remains the resolution contract.
 
-### Audit evidence
+### Dependabot and the workspace lockfile
 
-Start with manifest/lock diffs and authoritative registry or release metadata. Record exact current
-and candidate versions, publication/release timestamps where relevant, update ownership, every lock
-expected to change, and the frozen commands that passed. Do not run native restores for a static
-candidate scan; run them when the selected improvement changes a native manifest, lock, pin, or
-dependency workflow.
-
-### pnpm workspace lockfile note
-
-Dependabot's `npm` ecosystem reliably updates `pnpm-lock.yaml` only when its `directory:` points to the directory that **owns** the lockfile (the repo root). Per-workspace entries (`directory: '/backend'`, `directory: '/web'`, etc.) cause Dependabot to edit the workspace `package.json` without regenerating the root lockfile, producing `ERR_PNPM_OUTDATED_LOCKFILE` in CI on every PR it opens. Use a single `directory: '/'` entry and let Dependabot follow `pnpm-workspace.yaml` to discover all packages.
-
-Dependabot updates registry dependencies declared by workspace manifests, but it does not parse the
-`overrides` map in `pnpm-workspace.yaml`. PR #5159 therefore updated the direct
-`@jongleberry/vurst-*` requirements while leaving a parent-scoped override on the old version. Do
-not add or rely on dependency-version overrides as automation-managed pins; fix the upstream
-package metadata or upgrade the parent dependency instead. Removing the remaining overrides and
-enforcing that policy is tracked as a follow-up (formerly filed as jonathanong/filaments#7794).
-`packageExtensions`, which correct dependency metadata without
-forcing a version, is outside that ban.
+Dependabot's `npm` ecosystem updates `pnpm-lock.yaml` reliably only when its `directory:` is the
+directory that owns the lockfile (the repo root); per-workspace entries edit `package.json` without
+regenerating the lock and fail CI with `ERR_PNPM_OUTDATED_LOCKFILE`. Dependabot also does not parse
+the `overrides` map in `pnpm-workspace.yaml`, which is why dependency-version overrides are banned
+above: a parent-scoped override can keep an old version after the direct requirement is bumped.
 
 ### <a id="optional-peer-instance-keys"></a>Optional peer instance keys
 

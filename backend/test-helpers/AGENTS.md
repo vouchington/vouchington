@@ -1,6 +1,6 @@
 # Backend test helpers
 
-- Load [backend Vitest authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md); helper APIs/waits/fixtures belong in [Test helpers](../../docs/development/testing/backend/helpers.md).
+- Load [backend Vitest authoring](../../.agents/skills/backend-vitest-test-authoring/SKILL.md); helper APIs, waits, and fixtures belong in this directory, with rules in [tests.md](../../docs/development/tests.md).
 - Tests share a dirty parallel database: randomize ownership-scoped fixtures and never clean shared rows.
 - Never run DDL (`CREATE`/`DROP`/`ALTER`, `LOCK TABLE`) against the shared test database. Inject failures with a throwing [`QueryExecutor`](injected-failures.mts) passed through the real transaction; see [failure injection](../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#failure-injection-uses-a-query-executor).
 - Tests do not import raw PostgreSQL helpers or `sql-template-strings`; expose focused setup/assertions here without re-exporting SQL methods.

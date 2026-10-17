@@ -40,7 +40,7 @@ Review the project agent integration for Claude, Codex, Grok, and Cursor for sta
   reasoning-effort, and sandbox settings against the agent-workflow routing table; do not re-own
   per-agent `.toml` drift here. `security.md` is application-layer only. The credential deny list
   and its inventory live in vouchington-machines
-  ([pointer](../../development/reference-agent-sandbox-credential-deny-list.md)); do not rebuild a
+  ([pointer](../../development/agent-sandbox.md#sandbox-credential-deny-list)); do not rebuild a
   copy in this checkout.
 - Documented decisions that are not targets. Claude `Bash(./dev/*)` / `Bash(node dev/*)` and their
   `/../` deny rules are a review-skip decision

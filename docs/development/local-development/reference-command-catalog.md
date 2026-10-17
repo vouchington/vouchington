@@ -2,169 +2,27 @@
 
 [Back to Dev Environment Reference](README.md#command-catalog)
 
-This is the canonical inventory of `dev/` entrypoints. The command audit found an active developer,
-CI, hook, or composition use for every entrypoint, so there is no evidence-backed deletion candidate.
-Commands may still be internal or narrowly scoped; that is a reason to document their boundary, not
-to remove them.
+The `dev/` entrypoints are listed by `ls dev/` and described in each script's usage text; this page
+keeps only the contracts the scripts do not state.
 
 State-changing command-line interfaces follow one safety contract: standalone `-h` or `--help`
 prints usage and exits without loading local configuration or changing state, while unknown, extra,
 mixed-help, or incomplete arguments are rejected before files, services, databases, Docker, GitHub,
-or other external systems are touched. Valid documented invocations keep their existing behavior.
+or other external systems are touched.
 
-### Public setup and lifecycle
+Operating-system and host provisioning is intentionally not a `dev/` entrypoint; see the
+[system-dependency contract](../system-dependencies.md). Files under `dev/lib/` are sourced
+implementation helpers, not commands.
 
-Operating-system and host provisioning is intentionally not a `dev/` entrypoint. See the
-[system-dependency contract](../system-dependencies.md) and the canonical
-[host repository](https://github.com/vouchington/vouchington-machines).
+`./dev/db-clean` (also `pnpm run db:clean`) is the destructive database/Valkey primitive behind
+higher-level workflows; prefer `./dev/reset` for a complete developer reset. Local PostgreSQL access
+must already work without interactive password prompts, so initialization and teardown fail
+immediately when credentials are missing rather than prompting.
 
-- `./dev/initialize [monorepo|backend|web]` — Current worktree. Checks Git and host prerequisites,
-  installs dependencies and tooling, then configures worktree resources. `backend` additionally creates
-  local config, database, Valkey, ports, and caches; `web`
-  additionally sets up HTTPS certs and the CF Worker/Next.js environment.
-- `./dev/tmux [--no-attach] [-v]` — Current web-initialized worktree; starts, reuses a healthy ready
-  session, or restores dead managed windows in its one session with `nextjs`, `backend`, `worker`,
-  `cloudflare`, and `lambdas` windows.
-- `./dev/tmux-name <name>` — Current tmux pane/window metadata only; an empty name clears the title.
-- `./dev/stop-services [--keep-valkey]` — Current worktree; closes its managed tmux session, including
-  added windows, stops matching service processes and normally its Valkey container, but preserves database data.
-- `./dev/reset` — Current disposable worktree; destructively recreates its database, flushes Valkey,
-  and runs migrations.
-- `./dev/teardown [--yes] [--remove]` — Current disposable worktree; destructively removes services,
-  database, and Valkey, and optionally the worktree directory.
-- `./dev/reset-worktree [--force]` — Current disposable worktree with dependencies installed; fetches
-  `origin/main` before teardown, then returns it to a fresh branch and runs monorepo initialization
-  (`pnpm install` follows the reset). `--force` permits discarding uncommitted changes. A second reset
-  of the same worktree fails immediately. Reset runs without terminal input; configure Git
-  authentication and SSH host trust beforehand. See
-  [git-worktree-locks.md](../git-worktree-locks.md).
-- `./dev/rebase-onto-main [--stack] [--upstack]` — Current worktree. Runs `git fetch origin main`,
-  then `git rebase origin/main`, both with `git -C` anchored at the repository that contains
-  [`dev/rebase-onto-main`](../../../dev/rebase-onto-main). `--stack` runs `gh stack rebase` in the
-  current directory after that fetch instead of `git rebase`. `--upstack` is accepted only with
-  `--stack` and runs `gh stack rebase --upstack`. `-h` or `--help` prints usage and exits before
-  the fetch. Any other option, and `--upstack` without `--stack`, is rejected before the fetch.
-- `./dev/cleanup [--yes]` — All local Voucha worktrees; removes confirmed orphaned canonical hashed databases, Valkey
-  containers, and prunable worktrees.
-- `./dev/unstick-locks` — All local worktrees; removes stale zero-byte Git index locks and a dead-owner
-  worktree-resource operation lock when no corresponding operation is running.
+Before an env-var, Dynamic Config, secret, infrastructure, CI, or package-boundary rename, run
+`./dev/audit-rename OLD NEW` to classify every old-name hit, and `./dev/config-inventory` for the
+cross-surface checklist of env-var and Dynamic Config readers, local setup, deploy contracts, docs,
+and package gates.
 
-Generic Git worktree parsing and canonical path hashing come from the published
-`vouchington-tooling/scripts/worktree/git-worktrees.sh` through [`lib/git-worktrees.sh`](../../../dev/lib/git-worktrees.sh).
-When `node_modules` is missing, the adapter uses its checked-in
-[`git-worktrees-recovery.sh`](../../../dev/lib/git-worktrees-recovery.sh) so status, cleanup,
-teardown, and service shutdown remain available before reinstallation.
-Voucha database, Valkey, and protected-main ownership rules remain in
-[`lib/worktree-resource-env.sh`](../../../dev/lib/worktree-resource-env.sh).
-
-`./dev/db-clean` (also `pnpm run db:clean`) is the destructive database/Valkey implementation
-primitive used by higher-level workflows. Prefer `./dev/reset` for a complete developer reset;
-invoke `db-clean` directly only when a documented workflow specifically needs that lower-level step.
-
-PostgreSQL access must already work without interactive password prompts. Host provisioning
-creates the local development role and configures authentication; on Linux, repair it with
-[`linux/configure-postgres.sh`](https://github.com/vouchington/vouchington-machines/blob/main/linux/configure-postgres.sh)
-in vouchington-machines. Initialization and teardown database commands fail immediately when
-credentials are missing and default to a ten-second connection timeout (`PGCONNECT_TIMEOUT`
-can override it). Initialization stops when it cannot list databases, before attempting creation.
-Teardown accepts an absent database, but preserves tracking files and reports other drop failures
-so it can be retried safely after repairing access. Cancelling reset terminates its child processes
-before releasing the worktree lock.
-
-### State-changing diagnostics and optional tooling
-
-- `./dev/ci-local <target> [--dry-run]` — Runs the selected CI-equivalent command in the current
-  worktree; `--list` and `--dry-run` are read-only.
-- `pr_create` and `pr_update` (`vouchington-tooling` MCP tools) — Create a draft PR or replace a
-  PR body after validation by `dev/agent-policy.mts`; `pr_validate` is read-only.
-- `pnpm exec vouchington link-skill <name> --source-root .agents/skills --target-root .claude/skills`
-  — Creates the tracked `.claude/skills/<name>` symlink after `.agents/skills/<name>/SKILL.md`
-  exists; no-ops when the relative target is already correct.
-- `node dev/agent-issue-labels/ensure-labels.mts ...` — Manually verifies or repairs live label
-  taxonomy; it is not the agent issue-creation or classification entrypoint.
-- `./dev/otel-up` / `./dev/otel-down` — Starts or removes the optional host-local OpenTelemetry
-  Docker stack on shared fixed ports.
-- `./dev/benchmark-topic-metrics --label baseline|candidate` — Creates, seeds, measures, and
-  removes an isolated local sibling PostgreSQL database for a 100-topic batch. It refuses main
-  worktrees, remote targets, and pre-existing benchmark databases.
-
-#### Agent issue-label helpers
-
-[`agent-issue-labels/ensure-labels.mts`](../../../dev/agent-issue-labels/ensure-labels.mts) is a supported
-manual helper for checking that named labels exist in a repository's live taxonomy and creating
-any that are missing. Pass `--repo <owner/repo>` to target another repository and `--update` to
-replace existing label metadata. It does not classify or create issues. Agents creating issues
-must instead follow the canonical [GitHub issue skill](../../../.agents/skills/github-issue/SKILL.md),
-which reads the target repository's live labels and milestones, applies only existing taxonomy,
-and verifies the created issue.
-
-[`agent-issue-labels/labels-from-paths.mts`](../../../dev/agent-issue-labels/labels-from-paths.mts) is the
-read-only path-classification helper used by that skill. It reads `.github/labeler.yml` by default;
-pass `--labeler <path>` when classifying paths against another repository's downloaded labeler
-configuration.
-
-[`agent-issue-labels/batch-issues.mts`](../../../dev/agent-issue-labels/batch-issues.mts) preflights a batch of
-proposed `vouchington/vouchington` issues from one agent-authored manifest. It reads live taxonomy and
-duplicate-search data, validates every entry fail-closed, and writes only an ephemeral
-`preflight-report.json` under the caller's session directory. Issue creation and read-back remain
-one-at-a-time operations owned by the canonical
-[GitHub issue skill](../../../.agents/skills/github-issue/SKILL.md). See
-[`agent-issue-labels/README.md`](agent-issue-labels/README.md) for the manifest schema and call budget.
-
-#### Blackboard journal
-
-No repository command appends journal entries. Agents call the `journal_append` tool of the
-machine-registered `vouchington-tooling` MCP server (see
-[the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)), and read a session back with
-`journal_entries`. Both need an explicit session id, which `node dev/check-blackboard.mts` prints at SessionStart. See
-[docs/development/agent-blackboard.md](../agent-blackboard.md) for the hosted connection, the
-and outbox.
-
-Agents save a retrospective with the `retrospective_check` and `retrospective_save` tools of the same
-server (see [the `retrospective` skill](../../../.agents/skills/retrospective/SKILL.md)); the tool's
-`compose` argument assembles routine facts and markers, including validated work outcome and coverage
-front matter, and the repository policy module `dev/agent-policy.mts` validates the document.
-
-### Read-only helpers
-
-| Command                                                                                                  | Scope and output                                                                                                                                                                                                                                                                        |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `./dev/status`                                                                                           | Reports service and resource state across worktrees, including suspected orphans.                                                                                                                                                                                                       |
-| `./dev/valkey-logs`                                                                                      | Runs Valkey `MONITOR` for this worktree; it does not aggregate application logs.                                                                                                                                                                                                        |
-| `./dev/audit-rename OLD NEW`                                                                             | Reports repository references to both names before a rename.                                                                                                                                                                                                                            |
-| `./dev/config-inventory [--format json]`                                                                 | Reports environment and Dynamic Config readers and contracts.                                                                                                                                                                                                                           |
-| `pnpm exec vouchington retrospective-facts --pr N / --branch name / --no-pr [--repo owner/name] [--raw]` | Fetches and reports branch, PR, push, and diff facts without modifying repository files. Requires an explicit identity flag.                                                                                                                                                            |
-| `pnpm exec vouchington retrospective-transcript`                                                         | Reports turn, tool-call, and token facts from the current session transcript.                                                                                                                                                                                                           |
-| `node dev/retrospective-distill.mts <partition.jsonl> --retro-cutoff <iso> --session-cutoff <iso>`       | Classifies each session in a local `snapshot_export`/`snapshot partition` JSONL file by shape and eligibility for the `retrospective-distill` skill; pure local parsing, no MCP, network, or writes.                                                                                    |
-| `pnpm exec pr-shepherd journal extract --body-file <path>`                                               | Reads one explicit local Markdown body file and prints the typed Shepherd Journal extraction JSON plus newline. It never accepts stdin or logs the source body; invalid arguments and file-read errors exit nonzero, while typed `ok: false` extraction results are normal JSON output. |
-| `node dev/cloc.mts`                                                                                      | Produces the repository's classified line-count report.                                                                                                                                                                                                                                 |
-| `node dev/sandbox-command-audit.mts`                                                                     | Reports sandbox-bypass/denial candidates and escalation pressure from past sessions.                                                                                                                                                                                                    |
-
-#### Retrospective transcript facts
-
-`pnpm exec vouchington retrospective-transcript` resolves `--jsonl` first, then an explicit
-`--session-id` across Codex and Claude roots, then `CODEX_THREAD_ID`, `CURSOR_SESSION_ID`, and
-finally `CLAUDE_CODE_SESSION_ID`. Cursor JSONL auto-discovery is out of scope; pass `--jsonl` or
-`--session-id`. Codex rollouts are discovered recursively under `~/.codex/sessions` and
-Claude transcripts under `~/.claude/projects`; use `--codex-sessions-dir` or `--projects-dir` for
-fixtures and recovered roots. Empty, malformed-only, unsupported, or mixed-schema input prints an
-unavailable block instead of zero metrics. Output includes visible turns, tool calls and structural
-failures, command invocations, cumulative token deltas, recursive subagent spend, and compactions.
-
-### Internal hooks and checks
-
-These are invoked by agent hooks, tests, CI, or higher-level scripts rather than as routine developer
-commands: `check-fresh-base`, `check-web-init`, `node dev/check-blackboard.mts`,
-`node dev/codex-hooks/persist-session-id.mts claude`,
-`node dev/codex-hooks/post-tool-use-command.mts <claude|codex>`,
-`check-worktree-ports`, `check-db-backed-test-setup.mts`, `playwright-server-check`,
-`tmux-agent-reminder`, `host-storage-preflight.mts`, `otel-register.mts`, and the `codex-hooks/`
-policy entrypoints. Files under `dev/lib/` are sourced implementation helpers, not standalone
-commands.
-
-`node dev/codex-hooks/post-tool-use-command.mts <claude|codex>` is the merged PostToolUse hook: it
-runs the tmux reminder in-process, replacing three separately-spawned Codex hook processes per tool
-call with one. No hook records session evidence or appends Blackboard journal entries; agents write
-their own, following [the `blackboard` skill](../../../.agents/skills/blackboard/SKILL.md).
-See [reference-agent-session-hooks.md](reference-agent-session-hooks.md) and
-[agent-blackboard](../agent-blackboard.md#agent-written-journal-entries).
+No repository command appends Blackboard journal entries; agents use the machine-registered
+`vouchington-tooling` MCP tools ([agent-blackboard](../agent-blackboard.md)).

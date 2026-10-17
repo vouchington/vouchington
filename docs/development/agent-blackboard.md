@@ -1,27 +1,12 @@
 # Agent Blackboard — Hosted Session Store
 
-Durable storage for
-[`agent-blackboard`](https://github.com/jonathanong/agent-blackboard), the published client and CLI
-that back agent session journaling in Vouchington. Agents reach it through the `vouchington-tooling`
-MCP server, which
+Durable storage for [`agent-blackboard`](https://github.com/jonathanong/agent-blackboard), the
+published client and CLI behind agent session journaling. Agents reach it through the
+`vouchington-tooling` MCP server, which
 [vouchington-machines](https://github.com/vouchington/vouchington-machines/blob/main/docs/agent-config.md)
-registers once per machine in every harness. No repository file registers an MCP server, plugin, or
-marketplace. The root `package.json` installs `agent-blackboard` as a development dependency for the
-snapshot CLI and repository tests. Vouchington connects to a **hosted deployment**; there
-is no local server or database to run.
-
-The package supplies the file-backed `snapshot_export`, `snapshot partition`, and `snapshot cleanup`
-commands used by the snapshot-distillation workflow below. The export implementation landed in
-[agent-blackboard PR #21](https://github.com/jonathanong/agent-blackboard/pull/21); bounded partitioning
-and cleanup are owned upstream by
-[agent-blackboard PR #25](https://github.com/jonathanong/agent-blackboard/pull/25), with
-capability-bound cleanup and publication hardening in
-[agent-blackboard PR #28](https://github.com/jonathanong/agent-blackboard/pull/28).
-
-This document covers connecting to the hosted deployment and the Vouchington integrations around
-the MCP server, JS client, and CLI. What gets written into sessions belongs to the
-[`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). That adapter composes the portable
-`vouchington-workflow:blackboard` procedure with repository policy.
+registers once per machine in every harness; no repository file registers a server. Vouchington
+connects to a **hosted deployment**; there is no local server or database. What gets written into
+sessions belongs to the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md).
 
 ## Architecture
 
@@ -39,353 +24,52 @@ flowchart LR
   lambda --> table[(Shared DynamoDB table)]
 ```
 
-Every process supplied with the hosted connection uses the same durable store. There is no
-local/CI split and no local infrastructure to start, stop, or wipe. The Lambda function and
-DynamoDB infrastructure live in the separate `agent-blackboard` repository, not Vouchington or the
-private `vouchington-infra` repository.
+Every process with the hosted connection uses the same durable store; there is no local/CI split.
+The Lambda and DynamoDB infrastructure live in the separate `agent-blackboard` repository, which
+owns redeploying, scaling, and repair. The Bash gates never see MCP calls, so no `PreToolUse`
+matcher covers `mcp__` tools.
 
-## Setup (local)
+## Setup (human runbook)
 
-### 1. Configure the machine
+1. Run vouchington-machines' `./configure-agents.sh`, then `./diagnose-agents.sh --repo <worktree>`.
+   See [harness parity](agent-harness-parity.md#capability-matrix).
+2. Run `pnpm install` for the root-installed client and CLI (the MCP server does not depend on it).
+3. Export `AGENT_BLACKBOARD_URL` and `AGENT_BLACKBOARD_TOKEN`. Both are required; there is no
+   token-file or local-server fallback. Mint a credential with
+   `pnpm exec agent-blackboard credentials create --name <name>-local` (needs the deployment's admin
+   token). The raw token prints once and the server stores only its hash; keep it in a shell profile
+   or secrets manager, never on disk in this repository.
 
-Run vouchington-machines' `./configure-agents.sh` on each host, then `./diagnose-agents.sh --repo
-<worktree>`, which also fails when a project registers a server again. That registers
-`vouchington-tooling` in Claude, Codex, Cursor, Grok, and OpenCode and pre-approves its tools; see
-[harness parity](agent-harness-parity.md#capability-matrix) and each harness's page for the
-per-harness steps.
+Manual CLI commands are for people inspecting a session. An agent journals through the MCP
+`journal_append` tool. Sandboxed Claude and Codex commands never receive the credential; see the
+[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list).
 
-### 2. Install root dependencies
+## Automated sessions
 
-From the Vouchington worktree root:
+An automated session may not have the server: no repository registers it, and nothing here checks
+for it. A missing server does not stop a run. The run continues its primary work and states in its
+final report that journaling was unavailable and why, any pending outbox state, and the findings it
+would have journaled.
 
-```bash
-pnpm install
-```
+`.github/workflows/harness-dispatch.yml` does not provision `AGENT_BLACKBOARD_URL` or
+`AGENT_BLACKBOARD_TOKEN`; agent-blackboard is orthogonal to Auto Harness.
 
-This installs the published JS client and the `agent-blackboard` binary under the root
-`node_modules/.bin/`. No separate repository clone, source build, or `tsx` entrypoint is required.
-Vouchington's TypeScript integration imports the client directly; manual commands use the installed
-binary. The MCP server does not depend on this install.
-
-### 3. Export the hosted connection
-
-```bash
-export AGENT_BLACKBOARD_URL=<hosted-blackboard-url>
-export AGENT_BLACKBOARD_TOKEN=<your client credential>
-```
-
-Both values are required for hosted delivery. Missing values make hosted delivery fail and
-leave interactive feedback visibly pending in the durable outbox. There is no token-file or local-server fallback.
-
-If you do not yet have a client credential, ask the deployment owner for the admin-token procedure
-or follow the `agent-blackboard` repository's credential-management documentation. With an admin
-token available, mint a client credential through the installed CLI:
-
-```bash
-AGENT_BLACKBOARD_URL=<hosted-blackboard-url> \
-  AGENT_BLACKBOARD_ADMIN_TOKEN=<admin token> \
-  pnpm exec agent-blackboard credentials create --name <your-name>-local
-```
-
-`credentials create` prints the raw token exactly once. The server persists only its hash, so a
-lost token cannot be recovered. Store it in a shell profile or secrets manager; Vouchington never
-persists it to disk.
-
-### 4. Use the CLI
-
-Run manual commands from the Vouchington root with `pnpm exec` so they use the workspace-pinned
-version:
-
-```bash
-pnpm exec agent-blackboard sessions create my-session-id --agent claude-code --version unknown
-pnpm exec agent-blackboard append --session-id my-session-id '{"type":"journal","markdown":"...","timestamp":"2026-07-20T00:00:00Z"}'
-pnpm exec agent-blackboard get --session-id my-session-id --format json
-pnpm exec agent-blackboard sessions get my-session-id
-```
-
-Pass the explicit `{"type": ..., ...}` payload to `append`. The CLI's `--file foo.md` convenience
-wraps Markdown as `{markdown: ...}` without the `type` field required by later pipeline stages.
-These commands are for manual inspection by a person. An agent records journal entries with the MCP
-`journal_append` tool, never through the worktree's `node_modules/.bin`. Sandboxed Claude and Codex shell commands don't
-receive the credential; see the
-[sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list) for each harness.
-
-## MCP server, JS client, and CLI integration
-
-The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) records feedback through the
-machine-registered `vouchington-tooling` MCP server, which exposes nine tools: `journal_append`,
-`journal_entries`, `outbox_status`, `outbox_flush`, `session_ensure`, `snapshot_export`,
-`session_archive`, `retrospective_check`, and `retrospective_save`. One `journal_append` call carries the note as `markdown` plus mode, source-event
-id, work outcome, feedback coverage, and repositories; the server builds the validated feedback
-envelope and owns its `timestamp`. An event is its session, source-event id, and content, never its
-timestamp, so a retry is the identical call and reports the stored timestamp, while different
-content under the same source-event id is an `event-conflict`. Raw provider tools never satisfy
-that delivery contract. Each entry's `data.repositories` lists the repositories it concerns
-(`vouchington/vouchington` unless the caller lists others), and the session's `data.repositories`
-keeps their cumulative union. Interactive mode retains a failed delivery in the worktree's
-`.local/blackboard-outbox`, the same directory `retrospective_save` uses;
-`outbox_flush` delivers every retained record in the worktree, and `journal_append`,
-`outbox_status`, and `outbox_flush` report two counts: `pendingCount` is the calling session's
-unsent records and `worktreePendingCount` is every session's. Autonomous mode has no outbox.
-
-Every call takes an explicit `sessionId`, whose meaning depends on the tool: `journal_append` and
-`session_ensure` name the session written or ensured, `journal_entries` and `session_archive` the
-session read or archived, and `snapshot_export`, `outbox_status`, and `outbox_flush` only the
-caller. Agents copy it from the `Blackboard sessionId:` line that the SessionStart check prints.
-
-The tools carry a harness-specific name: `mcp__vouchington-tooling__<tool>` in Claude,
-`mcp__vouchington_tooling__<tool>` in Codex, `vouchington-tooling__<tool>` through `search_tool`
-and `use_tool` in Grok, and the `vouchington-tooling` namespace through `GetDynamicTools` and
-`CallDynamicTool` in Cursor. Search for `journal_append` by bare name before concluding the server
-is unavailable.
-
-### Server unavailable
-
-Agents journal through the MCP server. When it is not available, an interactive agent tells the
-user the fix, remediation first:
-
-- **Not registered:** run vouchington-machines' `./configure-agents.sh`, check it with
-  `./diagnose-agents.sh --repo <checkout>` ([setup](#1-configure-the-machine)), then reconnect
-  (`/mcp` in Claude Code, or restart Codex).
-- **Registered but disconnected:** reconnect (`/mcp` in Claude Code, or restart Codex).
-
-The worktree install does not affect the server.
-
-Last resort: the canonical `vouchington-workflow:blackboard` skill's CLI fallback is deprecated and
-being phased out. Use it only when the remediation above cannot restore the server, and tell the user
-(or the final report) that you fell back. The token is hidden from sandboxed Claude commands and Codex
-shell commands (see the [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list)),
-so the fallback cannot deliver there; never ask for an unsandboxed run just to get the token.
-
-### Automated sessions
-
-An automated session may not have the server: no repository registers it, and a host has it only when its own user configuration was run through
-`./configure-agents.sh` (a profile that uses its own home directory needs
-`--home <profile home>`; whether the Auto Harness profiles do is not documented here). Nothing in this repository checks for that: there is no dispatch or
-prompt preflight, and a missing server does not stop a run. The run continues its primary work and
-states in its final report that journaling was unavailable and why, any pending outbox state, and
-the findings it would have journaled, as the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md)
-requires.
-
-### Retrospectives and distillation
-
-The [`retrospective-distill` skill](../../.agents/skills/retrospective-distill/SKILL.md) uses the
-server's `snapshot_export` for the bulk read and `session_archive` per session. `snapshot_export`
-returns only the snapshot path, counts, checksum, and manifest; full records come from the exported
-file, never from `journal_entries`, which reads one session at a time (every entry of every type,
-oldest first, each with its full envelope) with no checksum or manifest.
-Eligibility for distillation and archival is age-based, not retro-presence-based: a session becomes
-eligible once its retrospective entry is older than `--retro-days` (default 1) or, regardless of
-whether it has a retrospective, once the session itself is older than `--session-days` (default 7).
-Both flags are validated as finite, non-negative numbers before any cutoff is computed. An entry
-lacking a recognized `type` (the CLI's `--file` convenience omits it) is never treated as journal
-evidence; the distill skill flags such a session as entry-type-unresolved and skips it — including
-archival — for the run. See
-[retrospective-distill's SKILL.md](../../.agents/skills/retrospective-distill/SKILL.md) and
-[distilling.md](../../.agents/skills/retrospective-distill/distilling.md) for the full eligibility,
-redaction, and archival-carve-out rules. Before the export, and again before any `session_archive`,
-the root calls `outbox_flush` then `outbox_status` for every worktree that `git worktree list`
-prints (each path as `worktree`) and stops if any reports a `worktreePendingCount` above 0 (not
-`pendingCount`, which covers only the root's own session, while the sessions being distilled belong
-to other agents): an archived session refuses later delivery, which would strand the retained
-record. A removed worktree or another machine cannot be drained. The export never passes
-`selection.inactiveForHours`: the filter never matches a zero-entry session, so passing it would
-hide exactly the aborted sessions this age rule exists to sweep up. The `--retro-days` and
-`--session-days` cutoffs supply the delivery window instead, and effective activity is classified
-client-side from normalized entry `createdAt` values, falling back to session `createdAt` when
-empty. Immediately before each `session_archive`, which has no guard of its own, the root reads that
-session with `journal_entries` and archives it only if its entries match the verified snapshot's by
-source identity (`sourceEventId`, or `createdAt` for a legacy entry without one) and content,
-ignoring only the server-assigned `timestamp` (two empty entry sets match); otherwise it leaves the session for the next pass. The root agent first verifies the
-snapshot against the returned checksum, compact counts, and terminal manifest, and stops on any
-mismatch, then checks the generated-export cleanup token,
-then partitions the returned local JSONL snapshot with `pnpm exec agent-blackboard snapshot partition
---path <path> --cleanup-token <cleanupToken> --checksum <sha256> --sessions <count> --entries <count>
---records <count> --bytes <count>` before it delegates read-only
-partitions to inspector subagents. When `snapshot_export` omits a path,
-the client intentionally writes a private `agent-blackboard-snapshot-*.jsonl` directly under the system
-temp directory. Cross-process partition and cleanup commands must receive that token through
-`--cleanup-token`; explicit caller-owned export destinations receive no cleanup capability and are not
-eligible for this managed workflow. Each partition holds no more than 25 whole contiguous session groups or 1 MiB, is stored
-in a `0700` temporary directory as a `0400` file, and is cleaned by the root after it merges the inspector
-summaries and completes archival. A group larger than 1 MiB is an explicit failure: the workflow never
-splits a session or silently exceeds the inspection bound. If partitioning fails before a partition
-directory exists, cleanup receives the validated snapshot path and cleanup token without a directory.
+## Retrospectives and distillation
 
 Retrospective persistence goes through `retrospective_check` and `retrospective_save`, never
-`journal_append`. `retrospective_save` runs the repository policy module `dev/agent-policy.mts`
-(declared as `"vouchington-tooling": { "policy": "dev/agent-policy.mts" }` in the root
-`package.json`) in a fresh child process without blackboard credentials; its
-`validateRetrospective` export checks required sections, failure grammar, and the front matter
-(`key: <JSON value>` lines), and any error rejects the save with nothing written. The server appends
-typed provenance and verifies the write by reading it back. `journal_append` writes journal entries
-only and would bypass those repository-owned invariants for a retrospective.
-
-The repository's policy tests pin that no `PreToolUse` matcher can match an `mcp__` tool name,
-because the Bash gates never see MCP calls, and that no repository file registers a server or
-approves a retired `agent-blackboard` tool.
-
-## Child-agent identity
-
-A spawned delegation child resolves its own session id
-from its runtime environment — Codex's `CODEX_THREAD_ID`, Claude Code's `CLAUDE_CODE_SESSION_ID`, and
-so on — as the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) describes.
-There is no
-identity round-trip: the parent passes its own session id in the spawn assignment, and the child
-calls `session_ensure` with its own resolved id, the parent id it was given, its agent name, and
-its version before performing substantive or blackboard-aware work.
-
-The [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md#child-identity-for-spawned-agents)
-owns the exact parent/child responsibilities. The child must never infer or synthesize an identity
-when its runtime environment supplies none — it stops and reports the blocker instead. A Claude
-Code Agent-tool subagent is the one exception: it shares its parent's `CLAUDE_CODE_SESSION_ID`
-rather than resolving a distinct id, so this protocol does not apply to it — see the skill for the
-fallback.
-
-### Root Codex sessions
-
-The MCP tools take the explicit `sessionId` the SessionStart check printed, so a root Codex
-session needs no `--root-codex` or `--new-root-codex-session` flags and no
-`.local/codex-session-id` rotation.
-
-## Agent-written journal entries
-
-Agents write their own journal entries, following the triggers in the
-[`blackboard` skill](../../.agents/skills/blackboard/SKILL.md). Those include one `GitHub Actions`
-block per CI failure root cause, the only source of the retrospective's `## CI Failures`. Hooks do
-not append journal entries: the SessionStart `compact` hook and the PostToolUse checkpoint
-pipeline that once journaled post-compaction facts, repeated command failures, and PR/push
-milestones (#9337) were removed in #1201. Mechanical detail comes from the transcript readers
-instead, for example `pnpm exec vouchington retrospective-transcript`.
-
-Entries those hooks already appended keep their structural `checkpoint` field and stay in Blackboard
-until archived, so `node dev/retrospective-distill.mts` still classifies a session made only of them
-as `checkpoint-only` (vouchington-tooling's `retrospective-distill` classifier).
+`journal_append`: `retrospective_save` runs the repository policy module `dev/agent-policy.mts` in
+a credential-free child process, and `journal_append` would bypass those repository-owned
+invariants. Distillation reads the bulk export from `snapshot_export` and archives per session;
+eligibility and redaction rules live in the
+[retrospective-distill skill](../../.agents/skills/retrospective-distill/SKILL.md). Before any
+export or `session_archive`, the root drains every worktree's outbox, because an archived session
+refuses later delivery and would strand a retained record.
 
 ## SessionStart availability check
 
-`dev/check-blackboard.mts` runs at every SessionStart, including after compaction. It emits
-advisory context; emitting context cannot mechanically stop an agent.
-
-- **Session id.** A `Blackboard sessionId: <id>` line names the id to pass as `sessionId` to the
-  `vouchington-tooling` tools. It is the id in the hook's own payload (`session_id`, or Cursor's
-  `conversation_id`), accepted only when it is a plain token, so no inherited environment or
-  persisted file can leak in. A payload with no id prints no line; the
-  [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) then names the only fallbacks:
-  `CLAUDE_CODE_SESSION_ID` for Claude Code, `CODEX_THREAD_ID` for Codex, and the persisted
-  `.local/cursor-session-id` and `.local/grok-session-id` for Cursor and Grok, whose shells export
-  no session id. With none, the agent stops journaling and reports it. A spawned child never
-  reuses its parent's id; it takes its own, from its own SessionStart line or runtime environment,
-  and registers it through `session_ensure`.
-- **Deployment probe.** Unless the run is a compaction restart or `CHECK_BLACKBOARD_SKIP=1`, the
-  hook makes a bounded `sessions.list({ limit: 1 })` request and says loudly when the hosted
-  deployment cannot be reached or the credential is missing, asking the user to fix the hosted
-  connection or credential ([setup](#3-export-the-hosted-connection)); this is separate from the
-  server-not-connected path ([Server unavailable](#server-unavailable)), which the hook cannot see. A sandboxed probe reports an unavailable assessment instead of a false
-  deployment outage, because its credential and egress are deliberately withheld by the machine's
-  [sandbox credential deny list](agent-sandbox.md#sandbox-credential-deny-list). A worktree
-  without the root install gets a workspace-setup message naming the install command; journaling
-  does not depend on it.
-
-The hook cannot see whether a harness connected the machine-registered server: it never spawns or
-queries it. An agent finds out by searching for `journal_append`. The check does not discard
-interactive pending feedback.
-
-## Interactive pending delivery
-
-The shared retrospective composer emits validated `work_outcome` and `feedback_coverage` front
-matter. `retrospective_save` takes `mode`, `workOutcome`, and `feedbackCoverage` as arguments and
-rejects front matter that contradicts them. See the
-[save contract](../../.agents/skills/retrospective/saving.md) for the tool arguments, including a
-hand-written `markdown` document. A `dryRun` preview returns a single-use `previewToken`, and
-saving with it stores exactly the previewed envelope, including its `repositories`.
-The `compose` argument accepts serializable facts and transcript options, then
-constructs its own journal collector from the same session's hosted journal and builds
-`## CI Failures` and `## Sandbox & Permission Audit` from the journal entries alone. A session
-unknown to the hosted blackboard reports both as unavailable. Caller
-input cannot supply a collector, credential environment, executable callback, or direct transcript
-path; facts accept no `repo`, and a pull request in another repository is recorded as
-`{status: "not-assessed", reason}`. Transcript discovery is bound to the harness session that
-launched the server.
-
-`journal_append` and the retrospective writer take an explicit mode (`interactive` or
-`autonomous`). Interactive delivery failures preserve the shared writer's sanitized feedback record
-in a bounded, private worktree-local outbox and return visible `pending` state so work can
-continue. Unsent records are never silently evicted. Saturation, persistence failure, malformed
-input, and identity mismatch remain explicit failures. Use the `outbox_status` and `outbox_flush`
-tools to inspect pending delivery (the calling session's `pendingCount` and the worktree's
-`worktreePendingCount`) and to retry it for the whole worktree; retries preserve source IDs and
-verify read-back.
-
-The versioned envelope records `schemaVersion`, `type`, `sourceEventId`, `timestamp`,
-`repositories`, `markdown`, `workOutcome`, and `feedbackCoverage`. Retrospectives retain typed
-`date`, `issues`, and `prs` provenance. The writer owns validation, sanitization, deduplication,
-attribution, transport, and acknowledgment; repository adapters do not duplicate those mechanisms.
-
-## Credential recovery
-
-An availability or delivery diagnostic can mean the hosted connection failed: `AGENT_BLACKBOARD_URL`/
-`AGENT_BLACKBOARD_TOKEN` is missing or stale, or the deployment is unreachable even with valid
-credentials. An append/save hard-fail (see [Interactive pending delivery](#interactive-pending-delivery)
-above) can point to the same cause, but not always — these commands also hard-fail for invalid UTF-8, retrospective
-validation errors, missing session metadata, network failures, HTTP 500 responses, and failed
-read-back verification, none of which involve the credential. Read the printed error before
-acting: only when it actually identifies a missing/stale token, an authentication failure, or an
-unreachable deployment does the recovery below apply. When it does, an agent must **stop and
-report the blocker to the user** — it must never try to recover the value itself:
-
-- Never grep shell profiles (`~/.zshrc`, `~/.zprofile`, `~/.bash_profile`, `~/.bashrc`), `env`, or
-  `.env*` files for the token or any related secret name (including
-  `AGENT_BLACKBOARD_ADMIN_TOKEN`/`AGENT_BLACKBOARD_ADMIN_CREDENTIALS`).
-- Never inline, export, echo, or otherwise print a derived credential value — including inside a
-  "safe-looking" presence check. `${VAR:+SET}${VAR:-UNSET}` is **not** safe: whenever `VAR` is set
-  and non-empty, the second branch expands to its value, printing it in any shell — not only an
-  interactive one. `[ -n "$VAR" ] && echo SET || echo UNSET` is **also not safe**: shell tracing (`set -x`/`bash -x`, or an inherited
-  `SHELLOPTS`) prints every command with its expanded arguments, so `$VAR` still lands in the
-  trace. Use `[ -n "${VAR+x}" ] && echo SET || echo UNSET` instead — the `${VAR+x}` form expands to
-  the literal `x` (or nothing) without ever substituting the variable's actual value, so it stays
-  safe even when tracing is on.
-- A sandboxed run (`SANDBOX_RUNTIME=1`) deliberately denies the token, as described above — that is
-  expected behavior, not a fix target, and needs no recovery action.
-- Ask the user to set or refresh the credential (see
-  [Export the hosted connection](#3-export-the-hosted-connection)). A newly exported value does not
-  reach an already-running process: for the MCP path, ask the user to restart the agent/MCP client
-  after they confirm the refreshed value is set; for the script path, run the export and the retry
-  in the same shell invocation. Only then retry the failed call.
-
-Interactive writer delivery failures remain visible in the outbox. `--mode autonomous` still requires
-a verified read-back and does not fall back to that outbox.
-
-The [`blackboard` skill § Credential failures](../../.agents/skills/blackboard/SKILL.md#credential-failures)
-carries the matching agent-facing rule; keep the two in sync.
-
-## CI (Harness dispatch)
-
-`.github/workflows/harness-dispatch.yml` invokes Auto Harness through a dependency-free client but
-does not provision `AGENT_BLACKBOARD_URL` or `AGENT_BLACKBOARD_TOKEN`. Harness sessions therefore
-report contemporaneous failures through their available parent-agent channel when runtime session
-IDs are unavailable; they do not infer IDs or write unauthenticated blackboard records.
-
-agent-blackboard is orthogonal to auto-harness. Dispatch does not check a Blackboard protocol, and
-this repository does not give the runner a Blackboard credential. See
-[Automated sessions](#automated-sessions) for what a run does without the server.
-
-## AWS deploy path
-
-Vouchington consumes a hosted deployment; it does not own or provision it. Configure connection
-values through the private operator runbook:
-
-- `AGENT_BLACKBOARD_URL` — the hosted service URL
-- `AGENT_BLACKBOARD_TABLE_NAME` — a server-side deployment identifier; the Vouchington client never
-  sets it
-
-The hosted service is provisioned from the separate `agent-blackboard` repository. Redeploying,
-scaling, or repairing that infrastructure is the deployment owner's responsibility.
-
-## Files
-
-| File                       | Purpose                                                                                      |
-| -------------------------- | -------------------------------------------------------------------------------------------- |
-| `package.json`             | Pins the published package as a root development dependency                                  |
-| `dev/check-blackboard.mts` | SessionStart check: prints the hook's session id and probes the hosted connection            |
-| `dev/agent-policy.mts`     | Retrospective policy module that `retrospective_save` runs; the only retrospective validator |
+`dev/check-blackboard.mts` runs at every SessionStart and emits advisory context only; it cannot
+stop an agent. It prints the `Blackboard sessionId:` line from the hook's own payload (no inherited
+environment or persisted file can leak in) and probes the hosted deployment, asking the user to fix
+a missing credential or unreachable service. A sandboxed probe reports "unavailable" instead of a
+false outage because the credential and egress are deliberately withheld. It cannot see whether a
+harness connected the MCP server; an agent finds out by searching for `journal_append`.

@@ -1,6 +1,6 @@
 # Rate Limiter Checklist
 
-[Back to Valkey Data Store](README.md#rate-limiter-checklist)
+[Back to Valkey Data Store](README.md#related-checklists)
 
 Treat limiter round-trip reductions as distributed-systems changes, not just script consolidation.
 Before changing limiter keys, charging order, or request counts, verify:

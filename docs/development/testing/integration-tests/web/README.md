@@ -1,94 +1,12 @@
 # Web Integration Tests
 
-Source entrypoint: [integration-tests/web/README.md](../../../../../integration-tests/web/README.md)
+Source entrypoint: [integration-tests/web/README.md](../../../../../integration-tests/web/README.md). Read [AGENTS.md](../../../../../integration-tests/web/AGENTS.md) before changing suite setup, artifacts, data ownership, tracing, or failure behavior.
 
-Fetch-based full-stack integration tests for the built web application.
+Fetch-based tests of the built application along `client -> Cloudflare Worker -> Next.js -> backend`. Use this suite, not Playwright, for status codes, redirects, route existence, headers and cache behavior, `robots.txt`/`llms.txt`, metadata, canonical links, JSON-LD, static copy, and link attributes.
 
-## Suite Boundaries
-
-| Suite                                                                     | Scope                                                                     |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`integration-tests/web/`](../../../../../integration-tests/web)          | `client → Cloudflare Worker → Next.js → backend` — fetch-level full-stack |
-| [`integration-tests/web-api/`](../../../../../integration-tests/web-api/) | `web/lib/api/**` helpers talking directly to the backend                  |
-| [`playwright/`](../../../../../playwright/)                               | Browser, hydration, and interaction behavior                              |
-
-Use this suite (not Playwright) for: status codes, redirects, route existence, headers/cache behavior, `robots.txt`/`llms.txt`, metadata, canonical links, JSON-LD, static copy, link attributes.
-
-## Running
-
-- `pnpm run test:integration:web` — runs `pretest:integration:web` setup automatically
-- `pnpm run test:integration:web:setup` — manual prebuild/setup (use before repeated direct Vitest runs)
-- Direct: `pnpm exec vitest --project web-integration` (requires prior manual setup)
-- Vitest project name: `web-integration` in root `vitest.config.mts`
-
-CI keeps this full-stack project separate from `web-api`. `tests-web-api.yml` needs only
-Postgres/Valkey and backend setup; it does not build Next.js or the Worker. `tests-web-integration.yml`
-retains the built Worker → Next.js → backend contract and its CPU runner. Both keep independent
-matrix/report identities; integration stays at one shard because its build/setup is the dominant
-cost.
-
-Global setup clears Vitest's inherited `VITEST` marker for the standalone Next.js child. In-process
-Vitest may read catalog JSON, but the live test server fetches copy from the backend; the OAuth
-callback baseline checks for a successful localization request in the backend trace.
-
-Global setup reserves the backend, image Lambda, Next.js, worker, and inspector ports, then releases
-each reservation before that process starts. Those ports are outside the kernel ephemeral range. A
-port from `listen(0)` can be handed to a localhost connection as a source port during the child's
-startup, and the process then fails its bind with `EADDRINUSE`.
-
-The shared readiness helpers intentionally run probes serially: a probe settles, its result is
-checked, and only a failed result is followed by the configured delay. Poll callbacks must never
-overlap because many callers inspect stateful local services.
-
-## Worker Response Contract
-
-Every response received through `WebIntegrationClient.request()` must carry the Worker's
-`x-request-id`; it scopes backend tracing to the request that produced a page. During a supervised
-Wrangler restart, an idempotent request that resolves without that header is discarded and retried
-within the client's existing bounded retry schedule. Non-idempotent requests and exhausted retries
-throw a response-rejection error. Accepted responses, including non-2xx responses, retain their
-original body and fetch metadata.
-
-Read [AGENTS.md](../../../../../integration-tests/web/AGENTS.md) before changing suite setup, artifacts, data ownership, tracing, or
-failure behavior.
-
-## Authentication Isolation
-
-Generic authenticated route tests mint fresh device and session cookies with
-`createTestAuthCookies(TEST_USER_ID)`. They do not exercise the email-login limiter. The dedicated
-authentication contract performs the suite's one real email login through the Worker; its client
-uses the suite-randomized email that global setup associates with the seeded user and sends a
-UUID-derived IP from the RFC 3849 documentation prefix. No login-verification rate-limit identity
-is therefore shared across parallel runs.
-
-## Web API Coverage
-
-Every new API helper added to `web/lib/api/client/` or `web/lib/api/server/` must have a corresponding test case in [`integration-tests/web-api/__tests__/routes.public.test.mts`](../../../../../integration-tests/web-api/__tests__/routes.public.test.mts) or `integration-tests/web-api/routes-extended-tests/*.test.mts`.
-
-### Patterns
-
-```ts
-// Server route (GET helper from Next.js server component)
-const result = await serverRoutes.getMyThing({ id: 'some-id' })
-expect(result).toMatchObject({ ... })
-
-// Client route (mutation helper from client component)
-const result = await withClientRuntime(() => clientRoutes.createMyThing({ ... }))
-expect(result).toMatchObject({ ... })
-
-// Auth: use authCookie from createTestSession(), adminAuthCookie from createAdminTestSession()
-```
-
-### Exempt modules
-
-| Module                            | Reason                                  |
-| --------------------------------- | --------------------------------------- |
-| `psql` (client + server)          | Infrastructure helper, not an API route |
-| `valkey` (client + server)        | Infrastructure helper, not an API route |
-| `images` (client)                 | Requires S3 presigned URLs              |
-| `memberships` (client, mutations) | Requires Stripe                         |
-
-### Coverage gaps (add when next modified)
-
-- `mq` (client) — pauseQueue, resumeQueue, retryFailedJobs
-- `memberships` (server — read-only: getPlans, getMembership; requires Stripe in test env)
+- **Separate CI projects.** `web-api` needs only Postgres, Valkey, and the backend; `web-integration` needs the built Worker and Next.js and stays at one shard because its build and setup dominate cost.
+- **Reserved ports.** Global setup reserves the backend, image lambda, Next.js, worker, and inspector ports outside the kernel ephemeral range. A port from `listen(0)` can be handed to a localhost connection as a source port during a child's startup, which then fails to bind with `EADDRINUSE`.
+- **Serial readiness probes.** Probe callbacks never overlap, because many callers inspect stateful local services.
+- **Worker response contract.** Every response through `WebIntegrationClient.request()` must carry the Worker's `x-request-id`, which scopes backend tracing to the request. During a supervised Wrangler restart an idempotent request without it is retried within the bounded schedule; non-idempotent requests and exhausted retries throw.
+- **Authentication isolation.** Authenticated route tests mint fresh cookies with `createTestAuthCookies`. Only the dedicated authentication contract performs a real email login, with a suite-randomized email and a documentation-prefix IP, so no login rate-limit identity is shared across parallel runs.
+- **API helper coverage.** Every new helper in `web/lib/api/client/` or `server/` needs a case in the `web-api` route tests. Infrastructure helpers (`psql`, `valkey`) and Stripe- or S3-dependent ones are exempt.

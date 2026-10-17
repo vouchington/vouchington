@@ -7,7 +7,7 @@ Use this checklist before every `git commit`. GitHub Actions is the full gate af
 - **Format first** — run `pnpm run oxfmt:check` (global scan) on all changed file types before staging: `.ts/.tsx/.mts/.cts/.js/.mjs/.cjs`, `.json/.jsonc`, `.md`, `.yml/.yaml`, `.toml`.
   - The pinned Oxfmt processes explicit tracked dot-directory paths such as `.agents/skills/**/*.md`; keep those files in targeted formatter commands. This checklist still requires the global scan before committing.
 - **Lint TypeScript** — `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files>` before committing. Catches import-order violations and missing `vi.fn` type parameters that appear on nearly every first push.
-- **File size cap** — no `.ts/.tsx/.mts/.cts/.js/.mjs/.cjs` source file may exceed 200 lines; test files cap at 300 lines. Oxlint `max-lines` in [.oxlintrc.json](../../.oxlintrc.json) enforces both caps.
+- **File size cap** — no `.ts/.tsx/.mts/.cts/.js/.mjs/.cjs` source file may exceed the source line cap, and test files have their own cap. Oxlint `max-lines` in [.oxlintrc.json](../../.oxlintrc.json) enforces both caps.
 - **Doc size budget** — check current size (`wc -l <file>` / `wc -c <file>`) before editing `AGENTS.md`. Follow the enforced [size budgets](../../.no-mistakes.yml), including the tighter root-instruction limit.
 - **Commit message format** — use [conventional commit](https://www.conventionalcommits.org/) format: `type(scope): description`. Always add a `Co-Authored-By:` trailer when using an AI agent.
 - **Commit reminder** — after commitlint passes, [commit-msg](../../.husky/commit-msg) prints the cheap before-push command list.
