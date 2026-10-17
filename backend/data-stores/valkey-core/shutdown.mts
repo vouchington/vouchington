@@ -36,7 +36,8 @@ export function createGracefulShutdown(
 
     const results = await Promise.allSettled([
       ...deps.getGlideMQInstances().map(instance => Promise.resolve().then(() => instance.close())),
-      Promise.resolve().then(deps.closeValkeyClients),
+      // closeValkeyClients accepts optional options. Promise.then would pass void.
+      Promise.resolve().then(() => deps.closeValkeyClients()),
     ])
     errors.push(...collectErrors(results))
 
