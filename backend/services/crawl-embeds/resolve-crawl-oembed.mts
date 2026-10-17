@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { OEmbedHttpError, type EmbedResolutionPlan } from '@vouchington/embeds'
+import { EmbedPolicyError, OEmbedHttpError, type EmbedResolutionPlan } from '@vouchington/embeds'
 import { resolveCrawlerOEmbed } from './embed-resolver.mts'
 import { getPendingCrawlEmbed } from './get-pending.mts'
 
@@ -29,9 +29,10 @@ export async function resolveCrawlOEmbed(
   try {
     metadata = await dependencies.resolve(plan)
   } catch (err) {
-    if (!(err instanceof OEmbedHttpError) || (err.status !== 404 && err.status !== 410)) {
-      throw err
-    }
+    // A gone endpoint or a policy denial is deterministic: complete the row without enrichment
+    // so the backfill stops re-enqueuing a URL that can never resolve.
+    const gone = err instanceof OEmbedHttpError && (err.status === 404 || err.status === 410)
+    if (!gone && !(err instanceof EmbedPolicyError)) throw err
   }
   const { rowCount } = await write(
     `/* resolveCrawlOEmbed */
