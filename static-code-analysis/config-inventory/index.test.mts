@@ -8,8 +8,6 @@ import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.m
 describe('config inventory', () => {
   const testDirs: string[] = []
   const environmentVariablesIndexDoc = 'docs/overview/infrastructure/environment-variables.md'
-  const environmentVariablesReference =
-    'docs/overview/infrastructure/reference-environment-variables-test.md'
   afterEach(async () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
@@ -85,8 +83,7 @@ describe('config inventory', () => {
       '.env.example':
         'export FEATURE_EXAMPLE_ENABLED=\nexport API_KEY_CHECKSUM_SECRET=\nexport PORT=\n',
       [environmentVariablesIndexDoc]:
-        '`FEATURE_EXAMPLE_ENABLED`\nCI appears in specifications but should not match.\nsome/PORT and MY-PORT-ENV should not match.\n./dev/config-inventory\n',
-      [environmentVariablesReference]: '`LATE_ENV_VAR`\n',
+        '`FEATURE_EXAMPLE_ENABLED`\n`LATE_ENV_VAR`\nCI appears in specifications but should not match.\nsome/PORT and MY-PORT-ENV should not match.\n./dev/config-inventory\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
@@ -122,7 +119,7 @@ describe('config inventory', () => {
         }),
         expect.objectContaining({
           name: 'LATE_ENV_VAR',
-          docs: [environmentVariablesReference],
+          docs: [environmentVariablesIndexDoc],
           readers: ['web/late.mts'],
         }),
         expect.objectContaining({

@@ -1,9 +1,5 @@
 import type { SourceBucket } from './types.mts'
 
-const ENVIRONMENT_VARIABLES_REFERENCE_DIRECTORY = 'docs/overview/infrastructure/'
-const ENVIRONMENT_VARIABLES_REFERENCE_FILE_RE =
-  /^docs\/overview\/infrastructure\/reference-environment-variables-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/
-
 export function bucketsForFile(file: string): SourceBucket[] {
   const buckets: SourceBucket[] = []
   if (file.startsWith('docs/') || file.endsWith('.md')) buckets.push('docs')
@@ -23,15 +19,7 @@ export function isGithubYaml(file: string): boolean {
 export function isEnvInventoryDoc(file: string): boolean {
   return (
     file === 'docs/overview/infrastructure/environment-variables.md' ||
-    isCanonicalEnvironmentVariablesReference(file) ||
     file === 'docs/development/local-env-vars.md'
-  )
-}
-
-export function isCanonicalEnvironmentVariablesReference(file: string): boolean {
-  return (
-    file.startsWith(ENVIRONMENT_VARIABLES_REFERENCE_DIRECTORY) &&
-    ENVIRONMENT_VARIABLES_REFERENCE_FILE_RE.test(file)
   )
 }
 
