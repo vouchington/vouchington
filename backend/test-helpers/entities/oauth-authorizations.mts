@@ -28,7 +28,7 @@ export type TestOAuthAuthorizationRow = {
   completion_token_ciphertext: string | null
   exchange_claim_id: string | null
   facebook_account_id: string | null
-  github_user_id: string | null
+  github_account_id: string | null
   x_account_id: string | null
   linkedin_account_id: string | null
   microsoft_account_id: string | null
@@ -84,6 +84,10 @@ export async function insertTestOAuthAuthorization(
     provider === 'x' && options.providerUserId
       ? await getTestAuthorizationAccountId('x', options.providerUserId)
       : null
+  const githubAccountId =
+    provider === 'github' && options.providerUserId
+      ? await getTestAuthorizationAccountId('github', options.providerUserId)
+      : null
   const completionTokenHash = options.completionToken
     ? hashToken(`oauth-authorization-broker:completion:${id}`, options.completionToken)
     : null
@@ -94,7 +98,7 @@ export async function insertTestOAuthAuthorization(
        pkce_verifier_ciphertext, callback_code_ciphertext, callback_received_at,
        exchange_started_at, exchange_claim_id, completion_proof_challenge,
        completion_token_hash, completion_token_ciphertext, facebook_account_id,
-       github_user_id, x_account_id, result_kind, result_user_id, result_device_id,
+       github_account_id, x_account_id, result_kind, result_user_id, result_device_id,
        result_session_id, completion_ready_at, completed_at, expires_at, updated_at,
        linkedin_account_id, microsoft_account_id
      )
@@ -127,7 +131,7 @@ export async function insertTestOAuthAuthorization(
       completionTokenHash,
       options.completionTokenCiphertext ?? null,
       facebookAccountId,
-      provider === 'github' ? (options.providerUserId ?? null) : null,
+      githubAccountId,
       xAccountId,
       options.resultKind ?? null,
       options.resultUserId ?? null,
@@ -152,7 +156,7 @@ export async function getTestOAuthAuthorization(
     `/* getTestOAuthAuthorization */ SELECT
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
        completion_token_ciphertext, exchange_claim_id, facebook_account_id,
-       github_user_id, x_account_id, linkedin_account_id, microsoft_account_id, result_kind, result_user_id, result_device_id, result_session_id
+       github_account_id, x_account_id, linkedin_account_id, microsoft_account_id, result_kind, result_user_id, result_device_id, result_session_id
      FROM view_oauth_authorization_current_records
      WHERE id = $1`,
     [authorizationId],

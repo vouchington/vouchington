@@ -41,10 +41,7 @@ export async function completeOAuthAuthorization(
         reportPostCommitError(err)
       }
       try {
-        await dependencies.enqueueFriendSync(
-          durableResult.provider,
-          durableResult.account.provider_user_id,
-        )
+        await dependencies.enqueueFriendSync(durableResult.provider, durableResult.account)
       } catch (err) {
         reportPostCommitError(err)
       }

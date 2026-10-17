@@ -11,14 +11,14 @@ const oauthProviderUserIdColumnByTable = new Map(
 const allowedOAuthCleanupIdentifiers = new Set([...oauthProviderUserIdColumnByTable].flat())
 const oauthAuthorizationProviderUserIdColumnByAccountTable = new Map([
   ['facebook_accounts', 'facebook_account_id'],
-  ['github_accounts', 'github_user_id'],
+  ['github_accounts', 'github_account_id'],
   ['linkedin_accounts', 'linkedin_account_id'],
   ['x_accounts', 'x_account_id'],
   ['microsoft_accounts', 'microsoft_account_id'],
 ])
 const oauthAccountIdColumnByTable = new Map([
   ['facebook_accounts', 'id'],
-  ['github_accounts', 'github_user_id'],
+  ['github_accounts', 'id'],
   ['linkedin_accounts', 'id'],
   ['x_accounts', 'id'],
   ['microsoft_accounts', 'id'],

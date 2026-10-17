@@ -101,7 +101,7 @@ describe('OAuth authorization exchange recovery', () => {
 
   it('does not reject a stale claim that completes while recovery waits for its row lock', async () => {
     const githubUserId = `github-recovery-${randomUUID()}`
-    await insertTestOAuthAccount('github', githubUserId)
+    const account = await insertTestOAuthAccount('github', githubUserId)
     const flowId = await insertTestOAuthAuthorization({
       provider: 'github',
       status: 'exchanging',
@@ -126,7 +126,7 @@ describe('OAuth authorization exchange recovery', () => {
       callback_error: null,
       callback_code_ciphertext: null,
       exchange_claim_id: null,
-      github_user_id: githubUserId,
+      github_account_id: account.account_id,
     })
   })
 

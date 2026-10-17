@@ -130,14 +130,14 @@ describe('OAuth authorization completion persistence guards', () => {
 
     await expect(
       getAuthorizationAccount(
-        completionRow({ github_user_id: null }),
+        completionRow({ github_account_id: null }),
         queryReturning({ rows: [], rowCount: 0 }),
       ),
     ).rejects.toThrow('Completed OAuth exchange has no provider account')
 
     await expect(
       getAuthorizationAccount(
-        completionRow({ github_user_id: 'missing-github-user' }),
+        completionRow({ github_account_id: 'missing-github-user' }),
         queryReturning({ rows: [], rowCount: 0 }),
       ),
     ).rejects.toThrow('Completed OAuth provider account is missing')
@@ -223,7 +223,7 @@ function completionRow(overrides: Partial<CompletionRow> = {}): CompletionRow {
     callback_error: null,
     facebook_account_id: null,
     x_account_id: null,
-    github_user_id: 'github-user',
+    github_account_id: 'github-user',
     linkedin_account_id: null,
     microsoft_account_id: null,
     result_kind: null,

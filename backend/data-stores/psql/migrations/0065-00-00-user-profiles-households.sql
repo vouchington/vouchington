@@ -444,8 +444,9 @@ COMMENT ON COLUMN user_profile_links.image_id IS 'Optional custom image/icon for
 -- GitHub accounts
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS github_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
-  github_user_id TEXT PRIMARY KEY,
+  github_user_id TEXT NOT NULL UNIQUE,
   github_user_email_address TEXT,
   email_domain_hostname_id UUID,
   github_user_data JSONB NOT NULL,
@@ -453,7 +454,7 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   refresh_token_ciphertext TEXT,
   access_token_expires_at TIMESTAMPTZ,
   friends_synced_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE github_accounts
@@ -487,8 +488,9 @@ ON github_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
 
 COMMENT ON TABLE github_accounts IS 'Linked GitHub accounts for OAuth authentication and friend-finding. Stores encrypted OAuth token ciphertext.';
+COMMENT ON COLUMN github_accounts.id IS 'Internal UUIDv7 identity of the GitHub account.';
 COMMENT ON COLUMN github_accounts.user_id IS 'The Voucha user linked to this GitHub account.';
-COMMENT ON COLUMN github_accounts.github_user_id IS 'GitHub''s unique user ID (primary key).';
+COMMENT ON COLUMN github_accounts.github_user_id IS 'GitHub''s unique external user ID.';
 COMMENT ON COLUMN github_accounts.github_user_email_address IS 'Email address from the GitHub profile.';
 COMMENT ON COLUMN github_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
 COMMENT ON COLUMN github_accounts.github_user_data IS 'Raw JSONB profile data from the GitHub API.';
@@ -500,10 +502,12 @@ COMMENT ON COLUMN github_accounts.friends_synced_at IS 'When the user''s GitHub 
 -- GitHub friends
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS github_friends (
-  github_user_id TEXT NOT NULL REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  github_account_id UUID NOT NULL REFERENCES github_accounts(id) ON DELETE CASCADE,
   github_friend_id TEXT NOT NULL,
-  PRIMARY KEY (github_user_id, github_friend_id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  friend_github_account_id UUID REFERENCES github_accounts(id) ON DELETE SET NULL,
+  UNIQUE (github_account_id, github_friend_id),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -518,9 +522,15 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_github_friends__friend_id
 ON github_friends (github_friend_id);
 
+CREATE INDEX IF NOT EXISTS idx_github_friends__friend_github_account_id
+ON github_friends (friend_github_account_id)
+WHERE friend_github_account_id IS NOT NULL;
+
 COMMENT ON TABLE github_friends IS 'GitHub follower/following relationships for friend recommendations.';
-COMMENT ON COLUMN github_friends.github_user_id IS 'The GitHub user whose friends list this entry belongs to.';
-COMMENT ON COLUMN github_friends.github_friend_id IS 'The GitHub user ID of the friend.';
+COMMENT ON COLUMN github_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
+COMMENT ON COLUMN github_friends.github_account_id IS 'Source GitHub account whose following list contains this entry.';
+COMMENT ON COLUMN github_friends.github_friend_id IS 'External GitHub user ID of the friend, who may not have an account here.';
+COMMENT ON COLUMN github_friends.friend_github_account_id IS 'Matching local GitHub account when the friend has signed in.';
 
 -- X friends
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -704,7 +714,7 @@ EXECUTE FUNCTION fn_create_metrics('user_metrics', 'id');
 -- ORDER BY created_at ASC, github_user_id ASC
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__orphan_retention_cleanup
-ON github_accounts (created_at, github_user_id)
+ON github_accounts (created_at, id)
 WHERE user_id IS NULL;
 
 -- Current indexes for fresh schema bootstrap.

@@ -4931,16 +4931,8 @@ rules:
           reason: 'replaced by #2512'
         - object: 'constraint:bluesky_linked_accounts.bluesky_linked_accounts_pkey'
           reason: 'replaced by #2512'
-        - object: 'constraint:github_accounts.github_accounts_pkey'
-          reason: 'replaced by #2512'
-        - object: 'constraint:github_friends.github_friends_github_user_id_fkey'
-          reason: 'replaced by #2512'
-        - object: 'constraint:github_friends.github_friends_pkey'
-          reason: 'replaced by #2512'
         - object: 'constraint:migrations.migrations_pkey'
           reason: 'owned by the migration runner'
-        - object: 'constraint:oauth_authorizations.oauth_authorizations_github_user_id_fkey'
-          reason: 'replaced by #2512'
 
   - name: reject text finite sets
     rule: postgres-finite-text-columns

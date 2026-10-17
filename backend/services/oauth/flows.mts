@@ -46,7 +46,7 @@ export async function connectPersistedOAuthAccountFlow(options: {
   account: OAuthAccount
 }): Promise<void> {
   await connectOAuthAccountAndRunPostCommitEffects(options)
-  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account.provider_user_id)
+  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account)
 }
 
 async function connectOAuthAccountAndRunPostCommitEffects(options: {
@@ -105,7 +105,7 @@ export async function preparePersistedOAuthAccountFlow(options: {
   deviceContext?: DeviceContext
   loginAttemptId?: string
 }) {
-  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account.provider_user_id)
+  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account)
   return prepareOAuthFlowResultWithPersistedOwner(options)
 }
 
@@ -132,18 +132,18 @@ async function prepareOAuthFlowResultWithPersistedOwner(options: {
 
 export async function enqueueOAuthFriendSyncBestEffort(
   provider: OAuthProvider,
-  providerUserId: string,
+  account: OAuthAccount,
 ): Promise<void> {
   try {
     switch (provider) {
       case 'facebook':
-        await enqueueSyncFacebookFriends(providerUserId)
+        await enqueueSyncFacebookFriends(requireFriendSyncAccountId(account))
         return
       case 'x':
-        await enqueueSyncXFriends(providerUserId)
+        await enqueueSyncXFriends(requireFriendSyncAccountId(account))
         return
       case 'github':
-        await enqueueSyncGithubFriends(providerUserId)
+        await enqueueSyncGithubFriends(requireFriendSyncAccountId(account))
         break
       default:
         break
@@ -151,4 +151,9 @@ export async function enqueueOAuthFriendSyncBestEffort(
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }
+}
+
+function requireFriendSyncAccountId(account: OAuthAccount): string {
+  if (!account.account_id) throw new Error('OAuth friend sync account has no internal id')
+  return account.account_id
 }

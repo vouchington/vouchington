@@ -88,7 +88,7 @@ function createSyncEnqueues<TData>(config: SyncConfig<TData>) {
 
 const facebookSync = createSyncEnqueues({
   jobName: 'syncFacebookFriends',
-  buildData: facebookUserId => ({ facebookUserId }),
+  buildData: facebookAccountId => ({ facebookAccountId }),
   deduplicationPrefix: 'sync_facebook',
   ordering: {
     ...FIND_YOUR_FRIENDS_ORDERING.sync_facebook,
@@ -98,7 +98,7 @@ const facebookSync = createSyncEnqueues({
 
 const xSync = createSyncEnqueues({
   jobName: 'syncXFriends',
-  buildData: xUserId => ({ xUserId }),
+  buildData: xAccountId => ({ xAccountId }),
   deduplicationPrefix: 'sync_x',
   ordering: {
     ...FIND_YOUR_FRIENDS_ORDERING.sync_x,
@@ -108,7 +108,7 @@ const xSync = createSyncEnqueues({
 
 const githubSync = createSyncEnqueues({
   jobName: 'syncGithubFriends',
-  buildData: githubUserId => ({ githubUserId }),
+  buildData: githubAccountId => ({ githubAccountId }),
   deduplicationPrefix: 'sync_github',
   ordering: {
     ...FIND_YOUR_FRIENDS_ORDERING.sync_github,

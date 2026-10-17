@@ -33,11 +33,13 @@ candidate page permits `friends_synced_at` to advance. A failed or deletion-inte
 therefore leave committed current-page rows for the next idempotent sync without holding the account
 deletion fence across the provider request or the full friend graph.
 
-The dispatcher captures a fixed sweep time and each provider's greatest text ID. It applies the
+The dispatcher captures a fixed sweep time and each provider's greatest account UUIDv7. It applies the
 registered `friends-dispatch-work-config` budget separately to each provider and reports `hasMore`.
 Continuation payloads retain provider positions and completed providers. Eligibility also checks
-account creation against the sweep time, since a newly inserted text ID can sort below the upper
-bound. Failed or still-queued accounts are retried by the next sweep without starving later IDs.
+account creation against the sweep time, so jobs created during a sweep wait for the next pass.
+Sync job payloads and continuation positions carry account UUIDs; workers read the current external
+provider ID from the account before calling the provider API. Failed or still-queued accounts are
+retried by the next sweep without starving later IDs.
 
 Workers use [retained queue sweep ownership](../../../../development/postgresql/reference-cursors.md#retained-queue-sweeps)
 to coalesce repeated roots and preserve successful cursor progress through bounded passes and retries.

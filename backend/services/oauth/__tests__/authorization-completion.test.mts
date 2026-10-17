@@ -182,7 +182,7 @@ describe('OAuth authorization completion', () => {
     const jobs = (await readAllQueueJobs(findYourFriendsQueue)).filter(
       job =>
         job.name === 'syncFacebookFriends' &&
-        (job.data as { facebookUserId?: string }).facebookUserId === account.provider_user_id,
+        (job.data as { facebookAccountId?: string }).facebookAccountId === account.account_id,
     )
     expect(jobs).toHaveLength(1)
 

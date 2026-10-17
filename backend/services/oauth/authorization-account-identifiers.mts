@@ -22,7 +22,8 @@ const authorizationAccountIdentifiers = {
   github: {
     table: 'github_accounts',
     providerUserIdColumn: 'github_user_id',
-    authorizationAccountColumn: 'github_user_id',
+    accountIdColumn: 'id',
+    authorizationAccountColumn: 'github_account_id',
     emailColumn: 'github_user_email_address',
     dataColumn: 'github_user_data',
   },

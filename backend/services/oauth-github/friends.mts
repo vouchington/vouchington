@@ -36,11 +36,13 @@ async function fetchGithubFollowing(
 
 async function getGithubSyncAccount(githubUserId: string) {
   const { rows } = await read(
-    `/* getGithubSyncAccount */ SELECT user_id, access_token_ciphertext FROM github_accounts WHERE github_user_id = $1 AND access_token_ciphertext IS NOT NULL`,
+    `/* getGithubSyncAccount */ SELECT id, user_id, access_token_ciphertext FROM github_accounts WHERE github_user_id = $1 AND access_token_ciphertext IS NOT NULL`,
     [githubUserId],
   )
 
-  return rows[0] as { user_id?: string | null; access_token_ciphertext?: string } | undefined
+  return rows[0] as
+    | { id: string; user_id?: string | null; access_token_ciphertext?: string }
+    | undefined
 }
 
 // Carry the marker as text and cast back to timestamptz in the cleanup DELETE — pg's TIMESTAMPTZ
@@ -73,7 +75,7 @@ export async function syncGithubFriends(githubUserId: string): Promise<void> {
     const { users, hasNextPage } = await fetchGithubFollowing(accessToken, page)
     // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
     const persisted = await persistGithubFriendPage(
-      githubUserId,
+      account.id,
       account.user_id,
       users.map(user => String(user.id)),
     )
@@ -82,5 +84,5 @@ export async function syncGithubFriends(githubUserId: string): Promise<void> {
     page++
   }
 
-  await finalizeGithubFriendSync(githubUserId, account.user_id, syncStartTime)
+  await finalizeGithubFriendSync(account.id, account.user_id, syncStartTime)
 }

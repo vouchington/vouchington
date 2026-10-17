@@ -101,6 +101,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataColumn: 'github_user_data',
     hasTokenColumns: true,
     hasRefreshToken: true,
+    accountIdColumn: 'id',
   },
 }
 

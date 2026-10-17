@@ -60,14 +60,14 @@ describe('syncGithubFriends batching', () => {
   })
 
   it('commits each bounded stale-row cleanup page separately', async () => {
-    const { providerUserId, userId } = await createGithubSyncAccount()
+    const { accountId, providerUserId, userId } = await createGithubSyncAccount()
     const friendIds = makeFriendIds('github-stale')
     await insertTestFriends('github', providerUserId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
     const secondStalePage = Promise.withResolvers<void>()
     let staleReads = 0
     const sync = finalizeGithubFriendSync(
-      providerUserId,
+      accountId,
       userId,
       new Date(Date.now() + 60_000).toISOString(),
       {
@@ -89,13 +89,18 @@ describe('syncGithubFriends batching', () => {
   })
 })
 
-async function createGithubSyncAccount(): Promise<{ providerUserId: string; userId: string }> {
+async function createGithubSyncAccount(): Promise<{
+  accountId: string
+  providerUserId: string
+  userId: string
+}> {
   const providerUserId = String(randomGithubId(1_000_000))
   const user = await createTestUserDirect()
-  await insertTestOAuthAccount('github', providerUserId, null)
+  const account = await insertTestOAuthAccount('github', providerUserId, null)
+  if (!account.account_id) throw new Error('GitHub account fixture is missing its UUID')
   await connectTestOAuthAccount('github', user.id, providerUserId)
   await setTestOAuthAccountAccessToken('github', providerUserId, 'fake-access-token')
-  return { providerUserId, userId: user.id }
+  return { accountId: account.account_id, providerUserId, userId: user.id }
 }
 
 function githubResponse(users: Array<{ id: number; login: string }>, link?: string): Response {

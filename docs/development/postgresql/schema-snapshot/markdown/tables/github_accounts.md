@@ -6,24 +6,26 @@ Linked GitHub accounts for OAuth authentication and friend-finding. Stores encry
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                 |
-| --------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
-| `user_id`                   | `uuid`                     | yes      |                     |          |           |           | The Voucha user linked to this GitHub account.                          |
-| `github_user_id`            | `text`                     | no       |                     |          |           |           | GitHub's unique user ID (primary key).                                  |
-| `github_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the GitHub profile.                                  |
-| `email_domain_hostname_id`  | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.      |
-| `github_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from the GitHub API.                             |
-| `access_token_ciphertext`   | `text`                     | yes      |                     |          |           |           | Encrypted OAuth access token ciphertext for GitHub API calls.           |
-| `refresh_token_ciphertext`  | `text`                     | yes      |                     |          |           |           | Encrypted OAuth refresh token ciphertext for renewing the access token. |
-| `access_token_expires_at`   | `timestamp with time zone` | yes      |                     |          |           |           | When the current access token expires.                                  |
-| `friends_synced_at`         | `timestamp with time zone` | yes      |                     |          |           |           | When the user's GitHub friends list was last synced.                    |
-| `created_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                         |
-| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                         |
+| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                 |
+| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------- |
+| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the GitHub account.                         |
+| `user_id`                   | `uuid`                     | yes      |                              |          |           |           | The Voucha user linked to this GitHub account.                          |
+| `github_user_id`            | `text`                     | no       |                              |          |           |           | GitHub's unique external user ID.                                       |
+| `github_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the GitHub profile.                                  |
+| `email_domain_hostname_id`  | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.      |
+| `github_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from the GitHub API.                             |
+| `access_token_ciphertext`   | `text`                     | yes      |                              |          |           |           | Encrypted OAuth access token ciphertext for GitHub API calls.           |
+| `refresh_token_ciphertext`  | `text`                     | yes      |                              |          |           |           | Encrypted OAuth refresh token ciphertext for renewing the access token. |
+| `access_token_expires_at`   | `timestamp with time zone` | yes      |                              |          |           |           | When the current access token expires.                                  |
+| `friends_synced_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When the user's GitHub friends list was last synced.                    |
+| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                         |
+| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                         |
 
-**Primary key:** `PRIMARY KEY (github_user_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `github_accounts_github_user_id_key`: `UNIQUE (github_user_id)`
 
 **Check constraints:**
 _none_
@@ -35,11 +37,12 @@ _none_
 
 **Indexes:**
 
-- `github_accounts_pkey`: `CREATE UNIQUE INDEX github_accounts_pkey ON public.github_accounts USING btree (github_user_id)`
+- `github_accounts_github_user_id_key`: `CREATE UNIQUE INDEX github_accounts_github_user_id_key ON public.github_accounts USING btree (github_user_id)`
+- `github_accounts_pkey`: `CREATE UNIQUE INDEX github_accounts_pkey ON public.github_accounts USING btree (id)`
 - `idx_github_accounts__email`: `CREATE INDEX idx_github_accounts__email ON public.github_accounts USING btree (github_user_email_address) WHERE (github_user_email_address IS NOT NULL)`
 - `idx_github_accounts__email_domain_hostname_id`: `CREATE INDEX idx_github_accounts__email_domain_hostname_id ON public.github_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_github_accounts__friends_synced_at`: `CREATE INDEX idx_github_accounts__friends_synced_at ON public.github_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
-- `idx_github_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_github_accounts__orphan_retention_cleanup ON public.github_accounts USING btree (created_at, github_user_id) WHERE (user_id IS NULL)`
+- `idx_github_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_github_accounts__orphan_retention_cleanup ON public.github_accounts USING btree (created_at, id) WHERE (user_id IS NULL)`
 - `idx_github_accounts__token_expires_at`: `CREATE INDEX idx_github_accounts__token_expires_at ON public.github_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
 - `idx_github_accounts__user_id`: `CREATE UNIQUE INDEX idx_github_accounts__user_id ON public.github_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 

@@ -3,6 +3,8 @@
 Source entrypoint: [backend/workers/find-your-friends/README.md](../../../../../../backend/workers/find-your-friends/README.md)
 
 Worker package for social graph sync and find-your-friends dispatch jobs.
+Sync jobs carry provider-account UUIDs. The worker reads the current external provider ID before
+calling the sync service, so queued work for a deleted or detached account cannot authenticate it.
 
 ## Exports
 
@@ -14,7 +16,7 @@ response's `Retry-After` (a minute when it names none, clamped to 1 second throu
 job is requeued after that wait without consuming an attempt. The signal's `cause` is an
 `HttpRateLimitError` with the 429 status and `retryAfterMs`. Other non-OK responses stay 502 under the
 queue attempts. The signal is raised in `@services/oauth-{x,facebook,github}/friends.mts` because the
-worker routes jobs straight to those services. X also reports its reset in `x-rate-limit-reset` and
+worker routes resolved accounts to those services. X also reports its reset in `x-rate-limit-reset` and
 GitHub sometimes signals a limit with 403, neither of which is read yet.
 
 ## Related

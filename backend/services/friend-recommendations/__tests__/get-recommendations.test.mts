@@ -103,6 +103,28 @@ describe('getFriendRecommendations', () => {
     )
   })
 
+  it('recommends a GitHub friend who signs up after the friend sync', async () => {
+    const viewer = await createTestUser()
+    const friend = await createTestUser()
+    const viewerProviderId = `github-viewer-${viewer.id}`
+    const friendProviderId = `github-friend-${friend.id}`
+    await insertTestOAuthAccount('github', viewerProviderId)
+    await connectTestOAuthAccount('github', viewer.id, viewerProviderId)
+    await insertTestFriend('github', viewerProviderId, friendProviderId)
+
+    const before = await getFriendRecommendations(viewer)
+    expect(before.results).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: friend.id })]),
+    )
+
+    await upsertOAuthAccount('github', friendProviderId, null, { login: 'new-github-friend' })
+    await connectTestOAuthAccount('github', friend.id, friendProviderId)
+    const after = await getFriendRecommendations(viewer)
+    expect(after.results).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: friend.id, provider: 'github' })]),
+    )
+  })
+
   it('returns friend recommendations', async () => {
     const result = await getFriendRecommendations(currentUser)
 

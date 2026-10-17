@@ -167,7 +167,7 @@ describe('OAuth recorded claim temporal disposition', () => {
         }),
       )
       await createTestUserWithId(userId, createTestUsername())
-      await insertTestOAuthAccount('github', accountId)
+      const account = await insertTestOAuthAccount('github', accountId)
       await connectTestOAuthAccount('github', userId, accountId)
       await insertTestOAuthAuthorization({
         id,
@@ -201,7 +201,7 @@ describe('OAuth recorded claim temporal disposition', () => {
             }
       const after = await getTestOAuthAuthorization(id)
       expect(after).toEqual(expected)
-      expect(after?.github_user_id).toBe(accountId)
+      expect(after?.github_account_id).toBe(account.account_id)
       const retainedCiphertext = status === 'completed' ? before?.completion_token_ciphertext : null
       expect(after?.completion_token_ciphertext).toBe(retainedCiphertext)
     },

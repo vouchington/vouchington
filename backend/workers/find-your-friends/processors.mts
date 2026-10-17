@@ -90,8 +90,7 @@ export async function processFindYourFriendsDispatcher(
       afterIds[provider.name] = lastId
       await saveProgress?.(snapshot())
     })
-    if (progress.hasMore && progress.lastRow)
-      afterIds[provider.name] = progress.lastRow.provider_user_id
+    if (progress.hasMore && progress.lastRow) afterIds[provider.name] = progress.lastRow.id
     else finishedProviders.push(provider.name)
     // oxlint-disable-next-line no-await-in-loop -- persist completed provider state before scanning the next provider
     await saveProgress?.(snapshot())
@@ -109,7 +108,7 @@ async function collectAndEnqueue(
   let count = 0
   let batch: string[] = []
   for await (const row of stream) {
-    batch.push(row.provider_user_id)
+    batch.push(row.id)
     if (batch.length >= batchSize) {
       await enqueueBulkFn(batch)
       await saveBatch(batch.at(-1)!)
