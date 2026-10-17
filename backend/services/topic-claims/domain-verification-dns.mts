@@ -1,5 +1,6 @@
 import { resolveTxt } from 'node:dns/promises'
 import {
+  type DnsClock,
   DnsTimeoutError as UpstreamDnsTimeoutError,
   resolveTxtRecords as resolveUpstreamTxtRecords,
 } from '@vouchington/domain-verification'
@@ -15,12 +16,13 @@ export class DnsTimeoutError extends Error {
 }
 
 /* no-mistakes: integration=http */
-export async function resolveTxtRecords(hostname: string): Promise<string[]> {
+export async function resolveTxtRecords(hostname: string, clock?: DnsClock): Promise<string[]> {
   try {
     return await resolveUpstreamTxtRecords(hostname, {
       lookup: resolveTxt,
       retries: DNS_MAX_RETRIES,
       timeoutMs: DNS_TIMEOUT_MS,
+      clock,
     })
   } catch (err) {
     if (

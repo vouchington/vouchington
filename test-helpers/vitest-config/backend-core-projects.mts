@@ -46,8 +46,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         'backend/modules/aws/s3.test.mts',
         'backend/modules/aws/ses.generated.test.mts',
       ],
-      testTimeout: 15_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
@@ -99,8 +99,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         './backend/test-helpers/vitest.setup.sentry-mock.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
       ],
-      testTimeout: 15_000,
-      hookTimeout: 15_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
