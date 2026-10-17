@@ -1339,6 +1339,9 @@
     "fn_project_community_image_placements()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_project_community_list_item_count()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_list_item_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET list_item_count = list_item_count - 1\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET list_item_count = list_item_count + 1\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_project_community_member_count()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_member_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET member_count = member_count - 1\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET member_count = member_count + 1\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -17666,7 +17669,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_list_posts_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_list_posts_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_posts FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "community_list_rss_feeds": {
@@ -17896,7 +17903,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_list_rss_feeds_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_list_rss_feeds_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "community_list_topics": {
@@ -18126,7 +18137,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_list_topics_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "community_list_url_hostnames": {
@@ -18356,7 +18371,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_list_url_hostnames_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_list_url_hostnames_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "community_list_urls": {
@@ -18586,7 +18605,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_list_urls_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_list_urls_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_urls FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "community_member_vacations": {
@@ -21157,6 +21180,10 @@
     },
     "community_search_counts": {
       "checkConstraints": {
+        "community_search_counts_list_item_count_check": {
+          "definition": "CHECK ((list_item_count >= 0))",
+          "validated": true
+        },
         "community_search_counts_member_count_check": {
           "definition": "CHECK ((member_count >= 0))",
           "validated": true
@@ -21176,6 +21203,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1
+        },
+        "list_item_count": {
+          "comment": "Active list items across the five community list relations.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
         },
         "member_count": {
           "comment": "Active members, matching view_community_metrics.member_count.",
@@ -21231,6 +21268,38 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_community_search_counts__listed_virtual_subscriptions": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_search_counts__listed_virtual_subscriptions ON public.community_search_counts USING btree (virtual_subscription_count DESC, community_id DESC) WHERE (list_item_count > 0)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "virtual_subscription_count",
+              "descending": true,
+              "expression": "virtual_subscription_count",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": true,
+              "expression": "community_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(list_item_count > 0)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_community_search_counts__members": {
@@ -119736,6 +119805,29 @@
           ],
           "live": true,
           "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rss_feeds__disabled": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feeds__disabled ON public.rss_feeds USING btree (id DESC) WHERE ((is_enabled = false) AND (deleted_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((is_enabled = false) AND (deleted_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

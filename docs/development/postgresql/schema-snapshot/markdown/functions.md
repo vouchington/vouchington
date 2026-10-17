@@ -307,6 +307,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()
  LANGUAGE plpgsql
 ```
 
+## `fn_project_community_list_item_count`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_community_list_item_count()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_project_community_member_count`
 
 ```sql
