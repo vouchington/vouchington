@@ -33,16 +33,16 @@ For a qualifying change, immediately before publication re-check the scheduled r
 commit, push without overwriting concurrent work, and create one draft pull request. Never merge or
 arm auto-merge.
 
-The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conventional commit format for the remainder. Include the exact standalone line `Scheduled prompt workflow: {{RUN_URL}}` in the PR body. The body must also include `## Scheduled prompt`, the prompt path, the exact standalone line `Workspace setup: Auto Harness scheduled prompt`, `## Related issues`, `## Root cause`, `## Implementation choice`, and `## Options considered`, with implementation details and the pros and cons of viable options. If there is no source issue, include:
+The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conventional commit format for the remainder. Include the exact standalone line `Scheduled prompt workflow: {{RUN_URL}}` in the PR body. The body must also include `## Scheduled prompt`, the prompt path, the exact standalone line `Workspace setup: Auto Harness scheduled prompt`, `## Related issues`, `## Root cause`, `## Implementation choice`, and `## Options considered`, with implementation details and the pros and cons of viable options. If there is no source issue, pass an empty `relatedIssues` and
+`noSourceIssue: { reason: "scheduled prompt run" }`; the tools render these two exact standalone
+lines consecutively in the visible `## Related issues` section:
 
 ```text
 No source issue; scheduled prompt run.
 <!-- related-issues-validation: no-source-scheduled-prompt -->
 ```
 
-Put those two exact standalone lines consecutively in the visible `## Related issues` section, with no
-blank line or other content between them. In the PR body, do not wrap the pair in a code fence or
-collapsed details section. Before publication, confirm the exact scheduled workspace-setup line
+Before publication, confirm the exact scheduled workspace-setup line
 in every body and validate it with the `pr_validate` tool of the `vouchington-tooling` MCP server.
 For a no-source body, the validator checks the pair's adjacency and placement and the exact
 scheduled workspace-setup line.

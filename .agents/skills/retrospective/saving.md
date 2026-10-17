@@ -104,19 +104,24 @@ was created with, or the save fails with `identity-conflict`), `version` (the ha
 `unknown`), `mode` (`interactive` or `autonomous`), `workOutcome`, `feedbackCoverage` (`status`,
 `sources`, `droppedCount`; pass `{status: "not-assessed"}` when coverage was not assessed — there is
 no default), and exactly one of `markdown` (a finished document) or `compose` (the composer input).
-Optional arguments: `repositories`, `sourceEventId`, `category`, and `dryRun`. Add `dryRun: true` to
-compose and validate without writing, then save the exact `markdown` the dry run returned (not a
-second `compose`, which can recompose a different document and conflict on `sourceEventId`) with the
-same `repositories` argument the preview used; the returned document does not carry that list.
-A `markdown` save cannot carry `compose.knownSensitiveValues`, so never put a known sensitive value
-in `feedbackCoverage.sources`, `category`, or any other argument besides the composer input.
+Optional arguments: `repositories`, `sourceEventId`, `category`, `dryRun`, and, beside `markdown`,
+`knownSensitiveValues` (with `compose`, pass it inside `compose`). Either list also redacts
+`category` and `feedbackCoverage`. Add `dryRun: true` to compose and validate without writing; the
+result carries the document and a single-use `previewToken`. Save the preview by calling
+`retrospective_save` again with the same `sessionId`, `parentSessionId`, `agent`, `version`, `mode`,
+`sourceEventId`, and that `previewToken`, and none of `markdown`, `compose`, `workOutcome`,
+`feedbackCoverage`, `repositories`, `category`, `knownSensitiveValues`, or `dryRun`. The server stores
+exactly the previewed content without running the policy again. Never save a preview with a second
+`compose`, which can recompose a different document and conflict on `sourceEventId`. A token is held
+only in server memory: after a server restart, or an unknown, spent, or mismatched token error,
+repeat the dry run.
 When the front matter repeats `session_id`, `work_outcome`, `feedback_coverage`, or `repositories`,
 each must equal the argument. Delivery mode is never read from the document.
 
 The tool:
 
 1. Composes the document (`compose`) or takes `markdown`, and redacts the server's blackboard token
-   and any `compose.knownSensitiveValues`.
+   and any `knownSensitiveValues`.
 2. Runs the checkout policy (`dev/agent-policy.mts`, `validateRetrospective`): `validateRetroDoc`
    (see [fact-contracts.md](fact-contracts.md)) rejects a malformed `## CI Failures` section, missing
    assessments, and bad section structure; the front-matter check rejects a

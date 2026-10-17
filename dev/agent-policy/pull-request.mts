@@ -3,6 +3,7 @@ import { fetchIssueProjectMemberships } from 'vouchington-tooling/github-project
 
 import { findHandRolledStackBaseBlock } from '../codex-hooks/policy/github-configured-base.mts'
 import { checkLargeDiff, type LargeDiffOptions } from './large-diff.mts'
+import { noSourceIssueErrors, type NoSourceIssue } from './no-source.mts'
 import { parseGitHubIssueApiResponse } from '../pr-description/closing-refs.mts'
 import { formatReferencedIssueSummary } from '../pr-description/referenced-issue-summary.mts'
 import { createMilestoneAuditor } from '../pr-description/milestone-audit.mts'
@@ -29,6 +30,7 @@ export type PullRequestPolicyInput = {
   base: string
   head: string
   mode: 'interactive' | 'autonomous'
+  noSourceIssue?: NoSourceIssue
   /** Set on update; absent on create. */
   pr?: number
 }
@@ -38,6 +40,7 @@ export type PullRequestDefaultsInput = {
   title?: string
   base?: string
   relatedIssues?: { number: number; relation: 'closes' | 'refs'; reason: string }[]
+  noSourceIssue?: NoSourceIssue
 }
 
 export type PullRequestDefaults = {
@@ -61,7 +64,10 @@ export async function validatePullRequest(
     input.pr === undefined
       ? findHandRolledStackBaseBlock('create', ['--base', input.base], undefined)
       : null
-  const baseErrors = stackBase === null ? [] : [stackBase.reason]
+  const baseErrors = [
+    ...(stackBase === null ? [] : [stackBase.reason]),
+    ...noSourceIssueErrors(input.noSourceIssue),
+  ]
   // Content-policy failures need no GitHub call, so report them before touching gh.
   const content = validatePrBody(input.body, { automationContext })
   if (!content.ok) return { errors: [...content.errors, ...baseErrors] }

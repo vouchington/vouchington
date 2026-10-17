@@ -55,3 +55,4 @@ export {
   type PullRequestDefaultsInput,
   type PullRequestPolicyInput,
 } from './agent-policy/pull-request.mts'
+export { renderNoSourceIssue, type NoSourceIssue } from './agent-policy/no-source.mts'

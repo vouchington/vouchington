@@ -35,7 +35,7 @@ child identity flags exist. An existing retrospective covers only its source eve
 task deltas with a new explicit `sourceEventId`. For the same already-reported event, collect only
 the delta since its timestamp or report `no delta since <timestamp>`. Otherwise call
 `retrospective_save` with `compose` (and `dryRun: true` first to preview the document; then save
-the exact `markdown` the preview returned with the same `repositories`, not a second `compose`) to generate
+it with the returned `previewToken`, not a second `compose`) to generate
 routine facts, markers, coverage, tool assessments, and architectural assessments through the shared
 composer. Its `compose` argument supplies the concise `narrative`, `date`, `issues`, `prs`,
 `description`, `facts`, `transcript`, `tools`, and `architecture`; the server adds the session,

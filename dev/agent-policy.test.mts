@@ -4,7 +4,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { UNASSESSED_RETROSPECTIVE_SECTIONS } from './test-helpers/blackboard/retrospective-sections.mts'
-import { validateRetrospective, type RetrospectivePolicyInput } from './agent-policy.mts'
+import {
+  renderNoSourceIssue,
+  validatePullRequest,
+  validateRetrospective,
+  type RetrospectivePolicyInput,
+} from './agent-policy.mts'
+import { isDirectUserRequestNoSourceBody } from './pr-description/direct-user-request.mts'
+import { isScheduledPromptNoSourceBody } from './pr-description/scheduled-no-source.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const SESSION_ID = 'f5413927-eec3-4204-90c6-4f81b6a413e4'
@@ -190,6 +197,36 @@ describe('validateRetrospective', () => {
     expect(errors).toEqual([
       'complete feedback coverage requires available assessed factual, tool, and architecture sources',
     ])
+  })
+})
+
+describe('renderNoSourceIssue', () => {
+  it.each([
+    ['direct user request', isDirectUserRequestNoSourceBody, ''],
+    [
+      'scheduled prompt run',
+      isScheduledPromptNoSourceBody,
+      'Workspace setup: Auto Harness scheduled prompt\n',
+    ],
+  ])('renders the %s pair the body policy accepts', (reason, accepts, setup) => {
+    const body = `## Related issues\n\n${renderNoSourceIssue({ reason })}\n\n${setup}`
+    expect(accepts(body)).toBe(true)
+  })
+
+  it('rejects any other reason before calling GitHub', async () => {
+    const reason = 'cleanup'
+    const body = `## Summary\n\nx\n\n## Related issues\n\n${renderNoSourceIssue({ reason })}\n`
+    const { errors } = await validatePullRequest({
+      title: 'chore: x',
+      body,
+      base: 'main',
+      head: 'x',
+      mode: 'interactive',
+      noSourceIssue: { reason },
+    })
+    expect(errors).toContainEqual(
+      expect.stringContaining('noSourceIssue.reason must be "direct user request" or'),
+    )
   })
 })
 
