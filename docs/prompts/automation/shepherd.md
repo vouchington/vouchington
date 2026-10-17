@@ -45,13 +45,13 @@ For duplicate or stale ready-state checks, use `gh pr view {{PR_NUMBER}} --json 
 then inspect relevant runs. Use `pr-shepherd iterate {{PR_NUMBER}}` to refresh state and
 `pr-shepherd admin log-file` for the per-worktree debug log.
 
-When an automation-authored fix eventually updates the PR description, require `## Root cause`, `## Implementation choice`, and `## Options considered`, including pros, cons, and implementation details for meaningful alternatives.
+When an automation-authored fix eventually updates the PR description, require `### Root cause`, `### Implementation choice`, and `### Options considered` `details` entries, including pros, cons, and implementation details for meaningful alternatives.
 
 For any PR body this workflow is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
-Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
-headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
+`details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after
 tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
 approved description helper and retain established gaps after green checks. Do not add routine
 successful local-check lists. This standard does not expand this workflow's mutation authority.

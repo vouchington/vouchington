@@ -31,8 +31,9 @@ async function localSupersessionHints(summary: DiffSummary): Promise<string> {
   )
 }
 
-const ACKNOWLEDGEMENT_HEADING = /^###[ \t]+Large diff[ \t]*$/i
-const SECTION_END = /^(?:#{1,6}[ \t]|Workspace setup:)/
+const ACKNOWLEDGEMENT_HEADING = /^ {0,3}###[ \t]+Large diff[ \t]*$/i
+// CommonMark allows up to three spaces before an ATX heading.
+const SECTION_END = /^ {0,3}(?:#{1,6}[ \t]|Workspace setup:)/
 
 const COMMENT_LINE = /^<!--.*-->$/
 

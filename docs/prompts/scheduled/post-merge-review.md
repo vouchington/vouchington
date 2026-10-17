@@ -82,7 +82,7 @@ repository evidence confirms it.
    body. A hit covers the item only when both hold:
    - Its author is trusted: `authorAssociation` is OWNER, MEMBER, or COLLABORATOR. Anyone can post a
      marker or a link on this public repository, and an untrusted hit must not suppress a follow-up.
-   - It records a disposition: the item is listed under `## Post-merge review items` or in a
+   - It records a disposition: the item is listed under `### Post-merge review items` or in a
      `Declined comment` block, or the PR or issue links the comment as the thing it handles. A bare
      mention covers nothing.
 
@@ -120,11 +120,12 @@ repository evidence confirms it.
    `fix(scope): address the post-merge review of #<merged PR>`, as #1950 did with
    `ci(automation): address the post-merge review of #1935`. Besides the wrapper's required
    sections, write the body in the shape of #1950: a `## Summary` table of comment, before, and
-   after, and `## Impact`. Add `## Post-merge review items` listing each handled item as its URL
+   after, and `## Impact`. Add a `### Post-merge review items` `details` entry listing each handled item as its URL
    followed by its marker on the next line. Put each non-actionable item of the same merged PR in a
    collapsed `<details>` block titled `Declined comment`, with the reason and its marker: this run
-   cannot reply on the thread. Add `## Pending post-merge review items` when step 4 left any. After
-   the scheduled no-source pair under `## Related issues`, add `This follows up #<merged PR>.`
+   cannot reply on the thread. Add a `### Pending post-merge review items` entry when step 4 left any. Pass
+   `noSourceIssue: { reason: "scheduled prompt run" }` and state `This follows up #<merged PR>.`
+   in `summary`.
 
 If no item is actionable, report a verified no-op with the query, the counts of PRs and items
 examined, and each non-actionable or recommended item with its URL and reason. A no-op records

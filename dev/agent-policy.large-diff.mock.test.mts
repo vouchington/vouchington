@@ -81,6 +81,7 @@ describe('validatePullRequest large-diff gate', () => {
   it.each([
     ['a fenced example', acknowledged('```\nhidden\n```')],
     ['an HTML comment', acknowledged('<!-- hidden -->')],
+    ['an indented heading', acknowledged(' ### Next section')],
     [
       'a heading inside a fence',
       VALID_PR_BODY.replace(

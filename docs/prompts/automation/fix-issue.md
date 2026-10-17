@@ -24,10 +24,10 @@ Before editing, search open pull requests for one that already fixes this issue 
 merges cleanly, rebase it onto current `main` and rerun the focused validation.
 
 When the fix is ready, revalidate those conditions again, then commit, push,
-and create one draft pull request. Its title must end with `(fixes #{{ISSUE_NUMBER}})`. Its body must
-begin with `## Issue`, include the issue URL and title before `## Summary`, and include `## Root cause`,
-`## Implementation choice`, and `## Options considered` with meaningful alternatives, implementation
-details, and their pros and cons. Do not update an unrelated PR or overwrite concurrent work.
+and create one draft pull request. Its title must end with `(fixes #{{ISSUE_NUMBER}})`. Open it with
+the `pr_create` tool of the `vouchington-tooling` MCP server: start `summary` with the issue URL and
+title, and supply `### Root cause`, `### Implementation choice`, and `### Options considered`
+`details` entries with meaningful alternatives, implementation details, and their pros and cons. Do not update an unrelated PR or overwrite concurrent work.
 Apply both the `automation` and `automation:auto-fix` labels, then re-fetch the PR and require both
 labels to be present before reporting completion.
 
@@ -45,8 +45,8 @@ comment's author association changed; those stops stay silent.
 For any PR body this workflow is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
-Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
-headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
+`details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after
 tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
 approved description helper and retain established gaps after green checks. Do not add routine
 successful local-check lists. This standard does not expand this workflow's mutation authority.

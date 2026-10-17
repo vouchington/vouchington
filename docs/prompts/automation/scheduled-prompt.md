@@ -33,7 +33,7 @@ For a qualifying change, immediately before publication re-check the scheduled r
 commit, push without overwriting concurrent work, and create one draft pull request. Never merge or
 arm auto-merge.
 
-The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conventional commit format for the remainder. Include the exact standalone line `Scheduled prompt workflow: {{RUN_URL}}` in the PR body. The body must also include `## Scheduled prompt`, the prompt path, the exact standalone line `Workspace setup: Auto Harness scheduled prompt`, `## Related issues`, `## Root cause`, `## Implementation choice`, and `## Options considered`, with implementation details and the pros and cons of viable options. If there is no source issue, pass an empty `relatedIssues` and
+The title must begin with `Automation scheduled: {{PROMPT_NAME}}` and use conventional commit format for the remainder. Supply a `### Scheduled prompt` `details` entry with the prompt path and the exact standalone line `Scheduled prompt workflow: {{RUN_URL}}`, plus `### Root cause`, `### Implementation choice`, and `### Options considered` `details` entries, and pass `workspaceSetup: "Auto Harness scheduled prompt"` so the tools render the exact standalone line `Workspace setup: Auto Harness scheduled prompt`. Include implementation details and the pros and cons of viable options. If there is no source issue, pass an empty `relatedIssues` and
 `noSourceIssue: { reason: "scheduled prompt run" }`; the tools render these two exact standalone
 lines consecutively in the visible `## Related issues` section:
 
@@ -54,8 +54,8 @@ require both labels to be present before reporting completion.
 For any PR body this workflow is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
-Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
-headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
+`details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after
 tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
 approved description helper and retain established gaps after green checks. Do not add routine
 successful local-check lists. This standard does not expand this workflow's mutation authority.

@@ -26,16 +26,17 @@ For a dependency-owned failure, retain only the required dependency, lockfile, t
 
 When a fix is required, implement and validate it on the existing Dependabot branch. Immediately
 before pushing, re-fetch PR #{{PR_NUMBER}}, require the same open repository/ref and the exact expected
-remote head, then push with an exact lease. Add or update the PR body with `## Automation fix`,
-`## Root cause`, `## Implementation choice`, and `## Options considered`, including implementation
+remote head, then push with an exact lease. Update the PR body with the `pr_update` tool of the `vouchington-tooling` MCP server, adding
+`### Automation fix`, `### Root cause`, `### Implementation choice`, and `### Options considered`
+`details` entries, including implementation
 details and the pros and cons of viable options. Never create a second pull request, merge, or arm
 auto-merge.
 
 For any PR body this workflow is authorized to create or update, follow the
 [PR-description standard](../../../.agents/skills/pr-description/SKILL.md): keep `## Summary`
 and `## Impact` visible, including the concrete outcome, affected audience, and material risks.
-Keep the required `## Root cause`, `## Implementation choice`, and `## Options considered`
-headings and long supporting evidence inside a collapsed `<details>` section. Use before/after
+Keep the required `### Root cause`, `### Implementation choice`, and `### Options considered`
+`details` entries and long supporting evidence inside a collapsed `<details>` section. Use before/after
 tables and Mermaid when useful. After CI diagnosis, refresh conditional Harness gaps through the
 approved description helper and retain established gaps after green checks. Do not add routine
 successful local-check lists. This standard does not expand this workflow's mutation authority.
