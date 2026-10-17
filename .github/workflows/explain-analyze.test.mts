@@ -61,32 +61,41 @@ describe('explain-analyze seed anchor day', () => {
     const pinStep = explainAnalyzeJob().steps.find(candidate =>
       candidate.run?.includes(`${ANCHOR_ENV}=`),
     )
-    // date -u ignores TZ. A zone whose local day differs (UTC+14 at/after 10:00, else UTC-11)
-    // fails the step if it formats the local day. The instant is injected into `date -d`.
+    // `date -u` ignores TZ. A zone whose local day differs (UTC+14 at/after 10:00, else UTC-11)
+    // fails the step if it formats the local day. The test shims `date` so it does not depend on
+    // the host flavor (GNU `-d` is unavailable in BSD date): Node computes both days and the shim
+    // answers only the two exact calls the workflow may make, `-u` for UTC and none for local.
     const script = `
 set -euo pipefail
-hour=$(command date -u -d "$VOUCH_INSTANT" +%H)
-if [ "$hour" -ge 10 ]; then
-  export TZ=Pacific/Kiritimati
-else
-  export TZ=Pacific/Pago_Pago
-fi
-date() { command date -d "$VOUCH_INSTANT" "$@"; }
-utc_day=$(date -u +%Y-%m-%d)
-local_day=$(date +%Y-%m-%d)
+date() {
+  case "$*" in
+    "-u +%Y-%m-%d") printf '%s\\n' "$VOUCH_UTC_DAY" ;;
+    "+%Y-%m-%d") printf '%s\\n' "$VOUCH_LOCAL_DAY" ;;
+    *) echo "unexpected date call: $*" >&2; return 1 ;;
+  esac
+}
 ${pinStep?.run ?? 'exit 1'}
-printf '%s\\n' "$utc_day" "$local_day"
+printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
 `
     for (const instant of proofInstants()) {
       const directory = mkdtempSync(join(tmpdir(), 'explain-anchor-'))
       const githubEnv = join(directory, 'github-env')
+      const at = new Date(instant)
+      const zone = at.getUTCHours() >= 10 ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago'
+      const utcDay = at.toISOString().slice(0, 10)
+      const localDay = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(at)
       try {
         const result = spawnSync('bash', ['-euo', 'pipefail', '-c', script], {
-          env: { ...process.env, GITHUB_ENV: githubEnv, VOUCH_INSTANT: instant },
+          env: {
+            ...process.env,
+            GITHUB_ENV: githubEnv,
+            VOUCH_UTC_DAY: utcDay,
+            VOUCH_LOCAL_DAY: localDay,
+          },
           encoding: 'utf8',
         })
         expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: '' })
-        const [utcDay, localDay] = result.stdout.trim().split('\n')
+        expect(result.stdout.trim().split('\n')).toEqual([utcDay, localDay])
         const exported = readFileSync(githubEnv, 'utf8')
         expect(exported).toBe(`${ANCHOR_ENV}=${utcDay}\n`)
         expect(localDay).not.toBe(utcDay)
