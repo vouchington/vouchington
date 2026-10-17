@@ -47,6 +47,17 @@ describe('server feature flag helpers', () => {
     })
   })
 
+  it('drops oversized overrides when the public length is an SSM placeholder', async () => {
+    const cookie = encodeFeatureFlagCookie({ fediverse: true })
+    vi.stubEnv('NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH', 'PLACEHOLDER')
+    vi.stubEnv('FEATURE_FLAG_COOKIE_MAX_LENGTH', String(cookie.length - 1))
+    mockCookies.mockResolvedValue({
+      get: (name: string) => (name === FF_COOKIE ? { value: cookie } : undefined),
+    })
+
+    await expect(getServerFeatureFlagOverrides()).resolves.toEqual({})
+  })
+
   it('merges global flags and anonymous cookie overrides', async () => {
     const cookie = encodeFeatureFlagCookie({ fediverse: true })
     mockCookies.mockResolvedValue({ get: () => ({ value: cookie }) })

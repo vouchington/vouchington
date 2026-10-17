@@ -3,14 +3,13 @@ import 'server-only'
 import { Buffer } from 'node:buffer'
 import { cookies } from 'next/headers'
 import {
-  DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
   FF_COOKIE,
   parseFeatureFlagCookie as parseSharedFeatureFlagCookie,
-  parseFeatureFlagCookieMaxLength,
   type FeatureFlagCookieCodec,
   type FeatureFlags,
 } from '@ts-shared/feature-flags'
 import { getFeatureFlags } from '@/lib/api/server/feature-flags'
+import { featureFlagCookieMaxLengthFromEnv } from './cookie-max-length'
 import { mergeFeatureFlagOverrides } from './shared'
 
 const GLOBAL_FEATURE_FLAGS_REQUEST_KIND = 'global-feature-flags'
@@ -26,11 +25,7 @@ export async function getServerFeatureFlagOverrides(): Promise<FeatureFlags> {
   if (!raw) return {}
 
   return parseSharedFeatureFlagCookie(raw, featureFlagCookieCodec, {
-    maxCookieLength: parseFeatureFlagCookieMaxLength(
-      process.env.NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH ??
-        process.env.FEATURE_FLAG_COOKIE_MAX_LENGTH,
-      DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
-    ),
+    maxCookieLength: featureFlagCookieMaxLengthFromEnv(),
   })
 }
 
