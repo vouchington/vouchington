@@ -59575,20 +59575,13 @@
         "idx_membership_source_states__observation_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_source_states__observation_id ON public.membership_source_states USING btree (membership_provider_observation_id, membership_source_id) WHERE (membership_provider_observation_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_membership_source_states__observation_id ON public.membership_source_states USING btree (membership_provider_observation_id) WHERE (membership_provider_observation_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
               "column": "membership_provider_observation_id",
               "descending": false,
               "expression": "membership_provider_observation_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            },
-            {
-              "column": "membership_source_id",
-              "descending": false,
-              "expression": "membership_source_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -59867,13 +59860,27 @@
         "idx_membership_sources__lineage_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_sources__lineage_id ON public.membership_sources USING btree (membership_provider_lineage_id) WHERE (membership_provider_lineage_id IS NOT NULL)",
-          "includedColumns": [],
+          "definition": "CREATE INDEX idx_membership_sources__lineage_id ON public.membership_sources USING btree (membership_provider_lineage_id, source_kind, id) INCLUDE (user_id) WHERE (membership_provider_lineage_id IS NOT NULL)",
+          "includedColumns": ["user_id"],
           "keys": [
             {
               "column": "membership_provider_lineage_id",
               "descending": false,
               "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "source_kind",
+              "descending": false,
+              "expression": "source_kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
