@@ -10,7 +10,6 @@ Not partitioned — growth: unbounded.
 | ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
 | `authorization_id` | `uuid`                     | no       |                     |          |           |           | Exact native authorization and account generation consumed at most once.                   |
 | `user_id`          | `uuid`                     | no       |                     |          |           |           | Authenticated initiating Voucha user; portable callback URLs cannot transfer ownership.    |
-| `bluesky_did`      | `text`                     | no       |                     |          |           |           | DID claimed by the matching authorization callback.                                        |
 | `handle`           | `text`                     | no       |                     |          |           |           | Display handle captured at authorization begin.                                            |
 | `token_hash`       | `text`                     | no       |                     |          |           |           | Purpose-bound HMAC-SHA256 of the custom-scheme bearer token; plaintext is never persisted. |
 | `expires_at`       | `timestamp with time zone` | no       |                     |          |           |           | Handoff deadline checked independently from the parent authorization deadline.             |
@@ -29,14 +28,12 @@ _none_
 
 **Foreign keys:**
 
-- `bluesky_link_completions_authorization_id_fkey`: `FOREIGN KEY (authorization_id) REFERENCES bluesky_link_authorizations(id) ON DELETE CASCADE`
-- `bluesky_link_completions_bluesky_did_authorization_id_fkey`: `FOREIGN KEY (bluesky_did, authorization_id) REFERENCES bluesky_linked_accounts(bluesky_did, link_authorization_id) ON DELETE CASCADE`
+- `bluesky_link_completions_authorization_id_fkey`: `FOREIGN KEY (authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE`
 - `bluesky_link_completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `bluesky_link_completions_pkey`: `CREATE UNIQUE INDEX bluesky_link_completions_pkey ON public.bluesky_link_completions USING btree (authorization_id)`
-- `idx_bluesky_link_completions__account`: `CREATE INDEX idx_bluesky_link_completions__account ON public.bluesky_link_completions USING btree (bluesky_did, authorization_id)`
 - `idx_bluesky_link_completions__expiry`: `CREATE INDEX idx_bluesky_link_completions__expiry ON public.bluesky_link_completions USING btree (expires_at, authorization_id)`
 - `idx_bluesky_link_completions__user_id`: `CREATE INDEX idx_bluesky_link_completions__user_id ON public.bluesky_link_completions USING btree (user_id)`
 
