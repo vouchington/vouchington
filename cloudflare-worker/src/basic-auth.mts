@@ -52,7 +52,7 @@ export function parseBasicAuthCredentials(envValue: string | undefined): Set<str
  * reaching origin-level 404/405 handling.
  *
  * NOTE: This Set is not used at runtime. It exists for static analysis
- * (basic-auth-doc-sync guard) and test synchronization assertions. The runtime
+ * and test synchronization assertions. The runtime
  * exemption source of truth is BASIC_AUTH_EXEMPT_METHODS_BY_PATH below.
  */
 const BASIC_AUTH_EXEMPT_PATHS = new Set([
