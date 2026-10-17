@@ -11,9 +11,17 @@ Claude Code and Codex load `vouchington-workflow:pr-description`; Grok, Cursor, 
 
 ## Vouchington additions
 
-Use `node dev/pr-description.mts create --title <title> --body-file <file>` and
-`node dev/pr-description.mts update <pr> --body-file <file>` rather than raw body mutation. The
-local validator enforces exactly one visible `## Summary` and `## Impact`, `## Related issues`, `Workspace setup:`, and tool-injected `Agent:`,
+Use the `pr_create`, `pr_update`, and `pr_validate` tools of the `vouchington-tooling` MCP server
+rather than raw `gh pr create` or `gh pr edit --body*`, which the Codex hook blocks. The tools take
+the structured `title`, `summary`, `impact`, `relatedIssues`, `details`, and `workspaceSetup`
+input (the server derives the trusted `mode` and the `Agent:` line from its own environment; omit
+`agent` and `model`) and
+render the H2 body themselves, so put no `##` headings or provenance
+lines in those fields. `details` entries may use `###` headings where a workflow names required
+sections (for example `### Root cause`, `### Implementation choice`, `### Options considered`).
+When the branch diff exceeds the split thresholds, `pr_create` fails unless `details` has a
+`### Large diff` entry explaining why the change stays whole. `pr_create` adds the milestone and project of the related issues. The checkout policy
+([`dev/agent-policy.mts`](../../../dev/agent-policy.mts)) enforces exactly one visible `## Summary` and `## Impact`, `## Related issues`, `Workspace setup:`, and tool-injected `Agent:`,
 `Device:`, and `Worktree:` provenance lines. It performs issue-supersession, milestone-completion, and project-completion audits. Include a
 Mermaid diagram when it helps reviewers understand the change; that is description guidance.
 
@@ -25,14 +33,16 @@ When the chosen plan record is a multi-PR `Plan:` issue, keep it as the sibling 
 ordinal and a `Refs #Plan` explanation, while the completing PR uses `Closes #Plan`. The main-push
 completion advisory is not an automatic Plan closure.
 
-For an interactive change explicitly requested by the user with no source issue, put this exact
-pair in `## Related issues`:
+For an interactive change explicitly requested by the user with no source issue, pass an empty
+`relatedIssues` and `noSourceIssue: { reason: "direct user request" }`; the policy's
+`renderNoSourceIssue` export renders this exact pair in `## Related issues`:
 
 ```markdown
 No source issue; direct user request.
 <!-- related-issues-validation: no-source-direct-request -->
 ```
 
-Use it only when that description is truthful. It requires no plan heading, retains validation of
-supplied closing references, and is rejected when the trusted runtime is automation. Existing
+Use it only when that description is truthful. It requires no plan heading and is rejected when
+the trusted runtime is automation. The only other accepted reason is `scheduled prompt run`, for
+scheduled prompts. Existing
 scheduled-prompt and Fix Main exceptions keep their own representations and authority limits.

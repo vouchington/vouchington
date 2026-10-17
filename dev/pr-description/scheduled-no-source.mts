@@ -169,7 +169,7 @@ const FIX_MAIN_ROOT_CAUSE_CONTEXT_LABEL =
  * `allowClosed` waives the open-issue requirement for a PR that has already merged: fix-main.md
  * requires the root-cause issue open only immediately before publication, and once the
  * interim-classifier PR has merged, that root-cause issue is expected to eventually get fixed and
- * closed. Pre-publication validation (`node dev/pr-description.mts create`, which has no merged
+ * closed. Pre-publication validation (`pr_create`, which has no merged
  * target) leaves this `false` so the gate still holds at the moment that matters.
  */
 export function validateFixMainRootCauseRef(

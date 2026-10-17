@@ -183,7 +183,6 @@ describe('Codex project rules', () => {
       './dev/valkey-logs',
     ]
     for (const script of scripts) expect(codexRules).toContain(codexRuleFor([script]))
-    expect(codexRules).toContain(codexRuleFor(['node', 'dev/pr-description.mts']))
   })
 
   it('does not allow broad bare git, gh, or npx bypasses', () => {

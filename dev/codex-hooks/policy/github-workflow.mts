@@ -42,13 +42,10 @@ export function findGitHubWorkflowBlock(
       const contentRulesApply = !exemptFromContentRules(invocation, index, invocationCwd)
 
       const prBodyDecision = githubPrBodyDecision({
-        automationContext: options.automationContext ?? DEFAULT_AUTOMATION_CONTEXT,
         contentRulesApply,
-        cwd,
         invocation,
         invocationCwd,
       })
-      if (prBodyDecision === 'skip') continue
       if (prBodyDecision !== 'fallthrough') return prBodyDecision
 
       const stackBlock = findGitHubStackWorkflowBlock(invocation, invocationCwd)

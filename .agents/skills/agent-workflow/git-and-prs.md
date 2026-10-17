@@ -20,12 +20,12 @@
   layers merge.
   Put ready layers at the bottom and append later work on top. Never ask whether to stack, or for
   an exception to stacking. Ask the human only when no option above resolves the conflict.
-- The PR helper flags about 5,000 added or 20,000 deleted lines for a split decision. Split only
+- `pr_create` flags about 5,000 added or 20,000 deleted lines (against `origin/<base>`) for a split decision. Split only
   along independently reviewable boundaries; dependencies and conflicts determine whether to stack.
   Disclose the 150-file automated-review limit for larger atomic changes. Verified CI-generated
   schema snapshots stay with their source when the handwritten diff fits those budgets; verify
   publisher provenance and schema intent, report generated versus total scope, and use
-  `--acknowledge-large-diff` without another size approval. Other generated output remains counted.
+  a `### Large diff` entry in `details` (the stated split decision) without another size approval. Other generated output remains counted.
 - Use conventional commit and PR titles; follow the [commit checklist](../../../docs/checklists/commit.md).
   Do not amend, bypass hooks, create merge commits, or use raw force pushes.
 - Before rebasing, inspect `git diff --name-only origin/main...HEAD`; for a stack also inspect the
@@ -73,11 +73,12 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 
 ## Publish and review
 
-- Run [before-push checks](before-pushing.md), then create or update a draft with
-  `node dev/pr-description.mts create --title <title> --body-file <file>` or
-  `node dev/pr-description.mts update <pr> --body-file <file>`. Follow
-  [PR description](../pr-description/SKILL.md); the helper preserves the live Shepherd Journal.
-- Include `Workspace setup:`. Agent, Device, and Worktree lines are helper-injected.
+- Run [before-push checks](before-pushing.md), push the branch, then create or update a draft with
+  the `pr_create` or `pr_update` tool of the `vouchington-tooling` MCP server. Follow
+  [PR description](../pr-description/SKILL.md); `pr_update` preserves the live Shepherd Journal.
+  Raw `gh pr create` and `gh pr edit --body*` are blocked.
+- Pass `workspaceSetup` for the `Workspace setup:` line. Agent, Device, and Worktree lines are
+  tool-injected.
   Keep the title and body accurate as scope and validation change.
 - Under `## Related issues`, close only real source issues this PR fully resolves. Validate supplied
   references and unchecked tasks. Explain why non-closing references remain open. For a direct
@@ -89,10 +90,10 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 - Keep a plan outside Git: the PR description, an existing issue/comment, or a persistent native
   plan file can be its sole record. A Plan issue is optional. When an actual multi-PR Plan issue
   exists, it owns the sibling ledger; completing work closes it, partial work references it.
-- Run `node dev/pr-description.mts validate <pr>` before marking ready. This checks live provenance,
+- Run the `pr_validate` tool with `pr` before marking ready. This checks live provenance,
   closing references, and applicable supersession/milestone audits. Keep unrelated issues open with
   a reason; project completion notices remain advisory. See the
-  [helper reference](../../../docs/development/local-development/reference-pr-description-helper.md).
+  [policy reference](../../../docs/development/local-development/reference-pr-description-helper.md).
 - Branches, commits, pushes, and draft PRs within the task need no repeated approval. Merging or
   arming auto-merge requires explicit human authorization; automation must never do either.
   A native stack merge lands every ready bottom layer at once; the approval must cover every layer

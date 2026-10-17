@@ -3,7 +3,8 @@ import { validateRetroDoc } from './retrospective-validate.mts'
 
 // vouchington-tooling policy module, contract v1.1 (declared in package.json under
 // "vouchington-tooling.policy"). The tooling server runs this in a fresh child node
-// process per call with no blackboard token, so it must stay pure: no network, no env.
+// process per call with no blackboard token. Retrospective validation is pure; the
+// pull-request exports call `gh` through HOME config and GH_TOKEN.
 
 export type RetrospectivePolicyInput = {
   sessionId: string
@@ -47,8 +48,11 @@ export function validateRetrospective(input: RetrospectivePolicyInput): PolicyRe
   return { errors }
 }
 
-// Phase 3 owns validatePullRequest and the PR defaults. Until then this carries only the
-// default repositories, which tooling also uses as the retrospective default.
-export function pullRequestDefaults(): { repositories: string[] } {
-  return { repositories: ['vouchington/vouchington'] }
-}
+export {
+  pullRequestDefaults,
+  validatePullRequest,
+  type PullRequestDefaults,
+  type PullRequestDefaultsInput,
+  type PullRequestPolicyInput,
+} from './agent-policy/pull-request.mts'
+export { renderNoSourceIssue, type NoSourceIssue } from './agent-policy/no-source.mts'

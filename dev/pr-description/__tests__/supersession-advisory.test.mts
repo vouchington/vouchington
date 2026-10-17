@@ -32,7 +32,7 @@ describe('runAdvisorySupersessionSearch', () => {
     )
     expect(hints).toContain('#1')
   })
-  it('swallows a search failure', async () => {
+  it('rejects on a search failure so the caller can warn', async () => {
     await expect(
       runAdvisorySupersessionSearch(
         () => Promise.reject(new Error('gh unavailable')),
@@ -40,6 +40,6 @@ describe('runAdvisorySupersessionSearch', () => {
         summary(),
         reader,
       ),
-    ).resolves.toBe('')
+    ).rejects.toThrow('gh unavailable')
   })
 })

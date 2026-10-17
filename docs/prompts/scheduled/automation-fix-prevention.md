@@ -4,7 +4,7 @@ concrete, bounded improvement that is safe to ship in one PR.
 
 Signal and scope:
 
-- Bound the corpus to the 50 most recently updated matching PRs and record the query. Classify merged, open, and closed-unmerged matches. A closed-unmerged auto-fix can be evidence of a rejected generation pattern. Use PR bodies' `## Root cause` and `## Options considered` evidence to decide which bug classes recurred and whether each fix closed the cause or only one symptom. Do not claim completeness beyond that bound.
+- Bound the corpus to the 50 most recently updated matching PRs and record the query. Classify merged, open, and closed-unmerged matches. A closed-unmerged auto-fix can be evidence of a rejected generation pattern. Use PR bodies' `Root cause` and `Options considered` sections (`###` in current bodies, `##` in older ones) as evidence to decide which bug classes recurred and whether each fix closed the cause or only one symptom. Do not claim completeness beyond that bound.
 - This prompt is **incident-driven**: the auto-fix corpus decides what to harden. That is the boundary against [static-code-analysis.md](static-code-analysis.md), which is tool-driven (tighten a tool regardless of incidents). Anchor every change to a specific `automation:auto-fix` PR and do not duplicate a rule the tool-driven prompt would produce.
 - Exclude transient/infra classification (adding or broadening `ci/transient-retry/**` rules): that is owned by [transient-retry.md](transient-retry.md). Leave the retry catalogue untouched here.
 - Skip any class already covered by an existing guard, an open issue, or an open PR.

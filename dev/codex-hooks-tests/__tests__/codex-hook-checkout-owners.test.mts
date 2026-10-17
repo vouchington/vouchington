@@ -15,7 +15,7 @@ import { withTestTempDir } from '../test-temp-root.mts'
 // Synthetic owners: `forker` forks `acme`'s repository; `widgets-inc` is an unrelated owner.
 const FORK_REMOTE = { origin: 'git@github.com:forker/tool.git' }
 const UPSTREAM_URL = 'git+https://github.com/acme/tool.git'
-const DRAFT_FIRST = 'New PRs must be opened as draft first'
+const DRAFT_FIRST = 'pr_create'
 
 const nonDraftPr = (repo: string) => `gh pr create --repo ${repo} --title t --body "no refs"`
 

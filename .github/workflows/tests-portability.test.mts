@@ -95,7 +95,7 @@ describe('portability path filters', () => {
 
   it('does not start on the #9389 ci-tools contract test', () => {
     expect(filterMatches(portability(), 'ci/agent-workflow-docs.test.mts')).toBe(false)
-    expect(filterMatches(portability(), 'dev/pr-description.mts')).toBe(false)
+    expect(filterMatches(portability(), 'dev/pr-description/validate.mts')).toBe(false)
   })
 
   it('covers first-party imports of the portability includes', () => {

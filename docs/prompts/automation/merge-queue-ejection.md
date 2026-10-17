@@ -91,6 +91,8 @@ continue at all, such as lost `gh` access.
   `Automation fix: <defect> (merge queue #N[, #M…])` for a defect, listing every pull request in
   the group.
 - **Workspace setup line:** `Workspace setup: Automation merge-queue-ejection run`.
+- **Publication:** open the fix PR with the `pr_create` tool of the `vouchington-tooling` MCP
+  server, never raw `gh pr create`.
 
 {{CI_FAILURE_CORE}}
 

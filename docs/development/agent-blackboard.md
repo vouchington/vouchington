@@ -300,8 +300,8 @@ The shared retrospective composer emits validated `work_outcome` and `feedback_c
 matter. `retrospective_save` takes `mode`, `workOutcome`, and `feedbackCoverage` as arguments and
 rejects front matter that contradicts them. See the
 [save contract](../../.agents/skills/retrospective/saving.md) for the tool arguments, including a
-hand-written `markdown` document. The composed document carries no `repositories` front matter,
-so saving a `dryRun` preview repeats the preview's `repositories` argument.
+hand-written `markdown` document. A `dryRun` preview returns a single-use `previewToken`, and
+saving with it stores exactly the previewed envelope, including its `repositories`.
 The `compose` argument accepts serializable facts and transcript options, then
 constructs its own journal collector from the same session's hosted journal and builds
 `## CI Failures` and `## Sandbox & Permission Audit` from the journal entries alone. A session

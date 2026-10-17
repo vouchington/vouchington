@@ -169,17 +169,12 @@ describe('Codex hook hand-rolled stack base policy', () => {
     )
   })
 
-  it.each([
-    'gh pr create --draft --fill',
-    'gh pr create --draft --base main --fill',
-    'gh pr create --draft -B main --fill',
-    'gh pr edit 12 --add-label plan',
-    'gh pr edit 12 --base main',
-    'gh pr edit 12 -B main',
-    'env -C"$PWD" gh pr create --draft --base main --fill',
-  ])('allows targeting main or omitting --base: %s', command => {
-    expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
-  })
+  it.each(['gh pr edit 12 --add-label plan', 'gh pr edit 12 --base main', 'gh pr edit 12 -B main'])(
+    'allows targeting main or omitting --base: %s',
+    command => {
+      expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
+    },
+  )
 
   it('blocks an empty --base= value', () => {
     expect(
@@ -236,15 +231,15 @@ describe('Codex hook hand-rolled stack base policy', () => {
     }
   })
 
-  it('allows omitted --base when no local gh-merge-base is set', () => {
+  it('gives the generic pr_create reason when no local gh-merge-base is set', () => {
     const dir = makeTestTempDirSync('gh-merge-base-none-')
     try {
       execFileSync('git', ['init', '-q', '-b', 'feature-api'], { cwd: dir, env: isolatedGitEnv() })
       expect(
         findPreToolUseBlock({
           tool_input: { command: 'gh pr create --draft --fill', cwd: dir },
-        }),
-      ).toBeNull()
+        })?.reason,
+      ).toContain('pr_create')
     } finally {
       rmSync(dir, { force: true, recursive: true })
     }
@@ -269,9 +264,9 @@ describe('Codex hook hand-rolled stack base policy', () => {
     }
   })
 
-  it('blocks gh pr new without --draft', () => {
+  it('blocks gh pr new and points at pr_create', () => {
     expect(findPreToolUseBlock({ tool_input: { command: 'gh pr new --fill' } })?.reason).toContain(
-      'opened as draft first',
+      'pr_create',
     )
   })
 })

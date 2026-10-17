@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
@@ -11,7 +10,6 @@ import { tokenizeShellWords } from '../../codex-hooks/policy-helpers.mts'
 import { withTestTempDir } from '../test-temp-root.mts'
 
 const BASE_CWD = '/filaments-session'
-const PR_BODY = '## Related issues\nCloses #2476'
 
 function tokensOf(command: string): string[] {
   return tokenizeShellWords(command, { splitRedirections: true })
@@ -97,31 +95,6 @@ describe('commandCwd sequential cd tracking', () => {
 })
 
 describe('Codex hook GitHub policy uses command-local cwd', () => {
-  it('reads a relative body file from the cd target', async () => {
-    await withTestTempDir('voucha-cd-pr-session-', async sessionDir => {
-      await withTestTempDir('voucha-cd-pr-body-', async otherDir => {
-        await writeFile(join(sessionDir, 'pr-body.md'), '## Summary\nno closing ref\n')
-        await writeFile(join(otherDir, 'pr-body.md'), `${PR_BODY}\n`)
-        expect(
-          findPreToolUseBlock({
-            tool_input: {
-              command: `gh pr create --draft --title "feat: test" --body-file pr-body.md`,
-              cwd: sessionDir,
-            },
-          })?.reason,
-        ).toContain('Closes #123')
-        expect(
-          findPreToolUseBlock({
-            tool_input: {
-              command: `cd ${otherDir} && gh pr create --draft --title "feat: test" --body-file pr-body.md`,
-              cwd: sessionDir,
-            },
-          }),
-        ).toBeNull()
-      })
-    })
-  })
-
   it('uses gh-merge-base from the cd checkout', async () => {
     await withTestTempDir('voucha-cd-merge-base-', async dir => {
       const env = Object.fromEntries(
@@ -147,24 +120,6 @@ describe('Codex hook GitHub policy uses command-local cwd', () => {
           },
         })?.reason,
       ).toContain('PRs must target main')
-    })
-  })
-
-  it('applies cd inside bash -lc inspected bodies', async () => {
-    await withTestTempDir('voucha-cd-pr-session-', async sessionDir => {
-      await withTestTempDir('voucha-cd-pr-body-', async otherDir => {
-        await writeFile(join(sessionDir, 'pr-body.md'), '## Summary\nno closing ref\n')
-        await writeFile(join(otherDir, 'pr-body.md'), `${PR_BODY}\n`)
-        const command = (dir: string) =>
-          `bash -lc "cd ${dir} && gh pr create --draft --title t --body-file pr-body.md"`
-        expect(
-          findPreToolUseBlock({ tool_input: { command: command(sessionDir), cwd: otherDir } })
-            ?.reason,
-        ).toContain('Closes #123')
-        expect(
-          findPreToolUseBlock({ tool_input: { command: command(otherDir), cwd: sessionDir } }),
-        ).toBeNull()
-      })
     })
   })
 })

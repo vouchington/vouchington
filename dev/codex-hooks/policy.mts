@@ -43,7 +43,8 @@ export function findPreToolUseBlock(
     return {
       reason:
         'Cannot Edit/Write/apply_patch the permission-enforcement hooks (dev/codex-hooks/**, ' +
-        'dev/agent-session-id/**), the modules they statically import (dev/pr-description/**), ' +
+        'dev/agent-session-id/**, dev/agent-policy.mts, dev/agent-policy/**, ' +
+        'dev/pr-description/**) ' +
         'or execpolicy configuration (.codex/config.toml, .codex/rules/**, ' +
         '.cursor/*.json) ' +
         'during an autonomous CI run. This closes the mid-session self-mutation gap a pre-dispatch ' +

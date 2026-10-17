@@ -73,7 +73,6 @@ describe('Claude review-skip for dev/ commands', () => {
     './dev/check-fresh-base',
     './dev/audit-rename web/lib/old.mts web/lib/new.mts',
     './dev/audit-rename ../old new',
-    'node dev/pr-description.mts update 1',
     'node dev/sandbox-command-audit.mts --help',
   ])('allows %s without review', command => {
     expect(isAllowed(command)).toBe(true)

@@ -104,7 +104,7 @@ export function validateMilestoneSiblings(
 }
 
 /**
- * Composition point for `dev/pr-description.mts`: bundles milestone-sibling enumeration + decision
+ * Composition point for the pull-request policy (`dev/agent-policy/pull-request.mts`): bundles milestone-sibling enumeration + decision
  * policy behind the `(body, closingRefs, closingIssues) => Promise<string[]>` shape `validate.mts`
  * expects. `closingIssues` pairs each closed issue with the repo its closing ref named (or
  * `undefined` for the audited repo), so grouping by milestone needs no extra `gh` call.

@@ -69,7 +69,7 @@ export function findGitHubStackWorkflowBlock(
     if (hasNamedFlag(stack.optionTokens, 'open')) {
       return {
         reason:
-          'New PRs must be opened as draft first. Use `gh stack submit --auto`, then `node dev/pr-description.mts update`.',
+          'New PRs must be opened as draft first. Use `gh stack submit --auto`, then the `pr_update` tool of the vouchington-tooling MCP server.',
       }
     }
     if (!hasNamedFlag(stack.optionTokens, 'auto')) {
@@ -84,7 +84,7 @@ export function findGitHubStackWorkflowBlock(
   if (action === 'link' && hasNamedFlag(stack.optionTokens, 'open')) {
     return {
       reason:
-        'New PRs must be opened as draft first. Use `gh stack link` without --open, then `node dev/pr-description.mts update`.',
+        'New PRs must be opened as draft first. Use `gh stack link` without --open, then the `pr_update` tool of the vouchington-tooling MCP server.',
     }
   }
 

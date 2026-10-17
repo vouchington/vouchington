@@ -25,7 +25,8 @@ describe('tooling dependency-cruiser runner', () => {
     expect(TOOLING_DEPENDENCY_CRUISER_ROOTS).toEqual([
       'ci',
       'dev/agent-issue-labels',
-      'dev/pr-description.mts',
+      'dev/agent-policy',
+      'dev/agent-policy.mts',
       'dev/pr-description',
       'static-code-analysis',
     ])
@@ -78,7 +79,8 @@ describe('tooling dependency-cruiser runner', () => {
     const representativePaths = [
       'ci/example.mts',
       'dev/agent-issue-labels/example.mts',
-      'dev/pr-description.mts',
+      'dev/agent-policy/example.mts',
+      'dev/agent-policy.mts',
       'dev/pr-description/example.mts',
       'static-code-analysis/example.mts',
     ]
@@ -103,10 +105,10 @@ describe('tooling dependency-cruiser runner', () => {
     expect(workflow).toContain(`${command} --cache`)
     expect(ciLocalTargets).toContain(command)
     expect(workflow).not.toContain(
-      'ci dev/agent-issue-labels dev/pr-description.mts dev/pr-description static-code-analysis',
+      'ci dev/agent-issue-labels dev/pr-description static-code-analysis',
     )
     expect(ciLocalTargets).not.toContain(
-      'ci dev/agent-issue-labels dev/pr-description.mts dev/pr-description static-code-analysis',
+      'ci dev/agent-issue-labels dev/pr-description static-code-analysis',
     )
   })
 })

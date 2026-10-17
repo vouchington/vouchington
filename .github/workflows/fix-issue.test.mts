@@ -229,7 +229,7 @@ describe('fix-issue workflow', () => {
     expect(contextStep?.run).toContain('bodyTruncated')
     expect(contextStep?.run).toContain('labels')
     expect(fixIssuePrompt).toContain('fixes #')
-    expect(fixIssuePrompt).toContain('## Issue')
+    expect(fixIssuePrompt).toContain('start `summary` with the issue URL')
     expect(fixIssuePrompt).toContain('## Root cause')
     expect(fixIssuePrompt).toContain('## Implementation choice')
     expect(fixIssuePrompt).toContain('## Options considered')

@@ -4,9 +4,9 @@
  * split is a native GitHub stack or independent PRs against `main`; this only forces the split
  * decision to be made consciously instead of skipped by default. Deletion-heavy retirement work
  * can remain coherent at a larger limit. Counts include generated files so the full diff stays
- * visible. The workflow's standing CI-generated schema snapshot exception uses
- * `--acknowledge-large-diff` without another approval when the remaining diff fits the budgets.
- * Other genuinely atomic large diffs also use that explicit acknowledgement.
+ * visible. The workflow's standing CI-generated schema snapshot exception uses the
+ * `### Large diff` acknowledgement section without another approval when the remaining diff fits
+ * the budgets. Other genuinely atomic large diffs also use that explicit acknowledgement.
  */
 export const LARGE_DIFF_ADDED_LINE_THRESHOLD = 5000
 export const LARGE_DIFF_DELETED_LINE_THRESHOLD = 20_000
@@ -24,7 +24,7 @@ export type DiffLineChanges = {
  * header." An added line whose content starts with `++`, or a removed line whose content starts
  * with `--` (a SQL comment, a CLI flag), renders as `+++`/`---` once the diff marker is prepended
  * and is silently excluded from the count — the same shape as a real header. For a ~5k-line
- * "probably needs a split" heuristic with a `--acknowledge-large-diff` override, that undercount is
+ * "probably needs a split" heuristic with a `### Large diff` acknowledgement, that undercount is
  * acceptable; this is not a full hunk parser and is not meant to become one.
  */
 export function countDiffLineChanges(diffText: string): DiffLineChanges {
@@ -37,24 +37,36 @@ export function countDiffLineChanges(diffText: string): DiffLineChanges {
   return changes
 }
 
-export function exceedsLargeDiffThreshold(changes: DiffLineChanges): boolean {
-  return (
-    changes.added > LARGE_DIFF_ADDED_LINE_THRESHOLD ||
-    changes.deleted > LARGE_DIFF_DELETED_LINE_THRESHOLD
-  )
+export type LargeDiffThresholds = { added: number; deleted: number }
+
+export const DEFAULT_LARGE_DIFF_THRESHOLDS: LargeDiffThresholds = {
+  added: LARGE_DIFF_ADDED_LINE_THRESHOLD,
+  deleted: LARGE_DIFF_DELETED_LINE_THRESHOLD,
 }
 
-export function formatLargeDiffRefusal(changes: DiffLineChanges): string {
+export function exceedsLargeDiffThreshold(
+  changes: DiffLineChanges,
+  thresholds: LargeDiffThresholds = DEFAULT_LARGE_DIFF_THRESHOLDS,
+): boolean {
+  return changes.added > thresholds.added || changes.deleted > thresholds.deleted
+}
+
+export function formatLargeDiffRefusal(
+  changes: DiffLineChanges,
+  base: string,
+  thresholds: LargeDiffThresholds = DEFAULT_LARGE_DIFF_THRESHOLDS,
+): string {
   return (
     `PR create refused: this diff adds ${changes.added} and deletes ${changes.deleted} lines ` +
-    `against origin/main. PRs may add at most ~${LARGE_DIFF_ADDED_LINE_THRESHOLD} lines and ` +
-    `delete at most ~${LARGE_DIFF_DELETED_LINE_THRESHOLD} lines before the split decision is ` +
+    `against origin/${base}. PRs may add at most ~${thresholds.added} lines and ` +
+    `delete at most ~${thresholds.deleted} lines before the split decision is ` +
     'required (see .agents/skills/agent-workflow/git-and-prs.md).\n' +
     'Decide the split before opening this PR: if the parts cannot compile, test, or land ' +
     'independently, split it into a native GitHub stack (.agents/skills/stacked-prs/SKILL.md); ' +
     'if they can land in any order, open separate PRs targeting main instead.\n' +
     'If this PR is genuinely atomic (a lockfile bump, a generated-file refresh) and splitting ' +
-    'would not help, rerun create with --acknowledge-large-diff to proceed anyway.\n' +
+    'would not help, add a `details` entry that starts with the line `### Large diff` and ' +
+    'explains why it stays whole, then rerun pr_create.\n' +
     'Apply the standing generated-schema-snapshot exception in the workflow without asking ' +
     'for another size approval; the handwritten diff must still fit the budgets.\n'
   )

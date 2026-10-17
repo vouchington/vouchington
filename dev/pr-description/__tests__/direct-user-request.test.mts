@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { findGitHubWorkflowBlock } from '../../codex-hooks/policy/github-workflow.mts'
 import { VALID_PROVENANCE_BLOCK } from '../../test-helpers/pr-description/valid-pr-body.mts'
 import { validatePrBody, validatePrBodyWithIssueReferences } from '../validate.mts'
 
@@ -32,13 +31,6 @@ describe('direct user request without a source issue', () => {
       { automationContext: false },
     )
     expect(result.ok).toBe(true)
-    expect(
-      findGitHubWorkflowBlock(
-        `gh pr create --draft --title "chore: cleanup" --body '${BODY}'`,
-        process.cwd(),
-        { automationContext: false },
-      ),
-    ).toBeNull()
   })
 
   it.each([
@@ -50,14 +42,9 @@ describe('direct user request without a source issue', () => {
     ['quoted example', DIRECT_REQUEST_PAIR.replaceAll(/^/gm, '> ')],
     ['hidden example', `<div>\n${DIRECT_REQUEST_PAIR}\n</div>`],
     ['intervening example', DIRECT_REQUEST_PAIR.replace('\n', '\n~~~md\nexample\n~~~\n')],
-  ])('rejects a %s in validator and hook', (_name, replacement) => {
+  ])('rejects a %s', (_name, replacement) => {
     const body = BODY.replace(DIRECT_REQUEST_PAIR, replacement ?? '')
     expect(validatePrBody(body, { automationContext: false }).ok).toBe(false)
-    expect(
-      findGitHubWorkflowBlock(`gh pr edit 123 --body '${body}'`, process.cwd(), {
-        automationContext: false,
-      }),
-    ).not.toBeNull()
   })
 
   it('requires the pair in the Related issues section', () => {
@@ -78,21 +65,6 @@ describe('direct user request without a source issue', () => {
 
   it.each([undefined, true])('rejects the representation with automationContext=%s', context => {
     expect(validatePrBody(BODY, { automationContext: context }).ok).toBe(false)
-    expect(
-      findGitHubWorkflowBlock(`gh pr edit 123 --body '${BODY}'`, process.cwd(), {
-        automationContext: context,
-      })?.reason,
-    ).toContain('interactive')
-  })
-
-  it('cannot declare the tool call interactive through command text', () => {
-    expect(
-      findGitHubWorkflowBlock(
-        `CI=false GITHUB_ACTIONS=false gh pr edit 123 --body '${BODY}'`,
-        process.cwd(),
-        { automationContext: true },
-      )?.reason,
-    ).toContain('interactive')
   })
 
   it.each(['closed', 'unchecked', 'missing', 'pull request'])(
@@ -125,10 +97,5 @@ describe('direct user request without a source issue', () => {
   it('rejects the representation in automation even alongside a closing reference', () => {
     const body = `${BODY}\nCloses #123`
     expect(validatePrBody(body, { automationContext: true }).ok).toBe(false)
-    expect(
-      findGitHubWorkflowBlock(`gh pr edit 123 --body '${body}'`, process.cwd(), {
-        automationContext: true,
-      })?.reason,
-    ).toContain('interactive')
   })
 })

@@ -13,11 +13,14 @@ import { tokenizeShellWords } from './shell-tokenizer.mts'
 export const PROTECTED_HOOK_DIR_PREFIXES = [
   'dev/codex-hooks/',
   'dev/agent-session-id/',
+  'dev/agent-policy/',
+  // The policy module imports these validators, so they need the same protection.
   'dev/pr-description/',
   '.codex/rules/',
   '.grok/hooks/',
 ]
 export const PROTECTED_HOOK_EXACT_FILES = [
+  'dev/agent-policy.mts',
   '.codex/config.toml',
   '.cursor/cli.json',
   '.cursor/hooks.json',
