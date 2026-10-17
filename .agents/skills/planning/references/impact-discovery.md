@@ -118,6 +118,23 @@ printf '%s\n' "$why_status" >"$impact_dir/why.status"
 The inline validator rejects empty or malformed `why.json` and appends its diagnostic to
 `why.stderr`. Apply the same per-field, per-entry, and total summary caps.
 
+## Static gate planning
+
+`plan.json` selects Vitest tests only. The static gates CI also runs (repository rules such as
+test-source correspondence, `scc` complexity, knip production exports) are listed by
+`impacted-checks` from the `checks.commands` entries in `.no-mistakes.yml`
+([#3015](https://github.com/vouchington/vouchington/issues/3015)). List them from the same manifest
+and run the commands that apply to the change:
+
+```bash
+pnpm exec no-mistakes impacted-checks --generic-only --changed-files "$impact_dir/changed-files.txt" \
+  --format md >"$impact_dir/checks.md" 2>"$impact_dir/checks.stderr"
+```
+
+Apply the same summary caps to `checks.md`. See
+[Local CI Parity](../../../../docs/development/local-development/reference-local-ci-parity.md#static-gates-that-local-selection-must-list)
+for the declared gates and the gates that are intentionally CI-only.
+
 ## Cleanup
 
 After the Plan and journal or retrospective have consumed the evidence, pass the original captured

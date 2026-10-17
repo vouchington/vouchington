@@ -7,7 +7,9 @@
   same defect is not repeated. For client/API changes, use the relevant [impact recipe](impact-recipes.md).
 - Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint for changed
   TypeScript, directly changed tests, scope inspection, and formatting. CI owns full area suites;
-  run broader local checks when the change or a failure requires them.
+  run broader local checks when the change or a failure requires them. List the static gates CI
+  will run for the diff with `pnpm exec no-mistakes impacted-checks --generic-only --changed-files
+  <manifest>` ([planning § Static gate planning](../planning/references/impact-discovery.md#static-gate-planning)).
 - Changes to manifests also follow [package metadata](../package-json-checklist/SKILL.md).
   Changes to guards follow [static analysis](../static-analysis-checklist/SKILL.md).
 - Verify claimed commands, paths, external references, and CI behavior against their actual owners.
