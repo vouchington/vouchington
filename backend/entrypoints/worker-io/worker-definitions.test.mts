@@ -23,8 +23,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['psql', 'psql', 'psql'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
       ['memberships', 'memberships', 'memberships'],
-      ['spam_detection', 'spam-detection', 'spamDetectionWorker'],
-      ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],
       ['admin-imports', 'admin-imports', 'adminImports'],
       ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
     ] as const

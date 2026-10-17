@@ -26,7 +26,7 @@ describe('background registry', () => {
     for (const job of BACKGROUND_JOBS) {
       const { group } = getBackgroundDomainDefinition(job.domain)
       const expected =
-        group.kind === 'domain'
+        group?.kind === 'domain'
           ? {
               key: job.domain,
               concurrency: group.concurrency,

@@ -22,8 +22,6 @@
     "psql",
     "bloom-filters",
     "memberships",
-    "spam_detection",
-    "ban_evasion",
     "admin-imports",
     "user-rss-feed-imports",
     "bedrock-batch-sqs",

@@ -1,5 +1,5 @@
 {
-  "name": "@workers/ban-evasion",
+  "name": "@queues/moderation-signals",
   "version": "1.0.0",
   "private": true,
   "description": "",
@@ -17,13 +17,10 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
-    "@services/communities": "workspace:^",
+    "@queues/background": "workspace:^",
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {
-    "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

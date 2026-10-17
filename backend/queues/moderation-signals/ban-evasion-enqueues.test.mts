@@ -1,18 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import {
   enqueueDetectBanEvasion,
   enqueueDetectBanEvasionAfterPostEmbedding,
   enqueueBulkDetectBanEvasionAfterPostEmbeddings,
 } from './enqueues.mts'
-import { ban_evasion } from './queues.mts'
+import { moderationSignalsQueue } from './queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('ban-evasion enqueues', () => {
-  beforeEach(async () => {
-    await ban_evasion.obliterate({ force: true })
-  })
-
   it('uses a post-specific dedup key for post-embedding detection', async () => {
     const communityId = randomUUID()
     const userId = randomUUID()
@@ -22,7 +19,7 @@ describe('ban-evasion enqueues', () => {
     await enqueueDetectBanEvasion(communityId, userId, postId)
     await enqueueDetectBanEvasionAfterPostEmbedding(communityId, userId, postId, inputSha256Hex)
 
-    const waiting = await readAllQueueJobs(ban_evasion)
+    const waiting = await readAllQueueJobs(moderationSignalsQueue)
     const jobs = waiting.filter(
       job =>
         (job.data as { communityId?: string; userId?: string }).communityId === communityId &&
@@ -52,17 +49,18 @@ describe('ban-evasion enqueues', () => {
       { communityId, userId, postId, inputSha256Hex },
     ])
 
-    const waiting = await readAllQueueJobs(ban_evasion)
+    const waiting = await readAllQueueJobs(moderationSignalsQueue)
     const job = waiting.find(
       item =>
         (item.data as { communityId?: string; userId?: string }).communityId === communityId &&
         (item.data as { communityId?: string; userId?: string }).userId === userId,
     )
     expect(job).toBeDefined()
-    expect(job!.name).toBe('detect')
+    expect(job!.name).toBe(MODERATION_SIGNALS_BAN_EVASION_JOB.name)
     expect(job!.data).toEqual({ communityId, userId, postId })
     expect(job!.opts).toMatchObject({
       priority: 10,
+      attempts: 3,
       deduplication: {
         id: `ban_evasion_post_embedding_${communityId}_${userId}_${postId}_${inputSha256Hex}`,
         mode: 'debounce',

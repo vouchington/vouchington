@@ -75,6 +75,7 @@ describe('background queue domain routes', () => {
         'entity-listeners',
         'follower-distributions',
         'kagi-smallweb',
+        'moderation-signals',
         'notifications',
         'oauth-authorization-exchange',
         'openai-moderation',

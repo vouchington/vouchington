@@ -12,10 +12,10 @@ export function defineBackgroundDomain(
   definition: BackgroundDomainDefinition,
 ): BackgroundDomainDefinition {
   assertPositiveInteger(`${definition.domain} workerConcurrency`, definition.workerConcurrency)
-  if (definition.group.kind === 'domain') {
+  if (definition.group?.kind === 'domain') {
     assertPositiveInteger(`${definition.domain} group concurrency`, definition.group.concurrency)
   }
-  if (definition.group.kind === 'lanes') {
+  if (definition.group?.kind === 'lanes') {
     assertPositiveInteger(`${definition.domain} lane cap`, definition.group.cap)
   }
   return definition
@@ -48,7 +48,7 @@ export function defineBackgroundJob<TData = unknown>(
 
 /** The shared key and limits of a domain-wide group, or nothing for any other kind. */
 function domainOrdering(domain: BackgroundDomainDefinition): Pick<JobOptions, 'ordering'> | null {
-  if (domain.group.kind !== 'domain') return null
+  if (domain.group?.kind !== 'domain') return null
   const { concurrency, rateLimit } = domain.group
   return {
     ordering: { key: domain.domain, concurrency, ...(rateLimit ? { rateLimit } : {}) },

@@ -17,9 +17,7 @@ import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { memberships } from '@queues/memberships/queues'
-import { spam_detection } from '@queues/spam-detection/queues'
 import { ai_agents as aiAgentsQueue, spendCapRechecks } from '@queues/ai-agents/queues'
-import { ban_evasion as banEvasion } from '@queues/ban-evasion/queues'
 import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
 import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
@@ -43,10 +41,8 @@ const allQueues = [
   findYourFriendsQueue,
   imageUploadsQueue,
   memberships,
-  spam_detection,
   aiAgentsQueue,
   spendCapRechecks,
-  banEvasion,
   crawlBrowserQueue,
   contentAnalysisQueue,
   unfurlReferralLinksQueue,
