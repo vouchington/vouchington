@@ -117,7 +117,7 @@ describe('owned engagement admission lifecycle', () => {
     })
     expect(observed.value).toBe(user.id)
     expect(observed.jobs).toEqual([
-      { name: 'processSendFollowTopicsEmail', data: { input: { userId: user.id }, variables } },
+      { name: 'email-digests.processSendFollowTopicsEmail', data: { input: { userId: user.id }, variables } },
     ])
     expect(ses.sendEmail).toBe(original)
   })
