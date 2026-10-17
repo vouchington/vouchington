@@ -164,4 +164,19 @@ describe('act_on_post share, send and read state against their REST twins', () =
     expect((await reject(user, 'read', { id: hidden })).error.status).toBe(404)
     expect(await readStateExists(user.id, 'post', hidden)).toBe(false)
   })
+
+  it.each(['read', 'unread'] as const)(
+    'refuses a suspended user to %s as REST does',
+    async option => {
+      const user = await createTestPlusMcpCaller()
+      const post = await createTestPost({ user, privacy: 'public' })
+      await suspendTestUser(user.id)
+      const request = createRequest()
+      await request.authenticateAs(user)
+      const route = `/api/v1/posts/${post.id}/read`
+      await request[option === 'read' ? 'put' : 'delete'](route).expect(403)
+      expect((await reject(user, option, { id: post.id })).error.status).toBe(403)
+      expect(await readStateExists(user.id, 'post', post.id)).toBe(false)
+    },
+  )
 })
