@@ -21,12 +21,7 @@ function isEnoent(error: unknown): boolean {
 }
 
 function isUnderSrcBuild(target: string): boolean {
-  return (
-    target === 'build/src' ||
-    target.startsWith('build/src/') ||
-    target === './build/src' ||
-    target.startsWith('./build/src/')
-  )
+  return /^(?:\.\/)?build\/src(?:\/|$)/.test(target)
 }
 
 function collectRuntimeTargets(node: unknown, targets: string[]): boolean {
@@ -37,11 +32,9 @@ function collectRuntimeTargets(node: unknown, targets: string[]): boolean {
   if (node === null || node === undefined) return true
   if (Array.isArray(node) || typeof node !== 'object') return false
 
-  for (const [key, value] of Object.entries(node)) {
-    if (NON_RUNTIME_EXPORT_KEYS.has(key)) continue
-    if (!collectRuntimeTargets(value, targets)) return false
-  }
-  return true
+  return Object.entries(node).every(
+    ([key, value]) => NON_RUNTIME_EXPORT_KEYS.has(key) || collectRuntimeTargets(value, targets),
+  )
 }
 
 export function alternateBuildsAreUnused(manifest: OpenTelemetryPackageManifest): boolean {
@@ -71,23 +64,13 @@ async function directorySize(directory: string): Promise<number> {
 }
 
 async function srcReferencesAlternateBuild(directory: string): Promise<boolean> {
-  const entries = await readdir(directory, { withFileTypes: true })
+  const entries = await readdir(directory, { withFileTypes: true, recursive: true })
   for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name)
-    if (entry.isDirectory()) {
-      if (await srcReferencesAlternateBuild(entryPath)) return true
-      continue
-    }
+    const entryPath = path.join(entry.parentPath, entry.name)
     if (!entry.isFile()) continue
-    if (
-      !entry.name.endsWith('.js') &&
-      !entry.name.endsWith('.cjs') &&
-      !entry.name.endsWith('.mjs')
-    ) {
-      continue
-    }
+    if (!/\.(?:c|m)?js$/.test(entry.name)) continue
     const text = await readFile(entryPath, 'utf8')
-    if (text.includes('build/esm') || text.includes('build/esnext')) return true
+    if (/build\/(?:esm|esnext)/.test(text)) return true
   }
   return false
 }
