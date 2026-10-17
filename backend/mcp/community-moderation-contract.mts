@@ -22,6 +22,7 @@ export const COMMUNITY_MODERATION_UNTRUSTED_FIELDS = [
   'answers',
   'authored_title',
   'model_output',
+  'internal_response',
   'metadata',
 ] as const
 

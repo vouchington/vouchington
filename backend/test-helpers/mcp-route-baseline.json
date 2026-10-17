@@ -3,13 +3,8 @@
   "source": "meta.api and tool input fields in api-fixtures/v1/mcp.json at 65fb7b2cf; shared-route body projections audited against its handlers and REST twins",
   "facts": {
     "F01": {
-      "scopes": [
-        "moderation:agent-votes",
-        "moderation:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:agent-votes", "moderation:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -19,13 +14,8 @@
       }
     },
     "F02": {
-      "scopes": [
-        "account-enforcement:penalize",
-        "account-enforcement:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["account-enforcement:penalize", "account-enforcement:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -35,13 +25,8 @@
       }
     },
     "F03": {
-      "scopes": [
-        "editorial:read",
-        "editorial:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["editorial:read", "editorial:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -51,13 +36,8 @@
       }
     },
     "F04": {
-      "scopes": [
-        "editorial:read",
-        "editorial:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["editorial:read", "editorial:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -67,13 +47,8 @@
       }
     },
     "F05": {
-      "scopes": [
-        "account-enforcement:read",
-        "account-enforcement:suspend"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["account-enforcement:read", "account-enforcement:suspend"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -83,13 +58,8 @@
       }
     },
     "F06": {
-      "scopes": [
-        "account-enforcement:read",
-        "account-enforcement:vote-weight"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["account-enforcement:read", "account-enforcement:vote-weight"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -99,12 +69,8 @@
       }
     },
     "F07": {
-      "scopes": [
-        "analytics:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["analytics:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": true,
@@ -113,12 +79,8 @@
       }
     },
     "F08": {
-      "scopes": [
-        "editorial:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["editorial:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": true,
@@ -127,12 +89,8 @@
       }
     },
     "F09": {
-      "scopes": [
-        "moderation:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": true,
@@ -141,9 +99,7 @@
       }
     },
     "F10": {
-      "scopes": [
-        "appeals:read"
-      ],
+      "scopes": ["appeals:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -152,12 +108,8 @@
       }
     },
     "F11": {
-      "scopes": [
-        "copyright-notices:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["copyright-notices:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": true,
@@ -166,9 +118,7 @@
       }
     },
     "F12": {
-      "scopes": [
-        "disputes:read"
-      ],
+      "scopes": ["disputes:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -177,12 +127,8 @@
       }
     },
     "F13": {
-      "scopes": [
-        "site-operations:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["site-operations:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": true,
@@ -191,12 +137,8 @@
       }
     },
     "F14": {
-      "scopes": [
-        "account-enforcement:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["account-enforcement:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": true,
@@ -205,9 +147,7 @@
       }
     },
     "F15": {
-      "scopes": [
-        "posts:read"
-      ],
+      "scopes": ["posts:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -216,13 +156,8 @@
       }
     },
     "F16": {
-      "scopes": [
-        "moderation:read",
-        "moderation:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -232,13 +167,8 @@
       }
     },
     "F17": {
-      "scopes": [
-        "site-operations:config",
-        "site-operations:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["site-operations:config", "site-operations:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -248,13 +178,8 @@
       }
     },
     "F18": {
-      "scopes": [
-        "account-enforcement:read",
-        "account-enforcement:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["account-enforcement:read", "account-enforcement:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -264,13 +189,8 @@
       }
     },
     "F19": {
-      "scopes": [
-        "moderation:read",
-        "moderation:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -280,13 +200,8 @@
       }
     },
     "F20": {
-      "scopes": [
-        "moderation:read",
-        "moderation:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -296,13 +211,8 @@
       }
     },
     "F21": {
-      "scopes": [
-        "moderation:approve",
-        "moderation:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:approve", "moderation:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -312,13 +222,8 @@
       }
     },
     "F22": {
-      "scopes": [
-        "moderation:approve",
-        "moderation:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:approve", "moderation:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -328,13 +233,8 @@
       }
     },
     "F23": {
-      "scopes": [
-        "moderation:ai-rerun",
-        "moderation:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:ai-rerun", "moderation:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -344,13 +244,8 @@
       }
     },
     "F24": {
-      "scopes": [
-        "moderation:approve",
-        "moderation:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:approve", "moderation:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -360,13 +255,8 @@
       }
     },
     "F25": {
-      "scopes": [
-        "copyright-notices:read",
-        "copyright-notices:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -376,13 +266,8 @@
       }
     },
     "F26": {
-      "scopes": [
-        "copyright-notices:read",
-        "copyright-notices:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -392,13 +277,8 @@
       }
     },
     "F27": {
-      "scopes": [
-        "copyright-notices:read",
-        "copyright-notices:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -408,13 +288,8 @@
       }
     },
     "F28": {
-      "scopes": [
-        "copyright-notices:read",
-        "copyright-notices:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["copyright-notices:read", "copyright-notices:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -424,13 +299,8 @@
       }
     },
     "F29": {
-      "scopes": [
-        "site-operations:jobs",
-        "site-operations:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["site-operations:jobs", "site-operations:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -440,13 +310,8 @@
       }
     },
     "F30": {
-      "scopes": [
-        "site-operations:queues",
-        "site-operations:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["site-operations:queues", "site-operations:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -456,13 +321,8 @@
       }
     },
     "F31": {
-      "scopes": [
-        "site-operations:queues",
-        "site-operations:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["site-operations:queues", "site-operations:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -472,13 +332,8 @@
       }
     },
     "F32": {
-      "scopes": [
-        "site-operations:queues",
-        "site-operations:read"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["site-operations:queues", "site-operations:read"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -488,13 +343,8 @@
       }
     },
     "F33": {
-      "scopes": [
-        "moderation:read",
-        "moderation:write"
-      ],
-      "roles": [
-        "administrator"
-      ],
+      "scopes": ["moderation:read", "moderation:write"],
+      "roles": ["administrator"],
       "plan": null,
       "annotations": {
         "readOnlyHint": false,
@@ -504,10 +354,7 @@
       }
     },
     "F34": {
-      "scopes": [
-        "bookmarks:read",
-        "bookmarks:write"
-      ],
+      "scopes": ["bookmarks:read", "bookmarks:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -517,10 +364,7 @@
       }
     },
     "F35": {
-      "scopes": [
-        "communities:read",
-        "communities:write"
-      ],
+      "scopes": ["communities:read", "communities:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -530,10 +374,7 @@
       }
     },
     "F36": {
-      "scopes": [
-        "entity-relations:read",
-        "entity-relations:write"
-      ],
+      "scopes": ["entity-relations:read", "entity-relations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -543,10 +384,7 @@
       }
     },
     "F37": {
-      "scopes": [
-        "lists:read",
-        "lists:write"
-      ],
+      "scopes": ["lists:read", "lists:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -556,10 +394,7 @@
       }
     },
     "F38": {
-      "scopes": [
-        "cards:read",
-        "cards:write"
-      ],
+      "scopes": ["cards:read", "cards:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -569,10 +404,7 @@
       }
     },
     "F39": {
-      "scopes": [
-        "notifications:read",
-        "notifications:write"
-      ],
+      "scopes": ["notifications:read", "notifications:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -582,10 +414,7 @@
       }
     },
     "F40": {
-      "scopes": [
-        "profile:read",
-        "profile:write"
-      ],
+      "scopes": ["profile:read", "profile:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -595,10 +424,7 @@
       }
     },
     "F41": {
-      "scopes": [
-        "point-valuations:read",
-        "point-valuations:write"
-      ],
+      "scopes": ["point-valuations:read", "point-valuations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -608,10 +434,7 @@
       }
     },
     "F42": {
-      "scopes": [
-        "rewards-statuses:read",
-        "rewards-statuses:write"
-      ],
+      "scopes": ["rewards-statuses:read", "rewards-statuses:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -621,10 +444,7 @@
       }
     },
     "F43": {
-      "scopes": [
-        "spending:read",
-        "spending:write"
-      ],
+      "scopes": ["spending:read", "spending:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -634,10 +454,7 @@
       }
     },
     "F44": {
-      "scopes": [
-        "posts:read",
-        "posts:write"
-      ],
+      "scopes": ["posts:read", "posts:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -647,10 +464,7 @@
       }
     },
     "F45": {
-      "scopes": [
-        "referral-links:read",
-        "referral-links:write"
-      ],
+      "scopes": ["referral-links:read", "referral-links:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -660,10 +474,7 @@
       }
     },
     "F46": {
-      "scopes": [
-        "topic-recommendations:read",
-        "topic-recommendations:write"
-      ],
+      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -673,9 +484,7 @@
       }
     },
     "F47": {
-      "scopes": [
-        "communities:read"
-      ],
+      "scopes": ["communities:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -684,9 +493,7 @@
       }
     },
     "F48": {
-      "scopes": [
-        "reference-data:read"
-      ],
+      "scopes": ["reference-data:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -695,9 +502,7 @@
       }
     },
     "F49": {
-      "scopes": [
-        "feeds:read"
-      ],
+      "scopes": ["feeds:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -706,9 +511,7 @@
       }
     },
     "F50": {
-      "scopes": [
-        "hostnames:read"
-      ],
+      "scopes": ["hostnames:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -717,9 +520,7 @@
       }
     },
     "F51": {
-      "scopes": [
-        "lists:read"
-      ],
+      "scopes": ["lists:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -728,9 +529,7 @@
       }
     },
     "F52": {
-      "scopes": [
-        "cards:read"
-      ],
+      "scopes": ["cards:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -739,9 +538,7 @@
       }
     },
     "F53": {
-      "scopes": [
-        "profile:read"
-      ],
+      "scopes": ["profile:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -750,9 +547,7 @@
       }
     },
     "F54": {
-      "scopes": [
-        "preferences:read"
-      ],
+      "scopes": ["preferences:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -761,9 +556,7 @@
       }
     },
     "F55": {
-      "scopes": [
-        "financial-profile:read"
-      ],
+      "scopes": ["financial-profile:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -772,9 +565,7 @@
       }
     },
     "F56": {
-      "scopes": [
-        "notifications:read"
-      ],
+      "scopes": ["notifications:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -783,9 +574,7 @@
       }
     },
     "F57": {
-      "scopes": [
-        "point-valuations:read"
-      ],
+      "scopes": ["point-valuations:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -794,9 +583,7 @@
       }
     },
     "F58": {
-      "scopes": [
-        "rewards-statuses:read"
-      ],
+      "scopes": ["rewards-statuses:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -805,9 +592,7 @@
       }
     },
     "F59": {
-      "scopes": [
-        "spending:read"
-      ],
+      "scopes": ["spending:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -816,9 +601,7 @@
       }
     },
     "F60": {
-      "scopes": [
-        "recommendations:read"
-      ],
+      "scopes": ["recommendations:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -827,9 +610,7 @@
       }
     },
     "F61": {
-      "scopes": [
-        "referral-links:read"
-      ],
+      "scopes": ["referral-links:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -838,9 +619,7 @@
       }
     },
     "F62": {
-      "scopes": [
-        "rss-feed-items:read"
-      ],
+      "scopes": ["rss-feed-items:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -849,9 +628,7 @@
       }
     },
     "F63": {
-      "scopes": [
-        "rss-feeds:read"
-      ],
+      "scopes": ["rss-feeds:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -860,9 +637,7 @@
       }
     },
     "F64": {
-      "scopes": [
-        "topic-recommendations:read"
-      ],
+      "scopes": ["topic-recommendations:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -871,9 +646,7 @@
       }
     },
     "F65": {
-      "scopes": [
-        "topics:read"
-      ],
+      "scopes": ["topics:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -882,9 +655,7 @@
       }
     },
     "F66": {
-      "scopes": [
-        "users:read"
-      ],
+      "scopes": ["users:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -893,9 +664,7 @@
       }
     },
     "F67": {
-      "scopes": [
-        "web-search:read"
-      ],
+      "scopes": ["web-search:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -904,10 +673,7 @@
       }
     },
     "F68": {
-      "scopes": [
-        "lists:read",
-        "lists:write"
-      ],
+      "scopes": ["lists:read", "lists:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -917,10 +683,7 @@
       }
     },
     "F69": {
-      "scopes": [
-        "preferences:read",
-        "preferences:write"
-      ],
+      "scopes": ["preferences:read", "preferences:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -930,10 +693,7 @@
       }
     },
     "F70": {
-      "scopes": [
-        "profile:read",
-        "profile:write"
-      ],
+      "scopes": ["profile:read", "profile:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -943,10 +703,7 @@
       }
     },
     "F71": {
-      "scopes": [
-        "notifications:read",
-        "notifications:write"
-      ],
+      "scopes": ["notifications:read", "notifications:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -956,10 +713,7 @@
       }
     },
     "F72": {
-      "scopes": [
-        "entity-relations:read",
-        "entity-relations:write"
-      ],
+      "scopes": ["entity-relations:read", "entity-relations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -969,10 +723,7 @@
       }
     },
     "F73": {
-      "scopes": [
-        "entity-relations:read",
-        "entity-relations:write"
-      ],
+      "scopes": ["entity-relations:read", "entity-relations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -982,10 +733,7 @@
       }
     },
     "F74": {
-      "scopes": [
-        "posts:read",
-        "posts:write"
-      ],
+      "scopes": ["posts:read", "posts:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -995,10 +743,7 @@
       }
     },
     "F75": {
-      "scopes": [
-        "referral-links:read",
-        "referral-links:write"
-      ],
+      "scopes": ["referral-links:read", "referral-links:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1008,10 +753,7 @@
       }
     },
     "F76": {
-      "scopes": [
-        "topic-recommendations:read",
-        "topic-recommendations:write"
-      ],
+      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1021,10 +763,7 @@
       }
     },
     "F77": {
-      "scopes": [
-        "appeals:read",
-        "appeals:write"
-      ],
+      "scopes": ["appeals:read", "appeals:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1034,10 +773,7 @@
       }
     },
     "F78": {
-      "scopes": [
-        "communities:read",
-        "communities:write"
-      ],
+      "scopes": ["communities:read", "communities:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1047,10 +783,7 @@
       }
     },
     "F79": {
-      "scopes": [
-        "communities:read",
-        "communities:write"
-      ],
+      "scopes": ["communities:read", "communities:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1060,10 +793,7 @@
       }
     },
     "F80": {
-      "scopes": [
-        "posts:read",
-        "posts:write"
-      ],
+      "scopes": ["posts:read", "posts:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1073,10 +803,7 @@
       }
     },
     "F81": {
-      "scopes": [
-        "disputes:read",
-        "disputes:write"
-      ],
+      "scopes": ["disputes:read", "disputes:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1086,10 +813,7 @@
       }
     },
     "F82": {
-      "scopes": [
-        "lists:read",
-        "lists:write"
-      ],
+      "scopes": ["lists:read", "lists:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1099,10 +823,7 @@
       }
     },
     "F83": {
-      "scopes": [
-        "profile:read",
-        "profile:write"
-      ],
+      "scopes": ["profile:read", "profile:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1112,10 +833,7 @@
       }
     },
     "F84": {
-      "scopes": [
-        "referral-links:read",
-        "referral-links:write"
-      ],
+      "scopes": ["referral-links:read", "referral-links:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1125,10 +843,7 @@
       }
     },
     "F85": {
-      "scopes": [
-        "referral-links:read",
-        "referral-links:write"
-      ],
+      "scopes": ["referral-links:read", "referral-links:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1139,9 +854,7 @@
       }
     },
     "F86": {
-      "scopes": [
-        "reports:write"
-      ],
+      "scopes": ["reports:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1151,10 +864,7 @@
       }
     },
     "F87": {
-      "scopes": [
-        "topic-recommendations:read",
-        "topic-recommendations:write"
-      ],
+      "scopes": ["topic-recommendations:read", "topic-recommendations:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1164,10 +874,7 @@
       }
     },
     "F88": {
-      "scopes": [
-        "financial-profile:read",
-        "financial-profile:write"
-      ],
+      "scopes": ["financial-profile:read", "financial-profile:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1177,9 +884,7 @@
       }
     },
     "F89": {
-      "scopes": [
-        "votes:write"
-      ],
+      "scopes": ["votes:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1189,10 +894,7 @@
       }
     },
     "F90": {
-      "scopes": [
-        "rss-feed-items:read",
-        "rss-feed-items:write"
-      ],
+      "scopes": ["rss-feed-items:read", "rss-feed-items:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1202,10 +904,7 @@
       }
     },
     "F91": {
-      "scopes": [
-        "rss-feed-items:read",
-        "rss-feed-items:write"
-      ],
+      "scopes": ["rss-feed-items:read", "rss-feed-items:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1215,10 +914,7 @@
       }
     },
     "F92": {
-      "scopes": [
-        "rss-feeds:read",
-        "rss-feeds:write"
-      ],
+      "scopes": ["rss-feeds:read", "rss-feeds:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1228,9 +924,7 @@
       }
     },
     "F93": {
-      "scopes": [
-        "community-moderation:read"
-      ],
+      "scopes": ["community-moderation:read"],
       "roles": null,
       "plan": "free",
       "annotations": {
@@ -1239,10 +933,7 @@
       }
     },
     "F94": {
-      "scopes": [
-        "community-moderation:read",
-        "community-moderation:write"
-      ],
+      "scopes": ["community-moderation:read", "community-moderation:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1252,10 +943,7 @@
       }
     },
     "F95": {
-      "scopes": [
-        "community-moderation:read",
-        "community-moderation:write"
-      ],
+      "scopes": ["community-moderation:read", "community-moderation:write"],
       "roles": null,
       "plan": "plus",
       "annotations": {
@@ -1266,218 +954,39 @@
     }
   },
   "inputs": {
-    "I001": [
-      [
-        "id"
-      ]
-    ],
-    "I002": [
-      [
-        "category_text"
-      ]
-    ],
-    "I003": [
-      [
-        "item_id",
-        "story_id"
-      ]
-    ],
-    "I004": [
-      [
-        "userId"
-      ]
-    ],
-    "I005": [
-      [
-        "after",
-        "limit"
-      ]
-    ],
-    "I006": [
-      [
-        "page_id"
-      ]
-    ],
-    "I007": [
-      [
-        "range"
-      ]
-    ],
-    "I008": [
-      [
-        "action_type",
-        "actor_user_id",
-        "after",
-        "community_id",
-        "limit"
-      ]
-    ],
-    "I009": [
-      []
-    ],
-    "I010": [
-      [
-        "after",
-        "limit",
-        "user_id"
-      ]
-    ],
-    "I011": [
-      [
-        "after",
-        "limit",
-        "userId"
-      ]
-    ],
-    "I012": [
-      [
-        "after",
-        "limit",
-        "status"
-      ]
-    ],
-    "I013": [
-      [
-        "appeal_id"
-      ]
-    ],
-    "I014": [
-      [
-        "job_id"
-      ]
-    ],
-    "I015": [
-      [
-        "after",
-        "id",
-        "limit"
-      ]
-    ],
-    "I016": [
-      [
-        "after",
-        "hostname_id",
-        "limit",
-        "referral_program_id"
-      ]
-    ],
-    "I017": [
-      [
-        "dispute_id"
-      ]
-    ],
-    "I018": [
-      [
-        "namespace"
-      ]
-    ],
-    "I019": [
-      [
-        "batch_id"
-      ]
-    ],
-    "I020": [
-      [
-        "after",
-        "limit",
-        "source_flag_id",
-        "status",
-        "user_id"
-      ]
-    ],
-    "I021": [
-      [
-        "after",
-        "before",
-        "cluster",
-        "limit",
-        "sort",
-        "status"
-      ]
-    ],
-    "I022": [
-      [
-        "after",
-        "exclude_item_id",
-        "limit",
-        "story_id"
-      ]
-    ],
-    "I023": [
-      [
-        "after",
-        "limit",
-        "source",
-        "source_flag_id",
-        "status",
-        "user_id"
-      ]
-    ],
-    "I024": [
-      [
-        "id",
-        "internal_notes",
-        "public_response"
-      ]
-    ],
-    "I025": [
-      [
-        "id",
-        "updates"
-      ]
-    ],
-    "I026": [
-      [
-        "config",
-        "namespace"
-      ]
-    ],
-    "I027": [
-      [
-        "id",
-        "resolution"
-      ]
-    ],
-    "I028": [
-      [
-        "id",
-        "status"
-      ]
-    ],
-    "I029": [
-      [
-        "story_id",
-        "title"
-      ]
-    ],
-    "I030": [
-      [
-        "id",
-        "rejection_reason"
-      ]
-    ],
-    "I031": [
-      [
-        "id",
-        "revocation_reason"
-      ]
-    ],
-    "I032": [
-      [
-        "communityId",
-        "publicMessage",
-        "reason",
-        "reportId",
-        "resolveReport",
-        "userId"
-      ]
-    ],
-    "I033": [
-      [
-        "action",
-        "id"
-      ]
-    ],
+    "I001": [["id"]],
+    "I002": [["category_text"]],
+    "I003": [["item_id", "story_id"]],
+    "I004": [["userId"]],
+    "I005": [["after", "limit"]],
+    "I006": [["page_id"]],
+    "I007": [["range"]],
+    "I008": [["action_type", "actor_user_id", "after", "community_id", "limit"]],
+    "I009": [[]],
+    "I010": [["after", "limit", "user_id"]],
+    "I011": [["after", "limit", "userId"]],
+    "I012": [["after", "limit", "status"]],
+    "I013": [["appeal_id"]],
+    "I014": [["job_id"]],
+    "I015": [["after", "id", "limit"]],
+    "I016": [["after", "hostname_id", "limit", "referral_program_id"]],
+    "I017": [["dispute_id"]],
+    "I018": [["namespace"]],
+    "I019": [["batch_id"]],
+    "I020": [["after", "limit", "source_flag_id", "status", "user_id"]],
+    "I021": [["after", "before", "cluster", "limit", "sort", "status"]],
+    "I022": [["after", "exclude_item_id", "limit", "story_id"]],
+    "I023": [["after", "limit", "source", "source_flag_id", "status", "user_id"]],
+    "I024": [["id", "internal_notes", "public_response"]],
+    "I025": [["id", "updates"]],
+    "I026": [["config", "namespace"]],
+    "I027": [["id", "resolution"]],
+    "I028": [["id", "status"]],
+    "I029": [["story_id", "title"]],
+    "I030": [["id", "rejection_reason"]],
+    "I031": [["id", "revocation_reason"]],
+    "I032": [["communityId", "publicMessage", "reason", "reportId", "resolveReport", "userId"]],
+    "I033": [["action", "id"]],
     "I034": [
       [
         "claimant_contact",
@@ -1495,92 +1004,18 @@
         "work_description"
       ]
     ],
-    "I035": [
-      [
-        "intake_id",
-        "kind",
-        "rationale"
-      ]
-    ],
-    "I036": [
-      [
-        "intake_id",
-        "kind",
-        "rationale",
-        "target_ids"
-      ]
-    ],
-    "I037": [
-      [
-        "intake_id",
-        "rationale"
-      ]
-    ],
-    "I038": [
-      [
-        "id",
-        "is_accepted",
-        "rationale"
-      ]
-    ],
-    "I039": [
-      [
-        "id",
-        "rationale",
-        "resolution_kind"
-      ]
-    ],
-    "I040": [
-      [
-        "id",
-        "intentId",
-        "rationale"
-      ]
-    ],
-    "I041": [
-      [
-        "capabilityId",
-        "id",
-        "rationale"
-      ]
-    ],
-    "I042": [
-      [
-        "action",
-        "id",
-        "rationale",
-        "restrictionId"
-      ]
-    ],
-    "I043": [
-      [
-        "accountUserId",
-        "rationale"
-      ]
-    ],
-    "I044": [
-      [
-        "disposition",
-        "id",
-        "rationale"
-      ]
-    ],
-    "I045": [
-      [
-        "id",
-        "outcome",
-        "rationale"
-      ]
-    ],
-    "I046": [
-      [
-        "decisions",
-        "id",
-        "manual_fallback_reason",
-        "rationale",
-        "recommendation_id"
-      ]
-    ],
+    "I035": [["intake_id", "kind", "rationale"]],
+    "I036": [["intake_id", "kind", "rationale", "target_ids"]],
+    "I037": [["intake_id", "rationale"]],
+    "I038": [["id", "is_accepted", "rationale"]],
+    "I039": [["id", "rationale", "resolution_kind"]],
+    "I040": [["id", "intentId", "rationale"]],
+    "I041": [["capabilityId", "id", "rationale"]],
+    "I042": [["action", "id", "rationale", "restrictionId"]],
+    "I043": [["accountUserId", "rationale"]],
+    "I044": [["disposition", "id", "rationale"]],
+    "I045": [["id", "outcome", "rationale"]],
+    "I046": [["decisions", "id", "manual_fallback_reason", "rationale", "recommendation_id"]],
     "I047": [
       [
         "ccb_claim_kind",
@@ -1594,50 +1029,13 @@
         "target_ids"
       ]
     ],
-    "I048": [
-      [
-        "action",
-        "body_text",
-        "id"
-      ]
-    ],
-    "I049": [
-      [
-        "csv"
-      ]
-    ],
-    "I050": [
-      [
-        "name"
-      ]
-    ],
-    "I051": [
-      [
-        "id",
-        "private_note",
-        "reason_code",
-        "status"
-      ]
-    ],
-    "I052": [
-      [
-        "category_text",
-        "topic_id"
-      ]
-    ],
-    "I053": [
-      [
-        "body",
-        "community_id",
-        "userId"
-      ]
-    ],
-    "I054": [
-      [
-        "choice",
-        "id"
-      ]
-    ],
+    "I048": [["action", "body_text", "id"]],
+    "I049": [["csv"]],
+    "I050": [["name"]],
+    "I051": [["id", "private_note", "reason_code", "status"]],
+    "I052": [["category_text", "topic_id"]],
+    "I053": [["body", "community_id", "userId"]],
+    "I054": [["choice", "id"]],
     "I055": [
       [
         "content_selectors",
@@ -1647,42 +1045,12 @@
         "referral_program_id"
       ]
     ],
-    "I056": [
-      [
-        "reason",
-        "userId"
-      ]
-    ],
-    "I057": [
-      [
-        "userId",
-        "weight"
-      ]
-    ],
-    "I058": [
-      [
-        "entity_id",
-        "entity_type",
-        "predicate"
-      ]
-    ],
-    "I059": [
-      [
-        "community_id"
-      ]
-    ],
-    "I060": [
-      [
-        "list_id"
-      ]
-    ],
-    "I061": [
-      [
-        "entity_id",
-        "item_type",
-        "list_id"
-      ]
-    ],
+    "I056": [["reason", "userId"]],
+    "I057": [["userId", "weight"]],
+    "I058": [["entity_id", "entity_type", "predicate"]],
+    "I059": [["community_id"]],
+    "I060": [["list_id"]],
+    "I061": [["entity_id", "item_type", "list_id"]],
     "I062": [
       [
         "action",
@@ -1697,77 +1065,17 @@
         "received_sign_up_bonus_on"
       ]
     ],
-    "I063": [
-      [
-        "notification_id"
-      ]
-    ],
-    "I064": [
-      [
-        "link_id"
-      ]
-    ],
-    "I065": [
-      [
-        "action",
-        "id",
-        "note",
-        "rewards_program_id",
-        "value_per_point"
-      ]
-    ],
-    "I066": [
-      [
-        "action",
-        "expires_on",
-        "id",
-        "rewards_program_status_topic_id",
-        "started_on"
-      ]
-    ],
+    "I063": [["notification_id"]],
+    "I064": [["link_id"]],
+    "I065": [["action", "id", "note", "rewards_program_id", "value_per_point"]],
+    "I066": [["action", "expires_on", "id", "rewards_program_status_topic_id", "started_on"]],
     "I067": [
-      [
-        "action",
-        "amount",
-        "id",
-        "note",
-        "spending_category_topic_id",
-        "spending_frequency"
-      ]
+      ["action", "amount", "id", "note", "spending_category_topic_id", "spending_frequency"]
     ],
-    "I068": [
-      [
-        "after",
-        "limit",
-        "q",
-        "sort"
-      ]
-    ],
-    "I069": [
-      [
-        "after",
-        "community_id",
-        "item_type",
-        "limit"
-      ]
-    ],
-    "I070": [
-      [
-        "after",
-        "community_id",
-        "limit",
-        "role"
-      ]
-    ],
-    "I071": [
-      [
-        "after",
-        "community_id",
-        "limit",
-        "q",
-        "sort"
-      ]
-    ],
+    "I068": [["after", "limit", "q", "sort"]],
+    "I069": [["after", "community_id", "item_type", "limit"]],
+    "I070": [["after", "community_id", "limit", "role"]],
+    "I071": [["after", "community_id", "limit", "q", "sort"]],
     "I072": [
       [
         "after",
@@ -1783,13 +1091,7 @@
         "time_range"
       ]
     ],
-    "I073": [
-      [
-        "after",
-        "feed_type",
-        "limit"
-      ]
-    ],
+    "I073": [["after", "feed_type", "limit"]],
     "I074": [
       [
         "after",
@@ -1805,37 +1107,10 @@
         "time_range"
       ]
     ],
-    "I075": [
-      [
-        "after",
-        "hostname",
-        "limit",
-        "query",
-        "sort",
-        "topic"
-      ]
-    ],
-    "I076": [
-      [
-        "after",
-        "limit",
-        "topic"
-      ]
-    ],
-    "I077": [
-      [
-        "after",
-        "limit",
-        "list_id",
-        "media_type"
-      ]
-    ],
-    "I078": [
-      [
-        "entity_id",
-        "item_type"
-      ]
-    ],
+    "I075": [["after", "hostname", "limit", "query", "sort", "topic"]],
+    "I076": [["after", "limit", "topic"]],
+    "I077": [["after", "limit", "list_id", "media_type"]],
+    "I078": [["entity_id", "item_type"]],
     "I079": [
       [
         "cards_after",
@@ -1861,30 +1136,10 @@
         "text_search_query"
       ]
     ],
-    "I081": [
-      [
-        "post_id"
-      ]
-    ],
-    "I082": [
-      [
-        "after",
-        "limit",
-        "post_id"
-      ]
-    ],
-    "I083": [
-      [
-        "limit"
-      ]
-    ],
-    "I084": [
-      [
-        "after",
-        "limit",
-        "referral_program_id"
-      ]
-    ],
+    "I081": [["post_id"]],
+    "I082": [["after", "limit", "post_id"]],
+    "I083": [["limit"]],
+    "I084": [["after", "limit", "referral_program_id"]],
     "I085": [
       [
         "after",
@@ -1901,18 +1156,8 @@
         "text_search_query"
       ]
     ],
-    "I086": [
-      [
-        "rss_feed_item_id"
-      ]
-    ],
-    "I087": [
-      [
-        "after",
-        "limit",
-        "rss_feed_item_id"
-      ]
-    ],
+    "I086": [["rss_feed_item_id"]],
+    "I087": [["after", "limit", "rss_feed_item_id"]],
     "I088": [
       [
         "after",
@@ -1925,39 +1170,11 @@
         "text_search_query"
       ]
     ],
-    "I089": [
-      [
-        "rss_feed_id"
-      ]
-    ],
-    "I090": [
-      [
-        "after",
-        "limit",
-        "rss_feed_id"
-      ]
-    ],
-    "I091": [
-      [
-        "crawl_id",
-        "rss_feed_id"
-      ]
-    ],
-    "I092": [
-      [
-        "after",
-        "limit",
-        "source"
-      ]
-    ],
-    "I093": [
-      [
-        "after",
-        "limit",
-        "min_score",
-        "time_range"
-      ]
-    ],
+    "I089": [["rss_feed_id"]],
+    "I090": [["after", "limit", "rss_feed_id"]],
+    "I091": [["crawl_id", "rss_feed_id"]],
+    "I092": [["after", "limit", "source"]],
+    "I093": [["after", "limit", "min_score", "time_range"]],
     "I094": [
       [
         "after",
@@ -1971,68 +1188,15 @@
         "text_search_query"
       ]
     ],
-    "I095": [
-      [
-        "topic_id"
-      ]
-    ],
-    "I096": [
-      [
-        "children_after",
-        "children_limit",
-        "hierarchy",
-        "topic_id"
-      ]
-    ],
-    "I097": [
-      [
-        "topic_id_a",
-        "topic_id_b",
-        "vertical"
-      ]
-    ],
-    "I098": [
-      [
-        "after",
-        "limit",
-        "post_type",
-        "time_range",
-        "topic_id"
-      ]
-    ],
-    "I099": [
-      [
-        "after",
-        "limit",
-        "time_range"
-      ]
-    ],
-    "I100": [
-      [
-        "after",
-        "limit",
-        "q"
-      ]
-    ],
-    "I101": [
-      [
-        "user_id"
-      ]
-    ],
-    "I102": [
-      [
-        "limit",
-        "query"
-      ]
-    ],
-    "I103": [
-      [
-        "description",
-        "list_id",
-        "name",
-        "visibility"
-      ]
-    ],
+    "I095": [["topic_id"]],
+    "I096": [["children_after", "children_limit", "hierarchy", "topic_id"]],
+    "I097": [["topic_id_a", "topic_id_b", "vertical"]],
+    "I098": [["after", "limit", "post_type", "time_range", "topic_id"]],
+    "I099": [["after", "limit", "time_range"]],
+    "I100": [["after", "limit", "q"]],
+    "I101": [["user_id"]],
+    "I102": [["limit", "query"]],
+    "I103": [["description", "list_id", "name", "visibility"]],
     "I104": [
       [
         "community_digest_frequency",
@@ -2045,47 +1209,14 @@
         "news_digest_frequency"
       ]
     ],
-    "I105": [
-      [
-        "profile_image_id",
-        "use_display_name_from"
-      ]
-    ],
-    "I106": [
-      [
-        "markdown"
-      ]
-    ],
-    "I107": [
-      [
-        "handle",
-        "link_id",
-        "name",
-        "url"
-      ]
-    ],
+    "I105": [["profile_image_id", "use_display_name_from"]],
+    "I106": [["markdown"]],
+    "I107": [["handle", "link_id", "name", "url"]],
     "I108": [
-      [
-        "action",
-        "entity_id",
-        "entity_type",
-        "object_id",
-        "object_type",
-        "predicate"
-      ],
-      [
-        "action",
-        "post_id",
-        "tag"
-      ]
+      ["action", "entity_id", "entity_type", "object_id", "object_type", "predicate"],
+      ["action", "post_id", "tag"]
     ],
-    "I109": [
-      [
-        "action",
-        "post_id",
-        "tag"
-      ]
-    ],
+    "I109": [["action", "post_id", "tag"]],
     "I110": [
       [
         "ai_summary_markdown",
@@ -2103,12 +1234,7 @@
         "title"
       ]
     ],
-    "I111": [
-      [
-        "label",
-        "link_id"
-      ]
-    ],
+    "I111": [["label", "link_id"]],
     "I112": [
       [
         "example_referral_link",
@@ -2141,15 +1267,7 @@
         "ui_locale"
       ]
     ],
-    "I114": [
-      [
-        "appeal_reason",
-        "idempotency_key",
-        "post_removal_kind",
-        "target_id",
-        "target_type"
-      ]
-    ],
+    "I114": [["appeal_reason", "idempotency_key", "post_removal_kind", "target_id", "target_type"]],
     "I115": [
       [
         "banner_image_id",
@@ -2168,14 +1286,7 @@
         "visibility"
       ]
     ],
-    "I116": [
-      [
-        "answers",
-        "community_id",
-        "idempotency_key",
-        "message"
-      ]
-    ],
+    "I116": [["answers", "community_id", "idempotency_key", "message"]],
     "I117": [
       [
         "broadcast",
@@ -2198,46 +1309,11 @@
         "url_id"
       ]
     ],
-    "I118": [
-      [
-        "claim_text",
-        "idempotency_key",
-        "post_id",
-        "reason",
-        "topic_id"
-      ]
-    ],
-    "I119": [
-      [
-        "description",
-        "name",
-        "visibility"
-      ]
-    ],
-    "I120": [
-      [
-        "handle",
-        "link_type",
-        "name",
-        "url"
-      ]
-    ],
-    "I121": [
-      [
-        "label",
-        "referral_program_id",
-        "url"
-      ]
-    ],
-    "I122": [
-      [
-        "entity_id",
-        "entity_type",
-        "idempotency_key",
-        "note",
-        "reason"
-      ]
-    ],
+    "I118": [["claim_text", "idempotency_key", "post_id", "reason", "topic_id"]],
+    "I119": [["description", "name", "visibility"]],
+    "I120": [["handle", "link_type", "name", "url"]],
+    "I121": [["label", "referral_program_id", "url"]],
+    "I122": [["entity_id", "entity_type", "idempotency_key", "note", "reason"]],
     "I123": [
       [
         "example_referral_link",
@@ -2263,72 +1339,19 @@
         "years_of_credit_history"
       ]
     ],
-    "I125": [
-      [
-        "ids"
-      ]
-    ],
-    "I126": [
-      [
-        "copyright_notice_id",
-        "intake_id"
-      ]
-    ],
+    "I125": [["ids"]],
+    "I126": [["copyright_notice_id", "intake_id"]],
     "I127": [
-      [
-        "audience",
-        "recipient_user_ids",
-        "rss_feed_item_id"
-      ],
-      [
-        "audience",
-        "rss_feed_item_id"
-      ]
+      ["audience", "recipient_user_ids", "rss_feed_item_id"],
+      ["audience", "rss_feed_item_id"]
     ],
-    "I128": [
-      [
-        "follow",
-        "rss_feed_url"
-      ]
-    ],
-    "I129": [
-      [
-        "idempotency_key",
-        "rss_feed_item_id"
-      ]
-    ],
-    "I130": [
-      [
-        "idempotency_key",
-        "story_id"
-      ]
-    ],
-    "I131": [
-      [
-        "domain",
-        "name",
-        "reason"
-      ]
-    ],
-    "I132": [
-      [
-        "domain",
-        "name"
-      ]
-    ],
-    "I133": [
-      [
-        "domains_of"
-      ]
-    ],
-    "I134": [
-      [
-        "after",
-        "community",
-        "limit",
-        "status"
-      ]
-    ],
+    "I128": [["follow", "rss_feed_url"]],
+    "I129": [["idempotency_key", "rss_feed_item_id"]],
+    "I130": [["idempotency_key", "story_id"]],
+    "I131": [["domain", "name", "reason"]],
+    "I132": [["domain", "name"]],
+    "I133": [["domains_of"]],
+    "I134": [["after", "community", "limit", "status"]],
     "I135": [
       [
         "after",
@@ -2342,121 +1365,23 @@
         "window"
       ]
     ],
-    "I136": [
-      [
-        "after",
-        "community",
-        "limit"
-      ]
-    ],
-    "I137": [
-      [
-        "community",
-        "range"
-      ]
-    ],
-    "I138": [
-      [
-        "community",
-        "window"
-      ]
-    ],
-    "I139": [
-      [
-        "community"
-      ]
-    ],
-    "I140": [
-      [
-        "action_type",
-        "after",
-        "community",
-        "limit"
-      ]
-    ],
-    "I141": [
-      [
-        "after",
-        "community",
-        "limit",
-        "sort"
-      ]
-    ],
-    "I142": [
-      [
-        "community",
-        "expires_at",
-        "reason",
-        "user_id"
-      ]
-    ],
-    "I143": [
-      [
-        "community",
-        "url_hostname_id"
-      ]
-    ],
-    "I144": [
-      [
-        "community",
-        "post_id"
-      ]
-    ],
-    "I145": [
-      [
-        "community",
-        "rss_feed_id"
-      ]
-    ],
-    "I146": [
-      [
-        "community",
-        "topic_id"
-      ]
-    ],
-    "I147": [
-      [
-        "community",
-        "url_id"
-      ]
-    ],
-    "I148": [
-      [
-        "community",
-        "postId"
-      ]
-    ],
-    "I149": [
-      [
-        "community",
-        "reportId"
-      ]
-    ],
-    "I150": [
-      [
-        "community",
-        "expires_at",
-        "reason",
-        "restriction_types"
-      ]
-    ],
-    "I151": [
-      [
-        "body",
-        "community",
-        "title"
-      ]
-    ],
-    "I152": [
-      [
-        "community",
-        "publicMessage",
-        "reason",
-        "reportId",
-        "resolveReport",
-        "userId"
-      ]
-    ],
+    "I136": [["after", "community", "limit"]],
+    "I137": [["community", "range"]],
+    "I138": [["community", "window"]],
+    "I139": [["community"]],
+    "I140": [["action_type", "after", "community", "limit"]],
+    "I141": [["after", "community", "limit", "sort"]],
+    "I142": [["community", "expires_at", "reason", "user_id"]],
+    "I143": [["community", "url_hostname_id"]],
+    "I144": [["community", "post_id"]],
+    "I145": [["community", "rss_feed_id"]],
+    "I146": [["community", "topic_id"]],
+    "I147": [["community", "url_id"]],
+    "I148": [["community", "postId"]],
+    "I149": [["community", "reportId"]],
+    "I150": [["community", "expires_at", "reason", "restriction_types"]],
+    "I151": [["body", "community", "title"]],
+    "I152": [["community", "publicMessage", "reason", "reportId", "resolveReport", "userId"]],
     "I153": [
       [
         "archive",
@@ -2474,96 +1399,19 @@
         "visibility"
       ]
     ],
-    "I154": [
-      [
-        "community",
-        "id",
-        "reason",
-        "status"
-      ]
-    ],
-    "I155": [
-      [
-        "community",
-        "should_suppress_community_digests_while_on_vacation"
-      ]
-    ],
-    "I156": [
-      [
-        "assigned_moderator_user_id",
-        "community",
-        "conversationId",
-        "resolved"
-      ]
-    ],
-    "I157": [
-      [
-        "community",
-        "should_allow_data_point_posts",
-        "should_allow_review_posts"
-      ]
-    ],
-    "I158": [
-      [
-        "community",
-        "postId",
-        "private_note",
-        "reason",
-        "reason_code",
-        "status"
-      ]
-    ],
-    "I159": [
-      [
-        "community",
-        "reportId",
-        "status"
-      ]
-    ],
-    "I160": [
-      [
-        "community",
-        "questions"
-      ]
-    ],
-    "I161": [
-      [
-        "community",
-        "ends_at"
-      ]
-    ],
-    "I162": [
-      [
-        "community",
-        "post_ids"
-      ]
-    ],
-    "I163": [
-      [
-        "community",
-        "userId"
-      ]
-    ],
-    "I164": [
-      [
-        "community",
-        "id"
-      ]
-    ],
-    "I165": [
-      [
-        "community",
-        "itemId"
-      ]
-    ],
-    "I166": [
-      [
-        "after",
-        "community",
-        "limit",
-        "window"
-      ]
-    ]
+    "I154": [["community", "id", "reason", "status"]],
+    "I155": [["community", "should_suppress_community_digests_while_on_vacation"]],
+    "I156": [["assigned_moderator_user_id", "community", "conversationId", "resolved"]],
+    "I157": [["community", "should_allow_data_point_posts", "should_allow_review_posts"]],
+    "I158": [["community", "postId", "private_note", "reason", "reason_code", "status"]],
+    "I159": [["community", "reportId", "status"]],
+    "I160": [["community", "questions"]],
+    "I161": [["community", "ends_at"]],
+    "I162": [["community", "post_ids"]],
+    "I163": [["community", "userId"]],
+    "I164": [["community", "id"]],
+    "I165": [["community", "itemId"]],
+    "I166": [["after", "community", "limit", "window"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -3809,11 +2657,7 @@
         "surface": "admin_mcp",
         "facts": "F22",
         "inputFields": "I051",
-        "requestBodyFields": [
-          "private_note",
-          "reason_code",
-          "status"
-        ],
+        "requestBodyFields": ["private_note", "reason_code", "status"],
         "operation": {
           "tool": "approve_post_clearance",
           "option": null
@@ -3824,11 +2668,7 @@
         "surface": "admin_mcp",
         "facts": "F33",
         "inputFields": "I051",
-        "requestBodyFields": [
-          "private_note",
-          "reason_code",
-          "status"
-        ],
+        "requestBodyFields": ["private_note", "reason_code", "status"],
         "operation": {
           "tool": "set_post_clearance",
           "option": null
@@ -5198,9 +4038,7 @@
         "surface": "mcp",
         "facts": "F72",
         "inputFields": "I108",
-        "requestBodyFields": [
-          "categories"
-        ],
+        "requestBodyFields": ["categories"],
         "operation": {
           "tool": "add_entity_relation",
           "option": null
@@ -5211,9 +4049,7 @@
         "surface": "mcp",
         "facts": "F73",
         "inputFields": "I109",
-        "requestBodyFields": [
-          "categories"
-        ],
+        "requestBodyFields": ["categories"],
         "operation": {
           "tool": "remove_entity_relation",
           "option": null
@@ -5639,9 +4475,7 @@
           },
           "decision": false,
           "inputFields": "I054",
-          "requestBodyFields": [
-            "choice"
-          ]
+          "requestBodyFields": ["choice"]
         }
       ]
     },
@@ -5673,9 +4507,7 @@
           },
           "decision": false,
           "inputFields": "I054",
-          "requestBodyFields": [
-            "choice"
-          ]
+          "requestBodyFields": ["choice"]
         }
       ]
     },
@@ -5707,9 +4539,7 @@
           },
           "decision": false,
           "inputFields": "I054",
-          "requestBodyFields": [
-            "choice"
-          ]
+          "requestBodyFields": ["choice"]
         }
       ]
     },
@@ -5789,10 +4619,7 @@
           },
           "decision": false,
           "inputFields": "I127",
-          "requestBodyFields": [
-            "audience",
-            "recipient_user_ids"
-          ]
+          "requestBodyFields": ["audience", "recipient_user_ids"]
         }
       ]
     },
@@ -5808,10 +4635,7 @@
           },
           "decision": false,
           "inputFields": "I128",
-          "requestBodyFields": [
-            "follow",
-            "rss_feed_url"
-          ]
+          "requestBodyFields": ["follow", "rss_feed_url"]
         }
       ]
     },
@@ -5854,9 +4678,7 @@
           "surface": "admin_mcp",
           "facts": "F30",
           "inputFields": "I131",
-          "requestBodyFields": [
-            "reason"
-          ],
+          "requestBodyFields": ["reason"],
           "operation": {
             "tool": "pause_queue",
             "option": null
@@ -6110,13 +4932,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I142",
-          "requestBodyFields": [
-            "expires_at",
-            "reason",
-            "user_id"
-          ],
+          "requestBodyFields": ["expires_at", "reason", "user_id"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "ban_user"
@@ -6130,11 +4948,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I143",
-          "requestBodyFields": [
-            "url_hostname_id"
-          ],
+          "requestBodyFields": ["url_hostname_id"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "add_domain_to_list"
@@ -6148,11 +4964,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I144",
-          "requestBodyFields": [
-            "post_id"
-          ],
+          "requestBodyFields": ["post_id"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "add_post_to_list"
@@ -6166,11 +4980,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I145",
-          "requestBodyFields": [
-            "rss_feed_id"
-          ],
+          "requestBodyFields": ["rss_feed_id"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "add_rss_feed_to_list"
@@ -6184,11 +4996,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I146",
-          "requestBodyFields": [
-            "topic_id"
-          ],
+          "requestBodyFields": ["topic_id"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "add_topic_to_list"
@@ -6202,11 +5012,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I147",
-          "requestBodyFields": [
-            "url_id"
-          ],
+          "requestBodyFields": ["url_id"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "add_url_to_list"
@@ -6220,7 +5028,7 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
           "operation": {
@@ -6236,7 +5044,7 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
           "operation": {
@@ -6252,7 +5060,7 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
           "operation": {
@@ -6268,7 +5076,7 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
           "operation": {
@@ -6284,7 +5092,7 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
           "operation": {
@@ -6300,13 +5108,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I150",
-          "requestBodyFields": [
-            "expires_at",
-            "reason",
-            "restriction_types"
-          ],
+          "requestBodyFields": ["expires_at", "reason", "restriction_types"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "activate_restrictions"
@@ -6320,12 +5124,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I151",
-          "requestBodyFields": [
-            "body",
-            "title"
-          ],
+          "requestBodyFields": ["body", "title"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "create_saved_reply"
@@ -6339,15 +5140,9 @@
       "contracts": [
         {
           "surface": "mcp",
-          "facts": "F94",
+          "facts": "F95",
           "inputFields": "I152",
-          "requestBodyFields": [
-            "publicMessage",
-            "reason",
-            "reportId",
-            "resolveReport",
-            "userId"
-          ],
+          "requestBodyFields": ["publicMessage", "reason", "reportId", "resolveReport", "userId"],
           "operation": {
             "tool": "add_community_moderation",
             "option": "issue_warning"
@@ -6392,10 +5187,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I154",
-          "requestBodyFields": [
-            "reason",
-            "status"
-          ],
+          "requestBodyFields": ["reason", "status"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "review_application"
@@ -6411,9 +5203,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I155",
-          "requestBodyFields": [
-            "should_suppress_community_digests_while_on_vacation"
-          ],
+          "requestBodyFields": ["should_suppress_community_digests_while_on_vacation"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "set_vacation_digest_preference"
@@ -6429,10 +5219,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I156",
-          "requestBodyFields": [
-            "assigned_moderator_user_id",
-            "resolved"
-          ],
+          "requestBodyFields": ["assigned_moderator_user_id", "resolved"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "update_modmail_thread"
@@ -6448,10 +5235,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I157",
-          "requestBodyFields": [
-            "should_allow_data_point_posts",
-            "should_allow_review_posts"
-          ],
+          "requestBodyFields": ["should_allow_data_point_posts", "should_allow_review_posts"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "update_post_type_settings"
@@ -6467,12 +5251,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I158",
-          "requestBodyFields": [
-            "private_note",
-            "reason",
-            "reason_code",
-            "status"
-          ],
+          "requestBodyFields": ["private_note", "reason", "reason_code", "status"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "moderate_post"
@@ -6488,9 +5267,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I159",
-          "requestBodyFields": [
-            "status"
-          ],
+          "requestBodyFields": ["status"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "resolve_report"
@@ -6506,9 +5283,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I160",
-          "requestBodyFields": [
-            "questions"
-          ],
+          "requestBodyFields": ["questions"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "set_application_questions"
@@ -6524,9 +5299,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I161",
-          "requestBodyFields": [
-            "ends_at"
-          ],
+          "requestBodyFields": ["ends_at"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "set_moderator_vacation"
@@ -6542,9 +5315,7 @@
           "surface": "mcp",
           "facts": "F95",
           "inputFields": "I162",
-          "requestBodyFields": [
-            "post_ids"
-          ],
+          "requestBodyFields": ["post_ids"],
           "operation": {
             "tool": "update_community_moderation",
             "option": "set_pinned_posts"

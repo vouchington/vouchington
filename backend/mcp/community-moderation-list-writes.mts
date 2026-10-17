@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import { addCommunityListItem, removeCommunityListItem } from '@services/communities'
 import { isAdminUser } from '@services/users'
 import {
@@ -27,7 +28,12 @@ async function addItem(
     type,
     args[key] as string,
     kind === 'domain' ? { isAdministrator: isAdminUser(user) } : undefined,
-  )
+  ).catch(err => {
+    // Only the topic REST twin translates duplicate insertions to a conflict.
+    if (kind === 'topic' && (err as { code?: string }).code === '23505')
+      throw createHttpError(409, 'Item already in list', { cause: err })
+    throw err
+  })
   return { community_list_item: item }
 }
 

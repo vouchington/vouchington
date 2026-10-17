@@ -16,6 +16,7 @@ import {
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { searchCommunityListItems } from '@services/communities/list-items/get'
+import { communityModerationListWrites } from './community-moderation-list-writes.mts'
 
 const scopes = ['community-moderation:read', 'community-moderation:write'] as const
 const cases = [
@@ -114,5 +115,28 @@ describe('community moderation MCP list writes — real PostgreSQL and Valkey', 
       await callStructuredMcpTool(owner, 'remove_community_moderation', removeArgs, scopes),
     ).toEqual({ success: true })
     expect((await searchCommunityListItems(community.id, entry.entityType)).results).toEqual([])
+  })
+
+  it('returns the topic REST conflict for duplicate insertions', async () => {
+    const owner = await createTestPlusMcpCaller()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
+    const topicId = await entityFor('topic', owner.id, community.id)
+    const args = { community: community.slug, topic_id: topicId }
+    const envelope = optionArgs('add_topic_to_list', args)
+    const added = await callStructuredMcpTool(owner, 'add_community_moderation', envelope, scopes)
+    await expect(
+      communityModerationListWrites['add_topic_to_list']!(owner, args),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Item already in list',
+      cause: expect.objectContaining({ code: '23505' }),
+    })
+    expect(
+      await callRejectedMcpTool(owner, 'add_community_moderation', envelope, scopes),
+    ).toContain('Item already in list')
+    expect((await searchCommunityListItems(community.id, 'topic')).results).toEqual([
+      expect.objectContaining({ id: (added.community_list_item as { id: string }).id }),
+    ])
   })
 })

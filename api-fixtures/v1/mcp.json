@@ -14977,7 +14977,7 @@
                                     "type": "number"
                                   },
                                   "internal_response": {
-                                    "type": "string"
+                                    "$ref": "#/$defs/S3"
                                   },
                                   "is_stale": {
                                     "type": "boolean"
