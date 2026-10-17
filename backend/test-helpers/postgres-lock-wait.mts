@@ -104,3 +104,61 @@ export async function waitForTestPostgresLockWaiter(
     throw new Error(`Operation did not wait for the test lock: ${queryMarker}`, { cause: err })
   })
 }
+
+/**
+ * Waits until one backend is blocked by `holderProcessId` on `directQueryMarker` and a second
+ * backend is blocked by that first backend on one of `blockedByDirectQueryMarkers`.
+ *
+ * Use this when the second operation cannot reach the holder's lock because the first operation
+ * already holds a conflicting row lock. `pg_blocking_pids` reports only the direct blocker, so
+ * the second wait is the transitive link.
+ */
+export async function waitForTestPostgresBlockedLockChain(
+  holderProcessId: number,
+  directQueryMarker: string,
+  blockedByDirectQueryMarkers: readonly string[],
+  observerPool: 'write' | 'advisoryLock' | QueryExecutor = 'advisoryLock',
+): Promise<void> {
+  const directPattern = `%${directQueryMarker}%`
+  const blockedPatterns = blockedByDirectQueryMarkers.map(marker => `%${marker}%`)
+  await pollUntilNotNull(
+    async () => {
+      if (typeof observerPool === 'function') {
+        await observerPool(sql`/* waitForTestPostgresBlockedLockChain.refresh */
+          SELECT pg_stat_clear_snapshot()`)
+      }
+      const observation = sql`
+        /* waitForTestPostgresBlockedLockChain */
+        SELECT EXISTS (
+          SELECT 1
+          FROM pg_stat_activity direct_waiter
+          JOIN pg_stat_activity indirect_waiter
+            ON direct_waiter.pid = ANY(pg_blocking_pids(indirect_waiter.pid))
+          WHERE direct_waiter.pid <> pg_backend_pid()
+            AND indirect_waiter.pid <> pg_backend_pid()
+            AND direct_waiter.state = 'active'
+            AND indirect_waiter.state = 'active'
+            AND direct_waiter.wait_event_type = 'Lock'
+            AND indirect_waiter.wait_event_type = 'Lock'
+            AND direct_waiter.query LIKE ${directPattern}
+            AND ${holderProcessId} = ANY(pg_blocking_pids(direct_waiter.pid))
+            AND indirect_waiter.query LIKE ANY(${blockedPatterns}::text[])
+        ) AS waiting
+      `
+      const { rows } =
+        typeof observerPool === 'function'
+          ? await observerPool<{ waiting: boolean }>(observation)
+          : observerPool === 'advisoryLock'
+            ? await advisoryLockPool.query<{ waiting: boolean }>(observation)
+            : await write<{ waiting: boolean }>(observation)
+      return rows[0]?.waiting ? true : null
+    },
+    5_000,
+    10,
+  ).catch(err => {
+    throw new Error(
+      `Operations did not form a lock chain behind the test holder: ${directQueryMarker}`,
+      { cause: err },
+    )
+  })
+}
