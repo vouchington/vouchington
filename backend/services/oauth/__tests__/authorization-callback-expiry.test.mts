@@ -39,7 +39,7 @@ describe('OAuth authorization callback expiry', () => {
     const state = randomUUID()
     const providerUserId = `completed-callback-${randomUUID()}`
     const user = await createTestUser()
-    await insertTestOAuthAccount('github', providerUserId)
+    const account = await insertTestOAuthAccount('github', providerUserId)
     const authorizationId = await insertTestOAuthAuthorization({
       state,
       status: 'completed',
@@ -68,7 +68,7 @@ describe('OAuth authorization callback expiry', () => {
     ).rejects.toMatchObject({ status: 410 })
     expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
       status: 'completed',
-      github_user_id: providerUserId,
+      github_account_id: account.account_id,
       result_kind: 'authenticated',
       result_user_id: user.id,
     })

@@ -82,12 +82,12 @@ export async function sanitizeOAuthAccountPii(
         refresh_token_ciphertext = NULL,
         access_token_expires_at = NULL
     WHERE user_id = ${userId}
-    RETURNING github_user_id
+    RETURNING id
   `)
 
   const facebookAccountIds = (facebookRows as { id: string }[]).map(r => r.id)
   const xAccountIds = (xRows as { id: string }[]).map(r => r.id)
-  const githubUserIds = (githubRows as { github_user_id: string }[]).map(r => r.github_user_id)
+  const githubAccountIds = (githubRows as { id: string }[]).map(r => r.id)
 
   if (facebookAccountIds.length > 0) {
     await query(sql`/* sanitizeOAuthAccountPii */
@@ -103,10 +103,10 @@ export async function sanitizeOAuthAccountPii(
     `)
   }
 
-  if (githubUserIds.length > 0) {
+  if (githubAccountIds.length > 0) {
     await query(sql`/* sanitizeOAuthAccountPii */
       DELETE FROM github_friends
-      WHERE github_user_id = ANY(${githubUserIds}::text[])
+      WHERE github_account_id = ANY(${githubAccountIds}::uuid[])
     `)
   }
 }

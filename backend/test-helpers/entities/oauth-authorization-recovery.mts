@@ -18,7 +18,7 @@ export async function completeTestOAuthAuthorizationWhileRecoverySkipsLockedRow<
     await holder(
       `/* completeTestOAuthAuthorizationWhileRecoverySkipsLockedRow:complete */
        UPDATE oauth_authorizations
-       SET github_user_id = $2, callback_code_ciphertext = NULL,
+       SET github_account_id = (SELECT id FROM github_accounts WHERE github_user_id = $2), callback_code_ciphertext = NULL,
            exchange_claim_id = NULL, completion_ready_at = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [authorizationId, githubUserId],

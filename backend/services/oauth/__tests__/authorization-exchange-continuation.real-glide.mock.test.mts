@@ -231,7 +231,7 @@ describe('OAuth authorization exchange durable queue continuation', () => {
         })
       })
       await createTestUserWithId(userId, createTestUsername())
-      await insertTestOAuthAccount('github', accountId)
+      const account = await insertTestOAuthAccount('github', accountId)
       await connectTestOAuthAccount('github', userId, accountId)
       const id = await insertTestOAuthAuthorization({
         provider: 'github',
@@ -247,7 +247,7 @@ describe('OAuth authorization exchange durable queue continuation', () => {
       })
       ids.push(id)
       const before = await getTestOAuthAuthorization(id)
-      expect(before).toMatchObject({ status, github_user_id: accountId })
+      expect(before).toMatchObject({ status, github_account_id: account.account_id })
       await expect(settleOAuthAuthorizationExchangeClaim(id, randomUUID())).resolves.toBe(
         'terminal',
       )

@@ -28,7 +28,7 @@ SELECT
   flow.completion_token_ciphertext,
   flow.facebook_account_id,
   flow.x_account_id,
-  flow.github_user_id,
+  flow.github_account_id,
   flow.result_kind,
   flow.result_user_id,
   flow.result_device_id,

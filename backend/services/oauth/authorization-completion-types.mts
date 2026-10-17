@@ -38,7 +38,7 @@ export type CompletionRow = {
   callback_error: string | null
   facebook_account_id: string | null
   x_account_id: string | null
-  github_user_id: string | null
+  github_account_id: string | null
   linkedin_account_id: string | null
   microsoft_account_id: string | null
   result_kind: 'authenticated' | 'mfa_required' | 'connected' | null

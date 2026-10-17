@@ -22,11 +22,11 @@ export async function processUserDeletionCredentialsBatch(userId: string, batchS
           ORDER BY friend.x_account_id, friend.x_friend_id LIMIT ${batchSize}
         )`,
       sql`/* processUserDeletionCredentials:githubFriends */
-        DELETE FROM github_friends WHERE (github_user_id, github_friend_id) IN (
-          SELECT friend.github_user_id, friend.github_friend_id FROM github_friends friend
-          JOIN github_accounts account USING (github_user_id)
+        DELETE FROM github_friends WHERE (github_account_id, github_friend_id) IN (
+          SELECT friend.github_account_id, friend.github_friend_id FROM github_friends friend
+          JOIN github_accounts account ON account.id = friend.github_account_id
           WHERE account.user_id = ${userId}
-          ORDER BY friend.github_user_id, friend.github_friend_id LIMIT ${batchSize}
+          ORDER BY friend.github_account_id, friend.github_friend_id LIMIT ${batchSize}
         )`,
       sql`/* processUserDeletionCredentials:blueskyFollows */
         DELETE FROM bluesky_follow_records WHERE (follower_user_id, followee_user_id) IN (

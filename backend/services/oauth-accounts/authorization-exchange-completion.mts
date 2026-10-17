@@ -21,7 +21,7 @@ export async function completeOAuthAuthorizationExchange(
   const providerIdColumn = {
     facebook: 'facebook_account_id',
     x: 'x_account_id',
-    github: 'github_user_id',
+    github: 'github_account_id',
     linkedin: 'linkedin_account_id',
     microsoft: 'microsoft_account_id',
   }[provider]

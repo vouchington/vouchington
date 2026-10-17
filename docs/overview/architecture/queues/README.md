@@ -23,6 +23,9 @@ The [URL/domain blacklist queue](urls-domains-blacklist/README.md) runs a five-m
 bounded sweep of durable hostname-policy cache invalidations after sync, staff block,
 and unblock writers enqueue changed hostname IDs in PostgreSQL.
 
+The [find-your-friends queue](find-your-friends/README.md) carries provider-account UUIDs in sync
+jobs and bounded sweep cursors; workers resolve external IDs only when calling provider APIs.
+
 ## Background queue
 
 [`background`](background/README.md) is the shared IO queue for background domains of the same

@@ -29,9 +29,10 @@ describe('friend dispatcher continuations', () => {
     it(`reaches ${provider} tails despite unfinished earlier accounts`, async () => {
       const prefix = `bounded-${randomUUID()}`
       const ids = ['a', 'b', 'c'].map(suffix => `${prefix}-${suffix}`)
+      const accountIds: string[] = []
       for (const id of ids) {
         const owner = await createTestUser()
-        await insertTestOAuthAccount(provider, id)
+        accountIds.push((await insertTestOAuthAccount(provider, id)).account_id!)
         await connectTestOAuthAccount(provider, owner.id, id)
         await setTestOAuthAccountTokens(provider, id, { accessToken: 'synthetic-access-token' })
       }
@@ -44,8 +45,8 @@ describe('friend dispatcher continuations', () => {
       const sweepStartedAt = await readTestDatabaseTimestamp()
       const data: FriendsDispatchData = {
         sweepStartedAt,
-        upperIds: { facebook: null, x: null, github: null, [provider]: ids[2]! },
-        afterIds: { [provider]: `${prefix}-0` },
+        upperIds: { facebook: null, x: null, github: null, [provider]: accountIds[2]! },
+        afterIds: { [provider]: '00000000-0000-0000-0000-000000000000' },
       }
       const saved: FriendsDispatchData[] = []
       expect(
@@ -54,10 +55,10 @@ describe('friend dispatcher continuations', () => {
         }),
       ).toEqual({ count: 1, hasMore: true })
       const resumed = saved.at(-1)!
-      expect(resumed.afterIds?.[provider]).toBe(ids[0])
+      expect(resumed.afterIds?.[provider]).toBe(accountIds[0])
       const laterId = `${prefix}-bb`
       const laterOwner = await createTestUser()
-      await insertTestOAuthAccount(provider, laterId)
+      const laterAccountId = (await insertTestOAuthAccount(provider, laterId)).account_id!
       await connectTestOAuthAccount(provider, laterOwner.id, laterId)
       await setTestOAuthAccountTokens(provider, laterId, { accessToken: 'synthetic-access-token' })
       expect(await processFindYourFriendsDispatcher(undefined, resumed)).toEqual({
@@ -67,7 +68,7 @@ describe('friend dispatcher continuations', () => {
       expect(
         await processFindYourFriendsDispatcher(undefined, {
           ...resumed,
-          afterIds: { ...resumed.afterIds, [provider]: ids[1]! },
+          afterIds: { ...resumed.afterIds, [provider]: accountIds[1]! },
         }),
       ).toEqual({ count: 1, hasMore: false })
       // No sync job has run: the first account remains eligible and is retried on a new sweep.
@@ -80,9 +81,11 @@ describe('friend dispatcher continuations', () => {
         x: 'syncXFriends',
         github: 'syncGithubFriends',
       }[provider]
-      const key = { facebook: 'facebookUserId', x: 'xUserId', github: 'githubUserId' }[provider]
+      const key = { facebook: 'facebookAccountId', x: 'xAccountId', github: 'githubAccountId' }[
+        provider
+      ]
       expect(
-        await findYourFriendsQueue.searchJobs({ name: syncName, data: { [key]: laterId } }),
+        await findYourFriendsQueue.searchJobs({ name: syncName, data: { [key]: laterAccountId } }),
       ).toEqual([])
     })
   }

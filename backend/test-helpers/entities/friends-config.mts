@@ -19,7 +19,7 @@ const FRIENDS_TABLE_CONFIGS: Partial<Record<OAuthProvider, FriendsTableConfig>> 
   },
   github: {
     table: 'github_friends',
-    userIdColumn: 'github_user_id',
+    userIdColumn: 'github_account_id',
     friendIdColumn: 'github_friend_id',
   },
 }
@@ -34,7 +34,7 @@ export function sourceAccountId(provider: OAuthProvider): string {
   if (provider === 'facebook')
     return '(SELECT id FROM facebook_accounts WHERE facebook_user_id = $1)'
   if (provider === 'x') return '(SELECT id FROM x_accounts WHERE x_user_id = $1)'
-  return '$1'
+  return '(SELECT id FROM github_accounts WHERE github_user_id = $1)'
 }
 
 export function friendAccountReference(
@@ -53,5 +53,8 @@ export function friendAccountReference(
       value: `, (SELECT id FROM x_accounts WHERE x_user_id = ${friendIdExpression})`,
     }
   }
-  return { column: '', value: '' }
+  return {
+    column: ', friend_github_account_id',
+    value: `, (SELECT id FROM github_accounts WHERE github_user_id = ${friendIdExpression})`,
+  }
 }

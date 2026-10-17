@@ -70,7 +70,7 @@ function completionRow(overrides: Partial<CompletionRow> = {}): CompletionRow {
     callback_error: null,
     facebook_account_id: null,
     x_account_id: null,
-    github_user_id: 'github-user',
+    github_account_id: 'github-user',
     linkedin_account_id: null,
     microsoft_account_id: null,
     result_kind: null,

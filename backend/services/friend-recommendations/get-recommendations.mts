@@ -88,8 +88,8 @@ WITH friends AS (
         'github'::TEXT AS provider,
         COALESCE(ga.github_user_data->>'name', ga.github_user_data->>'login', '') AS provider_friend_name
       FROM github_friends gf
-      JOIN github_accounts my_ga ON my_ga.github_user_id = gf.github_user_id
-      JOIN github_accounts ga ON ga.github_user_id = gf.github_friend_id
+      JOIN github_accounts my_ga ON my_ga.id = gf.github_account_id
+      JOIN github_accounts ga ON ga.id = gf.friend_github_account_id
       JOIN users u ON u.id = ga.user_id
       WHERE my_ga.user_id = $1
         AND u.deleted_at IS NULL

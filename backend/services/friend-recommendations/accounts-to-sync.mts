@@ -2,7 +2,7 @@ import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { getFriendsDispatchLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
 
-export type AccountToSync = { provider_user_id: string }
+export type AccountToSync = { id: string }
 export type AccountSyncSweepOptions = {
   sweepStartedAt?: string
   afterId?: string
@@ -21,9 +21,23 @@ export async function getFriendAccountSweepUpperId(
   provider: FriendSyncProvider,
 ): Promise<string | null> {
   const { rows } = await read<{ id: string }>(
-    `/* getFriendAccountSweepUpperId */ SELECT ${PROVIDERS[provider]} AS id FROM ${provider}_accounts ORDER BY ${PROVIDERS[provider]} DESC LIMIT 1`,
+    `/* getFriendAccountSweepUpperId */ SELECT id FROM ${provider}_accounts ORDER BY id DESC LIMIT 1`,
   )
   return rows[0]?.id ?? null
+}
+
+export async function getFriendSyncProviderUserId(
+  provider: FriendSyncProvider,
+  accountId: string,
+): Promise<string | null> {
+  const { rows } = await read<{ provider_user_id: string }>(
+    `/* getFriendSyncProviderUserId */ SELECT account.${PROVIDERS[provider]} AS provider_user_id
+     FROM ${provider}_accounts account
+     JOIN users linked_user ON linked_user.id = account.user_id
+     WHERE account.id = $1::uuid AND linked_user.deleted_at IS NULL`,
+    [accountId],
+  )
+  return rows[0]?.provider_user_id ?? null
 }
 
 async function* streamAccounts(provider: FriendSyncProvider, options: AccountSyncSweepOptions) {
@@ -31,16 +45,15 @@ async function* streamAccounts(provider: FriendSyncProvider, options: AccountSyn
   const sweepStartedAt = options.sweepStartedAt ?? new Date().toISOString()
   const upperId =
     options.upperId !== undefined ? options.upperId : await getFriendAccountSweepUpperId(provider)
-  const id = PROVIDERS[provider]
   return yield* createAsyncGeneratorFromCursor<AccountToSync>(
-    `/* streamAccountsToSync */ SELECT ${id} AS provider_user_id
+    `/* streamAccountsToSync */ SELECT id
      FROM ${provider}_accounts
-     WHERE ${id} <= $1 AND ($2::text IS NULL OR ${id} > $2)
+     WHERE id <= $1::uuid AND ($2::uuid IS NULL OR id > $2::uuid)
        AND created_at <= $3::timestamptz
        AND user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL
        ${provider === 'x' ? 'AND (access_token_expires_at IS NULL OR access_token_expires_at > $3::timestamptz OR refresh_token_ciphertext IS NOT NULL)' : ''}
        AND (friends_synced_at IS NULL OR friends_synced_at < $3::timestamptz - INTERVAL '24 hours')
-     ORDER BY ${id}`,
+     ORDER BY id`,
     [upperId, options.afterId ?? null, sweepStartedAt],
     { batchSize: limits.batchSize, maxRows: limits.maxRows, onComplete: options.onComplete },
   )

@@ -27,4 +27,14 @@ export async function resolveFriendAccountReferences(
       [account.account_id, providerUserId],
     )
   }
+  if (provider === 'github') {
+    if (!account.account_id) throw new Error('GitHub account has no internal id')
+    await query(
+      `/* resolveGithubFriendAccounts */ UPDATE github_friends
+       SET friend_github_account_id = $1
+       WHERE github_friend_id = $2
+         AND friend_github_account_id IS DISTINCT FROM $1`,
+      [account.account_id, providerUserId],
+    )
+  }
 }

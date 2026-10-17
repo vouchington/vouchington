@@ -144,20 +144,27 @@ describe('OAuth authorization broker callback', () => {
     const providerUserId = `broker-exchange-${randomUUID()}`
     cleanup.githubUserIds.push(providerUserId)
 
-    await upsertOAuthAccount('github', providerUserId, null, { login: providerUserId }, undefined, {
-      authorizationId: flowId,
-      authorizationClaimId: claimId,
-    })
+    const account = await upsertOAuthAccount(
+      'github',
+      providerUserId,
+      null,
+      { login: providerUserId },
+      undefined,
+      {
+        authorizationId: flowId,
+        authorizationClaimId: claimId,
+      },
+    )
 
     const row = await getTestOAuthAuthorization(flowId)
     expect({
       status: row?.status,
-      github_user_id: row?.github_user_id,
+      github_account_id: row?.github_account_id,
       callback_code_ciphertext: row?.callback_code_ciphertext,
       exchange_claim_id: row?.exchange_claim_id,
     }).toEqual({
       status: 'completion_ready',
-      github_user_id: providerUserId,
+      github_account_id: account.account_id,
       callback_code_ciphertext: null,
       exchange_claim_id: null,
     })
