@@ -63,5 +63,5 @@ export const updateCommunityPostTypeSettings: CommunityModerationHandler = async
     membership,
   )
   const { owner: _owner, ...communityData } = updated
-  return { community: await attachWrittenCommunityProvenance(communityData, user) }
+  return { community: await attachWrittenCommunityProvenance(communityData, null) }
 }
