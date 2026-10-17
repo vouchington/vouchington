@@ -67,8 +67,12 @@ export async function seedFriendRecommendation(): Promise<void> {
       ],
     )
     await query(
-      `/* seedExplainData */ INSERT INTO facebook_friends (facebook_user_id, facebook_friend_id)
-       VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `/* seedExplainData */ INSERT INTO facebook_friends
+       (facebook_account_id, facebook_friend_id, friend_facebook_account_id)
+       SELECT owner.id, $2,
+         (SELECT id FROM facebook_accounts WHERE facebook_user_id = $2)
+       FROM facebook_accounts owner
+       WHERE owner.facebook_user_id = $1 ON CONFLICT DO NOTHING`,
       [seedUserFacebookId, friendFacebookId],
     )
 

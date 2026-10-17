@@ -30,7 +30,7 @@ CREATE TABLE oauth_authorizations (
   callback_error TEXT,
   completion_token_hash TEXT,
   completion_token_ciphertext TEXT,
-  facebook_user_id TEXT REFERENCES facebook_accounts(facebook_user_id) ON DELETE CASCADE,
+  facebook_account_id UUID REFERENCES facebook_accounts(id) ON DELETE CASCADE,
   x_user_id TEXT REFERENCES x_accounts(x_user_id) ON DELETE CASCADE,
   github_user_id TEXT REFERENCES github_accounts(github_user_id) ON DELETE CASCADE,
   linkedin_account_id UUID,
@@ -59,13 +59,13 @@ CREATE TABLE oauth_authorizations (
     (callback_mode = 'native' AND completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$')
     OR (callback_mode = 'web' AND completion_proof_challenge IS NULL)
   ),
-  CHECK (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1),
+  CHECK (num_nonnulls(facebook_account_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1),
   CHECK (
     (provider = 'facebook' AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
-    OR (provider = 'x' AND facebook_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
-    OR (provider = 'github' AND facebook_user_id IS NULL AND x_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
-    OR (provider = 'linkedin' AND facebook_user_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND microsoft_account_id IS NULL)
-    OR (provider = 'microsoft' AND facebook_user_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL)
+    OR (provider = 'x' AND facebook_account_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
+    OR (provider = 'github' AND facebook_account_id IS NULL AND x_user_id IS NULL AND linkedin_account_id IS NULL AND microsoft_account_id IS NULL)
+    OR (provider = 'linkedin' AND facebook_account_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND microsoft_account_id IS NULL)
+    OR (provider = 'microsoft' AND facebook_account_id IS NULL AND x_user_id IS NULL AND github_user_id IS NULL AND linkedin_account_id IS NULL)
   ),
   CHECK (
     status NOT IN ('callback_received', 'exchanging', 'completion_ready', 'completed')
@@ -76,7 +76,7 @@ CREATE TABLE oauth_authorizations (
     OR (
       completion_ready_at IS NOT NULL
       AND callback_code_ciphertext IS NULL
-      AND num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1
+      AND num_nonnulls(facebook_account_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1
     )
   ),
   CHECK (
@@ -161,9 +161,9 @@ WHERE callback_mode = 'web'
   AND purpose = 'authenticate'
   AND status IN ('pending', 'callback_received', 'exchanging', 'completion_ready');
 
-CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__facebook_user
-ON oauth_authorizations (facebook_user_id)
-WHERE facebook_user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__facebook_account
+ON oauth_authorizations (facebook_account_id)
+WHERE facebook_account_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_oauth_authorizations__x_user
 ON oauth_authorizations (x_user_id)
@@ -201,7 +201,7 @@ COMMENT ON COLUMN oauth_authorizations.callback_code_ciphertext IS 'Authenticate
 COMMENT ON COLUMN oauth_authorizations.callback_error IS 'Bounded provider callback or terminal exchange error code; never contains provider credentials.';
 COMMENT ON COLUMN oauth_authorizations.completion_token_hash IS 'Purpose-bound HMAC-SHA256 of the web cookie or native callback bearer token.';
 COMMENT ON COLUMN oauth_authorizations.completion_token_ciphertext IS 'Authenticated ciphertext of the completion token retained only so a repeated provider callback converges on the same handoff.';
-COMMENT ON COLUMN oauth_authorizations.facebook_user_id IS 'Facebook account produced by a successful exchange; parent deletion cascades the authorization.';
+COMMENT ON COLUMN oauth_authorizations.facebook_account_id IS 'Facebook account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.x_user_id IS 'X account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.github_user_id IS 'GitHub account produced by a successful exchange; parent deletion cascades the authorization.';
 COMMENT ON COLUMN oauth_authorizations.linkedin_account_id IS 'Internal LinkedIn account row produced by a successful exchange; parent deletion cascades the authorization.';

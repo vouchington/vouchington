@@ -63,7 +63,7 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'referral_program_topics', column: 'topic_id' },
   { table: 'user_referral_program_links', column: 'referral_program_topic_id' },
   { table: 'facebook_accounts', column: 'facebook_user_id', pattern: 'seed-fb-user-%' },
-  { table: 'facebook_friends', column: 'facebook_user_id', pattern: 'seed-fb-user-%' },
+  { table: 'facebook_friends', column: 'facebook_friend_id', pattern: 'seed-fb-user-%' },
 ]
 
 export const ANALYZE_TARGETS = [

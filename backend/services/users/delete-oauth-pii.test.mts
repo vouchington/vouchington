@@ -5,6 +5,8 @@ import {
   insertTestOAuthAccount,
   connectTestOAuthAccount,
   getTestOAuthAccountRaw,
+  getTestFriend,
+  insertTestFriend,
 } from '@voucha/test-helpers'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
@@ -19,6 +21,8 @@ describe('sanitizeOAuthAccountPii (via deleteUser)', () => {
     const fbId = `fb-pii-test-${v7()}`
     await insertTestOAuthAccount('facebook', fbId, `tests+fb-${v7()}@voucha.ai`)
     await connectTestOAuthAccount('facebook', user.id, fbId)
+    const friendProviderId = `fb-friend-${v7()}`
+    await insertTestFriend('facebook', fbId, friendProviderId)
 
     await deleteUserAndDrainForTest(user, user)
 
@@ -26,6 +30,7 @@ describe('sanitizeOAuthAccountPii (via deleteUser)', () => {
     expect(account?.user_id).toBeNull()
     expect(account?.provider_user_email_address).toBeNull()
     expect(account?.provider_user_data).toEqual({})
+    await expect(getTestFriend('facebook', fbId, friendProviderId)).resolves.toHaveLength(0)
   })
 
   it('nulls out tokens for a connected GitHub account', async () => {

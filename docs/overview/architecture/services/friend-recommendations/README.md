@@ -13,6 +13,11 @@ This service finds users on the platform who are friends/followers on connected 
 - `get-recommendations.mts` — Main query: joins Facebook, X, and GitHub friend tables against platform users, applies exclusion filters, returns paginated results with cursor-based pagination
 - `accounts-to-sync.mts` — Streams accounts due for friend list refresh (24-hour sync interval) using PostgreSQL cursor-based async generators
 
+Facebook friend rows reference their source account by UUID. A friend keeps the provider ID as a
+stored fact until that person signs in; the account writer then fills the nullable friend-account
+foreign key. Recommendations join those UUIDs and still require an active Voucha user on the
+friend account.
+
 ## Exclusion Filters
 
 Recommendations exclude users who are:

@@ -6,36 +6,7 @@ import {
   providerTableConfigs,
   type OAuthProvider,
 } from './_oauth-config-support.mts'
-
-type FriendsTableConfig = {
-  table: string
-  userIdColumn: string
-  friendIdColumn: string
-}
-
-const FRIENDS_TABLE_CONFIGS: Partial<Record<OAuthProvider, FriendsTableConfig>> = {
-  facebook: {
-    table: 'facebook_friends',
-    userIdColumn: 'facebook_user_id',
-    friendIdColumn: 'facebook_friend_id',
-  },
-  x: {
-    table: 'x_friends',
-    userIdColumn: 'x_user_id',
-    friendIdColumn: 'x_friend_id',
-  },
-  github: {
-    table: 'github_friends',
-    userIdColumn: 'github_user_id',
-    friendIdColumn: 'github_friend_id',
-  },
-}
-
-function getFriendsTableConfig(provider: OAuthProvider): FriendsTableConfig {
-  const config = FRIENDS_TABLE_CONFIGS[provider]
-  if (!config) throw new Error(`No friends table config for provider: ${provider}`)
-  return config
-}
+import { getFriendsTableConfig, sourceAccountId } from './friends-config.mts'
 
 export async function setTestOAuthAccountAccessToken(
   provider: OAuthProvider,
@@ -108,9 +79,14 @@ export async function insertTestFriend(
   friendProviderUserId: string,
 ): Promise<void> {
   const config = getFriendsTableConfig(provider)
+  const friendAccountColumn = provider === 'facebook' ? ', friend_facebook_account_id' : ''
+  const friendAccountValue =
+    provider === 'facebook'
+      ? ', (SELECT id FROM facebook_accounts WHERE facebook_user_id = $2)'
+      : ''
   await write(
-    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn})
-     VALUES ($1, $2)
+    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn}${friendAccountColumn})
+     SELECT ${sourceAccountId(provider)}, $2${friendAccountValue}
      ON CONFLICT DO NOTHING`),
     [providerUserId, friendProviderUserId],
   )
@@ -122,9 +98,15 @@ export async function insertTestFriends(
   friendProviderUserIds: string[],
 ): Promise<void> {
   const config = getFriendsTableConfig(provider)
+  const friendAccountColumn = provider === 'facebook' ? ', friend_facebook_account_id' : ''
+  const friendAccountValue =
+    provider === 'facebook'
+      ? ', (SELECT id FROM facebook_accounts WHERE facebook_user_id = friend_id)'
+      : ''
   await write(
-    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn})
-     SELECT $1, friend_id FROM UNNEST($2::text[]) AS friend_id
+    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn}${friendAccountColumn})
+     SELECT ${sourceAccountId(provider)}, friend_id${friendAccountValue}
+     FROM UNNEST($2::text[]) AS friend_id
      ON CONFLICT DO NOTHING`),
     [providerUserId, friendProviderUserIds],
   )
@@ -144,7 +126,7 @@ export async function acquireTestFriendRowLock(
   try {
     const result = await transaction(
       `/* testFriends */ SELECT 1 FROM ${config.table}
-       WHERE ${config.userIdColumn} = $1 AND ${config.friendIdColumn} = $2
+       WHERE ${config.userIdColumn} = ${sourceAccountId(provider)} AND ${config.friendIdColumn} = $2
        FOR UPDATE`,
       [providerUserId, friendProviderUserId],
     )
@@ -175,7 +157,7 @@ export async function getTestFriend(
   const config = getFriendsTableConfig(provider)
   const { rows } = await read(
     allowUnannotatedQuery(
-      `SELECT * FROM ${config.table} WHERE ${config.userIdColumn} = $1 AND ${config.friendIdColumn} = $2`,
+      `SELECT * FROM ${config.table} WHERE ${config.userIdColumn} = ${sourceAccountId(provider)} AND ${config.friendIdColumn} = $2`,
     ),
     [providerUserId, friendProviderUserId],
   )
@@ -189,7 +171,7 @@ export async function countTestFriends(
   const config = getFriendsTableConfig(provider)
   const { rows } = await read(
     allowUnannotatedQuery(
-      `SELECT COUNT(*) AS count FROM ${config.table} WHERE ${config.userIdColumn} = $1`,
+      `SELECT COUNT(*) AS count FROM ${config.table} WHERE ${config.userIdColumn} = ${sourceAccountId(provider)}`,
     ),
     [providerUserId],
   )

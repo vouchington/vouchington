@@ -547,11 +547,6 @@ COMMENT ON TABLE x_friends IS 'X (Twitter) follower/following relationships for 
 COMMENT ON COLUMN x_friends.x_user_id IS 'The X user whose friends list this entry belongs to.';
 COMMENT ON COLUMN x_friends.x_friend_id IS 'The X user ID of the friend.';
 
--- Reverse lookup indexes for recommendation query
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_facebook_friends__friend_id
-ON facebook_friends (facebook_friend_id);
-
 -- Sync status indexes for nightly dispatcher queries
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__friends_synced_at

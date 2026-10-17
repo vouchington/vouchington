@@ -42,11 +42,13 @@ async function fetchFacebookFriends(
 
 async function getFacebookSyncAccount(facebookUserId: string) {
   const { rows } = await read(
-    `/* getFacebookSyncAccount */ SELECT user_id, access_token_ciphertext FROM facebook_accounts WHERE facebook_user_id = $1 AND access_token_ciphertext IS NOT NULL`,
+    `/* getFacebookSyncAccount */ SELECT id, user_id, access_token_ciphertext FROM facebook_accounts WHERE facebook_user_id = $1 AND access_token_ciphertext IS NOT NULL`,
     [facebookUserId],
   )
 
-  return rows[0] as { user_id?: string | null; access_token_ciphertext?: string } | undefined
+  return rows[0] as
+    | { id: string; user_id?: string | null; access_token_ciphertext?: string }
+    | undefined
 }
 
 // Carry the marker as text and cast back to timestamptz in the cleanup DELETE — pg's TIMESTAMPTZ
@@ -79,7 +81,7 @@ export async function syncFacebookFriends(facebookUserId: string): Promise<void>
     if (result.error) throw createHttpError(502, `Facebook friends error: ${result.error.message}`)
     // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
     const persisted = await persistFacebookFriendPage(
-      facebookUserId,
+      account.id,
       account.user_id,
       result.data.map(friend => friend.id),
     )
@@ -88,5 +90,5 @@ export async function syncFacebookFriends(facebookUserId: string): Promise<void>
     if (!result.paging?.next) break
   } while (after)
 
-  await finalizeFacebookFriendSync(facebookUserId, account.user_id, syncStartTime)
+  await finalizeFacebookFriendSync(account.id, account.user_id, syncStartTime)
 }

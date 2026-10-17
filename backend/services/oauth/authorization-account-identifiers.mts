@@ -6,7 +6,8 @@ const authorizationAccountIdentifiers = {
   facebook: {
     table: 'facebook_accounts',
     providerUserIdColumn: 'facebook_user_id',
-    authorizationAccountColumn: 'facebook_user_id',
+    accountIdColumn: 'id',
+    authorizationAccountColumn: 'facebook_account_id',
     emailColumn: 'facebook_user_email_address',
     dataColumn: 'facebook_user_data',
   },

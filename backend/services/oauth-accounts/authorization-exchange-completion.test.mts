@@ -37,13 +37,13 @@ describe('completeOAuthAuthorizationExchange', () => {
       'facebook',
       authorizationId,
       claimId,
-      'facebook-user',
+      '00000000-0000-7000-8000-000000000123',
       query,
     )
 
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('facebook_user_id = $2'), [
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('facebook_account_id = $2'), [
       authorizationId,
-      'facebook-user',
+      '00000000-0000-7000-8000-000000000123',
       'facebook',
       claimId,
     ])

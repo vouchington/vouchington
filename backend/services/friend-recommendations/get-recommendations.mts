@@ -56,8 +56,8 @@ WITH friends AS (
         'facebook'::TEXT AS provider,
         COALESCE(fa.facebook_user_data->>'name', '') AS provider_friend_name
       FROM facebook_friends ff
-      JOIN facebook_accounts my_fa ON my_fa.facebook_user_id = ff.facebook_user_id
-      JOIN facebook_accounts fa ON fa.facebook_user_id = ff.facebook_friend_id
+      JOIN facebook_accounts my_fa ON my_fa.id = ff.facebook_account_id
+      JOIN facebook_accounts fa ON fa.id = ff.friend_facebook_account_id
       JOIN users u ON u.id = fa.user_id
       WHERE my_fa.user_id = $1
         AND u.deleted_at IS NULL
