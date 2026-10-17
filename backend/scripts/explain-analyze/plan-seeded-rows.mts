@@ -6,7 +6,7 @@ const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_cache_invalidation_work_items: 20_000,
-  users: 20_244,
+  users: 20_004,
   follower_distributions: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
@@ -60,12 +60,11 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   api_keys: 256,
   blocklisted_domains: 20_512,
   bedrock_nova_multimodal_v1_embeddings: 256,
-  mv_revenue_memberships: 902,
   membership_products: 4,
-  membership_provider_observations: 1_200,
-  membership_source_states: 1_506,
-  membership_sources: 1_506,
-  memberships: 1_506,
+  membership_provider_observations: 0,
+  membership_source_states: 300,
+  membership_sources: 300,
+  memberships: 300,
   podcast_shows: 0,
   post_review_topic_ratings: 1_001,
   post_slugs: 1_256,
@@ -119,7 +118,7 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   media_delivery_registry_records: 5_000,
   media_delivery_registry_changes: 10_000,
   media_types: ANCILLARY_SEED_ROW_UPPER_BOUND,
-  membership_provider_evidence_records: 1_200,
+  membership_provider_evidence_records: ANCILLARY_SEED_ROW_UPPER_BOUND,
   membership_refunds: ANCILLARY_SEED_ROW_UPPER_BOUND,
   microsoft_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   moderation_reports: ANCILLARY_SEED_ROW_UPPER_BOUND,
@@ -178,11 +177,4 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   vote_weight_penalties: ANCILLARY_SEED_ROW_UPPER_BOUND,
   x_accounts: ANCILLARY_SEED_ROW_UPPER_BOUND,
   x_friends: ANCILLARY_SEED_ROW_UPPER_BOUND,
-}
-
-/** Global aggregates retain their measured scan passes and twenty percent fixture headroom. */
-export function seededRowScanBudget(relation: string, passes = 1): number {
-  const rows = SEEDED_ROWS_BY_RELATION[relation]
-  if (rows === undefined) throw new Error(`Missing EXPLAIN fixture count for ${relation}`)
-  return Math.ceil(rows * passes * 1.2)
 }
