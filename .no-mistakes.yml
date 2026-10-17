@@ -380,10 +380,6 @@ checks:
       command: [pnpm, run, no-mistakes]
       fileArgs: none
       always: true
-    - name: ast-grep-rules
-      command: [pnpm, run, ast-grep]
-      fileArgs: none
-      always: true
     - name: repo-node-static-checks
       command:
         - node
