@@ -69,5 +69,4 @@ Conversations can be linked to entities for contextual lookup:
 
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- conversation and message CRUD, client-generated turns
-- [docs/requirements/api/v1/conversations/README.md](../../requirements/api/v1/conversations/README.md) -- API endpoints
 - [docs/overview/architecture/queues/psql/README.md](queues/psql/README.md) -- partition cleanup jobs

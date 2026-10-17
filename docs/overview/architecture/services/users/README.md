@@ -71,7 +71,6 @@ than omitting a selected column.
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Auth overview: [../../../docs/overview/architecture/auth-overview.md](../../auth-overview.md)
 - Auth requirements: [../../../docs/requirements/security/AUTH.md](../../../../requirements/security/AUTH.md)
-- Users requirements: [../../../docs/requirements/users/USERS.md](../../../../requirements/users/USERS.md)
 - Account-deletion lifecycle: [../../../docs/requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md](../../../../requirements/users/ACCOUNT-DELETION-DATA-REQUEST.md)
 - Durable deletion lifecycle service: [../user-deletions/README.md](../user-deletions/README.md)
 - My service: [../my/README.md](../my/README.md)

@@ -10,7 +10,7 @@ Prerequisites:
 - Test accounts for Facebook, X, GitHub, and LinkedIn
 - The provider credentials under test configured in `~/voucha.env`
 - The provider and client mode enabled under the `oauth-authorization-broker` dynamic config key;
-  all eight provider/mode fields default to `false`
+  every provider/mode field defaults to `false`
 - For legacy Facebook fallback testing only, `NEXT_PUBLIC_META_APP_ID` set in `web/.env.local`
 
 ---

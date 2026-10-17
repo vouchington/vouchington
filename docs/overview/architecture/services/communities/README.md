@@ -30,7 +30,7 @@ invite-row return used by the API; `createInviteWithEmailEnqueue()` additionally
 `emailEnqueue`. Only creation adds the one-time raw invite code to the returned metadata; storage
 uses a purpose-bound keyed hash, and read/redemption projections exclude both code and hash.
 Membership paths remove matching pending invitations transactionally; see
-[invitation behavior](../../../../requirements/community/COMMUNITIES.md#invitations).
+invitation behavior.
 Role changes return `roleChangeEmailEnqueue`, and ownership transfers return
 separate `newOwnerEmailEnqueue` and `previousOwnerEmailEnqueue` promises. These handles are
 optional when no email is queued. The API callers do not await them, preserving post-commit
@@ -109,7 +109,6 @@ await setCommunityArchiveState(currentUser, communityId, true, membership)
 
 - API routes: [../../api/v1/communities/README.md](../../../../../backend/api/v1/communities/README.md)
 - Moderation queue: [../community-agent-prompts/README.md](../community-agent-prompts/README.md)
-- [Communities requirements](../../../../requirements/community/COMMUNITIES.md)
 - [Memberships](../../../../requirements/users/memberships.md) — tier limits and billing
 
 ## Provisional export status (#1360)

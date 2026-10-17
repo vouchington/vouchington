@@ -59,4 +59,3 @@ Inserts a stacking 20% vote weight penalty (`reason = 'blocked_hostname_attempt'
 - Vote weight penalties: `backend/data-stores/psql/migrations/0240-00-00-elections-vote-integrity.sql`
 - Migration: `backend/data-stores/psql/migrations/0050-00-00-urls-hostnames-crawlers.sql`
 - Vote integrity service: [docs/overview/architecture/services/vote-integrity/README.md](../vote-integrity/README.md)
-- [docs/requirements/content/HOSTNAME-BLOCKING.md](../../../../requirements/content/HOSTNAME-BLOCKING.md)

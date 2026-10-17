@@ -1,4 +1,6 @@
-import { ESCAPE_COMMENT_RE, parseClosingIssueReferences } from './closing-refs.mts'
+import { parseClosingIssueReferences } from 'vouchington-tooling/gh-cli'
+
+import { ESCAPE_COMMENT_RE } from './closing-refs.mts'
 
 const MAX_REASON_PREVIEW_LENGTH = 200
 const MAX_LEAKED_REFERENCES_PER_COMMENT = 10

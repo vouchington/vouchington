@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import type { PreToolUseRuntime } from '../codex-hooks/hook-payload.mts'
 import type { HookPayload } from '../codex-hooks/types.mts'
@@ -13,16 +13,6 @@ export const SESSION_PERSIST_RELATIVE = {
   cursor: '.local/cursor-session-id',
   grok: '.local/grok-session-id',
 } as const
-
-export function enclosingWorktreeRoot(cwd: string): string {
-  let candidate = resolve(cwd)
-  while (!existsSync(join(candidate, '.git'))) {
-    const parent = dirname(candidate)
-    if (parent === candidate) return resolve(cwd)
-    candidate = parent
-  }
-  return candidate
-}
 
 export function sessionPersistPath(cwd: string, agent: SessionPersistAgent): string {
   return join(cwd, SESSION_PERSIST_RELATIVE[agent])

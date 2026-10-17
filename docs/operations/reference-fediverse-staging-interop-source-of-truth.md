@@ -8,5 +8,5 @@
 - Infrastructure/config: the deployed staging Worker and API/IO worker revisions.
 - CI or deploy workflow: the deployment run that produced `DEPLOYED_SHA`.
 - Related docs: [federation architecture](../overview/architecture/fediverse-federation.md),
-  [current boundaries](../requirements/content/FEDIVERSE.md), and
+  current boundaries, and
   [staging Basic Auth](cloudflare-worker-staging-auth.md).

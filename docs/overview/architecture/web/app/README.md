@@ -7,9 +7,6 @@ Next.js App Router tree. Top-level directories beginning with `(group)` are
 do **not** add a URL segment. Some groups (e.g. `(my)`, `(growth)`) define a shared
 `layout.tsx`; others are organizational only.
 
-Full route catalogue (with auth/permission rules and metadata expectations):
-[`../../docs/requirements/navigation/ROUTES.md`](../../../../requirements/navigation/ROUTES.md).
-
 ## Route Groups
 
 | Group                                                      | Purpose                                                           |

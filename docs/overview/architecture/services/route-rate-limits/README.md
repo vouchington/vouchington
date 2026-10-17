@@ -173,7 +173,6 @@ Fails open on Valkey errors: if `addAndCheck` throws, returns `{ limited: false 
 
 - [User Rate Limits Service](../user-rate-limits/README.md)
 - [Rate Limiting Overview](../../rate-limiting.md)
-- [Dynamic Config API](../../../../requirements/api/v1/dynamic-config/README.md)
 
 ## Provisional export status (#1360)
 

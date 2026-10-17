@@ -116,6 +116,6 @@ Existing namespaces expose recovery windows and work bounds through the same num
 
 ## Related
 
-- API route: [../../api/v1/dynamic-config/](../../../../requirements/api/v1/dynamic-config/README.md)
+- API route: ../../api/v1/dynamic-config/
 - Audit log: [../dynamic-config-audit/](../dynamic-config-audit/README.md)
 - Valkey DynamicConfig: [../../data-stores/valkey/README.md](../../../../development/valkey/README.md)

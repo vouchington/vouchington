@@ -90,8 +90,7 @@ still dials its IPv4-only provider directly.
 Leave `activitypub-inbox.async_delivery_enabled` at its default `false` for this gate. Unlike the flags
 above, it does not reroute a known IPv4-only dependency — remote actor servers are arbitrary
 third-party hosts, not a fixed endpoint — so it has no bearing on this cutover. It has its own
-independent rollout gate (`docs/requirements/content/FEDIVERSE.md`,
-`docs/operations/reference-fediverse-staging-interop-procedure.md`) governing when `POST /ap/inbox`
+independent rollout gate (`docs/operations/reference-fediverse-staging-interop-procedure.md`) governing when `POST /ap/inbox`
 may switch from synchronous actor/signature verification to async `202` ingestion, and that staged
 validation must pass on its own before the flag is ever turned on.
 

@@ -67,6 +67,3 @@ cross-user analytics route and raw staff access.
 Landing pages served at `/@username` and `/@username/slug` automatically create session referral attributions via the Next.js proxy. The landing page analytics events are separate from attribution — they track page performance, not signup referral.
 
 ## Related
-
-- [docs/requirements/api/v1/landing-pages/README.md](../../../../requirements/api/v1/landing-pages/README.md)
-- [docs/requirements/admin/LANDING-PAGE-ANALYTICS.md](../../../../requirements/admin/LANDING-PAGE-ANALYTICS.md)

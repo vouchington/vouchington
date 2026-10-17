@@ -6,144 +6,32 @@ Which channel created each piece of user content, and which OAuth client acted w
 
 - Voucha can't block AI agents. It steers them to the API and MCP
   ([agent access](../platform/agent-access.md)) and shows users when content arrived through those
-  paths ([#237](https://github.com/vouchington/vouchington/issues/237)).
+  paths.
 - Provenance is **declared** by the credential that made the write. The `ai-generated` moderator
-  label is **detected** from the text by the moderation pipeline
-  ([`moderator-labels.mts`](../../../backend/services/moderation/moderator-labels.mts)). The two
-  answer different questions and neither replaces the other.
+  label is **detected** from the text by the moderation pipeline. The two answer different
+  questions and neither replaces the other.
 
-## Channels
+## Trust grades
 
-`content_creation_channels` is the Postgres enum for the channel that created a row.
+The channel enum separates telemetry-grade channels (the first-party web, Swift, and .NET clients)
+from credential-grade ones (`api` and `mcp`). First-party channels derive from forgeable request
+headers, so only the credential-grade channels may be shown publicly, as "via API", "via MCP", or
+"via {app}". The `system` channel is server-assigned and stays internal. See
+[request client info](../../overview/architecture/request-client-info.md) for why the
+classification can be forged.
 
-| Channel  | Created by                                          | Trust                                                            |
-| -------- | --------------------------------------------------- | ---------------------------------------------------------------- |
-| `web`    | The Voucha web app                                  | Telemetry-grade: derived from forgeable request headers          |
-| `swift`  | The Swift clients                                   | Telemetry-grade                                                  |
-| `dotnet` | The .NET clients                                    | Telemetry-grade                                                  |
-| `api`    | The REST API, called with an API key or OAuth token | Credential-grade: derived from the credential that authorized it |
-| `mcp`    | The user MCP server                                 | Credential-grade                                                 |
-| `system` | A platform job                                      | Server-assigned                                                  |
-
-[Request client info](../../overview/architecture/request-client-info.md) owns how the edge and
-backend classify first-party clients, and why that classification can be forged. Only the
-credential-grade channels may be shown publicly.
-
-## Data Model
-
-Every user-content table carries two columns:
-
-| Column                        | Notes                                                                                        |
-| ----------------------------- | -------------------------------------------------------------------------------------------- |
-| `created_via`                 | Required `content_creation_channels`; no default                                             |
-| `created_via_oauth_client_id` | FK → `oauth_clients.id`, `ON DELETE RESTRICT`; set only when `created_via` is `api` or `mcp` |
-
-The tables are `posts` (including comments, stories and topic recommendations), `communities`,
-`topics`, `lists`, `rss_feeds`, `moderation_reports`, `moderation_appeals`,
-`community_applications`, `user_referral_program_links`, `user_rss_feed_import_batches` and
-`conversation_messages`.
-
-`conversation_messages` is the partitioned table behind chat, direct-message, modmail and
-client-generated turns. Every message records the channel of the request that sent it, so the two
-messages of a client-generated turn share one channel, and a retry that replays the turn keeps the
-channel of the request that stored it. The columns stay out of every conversation and message
-response.
-
-`user_rss_feed_import_batches` holds the channel of the request that submitted a user RSS feed
-import. A queue job creates the feeds later, so it reads the batch's stored provenance instead of
-recording `system`; each feed then carries the same channel and OAuth client as the submitting
-request. Staff CSV imports (`backend/services/admin-imports`) are platform work and record `system`.
-
-Invariants and what enforces each:
-
-- **Client only on agent channels:** `<table>_created_via_oauth_client_id_check` rejects an OAuth
-  client on any channel other than `api` or `mcp`.
-- **Immutable:** the `<table>_content_provenance_immutable` trigger fires `AFTER UPDATE` only when
-  either column changes, and `fn_reject_content_provenance_update()` rejects the change. Provenance describes the row's creation, so an
-  upsert that revives an existing row keeps the original channel, and writers leave both columns
-  out of `ON CONFLICT DO UPDATE SET`.
-- **Clients are kept:** `ON DELETE RESTRICT` blocks deleting an OAuth client that created content.
-  [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md) clients are retired by
-  setting `oauth_clients.revoked_at`, and no code path deletes them.
-- **Private by default:** neither column appears in an API response as a column. Only the derived
-  [exposure](#exposure) fields do, and only for posts, communities, topics, lists and RSS feeds.
-  Tests enforce this rather than the schema:
-  read paths select declared column lists whose tests assert the exact response keys (for example
-  [`communities/get.test.mts`](../../../backend/services/communities/get.test.mts)), and the schema
-  test below fails if a view references either column.
-
-### OAuth Client Labels
-
-The public label names an OAuth client only when the name can be trusted. `oauth_clients` carries
-what the label needs:
-
-| Column           | Notes                                                                                        |
-| ---------------- | -------------------------------------------------------------------------------------------- |
-| `metadata_url`   | Unique HTTPS URL of a Client ID Metadata Document; `NULL` for dynamically registered clients |
-| `verified_at`    | When staff verified a dynamically registered client's `client_name`                          |
-| `verified_by_id` | FK → `users.id`, `ON DELETE SET NULL`; set only when `verified_at` is set                    |
-
-Client ID Metadata Document clients store their exact Client Identifier URL in `metadata_url`;
-dynamically registered clients keep it `NULL`. Administrators set and clear `verified_at` and
-`verified_by_id` for dynamically registered clients through the
-[OAuth client verification routes](../api/v1/admin/README.md), and renaming a client
-or replacing its redirect URIs clears them. The [exposure](#exposure) rules below turn these facts
-into a label.
-
-The enum, columns, checks, indexes and immutability triggers live in the canonical table creators.
-The `0726-00-01` through `0726-00-09` migrations add the cross-file OAuth client foreign keys, and
-`0726-00-11` and `0726-00-12` add the foreign key and trigger for `user_rss_feed_import_batches`
-and `conversation_messages`, whose creators run before `oauth_clients` and the immutability
-function exist.
-`created_via` is `NOT NULL` with no default on all eleven tables; fresh-bootstrap seeds explicitly
-record `system`. See the [prelaunch schema policy](../../development/postgres-schema-rules.md#prelaunch-relational-storage).
-[`schema-content-provenance.test.mts`](../../../backend/data-stores/psql/__tests__/schema-content-provenance.test.mts)
-checks every table's columns, validated constraints, valid index and trigger, the trigger on a real
-`posts` partition row and on rows of the partitioned `conversation_messages` table, the OAuth client label columns, and that no view references either
-provenance column.
-
-## Recording
-
-Every creation service requires a typed `ContentProvenance`. The union permits an OAuth client
-only for `api` and `mcp`, matching the database check. One pure resolver maps the request origin:
-
-| Origin                | Recorded channel                            | OAuth client               |
-| --------------------- | ------------------------------------------- | -------------------------- |
-| REST session          | Validated client (`web`, `swift`, `dotnet`) | None                       |
-| MCP API key           | `mcp`                                       | None                       |
-| MCP OAuth             | `mcp`                                       | Issuing `oauth_clients.id` |
-| REST API key or OAuth | `api`                                       | Issuing client for OAuth   |
-
-REST API-key and OAuth writes have no route producer yet. Request handlers pass request
-provenance; config-driven seeds, fixtures and scripts pass `system`. A queue job that finishes work
-a request submitted passes the provenance that request stored (user RSS feed imports); other queue
-jobs pass `system`. Platform-authored
-StoryTeller posts and ban-evasion reports always record `system`, even when a request triggered
-the work. A revived row preserves its original provenance.
-
-### Unclassified session writes fail closed
-
-A session origin with missing or invalid client information cannot create content. Creation
-routes return `400` with `INVALID_CLIENT_INFO`, including while client metadata enforcement is
-in observe mode. This prevents an unknown channel from being recorded.
-
-## Exposure
-
-Posts, communities, topics, lists and RSS feeds show `api` and `mcp` rows with a "via API",
-"via MCP" or "via {app}" label (`provenance`), and show moderation staff every channel plus the raw
-OAuth client (`staff_provenance`). The four label tiers, the anonymous-post rule, the per-request
-computation, the scope rule for which entity objects carry the fields, and the routes and MCP tools
-that carry them are in [Exposure](reference-content-provenance-exposure.md). The other tables above
-stay private: reports, appeals, community applications, referral links, import batches and
-conversation messages never expose their channel.
-
-## Delivery scope
-
-[#611](https://github.com/vouchington/vouchington/issues/611) delivers writers, seeds and required
-schema together as one current contract. There is no historical untracked-row state or separate
-Contract stage. Public "via API" and "via MCP" labels and staff visibility cover posts,
-communities, topics, lists and RSS feeds (see [Exposure](#exposure)).
+- A session origin with missing or invalid client information cannot create content. It fails
+  closed, so an unknown channel is never recorded.
+- Only a reviewed allowlist of OAuth clients earns a public display name. Otherwise the label shows
+  the metadata hostname, a staff-verified name, or just "via API" / "via MCP", because a client's own
+  mutable name must not be trusted for public display.
+- Staff see every channel and the raw OAuth client. Reports, appeals, community applications,
+  referral links, import batches and conversation messages record a channel but never expose it.
+- Anonymous posts never reveal provenance that would identify the author.
 
 ## AI authorship disclosure
 
-AI disclosure belongs to the author: public `account_type='ai_agent'` renders **AI Agent** on each author display. Automated accounts without a live agent render **System**; reserved people and qualifying role-bearing members render **Official**. See [account permissions](../trust-safety/reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions). `created_via='system'` means no request made the write and remains internal; it never renders a provenance channel label.
+AI disclosure belongs to the author: an automated account with a live agent renders **AI Agent**,
+other automated accounts render **System**, and reserved people and qualifying role-bearing members
+render **Official**. See
+[account permissions](../trust-safety/reference-trust-system-official-accounts-and-material-connections.md#official-account-permissions).

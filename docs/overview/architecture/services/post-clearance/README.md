@@ -87,7 +87,6 @@ type ClearanceStatus = 'pending' | 'approved' | 'rejected' | 'in_review'
 - [../../../docs/overview/architecture/post-lifecycle.md](../../post-lifecycle.md) — post clearance and moderation flow
 - [../../queues/spam-detection/](../../queues/spam-detection/README.md) — spam detection system
 - [../../queues/openai-moderation/](../../queues/openai-moderation/README.md) — OpenAI moderation system
-- [../../api/v1/admin/](../../../../requirements/api/v1/admin/README.md) — admin review queue API
 
 ## Provisional export status (#1360)
 

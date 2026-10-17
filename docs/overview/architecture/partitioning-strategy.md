@@ -369,5 +369,4 @@ partition-status API and `pg_total_relation_size()`.
 - [Partition Pruning Hints](partition-pruning-hints.md)
 - [Database Rules](../../../backend/data-stores/psql/AGENTS.md)
 - [PostgreSQL queue](queues/psql/README.md)
-- [RSS feed crawling](../../requirements/content/RSS-FEED-CRAWLING.md)
 - [PostgreSQL schema-growth prompt](../../prompts/scheduled/postgresql-schema-growth.md) — recurring schema-growth classification audit against this policy.

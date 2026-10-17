@@ -30,4 +30,4 @@ A change racing an in-flight read wins over that read's older answer.
 ## Related
 
 - Operator surfaces: [queue monitoring](../queue-monitoring/README.md) and the
-  [MQ API](../../../../requirements/api/v1/mq/reference-domain-routes.md).
+  MQ API.

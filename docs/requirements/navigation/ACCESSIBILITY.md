@@ -17,7 +17,7 @@ them, while retaining WCAG 2.0 and 2.1 A/AA checks.
 - Required fields must use the `required` attribute or `aria-required="true"`.
 - Validation errors must be announced to screen readers (via `aria-describedby` or `aria-live`).
 - Use shadcn/ui form components (`<Input>`, `<Label>`, `<Select>`, `<Textarea>`) which handle accessibility attributes.
-- Helper text adjacent to a checkbox or radio control must sit inside the same `<label>` as the control so that the full visible row (including description text and padding area) is a single click/tap target — meeting the ≥ 44×44px touch-target requirement. See [Checkbox and radio rows](./reference-components-page-layout-primitives.md#checkbox--radio-rows).
+- Helper text adjacent to a checkbox or radio control must sit inside the same `<label>` as the control so that the full visible row (including description text and padding area) is a single click/tap target — meeting the ≥ 44×44px touch-target requirement. See Checkbox and radio rows.
 
 ## Motion Preferences
 
@@ -76,7 +76,7 @@ them, while retaining WCAG 2.0 and 2.1 A/AA checks.
 
 ## Testing
 
-- Static analysis: 30+ `jsx-a11y` rules enforced via oxlint at `error` level.
+- Static analysis: `jsx-a11y` rules enforced via oxlint at `error` level.
 - Runtime testing: `@axe-core/playwright` scans key public, authenticated, and admin pages for WCAG 2.0/2.1/2.2 A/AA violations and fails on every unwaived violation.
 - Storybook testing: `@storybook/addon-a11y` fails story-level WCAG 2.0/2.1/2.2 A/AA violations during the browser-mode Storybook Vitest suite.
 - Run `pnpm exec playwright test --grep a11y` for page audits and `VITEST_STORYBOOK_BROWSER=1 pnpm exec vitest run --project web-storybook-browser` for Storybook audits.

@@ -23,9 +23,7 @@ they validate after their existing transport/origin/rate-limit/anti-enumeration 
 rate limiting, honeypot checks, attempt-limit counters) and before any service call. Some public or
 protected routes also accept a field group that is legitimately absent as a whole (an all-or-nothing
 pair); for these, the route's own presence/pairing check runs first and pins its status code for the
-absent or partial case, and the declared schema only runs once that precondition holds. See
-[`docs/requirements/api/v1/sessions-authentication/reference-request-validation.md`](../../../../requirements/api/v1/sessions-authentication/reference-request-validation.md)
-for named examples of both patterns.
+absent or partial case, and the declared schema only runs once that precondition holds.
 
 ## Checked-in contracts
 

@@ -1,11 +1,5 @@
+import { formatReferenceKey, type ClosingIssueReference } from 'vouchington-tooling/gh-cli'
 import { hasUncheckedMarkdownTask } from 'vouchington-tooling/markdown'
-
-export type ClosingIssueReference = {
-  key: string
-  number: number
-  owner: string | undefined
-  repo: string | undefined
-}
 
 export type ReferencedIssue = {
   body: string
@@ -36,50 +30,8 @@ type GitHubIssueApiResponse = {
   title?: string
 }
 
-const CLOSING_ISSUE_RE =
-  /\b(?:close(?:s|d)?|fix(?:es|ed)?|resolve(?:s|d)?):?[ \t]+(?:(?<repo>[\w.-]+\/[\w.-]+)?#(?<number>\d+)|https?:\/\/github\.com\/(?<urlRepo>[\w.-]+\/[\w.-]+)\/issues\/(?<urlNumber>\d+))\b/gi
-
 export const ESCAPE_COMMENT_RE =
   /<!--\s*related-issues-validation:\s*allow\s+(?<ref>(?:[\w.-]+\/[\w.-]+)?#\d+)\s+because\s+(?<reason>.*?)-->/gis
-
-export function parseClosingIssueReferences(body: string): ClosingIssueReference[] {
-  const refs: ClosingIssueReference[] = []
-  const seen = new Set<string>()
-
-  for (const match of body.matchAll(CLOSING_ISSUE_RE)) {
-    const number = Number(match.groups?.number ?? match.groups?.urlNumber)
-    if (!Number.isSafeInteger(number)) continue
-
-    const repoRef = (match.groups?.repo ?? match.groups?.urlRepo)?.toLowerCase()
-    const [owner, repo] = repoRef?.split('/') ?? [undefined, undefined]
-    const key = formatReferenceKey({ number, owner, repo })
-    if (seen.has(key)) continue
-    seen.add(key)
-
-    refs.push({
-      key,
-      number,
-      owner,
-      repo,
-    })
-  }
-
-  return refs
-}
-
-export function hasClosingIssueReference(body: string): boolean {
-  return parseClosingIssueReferences(body).length > 0
-}
-
-export function formatReferenceKey(ref: {
-  number: number
-  owner?: string | undefined
-  repo?: string | undefined
-}): string {
-  return ref.owner !== undefined && ref.repo !== undefined
-    ? `${ref.owner}/${ref.repo}#${ref.number}`
-    : `#${ref.number}`
-}
 
 function hasIssueReferenceEscape(body: string, ref: ClosingIssueReference): boolean {
   for (const match of body.matchAll(ESCAPE_COMMENT_RE)) {

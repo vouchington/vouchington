@@ -229,10 +229,7 @@ approves a retired `agent-blackboard` tool.
 
 A spawned delegation child resolves its own session id
 from its runtime environment — Codex's `CODEX_THREAD_ID`, Claude Code's `CLAUDE_CODE_SESSION_ID`, and
-so on — the same way any other Vouchington blackboard consumer does
-(`dev/agent-session-id/resolve.mts`). The resolver keeps one coherent harness, agent label, and
-session selection: explicit Claude wins; Claude-compat recognizes live Grok and Codex-child signals;
-ordinary direct sessions prefer Codex, Grok, then Cursor; persisted files are only the final fallback.
+so on — as the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) describes.
 There is no
 identity round-trip: the parent passes its own session id in the spawn assignment, and the child
 calls `session_ensure` with its own resolved id, the parent id it was given, its agent name, and
@@ -263,7 +260,7 @@ instead, for example `pnpm exec vouchington retrospective-transcript`.
 
 Entries those hooks already appended keep their structural `checkpoint` field and stay in Blackboard
 until archived, so `node dev/retrospective-distill.mts` still classifies a session made only of them
-as `checkpoint-only` (`dev/retrospective-distill/checkpoint-entry.mts`).
+as `checkpoint-only` (vouchington-tooling's `retrospective-distill` classifier).
 
 ## SessionStart availability check
 
@@ -387,9 +384,8 @@ scaling, or repairing that infrastructure is the deployment owner's responsibili
 
 ## Files
 
-| File                        | Purpose                                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------------------- |
-| `package.json`              | Pins the published package as a root development dependency                                  |
-| `dev/blackboard/client.mts` | Resolves the hosted URL/token and constructs the published JS clients                        |
-| `dev/check-blackboard.mts`  | SessionStart check: prints the hook's session id and probes the hosted connection            |
-| `dev/agent-policy.mts`      | Retrospective policy module that `retrospective_save` runs; the only retrospective validator |
+| File                       | Purpose                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| `package.json`             | Pins the published package as a root development dependency                                  |
+| `dev/check-blackboard.mts` | SessionStart check: prints the hook's session id and probes the hosted connection            |
+| `dev/agent-policy.mts`     | Retrospective policy module that `retrospective_save` runs; the only retrospective validator |

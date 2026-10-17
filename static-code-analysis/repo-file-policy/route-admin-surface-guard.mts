@@ -166,7 +166,7 @@ export function checkRouteAdminSurfaceGuard(
     if (!trackedFileSet.has(policy.file)) {
       if (shouldEnforceAdminSurfaceFiles) {
         errors.push(
-          `::error file=${policy.file}::${policy.file}: protected entity-scoped admin surface must exist; see docs/requirements/navigation/ROUTES.md#route-relocation-audit`,
+          `::error file=${policy.file}::${policy.file}: protected entity-scoped admin surface must exist`,
         )
       }
       continue
@@ -174,7 +174,7 @@ export function checkRouteAdminSurfaceGuard(
     const fullPath = join(repoRoot, policy.file)
     if (!existsSync(fullPath)) {
       errors.push(
-        `::error file=${policy.file}::${policy.file}: protected entity-scoped admin surface must exist; see docs/requirements/navigation/ROUTES.md#route-relocation-audit`,
+        `::error file=${policy.file}::${policy.file}: protected entity-scoped admin surface must exist`,
       )
       continue
     }
@@ -191,7 +191,7 @@ export function checkRouteAdminSurfaceGuard(
     for (const requirement of policy.requirements) {
       if (!requirement.predicate(facts)) {
         errors.push(
-          `::error file=${policy.file}::${policy.file}: entity-scoped admin surface must ${requirement.description}; see docs/requirements/navigation/ROUTES.md#route-relocation-audit`,
+          `::error file=${policy.file}::${policy.file}: entity-scoped admin surface must ${requirement.description}`,
         )
       }
     }

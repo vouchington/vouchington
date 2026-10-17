@@ -111,7 +111,7 @@ redirect-sensitive route.
   discoverable flows.
 - When a route or admin surface moves, update `navigateTo()` targets, `page.route()` mocks, and
   `data-pw` selectors — see the
-  [relocation audit](../../../docs/requirements/navigation/ROUTES.md#route-relocation-audit).
+  relocation audit.
 - Avoid full journey tests for unrelated assertions. Keep each spec focused on one behavior, and use
   seeded state to start at the route where that behavior happens.
 - When Playwright exposes a real flake, fix the root selector/state setup in the spec before

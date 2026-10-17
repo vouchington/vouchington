@@ -25,6 +25,5 @@ redesign must preserve exact admission ordering instead of weakening the counter
 
 ## Related
 
-- [Fediverse requirements](../../../../../requirements/content/FEDIVERSE.md)
 - [ActivityPub inbox service](../../../services/ap-inbox-activities/README.md)
 - [ActivityPub inbox worker](../../../queues/workers/activitypub-inbox/README.md)

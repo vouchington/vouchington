@@ -13,7 +13,14 @@ import { isLargeTable, parentRelationName } from './plan-warnings.mts'
 export const SEQ_SCAN_TIE_RATIO = 0.25
 
 /** `no_seq_scan_total_cost` is the plan-only cost with `enable_seqscan = off`, set at capture. */
-export type ProbedExplainResult = ExplainResult & { no_seq_scan_total_cost?: number }
+export type ProbedExplainResult = ExplainResult & {
+  no_seq_scan_total_cost?: number
+  /** Baselined relations absent from the plan, each priced plan-only with index scans disabled. */
+  forced_seq_scans?: Readonly<Record<string, ForcedSeqScan>>
+}
+
+/** The forced plan's total cost and the cost of its sequential scan nodes on one relation. */
+export type ForcedSeqScan = { total_cost: number; scan_cost: number }
 
 export function planTotalCost(plan: unknown): number | undefined {
   if (plan == null || typeof plan !== 'object' || Array.isArray(plan)) return undefined
@@ -49,6 +56,36 @@ function seqScanCost(plan: unknown): number {
       node.seqScan && node.relationName && isLargeTable(node.relationName) ? sum + node.cost : sum,
     0,
   )
+}
+
+/**
+ * The forced plan's costs, only when it really sequentially scans `relation`. A forced plan that
+ * keeps no scan of it (an index-only path the planner still found, or a rewritten statement)
+ * proves nothing about the baselined scan.
+ */
+export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqScan | undefined {
+  const scans = collectNodes(probePlan).filter(
+    node =>
+      node.seqScan &&
+      node.relationName &&
+      isLargeTable(node.relationName) &&
+      parentRelationName(node.relationName) === relation,
+  )
+  const totalCost = planTotalCost(probePlan)
+  return scans.length > 0 && totalCost !== undefined
+    ? { total_cost: totalCost, scan_cost: scans.reduce((sum, node) => sum + node.cost, 0) }
+    : undefined
+}
+
+/**
+ * A baselined scan the planner no longer chose is a near-tie, not a fix, when forcing it back
+ * costs at most SEQ_SCAN_TIE_RATIO of that scan more than the chosen plan.
+ */
+export function isStaleSeqScanNearTie(result: ProbedExplainResult, relation: string): boolean {
+  const forced = result.forced_seq_scans?.[relation]
+  const chosen = planTotalCost(result.plan)
+  if (forced === undefined || chosen === undefined) return false
+  return forced.total_cost - chosen <= forced.scan_cost * SEQ_SCAN_TIE_RATIO
 }
 
 export function isSeqScanNearTie(result: ProbedExplainResult): boolean {

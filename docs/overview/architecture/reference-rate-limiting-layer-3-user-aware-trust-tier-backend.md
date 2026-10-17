@@ -27,7 +27,7 @@ All thresholds are runtime-configurable via DynamicConfig (Valkey-backed). Chang
   [`route-rate-limit-config.enabled` kill switch](rate-limiting.md#layer-4-per-route-rate-limiting-backend).
 
 Public contribution creation limits are configured separately in DynamicConfig namespace
-`contribution-rate-limits`; see [Contribution Limits](../../requirements/trust-safety/CONTRIBUTION-LIMITS.md).
+`contribution-rate-limits`; see Contribution Limits.
 
 ### Default Thresholds (per 60s)
 

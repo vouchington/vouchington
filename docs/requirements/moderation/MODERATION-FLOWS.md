@@ -1,17 +1,34 @@
 # Moderation Flows
 
-## Contents
+The platform moderates in layers. Non-admin user-created posts go through an automated clearance
+pipeline (spam and policy screening, then LLM agents) before becoming visible. Admin-created
+non-story posts are trusted on create, but community approval requirements can still hold a
+community-published post for manual approval, and a later edit resets an admin post into the
+normal pipeline. User reports are the manual escalation path. Community owners and moderators have
+community-scoped tools, and site admins have global control.
 
-- <a id="overview-and-subsystem-map"></a>[Overview and Subsystem Map](reference-moderation-flows-overview.md)
-- <a id="native-client-capability-boundary-pipeline-diagram-and-post-clearance-gate"></a>[Native Client Capability Boundary, Pipeline Diagram, and Post Clearance Gate](reference-moderation-flows-native-client-capability-boundary.md)
-- <a id="spam-detection-and-openai-omni-moderation"></a>[Spam Detection and OpenAI Omni Moderation](reference-moderation-flows-2-spam-detection.md)
-- <a id="4-llm-agent-moderation"></a>[4. LLM Agent Moderation](reference-moderation-flows-4-llm-agent-moderation.md)
-- <a id="5-community-moderation"></a>[5. Community Moderation](reference-moderation-flows-5-community-moderation.md)
-- <a id="user-reports-vote-integrity-user-suspension-domain-and-hostname-blocking-moderator-operations-and-related-documentation"></a>[User Reports, Vote Integrity, User Suspension, Domain and Hostname Blocking, Moderator Operations, and Related Documentation](reference-moderation-flows-6-user-reports.md)
-- <a id="public-documentation"></a>[Public Documentation](reference-moderation-flows-public-documentation.md)
+## Where each concern lives
+
+- Content policy keys, severity, and recommended actions: [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md).
+- User reports and the review queue: [Reporting](./REPORTING.md), with
+  [Report Judgements](./REPORT-JUDGEMENTS.md) for AI recommendations.
+- Appeals and legal disputes: [Moderation Appeals](./MODERATION-APPEALS.md) and
+  [Review Disputes](./REVIEW-DISPUTES.md).
+- Copyright cases: [Copyright Notices](./COPYRIGHT-NOTICES.md), a separate legal lifecycle.
+- Automated actors in audit trails: [Moderation System Users](./MODERATION-SYSTEM-USERS.md).
+- Aggregate dashboards: [Moderation Analytics](./MODERATION-ANALYTICS.md).
+- Penalties: Penalties.
+- Services and queues: the architecture docs and package READMEs under `backend/services` and
+  `backend/queues`.
+
+## Reports
+
+**Reportable entities:** `rss_feed_item`, `post`, `comment`, `user`, `url_hostname`
+**Reasons:** `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other`. `vote_manipulation` is valid only when `entityType = 'post'`.
+**Flow:** a report creates or updates one pending row; see [Reporting](./REPORTING.md).
 
 ## Paid Transparency Projection
 
 The paid transparency API is an aggregate release, not a moderation queue or a community record
-feed. It applies the shared 48-hour delay, cohort-of-20 suppression, and nearest-five rounding
-before data leaves `@services/moderation-analytics`; see [Moderation Analytics](./MODERATION-ANALYTICS.md).
+feed. It applies the shared delay, cohort suppression, and rounding before data leaves
+`@services/moderation-analytics`; see [Moderation Analytics](./MODERATION-ANALYTICS.md).

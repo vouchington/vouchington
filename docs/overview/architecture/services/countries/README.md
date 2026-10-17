@@ -20,5 +20,5 @@ edge instead (see the route README).
 
 ## Related
 
-- Route: [../../api/v1/countries/README.md](../../../../requirements/api/v1/countries/README.md)
+- Route: ../../api/v1/countries/README.md
 - Backend services: [../AGENTS.md](../../../../../backend/services/AGENTS.md)

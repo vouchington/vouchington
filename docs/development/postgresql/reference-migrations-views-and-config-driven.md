@@ -56,7 +56,7 @@ creator's ledger insert. Do not add online index-upgrade files, historical drops
 `BEGIN`/`COMMIT` statements. The schema snapshot verifies the resulting current definitions.
 
 Admin endpoints for operating this machinery are documented in
-[../../api/v1/psql/README.md](../../requirements/api/v1/psql/README.md).
+../../api/v1/psql/README.md.
 
 ### View Composition and the Eligibility-View Pull-Up Rule
 
@@ -97,7 +97,7 @@ The alias-side candidate source in that worked example derives ids from
 through a `post_topic_alias_sources` join: joining the candidate-bind subselect through that
 authorship table both breaks the pull-up (it is not the indexed relation the topic id restricts) and
 answers a different question than membership. See
-[Membership vs. authorship](../../requirements/content/reference-topics-topic-aliases.md#hashtag-aliases).
+Membership vs. authorship.
 
 New topic→post candidate derivations should use the shared builders in
 [`@modules/feed-query-builders`](../../overview/architecture/backend/modules/feed-query-builders/README.md#topic-post-candidates)

@@ -85,7 +85,7 @@ User logs out
 ```
 
 A suspended account keeps that authenticated session. Ordinary writes are blocked by the
-[suspended-user write policy](../../requirements/security/reference-security-authentication-sessions.md#suspended-user-write-policy).
+suspended-user write policy.
 
 ## Related
 

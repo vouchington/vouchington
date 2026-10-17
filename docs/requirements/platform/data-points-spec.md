@@ -1,17 +1,22 @@
 # Data Points Specification
 
-## Contents
+Data points are structured, typed records that users submit alongside posts. Unlike free-text
+reviews they follow a schema per vertical, which enables aggregation, comparison, and trend
+analysis. Schemas and validation live in `ts-shared/data-points` and
+`backend/services/data-points`.
 
-- <a id="overview"></a>[Overview](reference-data-points-spec-overview.md)
-- <a id="implementation"></a>[Implementation](reference-data-points-spec-overview.md)
-- <a id="profile-pre-fill--save-to-profile"></a>[Profile Pre-Fill & Save-To-Profile](reference-data-points-spec-overview.md)
-- <a id="privacy--anonymity"></a>[Privacy & Anonymity](reference-data-points-spec-overview.md)
-- <a id="credit-card-fields"></a>[Credit Card Fields](reference-data-points-spec-credit-card-fields.md)
-- <a id="bank-account-fields"></a>[Bank Account Fields](reference-data-points-spec-bank-account-fields.md)
-- <a id="hardware-fields"></a>[Hardware Fields](reference-data-points-spec-hardware-fields.md)
-- <a id="ai-tool-fields"></a>[AI Tool Fields](reference-data-points-spec-ai-tool-fields.md)
-- <a id="aggregation-views"></a>[Aggregation Views](reference-data-points-spec-ai-tool-fields.md)
-- <a id="data-quality-rules"></a>[Data Quality Rules](reference-data-points-spec-data-quality-rules.md)
-- <a id="review-structure-by-vertical"></a>[Review Structure by Vertical](reference-data-points-spec-review-structure-by-vertical.md)
-- <a id="multi-topic-review-enhancements-planned"></a>[Multi-Topic Review Enhancements (Planned)](reference-data-points-spec-multi-topic-review-enhancements-planned.md)
-- <a id="related"></a>[Related](reference-data-points-spec-multi-topic-review-enhancements-planned.md)
+## Decisions
+
+- **Public by design.** Data points are public so they can be aggregated. Financial fields are
+  pre-filled from a member's private financial profile but become part of the public post once
+  submitted.
+- **Anonymous posting.** A member can post anonymously to contribute to aggregates while decoupling
+  the data from their public identity. Other users see only "anonymous"; the creator and
+  administrators retain the author metadata.
+- **Profile pre-fill is opt-in on the way back.** Profile-sourced fields are pre-filled and
+  overridable per submission. Writing changes back to the profile requires an unchecked-by-default
+  "Save changes to my profile" choice and is best effort: a failed save never rolls back the post.
+- **Per-application facts stay per-application.** For example, an existing relationship with an
+  issuer reflects the applicant's state at that application and is deliberately not profile-scoped.
+- **Extensible and versioned.** New verticals add schemas without changing the core data model, and
+  an in-document schema version allows evolution without migrations.

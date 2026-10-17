@@ -96,6 +96,5 @@ the `ref` fallback.
 
 ## Related
 
-- [Attribution API](../../../../requirements/api/v1/attribution/README.md)
 - [Users Service](../users/README.md)
 - [Prioritized Referral Links Service](../prioritized-referral-links/README.md)

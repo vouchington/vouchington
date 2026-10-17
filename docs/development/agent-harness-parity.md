@@ -105,10 +105,8 @@ flowchart LR
 Cursor and OpenCode use the same instruction and skill ownership model through their native
 project surfaces:
 
-Ambient Blackboard identity is owned by
-[`dev/agent-session-id/resolve.mts`](../../dev/agent-session-id/resolve.mts). It consumes the
-policy-neutral environment inspection from `vouchington-tooling`; transcript discovery deliberately
-keeps its separate caller-owned order in `dev/retrospective-transcript-facts/resolve.mts`.
+Blackboard tools take the explicit `sessionId` the SessionStart hook prints; transcript discovery
+keeps its own caller-owned order in `dev/retrospective-transcript-facts/resolve.mts`.
 
 ### Cursor capability surface
 

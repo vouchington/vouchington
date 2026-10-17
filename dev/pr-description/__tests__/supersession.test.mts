@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ClosingIssueReference } from '../closing-refs.mts'
+import type { ClosingIssueReference } from 'vouchington-tooling/gh-cli'
 import type { IssueAuditKeepOpenDecision } from '../issue-audit-marker.mts'
 import type { PackageJsonReader } from '../removed-scripts.mts'
 import { createDiffSummary, reduceDiffBlock } from '../diff-summary.mts'

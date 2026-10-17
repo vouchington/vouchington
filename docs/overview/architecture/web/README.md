@@ -6,7 +6,6 @@ Next.js app-router frontend for Voucha. The Cloudflare Worker is the public entr
 
 ## Source Of Truth
 
-- Routes and page requirements: [docs/requirements/navigation/ROUTES.md](../../../requirements/navigation/ROUTES.md)
 - SEO and indexability: [docs/requirements/seo/SEO.md](../../../requirements/seo/SEO.md)
 - Dynamic rendering: [docs/requirements/navigation/DYNAMIC-RENDERING.md](../../../requirements/navigation/DYNAMIC-RENDERING.md)
 - Components and design-system usage: [docs/requirements/navigation/COMPONENTS.md](../../../requirements/navigation/COMPONENTS.md)
@@ -91,14 +90,12 @@ drift. See [`web/components/shared/time-ago.tsx`](../../../../web/components/sha
 - Storybook: [AGENTS.md](../../../../web/storybook/AGENTS.md) / [README.md](../../../development/testing/storybook/README.md)
 - Entity link helpers: [AGENTS.md](../../../../web/lib/links/AGENTS.md) / [README.md](lib/links/README.md)
 - Route factories: [lib/routes/AGENTS.md](../../../../web/lib/routes/AGENTS.md)
-- Entity anatomy (fields, states, surfaces): [anatomy/README.md](../../../requirements/anatomy/README.md)
+- Entity anatomy (fields, states, surfaces): anatomy/README.md
 - Content safety: [content-rendering.md](../content-rendering.md)
 - Expanded web agent rules: [web-agent-rules.md](../../../development/web-agent-rules.md)
-- Entity × action cross-cut matrix: [ENTITY-ACTION-MATRIX.md](../../../requirements/ENTITY-ACTION-MATRIX.md)
-- Entity × lifecycle flow matrix: [ENTITY-LIFECYCLE-MATRIX.md](../../../requirements/ENTITY-LIFECYCLE-MATRIX.md)
 - Error handling: [error-handling.md](../error-handling.md)
 - Currency-aware integer money contract: [monetary-values.md](../monetary-values.md)
-- Post requirements: [POSTS.md](../../../requirements/content/POSTS.md)
+- Post requirements: POSTS.md
 - Intent-based navigation (vocabulary, taxonomy, resolver): [NAVIGATION.md](../../../requirements/navigation/NAVIGATION.md)
 
 ## Related

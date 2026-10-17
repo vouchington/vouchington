@@ -12,7 +12,7 @@
 - Classification: `backend/services/posts/review-successions/audit.mts`.
 - Queue contract: `backend/queues/post-publication/enqueues.mts`.
 - Operator registry: `backend/services/queue-monitoring/backfills-post-publication.mts`.
-- Lifecycle contract: [Review succession](../requirements/content/reference-post-lifecycle-review-succession.md).
+- Lifecycle contract: Review succession.
 
 ## Prerequisites
 
@@ -58,4 +58,3 @@ Keep this aligned with `backend/services/posts/review-successions/audit.mts`,
 ## See Also
 
 - [Post publication queue](../overview/architecture/queues/post-publication/README.md)
-- [Review succession lifecycle](../requirements/content/reference-post-lifecycle-review-succession.md)

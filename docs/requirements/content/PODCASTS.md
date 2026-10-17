@@ -1,13 +1,11 @@
 # Podcasts
 
-Voucha surfaces podcasts as first-class content via the existing `rss_feeds` entity
-(`feed_type='podcast'`). This doc covers the architecture decision, the schema, parsing,
-hub routes, player design, and the roadmap for a persistent global player.
+## Architecture decision: facet, not a new topic type
 
-## Contents
+Podcasts are not a new `topic_type`. They qualify under the [type-vs-facet rule](./TOPICS.md#type-vs-facet),
+but the shared `rss_feeds` extension (URLs, crawls, items, enclosures, scheduler) already exists and
+serves podcasts well. A podcast topic type would orphan or duplicate that infrastructure.
 
-- <a id="architecture-decision-facet-not-a-new-topic-type"></a>[Architecture Decision: Facet, Not a New Topic Type](reference-podcasts-architecture-decision-facet-not-a-new-topic-type.md)
-- <a id="schema"></a>[Schema](reference-podcasts-schema.md)
-- <a id="parsing-read-model-and-hub-routes"></a>[Parsing, Read Model, and Hub Routes](reference-podcasts-parsing.md)
-- <a id="player-architecture"></a>[Player Architecture](reference-podcasts-player-architecture.md)
-- <a id="tests-episode-categories-and-see-also"></a>[Tests, Episode Categories, and See Also](reference-podcasts-tests.md)
+- Podcasts remain `rss_feeds` rows with `feed_type='podcast'`.
+- "First-class" means first-class routing and UI, not a new entity type.
+- The show page is the existing source page, so there is no duplicate SEO URL.

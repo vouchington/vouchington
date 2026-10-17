@@ -4,7 +4,7 @@
 
 Users can delete their accounts from the account settings page (`/my/data`). This feature satisfies
 GDPR "Right to Erasure" and CCPA "Right to Delete" requirements. Data export has its own
-[requirements](./ACCOUNT-DATA-EXPORT.md); see the [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
+[requirements](./ACCOUNT-DATA-EXPORT.md); see the User Privacy Feature Matrix
 for coverage.
 
 ---
@@ -30,7 +30,7 @@ stateDiagram-v2
     [*] --> Active
     Active --> Deleting: DELETE returns 202 after deleted_at and direct PII scrub commit
     Deleting --> SoftDeleted: bounded durable phases and required provider cleanup complete
-    SoftDeleted --> HardDeleted: dataRetentionCleanup cron, 90 days after deleted_at
+    SoftDeleted --> HardDeleted: dataRetentionCleanup cron, after the retention period
     HardDeleted --> [*]
 ```
 
@@ -48,8 +48,8 @@ writes finish before the deletion fence; later writes fail, so completed phases 
 The `user-deletions` worker then commits one bounded phase page at a time. Each job carries the
 request ID and an exact processing-attempt fencing token; the successor is enqueued only after the
 page commits. A final queue-attempt failure rotates its token before the failed job is retained. A
-five-minute recovery pass reuses tokens for ordinary unstarted work and replaces tokens for work
-that has been processing for 30 minutes. This keeps failed jobs and stale workers fenced without
+recovery pass reuses tokens for ordinary unstarted work and replaces tokens for work
+that has been processing too long. This keeps failed jobs and stale workers fenced without
 invalidating queued work. `user_deletion_requests.completed_at` is the internal
 completion marker and is written only after every database phase, relation recomputation, Stripe
 sanitization, export-object deletion, and Cloudflare user-tag purge completes.
@@ -62,9 +62,9 @@ future lease remains, which prevents an upload from landing after its durable cl
 Stale token rotation retains the displaced attempt's deterministic object key so deletion can still
 purge it after the lease expires.
 
-The daily `data-retention-cleanup-daily` cron permanently deletes a soft-deleted row after 90 days
+The daily `data-retention-cleanup-daily` cron permanently deletes a soft-deleted row after the retention period
 only when its deletion request is complete and no legal-process preservation hold is open. Releasing
-the hold makes the row eligible from its original `deleted_at`; the 90-day clock does not restart.
+the hold makes the row eligible from its original `deleted_at`; the retention clock does not restart.
 The purge reassigns FK references that lack `ON DELETE
 CASCADE`/`SET NULL` (for example verified identities) before the
 hard delete. Before removing the account, the same transaction revokes every retained administrator
@@ -82,7 +82,7 @@ payment/support audit without retaining either deleted account identifier.
    posts are reassigned to the tombstone `deleted` user.
 3. Active lists, configured election votes, and user-subject relations are removed in bounded pages.
 4. Entity-relation votes are removed in bounded pages by their full concrete key. Their actual
-   `DELETE RETURNING` tuples supply the relation table, subject ID, and relation ID for 17 concrete
+   `DELETE RETURNING` tuples supply the relation table, subject ID, and relation ID for the concrete
    retained identity families and an exact-one typed impact. Recompute, publication, and effect
    work use that full key; if a relation cascade removed the vote first, no impact is recorded.
 5. Email addresses, phone numbers, passkeys, social links, OAuth PII, Bluesky data, referral
@@ -153,7 +153,7 @@ privacy fence commits, or the `409` above. The
 [data-export requirements](./ACCOUNT-DATA-EXPORT.md#api-endpoints) document the request and status
 routes. Administrators place, list, and release a preservation hold with
 `PUT|GET|DELETE /api/v1/users/:userId/preservation-hold`; see the
-[users endpoint reference](../api/v1/users/reference-endpoints.md).
+users endpoint reference.
 
 Authorization: Users can only access their own requests; admins can access any user's requests.
 
@@ -161,7 +161,6 @@ Authorization: Users can only access their own requests; admins can access any u
 
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
-- [User Privacy Feature Matrix](./USER-PRIVACY-MATRIX.md)
 - [Account Data Export](./ACCOUNT-DATA-EXPORT.md)
 
 - [docs/requirements/navigation/ACCESSIBILITY.md](../navigation/ACCESSIBILITY.md)

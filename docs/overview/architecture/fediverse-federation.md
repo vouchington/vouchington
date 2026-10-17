@@ -1,7 +1,7 @@
 # Fediverse Federation
 
 The fediverse surface began as search-only — a live-queried aggregator, not protocol federation (see
-[FEDIVERSE.md](../../requirements/content/FEDIVERSE.md)). This doc is the roadmap and technical
+FEDIVERSE.md). This doc is the roadmap and technical
 design for the four dependency-sequenced phases that turn it into a real federation participant: A
 (real inbound search) → B (instance directory + voting) → C (outbound ActivityPub) → D (Bluesky
 account-linking). All four phases have shipped: Voucha now serves WebFinger, NodeInfo, an AP actor

@@ -16,7 +16,7 @@ The common 100-row profile uses `max_limit`. Existing 25-, 50- and 200-row excep
 have independent configured maxima, preserving their advertised range. Existing route-default
 profiles remain distinct; anonymous search is additionally bounded by `anonymous_max_limit`.
 Clients follow `page_info` and opaque cursors even when a configured page is shorter than their
-requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATRIX.md#runtime-pagination-limits).
+requested limit. See [client coordination](../../requirements/CLIENT-PARITY-MATRIX.md).
 
 ## API And Query Contract
 
@@ -178,7 +178,7 @@ export — prefer the named export at every genuinely provably-empty site so the
 
 - [Root repository rules](../../../AGENTS.md)
 - [Backend rules](../../../backend/AGENTS.md) and [API route rules](../../../backend/api/AGENTS.md)
-- [Web rules](../../../web/AGENTS.md) and [route requirements](../../requirements/navigation/ROUTES.md)
+- [Web rules](../../../web/AGENTS.md) and route requirements
 - [User settings workflows](../../requirements/users/USER_SETTINGS.md)
 - [native client rules](https://github.com/vouchington/vouchington-clients), and
   [native parity checklist](../../checklists/native-parity-interactions.md)

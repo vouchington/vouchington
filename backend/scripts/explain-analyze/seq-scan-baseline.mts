@@ -1,7 +1,11 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
 import { BASELINE_FINGERPRINTS } from './seq-scan-baseline-data.mts'
-import { isSeqScanNearTie } from './seq-scan-ties.mts'
+import {
+  isSeqScanNearTie,
+  isStaleSeqScanNearTie,
+  type ProbedExplainResult,
+} from './seq-scan-ties.mts'
 
 export type SeqScanBaseline = Readonly<Record<string, readonly string[]>>
 
@@ -69,9 +73,15 @@ export function assertNoNewSeqScans(
   const added = [...stable]
     .filter(fingerprint => !allowed.has(fingerprint) && !nearTies.includes(fingerprint))
     .toSorted()
+  // The mirror case: a baselined scan the planner dropped is not fixed when forcing it back
+  // would have cost almost the same, so it is advisory too.
+  const staleNearTies = getStaleNearTies(firstResults, repeatedResults)
   const stale = [
     ...[...allowed].filter(
-      fingerprint => !gatedFirst.has(fingerprint) && !gatedRepeated.has(fingerprint),
+      fingerprint =>
+        !gatedFirst.has(fingerprint) &&
+        !gatedRepeated.has(fingerprint) &&
+        !staleNearTies.includes(fingerprint),
     ),
     ...Object.entries(baseline)
       .filter(
@@ -91,7 +101,20 @@ export function getSeqScanNearTies(
   repeatedResults: readonly ExplainResult[],
 ): string[] {
   const tied = [...firstResults, ...repeatedResults].filter(isSeqScanNearTie)
-  return [...scanFingerprints(tied)].toSorted()
+  return [
+    ...new Set([...scanFingerprints(tied), ...getStaleNearTies(firstResults, repeatedResults)]),
+  ].toSorted()
+}
+
+function getStaleNearTies(
+  firstResults: readonly ExplainResult[],
+  repeatedResults: readonly ExplainResult[],
+): string[] {
+  return [...firstResults, ...repeatedResults].flatMap(result =>
+    Object.keys((result as ProbedExplainResult).forced_seq_scans ?? {})
+      .filter(relation => isStaleSeqScanNearTie(result as ProbedExplainResult, relation))
+      .map(relation => `${getExplainResultIdentity(result)}:${relation}`),
+  )
 }
 
 function scanFingerprints(results: readonly ExplainResult[]): Set<string> {

@@ -29,7 +29,7 @@
 - Reporter review notifications are one-per-report events and use generic copy; they do not expose the reported target, reporter note, moderator identity, or an appeal CTA. They persist `target_intent: notifications_inbox` rather than a content `target_path`.
 - Community application decisions, role changes, and ownership transfers are durable event-keyed
   rows; ownership transfer notifies both the previous and new owner.
-- A Monday 09:00 UTC job creates at most one combined previous-week community activity digest per
+- A weekly job creates at most one combined previous-week community activity digest per
   eligible owner/moderator. Communities without qualifying activity do not contribute. Incomplete
   dispatch windows become eligible for durable requeue after an hour without batch activity and
   restart on the next scheduler tick. Replay starts at the first recipient page, cursor jobs are
@@ -67,7 +67,6 @@
 - Topic subscriptions are split:
   - `subscribe_posts` for topic posts
   - `subscribe_rss_feed_items` for topic RSS feed items
-  - Note: the UI to create new topic subscriptions was removed in #6223; the backend relations remain active for existing subscribers
 - Users automatically subscribe to their own posts and comments
 
 ## Subscription Controls
@@ -81,7 +80,7 @@
 - Post cards, post detail pages, and news item cards expose `Send to followers` for eligible non-owner content
 - The send modal defaults to `All followers`
 - Users can switch to `Selected followers`; the picker searches current followers on the server by username prefix, discards superseded query and cursor responses, and appends de-duplicated cursor pages through its `Load more` control
-- A manual send can target 1–100 distinct selected followers
+- A manual send can target a bounded set of distinct selected followers
 - Sending to people who do not currently follow the sender is disallowed
 - Send actions queue chunked notification fanout only for followers who existed at send time
 
@@ -115,5 +114,4 @@
 - [Web rules](../../../web/AGENTS.md) — UI, routing, and client conventions
 - [Backend rules](../../../backend/AGENTS.md) — service, API, and data conventions
 
-- [Routes](./ROUTES.md)
 - [Topbar & Search](./TOPBAR-SEARCH.md)

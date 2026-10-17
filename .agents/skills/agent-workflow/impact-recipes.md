@@ -126,7 +126,7 @@ the accepted plan into a finite contract matrix before the first push.
 1. Start from the durable requirement maps:
 
    ```sh
-   rg -n -F '<entity-or-feature>' docs/requirements/CLIENT-PARITY-MATRIX.md docs/requirements/ENTITY-ACTION-MATRIX.md docs/requirements/ENTITY-LIFECYCLE-MATRIX.md docs/requirements/anatomy
+   rg -n -F '<entity-or-feature>' docs/requirements/client-feature-parity.json
    rg -n -F '<route-or-action>' docs/requirements docs/checklists backend web api-fixtures/v1
    ```
 

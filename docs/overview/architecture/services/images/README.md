@@ -430,5 +430,4 @@ FROM images WHERE deleted_at IS NULL;
 
 ## Related
 
-- [docs/requirements/api/v1/images/README.md](../../../../requirements/api/v1/images/README.md)
 - [docs/overview/architecture/queues/image-uploads/README.md](../../queues/image-uploads/README.md)

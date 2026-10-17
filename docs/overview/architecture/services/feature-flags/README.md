@@ -29,6 +29,4 @@ exports.
 
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Shared cookie primitives: [../../../ts-shared/feature-flags/index.mts](../../../../../ts-shared/feature-flags/index.mts)
-- [docs/requirements/api/v1/feature-flags/README.md](../../../../requirements/api/v1/feature-flags/README.md)
-- [docs/requirements/api/v1/dynamic-config/README.md](../../../../requirements/api/v1/dynamic-config/README.md)
 - [docs/overview/architecture/feature-flags.md](../../feature-flags.md)

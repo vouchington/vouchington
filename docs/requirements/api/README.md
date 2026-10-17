@@ -1,147 +1,127 @@
-# API Routes
+# API Design Decisions
 
-Source entrypoint: [backend/api/README.md](../../../backend/api/README.md)
+Routes, request schemas and limits are read from `backend/api/**` and the generated request
+contracts. This page records only the decisions code cannot show.
 
-HTTP API route reference for Voucha. Routes are thin controllers over `@services/*`.
+## Route helpers
 
-## Route documentation
+- Status precedence is deliberate: the rate limiter's 429 (also for anonymous callers) comes before
+  the 401, then the signature error, then suspension. The limiter charges while the user is
+  fetched, so they are one serial step.
+- Authorization runs before the limiter, so forbidden requests are not charged.
+- Body-bearing mutations accept only JSON unless a route declares an exception. Bodyless mutations
+  need no `Content-Type`.
+- Request validation runs through the generated contract, so a malformed body is a 422 and never a 500.
 
-Keep route-local README headings. When a heading links a `reference-*.md` leaf, update that leaf
-for endpoint-specific details; otherwise the README's inline section is canonical.
+## Response patterns
 
-## Route Map
+- Never return a raw entity or raw array at the top level. Wrap single entities, and wrap lists as
+  `{ results, page_info }`.
+- Entity payloads carry no nested election summaries or raw vote aggregates. Elections are
+  top-level sidecar maps keyed by entity id, fetched through the cached batch helpers.
+- Streamed lists return refs only in `results[]`; entity payloads stream in separate keyed maps.
+  Empty responses keep the same top-level fields.
 
-| Area                    | Reference                                                                                         | Notes                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Admin topic imports     | [v1/admin/imports/README.md](./v1/admin/imports/README.md)                                        | Admin-only bulk CSV imports                     |
-| Agent moderation        | [v1/agents/README.md](./v1/agents/README.md)                                                      | Agent moderation actions                        |
-| Attribution             | [v1/attribution/README.md](./v1/attribution/README.md)                                            | Referral attribution tracking                   |
-| Auth                    | [v1/auth/README.md](./v1/auth/README.md)                                                          | Login, logout, email auth, Meta auth            |
-| Captcha config          | [v1/captcha-config/README.md](./v1/captcha-config/README.md)                                      | Staging Turnstile always-approve public signal  |
-| Conversations           | [v1/conversations/README.md](./v1/conversations/README.md)                                        | Native transcript and title endpoints           |
-| Copyright notices       | [v1/copyright-notices/README.md](./v1/copyright-notices/README.md)                                | Notice, appeal, counter-notice, and review flow |
-| Crawlers                | [v1/crawlers/README.md](./v1/crawlers/README.md)                                                  | Crawler CRUD and refresh                        |
-| Dynamic config          | [v1/dynamic-config/README.md](./v1/dynamic-config/README.md)                                      | Runtime config namespaces and audit history     |
-| Entity relations        | [v1/entity-relations/README.md](./v1/entity-relations/README.md)                                  | Follow, mute, block, and subscribe actions      |
-| Feeds                   | [v1/feeds/README.md](./v1/feeds/README.md)                                                        | Personalized post and RSS item feeds            |
-| Hostnames               | [v1/hostnames/README.md](../../../backend/api/v1/hostnames/README.md)                             | Hostname search and comparison                  |
-| Households              | [v1/households/README.md](./v1/households/README.md)                                              | Household CRUD and memberships                  |
-| Images                  | [v1/images/README.md](./v1/images/README.md)                                                      | Presigned upload flow                           |
-| Individuals             | [v1/individuals/README.md](./v1/individuals/README.md)                                            | Current user's individual profile               |
-| Memberships             | [v1/memberships/README.md](./v1/memberships/README.md)                                            | Plans, billing, and grants                      |
-| MQ admin                | [v1/mq/README.md](./v1/mq/README.md)                                                              | Queue monitoring and management                 |
-| OAuth authorization     | [oauth/README.md](./oauth/README.md)                                                              | OAuth 2.1 authorization server and consent      |
-| My                      | [v1/my/README.md](./v1/my/README.md)                                                              | Current-user cards, profile, rewards, spending  |
-| PostgreSQL admin        | [v1/psql/README.md](./v1/psql/README.md)                                                          | Migrations, partitions, materialized views      |
-| Posts                   | [v1/posts/README.md](../../../backend/api/v1/posts/README.md)                                     | Post CRUD, ratings, search, descendants         |
-| Recommended topics      | [v1/recommended-topics/README.md](./v1/recommended-topics/README.md)                              | Personalized topic suggestions                  |
-| Referral links          | [v1/referral-links/README.md](./v1/referral-links/README.md)                                      | Link CRUD, validations, click attribution       |
-| RSS feed items          | [v1/rss-feed-items/README.md](./v1/rss-feed-items/README.md)                                      | Search and detail                               |
-| RSS feeds               | [v1/rss-feeds/README.md](../../../backend/api/v1/rss-feeds/README.md)                             | Feed CRUD, refresh, crawl history               |
-| Sessions authentication | [v1/sessions-authentication/README.md](../../../backend/api/v1/sessions-authentication/README.md) | Session lifecycle, passkeys, OAuth              |
-| Topic recommendations   | [v1/topic-recommendations/README.md](./v1/topic-recommendations/README.md)                        | Logged-in recommendation queue                  |
-| Topics                  | [v1/topics/README.md](../../../backend/api/v1/topics/README.md)                                   | Topic detail, search, discovery                 |
-| Trending topics         | [v1/trending-topics/README.md](./v1/trending-topics/README.md)                                    | Trending discovery                              |
-| URLs                    | [v1/urls/README.md](./v1/urls/README.md)                                                          | URL detail, search, crawl management            |
-| Users                   | [v1/users/README.md](../../../backend/api/v1/users/README.md)                                     | User profiles, collections, suspension          |
-| Valkey admin            | [v1/valkey/README.md](./v1/valkey/README.md)                                                      | Cache and bloom filter rebuild admin            |
-| Vote integrity          | [v1/vote-integrity/README.md](./v1/vote-integrity/README.md)                                      | Review queue and flag resolution                |
-| RSS XML                 | [../rss/README.md](../../overview/architecture/backend/rss/README.md)                             | Mounted at `/rss/`, not `/api/v1/`              |
+## Enumeration and disclosure
 
-## Route Helpers
+- Missing and not-owned private resources return 404, so ids cannot be probed.
+- Passkey sign-in failures are one generic 401 for unknown credential and failed verification.
+- Rate-limited attribution calls silently succeed so limits are not an oracle.
+- Post creation rejections never reveal quota thresholds, Safety policy, or moderation state.
+- Topic deletion is unsupported on purpose; merges are the only way to retire a topic.
+- The staff reply to a copyright counter-notice is intentionally not replay-safe, so staff are
+  never led to believe a repeated action succeeded.
 
-Use `response-helpers.mts` for standard route preambles:
+## Federation and OAuth
 
-- `requireAuth(ctx, routeId)` resolves a required user, applies rate limiting, and returns
-  `PrivateUser`. The route limiter charges while the user is fetched (it reads only session-token
-  data), so the two are one serial step. Status precedence is unchanged: the limiter's 429 (and
-  the 429 for an anonymous caller) comes before the 401, then the signature error, then
-  suspension. Usage metering still runs after the user resolves. The same overlap applies to
-  `getOptionalAuthAndRateLimit`, `requireAuthForSuspendedException` and
-  `getOptionalProtocolAuthAndRateLimit`.
-- `getOptionalAuthAndRateLimit(ctx, routeId)` resolves an optional user, applies rate limiting, and
-  returns `PrivateUser | null`.
-- `requireAuthAndRateLimit(ctx, canFn, routeId)` resolves a required user, authorizes, and applies
-  rate limiting, returning `PrivateUser`. It does not overlap: a `canFn` 403 comes before the
-  limiter, so forbidden requests are not charged.
-- `validateUUIDParam(ctx, name)` validates a UUID route parameter and throws 422 when invalid.
-- `parseJsonBody<T>(ctx, maxSize?)` parses a bounded JSON body, defaulting to `1mb`. Api-server
-  rejects non-JSON media types for body-bearing mutation routes unless the route declares an
-  explicit accepted-media-type exception. Enforcement is body-bearing only, so bodyless mutations
-  pass through without a `Content-Type` header.
-- `validateRequestContract(ctx, operation, input)` checks a route's path/body/query carriers
-  against the generated contract for `operation` (`'METHOD:/path'`) and throws 422 with the
-  registry's redacted message. Read [Request validation](reference-request-validation.md) for the
-  required ordering, pure query projection, meaningful-schema, and compiler/HTTP coverage rules.
-  Staff, moderation, membership, image, crawler, and operations routes, and the specialized ingress
-  that stays outside the adapter, are inventoried in
-  [Staff and operations validation](reference-staff-operations-request-validation.md).
+- ActivityPub discovery, actor and WebFinger routes and the Bluesky client-metadata route are
+  anonymous by design and skip the session preamble.
+- Actor identity is UUID-only; usernames appear only in WebFinger.
+- Federation is per-user opt-in; an opted-out user has no reachable actor.
+- Remote Likes land in an isolated ledger and never in `post_votes`, so a remote actor can never
+  move local ranking.
+- The inbox verifies the HTTP signature, then requires the activity's actor to match the signer.
+- OAuth `/register`, `/token` and `/revoke` are machine-to-machine; `/authorize` is a browser route
+  and keeps the ordinary session boundary. `/token` rejects a `resource` that is not the grant's
+  bound resource.
 
-Route modification invariants live in [AGENTS.md](../../../backend/api/AGENTS.md).
+## Route entrypoints
 
-## Response Patterns
+Each route directory keeps a short README that only points at the performance requirements, because
+a repository guard requires the `## Performance` heading. RSS XML is mounted outside `/api/v1`; see
+[RSS](../../overview/architecture/backend/rss/README.md).
 
-### Wrapped responses
+- [README.md](../../../backend/api/README.md)
+- [activitypub/README.md](../../../backend/api/activitypub/README.md)
+- [bluesky/README.md](../../../backend/api/bluesky/README.md)
+- [catalog/README.md](../../../backend/api/catalog/README.md)
+- [v1/reports/README.md](v1/reports/README.md) (guard-pinned token mirror)
+- [oauth/README.md](../../../backend/api/oauth/README.md)
+- [v1/admin/README.md](../../../backend/api/v1/admin/README.md)
+- [v1/admin/growth-metrics/README.md](../../../backend/api/v1/admin/growth-metrics/README.md)
+- [v1/admin/imports/README.md](../../../backend/api/v1/admin/imports/README.md)
+- [v1/admin/rss-feed-categories/README.md](../../../backend/api/v1/admin/rss-feed-categories/README.md)
+- [v1/agents/README.md](../../../backend/api/v1/agents/README.md)
+- [v1/app-attestation/README.md](../../../backend/api/v1/app-attestation/README.md)
+- [v1/appeals/README.md](../../../backend/api/v1/appeals/README.md)
+- [v1/attribution/README.md](../../../backend/api/v1/attribution/README.md)
+- [v1/auth/README.md](../../../backend/api/v1/auth/README.md)
+- [v1/availability/README.md](../../../backend/api/v1/availability/README.md)
+- [v1/blacklist/README.md](../../../backend/api/v1/blacklist/README.md)
+- [v1/bookmarks/README.md](../../../backend/api/v1/bookmarks/README.md)
+- [v1/captcha-config/README.md](../../../backend/api/v1/captcha-config/README.md)
+- [v1/communities/README.md](../../../backend/api/v1/communities/README.md)
+- [v1/conversations/README.md](../../../backend/api/v1/conversations/README.md)
+- [v1/copyright-notices/README.md](../../../backend/api/v1/copyright-notices/README.md)
+- [v1/countries/README.md](../../../backend/api/v1/countries/README.md)
+- [v1/crawlers/README.md](../../../backend/api/v1/crawlers/README.md)
+- [v1/curated-aside-items/README.md](../../../backend/api/v1/curated-aside-items/README.md)
+- [v1/currencies/README.md](../../../backend/api/v1/currencies/README.md)
+- [v1/disputes/README.md](../../../backend/api/v1/disputes/README.md)
+- [v1/dynamic-config/README.md](../../../backend/api/v1/dynamic-config/README.md)
+- [v1/entity-relations/README.md](../../../backend/api/v1/entity-relations/README.md)
+- [v1/feature-flags/README.md](../../../backend/api/v1/feature-flags/README.md)
+- [v1/fediverse/README.md](../../../backend/api/v1/fediverse/README.md)
+- [v1/feeds/README.md](../../../backend/api/v1/feeds/README.md)
+- [v1/friend-recommendations/README.md](../../../backend/api/v1/friend-recommendations/README.md)
+- [v1/hostnames/README.md](../../../backend/api/v1/hostnames/README.md)
+- [v1/households/README.md](../../../backend/api/v1/households/README.md)
+- [v1/images/README.md](../../../backend/api/v1/images/README.md)
+- [v1/individuals/README.md](../../../backend/api/v1/individuals/README.md)
+- [v1/landing-pages/README.md](../../../backend/api/v1/landing-pages/README.md)
+- [v1/lists/README.md](../../../backend/api/v1/lists/README.md)
+- [v1/localization/README.md](../../../backend/api/v1/localization/README.md)
+- [v1/markdown/README.md](../../../backend/api/v1/markdown/README.md)
+- [v1/mcp/README.md](../../../backend/api/v1/mcp/README.md)
+- [v1/memberships/README.md](../../../backend/api/v1/memberships/README.md)
+- [v1/mq/README.md](../../../backend/api/v1/mq/README.md)
+- [v1/my/README.md](../../../backend/api/v1/my/README.md)
+- [v1/my/aside-preferences/README.md](../../../backend/api/v1/my/aside-preferences/README.md)
+- [v1/platform-stats/README.md](../../../backend/api/v1/platform-stats/README.md)
+- [v1/podcast-episodes/README.md](../../../backend/api/v1/podcast-episodes/README.md)
+- [v1/posts/README.md](../../../backend/api/v1/posts/README.md)
+- [v1/psql/README.md](../../../backend/api/v1/psql/README.md)
+- [v1/recommended-topics/README.md](../../../backend/api/v1/recommended-topics/README.md)
+- [v1/referral-links/README.md](../../../backend/api/v1/referral-links/README.md)
+- [v1/report-integrity/README.md](../../../backend/api/v1/report-integrity/README.md)
+- [v1/reports/README.md](../../../backend/api/v1/reports/README.md)
+- [v1/rss-feed-items/README.md](../../../backend/api/v1/rss-feed-items/README.md)
+- [v1/rss-feeds/README.md](../../../backend/api/v1/rss-feeds/README.md)
+- [v1/scopes/README.md](../../../backend/api/v1/scopes/README.md)
+- [v1/search/README.md](../../../backend/api/v1/search/README.md)
+- [v1/sessions-authentication/README.md](../../../backend/api/v1/sessions-authentication/README.md)
+- [v1/stories/README.md](../../../backend/api/v1/stories/README.md)
+- [v1/topic-recommendations/README.md](../../../backend/api/v1/topic-recommendations/README.md)
+- [v1/topics/README.md](../../../backend/api/v1/topics/README.md)
+- [v1/trending-communities/README.md](../../../backend/api/v1/trending-communities/README.md)
+- [v1/trending-posts/README.md](../../../backend/api/v1/trending-posts/README.md)
+- [v1/trending-referral-programs/README.md](../../../backend/api/v1/trending-referral-programs/README.md)
+- [v1/trending-topics/README.md](../../../backend/api/v1/trending-topics/README.md)
+- [v1/urls/README.md](../../../backend/api/v1/urls/README.md)
+- [v1/users/README.md](../../../backend/api/v1/users/README.md)
+- [v1/valkey/README.md](../../../backend/api/v1/valkey/README.md)
+- [v1/vote-integrity/README.md](../../../backend/api/v1/vote-integrity/README.md)
+- [v1/web-search/README.md](../../../backend/api/v1/web-search/README.md)
 
-- Single entity: `{ post: { ... } }`
-- Lists: `{ results: [...], page_info: { ... } }`
-- Delete: `204 No Content`
-
-Never return a raw entity or raw array at the top level.
-
-### Election sidecars
-
-Entity payloads must not include nested election summaries or raw election aggregate fields such as
-`votes_score_net`, `votes_count_up`, or `votes_count_down`. Return election summaries as top-level
-sidecar maps keyed by entity ID, for example `post_elections`, `topic_elections`,
-`hostname_elections`, or `rss_feed_item_elections`. Detail endpoints may return a singular sidecar
-field such as `post_election`, but it must still be fetched through cached batch helpers.
-
-### Streaming lists
-
-For streamed list responses:
-
-- `results[]` contains refs only: `{ __entity_type, id }`
-- entity payloads stream in separate keyed maps such as `posts`, `topics`, `users`
-- promise-valued fields should be passed directly to `streamJsonObject()` from
-  `@jongleberry/api-server`
-- empty responses should still include the same top-level fields as the non-empty path
-
-## Caching And Rate Limiting
-
-- Rate-limit every endpoint unless explicitly exempted; use the [route helpers](#route-helpers).
-- Logged-out, non-personalized GET responses set `Cache-Control` for Cloudflare caching.
-- Single-entity reads use `@services/entity-cache`; logged-out list/search endpoints use `createSearchCache` where available.
-
-See the [rate-limit architecture](../../overview/architecture/rate-limiting.md).
-
-## Performance Conventions
-
-- Public GETs use `Cache-Control` and Cloudflare CDN caching.
-- Entity reads use Valkey `*CachedBatch()` / `*Cached()` helpers; logged-out list/search uses Valkey `*Cached()` wrappers.
-- List responses stream parallel promises through `streamJsonObject()`.
-
-Source route `README.md` files retain the required `## Performance` heading as a pointer to their
-canonical endpoint documentation under `docs/requirements/api/**`. Those docs own round trips,
-caching, and query patterns; keep source entrypoints short. See the [API performance requirements](../platform/api-performance.md).
-
-## Types
-
-- Canonical entity types live in [`backend/types/entities/`](../../../backend/types/entities/) (`@voucha/types/entities/`)
-- API response body types live in [`backend/api/types.mts`](../../../backend/api/types.mts)
-- Shared pagination types come from `@voucha/types/pagination`
-- Web API helpers should use concrete response types, not generic `<T>` wrappers
-
-## Related
-
-- Agent modification rules: [AGENTS.md](../../../backend/api/AGENTS.md)
-- Backend context: [../AGENTS.md](../../../backend/AGENTS.md)
-- Services: [../services/AGENTS.md](../../../backend/services/AGENTS.md)
-- Web requirements: [../../docs/requirements/README.md](../README.md)
-- Security architecture: [API Server Runtime Controls](../security/reference-backend-defence-in-depth.md#api-server-runtime-controls)
-
-## Reference index
-
-- [App Attestation API](../../../backend/api/v1/app-attestation/README.md)
-- [App Attestation API](v1/app-attestation/README.md)
-- [Content, list, household and public user route request validation](reference-content-routes-request-validation.md)
+See the [API performance requirements](../platform/api-performance.md) and
+[backend API instructions](../../../backend/api/AGENTS.md).

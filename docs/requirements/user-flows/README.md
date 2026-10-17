@@ -18,7 +18,7 @@ Update Status when specs land or flows change.
 **Persona collapse by entity:**
 
 - **Sources & Topics**: management is admin-only. SM has no elevated source or topic powers — personas collapse to **Anon / RU / SA** for these two. CM/CO matter only on `/communities/[slug]/*` scoped routes.
-- **Posts**: moderation is genuinely tiered — Author (24 h edit window) → RU → CM/CO → SA. All 4 personas diverge meaningfully here.
+- **Posts**: moderation is genuinely tiered — Author (time-boxed edit window) → RU → CM/CO → SA. All 4 personas diverge meaningfully here.
 
 ## Status Legend
 
@@ -38,9 +38,6 @@ Update Status when specs land or flows change.
 
 ## See Also
 
-- [Entity × Action Matrix](../ENTITY-ACTION-MATRIX.md) — atomic engagement actions (vote, follow, save, etc.)
-- [Entity × Lifecycle Flow Matrix](../ENTITY-LIFECYCLE-MATRIX.md) — create/edit/delete/approve lifecycle flows
-- [Moderation Test Matrix](../moderation/MODERATION-TEST-MATRIX.md) — moderation-specific flows and persona boundaries
 - [Signed-out Actions](../navigation/SIGNED_OUT_ACTIONS.md) — auth-state × entity × action visibility
 
 ## Local Setup Notes

@@ -175,7 +175,6 @@ Community list items are used in feed queries to expand the scope of followed an
 
 ## Related
 
-- [Community Lists requirements](../../../../../requirements/community/community-lists.md)
 - [Communities service](../README.md)
 - [Community authorization](../../../../../../backend/services/communities/authorization.mts)
 - [Entity relations](../../entity-relations/README.md)

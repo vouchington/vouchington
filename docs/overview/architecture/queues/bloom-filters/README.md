@@ -47,7 +47,7 @@ boot-time sweep (`@services/bloom-filter-maintenance`'s `sweepBookmarkBloomFilte
 attaches `BOOKMARK_BLOOM_FILTER_TTL_SECONDS` via `EXPIRE ... NX` to any live filter key left
 without one, closing the crash window between `backfillUserBookmarkBloomFilter`'s RENAME and its
 own TTL-setting `Batch` — see
-[JOB-REPLAYABILITY.md § Queue Replayability Matrix](../../../../requirements/platform/JOB-REPLAYABILITY.md#queue-replayability-matrix)
+[JOB-REPLAYABILITY.md § Queue Replayability Matrix](../../../../requirements/platform/JOB-REPLAYABILITY.md)
 and [bookmarks.md § Key Details](../../bookmarks.md#key-details).
 
 `processDeleteUserBookmarkBloomFilter` and `processBackfillUserBookmarkBloomFilter` share the

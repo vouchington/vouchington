@@ -93,7 +93,7 @@ The `backlog_dispatcher` runs every minute and reads the single-queue depth (`wa
   enqueue the story-clustering classifier's dispatcher for current RSS embeddings. The enqueue is
   best effort and the RSS item's durable classifier-run request is recovered by the classifier-run
   sweep, so there is no embedding-side marker. Queue acceptance does not imply clustering
-  completion. See [stories](../../requirements/content/stories.md).
+  completion. See stories.
 - **Ban-evasion detection** — current first-community-post embeddings use a conditional
   exact-input delivery marker. A separate bounded root revisits pending posts, including posts
   that become first after an earlier post is deleted.

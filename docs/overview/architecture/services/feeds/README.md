@@ -127,6 +127,5 @@ cursor, and indexed target/root lookup behavior.
 
 ## Related
 
-- [docs/requirements/api/v1/feeds/README.md](../../../../requirements/api/v1/feeds/README.md)
 - [docs/overview/architecture/services/rss-feeds/README.md](../rss-feeds/README.md)
 - [docs/overview/architecture/feeds.md](../../feeds.md)

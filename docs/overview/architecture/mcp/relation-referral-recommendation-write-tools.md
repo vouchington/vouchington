@@ -46,7 +46,7 @@ pair over the post category update, the way the web edits tags. The internal cur
 `add_related_topic` stays internal; the remove tool does not widen it. Both follow the private-post
 rule of `add_entity_relation`: an own private post needs the exact
 `post-relations.owned-private:write` grant, and another user's private post stays hidden. A missing
-freeform `#tag` is created by the add path as the domain already does (see [Tags](../../../requirements/content/TAGS.md)).
+freeform `#tag` is created by the add path as the domain already does (see Tags).
 
 Removing a tag the post's title or text writes is refused with `422` before any write: those tags
 come from the text, so edit the text. Removing a tag the post does not carry changes nothing and

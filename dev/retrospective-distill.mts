@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { runDistillClassify } from './retrospective-distill/run.mts'
+import { runDistillClassify } from 'vouchington-tooling/retrospective-distill'
 
 const USAGE = `Usage: node dev/retrospective-distill.mts <partition-jsonl-path> \\
   --retro-cutoff <iso8601> --session-cutoff <iso8601>

@@ -30,4 +30,4 @@ cross-file contract in [authorization.mts](../../../../../backend/services/lists
 - Parent: [../AGENTS.md](../../../../../backend/services/AGENTS.md)
 - Schema: [../../data-stores/psql/migrations/0500-00-00-lists.sql](../../../../../backend/data-stores/psql/migrations/0500-00-00-lists.sql)
 - View: [../../data-stores/psql/views/2026-06-28-list-items.sql](../../../../../backend/data-stores/psql/views/2026-06-28-list-items.sql)
-- API routes: [../../api/v1/lists/README.md](../../../../requirements/api/v1/lists/README.md)
+- API routes: ../../api/v1/lists/README.md

@@ -73,8 +73,7 @@ change, and defer the full suite to CI per the usual workflow.
 
 ## Related
 
-- Requirements and current-state boundaries: [FEDIVERSE.md](../../requirements/content/FEDIVERSE.md)
-- API route: [docs/requirements/api/v1/fediverse/README.md](../../requirements/api/v1/fediverse/README.md)
+- Requirements and current-state boundaries: FEDIVERSE.md
 - Search architecture: [search.md](search.md)
 - Staging interoperability runbook: [../../operations/fediverse-staging-interop.md](../../operations/fediverse-staging-interop.md)
 - Finite Enum Ripple Checklist: [../../development/finite-enum-ripple-checklist.md](../../development/finite-enum-ripple-checklist.md)
