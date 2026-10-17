@@ -10,6 +10,7 @@ import {
 } from '@services/user-import-export/rss-feed-imports'
 import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
 import { getUserImportExportConfig } from '@services/user-import-export/config'
+import onError from '@modules/on-error'
 import { isUUID } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
@@ -62,8 +63,10 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   const submitted = await submitRssFeedImport(currentUser, provenance, urls, {
     should_follow_imported_feeds,
   })
-  // One dispatcher pages the rows onto the queue, so a large import never floods it.
-  await enqueueUserRssFeedImportDispatch(submitted.import.id)
+  // One dispatcher pages the rows onto the queue, so a large import never floods it. The import is
+  // already committed, so a failed enqueue is reported and the recovery sweep dispatches it; the
+  // caller gets the import instead of an error that would invite a duplicate submission.
+  await enqueueUserRssFeedImportDispatch(submitted.import.id).catch(onError)
 
   const statusUrl = `/api/v1/my/import/rss-feeds/${submitted.import.id}`
   ctx.setStatus(201)

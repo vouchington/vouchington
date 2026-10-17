@@ -91,19 +91,33 @@ describe('ImportExportManager — file import and stream', () => {
     })
   })
 
-  it('tells the user when the server refuses a file as too large', async () => {
-    const { toast } = await import('sonner')
+  it('reports the server refusal of a file as too large with the server message', async () => {
     const { ApiError } = await import('@/lib/api/error')
-    mockImportRssFeeds.mockRejectedValueOnce(new ApiError('request entity too large', 413))
+    const refusal = new ApiError('request entity too large', 413)
+    mockImportRssFeeds.mockRejectedValueOnce(refusal)
     render(<ImportExportManager feedType='article' />)
     const file = new File(['<opml />'], 'feeds.xml', { type: 'text/xml' })
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     Object.defineProperty(input, 'files', { value: [file] })
     fireEvent.change(input)
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('2 MiB'))
+      expect(mockOnError).toHaveBeenCalledWith(refusal, expect.anything())
     })
-    expect(mockOnError).not.toHaveBeenCalled()
+  })
+
+  it('does not read a file above the absolute ceiling', async () => {
+    render(<ImportExportManager feedType='article' />)
+    const file = new File(['small'], 'huge.opml', { type: 'text/xml' })
+    Object.defineProperty(file, 'size', { value: 16 * 1024 * 1024 + 1 })
+    const text = vi.spyOn(file, 'text')
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    Object.defineProperty(input, 'files', { value: [file] })
+    fireEvent.change(input)
+    await waitFor(() => {
+      expect(mockOnError).toHaveBeenCalledWith(expect.any(Error), expect.anything())
+    })
+    expect(text).not.toHaveBeenCalled()
+    expect(mockImportRssFeeds).not.toHaveBeenCalled()
   })
 
   it('invokes progress callback during stream', async () => {

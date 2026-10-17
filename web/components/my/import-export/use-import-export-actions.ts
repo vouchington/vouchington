@@ -10,11 +10,12 @@ import {
   preflightExport,
   type RssFeedContentType,
 } from '@/lib/api/client/import-export'
-import { ApiError } from '@/lib/api/error'
 import { streamImportProgress } from '@/lib/api/client/import-stream'
 import onError, { onSuccess } from '@/lib/on-error'
-import { useTranslations } from '@/lib/i18n/use-translations'
 import type { Action, State } from './import-export-state'
+
+// The API's absolute ceiling for `import_max_body_bytes`.
+const MAX_IMPORT_FILE_BYTES = 16 * 1024 * 1024
 
 interface Options {
   isTopics: boolean
@@ -24,7 +25,6 @@ interface Options {
 }
 
 export function useImportExportActions({ isTopics, selectedType, state, dispatch }: Options) {
-  const t = useTranslations()
   const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => abortControllerRef.current?.abort(), [])
@@ -112,6 +112,8 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
     const isCsv = file.name.toLowerCase().endsWith('.csv')
     dispatch({ importingFeeds: true, importProgress: null })
     try {
+      // The server enforces the configured limit; this only keeps a huge file from being buffered.
+      if (file.size > MAX_IMPORT_FILE_BYTES) throw new Error('File is too large to import')
       const contents = await file.text()
       const body = isCsv
         ? { csv: contents, should_follow_imported_feeds: true as const }
@@ -119,12 +121,7 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
       const data = await importRssFeeds(body)
       await startImportStream(data.import.id, data.import.total_rows)
     } catch (err) {
-      // The server bounds the body; its refusal is the only size check.
-      if (err instanceof ApiError && err.status === 413) {
-        toast.error(t('extracted.importExport.sourceFileInput.requestIsTooLargeMax2Mib_53c0b35b'))
-      } else {
-        onError(err, { fallback: `Failed to import ${isCsv ? 'CSV' : 'OPML'}` })
-      }
+      onError(err, { fallback: `Failed to import ${isCsv ? 'CSV' : 'OPML'}` })
       dispatch({ importingFeeds: false })
     }
   }
