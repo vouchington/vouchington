@@ -1,7 +1,5 @@
 # Valkey Data Store
 
-Source entrypoint: [backend/data-stores/valkey/README.md](../../../backend/data-stores/valkey/README.md)
-
 Voucha's Valkey layer is a thin facade over [`valkyries`](https://github.com/jonathanong/valkyries),
 split into per-concern pnpm packages (`valkey-core`, `valkey-pubsub`, `valkey-rate-limiter`,
 `valkey-glide-mq`, and `valkey` for cache, Bloom, dynamic config, and the rest) so the workspace

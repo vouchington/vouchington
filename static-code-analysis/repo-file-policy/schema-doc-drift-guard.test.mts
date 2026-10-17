@@ -40,7 +40,7 @@ describe('schema doc drift guard path prefilter', () => {
     }
 
     const reads: string[] = []
-    checkSchemaDocDriftGuard(repoRoot, [...sources.keys()], { tables: {} } as never, [], file => {
+    checkSchemaDocDriftGuard(repoRoot, [...sources.keys()], [], file => {
       reads.push(file)
       return sources.get(file) ?? null
     })
@@ -60,7 +60,7 @@ describe('schema doc drift guard path prefilter', () => {
     await writeFile(join(repoRoot, file), content)
 
     const errors: string[] = []
-    checkSchemaDocDriftGuard(repoRoot, [file], { tables: {} } as never, errors, () => content)
+    checkSchemaDocDriftGuard(repoRoot, [file], errors, () => content)
 
     expect(errors).toContain(
       `::error file=${file}::${file}: moderation_appeals.status is derived from lifecycle fields; do not write a physical status column`,

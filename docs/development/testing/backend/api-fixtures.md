@@ -1,7 +1,5 @@
 # API Fixtures
 
-Source entrypoint: [backend/test-helpers/api-fixtures/README.md](../../../../backend/test-helpers/api-fixtures/README.md)
-
 `api-fixtures/v1` is the shared fixture corpus that backend, web, Swift, and .NET tests all read. The checked-in `backendResponseContracts` in its `manifest.json` are explicit data; nothing is inferred from TypeScript handlers (compiler discovery and OpenAPI publication were removed pending contract redesign). The checks therefore do not prove every handler still matches its declared schema; focused handler and tool integration tests must exercise that boundary when a contract changes. See the [Client Parity Matrix](../../../requirements/CLIENT-PARITY-MATRIX.md) for the round-trip invariant enforced on top of this corpus.
 
 ## Update Flow

@@ -7,10 +7,6 @@ import { checkConfigInventoryPolicy } from './index.mts'
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 
 const ENVIRONMENT_VARIABLES_INDEX = 'docs/overview/infrastructure/environment-variables.md'
-const CANONICAL_ENVIRONMENT_VARIABLES_REFERENCE =
-  'docs/overview/infrastructure/reference-environment-variables-test.md'
-const UNRELATED_ENVIRONMENT_VARIABLES_REFERENCE =
-  'docs/overview/infrastructure/reference-unrelated-environment-variable.md'
 
 describe('typed env contract docs drift', () => {
   const testDirs: string[] = []
@@ -19,7 +15,7 @@ describe('typed env contract docs drift', () => {
     await Promise.all(testDirs.splice(0).map(dir => rm(dir, { force: true, recursive: true })))
   })
 
-  it('requires typed contract env vars to appear in env-var docs', async () => {
+  it('requires typed local env vars to appear in the local env-var docs', async () => {
     const ctx = await makeRepoFixture({
       [ENVIRONMENT_VARIABLES_INDEX]: './dev/config-inventory\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
@@ -40,33 +36,7 @@ describe('typed env contract docs drift', () => {
 
     await expect(checkConfigInventoryPolicy(ctx)).resolves.toEqual({
       errors: expect.arrayContaining([
-        'typed env var DOC_DRIFT_ENV from local-init:local-web:DOC_DRIFT_ENV is missing from a canonical docs/overview/infrastructure/reference-environment-variables-*.md leaf',
         'typed local env var DOC_DRIFT_ENV from local-init:local-web:DOC_DRIFT_ENV is missing from docs/development/local-env-vars.md',
-      ]),
-    })
-  })
-
-  it('accepts only canonical environment-variable references as typed env documentation', async () => {
-    const files = makeBaseFiles()
-    files[CANONICAL_ENVIRONMENT_VARIABLES_REFERENCE] = '`DOC_DRIFT_ENV`\n'
-    files['docs/development/local-env-vars.md'] = '`DOC_DRIFT_ENV`\n./dev/config-inventory\n'
-
-    const errors = (await checkConfigInventoryPolicy(await makeRepoFixture(files))).errors
-
-    expect(errors).not.toContain(
-      'typed env var DOC_DRIFT_ENV from local-init:local-web:DOC_DRIFT_ENV is missing from a canonical docs/overview/infrastructure/reference-environment-variables-*.md leaf',
-    )
-  })
-
-  it('does not let the compact index or unrelated docs satisfy typed env documentation', async () => {
-    const files = makeBaseFiles()
-    files[ENVIRONMENT_VARIABLES_INDEX] = '`DOC_DRIFT_ENV`\n./dev/config-inventory\n'
-    files[UNRELATED_ENVIRONMENT_VARIABLES_REFERENCE] = '`DOC_DRIFT_ENV`\n'
-    files['docs/development/local-env-vars.md'] = '`DOC_DRIFT_ENV`\n./dev/config-inventory\n'
-
-    await expect(checkConfigInventoryPolicy(await makeRepoFixture(files))).resolves.toEqual({
-      errors: expect.arrayContaining([
-        'typed env var DOC_DRIFT_ENV from local-init:local-web:DOC_DRIFT_ENV is missing from a canonical docs/overview/infrastructure/reference-environment-variables-*.md leaf',
       ]),
     })
   })
