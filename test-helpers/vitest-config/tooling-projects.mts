@@ -120,6 +120,8 @@ export const toolingProjects = [
     test: {
       ...toolingTestBudget,
       name: 'playwright-helpers',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
       include: ['playwright/helpers/**/*.test.mts'],
       exclude: defaultExcludes,
       setupFiles: [worktreeDbSetupFile],
