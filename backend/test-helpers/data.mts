@@ -45,7 +45,7 @@ export const createRandomEmailAddress = () => createUniqueTestEmail('random')
  * `uuidv7()`-defaulted row from a concurrently running test can ever land there, and randomized
  * across a wide namespace so re-running the same test doesn't collide with rows a previous run left
  * behind. This isolates row ownership, not exact global aggregates: use
- * acquireTestAiUsageDateReservation for those (see test-helpers/README.md).
+ * acquireTestAiUsageDateReservation for those.
  */
 export function createTestFutureUtcDay(): string {
   const namespaceOffsetMs = crypto.randomInt(TEST_FUTURE_NAMESPACE_DAYS) * DAY_MS

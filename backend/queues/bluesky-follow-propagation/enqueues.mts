@@ -28,7 +28,7 @@ export function disconnectRequestedJobOptions(data: DisconnectRequestedData): Pa
 // relation__user__follow__user at run time rather than trusting job data, so only the *last*
 // enqueue in a toggle burst needs to actually run — matches notification-reconcile.mts's
 // established reconcile-shaped-job convention (see @queues/notifications/enqueues.mts), not the
-// generic "External API" throttle row in queues/README.md's dedup table.
+// generic "External API" throttle row in docs/overview/architecture/queues/README.md's dedup table.
 function reconcileFollowJobOptions(
   followerUserId: string,
   followeeUserId: string,
