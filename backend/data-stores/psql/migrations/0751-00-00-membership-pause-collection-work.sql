@@ -7,15 +7,18 @@ CREATE TABLE membership_pause_collection_work_items (
   lease_token uuid,
   leased_at timestamptz,
   lease_expires_at timestamptz,
-  attempt_count integer NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+  attempt_count integer NOT NULL DEFAULT 0
+    CONSTRAINT ck_membership_pause_collection_work_items__attempt_count CHECK (attempt_count >= 0),
   last_failed_at timestamptz,
   last_failure_message text,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
-  CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
+  CONSTRAINT ck_membership_pause_collection_work_items__lease_state
+    CHECK ((lease_token IS NULL AND leased_at IS NULL AND lease_expires_at IS NULL)
     OR (lease_token IS NOT NULL AND leased_at IS NOT NULL AND lease_expires_at IS NOT NULL
       AND lease_expires_at > leased_at)),
-  CHECK ((last_failed_at IS NULL) = (last_failure_message IS NULL))
+  CONSTRAINT ck_membership_pause_collection_work_items__failure_pair
+    CHECK ((last_failed_at IS NULL) = (last_failure_message IS NULL))
 );
 
 CREATE UNIQUE INDEX idx_membership_pause_collection_work_items__lease_token
@@ -34,7 +37,7 @@ ALTER TABLE membership_pause_collection_work_items
 ALTER TABLE membership_pause_collection_work_items
   VALIDATE CONSTRAINT fk_membership_pause_collection_work_items__user;
 
-COMMENT ON TABLE membership_pause_collection_work_items IS 'In-flight sync of Stripe pause_collection to the user''s open suspension. Completion deletes the row. Granted memberships never become a Stripe update.';
+COMMENT ON TABLE membership_pause_collection_work_items IS 'In-flight sync of Stripe pause_collection to the user''s latest suspension or lift. Completion deletes the row. Granted memberships never become a Stripe update.';
 COMMENT ON COLUMN membership_pause_collection_work_items.user_id IS 'User whose direct Stripe subscription should match the open suspension. One row per user.';
 COMMENT ON COLUMN membership_pause_collection_work_items.requested_at IS 'Generation of the latest suspension or lift, truncated to milliseconds. A newer value supersedes an in-flight lease.';
 COMMENT ON COLUMN membership_pause_collection_work_items.available_at IS 'Earliest time an unleased row may be claimed by the recovery dispatcher.';
