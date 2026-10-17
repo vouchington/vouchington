@@ -2,7 +2,11 @@ import { it, expect, beforeAll, describe } from 'vitest'
 
 import { bookmarkEntity, unbookmarkEntity } from '../upsert.mts'
 
-import { getBookmarksForEntity, getBookmarksForEntities } from '../get.mts'
+import {
+  getBookmarkMapsForEntityGroups,
+  getBookmarksForEntity,
+  getBookmarksForEntities,
+} from '../get.mts'
 
 import {
   getUserBookmarkCounts,
@@ -30,6 +34,28 @@ describe('index', () => {
   })
 
   describe('Bookmarks service', () => {
+    it('keeps post and creator bookmark maps separate in a grouped read', async () => {
+      const random = Math.random().toString(36).slice(2, 15)
+      const viewer = await createTestUser()
+      const creator = await createTestUser()
+      const postId = await insertTestPost({
+        createdById: creator.id,
+        slug: `grouped-bookmarks-${random}`,
+        title: `Grouped bookmarks ${random}`,
+        markdown: 'Test post',
+      })
+      await bookmarkEntity(viewer, 'post', { id: postId }, 'save')
+      await bookmarkEntity(viewer, 'user', { id: creator.id }, 'follow')
+
+      const [postBookmarks, creatorBookmarks] = await getBookmarkMapsForEntityGroups(viewer, [
+        { entityTypeName: 'post', entities: [postId, creator.id] },
+        { entityTypeName: 'user', entities: [creator.id, postId] },
+      ])
+
+      expect(postBookmarks).toEqual({ [postId]: { save: true } })
+      expect(creatorBookmarks).toEqual({ [creator.id]: { follow: true } })
+    })
+
     describe('RSS Feed bookmarks', () => {
       it('can follow and unfollow an RSS feed', async () => {
         const random = Math.random().toString(36).slice(2, 15)

@@ -16,18 +16,14 @@ describe('deriveSlugFromUsername', () => {
 describe('ensureDefaultLandingPage', () => {
   it('propagates a storage failure without creating a default page and permits a later retry', async () => {
     const user = await createTestUser()
-    const failure = await withPostgresQueryFailureForTest(
-      '/* createMyLandingPage */',
-      async () => {
-        try {
-          await ensureDefaultLandingPage(user.id, user.username!)
-          throw new Error('Default page creation unexpectedly succeeded')
-        } catch (err) {
-          return err
-        }
-      },
-      { command: 'INSERT' },
-    )
+    const failure = await withPostgresQueryFailureForTest('/* createMyLandingPage */', async () => {
+      try {
+        await ensureDefaultLandingPage(user.id, user.username!)
+        throw new Error('Default page creation unexpectedly succeeded')
+      } catch (err) {
+        return err
+      }
+    })
 
     expect(failure.result).toMatchObject({ code: '25P02' })
     expect(failure.result).toBe(failure.error)

@@ -120,9 +120,15 @@ app
       path: ctx.params,
     })
 
-    const updated = await updateUserReferralLink(currentUser, linkId, {
-      label: body.label,
-    })
+    const updated = await updateUserReferralLink(
+      currentUser,
+      linkId,
+      {
+        label: body.label,
+      },
+      undefined,
+      existing,
+    )
 
     ctx.assert(updated, 404, 'Referral link not found')
     ctx.json({ referral_link: updated })

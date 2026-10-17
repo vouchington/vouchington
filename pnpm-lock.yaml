@@ -3568,6 +3568,9 @@ importers:
       '@services/urls-hostnames':
         specifier: workspace:^
         version: link:../services/urls-hostnames
+      '@services/user-financial-profiles':
+        specifier: workspace:^
+        version: link:../services/user-financial-profiles
       '@services/users':
         specifier: workspace:^
         version: link:../services/users

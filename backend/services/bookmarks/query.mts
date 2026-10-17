@@ -6,7 +6,15 @@ import {
 import { read } from '@data-stores/psql'
 
 export type BookmarkRow = { object_id: string; _bookmark_type: string }
+type GroupedBookmarkRow = BookmarkRow & { group_index: number }
 type BookmarkRelation = Pick<EntityRelationMetadata, 'table_name' | 'predicate'>
+
+export type BookmarkRelationPlan = {
+  groupIndex?: number
+  entityTypeName: EntityRelationEntityType
+  relations: BookmarkRelation[]
+  objectIds: string[]
+}
 
 export async function queryBookmarksForAllRelations(
   userId: string,
@@ -15,12 +23,29 @@ export async function queryBookmarksForAllRelations(
   objectIds: string[],
 ): Promise<Record<string, Record<string, boolean>>> {
   if (relations.length === 0 || objectIds.length === 0) return {}
-  const safeRelations = relations.map(relation =>
-    assertValidBookmarkRelation(relation, entityTypeName),
-  )
-
-  const rows = await queryEntityBookmarksForRelations(userId, safeRelations, objectIds)
+  const rows = await queryEntityBookmarksForRelationPlans(userId, [
+    { entityTypeName, relations, objectIds },
+  ])
   return mapBookmarkRowsToOutput([rows])
+}
+
+export async function queryBookmarkGroupsForRelationPlans(
+  userId: string,
+  plans: BookmarkRelationPlan[],
+  groupCount: number,
+): Promise<Array<Record<string, Record<string, boolean>>>> {
+  const rows = await queryEntityBookmarksForRelationPlans(userId, plans, true)
+  const output = Array.from(
+    { length: groupCount },
+    () => ({}) as Record<string, Record<string, boolean>>,
+  )
+  for (const row of rows as GroupedBookmarkRow[]) {
+    const group = output[row.group_index]
+    if (!group) continue
+    group[row.object_id] ||= {}
+    group[row.object_id]![row._bookmark_type] = true
+  }
+  return output
 }
 
 export async function queryBookmarksForRelation(
@@ -32,7 +57,9 @@ export async function queryBookmarksForRelation(
   if (objectIds.length === 0) return []
   const safeRelation = assertValidBookmarkRelation(relation, entityTypeName)
 
-  return queryEntityBookmarks(userId, safeRelation, objectIds)
+  return queryEntityBookmarksForRelationPlans(userId, [
+    { entityTypeName, relations: [safeRelation], objectIds },
+  ])
 }
 
 export function mapBookmarkRowsToOutput(
@@ -48,34 +75,37 @@ export function mapBookmarkRowsToOutput(
   return output
 }
 
-async function queryEntityBookmarksForRelations(
+async function queryEntityBookmarksForRelationPlans(
   userId: string,
-  relations: BookmarkRelation[],
-  objectIds: string[],
+  plans: BookmarkRelationPlan[],
+  includeGroupIndex = false,
 ): Promise<BookmarkRow[]> {
-  const subqueries = relations.map((relation, index) => {
-    return `${index === 0 ? '' : '\n      SELECT\n'}        object_id,
-        '${relation.predicate}' AS _bookmark_type
-      FROM ${relation.table_name}
-      WHERE subject_id = $1
-        AND object_id = ANY($2)
-        AND deleted_at IS NULL
-    `
-  })
+  const parameters: unknown[] = [userId]
+  const subqueries: string[] = []
+  for (let planIndex = 0; planIndex < plans.length; planIndex += 1) {
+    const plan = plans[planIndex]!
+    const safeRelations = plan.relations.map(relation =>
+      assertValidBookmarkRelation(relation, plan.entityTypeName),
+    )
+    if (plan.objectIds.length === 0) continue
+    const objectIdsParameter = parameters.push(plan.objectIds)
+    for (const relation of safeRelations) {
+      subqueries.push(`
+        SELECT object_id, '${relation.predicate}' AS _bookmark_type${includeGroupIndex ? `, ${plan.groupIndex ?? planIndex} AS group_index` : ''}
+        FROM ${relation.table_name}
+        WHERE subject_id = $1
+          AND object_id = ANY($${objectIdsParameter}::uuid[])
+          AND deleted_at IS NULL
+      `)
+    }
+  }
+  if (subqueries.length === 0) return []
 
   const { rows } = await read(
-    `/* queryEntityBookmarksForRelations */ \n      SELECT\n${subqueries.join(' UNION ALL ')}`,
-    [userId, objectIds],
+    `/* queryEntityBookmarksForRelations */ \n      ${subqueries.join(' UNION ALL ')}`,
+    parameters,
   )
   return rows as BookmarkRow[]
-}
-
-function queryEntityBookmarks(
-  userId: string,
-  relation: BookmarkRelation,
-  objectIds: string[],
-): Promise<BookmarkRow[]> {
-  return queryEntityBookmarksForRelations(userId, [relation], objectIds)
 }
 
 function assertValidBookmarkRelation(

@@ -3,7 +3,7 @@ import { indexById } from '@modules/utils'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import {
   getPostByAnyCachedBatch,
@@ -159,12 +159,22 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     ),
   }
 
-  output.bookmarks = itemsPromise.then(async items => {
+  const bookmarkGroupsPromise = itemsPromise.then(async items => {
     const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
-    if (itemIds.length === 0) return undefined
-    const bookmarks = await getBookmarksForEntities(currentUser, 'rss_feed_item', itemIds)
-    return Object.keys(bookmarks).length > 0 ? bookmarks : undefined
+    const feedIds = [...new Set(items.flatMap(item => (item != null ? [item.rss_feed.id] : [])))]
+    return {
+      itemIds,
+      feedIds,
+      maps: await getBookmarkMapsForEntityGroups(currentUser, [
+        { entityTypeName: 'rss_feed_item', entities: itemIds },
+        { entityTypeName: 'rss_feed', entities: feedIds },
+      ]),
+    }
   })
+
+  output.bookmarks = bookmarkGroupsPromise.then(({ itemIds, maps: [bookmarks] }) =>
+    itemIds.length > 0 && Object.keys(bookmarks).length > 0 ? bookmarks : undefined,
+  )
 
   output.election_votes = itemsPromise.then(async items => {
     const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
@@ -176,12 +186,9 @@ app.route('/api/v1/feeds/rss_feed_items/:feed_type').get(async (ctx: Context) =>
     return Object.keys(election_votes).length > 0 ? election_votes : undefined
   })
 
-  output.rss_feed_bookmarks = itemsPromise.then(async items => {
-    const feedIds = [...new Set(items.flatMap(item => (item != null ? [item.rss_feed.id] : [])))]
-    if (feedIds.length === 0) return {}
-    const bookmarks = await getBookmarksForEntities(currentUser, 'rss_feed', feedIds)
-    return Object.keys(bookmarks).length > 0 ? bookmarks : {}
-  })
+  output.rss_feed_bookmarks = bookmarkGroupsPromise.then(({ feedIds, maps: [, bookmarks] }) =>
+    feedIds.length > 0 && Object.keys(bookmarks).length > 0 ? bookmarks : {},
+  )
 
   ctx.setType('json')
   await ctx.pipeline(streamJsonObject(output))

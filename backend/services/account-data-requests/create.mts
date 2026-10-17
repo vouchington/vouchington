@@ -9,10 +9,13 @@ export async function createDataRequest(
   requestedById: string,
 ): Promise<UserDataRequest> {
   await using query = await beginTransaction()
-  await query(sql`/* createDataRequest */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const { rows } = await query(sql`/* createDataRequest */
+      WITH active_user_lock AS MATERIALIZED (
+        SELECT fn_lock_active_user_for_mutation(${userId})
+      )
       INSERT INTO user_data_requests (user_id, requested_by_id)
-      VALUES (${userId}, ${requestedById})
+      SELECT ${userId}, ${requestedById}
+      FROM active_user_lock
       RETURNING
         id,
         user_id,

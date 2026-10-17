@@ -8,7 +8,7 @@ import {
   getUserPostsCollection,
   getUserUrlsCollection,
 } from '@services/entity-fetch'
-import { getBookmarksForEntities } from '@services/bookmarks'
+import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { attachPostProvenance } from '@services/content-provenance'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
@@ -93,7 +93,9 @@ app.route('/api/v1/users/:idOrSlug/users/:listType').get(async (ctx: Context) =>
   const users = collection.results
   const muteBookmarks =
     resolved.currentUser && users.length > 0 && !PRIVATE_USER_LIST_TYPES.has(listType)
-      ? await getBookmarksForEntities(resolved.currentUser, 'user', users)
+      ? await getBookmarksForEntityGroups(resolved.currentUser, [
+          { entityTypeName: 'user', entities: users },
+        ])
       : null
 
   const muted: Record<string, boolean> | undefined = muteBookmarks

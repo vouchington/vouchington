@@ -6,7 +6,7 @@ import {
   getRssFeedItemByIdCachedBatch,
   getRssFeedItemElectionByIdCachedBatch,
 } from '@services/entity-fetch'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { getRssFeedItemEmbedsByItems, proxyThumbnailUrls } from '@services/rss-feed-items'
 import { proxyRssFeedItemCoverArt } from '@services/rss-feed-items/proxy-cover-art'
@@ -52,10 +52,12 @@ async function getStoryPageViewerSidecars(
   itemIds: string[],
   feedIds: string[],
 ) {
-  const [bookmarks, votes, rss_feed_bookmarks] = await Promise.all([
-    getBookmarksForEntities(currentUser, 'rss_feed_item', itemIds),
+  const [[bookmarks, rss_feed_bookmarks], votes] = await Promise.all([
+    getBookmarkMapsForEntityGroups(currentUser, [
+      { entityTypeName: 'rss_feed_item', entities: itemIds },
+      { entityTypeName: 'rss_feed', entities: feedIds },
+    ]),
     itemIds.length === 0 ? [] : getRssFeedItemElectionVotesByUser(currentUser.id, itemIds),
-    getBookmarksForEntities(currentUser, 'rss_feed', feedIds),
   ])
   return {
     bookmarks,

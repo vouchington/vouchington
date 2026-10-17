@@ -33,6 +33,7 @@ import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
+import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 
 async function main() {
   prepareOutputDir()
@@ -62,6 +63,7 @@ async function main() {
     await seedMediaDeliveryReplay()
     await runMediaDeliveryReplayScenarios()
     await runRoundTripShapeScenarios()
+    await runUserProfileRoundTripScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

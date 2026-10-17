@@ -17,12 +17,14 @@ export async function updateUserReferralLink(
     label?: string | null
   },
   scope?: UserReferralLinkScope,
+  preloadedLink?: UserReferralLink,
 ): Promise<UserReferralLink | null> {
   assert(currentUser, 401, 'User not logged in')
   validateUUID(linkId)
 
-  const link = await getUserReferralLink(linkId)
+  const link = preloadedLink ?? (await getUserReferralLink(linkId))
   assert(link, 404, 'Referral link not found')
+  assert(link.id === linkId, 404, 'Referral link not found')
 
   assertCurrentUserCanUpdateUserReferralLink(currentUser, link)
   assertUserReferralLinkScope(currentUser, link, scope)

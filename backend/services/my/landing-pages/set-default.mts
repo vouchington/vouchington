@@ -1,6 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getLandingPageRowForUser, getLockedLandingPageRowForUser } from './reads.mts'
+import assert from 'http-assert'
+import { getLockedLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { LandingPage } from './types.mts'
 
@@ -23,23 +24,25 @@ async function updateLandingPageDefault(
   pageId: string,
 ): Promise<LandingPage> {
   await getLockedLandingPageRowForUser(userId, pageId, query)
-  await replaceLandingPageDefault(query, userId, pageId)
-  return getLandingPageRowForUser(userId, pageId, { query })
+  return replaceLandingPageDefault(query, userId, pageId)
 }
 
 async function replaceLandingPageDefault(
   query: Awaited<ReturnType<typeof beginTransaction>>,
   userId: string,
   pageId: string,
-): Promise<void> {
+): Promise<LandingPage> {
   await query(sql`/* setMyLandingPageDefault */
       UPDATE user_landing_pages
       SET is_default = FALSE
       WHERE user_id = ${userId} AND is_default
     `)
-  await query(sql`/* setMyLandingPageDefault */
+  const { rows } = await query(sql`/* setMyLandingPageDefault */
       UPDATE user_landing_pages
       SET is_default = TRUE
       WHERE id = ${pageId} AND user_id = ${userId}
+      RETURNING id, user_id, title, subtitle, slug, is_default, created_at, updated_at
     `)
+  assert(rows[0], 404, 'Landing page not found')
+  return rows[0] as LandingPage
 }

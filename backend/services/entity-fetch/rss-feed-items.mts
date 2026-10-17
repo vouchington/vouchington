@@ -2,7 +2,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { ElectionVote } from '@services/elections-votes/shared'
 import type { RssFeedItemFetchResult } from './types.mts'
 import { getRssFeedItemByIdCachedBatch, getRssFeedItemElectionByIdCachedBatch } from './get.mts'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
@@ -39,7 +39,9 @@ export async function fetchRssFeedItemsWithMetadata(
 
   const [bookmarks, electionVotesArray] = await Promise.all([
     rssFeedItemIds.length > 0
-      ? getBookmarksForEntities(currentUser, 'rss_feed_item', rssFeedItemIds)
+      ? getBookmarksForEntityGroups(currentUser, [
+          { entityTypeName: 'rss_feed_item', entities: rssFeedItemIds },
+        ])
       : Promise.resolve({}),
     rssFeedItemIds.length > 0
       ? getRssFeedItemElectionVotesByUser(currentUser.id, rssFeedItemIds)

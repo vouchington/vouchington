@@ -20,6 +20,9 @@ describe('membership purchase catalog primary reads', () => {
     const purchaseIntentSource = source('./purchase-intents.mts')
     expect(purchaseIntentSource).toContain('await using query = await beginTransaction()')
     expect(purchaseIntentSource).toContain(
+      'await insertPurchaseIntent(query, options, providerContext, fingerprint)',
+    )
+    expect(source('./insert-purchase-intent.mts')).toContain(
       'await query<PurchaseIntentRow>(sql`/* createMembershipPurchaseIntent.insert */',
     )
   })

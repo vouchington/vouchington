@@ -1,6 +1,10 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { bookmarkEntity, unbookmarkEntity } from './upsert.mts'
-import { getBookmarksForEntity, getBookmarksForEntities } from './get.mts'
+import {
+  getBookmarkMapsForEntityGroups,
+  getBookmarksForEntity,
+  getBookmarksForEntities,
+} from './get.mts'
 import {
   createTestUser,
   createTestTopic,
@@ -74,6 +78,20 @@ describe('get.rss-feed-items.generated', () => {
 
       expect(bookmarks[item1.id].save).toBe(true)
       expect(bookmarks[item2.id]).toBeUndefined()
+    })
+
+    it('keeps RSS item and feed bookmark maps separate in a grouped read', async () => {
+      const item = await createTestRssFeedItemWithUrl(sharedRssFeedId)
+      await bookmarkEntity(user, 'rss_feed_item', { id: item.id }, 'save')
+      await bookmarkEntity(user, 'rss_feed', { id: sharedRssFeedId }, 'follow')
+
+      const [itemBookmarks, feedBookmarks] = await getBookmarkMapsForEntityGroups(user, [
+        { entityTypeName: 'rss_feed_item', entities: [item.id, sharedRssFeedId] },
+        { entityTypeName: 'rss_feed', entities: [sharedRssFeedId, item.id] },
+      ])
+
+      expect(itemBookmarks).toEqual({ [item.id]: { save: true } })
+      expect(feedBookmarks).toEqual({ [sharedRssFeedId]: { follow: true } })
     })
 
     it('handles empty entities array without hanging', async () => {

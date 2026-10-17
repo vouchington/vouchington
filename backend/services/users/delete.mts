@@ -7,8 +7,8 @@ import { enqueueUserDeletion } from '@queues/account-lifecycle/enqueues/user-del
 import { invalidate } from '@services/entity-cache/invalidate'
 import { purgeCacheTags } from '@services/entity-cache/purge'
 import {
-  addUserDeletionExternalWork,
-  completeUserDeletionExternalWork,
+  addUserDeletionExternalWorks,
+  completeUserDeletionExternalWorks,
   createUserDeletionRequest,
   type UserDeletionAttempt,
 } from '@services/user-deletions'
@@ -106,10 +106,11 @@ async function addUserDeletionCacheEvictionWork(
   requestId: string,
   target: UserDeletionTarget,
 ): Promise<void> {
-  await Promise.all(
-    getUserDeletionCacheTags(target).map(tag =>
-      addUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag, query),
-    ),
+  await addUserDeletionExternalWorks(
+    requestId,
+    'cloudflare-cache-tag',
+    getUserDeletionCacheTags(target),
+    query,
   )
 }
 
@@ -129,7 +130,7 @@ async function attemptImmediateUserDeletionCacheEviction(
   try {
     await purge(tags)
     await settleUserDeletionOperations(
-      tags.map(tag => completeUserDeletionExternalWork(requestId, 'cloudflare-cache-tag', tag)),
+      [completeUserDeletionExternalWorks(requestId, 'cloudflare-cache-tag', tags)],
       'User deletion cache receipts failed',
     )
   } catch (err) {

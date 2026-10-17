@@ -87,7 +87,10 @@ export async function createHouseholdSpendingCategory(
     }
     throw err
   }
-  return getHouseholdSpendingCategoryById(currentUser, user, rows[0].id, { readOnly: false })
+  return getHouseholdSpendingCategoryById(currentUser, user, rows[0].id, {
+    readOnly: false,
+    ...(ownerField === 'individual_id' ? { individual_id: ownerValue } : {}),
+  })
 }
 export async function updateHouseholdSpendingCategoryById(
   currentUser: PrivateUser | null,

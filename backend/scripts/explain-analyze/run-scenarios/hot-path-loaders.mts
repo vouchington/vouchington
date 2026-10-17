@@ -16,6 +16,7 @@ const {
   getPostsByAnyBatch,
   getPublicUsersByAnyBatch,
   getUserProfileMetricsByAny,
+  fetchPostsWithMetadata,
   listProfileLinks,
 } = services
 
@@ -55,6 +56,21 @@ export async function runHotPathLoaderScenarios() {
 
   // Author/profile links: loaded by both the post-detail and user-profile routes.
   await runAndCapture('profile-links', () => listProfileLinks(seedUser.id))
+
+  registerScenarioContract('post-and-creator-bookmarks', {
+    // Both plan-cache modes read 25 saved-post rows and one creator-follow row; budgets add 20%.
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'relation__user__save__post', max: 30 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__post', max: 2 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 2 },
+    ],
+  })
+  await runAndCapture(
+    'post-and-creator-bookmarks',
+    () => fetchPostsWithMetadata(postIds, seedUser),
+    undefined,
+    'queryEntityBookmarksForRelations',
+  )
 
   const firstCardPage = await getIndividualCards(seedUser, seedUser, { limit: 25 })
   registerScenarioContract('individual-cards-page', {
@@ -164,6 +180,17 @@ export async function runHotPathLoaderScenarios() {
   )
 
   // User profile: per-profile metrics aggregation (view_user_metrics + member-community count).
+  registerScenarioContract('user-profile-metrics', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['posts__default_created_by_id_idx'],
+        queryContains: 'GROUP BY metric_scope, post_type',
+      },
+      // Both modes process 6,076 post rows across public and viewer visibility scopes; +20%.
+      { kind: 'maxProcessedRows', relation: 'posts', max: 7_292 },
+    ],
+  })
   await runAndCapture('user-profile-metrics', () =>
     getUserProfileMetricsByAny(seedUser.id, { currentUser: seedUser }),
   )

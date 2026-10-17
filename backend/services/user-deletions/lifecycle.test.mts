@@ -2,7 +2,10 @@ import { getUserDeletionsWorkLimit } from './work-limits.mts'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { createUserDeletionRequest } from './create.mts'
-import { addUserDeletionExternalWork, completeUserDeletionExternalWork } from './external-work.mts'
+import {
+  addUserDeletionExternalWorks,
+  completeUserDeletionExternalWorks,
+} from './external-work.mts'
 import {
   claimRecoverableUserDeletions,
   claimUserDeletionAttempt,
@@ -185,9 +188,7 @@ describe('user deletion lifecycle', () => {
       priorUsername: user.username,
     })
     const originalWorkKeys = [`user:${user.id}`, `alternate-user:${user.id}`]
-    for (const workKey of originalWorkKeys) {
-      await addUserDeletionExternalWork(request.id, 'cloudflare-cache-tag', workKey)
-    }
+    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', originalWorkKeys)
     const recomputedImpactId = await addUserDeletionRelationImpactForTest(request.id, true)
     const incompleteImpactId = await addUserDeletionRelationImpactForTest(request.id, false)
     const relationImpactIds = [recomputedImpactId, incompleteImpactId]
@@ -212,11 +213,7 @@ describe('user deletion lifecycle', () => {
     expect(blocked).not.toBeNull()
     expect(await getUserDeletionRequestForTest(request.id)).toMatchObject({ completedAt: null })
     if (!blocked) throw new Error('Expected successor')
-    for (const workKey of originalWorkKeys) {
-      expect(
-        await completeUserDeletionExternalWork(request.id, 'cloudflare-cache-tag', workKey),
-      ).toBe(true)
-    }
+    await completeUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', originalWorkKeys)
     externalWorkComplete = true
     const finalize = await processUserDeletionBatch(request.id, blocked.processingAttemptId, {
       processPhaseBatch,

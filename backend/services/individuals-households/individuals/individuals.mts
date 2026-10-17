@@ -11,32 +11,19 @@ type Individual = { id: string; updated_at: Date }
 async function getIndividual(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
 
-  // Check if the user already has an individual in the database
-  const {
-    rows: [user],
-  } = await read<{ individual_id: string | null }>(sql`/* getIndividual */
-    SELECT individual_id
-    FROM users
-    WHERE id = ${currentUser.id}
-    LIMIT 1
-  `)
-
-  if (!user?.individual_id) {
-    return null
-  }
-
   const {
     rows: [individual],
   } = await read<Individual>(sql`/* getIndividual */
     SELECT
-      id,
-      updated_at
-    FROM individuals
-    WHERE id = ${user.individual_id}
+      individual.id,
+      individual.updated_at
+    FROM users
+    LEFT JOIN individuals individual ON individual.id = users.individual_id
+    WHERE users.id = ${currentUser.id}
     LIMIT 1
   `)
 
-  return individual || null
+  return individual?.id ? individual : null
 }
 
 /**

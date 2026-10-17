@@ -4,7 +4,7 @@ import { isUUID, isUsername } from '@modules/utils'
 import type { PrivateUser, UserMetrics } from '@services/users/types'
 import createError from 'http-errors'
 import { getUserBookmarkCounts } from '@services/bookmarks/counts'
-import { getPostFacets } from '@services/posts/search/get-facets'
+import { getUserPostTypeFacets } from '@services/posts/search/get-facets'
 import { countUserMemberCommunities } from '@services/communities/members/member-communities'
 import { currentUserCanAccessUser } from '@services/users/authorization'
 import { getPrivateCounts } from './metrics-private-counts.mts'
@@ -62,26 +62,18 @@ async function buildUserMetrics(
   currentUser: PrivateUser | undefined,
   queryOptions: QueryOptions,
 ): Promise<UserMetrics> {
-  const [
-    bookmarkCounts,
-    publicReviewFacets,
-    publicDiscussionFacets,
-    publicCommentFacets,
-    communitiesMemberCount,
-    collectionVisibility,
-  ] = await Promise.all([
-    getUserBookmarkCounts(row.id),
-    getPostFacets(undefined, { user_id: row.id, post_types: ['review'] }),
-    getPostFacets(undefined, { user_id: row.id, post_types: ['discussion'] }),
-    getPostFacets(undefined, { user_id: row.id, post_types: ['comment'] }),
-    countUserMemberCommunities(row.id, currentUser ?? null, queryOptions),
-    getMetricsCollectionVisibility(currentUser, row.id),
-  ])
+  const [bookmarkCounts, postTypeFacets, communitiesMemberCount, collectionVisibility] =
+    await Promise.all([
+      getUserBookmarkCounts(row.id),
+      getUserPostTypeFacets(row.id, currentUser),
+      countUserMemberCommunities(row.id, currentUser ?? null, queryOptions),
+      getMetricsCollectionVisibility(currentUser, row.id),
+    ])
 
   const publicCounts = {
-    reviews: publicReviewFacets.total_count,
-    discussions: publicDiscussionFacets.total_count,
-    comments: publicCommentFacets.total_count,
+    reviews: postTypeFacets.public.review,
+    discussions: postTypeFacets.public.discussion,
+    comments: postTypeFacets.public.comment,
     users_following: collectionVisibility.follows
       ? (bookmarkCounts.bookmarks.users.follow ?? 0)
       : 0,
@@ -96,17 +88,11 @@ async function buildUserMetrics(
   }
 
   let viewerCount: UserMetrics['viewer_count']
-  if (currentUser) {
-    const [viewerReviewFacets, viewerDiscussionFacets, viewerCommentFacets] = await Promise.all([
-      getPostFacets(currentUser, { user_id: row.id, post_types: ['review'] }),
-      getPostFacets(currentUser, { user_id: row.id, post_types: ['discussion'] }),
-      getPostFacets(currentUser, { user_id: row.id, post_types: ['comment'] }),
-    ])
-
+  if (currentUser && postTypeFacets.viewer) {
     viewerCount = {
-      reviews: viewerReviewFacets.total_count,
-      discussions: viewerDiscussionFacets.total_count,
-      comments: viewerCommentFacets.total_count,
+      reviews: postTypeFacets.viewer.review,
+      discussions: postTypeFacets.viewer.discussion,
+      comments: postTypeFacets.viewer.comment,
     }
   }
 

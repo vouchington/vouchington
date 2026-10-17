@@ -6,7 +6,7 @@ import { getMyLandingPage } from './get.mts'
 import { assertNoDuplicateSelection, uniqueTopicMapFromCandidates } from './shared.mts'
 import { getLandingPageRowForUser } from './reads.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
-import type { LandingPageItemInput, LandingPageWithItems } from './types.mts'
+import type { LandingPage, LandingPageItemInput, LandingPageWithItems } from './types.mts'
 import { buildLandingPageInsertRows } from './replace-item-rows.mts'
 import { replaceLandingPageItemRows } from './replace-item-writes.mts'
 import { registerLandingPageLinkUrls } from './link-urls.mts'
@@ -47,8 +47,17 @@ export async function replaceMyLandingPageItems(
   userId: string,
   pageId: string,
   items: LandingPageItemInput[],
+  preloadedPage?: LandingPage,
 ): Promise<LandingPageWithItems> {
-  await getLandingPageRowForUser(userId, pageId)
+  if (preloadedPage) {
+    assert(
+      preloadedPage.id === pageId && preloadedPage.user_id === userId,
+      404,
+      'Landing page not found',
+    )
+  } else {
+    await getLandingPageRowForUser(userId, pageId)
+  }
   const candidates = await getMyLandingPageCandidates(userId)
   const profileLinksById = new Map(candidates.profile_links.map(link => [link.id, link]))
   const reviewsById = new Map(candidates.reviews.map(review => [review.id, review]))
