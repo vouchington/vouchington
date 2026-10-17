@@ -39,6 +39,23 @@ describe('userRssFeedImportsHandlers', () => {
     ).toThrow('User RSS feed import dispatch job .importId is required')
   })
 
+  it('hands a row job to the row processor, which refuses a row that does not exist', async () => {
+    const id = '00000000-0000-7000-8000-000000000001'
+
+    await expect(
+      handlerFor(IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB.name).handle({
+        data: { importId: id, rowId: id },
+        attemptsMade: 0,
+      } as Job<never>),
+    ).rejects.toThrow('not found')
+  })
+
+  it('runs both recovery sweeps for the stalled-import job', async () => {
+    await expect(
+      handlerFor(IMPORTS_RECOVER_STALLED_JOB.name).handle({ data: {} } as Job<never>),
+    ).resolves.toBeUndefined()
+  })
+
   it('keeps the default lock: no job asks for a longer one', () => {
     for (const handler of userRssFeedImportsHandlers) {
       expect(handler.job.options.lockDuration).toBeUndefined()

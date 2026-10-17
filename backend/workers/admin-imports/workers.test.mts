@@ -36,4 +36,15 @@ describe('adminImportsHandlers', () => {
       handlerFor(IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB.name).handle({ data: {} } as Job<never>),
     ).toThrow('Admin import dispatch job .batchId is required')
   })
+
+  it('hands a row job to the row processor, which ignores a row that does not exist', async () => {
+    const id = '00000000-0000-7000-8000-000000000001'
+
+    await expect(
+      handlerFor(IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB.name).handle({
+        data: { batchId: id, rowId: id },
+        attemptsMade: 0,
+      } as Job<never>),
+    ).resolves.toBeUndefined()
+  })
 })

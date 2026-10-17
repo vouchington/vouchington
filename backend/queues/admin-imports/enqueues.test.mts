@@ -5,6 +5,7 @@ import { getEnqueuedJobId, readEnqueuedJob } from '@voucha/test-helpers/queue-jo
 import {
   enqueueAdminTopicImportDispatch,
   enqueueAdminTopicImportDispatchContinuation,
+  enqueueAdminTopicImportDispatches,
 } from './enqueues.mts'
 import { adminImports } from './queues.mts'
 
@@ -37,5 +38,15 @@ describe('admin topic import dispatcher ids', () => {
 
   it('ranks dispatchers behind the rows they enqueue', () => {
     expect(IMPORTS_DISPATCH_ADMIN_TOPIC_IMPORT_JOB.options.priority).toBe(100)
+  })
+
+  it('starts several dispatchers at their start id and skips ones still claiming it', async () => {
+    const batchIds = [randomUUID(), randomUUID()]
+
+    const added = await enqueueAdminTopicImportDispatches(batchIds)
+    const again = await enqueueAdminTopicImportDispatches(batchIds)
+
+    expect(added).toHaveLength(2)
+    expect(again).toEqual([])
   })
 })
