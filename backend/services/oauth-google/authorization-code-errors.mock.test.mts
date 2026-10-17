@@ -1,7 +1,8 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createRandomString } from '@voucha/test-helpers'
 import { randomUUID } from 'node:crypto'
-import type { fetch as undiciFetch } from 'undici'
+import { Response, type fetch as undiciFetch } from 'undici'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   deleteTestOAuthAuthorizationFixtures,
   getTestOAuthAuthorization,
@@ -64,70 +65,108 @@ describe('Google OAuth authorization-code failures', () => {
     },
   )
 
-  it('maps a token endpoint failure to 502 before account persistence', async () => {
-    const googleUserId = `google-token-http-error-${createRandomString(12)}`
-    const { authorizationId, authorizationClaimId } =
-      await beginGoogleAuthorizationExchange(googleUserId)
-    fetchSpy.mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-    } as Awaited<ReturnType<typeof undiciFetch>>)
+  it.each(['resolve', 'reject', 'null'] as const)(
+    'cancels token failure bodies (%s) and preserves 502',
+    async mode => {
+      const googleUserId = `google-token-http-error-${createRandomString(12)}`
+      const { authorizationId, authorizationClaimId } =
+        await beginGoogleAuthorizationExchange(googleUserId)
+      const cancellationError = new Error('Google token error-body cancellation failed')
+      const cancel = vi.fn<() => Promise<void>>(() =>
+        mode === 'reject' ? Promise.reject(cancellationError) : Promise.resolve(),
+      )
+      const response = new Response(mode === 'null' ? null : new ReadableStream({ cancel }), {
+        status: 400,
+      })
+      const reported =
+        mode === 'reject'
+          ? new Promise<unknown>(resolve => {
+              sentryCaptureExceptionMock.mockImplementationOnce(error => {
+                resolve(error)
+                return 'test-event-id'
+              })
+            })
+          : undefined
+      fetchSpy.mockResolvedValueOnce(response)
 
-    await expect(
-      upsertGoogleAuthorizationCodeAccount(
-        'authorization-code',
-        'https://example.com/auth/callback/google/broker',
-        'server-pkce-verifier',
-        { authorizationId, authorizationClaimId },
-      ),
-    ).rejects.toMatchObject({ status: 502 })
+      await expect(
+        upsertGoogleAuthorizationCodeAccount(
+          'authorization-code',
+          'https://example.com/auth/callback/google/broker',
+          'server-pkce-verifier',
+          { authorizationId, authorizationClaimId },
+        ),
+      ).rejects.toMatchObject({ status: 502 })
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(fetchSpy.mock.calls[0]?.[0]).toBe('https://oauth2.googleapis.com/token')
-    expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
-    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
-      status: 'exchanging',
-      google_account_id: null,
-      exchange_claim_id: authorizationClaimId,
-    })
-  })
+      expect(cancel).toHaveBeenCalledTimes(mode === 'null' ? 0 : 1)
+      expect(reported ? await reported : undefined).toBe(
+        mode === 'reject' ? cancellationError : undefined,
+      )
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(mode === 'reject' ? 1 : 0)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(fetchSpy.mock.calls[0]?.[0]).toBe('https://oauth2.googleapis.com/token')
+      expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+      expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+        status: 'exchanging',
+        google_account_id: null,
+        exchange_claim_id: authorizationClaimId,
+      })
+    },
+  )
 
-  it('maps a UserInfo HTTP failure to 502 before account persistence', async () => {
-    const googleUserId = `google-userinfo-http-error-${createRandomString(12)}`
-    const { authorizationId, authorizationClaimId } =
-      await beginGoogleAuthorizationExchange(googleUserId)
-    fetchSpy
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ access_token: 'google-access-token' }),
-      } as Awaited<ReturnType<typeof undiciFetch>>)
-      .mockResolvedValueOnce({
-        ok: false,
+  it.each(['resolve', 'reject', 'null'] as const)(
+    'cancels UserInfo failure bodies (%s) and preserves 502',
+    async mode => {
+      const googleUserId = `google-userinfo-http-error-${createRandomString(12)}`
+      const { authorizationId, authorizationClaimId } =
+        await beginGoogleAuthorizationExchange(googleUserId)
+      const cancellationError = new Error('Google UserInfo error-body cancellation failed')
+      const cancel = vi.fn<() => Promise<void>>(() =>
+        mode === 'reject' ? Promise.reject(cancellationError) : Promise.resolve(),
+      )
+      const response = new Response(mode === 'null' ? null : new ReadableStream({ cancel }), {
         status: 503,
-      } as Awaited<ReturnType<typeof undiciFetch>>)
+      })
+      const reported =
+        mode === 'reject'
+          ? new Promise<unknown>(resolve => {
+              sentryCaptureExceptionMock.mockImplementationOnce(error => {
+                resolve(error)
+                return 'test-event-id'
+              })
+            })
+          : undefined
+      fetchSpy
+        .mockResolvedValueOnce(Response.json({ access_token: 'google-access-token' }))
+        .mockResolvedValueOnce(response)
 
-    await expect(
-      upsertGoogleAuthorizationCodeAccount(
-        'authorization-code',
-        'https://example.com/auth/callback/google/broker',
-        'server-pkce-verifier',
-        { authorizationId, authorizationClaimId },
-      ),
-    ).rejects.toMatchObject({ status: 502 })
+      await expect(
+        upsertGoogleAuthorizationCodeAccount(
+          'authorization-code',
+          'https://example.com/auth/callback/google/broker',
+          'server-pkce-verifier',
+          { authorizationId, authorizationClaimId },
+        ),
+      ).rejects.toMatchObject({ status: 502 })
 
-    expect(fetchSpy).toHaveBeenCalledTimes(2)
-    expect(fetchSpy.mock.calls.map(([url]) => url)).toEqual([
-      'https://oauth2.googleapis.com/token',
-      'https://openidconnect.googleapis.com/v1/userinfo',
-    ])
-    expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
-    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
-      status: 'exchanging',
-      google_account_id: null,
-      exchange_claim_id: authorizationClaimId,
-    })
-  })
+      expect(cancel).toHaveBeenCalledTimes(mode === 'null' ? 0 : 1)
+      expect(reported ? await reported : undefined).toBe(
+        mode === 'reject' ? cancellationError : undefined,
+      )
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(mode === 'reject' ? 1 : 0)
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(fetchSpy.mock.calls.map(([url]) => url)).toEqual([
+        'https://oauth2.googleapis.com/token',
+        'https://openidconnect.googleapis.com/v1/userinfo',
+      ])
+      expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+      expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+        status: 'exchanging',
+        google_account_id: null,
+        exchange_claim_id: authorizationClaimId,
+      })
+    },
+  )
 })
 
 async function beginGoogleAuthorizationExchange(googleUserId: string) {

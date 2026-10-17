@@ -3,6 +3,7 @@ import { readGoogleClientId, readGoogleClientSecret } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { cancelResponseBody } from '@modules/utils/http'
 
 /* no-mistakes: integration=oauth */
 async function exchangeGoogleAuthorizationCode(
@@ -31,6 +32,7 @@ async function exchangeGoogleAuthorizationCode(
     signal,
   })
   if (!response.ok) {
+    cancelResponseBody(response)
     throw createHttpError(502, `Google token exchange failed: ${response.status}`)
   }
   return response.json() as Promise<unknown>
@@ -44,6 +46,7 @@ async function fetchGoogleUserInfo(accessToken: string, signal?: AbortSignal): P
     signal,
   })
   if (!response.ok) {
+    cancelResponseBody(response)
     throw createHttpError(502, `Google UserInfo request failed: ${response.status}`)
   }
   return response.json() as Promise<unknown>
