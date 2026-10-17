@@ -46,7 +46,6 @@ async function createSource(
 ): Promise<CreateSourceResult> {
   assert(isPublicRssFeedUrl(rssFeedUrl), 422, 'rss_feed_url must be a valid URL')
   assert(hopCount <= MAX_REDIRECT_HOPS, 422, 'Too many redirects while resolving RSS feed URL')
-  // The budget races only remote work, which can hang; a database write is never abandoned.
   await raceFeedBudget(signal, assertUrlAllowedByWebRisk(rssFeedUrl, { signal }))
 
   if (new URL(rssFeedUrl).protocol === 'http:') {
@@ -73,7 +72,8 @@ async function createSource(
 
   // Resolve the effective URL (prefer https, fall back to http) and classify the feed
   let firstAttempt = true
-  const { resolvedUrl, classification } = await raceFeedBudget(signal, 
+  const { resolvedUrl, classification } = await raceFeedBudget(
+    signal,
     resolveProtocolAndClassify(rssFeedUrl, {
       beforeFetch: url => {
         const alreadyChecked = firstAttempt && url === rssFeedUrl
@@ -144,7 +144,7 @@ async function createSource(
     }
   }
 
-  // Checked before the writes: an aborted call must not create a source the retried job races.
+  // The budget races remote work only; it is checked before the writes, never during them.
   assertWithinFeedBudget(signal)
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertContributionLimit?.()
