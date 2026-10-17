@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addTestCommunityActivityDigestWeeks,
   expireTestCommunityActivityDigestWorkItemLease,
   getTestCommunityActivityDigestWorkItems,
   insertTestCommunityActivityDigestWorkItem,
@@ -14,12 +15,6 @@ import {
   releaseCommunityActivityDigestWorkItem,
 } from './community-activity-digest-dispatch.mts'
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000
-
-function addWeeks(start: Date, weeks: number): Date {
-  return new Date(start.getTime() + weeks * WEEK_MS)
-}
-
 function iso(start: Date): string {
   return start.toISOString()
 }
@@ -29,7 +24,7 @@ describe('community activity digest work items', () => {
     await withTestCommunityActivityDigestLock(async () => {
       const firstStart = await readNextTestCommunityActivityDigestWindowStart()
       const foreignStart = new Date(firstStart.getTime() - 3 * 24 * 60 * 60 * 1000)
-      const firstEnd = addWeeks(firstStart, 1)
+      const firstEnd = await addTestCommunityActivityDigestWeeks(firstStart, 1)
       await expect(
         prepareCommunityActivityDigestWorkItems(firstStart, [firstStart]),
       ).resolves.toEqual([{ windowStart: firstStart, windowEnd: firstEnd }])
@@ -37,7 +32,10 @@ describe('community activity digest work items', () => {
       await expect(
         prepareCommunityActivityDigestWorkItems(firstStart, [firstStart, foreignStart]),
       ).resolves.toEqual([
-        { windowStart: foreignStart, windowEnd: addWeeks(foreignStart, 1) },
+        {
+          windowStart: foreignStart,
+          windowEnd: await addTestCommunityActivityDigestWeeks(foreignStart, 1),
+        },
         { windowStart: firstStart, windowEnd: firstEnd },
       ])
       await expect(
@@ -52,7 +50,9 @@ describe('community activity digest work items', () => {
       await expect(completeCommunityActivityDigestWorkItem(firstStart, leaseToken)).resolves.toBe(
         true,
       )
-      const owned = [addWeeks(firstStart, 1), addWeeks(firstStart, 2), addWeeks(firstStart, 3)]
+      const owned = await Promise.all(
+        [1, 2, 3].map(weeks => addTestCommunityActivityDigestWeeks(firstStart, weeks)),
+      )
       const pending = await prepareCommunityActivityDigestWorkItems(owned[2]!, owned)
       expect(pending.map(window => iso(window.windowStart))).toEqual(owned.map(iso))
       const stored = await getTestCommunityActivityDigestWorkItems()
@@ -93,7 +93,12 @@ describe('community activity digest work items', () => {
       ).resolves.toBe(true)
       await expect(
         prepareCommunityActivityDigestWorkItems(windowStart, [windowStart, foreignStart]),
-      ).resolves.toEqual([{ windowStart: foreignStart, windowEnd: addWeeks(foreignStart, 1) }])
+      ).resolves.toEqual([
+        {
+          windowStart: foreignStart,
+          windowEnd: await addTestCommunityActivityDigestWeeks(foreignStart, 1),
+        },
+      ])
     })
   })
 })
