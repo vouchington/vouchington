@@ -1,6 +1,6 @@
 import { getCommunitiesWorkLimit } from '../work-limits.mts'
 import { read, write } from '@data-stores/psql'
-import { enqueueBulkDetectBanEvasionAfterPostEmbeddings } from '@queues/ban-evasion/enqueues'
+import { enqueueBulkDetectBanEvasionAfterPostEmbeddings } from '@queues/moderation-signals/enqueues'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
 

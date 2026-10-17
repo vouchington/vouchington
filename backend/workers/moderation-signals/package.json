@@ -1,5 +1,5 @@
 {
-  "name": "@workers/spam-detection",
+  "name": "@workers/moderation-signals",
   "version": "1.0.0",
   "private": true,
   "description": "",
@@ -17,13 +17,12 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
+    "@services/communities": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/spam-detection": "workspace:^",
-    "@services/vote-integrity": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "@services/vote-integrity": "workspace:^"
   },
   "devDependencies": {
     "@services/users": "workspace:^",
