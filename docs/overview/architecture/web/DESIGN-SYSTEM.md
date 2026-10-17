@@ -1,6 +1,6 @@
 # Voucha Design System
 
-Interactive design-system, component, autocomplete, shell, and entity permutations live in Storybook. In local development, start the web app and open `/storybook/`. CI publishes the current successful `main` static build to the private, Basic Auth-gated `https://voucha-storybook.pages.dev/`; the trusted publisher validates the artifact and injects the Pages Function. Pull requests receive Storybook build and browser validation only. Hosted PR previews are disabled because they would execute contributor-controlled JavaScript after a reviewer enters the shared credentials. See [docs/operations/private-docs-site.md](../../../operations/private-docs-site.md).
+Interactive design-system, component, autocomplete, shell, and entity permutations live in Storybook. In local development, start the web app and open `/storybook/`. CI publishes the current successful `main` static build to the private, Basic Auth-gated `https://voucha-storybook.pages.dev/`; the trusted publisher validates the artifact and injects the Pages Function. Pull requests receive Storybook build and browser validation only. Hosted PR previews are disabled because they would execute contributor-controlled JavaScript after a reviewer enters the shared credentials.
 
 ## Brand Identity
 

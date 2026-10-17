@@ -17,8 +17,6 @@ The Worker requires HTTP Basic Auth before reading R2. Store the comma-separated
 `wrangler secret put BASIC_AUTH_CREDENTIALS --env docs`; the infrastructure repository, GitHub Actions, SSM, and
 artifacts never receive its value. Missing, empty, or partially malformed configuration fails
 closed with `503`; missing or incorrect request credentials receive a `401` browser challenge.
-See the
-[private docs site runbook](../../../operations/private-docs-site.md) for provisioning and rollout.
 
 Staging exposes only the exact unauthenticated machine routes required for ActivityPub discovery,
 inbox delivery, actor documents, and AT Protocol client metadata. See the

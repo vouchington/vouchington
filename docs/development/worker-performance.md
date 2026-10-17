@@ -12,7 +12,6 @@ resource envelope.
 
 ## Contents
 
-- <a id="sizing-target"></a>[Sizing target](reference-worker-performance-sizing-target.md)
 - <a id="concurrency-model"></a>[Concurrency model](reference-worker-performance-concurrency-model.md)
 - <a id="native-thread-pools"></a>[Native thread pools](reference-worker-performance-native-thread-pools.md)
 - <a id="node-process-knobs"></a>[Node process knobs](reference-worker-performance-node-process-knobs.md)

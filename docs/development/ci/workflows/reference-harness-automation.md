@@ -49,8 +49,7 @@ checked-in secret inventory's `requiredBranchPolicy: 'auto-harness'` field (see
 `auto-harness` Environment permits deployments from only `main`, independent of `HARNESS_API_KEY`
 no longer being required to live inside that Environment. Branch policy on the callee restricts job
 _execution_, not the repository secret's _value_ — a same-repo PR-controlled workflow can still
-read `HARNESS_API_KEY` before review, an accepted residual risk documented in
-[Auto Harness automation accepted boundary](reference-harness-automation-accepted-risk.md#harness_api_key-repository-secret-scope-accepted-2026-08-26).
+read `HARNESS_API_KEY` before review, an accepted residual risk.
 They read:
 
 - the repository secret `HARNESS_API_KEY`;
@@ -184,8 +183,7 @@ this doc does not restate it. Resume never re-resolves `HARNESS_TARGET`/`HARNESS
 active or resumed session keeps the Command it was originally dispatched against. Only
 `shepherd.yml` ever resumes a session; the other six surfaces above never pass a resume session id,
 so they carry no checkpoint to invalidate, but they share the same concurrency-ID residual as
-`/shepherd` — see [Accepted risk](reference-harness-automation-accepted-risk.md#residual-risk) for
-the per-surface breakdown, not restated here.
+`/shepherd`.
 
 A `HARNESS_TARGET`/`HARNESS_FALLBACKS` repoint (e.g. from a provider-level route to a specific
 `claude-print-auto` Command) is a plain variable update — it changes only which Command a _new_
@@ -196,8 +194,7 @@ created after it lands. A dispatch that instead resolves — via its concurrency
 response — to an already-queued or -running pre-repoint session inherits that session's original
 Command rather than getting a new one. That gap, together with the platform having no way to force
 an in-flight or historical checkpoint onto the new Command, is accepted, not mitigated locally; see
-[Accepted risk](reference-harness-automation-accepted-risk.md#residual-risk) for the full breakdown,
-and [`jonathanong/auto-harness#402`](https://github.com/jonathanong/auto-harness/issues/402) for the
+[`jonathanong/auto-harness#402`](https://github.com/jonathanong/auto-harness/issues/402) for the
 proposed server-side fix (resume-time Command rebinding) that would close it upstream instead.
 
 Every successful dispatch writes a bounded Actions summary and notice with the session ID, exact

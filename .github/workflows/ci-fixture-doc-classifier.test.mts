@@ -45,7 +45,6 @@ const fixtureDocumentationPaths = [
   'docs/development/ci/workflows/reference-step-timeouts.md',
   'docs/development/ci/workflows/reference-artifact-rerun-safety.md',
   'docs/development/ci/workflows/reference-github-actions-concurrency-locks.md',
-  'docs/development/ci/workflows/reference-harness-automation-accepted-risk.md',
   'docs/development/ci/workflows/reference-fixed-branch-automation-prs.md',
   'docs/development/ci/workflows/reference-fix-main-dependency-policy.md',
   'docs/development/ci/workflows/reference-workflow-automation-map.md',

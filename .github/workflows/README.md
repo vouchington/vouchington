@@ -19,7 +19,6 @@ keep each topic within one further link hop.
 
 - [Artifact rerun safety](../../docs/development/ci/workflows/reference-artifact-rerun-safety.md)
 - [GitHub Actions concurrency locks](../../docs/development/ci/workflows/reference-github-actions-concurrency-locks.md)
-- [Auto Harness automation security boundary](../../docs/development/ci/workflows/reference-harness-automation-accepted-risk.md)
 - [Auto Harness automation](../../docs/development/ci/workflows/reference-harness-automation.md)
 - [Codex Fix Main dependency policy](../../docs/development/ci/workflows/reference-fix-main-dependency-policy.md)
 - [Commands reference](../../docs/development/ci/workflows/reference-commands-reference.md)

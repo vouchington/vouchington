@@ -85,7 +85,6 @@ Seed articles for blog publishing and public/site knowledge retrieval.
 - [Voucha for Families](../../../../articles/for-families.md) — Optimize your household's cards, tech, and more
 - [Voucha for Developers](../../../../articles/for-developers.md) — Open standards, API access, structured data
 - [Voucha for Community Creators](../../../../articles/for-community-creators.md) — Build topic-focused spaces with real trust
-- [Voucha for Investors](../../../../articles/for-investors.md) — Platform metrics and growth intelligence
 - [Voucha API Keys Guide](../../../../articles/api-keys-guide.md) — Programmatic access to community data
 
 ## Legal & Institutional

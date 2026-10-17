@@ -172,9 +172,7 @@ default-off master and per-surface gates are exactly `true`. Callers retain auth
 freshness, transient retry, deduplication, prompt rendering, and immediate failure reporting; the
 trusted-host agent owns its narrowly authorized draft PR, existing-PR update, or comment. Every
 mutation-capable prompt revalidates live trigger and exact-head state immediately before writing.
-The canonical workflow contract is [Auto Harness automation](ci/workflows/reference-harness-automation.md),
-with accepted residuals and the operator-authenticated incident-response drain control in the
-[security boundary](ci/workflows/reference-harness-automation-accepted-risk.md).
+The canonical workflow contract is [Auto Harness automation](ci/workflows/reference-harness-automation.md).
 
 PR shepherding configures bundled [bot-comment classifiers](https://github.com/jonathanong/pr-shepherd/blob/main/docs/configuration.md#classifystandard--default-)
 through [`.pr-shepherdrc.yml`](../../.pr-shepherdrc.yml), with automatic minimization for rules

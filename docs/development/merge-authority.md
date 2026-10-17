@@ -25,5 +25,4 @@ Claude Code stops setting the variable, the allow disappears and the harness pro
 - <a id="why-automation-means-github-actions"></a>[Why "automation" means GitHub Actions](reference-merge-authority-why-automation-means-github-actions.md)
 - <a id="decision-flow"></a>[Decision flow](reference-merge-authority-decision-flow.md)
 - <a id="automation-pr-labeling"></a>[Automation PR labeling](reference-merge-authority-automation-pr-labeling.md)
-- <a id="accepted-automation-ci-risk"></a>[Accepted automation CI risk](reference-merge-authority-accepted-automation-ci-risk.md)
 - <a id="see-also"></a>[See also](reference-merge-authority-see-also.md)

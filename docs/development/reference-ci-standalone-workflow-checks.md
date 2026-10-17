@@ -127,8 +127,7 @@ without mutation. Malformed input, API uncertainty, or an identity mismatch fail
 The selected provider runs on a trusted host with repository-scoped git and `gh` credentials.
 Prompts treat GitHub content as untrusted evidence, revalidate authorization and exact target state
 immediately before mutation, use exact branch leases, and prohibit merge and auto-merge. The
-complete contract and accepted residual risk are in
-[Auto Harness automation security boundary](ci/workflows/reference-harness-automation-accepted-risk.md).
+complete contract is in [Auto Harness automation](ci/workflows/reference-harness-automation.md).
 
 Interactive Codex tooling and Codex Cloud Security remain intentionally provider-specific and are
 not part of repository automation dispatch.

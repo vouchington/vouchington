@@ -55,4 +55,4 @@ do not repeat those inventories in [docs/README.md](README.md) or the
 ### Operations and agent references
 
 - [Operations](operations/README.md) · [Runbooks](runbooks/README.md) · [Checklists](checklists/README.md)
-- [Prompts](prompts/README.md) · [Scheduled prompts](prompts/SCHEDULED.md) · [Automation templates](prompts/automation/README.md) · [Strategy](strategy/README.md) · [Focused catalog](catalog/README.md)
+- [Prompts](prompts/README.md) · [Scheduled prompts](prompts/SCHEDULED.md) · [Automation templates](prompts/automation/README.md) · [Focused catalog](catalog/README.md)

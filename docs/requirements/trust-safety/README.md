@@ -21,6 +21,4 @@ here and cross-link from `docs/overview/architecture/` and `backend/services/`.
 - [Trust System reference](reference-trust-system-bot-defense-through-trust.md)
 - [Trust System reference](reference-trust-system-contribution-gating.md)
 - [Trust System reference](reference-trust-system-official-accounts-and-material-connections.md)
-- [Trust System reference](reference-trust-system-phase-2-post-launch-vote-weight-calibration.md)
 - [Trust System reference](reference-trust-system-phase-3-scale-ml-based-trust.md)
-- [Trust System reference](reference-trust-system-vote-weight-system.md)

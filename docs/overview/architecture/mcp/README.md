@@ -97,7 +97,7 @@ The live check asserts that each server's catalog equals what `tools/list` retur
 holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,
 and that hints agree with their REST equivalents (see [MCP Metadata](#mcp-metadata)). The `docs-publish` workflow renders
 `mcp.json` with [`ci/render-mcp-docs.mts`](../../../../ci/render-mcp-docs.mts) onto the credentialed
-[private docs site](../../../operations/private-docs-site.md) at `/mcp/`, alongside the PostgreSQL reference.
+private docs site at `/mcp/`, alongside the PostgreSQL reference.
 
 ---
 

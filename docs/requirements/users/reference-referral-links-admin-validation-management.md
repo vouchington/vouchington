@@ -56,7 +56,6 @@ Referral links are the core revenue driver for landing pages (@username pages). 
 - Landing page service: `backend/services/my/landing-pages/`
 - Referral link click tracking: `backend/services/attribution/create.mts`
 - Prioritized query: `backend/services/prioritized-referral-links/`
-- Strategy doc: [docs/strategy/landing-pages-strategy.md](../../strategy/landing-pages-strategy.md)
 
 ## Auto-Follow on Signup
 
