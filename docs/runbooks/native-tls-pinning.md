@@ -43,9 +43,3 @@ an unsafe certificate rotation; do not ask users to bypass it.
 This runbook is only the public API SPKI pin. It is not the local-LLM cleartext peer check:
 `OpenAICompatibleResponsesClient` re-validates the resolved IP before a local-model `http` request
 (see [Native client architecture](https://github.com/vouchington/vouchington-clients/blob/main/docs/architecture/native-clients.md)).
-
-## Validation
-
-- Swift and .NET validation commands are owned by the [client repository](https://github.com/vouchington/vouchington-clients).
-- Infrastructure changes: run the validation documented in the private `vouchington-infra`
-  repository.

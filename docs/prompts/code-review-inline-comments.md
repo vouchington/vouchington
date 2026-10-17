@@ -2,12 +2,10 @@
 
 [vouchington/vouchington-tooling](https://github.com/vouchington/vouchington-tooling)'s
 `code-review` composite action defaults `inline_prompt_path` to
-this file — verified against `code-review.yml@93bad61` (v0.15.1) on 2026-09-09; re-verify against the pinned SHA
-on each pin bump, since nothing in this repo enforces that the tooling default stays this path. The caller
-appends it after the shared
+this file. The caller appends it after the shared
 [code-review-prompt.md](../../.agents/skills/agent-workflow/code-review-prompt.md) when building
-its review prompt. No workflow in this repository currently calls that reusable workflow; the `code-review`
-composite's poster validates the resulting `code-review-payload.json` against this contract.
+its review prompt, and the composite's poster parses and normalizes the resulting
+`code-review-payload.json` before posting.
 
 - This section overrides how findings are published, and which review event is used.
 - You have no MCP tool and no `gh` / `curl` / `node -e` publish path. Do not call `gh`, `curl`, or `node -e`. Do not post a GitHub review yourself. Write the complete review JSON to `code-review-payload.json` at the repository root with the Write tool. A separate trusted poster job posts exactly one review from that file after you exit.

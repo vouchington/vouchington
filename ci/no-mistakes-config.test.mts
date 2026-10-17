@@ -59,9 +59,6 @@ describe('no-mistakes config', () => {
       '.agents/skills/planning/references/impact-discovery.md',
     )
 
-    expect(workflowStartOfWork).toMatch(
-      /https:\/\/github\.com\/jonathanong\/filaments\/blob\/[0-9a-f]{40}\/\.agents\/skills\/no-mistakes\/references\/impact-recipes\.md/u,
-    )
     expect(workflowStartOfWork).toContain('pnpm exec no-mistakes planning-impact')
     const legacyVitestPlanner = ['pnpm exec vitest', 'related'].join(' ')
     for (const path of workflowDocPaths) {

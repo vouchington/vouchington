@@ -21,19 +21,12 @@ The remaining rules are Vouchington-only mechanics, ownership, and the shepherd/
 
 ## Native GitHub stack mechanics
 
-Official docs (do not copy): [About](https://docs.github.com/en/pull-requests/get-started/about-stacked-prs), [CLI](https://docs.github.com/en/pull-requests/reference/stacked-prs-cli-commands), [Managing](https://docs.github.com/en/pull-requests/how-tos/create-pull-requests/managing-stacked-pull-requests), [Merging](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-stacked-pull-requests).
-
 Install on first stacked use: `gh extension install github/gh-stack`. This feature is public preview.
 If `gh stack` exits 9 (not enabled on the repository), do not bundle the source issues into one PR.
 Open one PR targeting `main` for the bottom issue, wait for it to merge, then open the next. Say that
 stacks are unavailable.
 
-The [area workflows](../../../docs/development/ci/workflows/reference-workflow-automation-pull-requests.md) must not set `pull_request.branches` or
-`branches-ignore`. GitHub docs evaluate `branches: [main]` against `stack.base.ref`, but
-`gh stack submit` opens mid-stack PRs before the stack object exists
-([github/gh-stack#425](https://github.com/github/gh-stack/issues/425)), so that filter skips those
-PRs permanently. After an area-workflow trigger change lands on `main`, rebase existing stacks
-(`gh stack rebase` or `gh stack sync`) so parent branches include the new file.
+The [area workflows](../../../docs/development/ci/workflows/reference-workflow-automation-pull-requests.md) must not set `pull_request.branches` or `branches-ignore`: `gh stack submit` opens mid-stack PRs before the stack object exists, so a branch filter skips them permanently.
 
 ### Agent commands
 
@@ -47,12 +40,10 @@ Use only these non-interactive forms:
   `git fetch origin main:main` only when no worktree has main checked out; otherwise the checkout
   that has it fast-forwards itself (`git merge --ff-only origin/main`). Never move it from here.
 - `gh stack add <branch>`
-- `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
-  number also works. Hook-enforced: it takes exactly one numeric stack or PR number. See
+- `gh stack checkout <stack-number>` — imports an existing remote stack by stack or PR number. See
   [Import a stack before acting on it](#import-a-stack-before-acting-on-it).
 - `gh stack submit --auto` — creates drafts. Immediately `pr_update` (the `vouchington-tooling` MCP tool) each
-  new PR from that layer's worktree, since the tool requires the PR head to be the worktree branch; auto titles and bodies are not sufficient. The hook gates `--auto` / no `--open` only; it
-  does not check that the body update ran.
+  new PR from that layer's worktree, since the tool requires the PR head to be the worktree branch; auto titles and bodies are not sufficient.
 - `gh stack view --json` — acting only; never use its output, or `gh stack bottom`, to decide
   topology, ownership, or bottom-ness (see "Local metadata is advisory" below).
 - `gh stack rebase`, `gh stack rebase --upstack`, `gh stack rebase --continue`, `gh stack rebase --abort`
@@ -60,23 +51,9 @@ Use only these non-interactive forms:
 - `gh stack push`
 - `gh stack up <n>`, `gh stack down <n>`, `gh stack top`, `gh stack bottom` (movement only)
 - `gh stack merge <pr> --yes --squash` — see [Merge every ready bottom layer at once](#merge-every-ready-bottom-layer-at-once). The PR-number selector is required; bare `gh stack merge` stays banned below. Always include both flags: `--yes` skips the confirmation prompt a non-interactive command runner cannot answer, and `--squash` is the required strategy.
-- `gh stack unstack <branch>` / `gh stack delete <branch>` — recovery from a mis-rooted stack. Both
-  remove tracking only; pull requests and local branches are preserved, and a merged, merging, or
-  queued PR cannot be removed. `unstack` is `delete`'s default-form alias.
+- `gh stack unstack` (active stack or a stack number; removes the remote stack grouping unless `--local`) / `gh stack delete <branch>` — recovery from a mis-rooted stack.
 
-The hook allowlist is closed at the subcommand level: only `add`, `bottom`, `checkout`, `delete`,
-`down`, `init`, `link`, `merge`, `push`, `rebase`, `submit`, `sync`, `top`, `unstack`, `up`, and
-`view` are permitted `gh stack` actions. `merge` requires a numeric PR-number selector, and
-`checkout` requires exactly one stack number or PR number. Help runs no command, so
-`gh stack --help`, `gh stack help [<action>]`, and `gh stack <action> --help` (or `-h`) for a
-permitted action pass with nothing else beside them. The hook does not further enforce
-the exact flag combination shown above — `gh stack merge <pr>` and `gh stack merge <pr> --yes` also
-pass the hook even though neither is the form this page requires. Do not run interactive TUIs:
-`gh stack submit` without `--auto`, `gh stack modify`, bare `gh stack checkout`, `gh stack switch`, or
-bare `gh stack merge` (no PR-number selector — it is a TUI and lands the whole stack). The hook also
-blocks `gh stack checkout <branch>`: a branch name resolves only against stacks this worktree already
-tracks. Do not run `gh stack trunk` — the main worktree already has `main` checked out, and agents
-stay in a non-main worktree.
+The pre-tool-use hook enforces this allowlist (see `dev/codex-hooks/policy/github-stack-workflow.mts`); do not run interactive TUIs (`gh stack submit` without `--auto`, `modify`, `switch`, bare `checkout`, bare `merge`) or `gh stack trunk`.
 
 ### Worktree and scope
 
@@ -130,14 +107,7 @@ bases. PR creation can succeed while stack registration fails; inspect both outc
 reporting a native stack or starting its stack shepherd. Missing preview metadata leaves membership
 unknown; report that limitation and do not infer success from local tracking.
 
-If the lower PR merges before registration, GitHub can reject linking it as a merged layer.
-Re-read the forge, fetch current refs, and rebase the remaining work onto the updated `origin/main`
-without replaying the merged layer. Preserve any upper PR already created. Register multiple
-remaining open layers as a stack and verify their bases. For a single surviving PR, read its remote
-base, retarget it to `main` if needed, and verify that target before shepherding it individually:
-a head rebase alone does not change a PR's base branch. Report the result as
-sequential PRs when no remote stack was registered. Do not recreate the merged bottom PR or use
-manual base chaining as a substitute for native registration.
+If the lower PR merges before registration, re-read the forge, fetch refs, and rebase the remaining work onto the updated `origin/main` without replaying the merged layer. Register multiple remaining open layers as a stack; for a single survivor, retarget it to `main` and shepherd it individually. Never recreate the merged bottom PR or chain bases manually as a substitute for native registration.
 
 ### Lower-layer review fix
 
@@ -148,11 +118,8 @@ Check out the layer that owns the change, commit there, then `gh stack rebase --
 
 Every fact this procedure branches on — topology, layer state, ownership, head SHA — comes from the
 REST/GraphQL API, never from local `gh-stack` metadata. A local base ref can go stale after a remote
-relink or rebase and silently replay already-landed commits (formerly filed as
-jonathanong/filaments#11426).
-`gh stack view --json` and `gh stack bottom` are used only to **act**, never to **decide**, and the
-former errors from a worktree whose current branch is not in the stack — the normal state right after
-a merge retargets the stack.
+relink or rebase and silently replay already-landed commits.
+`gh stack view --json` and `gh stack bottom` are used only to **act**, never to **decide**.
 
 ```bash
 gh api "repos/{owner}/{repo}/pulls/<N>" --jq '{stackPresent: has("stack"), stack: .stack}'
@@ -312,13 +279,7 @@ Immediately before each approved merge, run these checks in order:
    when the new bottom layer is ready, merge the next ready prefix the same way. If no unmerged
    owned layers remain, the drain is complete.
 
-**Residual TOCTOU, stated honestly:** the window between `S1` and the merge cannot be closed —
-`gh stack merge` has no head-SHA pin. The backstop is server-side: branch protection and repository
-rules are evaluated when the merge actually runs, and bypassing merge requirements is not supported
-for stacks. If a merge is rejected there, return to A2; do not retry blindly. If `main` uses a merge
-queue, a successful `gh stack merge` does not mean merged yet. The prefix queues together and
-GitHub evaluates each layer from the bottom; a failure ejects that layer and those above it. The
-re-read at step 2 of the next drain iteration handles that normally.
+**Residual TOCTOU:** the window between `S1` and the merge cannot be closed (`gh stack merge` has no head-SHA pin); branch protection is the server-side backstop. If a merge is rejected, return to A2; do not retry blindly. With a merge queue, a successful `gh stack merge` only means queued; re-read topology on the next drain iteration.
 
 **When you stop or are blocked, report the stack and ask.** Before yielding on an unresolved
 escalation, a human interrupt or session pause, repeated fixes with no progress, or an
@@ -359,17 +320,6 @@ Three duties follow:
    second stack. If the open stack is not owned, report it and ask rather than adding to it or
    silently starting a rival.
 
-State (which PRs/stacks exist, their position, their status) is always derived this way, never cached.
-Only intent — which stack is being built, what a planned-but-not-yet-opened layer is for — is not
-derivable, so write it down in the session's own plan or journal, and treat it strictly as a plan, not
-as a record of what exists.
+State is always derived this way, never cached; only intent (which stack is being built) belongs in the session's plan or journal.
 
-## Known gaps
-
-- **Provenance is not tamper-proof.** It is a body line any writer can edit, and it is absent whenever
-  a PR was opened without `pr_create`, or the harness exposed no valid session id. It is an
-  ownership signal, not an authorization boundary — sound here because every merge is human-gated
-  regardless of ownership.
-- **Stack/PR number disjointness** is not guaranteed by GitHub — it is a shared repo counter. The
-  procedure does not rely on it staying disjoint; it asserts the 404 per merge instead (merge check 1
-  above).
+Provenance is an ownership signal, not an authorization boundary: every merge is human-gated regardless of ownership.

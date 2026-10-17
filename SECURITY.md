@@ -32,17 +32,8 @@ vulnerabilities:
 - [`ts-shared/session-jwt/test-jwt-private-key.mts`](ts-shared/session-jwt/test-jwt-private-key.mts)
 - [`backend/modules/bluesky-oauth/test-jwk-private-key.mts`](backend/modules/bluesky-oauth/test-jwk-private-key.mts)
 
-Both are synthetic, non-production signing keys bundled only as a
-development/test fallback. The key files themselves carry no runtime guard —
-the guard lives in the code that consumes them: `getResolvedKeySet()` in
-`ts-shared/session-jwt/keys.mts` and `getBlueskyKeyset()` in
-`backend/modules/bluesky-oauth/keyset.mts` each fall back to the bundled test
-key only when their corresponding environment variable
-(`VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64`/`VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64` and
-`VOUCHA_BLUESKY_JWT_PRIVATE_KEYS_B64`, respectively) is unconfigured. In
-production mode (`NODE_ENV=production`), both instead throw rather than
-falling back, so the bundled test key can't silently end up signing or
-verifying a token in a production deployment.
+Both are synthetic, non-production signing keys used only as a development/test fallback; the
+consuming code refuses to fall back to them in production mode.
 
 If you find a way around that production-mode guard, that **is** worth
 reporting through the process above.
