@@ -4,6 +4,7 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
+import { POSTS_CREATOR_INDEXES } from './posts-creator-indexes.mts'
 
 const {
   getCommunitiesByIdBatch,
@@ -184,7 +185,8 @@ export async function runHotPathLoaderScenarios() {
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['posts__default_created_by_id_idx'],
+        indexes: POSTS_CREATOR_INDEXES,
+        anyOf: true,
         queryContains: 'GROUP BY metric_scope, post_type',
       },
       // Both modes process 6,076 post rows across public and viewer visibility scopes; +20%.

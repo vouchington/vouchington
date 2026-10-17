@@ -4,7 +4,14 @@ import { isKnownCustomPlanCheck } from './plan-custom-checks.mts'
 
 export type PlanExpectation =
   | { kind: 'maxProcessedRows'; relation: string; max: number }
-  | { kind: 'usesIndexes'; indexes: readonly string[]; queryContains?: string; noSort?: boolean }
+  | {
+      kind: 'usesIndexes'
+      indexes: readonly string[]
+      /** The listed indexes are equivalent access paths: using any one satisfies the gate. */
+      anyOf?: boolean
+      queryContains?: string
+      noSort?: boolean
+    }
   | { kind: 'queryBinds'; token: string }
   | { kind: 'forbidCorrelatedAggregates' }
   | { kind: 'singleLeaf'; parent: string; key?: string }
