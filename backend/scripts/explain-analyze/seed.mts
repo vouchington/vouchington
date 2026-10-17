@@ -94,6 +94,7 @@ import {
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
+import { seedModerationSummaryRecipient } from './seed-data/view-driven-reads.mts'
 
 async function main() {
   await seedUsers(20_000)
@@ -160,6 +161,7 @@ async function main() {
   await seedFollowerDistributions()
   await seedProfileLinks(1000)
   await seedCommunities(5, 200)
+  await seedModerationSummaryRecipient()
   await seedViewDrivenLists()
   await seedViewDrivenPrompts()
   await seedCommunityListItemTopic()
