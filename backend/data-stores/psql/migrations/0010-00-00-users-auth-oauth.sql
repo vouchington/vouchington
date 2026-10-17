@@ -698,12 +698,13 @@ ON CONFLICT DO NOTHING;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS facebook_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   -- which user this facebook account is connected to
   -- NOTE: this is nullable because a user can be created after this facebook account data is saved
   user_id UUID REFERENCES users ON DELETE SET NULL,
 
   -- facebook user ID
-  facebook_user_id TEXT PRIMARY KEY,
+  facebook_user_id TEXT NOT NULL UNIQUE,
   facebook_user_email_address TEXT,
   email_domain_hostname_id UUID,
   facebook_user_data JSONB NOT NULL, -- from /api/me
@@ -714,7 +715,7 @@ CREATE TABLE IF NOT EXISTS facebook_accounts (
 
   friends_synced_at TIMESTAMPTZ,
 
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -743,8 +744,9 @@ ON facebook_accounts (access_token_expires_at)
 WHERE access_token_expires_at IS NOT NULL;
 
 COMMENT ON TABLE facebook_accounts IS 'Facebook OAuth accounts linked to users. Stores profile data and encrypted long-lived access token ciphertext.';
+COMMENT ON COLUMN facebook_accounts.id IS 'Internal UUIDv7 identity of the Facebook account.';
 COMMENT ON COLUMN facebook_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
-COMMENT ON COLUMN facebook_accounts.facebook_user_id IS 'Facebook''s unique user ID (primary key).';
+COMMENT ON COLUMN facebook_accounts.facebook_user_id IS 'Facebook''s unique external user ID.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_email_address IS 'Email address from the Facebook profile.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_data IS 'Raw JSONB profile data from Facebook''s /api/me endpoint.';
 COMMENT ON COLUMN facebook_accounts.access_token_ciphertext IS 'Encrypted long-lived Facebook access token ciphertext for API calls.';
@@ -753,12 +755,14 @@ COMMENT ON COLUMN facebook_accounts.friends_synced_at IS 'When the user''s Faceb
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS facebook_friends (
-  facebook_user_id TEXT NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  facebook_account_id UUID NOT NULL REFERENCES facebook_accounts(id) ON DELETE CASCADE,
   facebook_friend_id TEXT NOT NULL,
+  friend_facebook_account_id UUID REFERENCES facebook_accounts(id) ON DELETE SET NULL,
 
-  PRIMARY KEY (facebook_user_id, facebook_friend_id),
+  UNIQUE (facebook_account_id, facebook_friend_id),
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -769,9 +773,18 @@ BEFORE UPDATE ON facebook_friends
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-COMMENT ON TABLE facebook_friends IS 'Facebook friend relationships between Facebook user IDs.';
-COMMENT ON COLUMN facebook_friends.facebook_user_id IS 'The Facebook user ID of the source user.';
-COMMENT ON COLUMN facebook_friends.facebook_friend_id IS 'The Facebook user ID of the friend.';
+CREATE INDEX IF NOT EXISTS idx_facebook_friends__friend_facebook_account_id
+ON facebook_friends (friend_facebook_account_id)
+WHERE friend_facebook_account_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_facebook_friends__facebook_friend_id
+ON facebook_friends (facebook_friend_id);
+
+COMMENT ON TABLE facebook_friends IS 'Facebook friend relationships from linked accounts to provider friends.';
+COMMENT ON COLUMN facebook_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
+COMMENT ON COLUMN facebook_friends.facebook_account_id IS 'Source Facebook account whose friends list contains this entry.';
+COMMENT ON COLUMN facebook_friends.facebook_friend_id IS 'External Facebook user ID of the friend, who may not have an account here.';
+COMMENT ON COLUMN facebook_friends.friend_facebook_account_id IS 'Matching local Facebook account when the friend has signed in.';
 
 -- ============================================================================
 -- passkeys
@@ -1193,7 +1206,7 @@ COMMENT ON COLUMN curated_aside_items.created_by_id IS 'Admin who curated the it
 -- ORDER BY created_at ASC, <provider_user_id> ASC
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_facebook_accounts__orphan_retention_cleanup
-ON facebook_accounts (created_at, facebook_user_id)
+ON facebook_accounts (created_at, id)
 WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

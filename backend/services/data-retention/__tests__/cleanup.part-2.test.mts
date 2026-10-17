@@ -156,6 +156,57 @@ describe('orphaned OAuth account cleanup', () => {
     })
   }, 30_000)
 
+  it('preserves an old orphaned Facebook account during its active broker completion', async () => {
+    const window = createTestRetentionWindow()
+    const activeProviderId = `retained-facebook-${createRandomString(12)}`
+    const unrelatedProviderId = `unrelated-facebook-${createRandomString(12)}`
+    await insertTestOAuthAccount('facebook', activeProviderId)
+    await insertTestOAuthAccount('facebook', unrelatedProviderId)
+    const activeAccountId = await setOAuthAccountCreatedAt(
+      'facebook',
+      activeProviderId,
+      window.firstEligibleDate,
+    )
+    await setOAuthAccountCreatedAt('facebook', unrelatedProviderId, window.secondEligibleDate)
+    if (!activeAccountId) throw new Error('Retained Facebook account fixture is missing')
+    const authorizationId = v7()
+    onTestFinished(async () => {
+      await deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        facebookUserIds: [activeProviderId, unrelatedProviderId],
+      })
+    })
+    const now = new Date()
+    await insertTestOAuthAuthorization({
+      id: authorizationId,
+      provider: 'facebook',
+      status: 'completion_ready',
+      providerUserId: activeProviderId,
+      callbackReceivedAt: now,
+      completionReadyAt: now,
+      expiresAt: new Date(now.getTime() + 10 * 60_000),
+    })
+
+    await expect(
+      deleteOrphanedOAuthAccountBatch(
+        'facebook_accounts',
+        'facebook_user_id',
+        window.upperBoundDate,
+        2,
+        window.lowerBoundDate,
+      ),
+    ).resolves.toBe(1)
+    await expect(oauthAccountExistsByProviderUserId('facebook', activeProviderId)).resolves.toBe(
+      true,
+    )
+    await expect(oauthAccountExistsByProviderUserId('facebook', unrelatedProviderId)).resolves.toBe(
+      false,
+    )
+    await expect(getTestOAuthAuthorization(authorizationId)).resolves.toMatchObject({
+      facebook_account_id: activeAccountId,
+    })
+  }, 30_000)
+
   it('preserves an old orphaned Microsoft account during its active broker completion', async () => {
     const window = createTestRetentionWindow()
     const activeProviderId = `retained-microsoft-${createRandomString(12)}`

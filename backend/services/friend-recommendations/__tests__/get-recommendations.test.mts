@@ -12,6 +12,7 @@ import { getFriendRecommendations } from '../get-recommendations.mts'
 import { updateUserFields } from '@services/users/update-fields'
 import { decodeCursor, encodeCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
+import { upsertOAuthAccount } from '../../oauth-accounts/upsert.mts'
 
 const followTable = getEntityRelationTableNameOrThrow({
   subjectType: 'user',
@@ -56,6 +57,28 @@ describe('getFriendRecommendations', () => {
     // Insert github friendship: currentUser follows friendUser and friend2User
     await insertTestFriend('github', currentGithubId, friendGithubId)
     await insertTestFriend('github', currentGithubId, friend2GithubId)
+  })
+
+  it('recommends a Facebook friend who signs up after the friend sync', async () => {
+    const viewer = await createTestUser()
+    const friend = await createTestUser()
+    const viewerProviderId = `facebook-viewer-${viewer.id}`
+    const friendProviderId = `facebook-friend-${friend.id}`
+    await insertTestOAuthAccount('facebook', viewerProviderId)
+    await connectTestOAuthAccount('facebook', viewer.id, viewerProviderId)
+    await insertTestFriend('facebook', viewerProviderId, friendProviderId)
+
+    const before = await getFriendRecommendations(viewer)
+    expect(before.results).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: friend.id })]),
+    )
+
+    await upsertOAuthAccount('facebook', friendProviderId, null, { name: 'New Facebook Friend' })
+    await connectTestOAuthAccount('facebook', friend.id, friendProviderId)
+    const after = await getFriendRecommendations(viewer)
+    expect(after.results).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: friend.id, provider: 'facebook' })]),
+    )
   })
 
   it('returns friend recommendations', async () => {

@@ -17,6 +17,16 @@ describe('upsertOAuthAccount', () => {
     expect(account.provider_user_email_address).toBeNull()
   })
 
+  it('keeps the Facebook account identity across provider updates', async () => {
+    const providerUserId = `facebook-account-${randomUUID()}`
+    const first = await upsertOAuthAccount('facebook', providerUserId, null, { name: 'First' })
+    const updated = await upsertOAuthAccount('facebook', providerUserId, null, { name: 'Second' })
+
+    expect(first.account_id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(updated.account_id).toBe(first.account_id)
+    expect(updated.provider_user_id).toBe(providerUserId)
+  })
+
   it.each(['linkedin', 'microsoft', 'github'] as const)(
     'updates the %s email-domain owner with the address',
     async provider => {

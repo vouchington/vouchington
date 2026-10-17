@@ -221,7 +221,7 @@ function completionRow(overrides: Partial<CompletionRow> = {}): CompletionRow {
     completion_proof_challenge: null,
     completion_token_hash: null,
     callback_error: null,
-    facebook_user_id: null,
+    facebook_account_id: null,
     x_user_id: null,
     github_user_id: 'github-user',
     linkedin_account_id: null,

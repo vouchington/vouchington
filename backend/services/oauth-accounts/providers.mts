@@ -39,6 +39,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataConflictStrategy: 'replace',
     hasTokenColumns: true,
     hasRefreshToken: false,
+    accountIdColumn: 'id',
   },
   apple: {
     table: 'apple_accounts',

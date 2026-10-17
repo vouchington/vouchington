@@ -42,6 +42,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataColumn: 'facebook_user_data',
     hasTokenColumns: true,
     hasRefreshToken: false,
+    accountIdColumn: 'id',
   },
   apple: {
     table: 'apple_accounts',

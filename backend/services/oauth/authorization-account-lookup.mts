@@ -14,6 +14,7 @@ export async function getAuthorizationAccount(
   }
   const { rows } = await query(
     `/* getAuthorizationAccount */ SELECT
+       ${config.accountIdColumn === 'id' ? 'id AS account_id,' : ''}
        user_id,
        ${config.providerUserIdColumn} AS provider_user_id,
        ${config.emailColumn} AS provider_user_email_address,

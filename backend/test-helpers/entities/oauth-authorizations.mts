@@ -26,7 +26,7 @@ export type TestOAuthAuthorizationRow = {
   completion_token_hash: string | null
   completion_token_ciphertext: string | null
   exchange_claim_id: string | null
-  facebook_user_id: string | null
+  facebook_account_id: string | null
   github_user_id: string | null
   x_user_id: string | null
   linkedin_account_id: string | null
@@ -75,6 +75,10 @@ export async function insertTestOAuthAuthorization(
     provider === 'linkedin' && options.providerUserId
       ? await getLinkedInAccountId(options.providerUserId)
       : null
+  const facebookAccountId =
+    provider === 'facebook' && options.providerUserId
+      ? await getFacebookAccountId(options.providerUserId)
+      : null
   const completionTokenHash = options.completionToken
     ? hashToken(`oauth-authorization-broker:completion:${id}`, options.completionToken)
     : null
@@ -84,7 +88,7 @@ export async function insertTestOAuthAuthorization(
        initiating_device_id, initiating_session_id, redirect_uri, state_hash,
        pkce_verifier_ciphertext, callback_code_ciphertext, callback_received_at,
        exchange_started_at, exchange_claim_id, completion_proof_challenge,
-       completion_token_hash, completion_token_ciphertext, facebook_user_id,
+       completion_token_hash, completion_token_ciphertext, facebook_account_id,
        github_user_id, x_user_id, result_kind, result_user_id, result_device_id,
        result_session_id, completion_ready_at, completed_at, expires_at, updated_at,
        linkedin_account_id, microsoft_account_id
@@ -117,7 +121,7 @@ export async function insertTestOAuthAuthorization(
       options.completionProofChallenge ?? null,
       completionTokenHash,
       options.completionTokenCiphertext ?? null,
-      provider === 'facebook' ? (options.providerUserId ?? null) : null,
+      facebookAccountId,
       provider === 'github' ? (options.providerUserId ?? null) : null,
       provider === 'x' ? (options.providerUserId ?? null) : null,
       options.resultKind ?? null,
@@ -142,7 +146,7 @@ export async function getTestOAuthAuthorization(
   const { rows } = await read<TestOAuthAuthorizationRow>(
     `/* getTestOAuthAuthorization */ SELECT
        id, status, callback_error, callback_code_ciphertext, completion_token_hash,
-       completion_token_ciphertext, exchange_claim_id, facebook_user_id,
+       completion_token_ciphertext, exchange_claim_id, facebook_account_id,
        github_user_id, x_user_id, linkedin_account_id, microsoft_account_id, result_kind, result_user_id, result_device_id, result_session_id
      FROM view_oauth_authorization_current_records
      WHERE id = $1`,
@@ -157,6 +161,15 @@ async function getLinkedInAccountId(providerUserId: string): Promise<string> {
     [providerUserId],
   )
   if (!rows[0]) throw new Error('LinkedIn test account must exist before authorization fixture')
+  return rows[0].id
+}
+
+async function getFacebookAccountId(providerUserId: string): Promise<string> {
+  const { rows } = await read<{ id: string }>(
+    `/* getTestFacebookAccountId */ SELECT id FROM facebook_accounts WHERE facebook_user_id = $1`,
+    [providerUserId],
+  )
+  if (!rows[0]) throw new Error('Facebook test account must exist before authorization fixture')
   return rows[0].id
 }
 

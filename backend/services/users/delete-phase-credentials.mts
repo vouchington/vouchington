@@ -8,11 +8,11 @@ export async function processUserDeletionCredentialsBatch(userId: string, batchS
   return withUserDeletionTransaction(userId, async query => {
     const statements = [
       sql`/* processUserDeletionCredentials:facebookFriends */
-        DELETE FROM facebook_friends WHERE (facebook_user_id, facebook_friend_id) IN (
-          SELECT friend.facebook_user_id, friend.facebook_friend_id FROM facebook_friends friend
-          JOIN facebook_accounts account USING (facebook_user_id)
+        DELETE FROM facebook_friends WHERE (facebook_account_id, facebook_friend_id) IN (
+          SELECT friend.facebook_account_id, friend.facebook_friend_id FROM facebook_friends friend
+          JOIN facebook_accounts account ON account.id = friend.facebook_account_id
           WHERE account.user_id = ${userId}
-          ORDER BY friend.facebook_user_id, friend.facebook_friend_id LIMIT ${batchSize}
+          ORDER BY friend.facebook_account_id, friend.facebook_friend_id LIMIT ${batchSize}
         )`,
       sql`/* processUserDeletionCredentials:xFriends */
         DELETE FROM x_friends WHERE (x_user_id, x_friend_id) IN (

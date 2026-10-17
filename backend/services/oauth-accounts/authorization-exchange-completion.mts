@@ -19,7 +19,7 @@ export async function completeOAuthAuthorizationExchange(
     throw new Error(`OAuth authorization broker does not support ${provider}`)
   }
   const providerIdColumn = {
-    facebook: 'facebook_user_id',
+    facebook: 'facebook_account_id',
     x: 'x_user_id',
     github: 'github_user_id',
     linkedin: 'linkedin_account_id',

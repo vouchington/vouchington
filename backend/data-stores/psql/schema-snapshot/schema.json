@@ -42021,7 +42021,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -42032,18 +42032,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -42054,7 +42054,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "facebook_user_data": {
@@ -42065,7 +42065,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "facebook_user_email_address": {
@@ -42076,18 +42076,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "facebook_user_id": {
           "collation": null,
-          "comment": "Facebook's unique user ID (primary key).",
+          "comment": "Facebook's unique external user ID.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "friends_synced_at": {
@@ -42098,8 +42098,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the Facebook account.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "updated_at": {
           "collation": null,
@@ -42109,7 +42120,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -42120,7 +42131,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
@@ -42147,10 +42158,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "facebook_accounts_pkey": {
+        "facebook_accounts_facebook_user_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX facebook_accounts_pkey ON public.facebook_accounts USING btree (facebook_user_id)",
+          "definition": "CREATE UNIQUE INDEX facebook_accounts_facebook_user_id_key ON public.facebook_accounts USING btree (facebook_user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -42159,6 +42170,26 @@
               "expression": "facebook_user_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "facebook_accounts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX facebook_accounts_pkey ON public.facebook_accounts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -42230,7 +42261,7 @@
         "idx_facebook_accounts__orphan_retention_cleanup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_facebook_accounts__orphan_retention_cleanup ON public.facebook_accounts USING btree (created_at, facebook_user_id) WHERE (user_id IS NULL)",
+          "definition": "CREATE INDEX idx_facebook_accounts__orphan_retention_cleanup ON public.facebook_accounts USING btree (created_at, id) WHERE (user_id IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -42241,11 +42272,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "facebook_user_id",
+              "column": "id",
               "descending": false,
-              "expression": "facebook_user_id",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(user_id IS NULL)",
@@ -42298,14 +42329,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["facebook_user_id"],
-        "definition": "PRIMARY KEY (facebook_user_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_facebook_accounts_updated_at": "CREATE TRIGGER trigger_facebook_accounts_updated_at BEFORE UPDATE ON public.facebook_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "facebook_accounts_facebook_user_id_key": {
+          "columns": ["facebook_user_id"],
+          "definition": "UNIQUE (facebook_user_id)"
+        }
+      }
     },
     "facebook_friends": {
       "checkConstraints": {},
@@ -42313,35 +42349,57 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
-        "facebook_friend_id": {
+        "facebook_account_id": {
           "collation": null,
-          "comment": "The Facebook user ID of the friend.",
+          "comment": "Source Facebook account whose friends list contains this entry.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
-          "type": "text"
+          "type": "uuid"
         },
-        "facebook_user_id": {
+        "facebook_friend_id": {
           "collation": null,
-          "comment": "The Facebook user ID of the source user.",
+          "comment": "External Facebook user ID of the friend, who may not have an account here.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 3,
           "type": "text"
+        },
+        "friend_facebook_account_id": {
+          "collation": null,
+          "comment": "Matching local Facebook account when the friend has signed in.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the observed friend relation.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "last_observed_at": {
           "collation": null,
@@ -42351,7 +42409,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -42362,26 +42420,45 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         }
       },
-      "comment": "Facebook friend relationships between Facebook user IDs.",
-      "foreignKeys": {},
+      "comment": "Facebook friend relationships from linked accounts to provider friends.",
+      "foreignKeys": {
+        "facebook_friends_facebook_account_id_fkey": {
+          "columns": ["facebook_account_id"],
+          "definition": "FOREIGN KEY (facebook_account_id) REFERENCES facebook_accounts(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "facebook_accounts",
+          "validated": true
+        },
+        "facebook_friends_friend_facebook_account_id_fkey": {
+          "columns": ["friend_facebook_account_id"],
+          "definition": "FOREIGN KEY (friend_facebook_account_id) REFERENCES facebook_accounts(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "facebook_accounts",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
-        "facebook_friends_pkey": {
+        "facebook_friends_facebook_account_id_facebook_friend_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX facebook_friends_pkey ON public.facebook_friends USING btree (facebook_user_id, facebook_friend_id)",
+          "definition": "CREATE UNIQUE INDEX facebook_friends_facebook_account_id_facebook_friend_id_key ON public.facebook_friends USING btree (facebook_account_id, facebook_friend_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "facebook_user_id",
+              "column": "facebook_account_id",
               "descending": false,
-              "expression": "facebook_user_id",
+              "expression": "facebook_account_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             },
             {
               "column": "facebook_friend_id",
@@ -42392,15 +42469,35 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "facebook_friends_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX facebook_friends_pkey ON public.facebook_friends USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": true,
           "ready": true,
           "unique": true,
           "valid": true
         },
-        "idx_facebook_friends__friend_id": {
+        "idx_facebook_friends__facebook_friend_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_facebook_friends__friend_id ON public.facebook_friends USING btree (facebook_friend_id)",
+          "definition": "CREATE INDEX idx_facebook_friends__facebook_friend_id ON public.facebook_friends USING btree (facebook_friend_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -42416,19 +42513,44 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_facebook_friends__friend_facebook_account_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_friends__friend_facebook_account_id ON public.facebook_friends USING btree (friend_facebook_account_id) WHERE (friend_facebook_account_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_facebook_account_id",
+              "descending": false,
+              "expression": "friend_facebook_account_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_facebook_account_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["facebook_user_id", "facebook_friend_id"],
-        "definition": "PRIMARY KEY (facebook_user_id, facebook_friend_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_facebook_friends_updated_at": "CREATE TRIGGER trigger_facebook_friends_updated_at BEFORE UPDATE ON public.facebook_friends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "facebook_friends_facebook_account_id_facebook_friend_id_key": {
+          "columns": ["facebook_account_id", "facebook_friend_id"],
+          "definition": "UNIQUE (facebook_account_id, facebook_friend_id)"
+        }
+      }
     },
     "fediverse_instance_integration_changes": {
       "checkConstraints": {
@@ -69460,10 +69582,10 @@
         "oauth_authorizations_check": "CHECK ((num_nonnulls(completed_at, rejected_at, expired_at) <= 1))",
         "oauth_authorizations_check1": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = 'connect'::oauth_authorization_purposes) AND (initiating_user_id IS NOT NULL))))",
         "oauth_authorizations_check2": "CHECK ((((callback_mode = 'native'::oauth_callback_modes) AND (completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)) OR ((callback_mode = 'web'::oauth_callback_modes) AND (completion_proof_challenge IS NULL))))",
-        "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1))",
-        "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'microsoft'::oauth_authorization_providers) AND (facebook_user_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL))))",
+        "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_account_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1))",
+        "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'microsoft'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_user_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL))))",
         "oauth_authorizations_check5": "CHECK (((status <> ALL (ARRAY['callback_received'::oauth_authorization_statuses, 'exchanging'::oauth_authorization_statuses, 'completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR (callback_received_at IS NOT NULL)))",
-        "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_user_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1))))",
+        "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_account_id, x_user_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1))))",
         "oauth_authorizations_check7": "CHECK ((((status <> 'completed'::oauth_authorization_statuses) AND (completed_at IS NULL) AND (result_kind IS NULL) AND (result_user_id IS NULL) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL)) OR ((status = 'completed'::oauth_authorization_statuses) AND (completed_at IS NOT NULL) AND (result_user_id IS NOT NULL) AND (((result_kind = 'authenticated'::oauth_authorization_result_kinds) AND (result_device_id IS NOT NULL) AND (uuid_extract_version(result_device_id) = 7) AND (result_session_id IS NOT NULL) AND (uuid_extract_version(result_session_id) = 7) AND (login_attempt_id IS NULL)) OR ((result_kind = 'mfa_required'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NOT NULL) AND (uuid_extract_version(login_attempt_id) = 7)) OR ((result_kind = 'connected'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL))))))",
         "oauth_authorizations_provider_check": "CHECK ((provider = ANY (ARRAY['facebook'::oauth_authorization_providers, 'x'::oauth_authorization_providers, 'github'::oauth_authorization_providers, 'linkedin'::oauth_authorization_providers, 'microsoft'::oauth_authorization_providers])))",
         "oauth_authorizations_purpose_check": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes])))",
@@ -69626,7 +69748,7 @@
           "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
-        "facebook_user_id": {
+        "facebook_account_id": {
           "collation": null,
           "comment": "Facebook account produced by a successful exchange; parent deletion cascades the authorization.",
           "defaultExpression": null,
@@ -69635,7 +69757,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 17,
-          "type": "text"
+          "type": "uuid"
         },
         "github_user_id": {
           "collation": null,
@@ -69871,12 +69993,12 @@
       },
       "comment": "Durable server-begun OAuth state machine shared by web and native Facebook, X, GitHub, LinkedIn, and Microsoft authentication and account connection.",
       "foreignKeys": {
-        "oauth_authorizations_facebook_user_id_fkey": {
-          "columns": ["facebook_user_id"],
-          "definition": "FOREIGN KEY (facebook_user_id) REFERENCES facebook_accounts(facebook_user_id) ON DELETE CASCADE",
+        "oauth_authorizations_facebook_account_id_fkey": {
+          "columns": ["facebook_account_id"],
+          "definition": "FOREIGN KEY (facebook_account_id) REFERENCES facebook_accounts(id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["facebook_user_id"],
+          "referencedColumns": ["id"],
           "referencedTable": "facebook_accounts",
           "validated": true
         },
@@ -69991,21 +70113,21 @@
           "unique": false,
           "valid": true
         },
-        "idx_oauth_authorizations__facebook_user": {
+        "idx_oauth_authorizations__facebook_account": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_oauth_authorizations__facebook_user ON public.oauth_authorizations USING btree (facebook_user_id) WHERE (facebook_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_oauth_authorizations__facebook_account ON public.oauth_authorizations USING btree (facebook_account_id) WHERE (facebook_account_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "facebook_user_id",
+              "column": "facebook_account_id",
               "descending": false,
-              "expression": "facebook_user_id",
+              "expression": "facebook_account_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(facebook_user_id IS NOT NULL)",
+          "predicate": "(facebook_account_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -136539,7 +136661,7 @@
     },
     "view_oauth_authorization_current_records": {
       "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_user_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id\n   FROM oauth_authorizations flow;",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_user_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {

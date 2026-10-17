@@ -26,7 +26,7 @@ SELECT
   flow.callback_error,
   flow.completion_token_hash,
   flow.completion_token_ciphertext,
-  flow.facebook_user_id,
+  flow.facebook_account_id,
   flow.x_user_id,
   flow.github_user_id,
   flow.result_kind,
