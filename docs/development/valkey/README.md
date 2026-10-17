@@ -2,47 +2,54 @@
 
 Source entrypoint: [backend/data-stores/valkey/README.md](../../../backend/data-stores/valkey/README.md)
 
-Voucha's Valkey layer is a thin facade over [`valkyries`](https://github.com/jonathanong/valkyries), split into per-concern pnpm packages so the workspace graph enforces which concern each consumer may touch:
+Voucha's Valkey layer is a thin facade over [`valkyries`](https://github.com/jonathanong/valkyries),
+split into per-concern pnpm packages (`valkey-core`, `valkey-pubsub`, `valkey-rate-limiter`,
+`valkey-glide-mq`, and `valkey` for cache, Bloom, dynamic config, and the rest) so the workspace
+graph enforces which concern each consumer may touch. Every package depends only on `valkey-core`
+(star layering, cycle-free); consumers of pubsub, rate limiting, or queues must declare the matching
+package. `valkyries` owns the reusable primitives; Voucha keeps application glue: session state,
+the GlideMQ factory and registry, cache metric forwarding to analytics, and error handling through
+`@modules/on-error`. Read primitive API details in the upstream `valkyries` docs.
 
-| Package                            | Directory                | Holds                                                                                                                                                                   |
-| ---------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@data-stores/valkey-core`         | `../valkey-core`         | Shared leaf: `config`, `app-integration` (error handler + analytics bridge), `glide-mq-client` (connection primitive), `glide-mq-registry`, `shutdown`                  |
-| `@data-stores/valkey-pubsub`       | `../valkey-pubsub`       | `createChannelPubSub` plus the image-state / data-request / article-sync / import-progress facades                                                                      |
-| `@data-stores/valkey-rate-limiter` | `../valkey-rate-limiter` | `RateLimiter` facade                                                                                                                                                    |
-| `@data-stores/valkey-glide-mq`     | `../valkey-glide-mq`     | `glide-mq-factory` (createQueue/createWorker/createBatchWorker/createFlowProducer/enqueue helpers), shared and dedicated command clients, enqueue retry                 |
-| `@data-stores/valkey` (this)       | here                     | Service-only concerns: cache, cache metrics, Bloom filters, conditional operations, dynamic config, idempotency keys, JWT staleness, clients, scripts, utils, and types |
+## Client groups
 
-Every package depends only on `valkey-core` (star layering, cycle-free). The `@data-stores/valkey` barrel has no path to the three extracted concerns: consumers of pubsub, rate limiting, or queues must declare the matching per-concern package in their `package.json`.
+Each group has its own URL so it can have its own eviction and persistence policy; in dev they all
+point at one instance. Clients with the same URL are deduplicated unless given a distinct `name`.
 
-`valkyries` owns the reusable primitives:
+- Session, cache, Bloom, and rate-limiter data are disposable (no persistence). Dynamic Config and
+  the worker queue are `noeviction` with append-only persistence, because losing them loses
+  configuration or jobs.
+- Use `primary` reads when staleness is unacceptable: auth/session checks, rate limiting, and Bloom
+  ready-marker and live-filter reads. Cache reads prefer a replica.
+- `bloomValkeyClient` is isolated even when it shares the cache URL, so large Bloom rebuild batches
+  cannot exhaust the cache client's inflight budget.
+- The dynamic-config group also holds the fail-closed AI accounting uncertainty latch. Ops may
+  `UNLINK` a day key to recover after an outage; never flush the group.
 
-- `ValkeyCache`
-- `ValkeyBloomFilter`
-- `DynamicConfig`
-- `RateLimiter`
-- shared Valkey clients, script helpers, events, cache invalidation, conditional unlink, idempotency-key reservation, shutdown helpers, and cursor-based TTL hygiene sweeps
+## Worker queue
 
-Voucha keeps application-specific glue across these packages:
+GlideMQ needs Valkey/Redis server functions (`FUNCTION LOAD` / `FCALL`). AWS ElastiCache
+Serverless blocks them and is incompatible. Build queues and workers only through the factory in
+`@data-stores/valkey-glide-mq`, never `new Worker(...)` (enforced by an ast-grep rule), and keep
+`glide-mq` specs aligned across workspaces. See
+[Worker construction](../../overview/architecture/backend/data-stores/valkey-glide-mq/README.md#worker-construction).
 
-- `sessionValkeyClient` for auth/session state on `VALKEY_SESSION_URL`
-- GlideMQ queue connection/factory/registry on `VALKEY_WORKER_QUEUE_URL`
-- cache metric forwarding from `valkyries` `cache:call` events into `@data-stores/analytics`
-- package error handling routed through `@modules/on-error`
+**Enqueue retry.** Only client-side `Reached maximum inflight requests` is retried, because Glide
+rejects it before the command reaches Valkey. Other transient errors (connection close, request
+timeout) are ambiguous for non-idempotent queues, since the server may already have accepted the
+enqueue and a retry would duplicate jobs. `ValkeyCache` reads and `RateLimiter` commands retry
+saturation internally in a separate layer.
 
-Imports such as `@data-stores/valkey/cache`, `@data-stores/valkey/conditional`,
-`@data-stores/valkey/idempotency-key`, and `@data-stores/valkey/clients` remain supported through
-selective facade modules in this package. The idempotency facade exposes both token-fenced
-reservations and atomic consume-once reads through `getAndDelete()`.
+## Shutdown order
 
-## Contents
+`valkey-core/shutdown.mts` self-registers on import, so any process touching a Valkey concern gets
+it: close `DynamicConfig` wrappers first so subscriptions stop, drain GlideMQ queues, workers, and
+flow producers while `valkyries` closes shared clients, then close the shared GlideMQ command
+client. That client is lazy on purpose: importing the queue facade must not open a connection, and
+shutdown must not close it before workers and producers finish draining. Dedicated pub/sub clients
+and `dedicatedCommandClient` workers are closed by their owners.
 
-- <a id="client-groups"></a>[Client Groups](reference-client-groups.md)
-- <a id="bloom-client"></a>[Bloom Client](reference-bloom-client.md)
-- <a id="lua-scripts"></a>[Lua Scripts](reference-lua-scripts.md)
-- <a id="rate-limiter-checklist"></a>[Rate Limiter Checklist](reference-rate-limiter-checklist.md)
-- <a id="worker-queue"></a>[Worker Queue](reference-worker-queue.md)
-- <a id="pubsub-lifecycle"></a>[Pub/Sub Lifecycle](reference-pub-sub-lifecycle.md)
-- <a id="shutdown-sequencing"></a>[Shutdown Sequencing](reference-shutdown-sequencing.md)
-- <a id="queue-enqueue-retry"></a>[Queue Enqueue Retry](reference-queue-enqueue-retry.md)
-- <a id="primitives"></a>[Primitives](reference-primitives.md)
-- <a id="related"></a>[Related](reference-related.md)
+## Related checklists
+
+- [Rate Limiter Checklist](reference-rate-limiter-checklist.md)
+- [Pub/Sub Lifecycle](reference-pub-sub-lifecycle.md)

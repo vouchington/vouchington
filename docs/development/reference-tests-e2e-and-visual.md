@@ -2,85 +2,20 @@
 
 [Back to Tests and Checks](tests.md#e2e-and-visual)
 
-| Command                    | What                                   | Init |
-| -------------------------- | -------------------------------------- | ---- |
-| `pnpm run test:playwright` | E2E, a11y page scans, visual snapshots | web  |
+`pnpm run test:playwright` runs E2E, a11y page scans, and visual snapshots against production builds. CI runs the full suite whenever the Playwright path filter matches; docs-only changes skip all test jobs ([area test suites](ci.md#area-test-suites)).
 
-In CI, pull requests, merge groups, and `main` run the full Playwright suite whenever the
-Playwright path filter matches or a pull request changes workflows or local actions; docs-only
-changes skip all test jobs. See [area test suites](ci.md#area-test-suites). Reproduce the CI run
-locally with `pnpm run test:playwright`.
+## Timeouts
 
-Playwright tests have a 30-second maximum in the regular, credentialed, and localization smoke
-configs. The shared config rejects disabled, non-finite, and over-limit test or project timeouts;
-AST-grep rejects in-test deadline changes such as `test.setTimeout`, `test.slow`, and
-`testInfo.setTimeout`. Global setup checks resolved project timeouts, including CLI overrides,
-before seed work. A browser-free automatic fixture guards each test's public `TestInfo` before
-`beforeEach` hooks and the test body. `beforeAll` runs with a separate hook budget; this fixture
-does not claim to adapt that hook's `TestInfo`. The shared test factory validates public setters and suite configuration, rejects
-`slow()`, and preserves these guards on `extend()` descendants. Aliased, bound, and computed
-public calls follow the same cap. The browser monitor depends on this independent fixture;
-raw test-factory imports are rejected outside its exact bootstrap module. Public method guards
-cannot be replaced on the guarded instances; private Playwright internals are unsupported.
-Action, navigation, assertion, protocol, and web-server startup timeouts
-have separate purposes and retain their own budgets. Shorten slow scenarios or seed closer to the
-behavior under test instead of extending a test deadline.
-The [tiny installed-runner regressions](../../ci/playwright-test-timeout-runtime.test.mts) exercise
-late public calls and resolved CLI overrides in browser-free, one-case temporary projects. They
-assert immediate rejection, process results, and a missing continuation marker rather than
-waiting for a deadline. They need no application server, build, database, or credentials.
-The [pure config regression tests](../../ci/playwright-test-timeout-config.test.mts) run in the
-`ci-tools` Vitest project, so they need only monorepo initialization.
+Playwright tests have a maximum deadline in every config. The shared config and a browser-free fixture reject disabled, non-finite, or over-limit deadlines, and AST-grep rejects in-test deadline changes such as `test.setTimeout` and `test.slow`. Action, navigation, assertion, protocol, and web-server startup timeouts keep their own budgets. Shorten slow scenarios or seed closer to the behavior under test instead of extending a deadline.
 
-### Credentialed E2E Suite
+## Credentialed suite
 
-A separate credentialed suite lives under `playwright/credentialed/` and uses
-`playwright.credentialed.config.mts`. It tests features that require real cloud credentials:
-real S3 presigned PUT uploads (CORS validation) and sideloaded images served through the image lambda. Run it locally with:
+`playwright/credentialed/` (with `playwright.credentialed.config.mts`) covers features that need real cloud credentials: real S3 presigned uploads and sideloaded images through the image lambda. A spec fails when its credentials are absent ([R6](tests.md#test-suite-rules)). CI runs it only in a trusted secret context; the job is informational and does not gate `web` ([live-provider smoke checks](tests.md#live-provider-smoke-checks)).
 
-```bash
-source .env
-pnpm exec playwright test --config playwright.credentialed.config.mts
-```
+## Production builds only
 
-A spec fails when its credentials are absent (`S3_AWS_ACCESS_KEY_ID` or `AWS_ACCESS_KEY_ID`, and
-`S3_BUCKET_IMAGE_UPLOADS` for the upload spec); see [R6](tests.md#test-suite-rules).
-In CI, the suite runs only in a trusted secret context via the `test-playwright-credentialed`
-job, which is informational and does not gate `web`
-([live-provider smoke checks](tests.md#live-provider-smoke-checks)); see
-[CI Job Conditions](reference-ci-ci-job-conditions.md).
+Playwright and web-integration tests run against production builds, never dev servers: the Next.js standalone server and the pre-built Cloudflare Worker bundle are the only accepted modes for automation. `next dev` and on-the-fly `wrangler dev` are dev-loop only. Local automation builds default to `NEXT_TEST_BUILD=1` (React Compiler stays on; minification and gzip are skipped); CI sets `NEXT_TEST_BUILD=0`. Set it to 0 locally when reproducing CI's fully optimized build. A compiler-enabled build test can use the local build, but Vitest and Storybook intentionally keep their normal transforms.
 
-Playwright and web-integration tests always run against **production builds** — never dev
-servers. `pnpm run test:playwright` and `pnpm run test:integration:web` automatically build
-both targets first (`ci/setup-web-integration.mts` via the `pretest:*` lifecycle hooks). The
-Next.js standalone server (`node server.js`) and the pre-built Cloudflare Worker bundle
-(`wrangler dev dist/index.js --no-bundle`) are the only accepted server modes for automation.
-`next dev` and on-the-fly `wrangler dev` (without `--no-bundle`) are dev-loop only
-(`./dev/tmux`, `pnpm --dir web dev`).
+In-build TypeScript checking is disabled for every build (`typescript.ignoreBuildErrors`); the dedicated typecheck step gates instead, so direct `pnpm --dir web build` runs bypass it and need `pnpm run typecheck:web`.
 
-Local automation builds default to `NEXT_TEST_BUILD=1`. This keeps `reactCompiler: true` but
-skips Turbopack minification and Next.js gzip compression. The shared CI web test build explicitly
-sets `NEXT_TEST_BUILD=0` and leaves `NEXT_PUBLIC_ASSET_PREFIX` empty. Playwright and web-integration
-jobs use that production-profile build, with browser assets served through the same-origin Worker;
-see [Caching Architecture](../overview/infrastructure/cloudflare-worker/reference-caching-architecture.md).
-
-In React Compiler work, a **compiler-enabled build test** can use the local `NEXT_TEST_BUILD=1`
-build: it proves production source is transformed by the compiler. It does not mean compiling
-Vitest or Storybook, which remain behavior-focused and intentionally use their normal transforms.
-Docker image builds are separate from the shared CI web test build and its cache. They and manual
-`pnpm --dir web build` runs do not set this flag by default, so they keep the full production
-optimization path. Set `NEXT_TEST_BUILD=0` before local automation commands when reproducing
-CI's fully optimized build behavior.
-
-In-build TypeScript type checking is disabled for **every** build
-(`typescript.ignoreBuildErrors: true`), not just `NEXT_TEST_BUILD` ones. Types are still
-checked by the dedicated `Typecheck web` step in `tests-web.yml`
-(`next typegen && tsc --noEmit --incremental`), which runs before the test workflow's
-build and gates the main web build; type errors never affect `next build`'s emit anyway, so the in-build pass is
-pure redundant work (~46s/build). Direct image validation and local `pnpm --dir web build` runs
-bypass that gate — run `pnpm run typecheck:web` explicitly in those contexts.
-
-Test setup also clears Next.js runtime output and Wrangler/Miniflare state before starting
-servers. This is stale-cache prevention: old `.next` output or persisted worker cache can
-produce false failures such as hydration mismatches or cached stale HTML. Local checkouts may
-preserve `web/.next/cache` as build-performance state; it is never treated as runtime output.
+Test setup clears Next.js runtime output and Wrangler/Miniflare state before starting servers, because stale `.next` output or persisted worker cache produces false failures such as hydration mismatches and cached stale HTML. `web/.next/cache` is build-performance state and may be preserved.

@@ -15,7 +15,7 @@ Claude Code and Codex load `vouchington-testing:nextjs-vitest-test-authoring`; G
 `web/**` is exempt from the non-web internal-module mock ban in
 [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) because Next.js client/server and lazy
 import boundaries require module mocks. Read
-[Vitest Mock Typing § Web](../../../docs/development/reference-tests-vitest-mock-typing.md#web-mocktesttsx--mocktestts)
+[Vitest Mock Typing](../../../docs/development/reference-tests-vitest-mock-typing.md)
 for the full policy.
 
 1. Use typed dynamic-import mocks: `vi.mock(import('specifier'), () => ({ ... }))`. Preserve the

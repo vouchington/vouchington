@@ -60,8 +60,7 @@ it. `git grep` searches tracked dotfiles as well as ordinary source files.
    rather than changes, CI's unchanged `gitleaks git` history scan. See
    [system dependencies](../../../docs/development/system-dependencies.md#product-contract)
    for the local pin and
-   [standalone workflow checks](../../../docs/development/reference-ci-standalone-workflow-checks.md)
-   for the isolated CI scan.
+   the standalone Gitleaks workflow for the isolated CI scan.
 
 ## Native API Parity
 

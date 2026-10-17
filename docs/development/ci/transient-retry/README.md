@@ -2,7 +2,7 @@
 
 Source entrypoint: [ci/transient-retry/README.md](../../../../ci/transient-retry/README.md)
 
-This directory contains the extensible rule catalogue for known-transient CI failures on `main`.
+This directory explains the rule catalogue for known-transient CI failures on `main`.
 Automatic `main` recovery runs only while `HARNESS_DISPATCH_ENABLED` and
 `HARNESS_FIX_MAIN_ENABLED` are both exactly `true`; both gates are unset by default. The manual
 non-`main` PR-branch helper documented below remains available.
@@ -13,25 +13,18 @@ non-`main` PR-branch helper documented below remains available.
 - <a id="how-automatic-reruns-work-on-main-ci-only"></a>[How automatic reruns work on `main` (CI only)](reference-how-automatic-reruns-work-on-main-ci-only.md)
 - <a id="how-agents-should-use-this-on-non-main-non-dependabot-pr-branches"></a>[How agents should use this on non-`main`, non-Dependabot PR branches](reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md)
 - <a id="rule-consolidation-concepts"></a>[Rule Consolidation Concepts](reference-rule-consolidation-concepts.md)
-- <a id="shared-vocabulary-aws-transport-transients"></a>[Shared Vocabulary: AWS Transport Transients](reference-shared-vocabulary-aws-transport-transients.md)
-- <a id="shared-vocabulary-undicifetch-transport-transients"></a>[Shared Vocabulary: undici/fetch Transport Transients](reference-shared-vocabulary-undici-fetch-transport-transients.md)
-- <a id="cautionary-examples"></a>[Cautionary Examples](reference-cautionary-examples.md)
-- <a id="rule-authoring-guide"></a>[Rule authoring guide](reference-rule-authoring-guide.md)
-- <a id="running-tests"></a>[Running tests](reference-running-tests.md)
 
 ## Design rationale
 
-- Never pin a `describe`/`it` title string or a raw timeout digit count (`30000ms`) in a matcher — a
-  project's own `testTimeout` already owns that number, and a title is a surface variant that drifts
-  on rename with zero test signal. `hasBackendSesSendEmailTimeout` (#10806/#10825) required
-  `Test timed out in 120000ms` and went silently dead for months after `testTimeout` dropped from
-  `120000` to `60000`, because its own fixture synthesized the same stale digits. Match on markers the
-  failing tool owns instead. Any repo-owned source-path literal that does survive in this directory
-  needs a tracked-file existence check beside its rule's test. A pinned title or timeout digit count
-  has no automated guard at all, which is exactly why pinning either is disallowed outright rather
-  than merely discouraged.
+- Never pin a `describe`/`it` title string or a raw timeout digit count in a matcher. A project's
+  own `testTimeout` owns that number, and a title drifts on rename with zero test signal. A matcher
+  that required a stale timeout literal went silently dead for months because its own fixture
+  synthesized the same stale digits. Match on markers the failing tool owns instead. A pinned title
+  or timeout digit count has no automated guard, which is why pinning is disallowed outright.
 - No rule reruns a live-provider failure. Those jobs are informational smoke checks that never gate
-  CI, and an automatic rerun of a non-gating job gains nothing
-  ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)). The shared
-  `runner-shutdown-leaf-rerun` and Playwright-setup apt-lock rules can still rerun these jobs after
-  an infrastructure failure, because they also guard gating jobs.
+  CI, so an automatic rerun gains nothing
+  ([live-provider smoke checks](../../tests.md#live-provider-smoke-checks)). Shared
+  infrastructure rules can still rerun them because they also guard gating jobs.
+- A job-level timeout match is unsafe for a heterogeneous job, because it would rerun real code-bug
+  deadlocks. A timeout rule must prove the job is homogeneous by config or pin the owning
+  project's boundary.

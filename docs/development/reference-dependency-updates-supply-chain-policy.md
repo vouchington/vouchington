@@ -2,34 +2,18 @@
 
 [Back to Dependency Updates](dependency-updates.md#supply-chain-policy)
 
-### pnpm hardening flags
+### pnpm hardening
 
-Shared npm settings live in `.npmrc` (root). pnpm-specific settings live in `pnpm-workspace.yaml` so npm does not warn about unsupported project config keys.
-
-Vulnerability detection for npm dependencies is owned by GitHub Dependabot and advisory alerts; it
-does not block deploys. `audit-level` never made `pnpm install` run or fail an audit, so it is not a
-repository setting. Do not add a separate `pnpm audit` or OSV npm scan to CI.
-
-| Setting                     | Value                    | Why                                                                                                                                   |
-| --------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `engine-strict`             | `true`                   | Fails install if the current Node version doesn't satisfy `engines.node`.                                                             |
-| `fund`                      | `false`                  | Silences funding noise; no network calls for fund metadata.                                                                           |
-| `update-notifier`           | `false`                  | Disables the pnpm version-update prompt; avoids an outbound network request on every install.                                         |
-| `preferFrozenLockfile`      | `true`                   | Refuses to write a new lockfile unless `--no-frozen-lockfile` is passed explicitly.                                                   |
-| `strictDepBuilds`           | `true`                   | Fails if a transitive dep tries to run lifecycle scripts but isn't listed in `pnpm-workspace.yaml` `allowBuilds`.                     |
-| `verifyDepsBeforeRun`       | `error`                  | Refuses `pnpm run` when `node_modules` is out of sync with the lockfile (e.g. after a rebase without re-running `pnpm install`).      |
-| `minimumReleaseAge`         | `2880` (2 days, minutes) | Delays installing packages published fewer than 2 days ago, buying time for the community to detect and retract compromised releases. |
-| `dangerouslyAllowAllBuilds` | `false`                  | Explicit: reviewed packages in `allowBuilds` use `true` to permit scripts; all others cannot run them.                                |
-
-`ignoredOptionalDependencies` contains only `sharp`, which suppresses Next's optional Sharp
-resolution. The web workspace owns the patched implementation directly with `sharp@^0.35.3`, and
-its build rejects Sharp versions older than 0.35.
+Shared npm settings live in `.npmrc`; pnpm-specific settings (`minimumReleaseAge`, `allowBuilds`,
+`strictDepBuilds`, frozen-lockfile preference) live in `pnpm-workspace.yaml`. Vulnerability detection
+for npm dependencies is owned by GitHub Dependabot and advisory alerts and does not block deploys; do
+not add a separate `pnpm audit` or OSV npm scan to CI.
 
 ### Dependabot cooldown and pnpm `minimumReleaseAge`
 
-All release delays are two days. Dependabot applies its configured two-day cooldown to normal
+All release delays match. Dependabot applies its configured cooldown to normal
 version updates; Dependabot security updates do not honor cooldown and remain eligible immediately.
-pnpm's `minimumReleaseAge` is independent: a Dependabot PR does not bypass pnpm's two-day install
+pnpm's `minimumReleaseAge` is independent: a Dependabot PR does not bypass pnpm's install
 gate, and pnpm does not change Dependabot's scheduling.
 
 For a reviewed urgent pnpm release, add only the exact `package@version` selector to
@@ -68,19 +52,10 @@ boolean `allowBuilds` values.
 
 ### Release-age violations fail the install
 
-`setup-node-pnpm` runs one `pnpm install --frozen-lockfile`. A lockfile entry newer than
-`minimumReleaseAge` fails it immediately with pnpm's own error:
-
-```
-[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification:
-  undici@8.10.0 was published at 2026-08-03T15:06:33.000Z, within the minimumReleaseAge cutoff (2026-08-02T04:48:10.357Z)
-```
-
-The failure is permanent until the flagged release ages past the cutoff: it becomes installable at
-its publish time plus `minimumReleaseAge` (from `pnpm-workspace.yaml`), and re-running the job
-before then fails the same way. A PR blocked this way needs no action other than waiting past that
-time (or `@dependabot rebase` once it has passed) — see the temporary exemption procedure above only
-if the delay is itself the problem.
+A lockfile entry newer than `minimumReleaseAge` fails `pnpm install --frozen-lockfile` with
+`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`. The failure is permanent until the release ages past the
+cutoff, so re-running does not help; wait (or `@dependabot rebase` afterwards), and use the temporary
+exemption procedure above only if the delay is itself the problem.
 
 ### Contents
 
@@ -88,15 +63,6 @@ if the delay is itself the problem.
 
 ### Registry-only dependency rule
 
-All `dependencies`, `devDependencies`, `peerDependencies`, and `optionalDependencies` in every workspace `package.json` must resolve from the npm registry. The following specifier types are hard-blocked:
-
-- `git:`, `git+ssh:`, `git+https:`, `git+http:`, `git+file:`
-- `github:`, `gitlab:`, `bitbucket:`, `gist:`
-- `http:`, `https:` (tarball URLs)
-- `file:`, `link:`, `portal:`
-
-`npm:` package aliases are allowed only when the aliased version is itself a registry specifier (e.g. `npm:lodash@^4` is fine; `npm:foo@github:attacker/foo` is blocked).
-
-Lockfile resolutions are also checked: any `pnpm-lock.yaml` package entry with a `tarball`, `repo`, `commit`, or `directory` resolution field is flagged.
-
-Enforcement: `pnpm run no-mistakes` via the `package-json-registry-only` rule in `.no-mistakes.yml`.
+Every workspace dependency must resolve from the npm registry; git, URL, file, link, and portal
+specifiers and non-registry lockfile resolutions are blocked by the `package-json-registry-only`
+rule in `.no-mistakes.yml`. `npm:` aliases are allowed only to registry specifiers.

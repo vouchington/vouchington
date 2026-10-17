@@ -44,7 +44,7 @@ Follow the canonical "When the server is unavailable" and "CLI fallback" section
 remediation, told to an interactive user first: if the server is not registered, run
 vouchington-machines' `./configure-agents.sh`, check with `./diagnose-agents.sh --repo <checkout>`,
 then reconnect (`/mcp` in Claude Code, or restart Codex). If it is registered but disconnected,
-reconnect. See [agent-blackboard.md](../../../docs/development/agent-blackboard.md#server-unavailable).
+reconnect.
 An automated run follows Automated runs below.
 
 ## Automated runs

@@ -1,40 +1,14 @@
 # Views
 
-[Back to PostgreSQL Data Store](README.md#views)
+[Back to PostgreSQL Data Store](README.md#contents)
 
-- Views should expose user-facing data, not internal hashes, embeddings, or search vectors.
-- If a relation is returned as embedded JSON, the raw foreign-key column usually does not need to
-  be duplicated in the same view payload.
-- Use exactly one file per managed view.
-- Prefer durable `CREATE OR REPLACE VIEW` statements in `views/**`.
-- Write managed views as `CREATE OR REPLACE VIEW name AS SELECT ...;` without outer parentheses
-  around the `SELECT`. This keeps view SQL parseable by Squawk, which runs against `views/**`.
-- A materialized view replaced on every `runViews` is the exception in
-  [schema object buckets](reference-migrations-views-and-config-driven.md#schema-object-buckets):
-  drop it before `CREATE MATERIALIZED VIEW` and mark that drop with `squawk-ignore ban-drop-view`.
-
-### `view_embedded_users` vs `view_users_public`
-
-`view_embedded_users` is the lightweight projection: it uses CASE + scalar subqueries for
-`display_account` instead of 7 OAuth `LEFT JOIN`s, which dramatically reduces planning overhead
-when the planner evaluates the outer view for a single-row lookup.
-
-`view_users_public` extends `view_embedded_users`; it joins `users` and adds `markdown`,
-visibility-gated verification fields, the derived `verified_display_name`, and
-`lingua_rs_detected_language`. Verification columns are populated only when the user is verified
-and has made the verified badge visible; `verified_display_name` is derived from the selected
-public verified-name display. This makes the view the intentionally redacted public projection for
-top-level user lookups, where user rows are the primary result set. The caller picks the user ids
-first, resolving a handle or other outside input to an id against `users`, then reads the view by
-those ids. It never filters, sorts, or pages on the view's columns; see
-[R6](../postgres-schema-rules.md#r6--query-shape).
-
-Use `view_embedded_users` (via scalar subquery) when nesting user data as JSON inside another
-entity's view (e.g. `created_by`, `updated_by` in `view_posts` and `view_topics`).
-
-**Do not** `LEFT JOIN view_users_public` inside another view — use scalar subqueries to
-`view_embedded_users` instead:
-
-```sql
-(SELECT ROW_TO_JSON(eu.*) FROM view_embedded_users eu WHERE eu.id = posts.created_by_id) AS created_by
-```
+- Views expose user-facing data, not internal hashes, embeddings, or search vectors.
+- `view_users_public` is the intentionally redacted public projection for top-level user lookups.
+  The caller picks user ids first, then reads the view by those ids; it never filters, sorts, or
+  pages on view columns ([R6](../postgres-schema-rules.md#r6--query-shape)).
+- Nest user data inside another entity's view through a scalar subquery to `view_embedded_users`,
+  never a `LEFT JOIN view_users_public`; see the pull-up rule in
+  [Migrations, Views, and Config-Driven](reference-migrations-views-and-config-driven.md#view-composition-and-the-eligibility-view-pull-up-rule).
+- Write managed views as `CREATE OR REPLACE VIEW name AS SELECT ...;` without outer parentheses so
+  Squawk can parse them. A materialized view replaced on every `runViews` is dropped first, marked
+  `squawk-ignore ban-drop-view`, because there is no `CREATE OR REPLACE MATERIALIZED VIEW`.

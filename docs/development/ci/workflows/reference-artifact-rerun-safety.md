@@ -2,25 +2,17 @@
 
 [Back to Workflow Reference](WORKFLOWS.md)
 
-Every artifact upload has `retention-days: 1`. The repository-level artifact and log setting must
-also be one day; `artifact-retention-policy.test.mts` rejects other values.
+Area workflows use full LCOV artifacts only as a same-run handoff to their own patch-coverage job.
+A failed attempt may leave an unfinalized artifact name, so callers retry the upload once under a
+`-retry` name and then make a terminal outcome assertion. A selected area cannot pass its required
+gate without the LCOV evidence its patch rules need. Codecov receives the same report as
+informational evidence and is never a required check.
 
-Area workflows use full LCOV artifacts only as same-run handoff to their own patch-coverage job.
-Each suite uploads `lcov-full-<suite>` with the shared `upload-full-lcov` action. A failed attempt
-may leave an unfinalized artifact name, so callers retry once with `-retry` and then make the
-terminal `artifact-upload-outcome.mts` assertion. A selected area cannot pass its required gate
-without the full LCOV evidence its patch rules need. Codecov receives the same full report as
-informational evidence; it is never a required check.
-
-Artifact names in workflows and composite actions must remain classified `keep` or `delete` in
+Every artifact name must stay classified `keep` or `delete` in
 [`ci/cleanup-artifacts-patterns.json`](../../../../ci/cleanup-artifacts-patterns.json). The trusted
-scheduled/manual sweep removes delete-classified artifacts from successful or cancelled runs only
-after its age threshold; failed-run evidence remains until GitHub expiration. Pull-request
-workflows do not get `actions: write` for cleanup because their definitions are PR-controlled.
+sweep removes delete-classified artifacts only from successful or cancelled runs, because a rerun of
+a failed run may need its same-run handoffs. Pull-request workflows get no `actions: write` for
+cleanup because their definitions are PR-controlled.
 
-Keep required producer-consumer handoffs visible to the workflow topology model. It resolves only
+Keep required producer-consumer handoffs visible to the workflow topology model, which resolves only
 same-run jobs, including local reusable workflows. Inspect the result with `pnpm run ci:topology`.
-See [CI Reference: Workflow Topology Contracts](../../ci.md#workflow-topology-contracts).
-
-The artifact-retention guard reads decoded YAML data, including resolved aliases. Failure evidence
-shows the effective upload step with its resolved inputs; it does not rely on YAML AST source ranges.

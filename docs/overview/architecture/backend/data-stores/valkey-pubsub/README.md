@@ -20,5 +20,5 @@ shutdown.
 ## Related
 
 - Pub/Sub lifecycle, subscriber cleanup, and reconnect semantics:
-  [../valkey/README.md § Pub/Sub Lifecycle](../../../../../development/valkey/README.md#pubsub-lifecycle)
+  [reference-pub-sub-lifecycle.md](../../../../../development/valkey/reference-pub-sub-lifecycle.md)
 - Backend context: [../../AGENTS.md](../../../../../../backend/AGENTS.md)

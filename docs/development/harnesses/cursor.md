@@ -25,7 +25,7 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
 - Agents Window / `agent --worktree` setup: [`worktrees.json`](../../../.cursor/worktrees.json)
   runs `./dev/initialize monorepo` through the generic `setup-worktree`
   command array. Do not put a command array on `setup-worktree-unix`: Cursor
-  CLI (`2026.08.11-e8db854`) treats that key as a script path and crashes with
+  CLI treats that key as a script path and crashes with
   `The "path" argument must be of type string. Received an instance of Array`.
   Full `./dev/initialize web` stays agent-driven.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).

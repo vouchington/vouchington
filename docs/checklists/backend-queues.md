@@ -7,10 +7,11 @@ contracts.
 
 ## Priority kinds
 
-Declare one priority kind when creating each queue: `none` accepts only 0, while `ranked`
-accepts 1 through 2048 and defaults to 10. Never mix the two kinds in one queue. Task jobs
-default to 10 and may use other tiers below 100 when a domain ranks its own work; dispatchers,
-cleanup, recovery, and backfills use 100 so they run behind the tasks they create.
+Declare one priority kind when creating each queue: `none` accepts only the zero priority, while
+`ranked` accepts a bounded range and has a default. Never mix the two kinds in one queue. Task jobs
+use the default and may use other tiers below the dispatcher tier when a domain ranks its own work;
+dispatchers, cleanup, recovery, and backfills use the dispatcher tier so they run behind the tasks
+they create.
 In [glide-mq's priority order](https://github.com/avifenesh/glide-mq/blob/main/docs/USAGE.md),
 ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 jobs.
 
@@ -60,11 +61,22 @@ flowchart LR
 
 For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents/skills/bounded-iteration/SKILL.md).
 
+## Placement and validation
+
+- Queue configuration, payload types, enqueue APIs, and scheduler registration live in
+  [`backend/queues/<domain>/`](../../backend/queues/) (never importing workers); registrations and
+  thin processors live in [`backend/workers/<domain>/`](../../backend/workers/), with fetching,
+  authorization, durable writes, and business logic in services. Worker placement is data-driven in
+  [`worker-queue-policy.json`](../../backend/modules/worker-queue-inventory/worker-queue-policy.json).
+- Test at the service boundary with real PostgreSQL, Valkey, and GlideMQ; never mock internal queues,
+  workers, services, or data stores. Find an enqueued job with `searchJobs` or by id, not
+  `getJobs('waiting')`; see [GlideMQ testing](../development/testing/backend/glide-mq-testing.md).
+- Update the domain queue/worker README, the
+  [queue inventory](../overview/architecture/queues/README.md), and, when applicable, the replayability
+  matrix, scheduled/backfill registries, and placement policy.
+
 ## Contents
 
-- <a id="place-each-responsibility"></a>[Place each responsibility](reference-backend-queues-place-each-responsibility.md)
 - <a id="define-a-replay-safe-job"></a>[Define a replay-safe job](reference-backend-queues-define-a-replay-safe-job.md)
 - <a id="durable-transition-matrix"></a>[Durable transition matrix](reference-backend-queues-durable-transition-matrix.md)
 - <a id="schedulers-flows-and-backfills"></a>[Schedulers, flows, and backfills](reference-backend-queues-schedulers-flows-and-backfills.md)
-- <a id="test-and-document"></a>[Test and document](reference-backend-queues-test-and-document.md)
-- <a id="see-also"></a>[See also](reference-backend-queues-see-also.md)

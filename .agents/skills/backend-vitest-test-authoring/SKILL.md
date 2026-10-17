@@ -15,9 +15,8 @@ Claude Code and Codex load `vouchington-testing:backend-vitest-test-authoring`; 
 Read the nearest backend `AGENTS.md`, then
 [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the shared mock-boundary and
 naming contract, and [`docs/development/tests.md`](../../../docs/development/tests.md) for project
-selection, parallel safety, and validation commands. Use
-[`backend/test-helpers/README.md`](../../../docs/development/testing/backend/helpers.md) for entity-listener,
-fixture, and dirty-database patterns.
+selection, parallel safety, and validation commands. Read
+`backend/test-helpers/` for entity-listener, fixture, and dirty-database helpers.
 
 1. Add test-case stubs first and select the exact owning Vitest project from the documented project
    name reference.
@@ -28,7 +27,7 @@ fixture, and dirty-database patterns.
 4. Mock only external provider boundaries — see
    [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the exact boundary and naming
    rules. Gate a provider integration on a recorded response replayed through the SDK's `fetch`
-   (see [recorded provider responses](../../../docs/development/testing/backend/helpers.md#recorded-provider-responses));
+   (`createProviderReplay()` in `backend/test-helpers/provider-replay.mts`);
    a live-provider test is a non-gating smoke check
    ([rules](../../../docs/development/tests.md#live-provider-smoke-checks)).
 5. Run the exact file in its owning project before broader backend validation. If DB/Valkey setup is
@@ -38,10 +37,10 @@ fixture, and dirty-database patterns.
    wipes every concurrent fork's counters, not just yours. Prefer a fresh request/session/IP that
    needs no cleanup. For fixed identities, derive exact owned keys through the production key
    builder and delete only those keys; route tests use `deleteRouteRateLimitKeys()`. See
-   [tests.md § Rate-limiter cleanup](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#rate-limiter-cleanup-must-be-ownership-scoped-never-prefix-wide).
+   [tests.md § Rate-limiter cleanup](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
 7. Wrap a non-decaying (future-dated or permanently top-scoring) fixture in
    `withDominantPostFixtures()` so it is cleaned up even when the test fails. See
-   [tests.md § Persistent dominant fixtures](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#persistent-dominant-fixtures-require-deterministic-cleanup).
+   [tests.md § Persistent dominant fixtures](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
 8. A compiler-backed contract test must reuse the memoized `loadBackendProgram()` or build one
    `buildVirtualProgramMatrix(import.meta, sources)` per test file, and retain its
    reviewed explicit consuming-hook budget, never a new local timeout constant. Do not wrap matrix
@@ -56,6 +55,6 @@ fixture, and dirty-database patterns.
    `explainCapturedTestQuery` a `PlanStatisticsRefresh` that `ANALYZE`s every relation in the plan,
    including join partners, not just the table under test; prefer the isolated `explain-analyze`
    scenario suite for new plan-shape gates. See
-   [tests.md § Query-plan (EXPLAIN) assertions](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#query-plan-explain-assertions).
+   [tests.md § Query-plan (EXPLAIN) assertions](../../../docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md).
 10. Apply the [Test Value and Safe Reduction](../../../docs/development/reference-tests-value-and-reduction.md) gate; do not duplicate an invariant already owned by a lower-cost realistic boundary.
 11. Follow the [suite rules](../../../docs/development/tests.md#test-suite-rules). Scope assertions to owned rows. Inject a write failure with a throwing `QueryExecutor`. Wait on the returned promise or queue event. Lower DynamicConfig limits instead of building a large fixture. Real network calls stay on the allowlisted hosts. Before asserting that nothing happened, complete the sibling event that would have caused it. Delete a redundant test only with the coverage comparison in R12.

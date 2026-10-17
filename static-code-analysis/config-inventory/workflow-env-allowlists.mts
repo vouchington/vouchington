@@ -10,7 +10,7 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'AWS_RESPONSE_CHECKSUM_VALIDATION',
   // Git commit identity — consumed by git directly, not by TypeScript code.
   // Set in commit-creating workflows such as pnpm-dedupe.
-  // Enforced pattern documented in docs/development/ci/workflows/AUTHORING.md § Fixed-Branch Automation PRs.
+  // Enforced by the fixed-branch automation PR workflows.
   'GIT_AUTHOR_EMAIL',
   'GIT_AUTHOR_NAME',
   'GIT_COMMITTER_EMAIL',
@@ -25,6 +25,7 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'CLAUDE_CODE_EFFORT_LEVEL',
   'CLAUDE_CODE_SUBAGENT_MODEL',
   'CLOUDFLARE_ACCOUNT_ID',
+  'COVERAGE_AREA',
   'COVERAGE_BASE',
   'COVERAGE_HEAD',
   'COVERAGE_PR',
@@ -53,14 +54,19 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'SLACK_SOURCE',
   'DOCKER_BUILD_SUMMARY',
   'DOCKER_CLI_EXPERIMENTAL',
+  'HARNESS_AGENT_DISPATCH_ENABLED',
   'HARNESS_CONCURRENCY_ID',
+  'HARNESS_FALLBACKS',
   'HARNESS_PRIORITY',
   'HARNESS_PROMPT',
   'HARNESS_QUEUE_TTL_SECONDS',
   'HARNESS_REF',
+  'HARNESS_REPOSITORY_ID',
   'HARNESS_REQUIRED_LABELS',
   'HARNESS_RESUME_SESSION_ID',
+  'HARNESS_TARGET',
   'HARNESS_TIMEOUT',
+  'HARNESS_URL',
   // Node.js consumes this before application code to disable its compile cache for precise V8
   // coverage in the native EXPLAIN preflight; it is not a repository TypeScript environment read.
   'NODE_DISABLE_COMPILE_CACHE',

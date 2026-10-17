@@ -2,66 +2,24 @@
 
 [Back to Tests and Checks](tests.md#schema-checks)
 
-The production migration task checks the live schema after applying migrations. Its committed
-versus unverified failure reporting and connection-loss behavior are documented in
-[Migrations, Views, and Config-Driven](postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
+PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vitest project against a freshly migrated database. The production migration task also checks the live schema after applying migrations; see [staging schema drift](postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
 
-PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vitest project:
-`pnpm run test:backend:postgres-schema` after `./dev/initialize web`, `source .env`, and
-`export READ_DATABASE_URL="$DATABASE_URL"; pnpm --dir backend run db:clean && pnpm run db:migrate`.
+## Coverage visibility
 
-`backend-postgres-schema` runs in `backend.yml`'s `test-postgres-schema` job
-(`tests-postgres-schema.yml`), invoked without `--coverage`. The backend area's `coverage` job
-([area patch coverage](reference-ci-coverage-gates.md#area-patch-coverage)) merges LCOV only from
-the backend module, unit, and credentialed suites. Real tests in this project pass and genuinely
-exercise their target function against a live database, but they never contribute LCOV to that
-gate. Source whose only non-mocked call site is a `backend-postgres-schema` test (for example
-`backend/data-stores/psql/schema-snapshot/verify-live-schema.mts` and the `catalog-queries.mts` /
-`generate.mts` live-DB helpers it sits alongside) must be wrapped in `/* v8 ignore start -- ... */`
-/ `/* v8 ignore stop */` so the backend area's patch-coverage rules do not fail on code that is
-correctly tested but structurally invisible to that gate's LCOV.
+`backend-postgres-schema` runs without `--coverage`, and the backend area's patch-coverage gate merges LCOV only from the module, unit, and credentialed suites. Source whose only non-mocked call site is a schema test (for example `verify-live-schema.mts` and the live-DB catalog helpers) is correctly tested but invisible to that gate, so it is wrapped in `/* v8 ignore start */` / `/* v8 ignore stop */`.
 
-Schema catalog assertions own declared foreign-key actions. Runtime lifecycle effects belong in
-their service or integration suites instead of redundant direct `DELETE FROM users` probes: each
-such delete traverses the full high-fanout inbound foreign-key graph.
+## Ownership
 
-### SQL and helper ownership
+Schema catalog assertions own declared foreign-key actions. Runtime lifecycle effects belong in their service or integration suites, not in redundant `DELETE FROM users` probes, each of which traverses the full high-fanout inbound foreign-key graph.
 
-The repository enforces one first-layer helper boundary: the repository `test-helpers/**` root and each
-top-level workspace's `<top-level>/test-helpers/**` root. The only selected helper alias is the
-literal `test-helpers` directory at that layer. Do not add nested `test-helpers` directories,
-`test-support` or other alternate aliases, or forwarding modules. PostgreSQL schema tests retain their observable
-constraint and view contracts, but their setup and assertions move behind focused typed APIs in
-the approved helper roots; raw SQL executors and SQL statement types remain implementation details
-of those APIs.
+Setup and assertions for schema tests live behind typed APIs in the approved `test-helpers/**` roots; raw SQL executors and statement types stay implementation details of those APIs. Do not add nested `test-helpers` directories, alternate aliases, or forwarding modules.
 
-After rebasing schema work, a local database can be stale when an already-recorded migration file
-gained safe idempotent DDL upstream or an edited-in-place pre-launch migration gained new columns
-used by managed views. First rerun `./dev/initialize web`; for known non-main drift cases it resets
-the worktree database before migrations. If validation still reports missing schema, blocked view
-recreation, or stale columns, run `./dev/reset` or
-`source .env && pnpm run db:clean && pnpm run db:migrate`, then rerun the failing DB-backed check.
-Follow [Ephemeral worktree databases](../../AGENTS.md) before running that reset.
+## Snapshot
 
-The committed schema snapshot (`backend/data-stores/psql/schema-snapshot/schema.json` and the
-generated `docs/development/postgresql/schema-snapshot/markdown/` tree) is checked separately with
-`pnpm run db:snapshot:check` (after the same `./dev/initialize web` / `source .env` / migrate
-setup above) and enforced in CI by `tests-postgres-schema.yml` right after the schema tests,
-against a digest-pinned `pgvector/pgvector:pg18` image. The digest and generated extension-version
-snapshot must move together when pgvector is updated, preventing mutable-tag drift across persistent
-Docker hosts. A workflow policy test also requires every service and inline smoke-test reference to
-use the same digest. After a schema change, push the branch and request
-`/postgresql-snapshot-update` on its PR, or run `pnpm run db:snapshot:update` (current branch) or
-`pnpm run db:snapshot:update -- --pr <number>` to dispatch the same CI workflow. The workflow commits
-`schema.json` and the generated `markdown/` tree to the PR head;
-fetch that commit before further edits. The local update command never introspects the worktree DB. See
-[schema-snapshot/README.md](postgresql/schema-snapshot/README.md).
+The committed schema snapshot is verified separately by `pnpm run db:snapshot:check` in `tests-postgres-schema.yml` against a digest-pinned `pgvector/pgvector:pg18` image. The digest and the generated extension-version snapshot must move together, which prevents mutable-tag drift across persistent Docker hosts. After a schema change, push and request `/postgresql-snapshot-update` on the PR (or run `pnpm run db:snapshot:update`); the workflow commits the snapshot to the PR head, so fetch before further edits. Pre-push runs the same freshness check after a clean migration, because snapshot-backed repository guards read the committed artifact before the database-backed phase verifies it. See [schema-snapshot/README.md](postgresql/schema-snapshot/README.md).
 
-Pre-push runs the same freshness check after clean migration and the live schema tests whenever a
-migration, config-driven schema generator, view, schema-growth input, snapshot catalog/builder/type,
-or committed `schema.json` changes. This ordering matters because snapshot-backed repository guards
-read the committed artifact before the database-backed phase verifies it against PostgreSQL 18.
+Prelaunch index changes belong in their canonical creators; there is no cross-revision index-rename deployment check.
 
-The schema snapshot and PostgreSQL catalog checks verify the current index definitions on a fresh
-database. Prelaunch index changes belong in their canonical creators; there is no cross-revision
-index-rename deployment check.
+## Stale local databases
+
+After a rebase that touches migrations, a local database can lag (an edited-in-place pre-launch migration gained columns used by managed views). Rerun `./dev/initialize web`, then `./dev/reset` if validation still reports missing schema, blocked view recreation, or stale columns, following [Ephemeral worktree databases](../../AGENTS.md).

@@ -65,7 +65,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
   references and unchecked tasks. Explain why non-closing references remain open. For a direct
   interactive request without a source issue, use the exact representation in the PR skill;
   scheduled automation keeps its own template contract.
-  An incomplete batch uses the [partial-batch representation](../../../docs/development/local-development/reference-pr-description-helper.md)
+  An incomplete batch uses the [partial-batch representation](../pr-description/SKILL.md)
   with its source issue as the only `refs` entry and explains the remaining work; the completing batch
   carries a truthful closing reference.
 - Keep a plan outside Git: the PR description, an existing issue/comment, or a persistent native
@@ -74,7 +74,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
 - Run the `pr_validate` tool with `pr` before marking ready. This checks live provenance,
   closing references, and applicable supersession/milestone audits. Keep unrelated issues open with
   a reason; project completion notices remain advisory. See the
-  [policy reference](../../../docs/development/local-development/reference-pr-description-helper.md).
+  [PR description skill](../pr-description/SKILL.md).
 - Branches, commits, pushes, and draft PRs within the task need no repeated approval. Merging or
   arming auto-merge requires explicit human authorization; automation must never do either.
   A native stack merge lands every ready bottom layer at once; the approval must cover every layer

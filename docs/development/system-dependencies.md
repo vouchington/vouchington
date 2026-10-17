@@ -15,10 +15,10 @@ project/machine split.
 
 Voucha expects the host repository to provide these capabilities:
 
-- Node.js matching [`.nvmrc`](../../.nvmrc), pnpm 12, JDK 17 or newer, and the native build
+- Node.js matching [`.nvmrc`](../../.nvmrc), pnpm, a current JDK, and the native build
   toolchain.
 - Git, tmux, lsof, jq, ripgrep, fd, mkcert, GitHub CLI, and `mise`.
-- Docker, PostgreSQL 18 with pgvector, and Playwright system dependencies for the full web stack.
+- Docker, PostgreSQL with pgvector and UUIDv7 support, and Playwright system dependencies for the full web stack.
 - AWS CLI for diagnostics and the optional OpenTofu CLI when working in the separate
   `vouchington-infra` checkout.
 
@@ -41,30 +41,9 @@ repository's pinned Playwright package.
 
 ## Initialize the checkout
 
-After the host is provisioned, initialize Voucha from the repository root:
-
-```bash
-./dev/initialize monorepo
-./dev/initialize web
-pnpm exec playwright install chromium
-```
-
-`monorepo` installs JavaScript dependencies and pinned repository tools without starting Docker or
-database services. `web` additionally configures ports, Valkey, PostgreSQL databases, migrations,
-certificates, and local environment files.
-
-On macOS, `./dev/initialize web` starts the Homebrew `postgresql@18` service only for the default
-local database target. An explicit `DATABASE_URL`, including one loaded from `~/voucha.env`, selects
-a custom target and suppresses that host-service action. Bare libpq target variables such as `PGHOST`
-or `PGSERVICE` are rejected because the generated worktree environment and application use
-`DATABASE_URL`; set that URL explicitly so initialization and runtime cannot select different targets.
-Non-local database initialization and reset remain protected by the explicit opt-ins documented in
-the [command catalog](local-development/reference-command-catalog.md).
-
-Before Node activation, initialization requires at least 5 GiB free on each distinct host
-filesystem backing the worktree, home directory, and temporary directory. Web initialization also
-checks the pnpm store and Docker storage when discoverable. The preflight reports remediation
-commands but never deletes host data.
-
-See [Getting Started](README.md) for the developer flow and
-[Backend Setup](BACKEND-SETUP.md) for shared secrets and worktree configuration.
+After the host is provisioned, run `./dev/initialize` from the repository root (modes and
+requirements: [Getting Started](README.md)). On macOS, `./dev/initialize web` starts the Homebrew
+Homebrew PostgreSQL service only for the default local database target; an explicit `DATABASE_URL`
+(including one from `~/voucha.env`) selects a custom target and suppresses that action. Bare libpq
+variables such as `PGHOST` or `PGSERVICE` are rejected so initialization and runtime cannot select
+different targets. Initialization never deletes host data when its free-space preflight fails.

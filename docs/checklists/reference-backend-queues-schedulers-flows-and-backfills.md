@@ -9,15 +9,15 @@
   last scheduled job for a queue is removed, keep `schedules.mts` with an empty `jobs` array and keep
   its `SCHEDULE_DEFINITIONS` entry so upsert still runs. Do not delete that file. Do not leave
   Valkey orphans and do not call `removeJobScheduler` outside that helper.
-- Scheduler templates cannot carry `delay`, `deduplication`, `parent`, or `jobId`: GlideMQ 0.16
+- Scheduler templates cannot carry `delay`, `deduplication`, `parent`, or `jobId`: GlideMQ
   rejects them in `upsertJobScheduler` because the scheduler tick never applies them. Build template
   options with `toSchedulerTemplateOptions` (`@modules/scheduled-job-manifest/template-options`) and
   put deduplication on the producer's own enqueue instead.
 - Give central scheduled-job surfaces a normal enqueue API. Domain-specific backfill, PostgreSQL,
   and Valkey controls may remain on their existing admin routes.
 - Register every replayable queue in `BACKFILL_REGISTRY`. Stream an exhaustive durable source with a
-  PostgreSQL cursor and bulk-enqueue bounded batches; use one throttled dispatcher job at priority
-  `100`.
+  PostgreSQL cursor and bulk-enqueue bounded batches; use one throttled dispatcher job at the
+  dispatcher priority.
 - Exclude irreversible external sends unless a durable marker makes replay safe. Record every
   exclusion and replay contract in
   [`JOB-REPLAYABILITY.md`](../requirements/platform/JOB-REPLAYABILITY.md).

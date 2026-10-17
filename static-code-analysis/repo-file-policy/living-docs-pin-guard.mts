@@ -20,10 +20,6 @@ export const LIVING_DOCS_PIN_CASES: readonly LivingDocsPinCase[] = [
     patterns: [/build-tools;\d+\.\d+\.\d+/u],
   },
   {
-    path: 'docs/development/code-statistics.md',
-    patterns: [/update the `go install` command in/u],
-  },
-  {
     path: '.agents/skills/agent-workflow/implementation.md',
     patterns: [/tool version pin in `\.mise\.toml`, update the corresponding doc/u],
   },

@@ -1,7 +1,5 @@
 # PR-Triggered Workflow Trust Boundary Checklist
 
-[Back to Workflow Authoring Reference](AUTHORING.md#pr-triggered-workflow-trust-boundary-checklist)
-
 Apply this checklist before the first push of any PR-triggered workflow or composite action change. Each item is a judgment question; where a mechanical enforcer exists it is named so you can run it locally (commits are free, pushes are expensive — see [AGENTS.md](../../../../.github/workflows/AGENTS.md)).
 
 - **Untrusted PR code execution** — does any job check out PR-head code and then _execute_ it (build/test/run scripts) in a context that holds secrets or a write token? If so, gate the job behind the trusted-secret-context flag (`trusted-secret-context` from the area's `changes` job; `trusted_secret_context` as a `workflow_call` input) or treat the PR as untrusted and skip the sensitive steps. Wiring: `__tests__/secret-context.*` (automated).

@@ -46,4 +46,4 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 - [docs/overview/architecture/services/urls-domains-robots/README.md](services/urls-domains-robots/README.md) — bloom filter fast path, RFC 9309
 - [docs/overview/architecture/queues/crawler/README.md](queues/crawler/README.md) — job queue configuration, S3 storage
 - [articles/voucha-bot.md](../../../articles/voucha-bot.md) — public-facing crawler documentation
-- [Runtime timeout classification](../../development/reference-runtime-timeouts-classification.md#hard-constraints-externalprotocol-driven) — per-fetch hard constraints for crawler HTML, robots.txt, and RSS chapters
+- [runtime-timeouts.md](../../development/runtime-timeouts.md#external-calls) — why per-fetch crawler timeouts are sized as they are

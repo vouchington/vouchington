@@ -7,4 +7,4 @@
 - `preferReplica` routes writes to primary; choose `primary` for strongly consistent reads such as auth/rate limits.
 - Close `createChannelPubSub()` subscriptions on SSE disconnect. Tests close every subscription before optional idle-only domain `close*Subscriber()` teardown; shutdown uses the registered terminal owner close. Fire-and-forget publish/signals attach `.catch(onError)` or a justified benign catch.
 - Keep `sessionValkeyClient`, GlideMQ wiring, analytics forwarding, and `onError` glue local unless `valkyries` explicitly adopts them.
-- Preserve isolated `bloomValkeyClient` so rebuilds cannot exhaust cache capacity; [Bloom ownership/config](../../../docs/development/valkey/README.md#bloom-client) remains canonical.
+- Preserve isolated `bloomValkeyClient` so rebuilds cannot exhaust cache capacity; [Bloom ownership/config](../../../docs/development/valkey/README.md#client-groups) remains canonical.

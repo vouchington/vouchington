@@ -4,7 +4,7 @@
 
 Every effectful worker operation that calls an external provider, mutates
 durable state, or both — must ship a filled-in transition matrix in its owning README covering these
-8 required rows (transition modes):
+required rows (transition modes):
 
 1. Dispatch failure
 2. Provider non-consumption
@@ -19,7 +19,7 @@ Fill in these columns for every row:
 
 | Column                       | What it answers                                                                                                             |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Failure mode                 | Which of the 8 transition modes above.                                                                                      |
+| Failure mode                 | Which of the transition modes above.                                                                                        |
 | Detectable state             | What durable, queue, or reply state distinguishes this mode from every other row — what would you actually observe?         |
 | Recovery/reconciliation path | Who notices and what they do: a caller-owned retry, a reconciliation job, a durable-handoff race, or an accepted-loss note. |
 | Idempotency guarantee        | What makes a second attempt or delivery safe: a stable logical key, a uniqueness constraint, a fencing token, or n/a.       |

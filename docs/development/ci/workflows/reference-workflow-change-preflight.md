@@ -1,7 +1,5 @@
 # Workflow Change Preflight
 
-[Back to Workflow Authoring Reference](AUTHORING.md#workflow-change-preflight)
-
 Before changing workflow behavior because a third-party tool appears broken or slow, prove the
 current upstream state first: read the release notes, inspect the exact failing run or action
 output, and document the observed behavior in the PR. When pinning third-party actions, resolve
