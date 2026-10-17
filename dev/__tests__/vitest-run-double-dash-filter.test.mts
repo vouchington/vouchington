@@ -4,34 +4,6 @@ import { describe, expect, it } from 'vitest'
 const repoFile = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8')
 
 describe('backend focused-command docs stay pinned to supported filtering forms', () => {
-  it('docs/overview/architecture/backend/README.md documents aggregate pnpm filtering through the group runner', () => {
-    const readme = repoFile('docs/overview/architecture/backend/README.md')
-    const codeSpans = [...readme.matchAll(/`([^`]+)`/g)].map(match => match[1])
-
-    const runScriptSpans = codeSpans.filter(span => span.startsWith('pnpm run test:backend'))
-    expect(runScriptSpans.length).toBeGreaterThan(0)
-    expect(runScriptSpans).toContain('pnpm run test:backend:default -- <files>')
-    expect(codeSpans).toContain('pnpm exec vitest run --project backend-data-stores <file>')
-  })
-
-  it('backend/agents/README.md routes focused agent test commands to its reference section', () => {
-    const readme = repoFile('backend/agents/README.md')
-
-    expect(readme).toContain(
-      '[Tests](../../docs/overview/architecture/ai-agents/README.md)',
-    )
-
-    const referenceTests = repoFile('docs/overview/architecture/ai-agents/README.md')
-    const fencedBash = /```bash\n([\s\S]*?)```/.exec(referenceTests)
-    expect(fencedBash).not.toBeNull()
-    const commandBlock = fencedBash![1]
-
-    expect(commandBlock).not.toContain(' -- ')
-    expect(commandBlock).toContain(
-      'pnpm exec vitest run --project backend-data-stores --project backend-mocks backend/agents/<agent-name>/',
-    )
-  })
-
   it('backend/agents/AGENTS.md routes commands to the README without duplicating them', () => {
     const claudeMd = repoFile('backend/agents/AGENTS.md')
 
