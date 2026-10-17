@@ -362,12 +362,12 @@ returns ids and a slug, so it carries neither. The MCP `read_community(details)`
 `read_my_lists(get)`, `read_my_lists(list)`, `create_list`, `update_list`, `read_topic(details)`, `read_rss_feed(details)` and
 `discover_rss_feeds(search)` tools carry the public label and never the staff block.
 
-Swift and .NET must decode both optional fields on all five entities and render the badge beside
+Swift and .NET decode both optional fields on all five entities and render the badge beside
 the post type badge on posts and on the cards and detail headers of communities, topics, lists and
 RSS feeds, composing the text from their own localized copy. The structured shape of posts is staged in `api-fixtures/v1/` as `native.users.profile.posts.provenance` and
-`native.users.profile.posts.staff-provenance`. Native delivery is tracked by
-[vouchington-clients#206](https://github.com/vouchington/vouchington-clients/issues/206); this
-repository does not edit `vouchington-clients`, and native delivery never blocks the entity routes.
+`native.users.profile.posts.staff-provenance`. Native delivery is complete in
+[vouchington-clients#283](https://github.com/vouchington/vouchington-clients/pull/283), with public-label and staff-only rendering tests recorded in the capability contract.
+[vouchington-clients#206](https://github.com/vouchington/vouchington-clients/issues/206) is closed.
 
 ## Retired agent flag action handoff
 
