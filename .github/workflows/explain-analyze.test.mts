@@ -104,6 +104,23 @@ printf '%s\\n' "$utc_day" "$local_day"
   })
 })
 
+// The seed and run steps execute the same fixtures that the development seed encrypts, so a key
+// that only the dev-seed step has fails in CI and never in a local run with the inline key (#2734).
+describe('stored-secret encryption key', () => {
+  it('is the same value on the development seed, EXPLAIN seed, and EXPLAIN run steps', () => {
+    const { steps } = explainAnalyzeJob()
+    const key = 'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS'
+    const values = [
+      'backend/scripts/seeds/dev-seed.mts',
+      'explain-analyze/seed.mts',
+      'explain-analyze/run.mts',
+    ].map(script => steps[stepIndexRunning(steps, script)]?.env?.[key])
+
+    expect(values[0]).toMatch(/^[\w-]+:raw32:/)
+    expect(new Set(values).size).toBe(1)
+  })
+})
+
 describe('native pruning coverage artifacts', () => {
   it('retains native pruning and retirement V8 coverage in the existing uploaded output', () => {
     const { steps } = explainAnalyzeJob()

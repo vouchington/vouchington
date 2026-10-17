@@ -11,6 +11,7 @@ describe('planning skill contract', () => {
     const impact = read('.agents/skills/planning/references/impact-discovery.md')
     const metadata = read('.agents/skills/planning/agents/openai.yaml')
     expect(impact).toContain('pnpm exec no-mistakes planning-impact')
+    expect(impact).toContain('pnpm exec no-mistakes impacted-checks --generic-only')
     expect(metadata).toMatch(/default_prompt:.*\$planning\b/)
   })
 })

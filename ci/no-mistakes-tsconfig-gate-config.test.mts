@@ -108,7 +108,9 @@ describe('TypeScript compiler gate configuration', () => {
       ],
     ]
 
-    expect(commands).toHaveLength(projects.length)
+    expect(commands.filter(command => command.name?.startsWith('typecheck-'))).toHaveLength(
+      projects.length,
+    )
     for (const [name, command] of projects) {
       expect(commands).toContainEqual({
         always: true,

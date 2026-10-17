@@ -14,6 +14,9 @@ The `pnpm run explain:coverage` report is local-only analysis of completed EXPLA
 Nightly produces the artifact, while Tooling CI runs its classifier and artifact-validation
 tests. See the [EXPLAIN coverage guide](postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario).
 
+Which static gates local planning lists, and which gates are intentionally CI-only, is in
+[Local CI Parity](local-development/reference-local-ci-parity.md#static-gates-that-local-selection-must-list).
+
 AST-grep scans honor the severity declared in each rule: errors block CI and warnings report staged
 cleanup work. Entrypoints must not use a bare `--error`, which would promote warning rollouts.
 

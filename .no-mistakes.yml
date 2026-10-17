@@ -370,6 +370,30 @@ checks:
         [pnpm, exec, tsc, --noEmit, --incremental, --project, integration-tests/tsconfig.json]
       fileArgs: none
       always: true
+    # CI-only static gates (#3015): `check` runs the repository rules, but impacted-checks would
+    # otherwise list only typechecks and tests. Each command mirrors its static-code-analysis.yml step.
+    - name: no-mistakes-rules
+      command: [pnpm, run, no-mistakes]
+      fileArgs: none
+      always: true
+    - name: repo-node-static-checks
+      command:
+        - node
+        - static-code-analysis/run-node-checks.mts
+        - --checks
+        - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
+      fileArgs: none
+      always: true
+    - name: knip-production-exports
+      command: [pnpm, run, knip:production-exports]
+      fileArgs: none
+      include:
+        - 'backend/**/*.mts'
+        - '**/package.json'
+        - knip.jsonc
+      exclude:
+        - '**/*.test.mts'
+        - '**/test-helpers/**'
 
 tests:
   playwright:
