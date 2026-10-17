@@ -124,6 +124,9 @@ async function backfillCategoryBatch(
   await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
   await invalidateRssFeedItemChunks(changedItemIds)
   void enqueueRefreshTopHashtags()
+  // The update re-reads every matching category of the page's items, so a short result proves the
+  // bounded scan was not truncated and no terminal candidate scan is needed.
+  if (rows.length < CATEGORY_BACKFILL_BATCH_SIZE) return { updated: updated + rows.length }
   return backfillCategoryBatch(topicId, updated + rows.length, options)
 }
 
