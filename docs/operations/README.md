@@ -13,5 +13,3 @@ the decision boundary and the order of steps.
 | [oauth-authorization-broker-rollout.md](oauth-authorization-broker-rollout.md) | Roll out the shared OAuth broker by provider and client mode                                |
 | [staging-turnstile-always-approve.md](staging-turnstile-always-approve.md)     | Staging Turnstile always-approve kill switch for MCP QA                                     |
 | [valkey-memory-recovery.md](valkey-memory-recovery.md)                         | Decision boundary for Valkey memory-pressure diagnosis and recovery                         |
-
-
