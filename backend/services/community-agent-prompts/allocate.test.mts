@@ -30,7 +30,7 @@ describe('allocate', () => {
         createdById: plusUser.id,
       })
 
-      await allocateCommunityAgentPromptSlot(plusUser.id, p.id)
+      await allocateCommunityAgentPromptSlot(plusUser.id, p)
 
       const fetched = await getCommunityAgentPrompt(p.id)
       expect(fetched!.is_slot_allocated).toBe(true)
@@ -46,9 +46,7 @@ describe('allocate', () => {
         createdById: noMembershipUser.id,
       })
 
-      await expect(
-        allocateCommunityAgentPromptSlot(noMembershipUser.id, p.id),
-      ).rejects.toMatchObject({
+      await expect(allocateCommunityAgentPromptSlot(noMembershipUser.id, p)).rejects.toMatchObject({
         status: 403,
       })
     })
@@ -59,7 +57,7 @@ describe('allocate', () => {
       const c = await insertTestCommunity({ createdById: creator.id })
       const p = await insertTestCommunityAgentPrompt({ communityId: c.id, createdById: creator.id })
 
-      await expect(allocateCommunityAgentPromptSlot(other.id, p.id)).rejects.toMatchObject({
+      await expect(allocateCommunityAgentPromptSlot(other.id, p)).rejects.toMatchObject({
         status: 403,
       })
     })
@@ -74,7 +72,7 @@ describe('allocate', () => {
       })
       await archiveCommunity(c.id, plusUser.id)
 
-      await expect(allocateCommunityAgentPromptSlot(plusUser.id, p.id)).rejects.toMatchObject({
+      await expect(allocateCommunityAgentPromptSlot(plusUser.id, p)).rejects.toMatchObject({
         status: 403,
         message: 'Community is archived',
       })
@@ -89,8 +87,8 @@ describe('allocate', () => {
         createdById: plusUser.id,
       })
 
-      await allocateCommunityAgentPromptSlot(plusUser.id, p.id)
-      await expect(allocateCommunityAgentPromptSlot(plusUser.id, p.id)).rejects.toMatchObject({
+      await allocateCommunityAgentPromptSlot(plusUser.id, p)
+      await expect(allocateCommunityAgentPromptSlot(plusUser.id, p)).rejects.toMatchObject({
         status: 422,
       })
     })
@@ -112,10 +110,10 @@ describe('allocate', () => {
       ])
 
       // Allocate all 3 allowed slots sequentially (each checks current used count)
-      await allocateCommunityAgentPromptSlot(plusUser.id, p1.id)
-      await allocateCommunityAgentPromptSlot(plusUser.id, p2.id)
-      await allocateCommunityAgentPromptSlot(plusUser.id, p3.id)
-      await expect(allocateCommunityAgentPromptSlot(plusUser.id, p4.id)).rejects.toMatchObject({
+      await allocateCommunityAgentPromptSlot(plusUser.id, p1)
+      await allocateCommunityAgentPromptSlot(plusUser.id, p2)
+      await allocateCommunityAgentPromptSlot(plusUser.id, p3)
+      await expect(allocateCommunityAgentPromptSlot(plusUser.id, p4)).rejects.toMatchObject({
         status: 422,
       })
     })
@@ -135,9 +133,9 @@ describe('allocate', () => {
       ])
 
       await Promise.all([
-        allocateCommunityAgentPromptSlot(premiumUser.id, p1.id),
-        allocateCommunityAgentPromptSlot(premiumUser.id, p2.id),
-        allocateCommunityAgentPromptSlot(premiumUser.id, p3.id),
+        allocateCommunityAgentPromptSlot(premiumUser.id, p1),
+        allocateCommunityAgentPromptSlot(premiumUser.id, p2),
+        allocateCommunityAgentPromptSlot(premiumUser.id, p3),
       ])
 
       const results = await Promise.all(
@@ -158,7 +156,7 @@ describe('allocate', () => {
         slotAllocated: true,
       })
 
-      await deallocateCommunityAgentPromptSlot(plusUser.id, p.id)
+      await deallocateCommunityAgentPromptSlot(plusUser.id, p)
 
       const fetched = await getCommunityAgentPrompt(p.id)
       expect(fetched!.is_slot_allocated).toBe(false)
@@ -175,7 +173,7 @@ describe('allocate', () => {
         slotAllocated: true,
       })
 
-      await expect(deallocateCommunityAgentPromptSlot(other.id, p.id)).rejects.toMatchObject({
+      await expect(deallocateCommunityAgentPromptSlot(other.id, p)).rejects.toMatchObject({
         status: 403,
       })
     })
@@ -191,7 +189,7 @@ describe('allocate', () => {
       })
       await archiveCommunity(c.id, plusUser.id)
 
-      await deallocateCommunityAgentPromptSlot(plusUser.id, p.id)
+      await deallocateCommunityAgentPromptSlot(plusUser.id, p)
 
       const fetched = await getCommunityAgentPrompt(p.id)
       expect(fetched!.is_slot_allocated).toBe(false)
@@ -215,8 +213,8 @@ describe('allocate', () => {
       })
 
       await archiveCommunity(archivedCommunity.id, plusUser.id)
-      await deallocateCommunityAgentPromptSlot(plusUser.id, archivedPrompt.id)
-      await allocateCommunityAgentPromptSlot(plusUser.id, reusablePrompt.id)
+      await deallocateCommunityAgentPromptSlot(plusUser.id, archivedPrompt)
+      await allocateCommunityAgentPromptSlot(plusUser.id, reusablePrompt)
 
       const fetchedReusablePrompt = await getCommunityAgentPrompt(reusablePrompt.id)
       expect(fetchedReusablePrompt!.is_slot_allocated).toBe(true)
@@ -230,7 +228,7 @@ describe('allocate', () => {
         createdById: plusUser.id,
       })
 
-      await expect(deallocateCommunityAgentPromptSlot(plusUser.id, p.id)).rejects.toMatchObject({
+      await expect(deallocateCommunityAgentPromptSlot(plusUser.id, p)).rejects.toMatchObject({
         status: 422,
       })
     })

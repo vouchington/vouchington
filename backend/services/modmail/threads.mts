@@ -100,41 +100,59 @@ export async function upsertModmailStaffParticipant(
   `)
 }
 
+/** Each of the three updates below returns the thread as the write left it, or null if it is gone. */
 export async function assignModmailThread(
   conversationId: string,
   modUserId: string,
-): Promise<void> {
-  await write(sql`/* assignModmailThread */
+): Promise<ModmailThread | null> {
+  const { rows } = await write(sql`/* assignModmailThread */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, assigned_moderator_user_id = ${modUserId},
         assigned_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
       AND channel_type = 'modmail'
       AND deleted_at IS NULL
+    RETURNING
+      id, channel_type, title, community_id, subject_user_id,
+      assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
+      created_by_id, created_at, updated_at
   `)
+  return (rows[0] as ModmailThread | undefined) ?? null
 }
 
 export async function resolveModmailThread(
   conversationId: string,
   resolvedBy: string,
-): Promise<void> {
-  await write(sql`/* resolveModmailThread */
+): Promise<ModmailThread | null> {
+  const { rows } = await write(sql`/* resolveModmailThread */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, resolved_at = CURRENT_TIMESTAMP,
         resolved_by_id = ${resolvedBy}
     WHERE id = ${conversationId}
       AND channel_type = 'modmail'
       AND deleted_at IS NULL
+    RETURNING
+      id, channel_type, title, community_id, subject_user_id,
+      assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
+      created_by_id, created_at, updated_at
   `)
+  return (rows[0] as ModmailThread | undefined) ?? null
 }
 
-export async function unresolveModmailThread(conversationId: string): Promise<void> {
-  await write(sql`/* unresolveModmailThread */
+export async function unresolveModmailThread(
+  conversationId: string,
+): Promise<ModmailThread | null> {
+  const { rows } = await write(sql`/* unresolveModmailThread */
     UPDATE conversations
     SET last_activity_at = CURRENT_TIMESTAMP, resolved_at = NULL,
         resolved_by_id = NULL
     WHERE id = ${conversationId}
       AND channel_type = 'modmail'
       AND deleted_at IS NULL
+    RETURNING
+      id, channel_type, title, community_id, subject_user_id,
+      assigned_moderator_user_id, assigned_at, resolved_at, resolved_by_id,
+      created_by_id, created_at, updated_at
   `)
+  return (rows[0] as ModmailThread | undefined) ?? null
 }

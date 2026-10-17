@@ -139,6 +139,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
     body,
   })
 
+  let updated: typeof thread | null = thread
   if (typeof body.assigned_moderator_user_id === 'string') {
     const assigneeMembership = await getCommunityMember(
       community.id,
@@ -151,10 +152,10 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
       422,
       'assigned_moderator_user_id must be an active owner or moderator in this community',
     )
-    await assignModmailThread(conversationId, body.assigned_moderator_user_id)
+    updated = await assignModmailThread(conversationId, body.assigned_moderator_user_id)
   }
   if (body.resolved === true) {
-    await resolveModmailThread(conversationId, currentUser.id)
+    updated = await resolveModmailThread(conversationId, currentUser.id)
   } else if (body.resolved === false) {
     const alreadyOpen = await hasOpenModmailThread(
       thread.community_id!,
@@ -162,9 +163,8 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
       conversationId,
     )
     ctx.assert(!alreadyOpen, 409, 'Another open thread already exists for this subject')
-    await unresolveModmailThread(conversationId)
+    updated = await unresolveModmailThread(conversationId)
   }
 
-  const updated = await getModmailThread(conversationId)
   ctx.json({ thread: updated })
 })

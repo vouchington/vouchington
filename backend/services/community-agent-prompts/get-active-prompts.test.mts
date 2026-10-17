@@ -59,7 +59,7 @@ describe('get-active-prompts', () => {
         slotAllocated: true,
       })
 
-      await deleteCommunityAgentPrompt(user, p.id)
+      await deleteCommunityAgentPrompt(user, p)
 
       const results = await getActiveCommunityAgentPrompts(c.id)
       expect(results.map(r => r.id)).not.toContain(p.id)

@@ -52,50 +52,51 @@ export async function redeemInviteCode(
   assert(!existing, 409, 'You are already a member of this community')
   await assertNotBanned(found.community_id, currentUserId, options)
 
-  const { rowCount } = await write(
-    sql`/* redeemInviteCode */
-    UPDATE community_invites
-    SET accepted_at = CURRENT_TIMESTAMP,
-        accepted_by_id = ${currentUserId}
-    WHERE id = ${found.id}
-      AND accepted_at IS NULL
-      AND declined_at IS NULL
-      AND revoked_at IS NULL
-    `,
-    options,
-  )
-  assert(rowCount === 1, 409, 'Invite has already been redeemed')
-
-  await write(
-    sql`/* redeemInviteCode */
-    INSERT INTO community_members (community_id, user_id, role, approved_by_id)
-    VALUES (
-      ${found.community_id},
-      ${currentUserId},
-      'member',
-      CASE
-        WHEN EXISTS (
-          SELECT 1
-          FROM community_members inviter
-          WHERE inviter.community_id = ${found.community_id}
-            AND inviter.user_id = ${found.invited_by_id}
-            AND inviter.role IN ('owner', 'moderator')
-            AND inviter.removed_at IS NULL
-        ) OR EXISTS (
-          SELECT 1
-          FROM user_roles ur
-          JOIN user_role_types urt ON urt.id = ur.role_type_id
-          WHERE ur.user_id = ${found.invited_by_id}
-            AND urt.slug = 'administrator'
-        )
-          THEN ${found.invited_by_id}::uuid
-        ELSE NULL::uuid
-      END
+  // Accepting the invite and adding the member are one statement: the member row is derived from
+  // the invite row this statement accepted, so a lost race inserts nothing and fails the count.
+  const { rows: acceptRows } = await write(
+    sql`/* redeemInviteCode:accept */
+    WITH accepted AS (
+      UPDATE community_invites
+      SET accepted_at = CURRENT_TIMESTAMP,
+          accepted_by_id = ${currentUserId}
+      WHERE id = ${found.id}
+        AND accepted_at IS NULL
+        AND declined_at IS NULL
+        AND revoked_at IS NULL
+      RETURNING id
+    ), added AS (
+      INSERT INTO community_members (community_id, user_id, role, approved_by_id)
+      SELECT
+        ${found.community_id},
+        ${currentUserId},
+        'member',
+        CASE
+          WHEN EXISTS (
+            SELECT 1
+            FROM community_members inviter
+            WHERE inviter.community_id = ${found.community_id}
+              AND inviter.user_id = ${found.invited_by_id}
+              AND inviter.role IN ('owner', 'moderator')
+              AND inviter.removed_at IS NULL
+          ) OR EXISTS (
+            SELECT 1
+            FROM user_roles ur
+            JOIN user_role_types urt ON urt.id = ur.role_type_id
+            WHERE ur.user_id = ${found.invited_by_id}
+              AND urt.slug = 'administrator'
+          )
+            THEN ${found.invited_by_id}::uuid
+          ELSE NULL::uuid
+        END
+      FROM accepted
+      ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL DO NOTHING
     )
-    ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL DO NOTHING
+    SELECT COUNT(*)::int AS accepted_count FROM accepted
     `,
     options,
   )
+  assert(acceptRows[0]?.accepted_count === 1, 409, 'Invite has already been redeemed')
   await deletePendingInvitesForMember(found.community_id, currentUserId, options)
 
   const invite = {

@@ -5,7 +5,12 @@ import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
 import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenario-ids.mts'
+<<<<<<< HEAD
 import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
+=======
+import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
+
+>>>>>>> 4bead801a (perf(communities): remove or justify community and messaging query-profile baseline entries)
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
   ...BOUNDED_WORK_SCENARIOS,
@@ -190,11 +195,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'media-delivery-replay-first',
   'media-delivery-replay-continuation',
   'media-delivery-replay-scoped',
-  'community-with-viewer',
-  'comment-ancestors-batch',
-  'notification-block-set',
-  'hostname-policies-batch',
-  'messaging-eligibility-batch',
-  'copyright-staff-case-batch',
-  'user-agent-read-first',
+  ...ROUND_TRIP_SHAPE_SCENARIO_IDS,
 ] as const

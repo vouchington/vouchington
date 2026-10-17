@@ -12,7 +12,7 @@ import { recordModeratorAction } from '@services/moderator-actions'
 import { enqueueSendCommunityApplicationDecisionEmail } from '@queues/emails/enqueues'
 import { getSiteUrl } from '@modules/utils'
 import {
-  createCommunityLifecycleNotification,
+  createCommunityLifecycleNotifications,
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 import { invalidateCommunityMemberUserMetrics } from '../members/invalidate-user-metrics.mts'
@@ -65,15 +65,17 @@ export async function approveApplication(
     currentUser.id,
     options,
   )
-  const notification = await createCommunityLifecycleNotification(
-    {
-      userId: application.user_id,
-      communityId: application.community_id,
-      entityType: 'community_application_decision',
-      eventKey: `community-application-decision:${applicationId}`,
-      title: `Your application to ${community.name} was approved`,
-      body: `You are now a member of ${community.name}.`,
-    },
+  const [notification] = await createCommunityLifecycleNotifications(
+    [
+      {
+        userId: application.user_id,
+        communityId: application.community_id,
+        entityType: 'community_application_decision',
+        eventKey: `community-application-decision:${applicationId}`,
+        title: `Your application to ${community.name} was approved`,
+        body: `You are now a member of ${community.name}.`,
+      },
+    ],
     options,
   )
 
@@ -136,20 +138,22 @@ export async function rejectApplication(
       `,
     options,
   )
-  const notification =
+  const [notification = null] =
     (rejectedRowCount ?? 0) === 0
-      ? null
-      : await createCommunityLifecycleNotification(
-          {
-            userId: application.user_id,
-            communityId: application.community_id,
-            entityType: 'community_application_decision',
-            eventKey: `community-application-decision:${applicationId}`,
-            title: `Your application to ${community.name} was not approved`,
-            body: reason
-              ? `Reason: ${reason}`
-              : `Your application to ${community.name} was not approved.`,
-          },
+      ? []
+      : await createCommunityLifecycleNotifications(
+          [
+            {
+              userId: application.user_id,
+              communityId: application.community_id,
+              entityType: 'community_application_decision',
+              eventKey: `community-application-decision:${applicationId}`,
+              title: `Your application to ${community.name} was not approved`,
+              body: reason
+                ? `Reason: ${reason}`
+                : `Your application to ${community.name} was not approved.`,
+            },
+          ],
           options,
         )
 

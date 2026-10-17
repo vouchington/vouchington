@@ -1,6 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
+import type { CommunityAgentPrompt } from './types.mts'
 import { getCommunityAgentPrompt } from './get.mts'
 import { getCommunity } from '@services/communities'
 import { getSlotLimitForMembership } from './slots.mts'
@@ -11,12 +12,14 @@ import {
   snapshotCommunityAgentPrompt,
 } from '@services/community-agent-prompt-audit'
 
+type SlotState = Pick<CommunityAgentPrompt, 'is_slot_allocated' | 'activated_at' | 'deactivated_at'>
+
+/** `prompt` is the row the caller already loaded and authorized against the community. */
 export async function allocateCommunityAgentPromptSlot(
   currentUserId: string,
-  promptId: string,
+  prompt: CommunityAgentPrompt,
 ): Promise<void> {
-  const prompt = await getCommunityAgentPrompt(promptId)
-  assert(prompt, 404, 'Prompt not found')
+  const promptId = prompt.id
   const community = await getCommunity(prompt.community_id)
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Community is archived')
@@ -53,37 +56,34 @@ export async function allocateCommunityAgentPromptSlot(
       AND created_by_id = ${currentUserId}
       AND is_slot_allocated = false
       AND deleted_at IS NULL
-    RETURNING id
+    RETURNING is_slot_allocated, activated_at, deactivated_at
   `)
   assert(updated.length === 1, 422, 'Prompt could not be allocated')
 
   await query.commit()
 
-  const afterPrompt = await getCommunityAgentPrompt(promptId)
-  if (afterPrompt) {
-    await recordCommunityAgentPromptChange(
-      currentUserId,
-      prompt.community_id,
-      promptId,
-      'allocated',
-      snapshotCommunityAgentPrompt(prompt),
-      snapshotCommunityAgentPrompt(afterPrompt),
-    )
-  }
+  await recordCommunityAgentPromptChange(
+    currentUserId,
+    prompt.community_id,
+    promptId,
+    'allocated',
+    snapshotCommunityAgentPrompt(prompt),
+    snapshotCommunityAgentPrompt({ ...prompt, ...(updated[0] as SlotState) }),
+  )
 }
 
+/** `prompt` is the row the caller already loaded and authorized against the community. */
 export async function deallocateCommunityAgentPromptSlot(
   currentUserId: string,
-  promptId: string,
+  prompt: CommunityAgentPrompt,
 ): Promise<void> {
-  const prompt = await getCommunityAgentPrompt(promptId)
-  assert(prompt, 404, 'Prompt not found')
+  const promptId = prompt.id
   const community = await getCommunity(prompt.community_id)
   assert(community, 404, 'Community not found')
   assert(prompt.created_by_id === currentUserId, 403, 'Forbidden')
   assert(prompt.is_slot_allocated, 422, 'Slot not allocated')
 
-  await write(
+  const { rows: updated } = await write(
     sql`/* deallocateCommunityAgentPromptSlot */
     UPDATE community_agent_prompts
     SET is_slot_allocated = false,
@@ -93,10 +93,15 @@ export async function deallocateCommunityAgentPromptSlot(
       AND created_by_id = ${currentUserId}
       AND is_slot_allocated = true
       AND deleted_at IS NULL
+    RETURNING is_slot_allocated, activated_at, deactivated_at
     `,
   )
 
-  const afterPrompt = await getCommunityAgentPrompt(promptId)
+  // A concurrent change can leave the guard matching nothing; the audit then records the state
+  // that won, as before, so only that case reads the row back.
+  const afterPrompt = updated[0]
+    ? { ...prompt, ...(updated[0] as SlotState) }
+    : await getCommunityAgentPrompt(promptId)
   if (afterPrompt) {
     await recordCommunityAgentPromptChange(
       currentUserId,

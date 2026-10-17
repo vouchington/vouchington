@@ -1,0 +1,15 @@
+export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
+  'community-with-viewer',
+  'comment-ancestors-batch',
+  'notification-block-set',
+  'hostname-policies-batch',
+  'messaging-eligibility-batch',
+  'copyright-staff-case-batch',
+  'user-agent-read-first',
+  'community-post-review-load',
+  'community-lifecycle-notifications',
+  'community-create',
+  'conversation-participant-add-read',
+  'community-invite-redeem',
+  'community-application-questions',
+] as const

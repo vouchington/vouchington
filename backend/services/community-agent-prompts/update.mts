@@ -1,7 +1,6 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunityAgentPrompt } from './get.mts'
 import { getCommunity } from '@services/communities'
 import type { CommunityAgentPrompt } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -11,15 +10,15 @@ import {
 } from '@services/community-agent-prompt-audit'
 import { getLockedActiveCommunityMember } from './get-locked-community-member.mts'
 
+/** `existing` is the row the caller already loaded and matched to the community. */
 export async function updateCommunityAgentPrompt(
   currentUser: PrivateUser,
-  promptId: string,
+  existing: CommunityAgentPrompt,
   updates: {
     prompt?: string
   },
 ): Promise<CommunityAgentPrompt> {
-  const existing = await getCommunityAgentPrompt(promptId)
-  assert(existing, 404, 'Prompt not found')
+  const promptId = existing.id
   const community = await getCommunity(existing.community_id)
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Community is archived')

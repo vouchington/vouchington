@@ -9,11 +9,13 @@
  *   - DELETE:      requireAuth + assertNotSuspended + currentUserCanViewConversation → 403
  *
  * Service layer (participants.mts → this file):
- *   - POST add:    currentUserCanManageParticipants → 403; inline cap (26) → 400;
- *                  inline already-participant → 409; inline user-existence → 404;
+ *   - POST add:    the manage-participants gate, decided inside the transaction from the same read
+ *                  as the participant list (mirrors currentUserCanManageParticipants) → 403;
+ *                  inline cap (26) → 400; inline already-participant → 409; inline user-existence → 404;
  *                  currentUserCanMessageUsers (message-eligibility.mts) → 403; block-mute pair check → 403
  *   - DELETE:      inline owner-vs-self semantics; inline ownership for remove-other → 403
- *   - PATCH policy: currentUserCanChangeParticipantPolicy → 403
+ *   - PATCH policy: owner gate carried by the UPDATE's WHERE clause (mirrors
+ *                  currentUserCanChangeParticipantPolicy) → 403
  *
  * Rejection-path tests (the enforcing guardians, not this comment):
  *   backend/api/v1/my/__tests__/messages-participants.test.mts
