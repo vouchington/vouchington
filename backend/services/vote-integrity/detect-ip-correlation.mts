@@ -8,7 +8,7 @@ import sql from 'sql-template-strings'
 import {
   IP_CORRELATION_THRESHOLD,
   IP_CORRELATION_WINDOW_MINUTES,
-  ENTITY_VOTE_TABLES,
+  resolveEntityVoteTableConfig,
 } from './config.mts'
 
 type IpCorrelationDetail = {
@@ -29,7 +29,7 @@ export async function detectIpCorrelation(
   entityType: string,
   entityId: string,
 ): Promise<IpCorrelationResult> {
-  const tableConfig = ENTITY_VOTE_TABLES[entityType]
+  const tableConfig = await resolveEntityVoteTableConfig(entityType, entityId)
   if (!tableConfig) {
     return {
       flagged: false,

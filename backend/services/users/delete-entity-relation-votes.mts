@@ -1,3 +1,4 @@
+import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import { assertWhitelistedSqlIdentifier } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import {
@@ -28,6 +29,10 @@ export async function recomputeEntityRelationVoteStats(
   targets: EntityRelationVoteTarget[],
   query: TransactionQuery,
 ): Promise<UpdatedEntityRelationVoteStats[]> {
+  if (targets.length === 0) return []
+  const tables = [...new Set(targets.map(target => target.relationTable))].toSorted()
+  for (const table of tables)
+    assertWhitelistedSqlIdentifier(table, electionTables, 'entityRelationTable')
   const statement = sql`/* recomputeEntityRelationVoteStatsAfterUserDeletion */
     WITH affected_ids AS (
       SELECT * FROM UNNEST(
@@ -35,12 +40,22 @@ export async function recomputeEntityRelationVoteStats(
         ${targets.map(target => target.subjectId)}::uuid[],
         ${targets.map(target => target.entityRelationId)}::uuid[]
       ) AS affected(entity_relation, subject_id, entity_relation_id)
-    ), current_votes AS (
-      SELECT DISTINCT ON (votes.entity_relation, votes.subject_id, votes.entity_relation_id, votes.user_id)
-        votes.entity_relation, votes.subject_id, votes.entity_relation_id, votes.user_id, votes.score
-      FROM view_entity_relation_votes votes
-      JOIN affected_ids affected USING (entity_relation, subject_id, entity_relation_id)
-      ORDER BY votes.entity_relation, votes.subject_id, votes.entity_relation_id, votes.user_id, votes.id DESC
+    ), current_votes AS (`
+  tables.forEach((table, index) => {
+    if (index > 0) statement.append(' UNION ALL ')
+    statement.append(sql`SELECT ${table}::elected_entity_relations AS entity_relation,
+      current.subject_id, current.entity_relation_id, current.user_id, current.score
+      FROM (SELECT DISTINCT ON (votes.subject_id, votes.entity_relation_id, votes.user_id)
+        votes.subject_id, votes.entity_relation_id, votes.user_id, votes.score
+        FROM `)
+    statement.append(getEntityRelationVoteTableIdentifier(table))
+    statement.append(sql` votes JOIN affected_ids affected
+      ON affected.entity_relation = ${table}
+        AND affected.subject_id = votes.subject_id
+        AND affected.entity_relation_id = votes.entity_relation_id
+      ORDER BY votes.subject_id, votes.entity_relation_id, votes.user_id, votes.id DESC) current`)
+  })
+  statement.append(sql`
     ), aggregated AS (
       SELECT
         current_votes.entity_relation, current_votes.subject_id, current_votes.entity_relation_id,
@@ -63,9 +78,8 @@ export async function recomputeEntityRelationVoteStats(
         COALESCE(aggregated.votes_count_down, 0) AS votes_count_down
       FROM affected_ids affected
       LEFT JOIN aggregated USING (entity_relation, subject_id, entity_relation_id)
-    ), `
+    ), `)
 
-  const tables = [...electionTables]
   tables.forEach((table, index) => {
     if (index > 0) statement.append(sql`, `)
     statement.append(`current_${index} AS (SELECT

@@ -17,7 +17,7 @@ import { upsertPostElectionVotes } from '../post/votes-upsert.mts'
 import { TOPIC_ELECTION_CONFIG } from '../topic/config.mts'
 import { HOSTNAME_ELECTION_CONFIG } from '../hostname/config.mts'
 import { RSS_FEED_ITEM_ELECTION_CONFIG } from '../rss-feed-item/config.mts'
-import { ENTITY_RELATION_ELECTION_CONFIG } from '../entity-relation/config.mts'
+import { getEntityRelationElectionConfig } from '../entity-relation/config.mts'
 import { AGENT_MODERATION_ELECTION_CONFIG } from '../agent-moderation/config.mts'
 import { USER_VOUCH_ELECTION_CONFIG } from '../user-vouch/config.mts'
 import {
@@ -32,7 +32,7 @@ const ALL_ELECTION_CONFIGS = [
   TOPIC_ELECTION_CONFIG,
   HOSTNAME_ELECTION_CONFIG,
   RSS_FEED_ITEM_ELECTION_CONFIG,
-  ENTITY_RELATION_ELECTION_CONFIG,
+  getEntityRelationElectionConfig('relation__topic__category__topic'),
   AGENT_MODERATION_ELECTION_CONFIG,
   USER_VOUCH_ELECTION_CONFIG,
 ]

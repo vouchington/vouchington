@@ -7,6 +7,7 @@ import {
 } from '@data-stores/psql'
 import {
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
+  getEntityRelationVoteTableIdentifier,
   VOTE_TABLE_IDENTIFIERS,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import { enqueueBulkRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
@@ -15,7 +16,7 @@ import sql from 'sql-template-strings'
 import { ENTITY_VOTE_TABLES, FLAG_ENTITY_FK_COLUMNS } from './config.mts'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import { insertVoteWeightPenalty } from './insert-vote-weight-penalty.mts'
-import { VOTE_INTEGRITY_FLAG_PROJECTION } from './flag-projection.mts'
+import { VOTE_INTEGRITY_FLAG_PROJECTION, voteIntegrityRelationTargets } from './flag-projection.mts'
 
 type ApplyRingPenaltyResult = {
   flag: VoteIntegrityFlag
@@ -32,15 +33,24 @@ export async function applyVoteRingPenalty(
     const flagQuery = sql`/* applyVoteRingPenalty_getFlag */
     SELECT `
     flagQuery.append(VOTE_INTEGRITY_FLAG_PROJECTION)
+    flagQuery.append(', CASE ')
+    for (const target of voteIntegrityRelationTargets) {
+      flagQuery.append(`WHEN ${target.targetColumn} IS NOT NULL THEN `)
+      flagQuery.append(sql`${target.metadata.table_name}::text `)
+    }
+    flagQuery.append('END AS integrity_relation_table')
     flagQuery.append(sql`
     FROM vote_integrity_flags
     WHERE id = ${flagId}
     FOR UPDATE
   `)
-    const { rows: flagRows } = await query<VoteIntegrityFlag>(flagQuery)
+    const { rows: flagRows } = await query<
+      VoteIntegrityFlag & { integrity_relation_table: string | null }
+    >(flagQuery)
 
-    const flag = flagRows[0]
-    if (!flag) throw createHttpError(404, 'Vote integrity flag not found')
+    const rawFlag = flagRows[0]
+    if (!rawFlag) throw createHttpError(404, 'Vote integrity flag not found')
+    const { integrity_relation_table: relationTable, ...flag } = rawFlag
     if (flag.resolved_at) throw createHttpError(409, 'Vote integrity flag is already resolved')
 
     // Find which FK column is set and look up the vote table
@@ -57,7 +67,12 @@ export async function applyVoteRingPenalty(
 
     if (!entityId || !entityType) throw createHttpError(500, 'Flag has no entity FK set')
 
-    const tableConfig = ENTITY_VOTE_TABLES[entityType]
+    const tableConfig = relationTable
+      ? {
+          voteTable: getEntityRelationVoteTableIdentifier(relationTable),
+          entityIdColumn: 'entity_relation_id',
+        }
+      : ENTITY_VOTE_TABLES[entityType]
     if (!tableConfig)
       throw createHttpError(500, `No vote table configured for entity type: ${entityType}`)
 

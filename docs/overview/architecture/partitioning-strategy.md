@@ -111,9 +111,9 @@ This block is rendered from the typed registry, and its normalized rows are chec
 Ordinary vote parents are generated from `VOTE_SCHEMA_CONFIGS`. Relation tables and their vote
 parents are generated from `entityRelationMetadatum`; do not duplicate either list in code.
 Each concrete relation vote parent enforces its composite relation FK and uses RANGE by
-`entity_relation_id`. Scoped readers select that parent and bind the relation ID. Cross-family
-readers use the enum-tagged `view_entity_relation_votes` union. Voter-only maintenance and export
-intentionally fan out and rely on local `user_id` indexes.
+`entity_relation_id`. Scoped readers select that parent and bind the relation ID. Voter-only maintenance and export
+fan out over the fixed relation metadata using bounded `(user_id, id)` keyset pages. Export merges
+event ids across families; vote-weight maintenance persists continuation jobs for later pages.
 
 The [isolated EXPLAIN pruning proof](../../development/postgresql/explain-analyze/README.md#explicit-range-pruning)
 uses a disposable migrated sibling database with two populated explicit ranges and the default

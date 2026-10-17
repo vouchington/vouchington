@@ -1,3 +1,4 @@
+import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
@@ -167,6 +168,7 @@ async function main() {
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()
   await seedClassifierHumanVoteComparison()
+  await seedRelationVoteReads()
   await runAnalyze()
   await refreshMaterializedView('mv_rss_feed_crawl_tiers')
   await printRowCounts()

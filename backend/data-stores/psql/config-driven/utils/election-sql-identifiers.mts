@@ -14,7 +14,6 @@ export const VOTE_TABLE_IDENTIFIERS: ReadonlySet<string> = new Set([
   ...entityRelationMetadatum.flatMap(metadata =>
     metadata.election ? [getEntityRelationVoteTableName(metadata)] : [],
   ),
-  'view_entity_relation_votes',
 ])
 
 export const VOTE_ENTITY_ID_COLUMN_IDENTIFIERS: ReadonlySet<string> = new Set([

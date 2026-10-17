@@ -11164,6 +11164,9 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions

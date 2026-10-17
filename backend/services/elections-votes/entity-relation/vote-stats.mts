@@ -13,7 +13,7 @@ import {
   aggregateElectionVoteStatsFromPrimary,
   aggregateElectionVoteStatsFromReplica,
 } from '../shared/vote-aggregation.mts'
-import { ENTITY_RELATION_ELECTION_CONFIG } from './config.mts'
+import { getEntityRelationElectionConfig } from './config.mts'
 import { enqueueBulkEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { findRssFeedIdsByTopicIds } from '@services/entity-relations/rss-feed-ids-by-topic-ids'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
@@ -148,9 +148,8 @@ export async function updateEntityRelationElectionVoteStats(
 ): Promise<void> {
   // ast-grep-ignore: no-three-sequential-awaits -- replica aggregation, mutation, and follow-up side effects are ordered
   const stats = await aggregateElectionVoteStatsFromReplica(
-    ENTITY_RELATION_ELECTION_CONFIG,
+    getEntityRelationElectionConfig(target.relationTable),
     target.entityRelationId,
-    target.relationTable,
   )
   const updated = await persistEntityRelationVoteStats(target, stats)
   await invalidate.entity_relation_elections(target)
@@ -164,9 +163,8 @@ export async function updateEntityRelationElectionVoteStatsFromPrimary(
 ): Promise<void> {
   // ast-grep-ignore: no-three-sequential-awaits -- read-after-write aggregation, stats persistence, then cache invalidation are ordered
   const stats = await aggregateElectionVoteStatsFromPrimary(
-    ENTITY_RELATION_ELECTION_CONFIG,
+    getEntityRelationElectionConfig(target.relationTable),
     target.entityRelationId,
-    target.relationTable,
   )
   const updated = await persistEntityRelationVoteStats(target, stats)
   await invalidate.entity_relation_elections(target)

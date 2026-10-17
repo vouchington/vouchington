@@ -1,3 +1,5 @@
+import { RELATION_SCENARIOS } from './relation-scenarios.mts'
+
 export const EXPLAIN_SCENARIO_MANIFEST = [
   'bloom-repair-window',
   'bloom-repair-capped',
@@ -33,9 +35,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'conversations-by-user',
   'crawl-chunks-by-crawl',
   'crawl-latest-successful',
-  'entity-relation-votes-by-target',
-  'entity-relations-best',
-  'entity-relations-newest',
+  ...RELATION_SCENARIOS,
   'first-community-post-id-index',
   'feed-posts-batch',
   'feed-shared-by-users-batch',

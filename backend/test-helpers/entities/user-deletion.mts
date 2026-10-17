@@ -1,3 +1,5 @@
+import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
+import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -52,14 +54,15 @@ export async function startPausedTestUserSoftDeletion(
 }
 
 export async function countTestUserDeletionEntityRelationVotes(userId: string): Promise<number> {
-  const { rows } = await read<{ count: number }>(
-    allowUnannotatedQuery(sql`
-    SELECT COUNT(*)::int AS count
-    FROM view_entity_relation_votes
-    WHERE user_id = ${userId}
-  `),
-  )
-  return rows[0]?.count ?? 0
+  let count = 0
+  for (const metadata of entityRelationMetadatum.filter(relation => relation.election)) {
+    const statement = sql`/* countTestUserDeletionEntityRelationVotes */ SELECT COUNT(*)::int AS count FROM `
+    statement.append(getEntityRelationVoteTableIdentifier(metadata.table_name))
+    statement.append(sql` WHERE user_id = ${userId}`)
+    const { rows } = await read<{ count: number }>(statement)
+    count += rows[0]?.count ?? 0
+  }
+  return count
 }
 
 export async function withTestDeletionCandidateCascade<T>(

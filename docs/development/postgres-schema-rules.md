@@ -403,10 +403,9 @@ This extends the prelaunch relational-storage rule.
     otherwise the NM-2 `postgres-object-naming` (jonathanong/no-mistakes#1056) behaviour-10 abbreviation, otherwise throw. The same helper fixes the 20
     relation-table index names that PostgreSQL formerly truncated
     (`0000-00-01b-entity-relation-indexes.mts`).
-  - Readers that need every relation loop over the relation metadata. Where SQL needs one
-    relation set, a generated `view_entity_relation_votes` is a `UNION ALL` of the 17 tables,
-    each branch adding `'<relation table>'::elected_entity_relations AS entity_relation`. It has
-    a comment.
+  - Scoped readers select the concrete vote parent. Voter-only readers fan out over the fixed
+    relation metadata, with `(user_id, id)` indexes and bounded keyset pages per family.
+    Export merges those pages in event-id order; vote-weight fanout persists continuation jobs.
 - **State kept per relation is keyed by an enum generated from the same metadata.** The
   entity-relations generator emits `CREATE TYPE elected_entity_relations AS ENUM (…)`, one label
   per elected relation table name. `retained_relation_identity_cleanup_cursors.entity_relation` uses

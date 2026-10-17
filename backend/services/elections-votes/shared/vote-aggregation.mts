@@ -3,7 +3,6 @@ import {
   ELECTION_ENTITY_TABLE_IDENTIFIERS,
   VOTE_ENTITY_ID_COLUMN_IDENTIFIERS,
   VOTE_TABLE_IDENTIFIERS,
-  getEntityRelationVoteTableIdentifier,
 } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
@@ -25,28 +24,20 @@ import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
 export async function aggregateElectionVoteStatsFromReplica(
   config: EntityElectionConfig,
   entityId: string,
-  relationTable?: string,
 ): Promise<AggregatedElectionStats> {
-  const { rows } = await read(buildAggregateElectionVoteStatsQuery(config, entityId, relationTable))
+  const { rows } = await read(buildAggregateElectionVoteStatsQuery(config, entityId))
   return getAggregatedElectionStats(rows)
 }
 
 export async function aggregateElectionVoteStatsFromPrimary(
   config: EntityElectionConfig,
   entityId: string,
-  relationTable?: string,
 ): Promise<AggregatedElectionStats> {
-  const { rows } = await write(
-    buildAggregateElectionVoteStatsQuery(config, entityId, relationTable),
-  )
+  const { rows } = await write(buildAggregateElectionVoteStatsQuery(config, entityId))
   return getAggregatedElectionStats(rows)
 }
 
-function buildAggregateElectionVoteStatsQuery(
-  config: EntityElectionConfig,
-  entityId: string,
-  relationTable?: string,
-) {
+function buildAggregateElectionVoteStatsQuery(config: EntityElectionConfig, entityId: string) {
   const query = sql`/* aggregateElectionVoteStats */
     WITH captured_snapshot AS MATERIALIZED (
       SELECT pg_current_snapshot() AS value
@@ -69,11 +60,7 @@ function buildAggregateElectionVoteStatsQuery(
       FROM `)
 
   query.append(
-    assertWhitelistedSqlIdentifier(
-      relationTable ? getEntityRelationVoteTableIdentifier(relationTable) : config.voteTable,
-      VOTE_TABLE_IDENTIFIERS,
-      'voteTable',
-    ),
+    assertWhitelistedSqlIdentifier(config.voteTable, VOTE_TABLE_IDENTIFIERS, 'voteTable'),
   )
   query.append(sql` AS election_vote`)
   appendLegacySentimentPolicyJoin(config, query)
