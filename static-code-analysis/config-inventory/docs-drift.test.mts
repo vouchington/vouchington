@@ -53,23 +53,6 @@ describe('typed env contract docs drift', () => {
     })
   })
 
-  function makeBaseFiles(): Record<string, string> {
-    return {
-      [ENVIRONMENT_VARIABLES_INDEX]: './dev/config-inventory\n',
-      'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
-      'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
-      'ts-shared/env-contract/index.mts': `
-        export function collectTypedEnvContractEntries() {
-          return [
-            { name: 'DOC_DRIFT_ENV', contractKey: 'local-init:local-web:DOC_DRIFT_ENV', sourceOfTruth: 'local-init', sensitivity: 'internal', runtimeSurfaces: ['local-web'] },
-          ]
-        }
-      `,
-      'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
-    }
-  }
-
   async function makeRepoFixture(files: Record<string, string>): Promise<SharedContext> {
     const dir = await mkdtemp(join(tmpdir(), 'voucha-config-doc-drift-'))
     testDirs.push(dir)
