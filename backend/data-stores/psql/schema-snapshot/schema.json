@@ -133571,6 +133571,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_users__vote_weight_dirty_marker": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_users__vote_weight_dirty_marker ON public.users USING btree (id) WHERE ((vote_weight_recalculated_at IS NULL) AND (deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((vote_weight_recalculated_at IS NULL) AND (deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_users__votes_score_sort__id": {
           "accessMethod": "btree",
           "constraintBacked": false,

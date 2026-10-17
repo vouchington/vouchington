@@ -122,6 +122,7 @@ _none_
 - `idx_users__username`: `CREATE UNIQUE INDEX idx_users__username ON public.users USING btree (lower(username)) WHERE (username IS NOT NULL)`
 - `idx_users__username__text_pattern_ops`: `CREATE INDEX idx_users__username__text_pattern_ops ON public.users USING btree (lower(username) text_pattern_ops) WHERE (username IS NOT NULL)`
 - `idx_users__vote_weight_age_milestone`: `CREATE INDEX idx_users__vote_weight_age_milestone ON public.users USING btree (id) WHERE ((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))`
+- `idx_users__vote_weight_dirty_marker`: `CREATE INDEX idx_users__vote_weight_dirty_marker ON public.users USING btree (id) WHERE ((vote_weight_recalculated_at IS NULL) AND (deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))`
 - `idx_users__votes_score_sort__id`: `CREATE INDEX idx_users__votes_score_sort__id ON public.users USING btree (votes_score_sort DESC, id) WHERE (deleted_at IS NULL)`
 - `idx_users__votes_score_sort__positive__id`: `CREATE INDEX idx_users__votes_score_sort__positive__id ON public.users USING btree (votes_score_sort DESC, id) WHERE ((votes_score_net > (0)::double precision) AND (deleted_at IS NULL))`
 - `users_pkey`: `CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)`
