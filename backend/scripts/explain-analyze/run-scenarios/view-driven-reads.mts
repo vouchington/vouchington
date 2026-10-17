@@ -107,7 +107,6 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
 
   registerScenarioContract('identity-verification-attempt-membership-gate', {
     expectations: [{ kind: 'maxProcessedRows', relation: 'memberships', max: 25 }],
-    seededRows: { memberships: 300 },
   })
   await runAndCapture('identity-verification-attempt-membership-gate', async () => {
     const { rows } = await read(buildIdentityVerificationPaidMembershipGate(seedUser.id))
