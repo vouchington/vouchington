@@ -43,9 +43,16 @@ crawl id from a shared UTC anchor day instead of hardcoding it. `EXPLAIN_SEED_AN
 (`YYYY-MM-DD`, UTC) pins that day for both; a malformed value fails at import. When it is unset,
 each process uses its own current UTC day, so a local seed-and-run pair that straddles UTC midnight
 (or a month boundary, for crawl ids) fails the up-front `Seed anchor post … not found` check in
-`run.mts`. Export the variable for such a session and unset it afterwards: the newest seeded post is
-stamped at the anchor, so a stale value ages every post out of the `1w` windows the heavy feed
-scenarios filter on. CI sets it once per job, before the seed step.
+`run.mts`. Export the variable for such a session and unset it afterwards. CI sets it once per job,
+before the seed step.
+
+While each scenario callback builds its query, `seed-clock.mts` pins `Date` to noon UTC on the
+anchor day, the instant the newest seeded post carries. A `time_range` cutoff therefore sits at the
+same offset from the seeded posts on every run; under the wall clock the `1w` window held about 60
+more or fewer posts per hour of UTC run time, which flipped the `post-search-hot` custom plan
+between a parallel seq scan and a bitmap scan of `posts` (#3022). EXPLAIN replays the captured SQL
+and values, so the pinned cutoff covers both captures and both plan-cache modes. The clock is
+restored before the EXPLAIN passes.
 
 The 100,000-post seed writes `output/seed-posts.jsonl` incrementally. Each batch and its INSERT,
 clearance update, and final COMMIT have begin/end records with elapsed time. Transaction acquisition

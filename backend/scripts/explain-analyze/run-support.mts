@@ -14,6 +14,7 @@ import { join } from 'node:path'
 import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gates.mts'
 import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
+import { withSeedAnchorClock } from './seed-clock.mts'
 import { SEED_ANCHOR_DATE_ENV } from './seed-data/seed-anchor.mts'
 import {
   captureScenarioTwice,
@@ -38,8 +39,7 @@ export const heavyFollowUser = {
   roles: [] as readonly string[],
 } as PrivateUser
 
-// posts moved off the fixed SEED_PREFIX instant onto a per-day real-clock timestamp (see
-// seed-data/common.mts); this is the only way to name a specific seeded post's id from here.
+// Posts carry per-day timestamps (seed-data/common.mts); this names a seeded post's id.
 export const seedPostId = seedUuid(0, '05')
 export const seedTopicId = `${SEED_PREFIX}-0400-7000-8000-000000000000`
 export const seedParentTopicId = `${SEED_PREFIX}-0400-7000-8000-0000000001f4`
@@ -145,7 +145,7 @@ export async function runAndCapture(
   enableQueryCapture()
 
   try {
-    await fn()
+    await withSeedAnchorClock(fn)
   } finally {
     disableQueryCapture()
   }
