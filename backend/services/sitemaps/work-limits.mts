@@ -1,4 +1,5 @@
-import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   archive_backfill_day_page_size: 30,

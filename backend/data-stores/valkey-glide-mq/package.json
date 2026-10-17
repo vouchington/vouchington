@@ -31,6 +31,6 @@
     "@modules/on-error": "workspace:^",
     "glide-mq": "^0.18.0",
     "p-map": "^7.1.0",
-    "valkyries": "^0.8.2"
+    "valkyries": "^0.9.0"
   }
 }

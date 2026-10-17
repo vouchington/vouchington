@@ -29,7 +29,8 @@
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@services/post-revisions": "workspace:^",

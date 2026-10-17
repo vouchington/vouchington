@@ -1,5 +1,6 @@
 import { minimumImageBatchSizeMB } from './input-size-limits.mts'
-import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export type RateLimitConfig = {
   MAX_INFLIGHT_JOBS: number

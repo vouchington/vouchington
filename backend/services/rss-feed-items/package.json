@@ -62,7 +62,8 @@
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@services/read-states": "workspace:^",

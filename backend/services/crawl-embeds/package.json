@@ -33,7 +33,8 @@
     "@vouchington/embeds": "^0.0.2",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "ssrf-guard": "^1.0.0"
+    "ssrf-guard": "^1.0.0",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

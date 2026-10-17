@@ -1,4 +1,5 @@
-import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   source_publication_backfill_max_batch_size: 1000,

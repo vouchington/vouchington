@@ -22,8 +22,7 @@ repository. Keep its rules authoritative; do not copy them here.
 - **Run cap and tunables.** For batch-deleting cleanup, use `runBoundedBatches()`
   ([source](../../../backend/services/data-retention/run-bounded-batches.mts)): `maxBatches` is
   required and the result reports `hasMore`. Read each batch size and cap from a `DynamicConfig`
-  namespace with `getBoundedPositiveIntegerField()` from `@data-stores/valkey`
-  ([source](../../../backend/data-stores/valkey/dynamic-config-fields.mts)), giving every field a
+  namespace with `getBoundedPositiveIntegerField()` from `valkyries/dynamic-config`, giving every field a
   default and a hard maximum. `data-retention-config` is the worked example:
   [config](../../../backend/services/data-retention/config.mts), and its
   [README](../../../docs/overview/architecture/services/data-retention/README.md) owns the values.

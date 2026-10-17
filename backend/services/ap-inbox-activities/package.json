@@ -38,7 +38,8 @@
     "@services/route-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
     "http-errors": "^2.0.1",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

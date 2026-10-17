@@ -24,7 +24,8 @@
     "@queues/ses-inbound": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
-    "mailparser": "^3.9.38"
+    "mailparser": "^3.9.38",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@types/mailparser": "^3.9.0",

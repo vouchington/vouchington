@@ -1315,8 +1315,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1151.0
@@ -1465,8 +1465,8 @@ importers:
         specifier: ^2.5.3
         version: 2.5.3
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       uuid:
         specifier: ^14.0.3
@@ -1484,8 +1484,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/data-stores/valkey-glide-mq:
     dependencies:
@@ -1511,8 +1511,8 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/data-stores/valkey-pubsub:
     dependencies:
@@ -1529,8 +1529,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/data-stores/valkey-rate-limiter:
     dependencies:
@@ -1538,8 +1538,8 @@ importers:
         specifier: workspace:^
         version: link:../valkey-core
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/entrypoints/api:
     dependencies:
@@ -2681,6 +2681,9 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/queues/ai-agents:
     dependencies:
@@ -2737,6 +2740,9 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/queues/ban-evasion:
     dependencies:
@@ -2878,6 +2884,9 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/queues/crawl-embeds:
     dependencies:
@@ -2970,6 +2979,9 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/queues/follower-distributions:
     dependencies:
@@ -3630,6 +3642,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
       yazl:
         specifier: ^3.3.1
         version: 3.3.1
@@ -3807,6 +3822,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -3896,6 +3914,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -3961,6 +3982,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4041,6 +4065,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/markdown':
         specifier: workspace:^
@@ -4216,6 +4243,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/pg-copy-streams':
         specifier: ^1.2.5
@@ -4402,6 +4432,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4491,6 +4524,9 @@ importers:
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -4572,6 +4608,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -4600,6 +4639,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       uuid:
         specifier: ^14.0.3
@@ -4755,6 +4797,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@queues/background':
         specifier: workspace:^
@@ -5035,6 +5080,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5117,6 +5165,9 @@ importers:
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5191,6 +5242,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/urls':
         specifier: workspace:^
@@ -5401,6 +5455,9 @@ importers:
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@queues/background':
         specifier: workspace:^
@@ -5552,6 +5609,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/oauth-accounts':
         specifier: workspace:^
@@ -5922,6 +5982,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5964,8 +6027,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/services/email-classification:
     dependencies:
@@ -6033,6 +6096,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -6088,6 +6154,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6237,6 +6306,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/post-revisions':
         specifier: workspace:^
@@ -6362,6 +6434,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6570,6 +6645,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/bookmarks':
         specifier: workspace:^
@@ -6601,6 +6679,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/entity-relations':
         specifier: workspace:^
@@ -6684,6 +6765,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6815,6 +6899,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -6938,6 +7025,9 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/topics':
         specifier: workspace:^
@@ -7003,6 +7093,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/urls':
         specifier: workspace:^
@@ -7187,6 +7280,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1151.0
@@ -7257,6 +7353,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -7417,6 +7516,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/communities':
         specifier: workspace:^
@@ -7620,6 +7722,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -7842,6 +7947,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/bookmarks':
         specifier: workspace:^
@@ -8076,6 +8184,9 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8119,6 +8230,9 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8231,6 +8345,9 @@ importers:
       undici:
         specifier: ^8.11.2
         version: 8.11.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8308,6 +8425,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8360,6 +8480,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8379,6 +8502,9 @@ importers:
       '@modules/search-utils':
         specifier: workspace:^
         version: link:../../modules/search-utils
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8542,6 +8668,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8601,6 +8730,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8777,6 +8909,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@queues/cache-purge':
         specifier: workspace:^
@@ -9144,6 +9279,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9202,6 +9340,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -9282,6 +9423,9 @@ importers:
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/entity-relations':
         specifier: workspace:^
@@ -9334,6 +9478,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -9550,6 +9697,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/read-states':
         specifier: workspace:^
@@ -9674,6 +9824,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@queues/background':
         specifier: workspace:^
@@ -9890,6 +10043,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
 
   backend/services/spam-detection:
     dependencies:
@@ -10017,6 +10173,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -10057,6 +10216,9 @@ importers:
       stripe:
         specifier: ^23.0.0
         version: 23.0.0(@types/node@26.6.5)
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -10336,6 +10498,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -10640,6 +10805,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@valkey/valkey-glide':
         specifier: ^2.5.3
@@ -10647,9 +10815,6 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
 
   backend/services/urls-domains-blacklist-sync:
     dependencies:
@@ -10783,6 +10948,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -11128,6 +11296,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@modules/csv':
         specifier: workspace:^
@@ -11172,8 +11343,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -11266,6 +11437,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -11486,8 +11660,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.8.2
-        version: 0.8.2
+        specifier: ^0.9.0
+        version: 0.9.0
       vouchington-tooling:
         specifier: ^0.46.0
         version: 0.46.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@typescript/typescript6@6.0.2)(agent-blackboard@0.6.1(supports-color@10.2.2)(zod@4.6.5))(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(no-mistakes@0.91.2(vitest@5.0.4))(supports-color@10.2.2)(vitest@5.0.4)
@@ -13180,6 +13354,9 @@ importers:
       mailparser:
         specifier: ^3.9.38
         version: 3.9.38
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/mailparser':
         specifier: ^3.9.0
@@ -22691,8 +22868,8 @@ packages:
     resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
     engines: {node: '>= 0.10'}
 
-  valkyries@0.8.2:
-    resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
+  valkyries@0.9.0:
+    resolution: {integrity: sha512-8rrkDwr4GAOO3fKu1IG+NXyEk3Tn2NVsL9rEu0GXmiJvmdW7PQDCKMGptNArogR+1gr+DMmHUKpTpRvR3fiolw==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -31962,7 +32139,7 @@ snapshots:
 
   validator@13.15.35: {}
 
-  valkyries@0.8.2:
+  valkyries@0.9.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 

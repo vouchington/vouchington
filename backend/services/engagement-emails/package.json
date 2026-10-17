@@ -31,7 +31,8 @@
     "@services/trending-referral-programs": "workspace:^",
     "@services/users": "workspace:^",
     "p-map": "^7.1.0",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

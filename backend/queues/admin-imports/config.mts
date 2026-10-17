@@ -1,4 +1,5 @@
-import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const QUEUE_NAME = 'admin-imports'
 export const PRIORITY_DEFAULT = 10

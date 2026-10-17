@@ -28,7 +28,8 @@
     "@services/classifiers": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

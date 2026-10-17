@@ -1,4 +1,5 @@
-import { DynamicConfig, getBoundedPositiveIntegerField } from '@data-stores/valkey'
+import { DynamicConfig } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export const SEMANTIC_POST_CANDIDATE_LIMIT = 1000
 
