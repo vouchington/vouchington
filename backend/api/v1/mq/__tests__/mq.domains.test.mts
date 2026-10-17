@@ -67,8 +67,12 @@ describe('background queue domain routes', () => {
       )
       expect([...byDomain.keys()].toSorted()).toEqual([
         'account-lifecycle',
+        'activitypub',
         'article-sync',
+        'bluesky-follow-propagation',
         'entity-listeners',
+        'follower-distributions',
+        'notifications',
         'oauth-authorization-exchange',
         'openai-moderation',
         'post-mentions',

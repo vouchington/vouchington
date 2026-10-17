@@ -55,7 +55,7 @@ constructor. One production file is ignored temporarily: `bedrock-embeddings-bat
 its direct `new Worker(...)` until #2447, which edits that file's worker options, lands.
 
 Queue-wide limits are queue state, not worker options: a worker that must run one job at a time
-across replicas (for example `bedrock-embeddings-batch-creation` and `bluesky-follow-propagation`)
+across replicas (for example `bedrock-embeddings-batch-creation`)
 calls `queue.setGlobalConcurrency(1)` before creating its worker, because `concurrency` bounds one
 process only.
 

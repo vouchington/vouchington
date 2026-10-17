@@ -2,7 +2,7 @@
 
 Worker package for processing manual follower share/send distribution chunks.
 
-- `followerDistributionsWorker` - worker instance for the `follower-distributions` queue.
+- `followerDistributionsHandlers` - the `follower-distributions` domain's handlers in the shared `background` worker.
 
 ## Related
 

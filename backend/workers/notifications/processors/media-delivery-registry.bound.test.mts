@@ -60,7 +60,10 @@ describe('media registry staging continuation', () => {
           expect(continuations).toHaveLength(2)
           expect(isDeduplicatedEnqueue(continuations[1]!)).toBe(true)
           const job = await readEnqueuedJob(notifications, continuations[0]!)
-          expect(job).toMatchObject({ name: 'processReconcileMediaDeliveryRegistry', data: next })
+          expect(job).toMatchObject({
+            name: 'notifications.processReconcileMediaDeliveryRegistry',
+            data: next,
+          })
           expect(job.opts.deduplication?.id).toBe(
             `media-delivery-registry-staging:${scanBefore}:${next.staging.after.placement_id}:${next.staging.after.placement_revision}:${next.staging.after.image_id}`,
           )

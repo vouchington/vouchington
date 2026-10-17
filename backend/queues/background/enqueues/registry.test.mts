@@ -59,7 +59,7 @@ describe('background registry', () => {
   it('rejects a job or domain that would break the queue contract', () => {
     const domain = defineBackgroundDomain({
       domain: 'ses-inbound',
-      group: { kind: 'none' },
+      group: { kind: 'entity' },
       workerConcurrency: 1,
     })
     expect(() => defineBackgroundJob(domain, { name: 'a.b', priority: 10 })).toThrow('dot')

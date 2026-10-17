@@ -157,7 +157,10 @@ describe('media delivery replay jobs', () => {
         const job = await enqueueReplayMediaDeliveryRegistry(next)
         if (isDeduplicatedEnqueue(job)) return job
         const persisted = await readEnqueuedJob(notifications, job)
-        expect(persisted).toMatchObject({ name: 'processReplayMediaDeliveryRegistry', data: next })
+        expect(persisted).toMatchObject({
+          name: 'notifications.processReplayMediaDeliveryRegistry',
+          data: next,
+        })
         expect(
           await getTestMediaDeliveryRecordSnapshot(
             decodeScopedUuidCursor(

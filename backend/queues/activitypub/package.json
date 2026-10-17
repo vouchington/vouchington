@@ -17,9 +17,9 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/activitypub-inbox-storage-policy": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/background": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.18.0",
     "uuid": "^14.0.3"

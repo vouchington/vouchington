@@ -79,7 +79,7 @@ describe('durable media registry recovery hardening', () => {
 
       for (const mediaDeliveryRegistryRecordId of recordIds.slice(1)) {
         const jobs = await notifications.searchJobs({
-          name: 'processApplyMediaDeliveryRegistryRecord',
+          name: 'notifications.processApplyMediaDeliveryRegistryRecord',
           data: { mediaDeliveryRegistryRecordId },
         })
         expect(jobs).toHaveLength(1)
@@ -129,7 +129,7 @@ describe('durable media registry recovery hardening', () => {
       expect(continuations).toHaveLength(1)
       const job = await readEnqueuedJob(notifications, continuations[0]!)
       expect(job).toMatchObject({
-        name: 'processReconcileMediaDeliveryRegistry',
+        name: 'notifications.processReconcileMediaDeliveryRegistry',
         data: { scanBefore },
         opts: { attempts: 3, removeOnComplete: 100, removeOnFail: 100 },
       })

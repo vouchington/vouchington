@@ -3,13 +3,17 @@ import dns from 'node:dns'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { UnrecoverableError } from '@modules/queue-errors'
-import { softDeleteRemoteActorForInboxTest } from '@voucha/test-helpers'
+import { softDeleteRemoteActorForInboxTest, readAllQueueJobs } from '@voucha/test-helpers'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import {
   claimTestDelivery,
   rejectTestDelivery,
 } from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
-import { processDelivery } from '../processors/inbox.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
+import { activitypub } from '@queues/activitypub/queues'
+import { apInboxActivitiesWorkConfig } from '@services/ap-inbox-activities/work-limits'
+import { processDelivery, rearmFailedDeliveries } from '../processors/inbox.mts'
 import {
   approveInstance,
   createApprovedRemoteActor,
@@ -151,6 +155,42 @@ describe('ActivityPub inbox processor', () => {
         candidate => candidate.deliveryId === delivery.deliveryId,
       )
       expect(rearmed?.leaseToken).not.toBe(delivery.leaseToken)
+    } finally {
+      lookup.mockRestore()
+    }
+  })
+
+  it('re-arms a retained failed delivery through the real page and continues a full page', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(apInboxActivitiesWorkConfig, {
+        delivery_transition_recovery_batch_size: 1,
+      }),
+    )
+    const hostname = `missing-${randomUUID()}.invalid`
+    const lookup = stubUnresolvableHostname(hostname)
+    try {
+      await approveInstance(hostname)
+      const { privateKeyPem } = generateRsaSha256KeyPair()
+      const actorUri = `https://${hostname}/users/alice`
+      const delivery = await createSignedDelivery({
+        actorUri,
+        hostname,
+        keyId: `${actorUri}#main-key`,
+        privateKeyPem,
+      })
+      await expect(processDelivery(delivery, { isFinalAttempt: true })).rejects.not.toBeInstanceOf(
+        UnrecoverableError,
+      )
+
+      await expect(rearmFailedDeliveries(uuidBefore(delivery.deliveryId))).resolves.toEqual({
+        enqueued: 1,
+        hasMore: true,
+      })
+
+      const jobs = await readAllQueueJobs(activitypub)
+      expect(
+        jobs.some(job => job.id === `activitypub-inbox-failed-backfill__${delivery.deliveryId}`),
+      ).toBe(true)
     } finally {
       lookup.mockRestore()
     }

@@ -203,7 +203,7 @@ describe('refreshStoryPostForStory', () => {
 
     await expect(
       notifications.searchJobs({
-        name: 'processReconcilePostNotifications',
+        name: 'notifications.processReconcilePostNotifications',
         data: { postId: post.id },
       }),
     ).resolves.toHaveLength(1)

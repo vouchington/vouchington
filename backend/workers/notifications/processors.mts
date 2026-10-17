@@ -11,6 +11,8 @@ import {
   enqueueBulkDeliverNotificationPushIntents,
   enqueueDeliverNotificationPushIntent,
   enqueueContinueNotificationPushIntentReconciliation,
+  enqueueContinueReconcilePostNotifications,
+  enqueueContinueReconcileRssFeedItemNotifications,
   type ReconcileNotificationPushIntentsData,
 } from '@queues/notifications/enqueues'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
@@ -21,6 +23,8 @@ type NotificationProcessorDependencies = {
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueContinueNotificationPushIntentReconciliation: typeof enqueueContinueNotificationPushIntentReconciliation
   enqueueDeliverNotificationPushIntent: typeof enqueueDeliverNotificationPushIntent
+  enqueueContinueReconcilePostNotifications: typeof enqueueContinueReconcilePostNotifications
+  enqueueContinueReconcileRssFeedItemNotifications: typeof enqueueContinueReconcileRssFeedItemNotifications
   listAvailableNotificationPushIntents: typeof listAvailableNotificationPushIntents
   reconcileNotificationsForPost: typeof reconcileNotificationsForPost
   reconcileNotificationsForRssFeedItem: typeof reconcileNotificationsForRssFeedItem
@@ -65,25 +69,46 @@ async function dispatchCreatedNotificationPushes(
   )
 }
 
+/** One bounded page of the post's recipients; a full page queues the next page after its last id. */
 export async function processReconcilePostNotifications(
-  data: { postId: string },
+  data: { postId: string; afterUserId?: string },
   dependencies?: Partial<NotificationProcessorDependencies>,
 ) {
   const reconcile = dependencies?.reconcileNotificationsForPost ?? reconcileNotificationsForPost
-  return reconcile(data.postId, {
+  const result = await reconcile(data.postId, {
+    afterUserId: data.afterUserId,
     onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
   })
+  if (result.nextAfterUserId) {
+    const continueReconcile =
+      dependencies?.enqueueContinueReconcilePostNotifications ??
+      enqueueContinueReconcilePostNotifications
+    await continueReconcile({ postId: data.postId, afterUserId: result.nextAfterUserId })
+  }
+  return result
 }
 
+/** One bounded page of the item's recipients; a full page queues the next page after its last id. */
 export async function processReconcileRssFeedItemNotifications(
-  data: { rssFeedItemId: string },
+  data: { rssFeedItemId: string; afterUserId?: string },
   dependencies?: Partial<NotificationProcessorDependencies>,
 ) {
   const reconcile =
     dependencies?.reconcileNotificationsForRssFeedItem ?? reconcileNotificationsForRssFeedItem
-  return reconcile(data.rssFeedItemId, {
+  const result = await reconcile(data.rssFeedItemId, {
+    afterUserId: data.afterUserId,
     onCreatedNotifications: created => dispatchCreatedNotificationPushes(created, dependencies),
   })
+  if (result.nextAfterUserId) {
+    const continueReconcile =
+      dependencies?.enqueueContinueReconcileRssFeedItemNotifications ??
+      enqueueContinueReconcileRssFeedItemNotifications
+    await continueReconcile({
+      rssFeedItemId: data.rssFeedItemId,
+      afterUserId: result.nextAfterUserId,
+    })
+  }
+  return result
 }
 
 export async function processReconcileNotificationPushIntents(

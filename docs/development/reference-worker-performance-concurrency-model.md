@@ -22,7 +22,7 @@ which scales, and keep their old caps as domain-wide groups of 2 and 1.
 
 `vote-aggregation` is a domain of the shared `background` worker with baseline 10 (it adds 10 to the worker's summed baseline): election tallies, vote weights, vote integrity, topic ratings, metric refresh, and report integrity. The former six baseline-5 workers could run 30 jobs concurrently; a domain-wide group of 10 keeps the former cap, so a backlog here cannot take the background worker's other slots. `WORKER_CONCURRENCY_VOTE_AGGREGATION` no longer exists; use `WORKER_CONCURRENCY_BACKGROUND`.
 
-`activitypub` shares one baseline-10 IO worker across outbound distribution/delivery and inbound durable inbox processing. The prior two baseline-5 workers also allowed ten jobs in total; the shared pool keeps that aggregate limit while allowing either direction to use idle slots. Bursts in either direction can delay the other, and each outbound distribution activity retains its own concurrency-one ordering lane.
+`activitypub` is a domain of the shared `background` worker with baseline 10 (it adds 10 to the worker's summed baseline) across outbound distribution/delivery and inbound durable inbox processing. The prior two baseline-5 workers also allowed ten jobs in total; the shared pool allows either direction to use idle slots. Bursts in either direction can delay the other, and a domain-wide group of 10 keeps the old cap, and each outbound distribution page runs under a durable lease. `follower-distributions` is a domain with baseline 5 and a domain-wide group of 5. `WORKER_CONCURRENCY_ACTIVITYPUB` and `WORKER_CONCURRENCY_FOLLOWER_DISTRIBUTIONS` no longer exist.
 
 ### Worker env knobs
 

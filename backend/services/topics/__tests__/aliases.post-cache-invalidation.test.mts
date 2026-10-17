@@ -242,7 +242,10 @@ async function expectPostCachesInvalidated(postIds: string[]): Promise<void> {
 async function expectPostNotificationReconciliationEnqueued(postIds: string[]): Promise<void> {
   const found = await Promise.all(
     postIds.map(postId =>
-      notifications.searchJobs({ name: 'processReconcilePostNotifications', data: { postId } }),
+      notifications.searchJobs({
+        name: 'notifications.processReconcilePostNotifications',
+        data: { postId },
+      }),
     ),
   )
   expect(found.every(jobs => jobs.length > 0)).toBe(true)

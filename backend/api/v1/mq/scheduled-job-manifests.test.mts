@@ -20,8 +20,8 @@ import {
 const EXPECTED_SCHEDULED_JOBS = [
   'background/account-data-requests-cleanup',
   'background/accountDataRequestRecovery',
-  'activitypub/activitypub-inbox-recovery',
-  'activitypub/activitypub-inbox-cleanup',
+  'background/activitypub-inbox-recovery',
+  'background/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileCopyrightAgentDispatches',
@@ -63,14 +63,14 @@ const EXPECTED_SCHEDULED_JOBS = [
   'memberships/renewalNotificationCheck',
   'memberships/stripeCatalogReconciliation',
   'memberships/stripeEventRecovery',
-  'notifications/community-activity-digest-weekly',
-  'notifications/media-delivery-registry-reconciliation',
-  'notifications/copyright-action-reconciliation',
-  'notifications/copyright-delivery-reconciliation',
-  'notifications/copyright-dsa-statement-reconciliation',
-  'notifications/copyright-evidence-retention',
-  'notifications/copyright-review-target-page',
-  'notifications/notification-push-intent-recovery',
+  'background/community-activity-digest-weekly',
+  'background/media-delivery-registry-reconciliation',
+  'background/copyright-action-reconciliation',
+  'background/copyright-delivery-reconciliation',
+  'background/copyright-dsa-statement-reconciliation',
+  'background/copyright-evidence-retention',
+  'background/copyright-review-target-page',
+  'background/notification-push-intent-recovery',
   'background/reconcile-image-quarantines',
   'background/reconcile-post-moderation',
   'background/oauthAuthorizationExchangeDispatcher',
@@ -99,8 +99,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 20 manifests and 76 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(20)
+  it('imports the exact 18 manifests and 75 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(18)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

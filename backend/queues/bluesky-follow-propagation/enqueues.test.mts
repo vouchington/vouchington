@@ -6,7 +6,9 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-gl
 import {
   disconnectRequestedJobOptions,
   enqueueBackfillBlueskyDisconnectRequests,
+  enqueueBackfillBlueskyDisconnectRequestsContinuation,
   enqueueBackfillBlueskyFollowPropagation,
+  enqueueBackfillBlueskyFollowPropagationContinuation,
   enqueueDisconnectRequested,
   enqueueBulkDisconnectRequested,
   enqueueReconcileBlueskyFollow,
@@ -37,6 +39,8 @@ describe('bluesky follow propagation enqueue helpers', () => {
       attempts: 3,
       backoff: { delay: 5000, type: 'exponential' },
       priority: 10,
+      // The domain-wide group serializes every Bluesky-token job across replicas.
+      ordering: { key: 'bluesky-follow-propagation', concurrency: 1 },
       removeOnComplete: 100,
       removeOnFail: 100,
       deduplication: {
@@ -89,6 +93,7 @@ describe('bluesky follow propagation enqueue helpers', () => {
       attempts: 3,
       backoff: { delay: 5000, type: 'exponential' },
       priority: 100,
+      ordering: { key: 'bluesky-follow-propagation', concurrency: 1 },
       removeOnComplete: 100,
       removeOnFail: 100,
       deduplication: {
@@ -96,6 +101,32 @@ describe('bluesky follow propagation enqueue helpers', () => {
         mode: 'throttle',
         ttl: 3_600_000,
       },
+    })
+  })
+
+  it('names the follow backfill continuation by its cursor pair at dispatcher priority', async () => {
+    const after = { followerUserId: randomUUID(), followeeUserId: randomUUID() }
+
+    const job = await enqueueBackfillBlueskyFollowPropagationContinuation(after)
+
+    expect(job).toMatchObject({
+      id: `backfill_bluesky_follow_propagation__${after.followerUserId}__${after.followeeUserId}`,
+      name: 'bluesky-follow-propagation.backfillBlueskyFollowPropagation',
+      data: { after },
+      opts: { priority: 100, removeOnComplete: true, removeOnFail: true },
+    })
+  })
+
+  it('names the disconnect backfill continuation by its cursor at dispatcher priority', async () => {
+    const afterId = randomUUID()
+
+    const job = await enqueueBackfillBlueskyDisconnectRequestsContinuation(afterId)
+
+    expect(job).toMatchObject({
+      id: `backfill_bluesky_disconnect_requests__${afterId}`,
+      name: 'bluesky-follow-propagation.backfillBlueskyDisconnectRequests',
+      data: { afterId },
+      opts: { priority: 100, removeOnComplete: true, removeOnFail: true },
     })
   })
 

@@ -62,7 +62,7 @@ describe('post.vote', () => {
       ): boolean {
         return jobs.some(
           job =>
-            job.name === 'distributeActivity' &&
+            job.name === 'activitypub.distributeActivity' &&
             (job.data as DistributeActivityData).activityType === activityType &&
             (job.data as Extract<DistributeActivityData, { activityType: 'Like' | 'UndoLike' }>)
               .targetPostId === targetPostId,
@@ -76,7 +76,7 @@ describe('post.vote', () => {
       ): number {
         return jobs.filter(
           job =>
-            job.name === 'distributeActivity' &&
+            job.name === 'activitypub.distributeActivity' &&
             (job.data as DistributeActivityData).activityType === activityType &&
             (job.data as Extract<DistributeActivityData, { activityType: 'Like' | 'UndoLike' }>)
               .targetPostId === targetPostId,
@@ -89,7 +89,7 @@ describe('post.vote', () => {
         activityType: 'Like' | 'UndoLike',
       ): Extract<DistributeActivityData, { activityType: 'Like' | 'UndoLike' }> | undefined {
         return jobs
-          .filter(job => job.name === 'distributeActivity')
+          .filter(job => job.name === 'activitypub.distributeActivity')
           .map(
             job =>
               job.data as Extract<DistributeActivityData, { activityType: 'Like' | 'UndoLike' }>,

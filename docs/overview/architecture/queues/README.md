@@ -6,7 +6,7 @@ The [Bedrock batch queue](bedrock-embeddings-batch/README.md) also runs four pro
 reconciliation roots. They copy reusable text embeddings and recover post follow-up delivery
 in bounded pages, independent of Bedrock capacity.
 
-Media-registry recovery in the [notifications queue](notifications/README.md) dispatches bounded
+Media-registry recovery in the [notifications domain](notifications/README.md) dispatches bounded
 pages through cutoff-scoped continuation jobs. Its durable registry terminalizes abandoned final
 claims for operator replay; continuation retries preserve the same cursor and cutoff. See the
 [media-delivery safety protocol](../services/media-delivery-safety/README.md).
@@ -28,7 +28,7 @@ and unblock writers enqueue changed hostname IDs in PostgreSQL.
 [`background`](background/README.md) is the shared IO queue for background domains of the same
 shape, served by one [worker](workers/background/README.md) that dispatches by `<domain>.<name>`
 through a registry. Pause, retry, and stats are per domain. Moved so far: `ses-inbound`,
-`openai-moderation`, `post-mentions`, `story-post-related-url-projections`, `post-publication`, `vote-aggregation`, `entity-listeners`, `account-lifecycle`, and `article-sync`; the remaining io queues follow under
+`openai-moderation`, `post-mentions`, `story-post-related-url-projections`, `post-publication`, `vote-aggregation`, `entity-listeners`, `account-lifecycle`, `article-sync`, `memberships`, `oauth-authorization-exchange`, and `notifications`; the remaining io queues follow under
 [#2855](https://github.com/vouchington/vouchington/issues/2855).
 
 ## Vote aggregation
@@ -74,4 +74,4 @@ active, so a processor must not enqueue its own continuation under the id its ac
 (`crawl_url_ratelimit__<urlId>__<n>`) and fails the job, so GlideMQ retries it, when the
 replacement add returns no job.
 
-Operator media-registry replay uses the [notifications queue](notifications/README.md#media-delivery-replay) to reopen one UUID page per job, preserving the actor across awaited continuations.
+Operator media-registry replay uses the [notifications domain](notifications/README.md#media-delivery-replay) to reopen one UUID page per job, preserving the actor across awaited continuations.

@@ -1,28 +1,22 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
+  BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
+  BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
+  BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
+  type DisconnectRequestedData,
+  type ReconcileFollowData,
+} from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  BACKFILL_DEDUPLICATION_TTL_MS,
-  BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  PRIORITY_BACKFILL,
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  RECONCILE_FOLLOW_DEDUPLICATION_TTL_MS,
-} from './config.mts'
-import { blueskyFollowPropagation } from './queues.mts'
+import { BACKFILL_DEDUPLICATION_TTL_MS, RECONCILE_FOLLOW_DEDUPLICATION_TTL_MS } from './config.mts'
 
-export type ReconcileFollowData = { followerUserId: string; followeeUserId: string }
-export type DisconnectRequestedData = {
-  userId: string
-  blueskyDid: string
-  linkAuthorizationId: string
-}
+export type { DisconnectRequestedData, ReconcileFollowData }
 
 export function disconnectRequestedJobOptions(data: DisconnectRequestedData): Partial<JobOptions> {
   const logicalId = `disconnect_${data.userId}_${data.linkAuthorizationId}`
   return {
     jobId: logicalId,
-    priority: PRIORITY_DEFAULT,
     deduplication: { id: logicalId, mode: 'simple' },
     removeOnComplete: true,
     removeOnFail: true,
@@ -40,7 +34,6 @@ function reconcileFollowJobOptions(
   followeeUserId: string,
 ): Partial<JobOptions> {
   return {
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `reconcile_${followerUserId}__${followeeUserId}`,
       mode: 'debounce',
@@ -49,72 +42,37 @@ function reconcileFollowJobOptions(
   }
 }
 
-const enqueueReconcileFollowJob = createEnqueueFunction<ReconcileFollowData, 'reconcileFollow'>({
-  defaults: BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  queue: blueskyFollowPropagation,
-  queueName: QUEUE_NAME,
-  jobName: 'reconcileFollow',
-})
+const enqueueReconcileFollowJob = createBackgroundEnqueue(
+  BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
+)
 
 // Used by the backfill processor to bulk-enqueue one reconcileFollow job per candidate pair
 // (@services/bluesky-follows/backfill.mts). Each pair still gets its own debounce dedup id so a
 // backfill run never collapses distinct pairs into a single job.
-export const enqueueBulkReconcileBlueskyFollow = createBulkEnqueueFunction<
-  ReconcileFollowData,
-  ReconcileFollowData,
-  'reconcileFollow'
->({
-  defaults: BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  queue: blueskyFollowPropagation,
-  queueName: QUEUE_NAME,
-  jobName: 'reconcileFollow',
-  buildJob: data => ({
+export const enqueueBulkReconcileBlueskyFollow = createBackgroundBulkEnqueue(
+  BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB,
+  (data: ReconcileFollowData) => ({
     data,
     opts: reconcileFollowJobOptions(data.followerUserId, data.followeeUserId),
   }),
-})
+)
 
-const enqueueDisconnectRequestedJob = createEnqueueFunction<
-  DisconnectRequestedData,
-  'disconnectRequested'
->({
-  defaults: BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  queue: blueskyFollowPropagation,
-  queueName: QUEUE_NAME,
-  jobName: 'disconnectRequested',
-})
+const enqueueDisconnectRequestedJob = createBackgroundEnqueue(
+  BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
+)
 
-export const enqueueBulkDisconnectRequested = createBulkEnqueueFunction<
-  DisconnectRequestedData,
-  DisconnectRequestedData,
-  'disconnectRequested'
->({
-  defaults: BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  queue: blueskyFollowPropagation,
-  queueName: QUEUE_NAME,
-  jobName: 'disconnectRequested',
-  buildJob: data => ({ data, opts: disconnectRequestedJobOptions(data) }),
-})
+export const enqueueBulkDisconnectRequested = createBackgroundBulkEnqueue(
+  BLUESKY_FOLLOW_PROPAGATION_DISCONNECT_REQUESTED_JOB,
+  (data: DisconnectRequestedData) => ({ data, opts: disconnectRequestedJobOptions(data) }),
+)
 
-const enqueueBackfillBlueskyFollowPropagationJob = createEnqueueFunction<
-  Record<string, never>,
-  'backfillBlueskyFollowPropagation'
->({
-  defaults: BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  queue: blueskyFollowPropagation,
-  queueName: QUEUE_NAME,
-  jobName: 'backfillBlueskyFollowPropagation',
-})
+const enqueueBackfillBlueskyFollowPropagationJob = createBackgroundEnqueue(
+  BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,
+)
 
-const enqueueBackfillBlueskyDisconnectRequestsJob = createEnqueueFunction<
-  Record<string, never>,
-  'backfillBlueskyDisconnectRequests'
->({
-  defaults: BLUESKY_FOLLOW_PROPAGATION_DEFAULTS,
-  queue: blueskyFollowPropagation,
-  queueName: QUEUE_NAME,
-  jobName: 'backfillBlueskyDisconnectRequests',
-})
+const enqueueBackfillBlueskyDisconnectRequestsJob = createBackgroundEnqueue(
+  BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
+)
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
@@ -136,7 +94,6 @@ export function enqueueDisconnectRequested(data: DisconnectRequestedData): Enque
 
 export function enqueueBackfillBlueskyFollowPropagation(): EnqueueReturnType {
   return enqueueBackfillBlueskyFollowPropagationJob({}, {
-    priority: PRIORITY_BACKFILL,
     deduplication: {
       id: 'backfill_bluesky_follow_propagation',
       mode: 'throttle',
@@ -145,13 +102,34 @@ export function enqueueBackfillBlueskyFollowPropagation(): EnqueueReturnType {
   } satisfies Partial<JobOptions>)
 }
 
+// A continuation carries the last pair of the page before it. Its job id is that cursor, so a
+// retried backfill cannot enqueue a second continuation, and a finished record releases the id.
+export function enqueueBackfillBlueskyFollowPropagationContinuation(
+  after: ReconcileFollowData,
+): EnqueueReturnType {
+  return enqueueBackfillBlueskyFollowPropagationJob({ after }, {
+    jobId: `backfill_bluesky_follow_propagation__${after.followerUserId}__${after.followeeUserId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  } satisfies Partial<JobOptions>)
+}
+
 export function enqueueBackfillBlueskyDisconnectRequests(): EnqueueReturnType {
   return enqueueBackfillBlueskyDisconnectRequestsJob({}, {
-    priority: PRIORITY_BACKFILL,
     deduplication: {
       id: 'backfill_bluesky_disconnect_requests',
       mode: 'throttle',
       ttl: BACKFILL_DEDUPLICATION_TTL_MS,
     },
+  } satisfies Partial<JobOptions>)
+}
+
+export function enqueueBackfillBlueskyDisconnectRequestsContinuation(
+  afterId: string,
+): EnqueueReturnType {
+  return enqueueBackfillBlueskyDisconnectRequestsJob({ afterId }, {
+    jobId: `backfill_bluesky_disconnect_requests__${afterId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
   } satisfies Partial<JobOptions>)
 }

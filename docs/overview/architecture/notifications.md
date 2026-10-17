@@ -10,12 +10,12 @@ The fan-out pipeline flows from durable publication reconciliation to per-channe
 flowchart TD
   E["Post, author, community, or RSS change"] --> O["post publication outbox"]
   O --> Q["post-publication queue"]
-  Q --> J["notifications queue (reconcile-post / reconcile-rss-feed-item jobs)"]
+  Q --> J["background queue, notifications domain (reconcile-post / reconcile-rss-feed-item jobs)"]
   J --> S["notifications service (reconcileNotificationsForPost / ForRssFeedItem)"]
   S --> I["Insert or prune subscription notifications"]
   I --> IA["In-app: row visible in /my/notifications"]
   I --> T["notification trigger creates durable push intent"]
-  T --> D["notifications queue (deliver-push-intent / reconcile-push-intents)"]
+  T --> D["background queue, notifications domain (deliver-push-intent / reconcile-push-intents)"]
   D --> W["Browser push via Web Push API (VAPID)"]
 ```
 
@@ -92,7 +92,7 @@ known generation, rejects mismatches, and remains retryable after a transient
 authentication-bootstrap failure. Ownership bootstrap reads use the primary database so a newly
 created generation cannot be mistaken for a missing or stale owner during replica lag.
 
-Post-publication owns subscription reconciliation and notification dispatch; the notifications queue
+Post-publication owns subscription reconciliation and notification dispatch; the notifications domain
 owns push delivery and recovery. Required env vars: `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`,
 `WEB_PUSH_SUBJECT`.
 

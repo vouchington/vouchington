@@ -1,46 +1,27 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import type {
+  CommunityActivityDigestBatchData,
+  CommunityActivityDigestDispatchData,
+} from '@queues/background/enqueues/notifications-domain'
+import {
+  NOTIFICATIONS_DIGEST_BATCH_JOB,
+  NOTIFICATIONS_DIGEST_DISPATCH_JOB,
+  NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
 import { notifications } from '../queues.mts'
 import { COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS } from '@voucha/types/community-activity-digest'
 
 const FIVE_MINUTES_MS = 5 * 60 * 1000
 
-export type CommunityActivityDigestBatchData = {
-  windowStart: string
-  windowEnd: string
-  leaseToken: string
-  afterUserId?: string
-}
+export type { CommunityActivityDigestBatchData, CommunityActivityDigestDispatchData }
 
-export type CommunityActivityDigestDispatchData = {
-  windowStart: string
-  windowEnd: string
-  leaseToken: string
-}
-
-const enqueueDispatchJob = createEnqueueFunction<
-  CommunityActivityDigestDispatchData,
-  'processCommunityActivityDigestDispatch'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processCommunityActivityDigestDispatch',
-})
-const enqueueScheduleTickJob = createEnqueueFunction<
-  Record<string, never>,
-  'processCommunityActivityDigestScheduleTick'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processCommunityActivityDigestScheduleTick',
-})
-
-const enqueueBatchJob = createEnqueueFunction<
-  CommunityActivityDigestBatchData,
-  'processCommunityActivityDigestBatch'
->({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processCommunityActivityDigestBatch' })
+const enqueueDispatchJob = createBackgroundEnqueue(NOTIFICATIONS_DIGEST_DISPATCH_JOB)
+const enqueueScheduleTickJob = createBackgroundEnqueue(NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB)
+const enqueueBatchJob = createBackgroundEnqueue(NOTIFICATIONS_DIGEST_BATCH_JOB)
 
 export function getCommunityActivityDigestDispatchData(
   now = new Date(),
@@ -58,21 +39,14 @@ export function enqueueCommunityActivityDigestDispatch(
   options: { queue?: typeof notifications } = {},
 ): EnqueueReturnType {
   const enqueue = options.queue
-    ? createEnqueueFunction<
-        CommunityActivityDigestDispatchData,
-        'processCommunityActivityDigestDispatch'
-      >({
+    ? createEnqueueFunction<CommunityActivityDigestDispatchData, string>({
         queue: options.queue,
-        queueName: QUEUE_NAME,
-        jobName: 'processCommunityActivityDigestDispatch',
+        queueName: BACKGROUND_QUEUE_NAME,
+        jobName: NOTIFICATIONS_DIGEST_DISPATCH_JOB.name,
+        defaults: NOTIFICATIONS_DIGEST_DISPATCH_JOB.options,
       })
     : enqueueDispatchJob
   return enqueue(data, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processCommunityActivityDigestDispatch__${data.windowStart}__${data.leaseToken}`,
       mode: 'throttle',
@@ -82,24 +56,13 @@ export function enqueueCommunityActivityDigestDispatch(
 }
 
 export function enqueueCommunityActivityDigestScheduleTick(): EnqueueReturnType {
-  return enqueueScheduleTickJob({}, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
-  } satisfies Partial<JobOptions>)
+  return enqueueScheduleTickJob({})
 }
 
 export function enqueueCommunityActivityDigestBatch(
   data: CommunityActivityDigestBatchData,
 ): EnqueueReturnType {
   return enqueueBatchJob(data, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `processCommunityActivityDigestBatch__${data.windowStart}__${data.leaseToken}__${data.afterUserId ?? 'start'}`,
       mode: 'throttle',

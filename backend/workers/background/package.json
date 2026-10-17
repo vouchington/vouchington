@@ -28,8 +28,12 @@
     "@queues/ses-inbound": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",
     "@workers/account-lifecycle": "workspace:^",
+    "@workers/activitypub": "workspace:^",
     "@workers/article-sync": "workspace:^",
+    "@workers/bluesky-follow-propagation": "workspace:^",
     "@workers/entity-listeners": "workspace:^",
+    "@workers/follower-distributions": "workspace:^",
+    "@workers/notifications": "workspace:^",
     "@workers/oauth-authorization-exchange": "workspace:^",
     "@workers/openai-moderation": "workspace:^",
     "@workers/post-mentions": "workspace:^",
@@ -40,7 +44,18 @@
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {
+    "@modules/activitypub-uris": "workspace:^",
+    "@modules/http-signatures": "workspace:^",
+    "@queues/notifications": "workspace:^",
+    "@services/activitypub-delivery": "workspace:^",
+    "@services/ap-actor-keys": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
+    "@services/bookmarks": "workspace:^",
     "@services/entity-relations": "workspace:^",
+    "@services/follower-distributions": "workspace:^",
+    "@services/notifications": "workspace:^",
+    "@services/remote-actors": "workspace:^",
+    "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -16,7 +16,7 @@ function categoryNotificationCount(
 ): number {
   return jobs.filter(
     job =>
-      job.name === 'processReconcilePostNotifications' &&
+      job.name === 'notifications.processReconcilePostNotifications' &&
       (job.data as { postId: string }).postId === postId,
   ).length
 }

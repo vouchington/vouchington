@@ -1,41 +1,30 @@
-import { getFollowerDistributionsWorkLimit } from './work-limits.mts'
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getFollowerDistributionsWorkLimit } from './work-limits.mts'
 
-export async function* streamIncompleteFollowerDistributionIdBatches(): AsyncGenerator<
-  string[],
-  void,
-  unknown
-> {
-  const batchSize = getFollowerDistributionsWorkLimit('backfill_batch_size')
-  yield* streamIncompleteFollowerDistributionIdBatchesFromRows(
-    createAsyncGeneratorFromCursor<{ id: string }>(
-      sql`/* streamIncompleteFollowerDistributionIdBatches */
-        SELECT id
-        FROM follower_distributions
-        WHERE completed_at IS NULL
-          AND failed_at IS NULL
-        ORDER BY id
-      `,
-      { batchSize: batchSize },
-    ),
-    batchSize,
+export type FollowerDistributionIdPage = { ids: string[]; hasMore: boolean }
+
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
+/**
+ * One page of incomplete, unfailed distribution ids after `afterId`, in id order. `hasMore` is true
+ * when the page is full, so the caller continues from its last id.
+ */
+export async function listIncompleteFollowerDistributionIdPage(
+  afterId?: string,
+): Promise<FollowerDistributionIdPage> {
+  const limit = getFollowerDistributionsWorkLimit('backfill_batch_size')
+  const { rows } = await read<{ id: string }>(
+    sql`/* listIncompleteFollowerDistributionIdPage */
+      SELECT id
+      FROM follower_distributions
+      WHERE completed_at IS NULL
+        AND failed_at IS NULL
+        AND id > ${afterId ?? START_OF_IDS}::uuid
+      ORDER BY id
+      LIMIT ${limit}
+    `,
   )
-}
-
-export async function* streamIncompleteFollowerDistributionIdBatchesFromRows(
-  rows: AsyncIterable<{ id: string }>,
-  batchSize = getFollowerDistributionsWorkLimit('backfill_batch_size'),
-): AsyncGenerator<string[], void, unknown> {
-  let batch: string[] = []
-  for await (const row of rows) {
-    batch.push(row.id)
-    if (batch.length >= batchSize) {
-      yield batch
-      batch = []
-    }
-  }
-  if (batch.length > 0) {
-    yield batch
-  }
+  return { ids: rows.map(row => row.id), hasMore: rows.length === limit }
 }

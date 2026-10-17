@@ -1,5 +1,5 @@
 import type { PoolClient } from '@data-stores/psql'
-import type { CreatedNotification } from './reconcile-batches.mts'
+import type { CreatedNotification, RecipientPageRange } from './reconcile-batches.mts'
 import { reconcileRssFeedItemContentNotificationVisibility } from './content-visibility-writes.mts'
 import { truncateText } from './shared.mts'
 
@@ -113,12 +113,17 @@ export async function pruneRssFeedItemNotificationsExceptRecipients(
   isContentEligible: boolean,
   client: PoolClient,
   recipientTable: string,
+  range: RecipientPageRange,
 ): Promise<number> {
-  const prunedForContentVisibility = await reconcileRssFeedItemContentNotificationVisibility(
-    rssFeedItemId,
-    isContentEligible,
-    client,
-  )
+  // Content visibility spans the whole item, so only the first page applies it.
+  const prunedForContentVisibility =
+    range.afterUserId === null
+      ? await reconcileRssFeedItemContentNotificationVisibility(
+          rssFeedItemId,
+          isContentEligible,
+          client,
+        )
+      : 0
   if (!isContentEligible) return prunedForContentVisibility
 
   const { rowCount } = await client.query(
@@ -130,13 +135,15 @@ export async function pruneRssFeedItemNotificationsExceptRecipients(
       AND n.delivery_type = 'subscription'
       AND n.deleted_at IS NULL
       AND n.read_at IS NULL
+      AND ($2::uuid IS NULL OR n.user_id > $2)
+      AND ($3::uuid IS NULL OR n.user_id <= $3)
       AND NOT EXISTS (
         SELECT 1
         FROM ${recipientTable} recipients
         WHERE recipients.user_id = n.user_id
       )
   `,
-    [rssFeedItemId],
+    [rssFeedItemId, range.afterUserId, range.throughUserId],
   )
   return prunedForContentVisibility + (rowCount ?? 0)
 }

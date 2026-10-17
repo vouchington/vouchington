@@ -1,53 +1,27 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  NOTIFICATIONS_RECONCILE_DSA_JOB,
+  NOTIFICATIONS_SUBMIT_DSA_JOB,
+} from '@queues/background/enqueues/notifications-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
-import { PRIORITY_DEFAULT, QUEUE_NAME } from '../config.mts'
-import { notifications } from '../queues.mts'
 
 const FIVE_MINUTES_MS = 5 * 60 * 1000
-const enqueueSubmit = createEnqueueFunction<
-  { submissionId: string },
-  'processSubmitDsaStatementOfReasons'
->({ queue: notifications, queueName: QUEUE_NAME, jobName: 'processSubmitDsaStatementOfReasons' })
-const submitOptions = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-  priority: PRIORITY_DEFAULT,
-}
-export const enqueueBulkSubmitDsaStatementOfReasons = createBulkEnqueueFunction<
-  string,
-  { submissionId: string },
-  'processSubmitDsaStatementOfReasons'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processSubmitDsaStatementOfReasons',
-  buildJob: submissionId => ({ data: { submissionId }, opts: submitOptions }),
-})
-const enqueueReconcile = createEnqueueFunction<
-  Record<string, never>,
-  'processReconcileDsaStatementSubmissions'
->({
-  queue: notifications,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcileDsaStatementSubmissions',
-})
+const enqueueSubmit = createBackgroundEnqueue(NOTIFICATIONS_SUBMIT_DSA_JOB)
+export const enqueueBulkSubmitDsaStatementOfReasons = createBackgroundBulkEnqueue(
+  NOTIFICATIONS_SUBMIT_DSA_JOB,
+  (submissionId: string) => ({ data: { submissionId } }),
+)
+const enqueueReconcile = createBackgroundEnqueue(NOTIFICATIONS_RECONCILE_DSA_JOB)
 
 /** The durable item lease and ledger fence duplicate jobs; replay must enqueue immediately. */
 export function enqueueSubmitDsaStatementOfReasons(submissionId: string): EnqueueReturnType {
-  return enqueueSubmit({ submissionId }, submitOptions)
+  return enqueueSubmit({ submissionId })
 }
 
 export function enqueueReconcileDsaStatementSubmissions(): EnqueueReturnType {
   return enqueueReconcile(
     {},
     {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DEFAULT,
       deduplication: {
         id: 'copyright-dsa-statement-reconciliation',
         mode: 'throttle',

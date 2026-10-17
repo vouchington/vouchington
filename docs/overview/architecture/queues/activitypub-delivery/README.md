@@ -7,11 +7,11 @@ followers, then delivers the signed AS2 activity to each follower's inbox (Phase
 
 ## Queue
 
-- Queue name: `activitypub`
+- Queue: the `activitypub` domain of the shared [`background` queue](../background/README.md); job names are `activitypub.<name>`
 
 ## Jobs
 
-- `distributeActivity`
+- `activitypub.distributeActivity`
   - One job per social action (a Follow relation write, or a Like/Undo-Like vote).
   - The caller supplies the PostgreSQL-backed activity ID. Follow retries reuse the active
     relation generation and a re-follow rotates it; Like retries reuse the current vote
@@ -31,9 +31,9 @@ followers, then delivers the signed AS2 activity to each follower's inbox (Phase
   - Claims a bounded page with an expiring token, then bulk-enqueues its distinct inbox URLs.
     A token-fenced compare-and-swap commits the last remote actor
     only after that enqueue succeeds, then enqueues one continuation when another page remains.
-    `distributeActivity` jobs are ordered at concurrency `1` per activity ID, so a large fan-out
-    yields between pages instead of occupying a worker for its entire follower set.
-- `deliverActivity`
+    A distribute page runs under a durable lease (a second holder gets `busy`), and
+    the domain-wide group of 10 keeps a large fan-out from occupying more than its share of the shared worker.
+- `activitypub.deliverActivity`
   - One job per follower inbox. Builds the AS2 activity JSON (`@services/activitypub-delivery`)
     and signs + `POST`s it to the inbox.
   - Pre-upgrade Undo jobs missing `originalActivityId` are terminally discarded before federation

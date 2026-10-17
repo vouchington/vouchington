@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestUserDirect,
   getTestPostgresAdvisoryLockHolderProcessId,
@@ -7,6 +7,8 @@ import {
   readEnqueuedJob,
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
 import { getBlueskyLinkedAccountForUser } from '@services/bluesky-accounts'
 import {
@@ -16,11 +18,12 @@ import {
 import {
   hasPendingBlueskyDisconnect,
   requestBlueskyDisconnect,
-  streamPendingBlueskyDisconnectBatches,
+  listPendingBlueskyDisconnectPage,
   type BlueskyDisconnectRequest,
 } from './disconnect-request.mts'
 import { enqueueDisconnectRequested } from '@queues/bluesky-follow-propagation/enqueues'
 import { BLUESKY_DISCONNECT_LOCK_NAMESPACE } from './disconnect-lock.mts'
+import { blueskyFollowsWorkConfig } from './work-limits.mts'
 
 describe('durable Bluesky disconnect', () => {
   it('persists and queues the exact generation without synchronous cleanup', async () => {
@@ -54,12 +57,14 @@ describe('durable Bluesky disconnect', () => {
     expect(await hasPendingBlueskyDisconnect(expected)).toBe(true)
     const jobId = `disconnect_${user.id}_${linked.link_authorization_id}`
     const job = await blueskyFollowPropagation.getJob(jobId)
-    expect(job?.name).toBe('disconnectRequested')
+    expect(job?.name).toBe('bluesky-follow-propagation.disconnectRequested')
     expect(job?.data).toEqual(expected)
     expect(job?.opts).toMatchObject({
       attempts: 3,
       jobId,
       priority: 10,
+      // The domain-wide group serializes every Bluesky-token job across replicas.
+      ordering: { key: 'bluesky-follow-propagation', concurrency: 1 },
       deduplication: {
         id: jobId,
         mode: 'simple',
@@ -67,7 +72,7 @@ describe('durable Bluesky disconnect', () => {
     })
     expect(await readEnqueuedJob(blueskyFollowPropagation, unrelatedEnqueued)).toMatchObject({
       id: unrelatedJob.id,
-      name: 'disconnectRequested',
+      name: 'bluesky-follow-propagation.disconnectRequested',
       data: unrelated,
       opts: unrelatedJobOptions,
     })
@@ -106,9 +111,7 @@ describe('durable Bluesky disconnect', () => {
     expect(cleanup).toHaveBeenCalledExactlyOnceWith(user.id, expected)
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
     expect(await hasPendingBlueskyDisconnect(expected)).toBe(true)
-    const pending: BlueskyDisconnectRequest[] = []
-    for await (const batch of streamPendingBlueskyDisconnectBatches()) pending.push(...batch)
-    expect(pending).toContainEqual(expected)
+    expect(await listPendingFrom(uuidBefore(linked.link_authorization_id))).toContainEqual(expected)
   })
 
   it('serializes accepted cleanup for an exact generation', async () => {
@@ -182,7 +185,10 @@ describe('durable Bluesky disconnect', () => {
     }
   })
 
-  it('streams full disconnect batches before the final partial batch', async () => {
+  it('pages pending disconnects by authorization id, never over the page size, covering each once', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
+    )
     const first = await createTestUserDirect()
     const second = await createTestUserDirect()
     await insertTestBlueskyLinkedAccount({ userId: first.id })
@@ -191,12 +197,51 @@ describe('durable Bluesky disconnect', () => {
       requestBlueskyDisconnect(first.id),
       requestBlueskyDisconnect(second.id),
     ])
+    const ids = expected.map(request => request.linkAuthorizationId).toSorted()
 
-    const batches: BlueskyDisconnectRequest[][] = []
-    for await (const batch of streamPendingBlueskyDisconnectBatches(1)) batches.push(batch)
+    const seen: BlueskyDisconnectRequest[] = []
+    let afterId: string | undefined = uuidBefore(ids[0]!)
+    for (;;) {
+      const page = await listPendingBlueskyDisconnectPage(afterId)
+      expect(page.requests.length).toBeLessThanOrEqual(1)
+      expect(page.hasMore).toBe(page.requests.length === 1)
+      seen.push(...page.requests)
+      if (
+        !page.hasMore ||
+        ids.every(id => seen.some(request => request.linkAuthorizationId === id))
+      )
+        break
+      afterId = page.requests.at(-1)!.linkAuthorizationId
+    }
 
-    expect(batches.length).toBeGreaterThanOrEqual(2)
-    expect(batches.every(batch => batch.length === 1)).toBe(true)
-    expect(batches.flat()).toEqual(expect.arrayContaining(expected))
+    const authorizationIds = seen.map(request => request.linkAuthorizationId)
+    expect(authorizationIds).toEqual(authorizationIds.toSorted())
+    expect(new Set(authorizationIds).size).toBe(authorizationIds.length)
+    expect(seen).toEqual(expect.arrayContaining(expected))
+  })
+
+  it('starts from the first authorization id when no cursor is given', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(blueskyFollowsWorkConfig, { backfill_batch_size: 1 }),
+    )
+    const user = await createTestUserDirect()
+    await insertTestBlueskyLinkedAccount({ userId: user.id })
+    await requestBlueskyDisconnect(user.id)
+
+    const page = await listPendingBlueskyDisconnectPage()
+
+    expect(page.requests).toHaveLength(1)
+    expect(page.hasMore).toBe(true)
   })
 })
+
+async function listPendingFrom(afterId: string): Promise<BlueskyDisconnectRequest[]> {
+  const pending: BlueskyDisconnectRequest[] = []
+  let cursor: string | undefined = afterId
+  for (;;) {
+    const page = await listPendingBlueskyDisconnectPage(cursor)
+    pending.push(...page.requests)
+    if (!page.hasMore) return pending
+    cursor = page.requests.at(-1)!.linkAuthorizationId
+  }
+}

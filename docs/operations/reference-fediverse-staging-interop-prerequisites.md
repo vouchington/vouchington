@@ -3,7 +3,7 @@
 [Back to Fediverse Staging Interoperability - Runbook](fediverse-staging-interop.md#prerequisites)
 
 - Confirm the API, IO worker, and Cloudflare Worker all run `DEPLOYED_SHA`.
-- Confirm the `activitypub` queue/worker is registered and healthy.
+- Confirm the `activitypub` domain of the `background` queue/worker is registered and healthy.
 - Confirm API egress proxy routing is disabled for the direct baseline.
 - Use dedicated test accounts. Confirm access to remote request logs or database state for each
   instance, plus Voucha request logs and the queue-monitoring API.

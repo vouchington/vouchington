@@ -21,7 +21,7 @@ function followData(activityId = randomUUID()): DistributeActivityData {
 }
 
 describe('ActivityPub delivery enqueues', () => {
-  it('orders a single distribution without deduplication', async () => {
+  it('leaves a single distribution to the domain group without deduplication', async () => {
     const data = followData()
 
     await enqueueDistributeActivity(data)
@@ -31,18 +31,18 @@ describe('ActivityPub delivery enqueues', () => {
     )
     expect(jobs).toHaveLength(1)
     expect(jobs[0]).toMatchObject({
-      name: 'distributeActivity',
+      name: 'activitypub.distributeActivity',
       data,
       opts: {
         priority: 10,
-        ordering: { key: `activitypub-distribute__${data.activityId}`, concurrency: 1 },
+        ordering: { key: 'activitypub', concurrency: 10 },
       },
     })
     expect(jobs[0]!.opts.deduplication).toBeUndefined()
     expect(jobs[0]!.opts.jobId).toBeUndefined()
   })
 
-  it('orders every bulk distribution by its activity identity', async () => {
+  it('leaves every bulk distribution to the domain group', async () => {
     const inputs = [followData(), followData()]
 
     await enqueueBulkDistributeActivity(inputs)
@@ -53,10 +53,9 @@ describe('ActivityPub delivery enqueues', () => {
     )
     expect(jobs).toHaveLength(2)
     for (const job of jobs) {
-      const activityId = (job.data as { activityId: string }).activityId
       expect(job.opts).toMatchObject({
         priority: 10,
-        ordering: { key: `activitypub-distribute__${activityId}`, concurrency: 1 },
+        ordering: { key: 'activitypub', concurrency: 10 },
       })
       expect(job.opts.deduplication).toBeUndefined()
       expect(job.opts.jobId).toBeUndefined()
@@ -71,7 +70,7 @@ describe('ActivityPub delivery enqueues', () => {
 
     const jobs = (await readAllQueueJobs(activitypub)).filter(
       job =>
-        job.name === 'deliverActivity' &&
+        job.name === 'activitypub.deliverActivity' &&
         (job.data as { activityId?: string }).activityId === data.activityId,
     )
     expect(jobs).toHaveLength(1)
@@ -82,7 +81,7 @@ describe('ActivityPub delivery enqueues', () => {
         mode: 'simple',
       },
     })
-    expect(jobs[0]!.opts.ordering).toBeUndefined()
+    expect(jobs[0]!.opts.ordering).toEqual({ key: 'activitypub', concurrency: 10 })
   })
 
   describe('Accept activity id', () => {

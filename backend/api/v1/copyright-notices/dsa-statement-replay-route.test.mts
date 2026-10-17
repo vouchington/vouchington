@@ -47,7 +47,7 @@ describe('POST copyright DSA statement replay', () => {
     expect(
       (await readAllQueueJobs(notifications)).filter(
         job =>
-          job.name === 'processSubmitDsaStatementOfReasons' &&
+          job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
           (job.data as { submissionId?: string }).submissionId === id,
       ),
     ).toEqual([])
@@ -96,7 +96,7 @@ describe('POST copyright DSA statement replay with operator submission gate enab
     expect(
       (await readAllQueueJobs(notifications)).filter(
         job =>
-          job.name === 'processSubmitDsaStatementOfReasons' &&
+          job.name === 'notifications.processSubmitDsaStatementOfReasons' &&
           (job.data as { submissionId?: string }).submissionId === id,
       ),
     ).toHaveLength(1)

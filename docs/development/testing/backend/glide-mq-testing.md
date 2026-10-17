@@ -76,7 +76,7 @@ const waiting = await notifications.getJobs('waiting')
 
 // Right: any state, scoped by name and data
 const jobs = await notifications.searchJobs({
-  name: 'processReconcilePostNotifications',
+  name: 'notifications.processReconcilePostNotifications',
   data: { postId },
 })
 ```

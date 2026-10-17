@@ -2,6 +2,8 @@ import type { PoolClient } from '@data-stores/psql'
 import onError from '@modules/on-error'
 import {
   type ReconcileNotificationsOptions,
+  type ReconcileNotificationsResult,
+  type RecipientPage,
   reconcileNotificationBatches,
 } from './reconcile-batches.mts'
 import {
@@ -16,10 +18,7 @@ import { POST_NOTIFICATION_RECIPIENT_VISIBILITY } from './reconcile-post-recipie
 import { POST_NOTIFICATION_RECIPIENT_COMMUNITY_VISIBILITY } from './reconcile-post-recipient-community-visibility.mts'
 import { pruneMissingPostContentNotifications } from './content-visibility-writes.mts'
 
-type ReconcilePostNotificationsResult = {
-  created: number
-  pruned: number
-}
+type ReconcilePostNotificationsResult = ReconcileNotificationsResult
 export async function reconcileNotificationsForPost(
   postId: string,
   options: ReconcileNotificationsOptions = {},
@@ -31,17 +30,18 @@ export async function reconcileNotificationsForPost(
     return await reconcileNotificationBatches(
       {
         batchQueryComment: 'selectPostNotificationRecipientBatch',
-        createRecipients: (client, recipientTable) =>
-          populatePostNotificationRecipients(client, recipientTable, post),
+        createRecipients: (client, recipientTable, page) =>
+          populatePostNotificationRecipients(client, recipientTable, post, page),
         insertBatch: (client, recipientIds, createdTable) =>
           insertPostNotificationsForRecipients(post, recipientIds, client, createdTable),
-        prune: (client, recipientTable) =>
+        prune: (client, recipientTable, range) =>
           prunePostNotificationsExceptRecipients(
             post.id,
             post.is_content_eligible,
             post.is_manual_send_content_eligible,
             client,
             recipientTable,
+            range,
           ),
       },
       options,
@@ -66,6 +66,7 @@ async function populatePostNotificationRecipients(
   client: PoolClient,
   recipientTable: string,
   post: PostNotificationSnapshot,
+  page: RecipientPage,
 ): Promise<void> {
   if (!post.is_content_eligible) return
 
@@ -135,10 +136,12 @@ async function populatePostNotificationRecipients(
     FROM recipients
     WHERE user_id IS NOT NULL
       AND ($4::uuid IS NULL OR user_id != $4)
+      AND ($11::uuid IS NULL OR user_id > $11)
       AND ${POST_NOTIFICATION_RECIPIENT_VISIBILITY}
       AND ${POST_NOTIFICATION_RECIPIENT_COMMUNITY_VISIBILITY}
     -- no-mistakes: deadlock-safe -- random session-private temp table has no schema catalog entry.
     ORDER BY user_id
+    LIMIT $12
     ON CONFLICT (user_id) DO NOTHING
   `,
     [
@@ -152,6 +155,8 @@ async function populatePostNotificationRecipients(
       post.root_created_by_id,
       post.root_privacy,
       post.root_broadcast,
+      page.afterUserId,
+      page.limit,
     ],
   )
 }

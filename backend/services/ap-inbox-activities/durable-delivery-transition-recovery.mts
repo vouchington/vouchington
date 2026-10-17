@@ -1,7 +1,11 @@
 import { getApInboxActivitiesWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import {
+  observeSharedDbScope,
+  sharedDbCursorScope,
+  sharedDbIdsScope,
+} from '@data-stores/psql/shared-db-scope-observer'
 import type { RecoverableActivityPubInboxDelivery } from './durable-delivery-transition-contract.mts'
 
 export async function recoverActivityPubInboxDeliveries(
@@ -47,18 +51,27 @@ export async function recoverActivityPubInboxDeliveries(
   return mapRecoverableRows(rows)
 }
 
+// Sorts before every UUID, so a first page needs no separate "no cursor" predicate.
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
+/** Re-arms one page of failed deliveries in id order after `afterId` (none: from the start). */
 export async function rearmFailedActivityPubInboxDeliveries(
   deliveryIds?: readonly string[],
+  afterId?: string,
 ): Promise<RecoverableActivityPubInboxDelivery[]> {
   const WORK_PAGE_SIZE = getApInboxActivitiesWorkLimit('delivery_transition_recovery_batch_size')
   if (deliveryIds?.length === 0) return []
-  observeSharedDbScope('rearmFailedActivityPubInboxDeliveries', sharedDbIdsScope(deliveryIds))
+  observeSharedDbScope(
+    'rearmFailedActivityPubInboxDeliveries',
+    deliveryIds ? sharedDbIdsScope(deliveryIds) : sharedDbCursorScope(afterId),
+  )
   const idScope = deliveryIds ? [...deliveryIds] : null
   const { rows } = await write(sql`/* rearmFailedActivityPubInboxDeliveries */
     WITH candidates AS (
       SELECT delivery.id
       FROM activitypub_inbox_delivery_work_items delivery
       WHERE delivery.failed_at IS NOT NULL
+        AND delivery.id > ${afterId ?? START_OF_IDS}::uuid
         AND (${idScope}::uuid[] IS NULL OR delivery.id = ANY(${idScope}::uuid[]))
         AND delivery.retention_expires_at > CURRENT_TIMESTAMP
       ORDER BY delivery.id

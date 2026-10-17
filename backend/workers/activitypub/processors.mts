@@ -1,31 +1,27 @@
 import { boundRateLimitDeferral } from '@modules/queue-errors'
 import type { Job } from 'glide-mq'
-import type { DistributeActivityData } from '@queues/activitypub/enqueues/delivery'
+import type {
+  DeliverActivityData,
+  DistributeActivityData,
+} from '@queues/background/enqueues/activitypub-domain'
 import type { deliverActivityToInbox } from '@services/activitypub-delivery'
 import { distributeActivity, deliverActivity } from './processors/delivery.mts'
-import {
-  processActivityPubInboxJob,
-  type ActivityPubInboxJobProcessors,
-} from './processors/inbox-job.mts'
 
-export async function processActivityPubJob(
-  job: Job,
-  dependencies: {
-    deliverActivityToInbox?: typeof deliverActivityToInbox
-    inboxProcessors?: ActivityPubInboxJobProcessors
-  } = {},
+export async function processDistributeActivityJob(
+  job: Pick<Job<DistributeActivityData>, 'data' | 'moveToDelayed'>,
 ): Promise<unknown> {
-  if (job.name === 'distributeActivity') {
-    const result = await distributeActivity(job.data as DistributeActivityData)
-    if (result.retryAfterMs !== undefined) {
-      await job.moveToDelayed(Date.now() + result.retryAfterMs)
-    }
-    return result
+  const result = await distributeActivity(job.data)
+  if (result.retryAfterMs !== undefined) {
+    await job.moveToDelayed(Date.now() + result.retryAfterMs)
   }
-  if (job.name === 'deliverActivity') {
-    return boundRateLimitDeferral(job, async () =>
-      deliverActivity(job.data as never, dependencies.deliverActivityToInbox ? dependencies : {}),
-    )
-  }
-  return processActivityPubInboxJob(job, dependencies.inboxProcessors)
+  return result
+}
+
+export async function processDeliverActivityJob(
+  job: Pick<Job<DeliverActivityData>, 'data' | 'timestamp' | 'moveToDelayed'>,
+  dependencies: { deliverActivityToInbox?: typeof deliverActivityToInbox } = {},
+): Promise<unknown> {
+  return boundRateLimitDeferral(job, async () =>
+    deliverActivity(job.data, dependencies.deliverActivityToInbox ? dependencies : {}),
+  )
 }

@@ -2,9 +2,12 @@ import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import {
   advanceFollowerDistributionChunkCursor,
   processFollowerDistributionChunk,
-  streamIncompleteFollowerDistributionIdBatches,
+  listIncompleteFollowerDistributionIdPage,
 } from '@services/follower-distributions'
-import { enqueueBulkProcessFollowerDistributions } from '@queues/follower-distributions/enqueues'
+import {
+  enqueueBackfillFollowerDistributionsContinuation,
+  enqueueBulkProcessFollowerDistributions,
+} from '@queues/follower-distributions/enqueues'
 import { enqueueBulkDeliverNotificationPushIntents } from '@queues/notifications/enqueues'
 import type { Job } from 'glide-mq'
 
@@ -13,7 +16,8 @@ type FollowerDistributionDependencies = {
   enqueueBulkDeliverNotificationPushIntents: typeof enqueueBulkDeliverNotificationPushIntents
   enqueueBulkProcessFollowerDistributions: typeof enqueueBulkProcessFollowerDistributions
   processFollowerDistributionChunk: typeof processFollowerDistributionChunk
-  streamIncompleteFollowerDistributionIdBatches: typeof streamIncompleteFollowerDistributionIdBatches
+  enqueueBackfillFollowerDistributionsContinuation: typeof enqueueBackfillFollowerDistributionsContinuation
+  listIncompleteFollowerDistributionIdPage: typeof listIncompleteFollowerDistributionIdPage
 }
 
 type ProcessFollowerDistributionDependencies = Pick<
@@ -25,7 +29,9 @@ type ProcessFollowerDistributionDependencies = Pick<
 
 type BackfillFollowerDistributionDependencies = Pick<
   FollowerDistributionDependencies,
-  'enqueueBulkProcessFollowerDistributions' | 'streamIncompleteFollowerDistributionIdBatches'
+  | 'enqueueBackfillFollowerDistributionsContinuation'
+  | 'enqueueBulkProcessFollowerDistributions'
+  | 'listIncompleteFollowerDistributionIdPage'
 >
 
 /**
@@ -62,18 +68,24 @@ export async function processFollowerDistribution(
   })
 }
 
+/**
+ * Enqueues one bounded page of incomplete distributions after `afterId`, then continues from the
+ * page's last id, so a backlog never runs inside one job.
+ */
 export async function backfillFollowerDistributions(
+  afterId?: string,
   dependencies?: Partial<BackfillFollowerDistributionDependencies>,
 ) {
-  const streamBatches =
-    dependencies?.streamIncompleteFollowerDistributionIdBatches ??
-    streamIncompleteFollowerDistributionIdBatches
+  const listPage =
+    dependencies?.listIncompleteFollowerDistributionIdPage ??
+    listIncompleteFollowerDistributionIdPage
   const enqueueBulk =
     dependencies?.enqueueBulkProcessFollowerDistributions ?? enqueueBulkProcessFollowerDistributions
-  let enqueued = 0
-  for await (const ids of streamBatches()) {
-    await enqueueBulk(ids)
-    enqueued += ids.length
-  }
-  return { enqueued }
+  const enqueueContinuation =
+    dependencies?.enqueueBackfillFollowerDistributionsContinuation ??
+    enqueueBackfillFollowerDistributionsContinuation
+  const { ids, hasMore } = await listPage(afterId)
+  if (ids.length > 0) await enqueueBulk(ids)
+  if (hasMore) await enqueueContinuation(ids.at(-1)!)
+  return { enqueued: ids.length, hasMore }
 }

@@ -34,19 +34,18 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
     trackBulkEnqueue(activitypub, pendingEnqueues)
-    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
+    await removeBlueskyReconcileJobs(pendingEnqueues)
     vi.restoreAllMocks()
   })
 
   function undoFollowPairs(jobs: { name: string; data: unknown }[]): Set<string> {
     return new Set(
       jobs
-        .filter(job => job.name === 'distributeActivity')
+        .filter(job => job.name === 'activitypub.distributeActivity')
         .map(
           job =>
             job.data as Extract<DistributeActivityData, { activityType: 'Follow' | 'UndoFollow' }>,
@@ -59,7 +58,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
   function reconcilePairs(jobs: { name: string; data: unknown }[]): Set<string> {
     return new Set(
       jobs
-        .filter(job => job.name === 'reconcileFollow')
+        .filter(job => job.name === 'bluesky-follow-propagation.reconcileFollow')
         .map(job => job.data as ReconcileFollowData)
         .map(data => `${data.followerUserId}__${data.followeeUserId}`),
     )
@@ -78,7 +77,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
     await settleEnqueues(pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
+    await removeBlueskyReconcileJobs(pendingEnqueues)
 
     // Includes a subject that was never following `followee` — the RETURNING-gated filter must
     // skip it, not emit a spurious UndoFollow/reconcile for a relation that never existed.
@@ -117,7 +116,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
     )
     await settleEnqueues(pendingEnqueues)
     const priorActivityJobIds = new Set((await readAllQueueJobs(activitypub)).map(job => job.id))
-    await blueskyFollowPropagation.obliterate({ force: true })
+    await removeBlueskyReconcileJobs(pendingEnqueues)
 
     // Retry the identical bulk unfollow while the relation is already inactive.
     await softDeleteEntityRelationsForSubjects(
@@ -143,7 +142,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
 
     await upsertEntityRelationsForSubjects(followee, userFollowUserMetadata, [follower], followee)
     await settleEnqueues(pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
+    await removeBlueskyReconcileJobs(pendingEnqueues)
 
     await softDeleteEntityRelationsForSubjects(
       followee,
@@ -175,7 +174,7 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
       followee,
     )
     await settleEnqueues(pendingEnqueues)
-    await blueskyFollowPropagation.obliterate({ force: true })
+    await removeBlueskyReconcileJobs(pendingEnqueues)
 
     await softDeleteEntityRelationsForSubjects(
       followee,
@@ -198,13 +197,19 @@ describe('softDeleteEntityRelationsForSubjects follow federation + Bluesky propa
 async function activityJobsFor(followeeId: string, followerIds: string[]) {
   const followers = new Set(followerIds)
   return (await readAllQueueJobs(activitypub)).filter(job => {
-    if (job.name !== 'distributeActivity') return false
+    if (job.name !== 'activitypub.distributeActivity') return false
     const data = job.data as Extract<
       DistributeActivityData,
       { activityType: 'Follow' | 'UndoFollow' }
     >
     return followers.has(data.sourceUserId) && data.targetUserId === followeeId
   })
+}
+
+// The Bluesky reconcile jobs share the background queue with every other domain, so a test removes
+// only the jobs its own enqueues created instead of emptying the queue.
+async function removeBlueskyReconcileJobs(pending: Promise<unknown>[]): Promise<void> {
+  await removeEnqueuedJobs(pending, 'bluesky-follow-propagation.reconcileFollow')
 }
 
 function trackBulkEnqueue(

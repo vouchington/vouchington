@@ -30,20 +30,19 @@ describe('createSessionReferralAttribution', () => {
   let signedInUser: PrivateUser
 
   beforeAll(async () => {
-    referrer = await createTestUserDirect()
     signedInUser = await createTestUserDirect()
   })
 
-  // Every test in this file shares one `referrer`, so `enqueueReferralClickNotification`'s
-  // debounce dedup id (keyed only on referrerId) collides across tests. Nothing in this project
-  // attaches a `notifications` worker (see below) to move a prior test's job to a terminal state,
-  // so without this a later test's enqueue is silently deduped against an earlier test's
-  // still-`waiting` job. Obliterate so each test starts with a clean dedup slate.
+  // `enqueueReferralClickNotification`'s debounce dedup id is keyed only on referrerId. Nothing in
+  // this project attaches a worker to move a prior test's job to a terminal state, so a shared
+  // referrer would silently dedupe a later test's enqueue against an earlier test's still-waiting
+  // job. A fresh referrer per test gives each test its own dedup slate without clearing the shared
+  // background queue.
   beforeEach(async () => {
-    await notifications.obliterate({ force: true })
+    referrer = await createTestUserDirect()
   })
 
-  // No worker is attached to `notifications` in this project (backend-data-stores runs with
+  // No worker is attached to the notifications domain in this project (backend-data-stores runs with
   // isolate: false, so a worker imported here would run fork-wide and start consuming jobs
   // enqueued by unrelated test files) — assert on the enqueued job itself instead of on
   // end-to-end notification delivery, matching
@@ -70,7 +69,7 @@ describe('createSessionReferralAttribution', () => {
     // `searchJobs` scans every state: a `priority > 0` notification is `prioritized`, which
     // `getJobs('waiting')` omits.
     const jobs = await notifications.searchJobs({
-      name: 'processReferralClickNotification',
+      name: 'notifications.processReferralClickNotification',
       data: { landingUrl },
     })
     return jobs.length > 0

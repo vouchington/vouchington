@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest'
 import {
   enqueueCommunityActivityDigestBatch,
   enqueueCommunityActivityDigestDispatch,
+  enqueueCommunityActivityDigestScheduleTick,
   getCommunityActivityDigestDispatchData,
 } from './community-activity-digest.mts'
 import { notifications } from '../queues.mts'
 import { enqueueBulkDeliverNotificationPushIntents } from '../enqueues.mts'
-import { upsertSchedules } from './schedules.mts'
+import { scheduledJobManifest } from './schedules.mts'
 import { COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS } from '@voucha/types/community-activity-digest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
@@ -39,12 +40,12 @@ describe('community activity digest queue wiring', () => {
     const jobs = await readAllQueueJobs(notifications)
     const dispatch = jobs.find(
       job =>
-        job.name === 'processCommunityActivityDigestDispatch' &&
+        job.name === 'notifications.processCommunityActivityDigestDispatch' &&
         (job.data as { leaseToken?: string }).leaseToken === leaseToken,
     )
     const cursors = jobs.filter(
       job =>
-        job.name === 'processCommunityActivityDigestBatch' &&
+        job.name === 'notifications.processCommunityActivityDigestBatch' &&
         (job.data as { leaseToken?: string }).leaseToken === leaseToken &&
         (job.data as { windowStart?: string }).windowStart === batch.windowStart &&
         (job.data as { afterUserId?: string }).afterUserId === batch.afterUserId,
@@ -73,7 +74,7 @@ describe('community activity digest queue wiring', () => {
     const jobs = await readAllQueueJobs(notifications)
     const pushIntents = jobs.filter(
       job =>
-        job.name === 'processDeliverNotificationPushIntent' &&
+        job.name === 'notifications.processDeliverNotificationPushIntent' &&
         (job.data as { notificationId?: string }).notificationId === notification.notificationId,
     )
     expect(pushIntents).toHaveLength(1)
@@ -84,7 +85,21 @@ describe('community activity digest queue wiring', () => {
     })
   })
 
-  it('registers the Monday 09:00 UTC scheduler', async () => {
-    await expect(upsertSchedules()).resolves.toBeUndefined()
+  it('schedules the Monday 09:00 UTC tick as a background job', () => {
+    const tick = scheduledJobManifest.jobs.find(
+      job => job.schedulerId === 'community-activity-digest-weekly',
+    )
+    expect(scheduledJobManifest.queueName).toBe('background')
+    expect(tick?.repeat).toEqual({ pattern: '0 9 * * 1' })
+    expect(tick?.template.name).toBe('notifications.processCommunityActivityDigestScheduleTick')
+  })
+
+  it('enqueues the schedule tick as an empty background job', async () => {
+    const tick = await enqueueCommunityActivityDigestScheduleTick()
+
+    expect(tick).toMatchObject({
+      name: 'notifications.processCommunityActivityDigestScheduleTick',
+      data: {},
+    })
   })
 })

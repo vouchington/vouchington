@@ -77,7 +77,8 @@ describe('POST /ap/inbox durable worker path', () => {
       .expect(401)
 
     const unexpectedJob = (await getInboxJobs()).find(
-      candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
+      candidate =>
+        candidate.name === 'activitypub.processDelivery' && !existingJobIds.has(candidate.id ?? ''),
     )
     expect(unexpectedJob).toBeUndefined()
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(false)
@@ -113,7 +114,8 @@ describe('POST /ap/inbox durable worker path', () => {
       .expect(401)
 
     const unexpectedJob = (await getInboxJobs()).find(
-      candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
+      candidate =>
+        candidate.name === 'activitypub.processDelivery' && !existingJobIds.has(candidate.id ?? ''),
     )
     expect(unexpectedJob).toBeUndefined()
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(false)
@@ -191,7 +193,8 @@ async function postSignedCreateAndClaimDelivery(input: {
     .expect(202)
 
   const job = (await getInboxJobs()).find(
-    candidate => candidate.name === 'processDelivery' && !existingJobIds.has(candidate.id ?? ''),
+    candidate =>
+      candidate.name === 'activitypub.processDelivery' && !existingJobIds.has(candidate.id ?? ''),
   )
   expect(job).toBeDefined()
   const payload = job?.data as { deliveryId: string; leaseToken: string } | undefined

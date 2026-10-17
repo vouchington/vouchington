@@ -26,7 +26,6 @@ import {
   shareRssFeedItemWithFollowers,
 } from '../create.mts'
 import { processFollowerDistributionChunk } from '../process.mts'
-import { streamIncompleteFollowerDistributionIdBatches } from '../backfill.mts'
 
 import {
   assertDistributablePost,
@@ -256,24 +255,6 @@ describe('processFollowerDistributionChunk', () => {
     expect(
       (await getFollowerDistributionFailureForTest(distribution.distribution_id))?.failure_reason,
     ).toBe('Only broadly visible posts can be sent')
-  })
-
-  it('streams incomplete distribution id batches for backfill', async () => {
-    const sender = await createTestUser()
-    const creator = await createTestUser()
-    const follower = await createTestUser()
-    await followUser(follower, sender)
-
-    const post = await createTestPost({ user: creator, privacy: 'public' })
-    const distribution = await sharePostWithFollowers(sender, post.id)
-
-    const streamedIds = new Set<string>()
-    for await (const batch of streamIncompleteFollowerDistributionIdBatches()) {
-      for (const id of batch) streamedIds.add(id)
-      if (streamedIds.has(distribution.distribution_id)) break
-    }
-
-    expect(streamedIds).toContain(distribution.distribution_id)
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof randomUUID)

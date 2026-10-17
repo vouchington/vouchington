@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { rearmFailedDeliveries, recoverDeliveries } from '../processors/inbox.mts'
 
+const PAGE_SIZE = 3
+
 describe('ActivityPub inbox recovery processors', () => {
   it('bulk-enqueues only the recoverable deliveries returned by the recovery boundary', async () => {
     const deliveries = makeDeliveries(2)
@@ -13,41 +15,76 @@ describe('ActivityPub inbox recovery processors', () => {
     expect(enqueueBulk).toHaveBeenCalledWith(deliveries)
   })
 
-  it('drains failed deliveries in sequential batches until the rearm boundary is empty', async () => {
-    const firstBatch = makeDeliveries(500)
-    const secondBatch = makeDeliveries(1)
-    const rearmFailed = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(firstBatch)
-      .mockResolvedValueOnce(secondBatch)
-      .mockResolvedValueOnce([])
-    const enqueueBulk = vi.fn<VitestLooseMock>().mockResolvedValue([])
+  it('re-arms one short page of failed deliveries without a continuation', async () => {
+    const page = makeDeliveries(PAGE_SIZE - 1)
+    const { dependencies, rearmFailed, enqueueBulk, enqueueContinuation } = rearmBoundary([page])
 
-    await expect(rearmFailedDeliveries({ rearmFailed, enqueueBulk })).resolves.toEqual({
-      enqueued: 501,
+    await expect(rearmFailedDeliveries('after-id', dependencies)).resolves.toEqual({
+      enqueued: PAGE_SIZE - 1,
+      hasMore: false,
     })
-    expect(rearmFailed).toHaveBeenCalledTimes(3)
-    expect(enqueueBulk).toHaveBeenNthCalledWith(1, firstBatch)
-    expect(enqueueBulk).toHaveBeenNthCalledWith(2, secondBatch)
+    expect(rearmFailed).toHaveBeenCalledOnce()
+    expect(rearmFailed).toHaveBeenCalledWith('after-id')
+    expect(enqueueBulk).toHaveBeenCalledWith(page)
+    expect(enqueueContinuation).not.toHaveBeenCalled()
   })
 
-  it('stops claiming failed deliveries when a bulk enqueue fails', async () => {
-    const rearmFailed = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce(makeDeliveries(500))
-      .mockResolvedValueOnce(makeDeliveries(1))
-      .mockResolvedValueOnce([])
-    const enqueueError = new Error('bulk enqueue failed')
-    const enqueueBulk = vi
-      .fn<VitestLooseMock>()
-      .mockResolvedValueOnce([])
-      .mockRejectedValueOnce(enqueueError)
+  it('continues a full page from its largest delivery id instead of draining in one job', async () => {
+    // The largest id sits in the middle, so the pairwise maximum is exercised in both directions.
+    const page = (
+      [
+        '00000000-0000-7000-8000-000000000002',
+        '00000000-0000-7000-8000-000000000003',
+        '00000000-0000-7000-8000-000000000001',
+      ] as const
+    ).map(deliveryId => ({
+      deliveryId,
+      leaseToken: randomUUID(),
+    }))
+    const { dependencies, rearmFailed, enqueueContinuation } = rearmBoundary([page])
 
-    await expect(rearmFailedDeliveries({ rearmFailed, enqueueBulk })).rejects.toBe(enqueueError)
-    expect(rearmFailed).toHaveBeenCalledTimes(2)
-    expect(enqueueBulk).toHaveBeenCalledTimes(2)
+    await expect(rearmFailedDeliveries(undefined, dependencies)).resolves.toEqual({
+      enqueued: PAGE_SIZE,
+      hasMore: true,
+    })
+    expect(rearmFailed).toHaveBeenCalledOnce()
+    expect(enqueueContinuation).toHaveBeenCalledWith(
+      page.map(delivery => delivery.deliveryId).toSorted()[PAGE_SIZE - 1],
+    )
+  })
+
+  it('does nothing when no failed delivery is left', async () => {
+    const { dependencies, enqueueBulk } = rearmBoundary([[]])
+
+    await expect(rearmFailedDeliveries(undefined, dependencies)).resolves.toEqual({
+      enqueued: 0,
+      hasMore: false,
+    })
+    expect(enqueueBulk).not.toHaveBeenCalled()
+  })
+
+  it('does not continue when the bulk enqueue fails', async () => {
+    const enqueueError = new Error('bulk enqueue failed')
+    const { dependencies, enqueueContinuation } = rearmBoundary([makeDeliveries(PAGE_SIZE)])
+    dependencies.enqueueBulk = vi.fn<VitestLooseMock>().mockRejectedValue(enqueueError)
+
+    await expect(rearmFailedDeliveries(undefined, dependencies)).rejects.toBe(enqueueError)
+    expect(enqueueContinuation).not.toHaveBeenCalled()
   })
 })
+
+function rearmBoundary(pages: ReturnType<typeof makeDeliveries>[]) {
+  const rearmFailed = vi.fn<VitestLooseMock>()
+  for (const page of pages) rearmFailed.mockResolvedValueOnce(page)
+  const enqueueBulk = vi.fn<VitestLooseMock>().mockResolvedValue([])
+  const enqueueContinuation = vi.fn<VitestLooseMock>().mockResolvedValue(null)
+  return {
+    rearmFailed,
+    enqueueBulk,
+    enqueueContinuation,
+    dependencies: { rearmFailed, enqueueBulk, enqueueContinuation, pageSize: () => PAGE_SIZE },
+  }
+}
 
 function makeDeliveries(count: number) {
   return Array.from({ length: count }, () => ({

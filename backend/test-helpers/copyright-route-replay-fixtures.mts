@@ -78,7 +78,7 @@ export async function verifyMediaDeliveryReplayRoute(): Promise<true> {
   if (accepted?.type !== 'return') throw new Error('Replay route did not accept its real queue job')
   const job = await readEnqueuedJob(notifications, await accepted.value)
   expect(job).toMatchObject({
-    name: 'processReplayMediaDeliveryRegistry',
+    name: 'notifications.processReplayMediaDeliveryRegistry',
     data: { actorUserId: fixture.moderator.id },
   })
   expect(job.data).not.toHaveProperty('after')

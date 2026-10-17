@@ -23,7 +23,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/follower-distributions": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/follower-distributions": "workspace:^",

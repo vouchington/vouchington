@@ -16,6 +16,10 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     load: () => import('@workers/cache-purge/workers').then(module => module.cachePurge),
   },
   {
+    queueName: 'find-your-friends',
+    load: () => import('@workers/find-your-friends/workers').then(module => module.findYourFriends),
+  },
+  {
     queueName: 'emails',
     load: () => import('@workers/emails/workers').then(module => module.emails),
   },
@@ -39,23 +43,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   },
   { queueName: 'psql', load: () => import('@workers/psql/workers').then(module => module.psql) },
   {
-    queueName: 'activitypub',
-    load: () => import('@workers/activitypub/workers').then(module => module.activitypubWorker),
-  },
-  {
     queueName: 'bloom-filters',
     load: () => import('@workers/bloom-filters/workers').then(module => module.bloomFilters),
-  },
-  {
-    queueName: 'find-your-friends',
-    load: () => import('@workers/find-your-friends/workers').then(module => module.findYourFriends),
-  },
-  {
-    queueName: 'follower-distributions',
-    load: () =>
-      import('@workers/follower-distributions/workers').then(
-        module => module.followerDistributionsWorker,
-      ),
   },
   {
     queueName: 'sitemaps',
@@ -64,10 +53,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'memberships',
     load: () => import('@workers/memberships/workers').then(module => module.memberships),
-  },
-  {
-    queueName: 'notifications',
-    load: () => import('@workers/notifications/workers').then(module => module.notificationsWorker),
   },
   {
     queueName: 'spam_detection',
@@ -90,12 +75,5 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'kagi-smallweb',
     load: () => import('@workers/kagi-smallweb/workers').then(module => module.kagiSmallWeb),
-  },
-  {
-    queueName: 'bluesky-follow-propagation',
-    load: () =>
-      import('@workers/bluesky-follow-propagation/workers').then(module =>
-        module.createBlueskyFollowPropagationWorker(),
-      ),
   },
 ]

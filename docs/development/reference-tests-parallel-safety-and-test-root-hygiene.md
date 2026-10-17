@@ -150,17 +150,12 @@ serving the `vote-aggregation` and `entity-listeners` domains, so entity-listene
 without a per-queue singleton) parks every other domain's jobs and takes jobs only while no other worker is attached to
 `background`, so a file that builds its own `createBackgroundWorker` for its domain still owns
 its jobs until it closes that worker (the attachment guard checks that close). Definition identity tests that import any other worker
-module must close it before the file finishes, matching the OAuth and
-activitypub `load()` tests in that file — closing the worker remains mandatory
+module must close it before the file finishes, matching the OAuth `load()` test in that file — closing the worker remains mandatory
 regardless of how enqueue tests assert. `TestWorker` drains jobs already waiting on
 its queue from a constructor `queueMicrotask`, and that microtask runs before the
 importing module body. `afterAll` and a `close()` after the static import are both
 too late. Pause that test queue before evaluating the worker module, close the
 worker, then resume the queue.
-`backend/entrypoints/worker-io/worker-definitions.test.mts` pauses `activitypub`
-before its lazy worker import, then closes the worker and resumes the queue in
-`finally`, so a waiting `rearmFailedDeliveries` job cannot run during that
-identity test.
 
 `backend-data-stores` also configures
 `vitest.runner.glide-mq-worker-attachment-guard.mts`. After the project's setup files load but

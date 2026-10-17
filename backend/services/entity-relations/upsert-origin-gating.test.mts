@@ -28,15 +28,13 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   beforeEach(async () => {
     pendingEnqueues.length = 0
     vi.restoreAllMocks()
+    // Notifications and ActivityPub share the background queue, so one spy sees both.
     trackBulkEnqueue(notifications, pendingEnqueues)
-    trackBulkEnqueue(activitypub, pendingEnqueues)
-    trackBulkEnqueue(blueskyFollowPropagation, pendingEnqueues)
-    await notifications.obliterate()
-    await blueskyFollowPropagation.obliterate({ force: true })
   })
 
   afterEach(async () => {
-    await removeEnqueuedJobs(pendingEnqueues, 'distributeActivity')
+    await removeEnqueuedJobs(pendingEnqueues, 'activitypub.distributeActivity')
+    await removeBlueskyReconcileJobs(pendingEnqueues)
     vi.restoreAllMocks()
   })
 
@@ -46,7 +44,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'processFollowNotification' &&
+        job.name === 'notifications.processFollowNotification' &&
         (job.data as { followeeId: string }).followeeId === followeeId,
     )
   }
@@ -57,7 +55,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'distributeActivity' &&
+        job.name === 'activitypub.distributeActivity' &&
         (job.data as DistributeActivityData).activityType === 'Follow' &&
         (job.data as Extract<DistributeActivityData, { activityType: 'Follow' | 'UndoFollow' }>)
           .targetUserId === targetUserId,
@@ -117,7 +115,7 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
   ): boolean {
     return jobs.some(
       job =>
-        job.name === 'reconcileFollow' &&
+        job.name === 'bluesky-follow-propagation.reconcileFollow' &&
         (job.data as ReconcileFollowData).followeeUserId === followeeUserId,
     )
   }
@@ -146,6 +144,12 @@ describe('upsertEntityRelation origin gating (Phase C3 loop prevention)', () => 
     expect(hasBlueskyReconcileJobFor(jobs, followee.id)).toBe(true)
   })
 })
+
+// The Bluesky reconcile jobs share the background queue with every other domain, so a test removes
+// only the jobs its own enqueues created instead of emptying the queue.
+async function removeBlueskyReconcileJobs(pending: Promise<unknown>[]): Promise<void> {
+  await removeEnqueuedJobs(pending, 'bluesky-follow-propagation.reconcileFollow')
+}
 
 function trackBulkEnqueue(
   queue: { addBulk: (jobs: { name: string; data: unknown }[]) => Promise<unknown> },

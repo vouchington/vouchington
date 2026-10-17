@@ -1,8 +1,20 @@
 import { BACKGROUND_DOMAINS, type BackgroundDomain } from '../config.mts'
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
 import { ACCOUNT_LIFECYCLE_DOMAIN, ACCOUNT_LIFECYCLE_JOBS } from './account-lifecycle-jobs.mts'
+import { ACTIVITYPUB_DOMAIN } from './activitypub-domain.mts'
+import { ACTIVITYPUB_JOBS } from './activitypub-jobs.mts'
 import { ARTICLE_SYNC_DOMAIN, ARTICLE_SYNC_JOBS } from './article-sync-jobs.mts'
+import {
+  BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
+  BLUESKY_FOLLOW_PROPAGATION_JOBS,
+} from './bluesky-follow-propagation-jobs.mts'
 import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
+import {
+  FOLLOWER_DISTRIBUTIONS_DOMAIN,
+  FOLLOWER_DISTRIBUTIONS_JOBS,
+} from './follower-distributions-jobs.mts'
+import { NOTIFICATIONS_DOMAIN } from './notifications-domain.mts'
+import { NOTIFICATIONS_JOBS } from './notifications-jobs.mts'
 import {
   OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
   OAUTH_AUTHORIZATION_EXCHANGE_JOBS,
@@ -30,6 +42,10 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   ACCOUNT_LIFECYCLE_DOMAIN,
   ARTICLE_SYNC_DOMAIN,
   OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
+  NOTIFICATIONS_DOMAIN,
+  ACTIVITYPUB_DOMAIN,
+  FOLLOWER_DISTRIBUTIONS_DOMAIN,
+  BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -43,6 +59,10 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...ACCOUNT_LIFECYCLE_JOBS,
   ...ARTICLE_SYNC_JOBS,
   ...OAUTH_AUTHORIZATION_EXCHANGE_JOBS,
+  ...NOTIFICATIONS_JOBS,
+  ...ACTIVITYPUB_JOBS,
+  ...FOLLOWER_DISTRIBUTIONS_JOBS,
+  ...BLUESKY_FOLLOW_PROPAGATION_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))

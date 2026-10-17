@@ -270,14 +270,17 @@ function runConversationMessageNotification(data: {
   })
 }
 
-function runReconcilePostNotifications(data: { postId: string }) {
+function runReconcilePostNotifications(data: { postId: string; afterUserId?: string }) {
   return processReconcilePostNotifications(data, {
     enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
     reconcileNotificationsForPost: mockReconcileNotificationsForPost,
   })
 }
 
-function runReconcileRssFeedItemNotifications(data: { rssFeedItemId: string }) {
+function runReconcileRssFeedItemNotifications(data: {
+  rssFeedItemId: string
+  afterUserId?: string
+}) {
   return processReconcileRssFeedItemNotifications(data, {
     enqueueBulkDeliverNotificationPushIntents: mockEnqueueBulkDeliverNotificationPushIntents,
     reconcileNotificationsForRssFeedItem: mockReconcileNotificationsForRssFeedItem,

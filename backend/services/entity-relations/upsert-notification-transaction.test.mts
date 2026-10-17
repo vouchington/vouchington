@@ -18,7 +18,7 @@ function hasPostNotification(
 ): boolean {
   return jobs.some(
     job =>
-      job.name === 'processReconcilePostNotifications' &&
+      job.name === 'notifications.processReconcilePostNotifications' &&
       (job.data as { postId: string }).postId === postId,
   )
 }

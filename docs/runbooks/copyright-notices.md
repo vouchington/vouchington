@@ -630,7 +630,7 @@ change the PostgreSQL revision merely to make the edge registry match it.
 
 ## Review-target page
 
-The `copyright-review-target-page` job on the `notifications` queue runs every five minutes. When
+The `copyright-review-target-page` job in the `notifications` domain of the `background` queue runs every five minutes. When
 any count below is above zero, it sends one Sentry warning named `copyright_review_target_breach`.
 Its `reason` tag has the same value, and one boolean tag per count shows which counts are set:
 
@@ -691,7 +691,7 @@ missed-escalation or restoration-deadline page; the staff queue display remains 
 
 ## Evidence retention deletion
 
-The `copyright-evidence-retention` job on the `notifications` queue runs hourly. It deletes the
+The `copyright-evidence-retention` job in the `notifications` domain of the `background` queue runs hourly. It deletes the
 evidence and claimant personal data of old `us_dmca` cases, and keeps the minimal record that the
 repeat-infringer count needs. What it erases, and what stops it, is in
 [evidence retention](../requirements/moderation/COPYRIGHT-NOTICES.md#evidence-retention). It does

@@ -5,27 +5,26 @@ import {
 } from '../services/ap-inbox-activities/index.mts'
 import {
   cleanupExpiredDeliveries,
-  processDelivery,
   rearmFailedDeliveries,
   recoverDeliveries,
 } from '../workers/activitypub/processors/inbox.mts'
-import type { ActivityPubInboxJobProcessors } from '../workers/activitypub/processors/inbox-job.mts'
 
-export function scopedActivityPubInboxProcessors(
-  deliveryId: string,
-): ActivityPubInboxJobProcessors {
+/** The maintenance processors of the durable inbox, each limited to the one delivery id. */
+export function scopedActivityPubInboxProcessors(deliveryId: string) {
   const ids = [deliveryId]
   return {
-    processDelivery,
     recoverDeliveries: () =>
       recoverDeliveries({
         claimRecoverable: () => activityPubInboxDeliveryTransitions.recover(ids),
         enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
       }),
     rearmFailedDeliveries: () =>
-      rearmFailedDeliveries({
+      rearmFailedDeliveries(undefined, {
         rearmFailed: () => activityPubInboxDeliveryTransitions.rearm(ids),
         enqueueBulk: enqueueBulkActivityPubInboxDeliveries,
+        // One scoped id never fills a page, so a continuation is never needed.
+        enqueueContinuation: () => Promise.resolve(null),
+        pageSize: () => 2,
       }),
     cleanupExpiredDeliveries: () =>
       cleanupExpiredDeliveries({

@@ -1,61 +1,30 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { PRIORITY_DISPATCH } from '@queues/background/config'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB,
+  ACTIVITYPUB_PROCESS_DELIVERY_JOB,
+  ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB,
+  ACTIVITYPUB_RECOVER_DELIVERIES_JOB,
+} from '@queues/background/enqueues/activitypub-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  ACTIVITYPUB_INBOX_DEFAULTS,
-  CLEANUP_INTERVAL_MS,
-  CLEANUP_PRIORITY,
-  PROCESS_PRIORITY,
-  QUEUE_NAME,
-  RECOVERY_INTERVAL_MS,
-  RECOVERY_PRIORITY,
-} from '../config.mts'
-import { activitypub } from '../queues.mts'
-import type { ActivityPubInboxDeliveryJob, ActivityPubInboxJobs } from '../types.mts'
+import { CLEANUP_INTERVAL_MS, RECOVERY_INTERVAL_MS } from '../config.mts'
+import type { ActivityPubInboxDeliveryJob } from '../types.mts'
 
-const enqueueDeliveryJob = createEnqueueFunction<ActivityPubInboxDeliveryJob, ActivityPubInboxJobs>(
-  {
-    queue: activitypub,
-    queueName: QUEUE_NAME,
-    jobName: 'processDelivery',
-    defaults: ACTIVITYPUB_INBOX_DEFAULTS,
-  },
+const enqueueDeliveryJob = createBackgroundEnqueue(ACTIVITYPUB_PROCESS_DELIVERY_JOB)
+
+export const enqueueBulkActivityPubInboxDeliveries = createBackgroundBulkEnqueue(
+  ACTIVITYPUB_PROCESS_DELIVERY_JOB,
+  // The bulk path re-enqueues recovered work, which ranks behind fresh deliveries.
+  (data: ActivityPubInboxDeliveryJob) => ({
+    data,
+    opts: { ...deliveryJobOptions(data), priority: PRIORITY_DISPATCH },
+  }),
 )
 
-export const enqueueBulkActivityPubInboxDeliveries = createBulkEnqueueFunction<
-  ActivityPubInboxDeliveryJob,
-  ActivityPubInboxDeliveryJob,
-  ActivityPubInboxJobs
->({
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'processDelivery',
-  defaults: ACTIVITYPUB_INBOX_DEFAULTS,
-  buildJob: data => ({ data, opts: deliveryJobOptions(data, RECOVERY_PRIORITY) }),
-})
-
-const enqueueRecoveryJob = createEnqueueFunction<Record<string, never>, ActivityPubInboxJobs>({
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'recoverDeliveries',
-  defaults: ACTIVITYPUB_INBOX_DEFAULTS,
-})
-
-const enqueueFailedBackfillJob = createEnqueueFunction<Record<string, never>, ActivityPubInboxJobs>(
-  {
-    queue: activitypub,
-    queueName: QUEUE_NAME,
-    jobName: 'rearmFailedDeliveries',
-    defaults: ACTIVITYPUB_INBOX_DEFAULTS,
-  },
-)
-
-const enqueueCleanupJob = createEnqueueFunction<Record<string, never>, ActivityPubInboxJobs>({
-  queue: activitypub,
-  queueName: QUEUE_NAME,
-  jobName: 'cleanupExpiredDeliveries',
-  defaults: ACTIVITYPUB_INBOX_DEFAULTS,
-})
+const enqueueRecoveryJob = createBackgroundEnqueue(ACTIVITYPUB_RECOVER_DELIVERIES_JOB)
+const enqueueFailedBackfillJob = createBackgroundEnqueue(ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB)
+const enqueueCleanupJob = createBackgroundEnqueue(ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB)
 
 export function enqueueActivityPubInboxDelivery(
   data: ActivityPubInboxDeliveryJob,
@@ -74,7 +43,6 @@ export function enqueueRecoverActivityPubInboxDeliveries(): EnqueueReturnType {
   const jobId = `activitypub-inbox-recovery__${Math.floor(Date.now() / RECOVERY_INTERVAL_MS)}`
   return enqueueRecoveryJob({}, {
     jobId,
-    priority: RECOVERY_PRIORITY,
     deduplication: {
       id: 'activitypub-inbox-recovery',
       mode: 'throttle',
@@ -85,7 +53,6 @@ export function enqueueRecoverActivityPubInboxDeliveries(): EnqueueReturnType {
 
 export function enqueueRearmFailedActivityPubInboxDeliveries(): EnqueueReturnType {
   return enqueueFailedBackfillJob({}, {
-    priority: RECOVERY_PRIORITY,
     deduplication: {
       id: 'activitypub-inbox-failed-backfill',
       mode: 'throttle',
@@ -94,11 +61,22 @@ export function enqueueRearmFailedActivityPubInboxDeliveries(): EnqueueReturnTyp
   } satisfies Partial<JobOptions>)
 }
 
+// A continuation carries the last delivery id of the page before it. Its job id is that cursor, so a
+// retried dispatcher cannot enqueue a second continuation, and a finished record releases the id.
+export function enqueueRearmFailedActivityPubInboxDeliveriesContinuation(
+  afterId: string,
+): EnqueueReturnType {
+  return enqueueFailedBackfillJob({ afterId }, {
+    jobId: `activitypub-inbox-failed-backfill__${afterId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  } satisfies Partial<JobOptions>)
+}
+
 export function enqueueCleanupExpiredActivityPubInboxDeliveries(): EnqueueReturnType {
   const jobId = `activitypub-inbox-cleanup__${Math.floor(Date.now() / CLEANUP_INTERVAL_MS)}`
   return enqueueCleanupJob({}, {
     jobId,
-    priority: CLEANUP_PRIORITY,
     deduplication: {
       id: 'activitypub-inbox-cleanup',
       mode: 'throttle',
@@ -107,14 +85,10 @@ export function enqueueCleanupExpiredActivityPubInboxDeliveries(): EnqueueReturn
   } satisfies Partial<JobOptions>)
 }
 
-function deliveryJobOptions(
-  data: ActivityPubInboxDeliveryJob,
-  priority = PROCESS_PRIORITY,
-): Partial<JobOptions> {
+function deliveryJobOptions(data: ActivityPubInboxDeliveryJob): Partial<JobOptions> {
   const jobId = `activitypub-inbox__${data.deliveryId}__${data.leaseToken}`
   return {
     jobId,
-    priority,
     deduplication: { id: jobId, mode: 'simple' },
   }
 }

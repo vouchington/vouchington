@@ -139,7 +139,7 @@ describe('BACKFILL_REGISTRY', () => {
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
     await expect(readEnqueuedJob(activitypub, enqueued)).resolves.toMatchObject({
-      name: 'rearmFailedDeliveries',
+      name: 'activitypub.rearmFailedDeliveries',
     })
   })
 

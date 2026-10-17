@@ -38,10 +38,11 @@ const background = combineBackgroundManifests([
   voteWeight,
   accountLifecycle,
   oauthAuthorizationExchange,
+  notifications,
+  activitypub,
 ])
 
 export const SCHEDULED_JOB_MANIFESTS = [
-  activitypub,
   aiAgents,
   background,
   bedrockEmbeddingsBatch,
@@ -54,7 +55,6 @@ export const SCHEDULED_JOB_MANIFESTS = [
   contentAnalysis,
   kagiSmallweb,
   memberships,
-  notifications,
   psql,
   rssFeeds,
   rssFeedMaintenance,

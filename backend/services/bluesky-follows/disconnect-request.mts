@@ -1,5 +1,5 @@
 import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
-import { createAsyncGeneratorFromCursor, read, write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
@@ -58,16 +58,28 @@ export async function hasPendingBlueskyDisconnect(
   return rows[0]?.present ?? false
 }
 
-export async function* streamPendingBlueskyDisconnectBatches(
-  batchSize = getBlueskyFollowsWorkLimit('backfill_batch_size'),
-): AsyncGenerator<BlueskyDisconnectRequest[], void, unknown> {
-  let batch: BlueskyDisconnectRequest[] = []
-  for await (const row of createAsyncGeneratorFromCursor<{
+export type BlueskyDisconnectRequestPage = {
+  requests: BlueskyDisconnectRequest[]
+  hasMore: boolean
+}
+
+// Sorts before every UUID, so the first page needs no separate "no cursor" predicate.
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
+/**
+ * One page of pending disconnect requests whose link authorization id is after `afterId`, in
+ * authorization id order (unique per linked account). `hasMore` is true when the page is full, so
+ * the caller continues from the last request's authorization id.
+ */
+export async function listPendingBlueskyDisconnectPage(
+  afterId?: string,
+): Promise<BlueskyDisconnectRequestPage> {
+  const limit = getBlueskyFollowsWorkLimit('backfill_batch_size')
+  const { rows } = await read<{
     user_id: string
     bluesky_did: string
     link_authorization_id: string
-  }>(
-    sql`/* streamPendingBlueskyDisconnectBatches */
+  }>(sql`/* listPendingBlueskyDisconnectPage */
       SELECT account.user_id, account.bluesky_did, account.link_authorization_id
       FROM bluesky_linked_accounts account
       JOIN bluesky_link_authorizations link_auth
@@ -75,18 +87,15 @@ export async function* streamPendingBlueskyDisconnectBatches(
        AND link_auth.user_id = account.user_id
        AND link_auth.status = 'attached'
       WHERE account.disconnect_requested_at IS NOT NULL
-      ORDER BY account.disconnect_requested_at, account.link_authorization_id`,
-    { batchSize },
-  )) {
-    batch.push({
+        AND account.link_authorization_id > ${afterId ?? START_OF_IDS}::uuid
+      ORDER BY account.link_authorization_id
+      LIMIT ${limit}`)
+  return {
+    requests: rows.map(row => ({
       userId: row.user_id,
       blueskyDid: row.bluesky_did,
       linkAuthorizationId: row.link_authorization_id,
-    })
-    if (batch.length >= batchSize) {
-      yield batch
-      batch = []
-    }
+    })),
+    hasMore: rows.length === limit,
   }
-  if (batch.length > 0) yield batch
 }

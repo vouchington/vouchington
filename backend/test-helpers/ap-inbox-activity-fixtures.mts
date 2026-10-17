@@ -71,7 +71,7 @@ export function acceptJobsFor(
 ): Extract<DeliverActivityData, { activityType: 'Accept' }>[] {
   const acceptJobs: Extract<DeliverActivityData, { activityType: 'Accept' }>[] = []
   for (const job of jobs) {
-    if (job.name !== 'deliverActivity') continue
+    if (job.name !== 'activitypub.deliverActivity') continue
     const data = job.data as DeliverActivityData
     if (data.activityType === 'Accept' && data.followActivityId === followActivityId) {
       acceptJobs.push(data)
