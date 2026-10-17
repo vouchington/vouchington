@@ -1,15 +1,29 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { createVitest } from 'vitest/node'
 import { effectiveTimeoutCap } from '../test-helpers/vitest-effective-timeout-cap.mts'
-import { checkFiniteTimeoutProfiles } from '../test-helpers/vitest-effective-timeout-controls.mts'
+import {
+  assertCanonicalRootVitestConfig,
+  checkCanonicalRootVitestConfigControls,
+  checkFiniteTimeoutProfiles,
+} from '../test-helpers/vitest-effective-timeout-controls.mts'
 
 const root = process.cwd()
+const configFileControls = checkCanonicalRootVitestConfigControls()
 let context: Awaited<ReturnType<typeof createVitest>> | undefined
 let failed = false
 let primary: unknown
 const cleanup: unknown[] = []
 const projects: string[] = []
 try {
+  const rootConfigs = execFileSync('git', ['ls-files', '-z', '--', ':(top,glob)vitest.config.*'], {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 4000,
+  })
+    .split('\0')
+    .filter(Boolean)
+  assertCanonicalRootVitestConfig(rootConfigs)
   context = await createVitest({ root, watch: false, run: true, reporters: [] })
   for (const project of context.projects) {
     const guards = project.viteConfig.plugins.filter(
@@ -76,4 +90,6 @@ for (const project of projects) {
   assert.ok(String(rejection).includes('received 30001'), project)
 }
 const profiles = await checkFiniteTimeoutProfiles(root)
-process.stdout.write(`${JSON.stringify({ selectedProjects: projects, profiles })}\n`)
+process.stdout.write(
+  `${JSON.stringify({ selectedProjects: projects, profiles, configFileControls })}\n`,
+)
