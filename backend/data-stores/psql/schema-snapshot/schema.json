@@ -20334,7 +20334,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "community_search_counts_pkey": {
           "accessMethod": "btree",
