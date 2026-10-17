@@ -47,9 +47,11 @@ _none_
 - `idx_memberships__effective_user`: `CREATE UNIQUE INDEX idx_memberships__effective_user ON public.memberships USING btree (user_id) WHERE (projection_ended_at IS NULL)`
 - `idx_memberships__expires_at`: `CREATE INDEX idx_memberships__expires_at ON public.memberships USING btree (expires_at, id) WHERE ((projection_ended_at IS NULL) AND (expires_at IS NOT NULL))`
 - `idx_memberships__latest_change_id`: `CREATE INDEX idx_memberships__latest_change_id ON public.memberships USING btree (latest_change_id) WHERE (latest_change_id IS NOT NULL)`
+- `idx_memberships__live_source`: `CREATE INDEX idx_memberships__live_source ON public.memberships USING btree (membership_source_id) WHERE (projection_ended_at IS NULL)`
 - `idx_memberships__product_id`: `CREATE INDEX idx_memberships__product_id ON public.memberships USING btree (membership_product_id)`
 - `idx_memberships__source_id`: `CREATE INDEX idx_memberships__source_id ON public.memberships USING btree (membership_source_id)`
 - `idx_memberships__user_id`: `CREATE INDEX idx_memberships__user_id ON public.memberships USING btree (user_id) WHERE (user_id IS NOT NULL)`
+- `idx_memberships__vote_weight_expiry`: `CREATE INDEX idx_memberships__vote_weight_expiry ON public.memberships USING btree (expires_at, id) WHERE ((projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (past_due_at IS NULL) AND (paused_at IS NULL) AND (expires_at IS NOT NULL))`
 - `memberships_pkey`: `CREATE UNIQUE INDEX memberships_pkey ON public.memberships USING btree (id)`
 
 **Triggers:**
