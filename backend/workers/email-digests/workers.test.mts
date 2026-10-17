@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { EMAIL_DIGESTS_JOBS } from '@queues/background/enqueues/email-digests-jobs'
 import { JobPayloadError } from '@queues/email-digests/payload/job-payload'
-import { emailDigestsHandlers, processEmailDigestJob } from './workers.mts'
+import { processEmailDigestJob } from './router.mts'
+import { emailDigestsHandlers } from './workers.mts'
 
 function dispatchers() {
   return {

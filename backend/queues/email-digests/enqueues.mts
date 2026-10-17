@@ -20,11 +20,6 @@ import {
   MODERATION_SUMMARY_DISPATCH_DEDUP_TTL_MS,
 } from './config.mts'
 
-export {
-  enqueueBulkSendApiKeyExpiryReminders,
-  enqueueDispatchApiKeyExpiryReminders,
-} from './enqueues/api-key-expiry.mts'
-
 const enqueueFollowTopics = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB)
 const enqueuePostReferralLink = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB)
 const enqueueFollowNewsSources = createBackgroundEnqueue(EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB)
