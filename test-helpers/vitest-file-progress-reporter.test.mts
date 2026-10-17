@@ -100,10 +100,11 @@ describe('backend-unit file progress reporter', () => {
     }
     expect(buffered.length).toBe(baseline.length + 1)
     expect(both.length).toBe(baseline.length + 2)
-    const reporter = buffered.find(isBackendUnitFileProgressReporter)
+    const reporter = createVitestFileProgressReporter(createFileProgressWriter(file))
+    expect(buffered.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
     const fileModule = testModule('backend/example.test.mts', 'passed')
-    reporter?.onTestModuleQueued(fileModule)
-    reporter?.onTestModuleEnd(fileModule)
+    reporter.onTestModuleQueued(fileModule)
+    reporter.onTestModuleEnd(fileModule)
     expect(readFileSync(file, 'utf8')).toBe(
       formatBackendUnitFileProgress('start', 'backend/example.test.mts') +
         formatBackendUnitFileProgress('finish', 'backend/example.test.mts', 'passed'),
