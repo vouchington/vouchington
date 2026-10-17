@@ -919,7 +919,7 @@ CREATE TABLE IF NOT EXISTS apple_accounts (
   apple_user_email_address TEXT,
   email_domain_hostname_id UUID,
   apple_user_data JSONB NOT NULL,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
