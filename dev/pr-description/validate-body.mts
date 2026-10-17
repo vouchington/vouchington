@@ -1,4 +1,6 @@
-import { hasClosingIssueReference, type ReferencedIssue } from './closing-refs.mts'
+import { hasClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
+import type { ReferencedIssue } from './closing-refs.mts'
 import { validatePrDescriptionContent } from './content-policy.mts'
 import { findEscapeCommentClosingKeywordLeaks } from './escape-comment-leaks.mts'
 import { isDirectUserRequestNoSourceBody } from './direct-user-request.mts'

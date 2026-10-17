@@ -5,12 +5,9 @@ import {
   formatHints,
   resolveClosingIssueReference,
 } from '../related-issues.mts'
-import {
-  parseClosingIssueReferences,
-  parseGitHubIssueApiResponse,
-  validateResolvedIssueReferences,
-  type ClosingIssueReference,
-} from '../closing-refs.mts'
+import type { ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
+import { parseGitHubIssueApiResponse, validateResolvedIssueReferences } from '../closing-refs.mts'
 import { findEscapeCommentClosingKeywordLeaks } from '../escape-comment-leaks.mts'
 
 describe('formatHints', () => {
@@ -67,34 +64,6 @@ describe('parseGitHubIssueApiResponse', () => {
     expect(() => parseGitHubIssueApiResponse(JSON.stringify({ number: 42 }))).toThrow(
       'missing required fields',
     )
-  })
-})
-
-describe('parseClosingIssueReferences', () => {
-  it('does not match issue refs split onto the next line', () => {
-    expect(parseClosingIssueReferences('Closes\n#42')).toEqual([])
-  })
-
-  it('recognizes a full GitHub issue URL as a closing reference (a form used for real in this repo)', () => {
-    const refs = parseClosingIssueReferences(
-      'Closes https://github.com/vouchington/vouchington/issues/1838',
-    )
-    expect(refs).toEqual([
-      {
-        key: 'vouchington/vouchington#1838',
-        number: 1838,
-        owner: 'vouchington',
-        repo: 'vouchington',
-      },
-    ])
-  })
-
-  it('dedupes a full URL and a #N/owner/repo#N reference to the same issue', () => {
-    const refs = parseClosingIssueReferences(
-      'Closes vouchington/vouchington#1838\n' +
-        'Fixes https://github.com/vouchington/vouchington/issues/1838',
-    )
-    expect(refs).toHaveLength(1)
   })
 })
 

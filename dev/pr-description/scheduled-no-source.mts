@@ -1,10 +1,7 @@
+import { formatReferenceKey, type ClosingIssueReference } from 'vouchington-tooling/gh-cli'
 import { parseMarkdownSections } from 'vouchington-tooling/markdown'
 
-import {
-  type ClosingIssueReference,
-  type IssueReferenceLookup,
-  formatReferenceKey,
-} from './closing-refs.mts'
+import type { IssueReferenceLookup } from './closing-refs.mts'
 import { sanitizedLines } from './sanitized-lines.mts'
 
 // This module holds two independent "no closing keyword required" exceptions to the

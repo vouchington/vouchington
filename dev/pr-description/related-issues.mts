@@ -1,8 +1,6 @@
-import {
-  parseGitHubIssueApiResponse,
-  type ClosingIssueReference,
-  type IssueReferenceLookup,
-} from './closing-refs.mts'
+import type { ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
+import { parseGitHubIssueApiResponse, type IssueReferenceLookup } from './closing-refs.mts'
 import type { RunGh } from './issue-closure.mts'
 
 export { createIssueClosureResolver, parsePullRequestIdentity } from './issue-closure.mts'

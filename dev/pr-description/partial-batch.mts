@@ -1,4 +1,6 @@
-import type { ClosingIssueReference, IssueReferenceLookup } from './closing-refs.mts'
+import type { ClosingIssueReference } from 'vouchington-tooling/gh-cli'
+
+import type { IssueReferenceLookup } from './closing-refs.mts'
 import { extractRelatedIssuesLines, parseStandaloneIssueRefLine } from './scheduled-no-source.mts'
 
 const VISIBLE_LINE = 'Partial batch; source issue remains open for remaining work.'
