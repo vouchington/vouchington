@@ -10,6 +10,8 @@ import type {
 import { postVoteOptions } from '@services/posts/vote-handler-options'
 import { topicVoteOptions } from '@services/topics/vote-handler-options'
 import { rssFeedItemVoteOptions } from '@services/rss-feed-items/vote-handler-options'
+import { hostnameVoteOptions } from '@services/elections-votes/hostname/vote-handler-options'
+import { userVouchVoteOptions } from '@services/elections-votes/user-vouch/vote-handler-options'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from './output-schema-shapes.mts'
@@ -24,30 +26,36 @@ const POST_CHOICES = [...SENTIMENT_CHOICES, 'support', 'oppose'] as const
 const OUTPUT_SCHEMA = successSchema({})
 const accessContext = { assert }
 
+type VoteEntity = 'post' | 'topic' | 'rss_feed_item' | 'hostname' | 'user_vouch'
+
+const VOTE_PATHS: Record<VoteEntity, string> = {
+  post: '/api/v1/posts/:id/vote',
+  topic: '/api/v1/topics/:id/vote',
+  rss_feed_item: '/api/v1/rss-feed-items/:id/vote',
+  hostname: '/api/v1/hostnames/:id/vote',
+  user_vouch: '/api/v1/users/:id/vouch-vote',
+}
+
 function voteSource(
   options: CreateVoteHandlerOptions<ElectionVoteMutationResult, VoteAccessContext>,
-  entity: 'post' | 'topic' | 'rss_feed_item',
+  entity: VoteEntity,
   isClear: boolean,
   choices: readonly string[],
 ): MergedToolSource<VoteArgs | ClearArgs, VoteResult> {
-  const path =
-    entity === 'post'
-      ? '/api/v1/posts/:id/vote'
-      : entity === 'topic'
-        ? '/api/v1/topics/:id/vote'
-        : '/api/v1/rss-feed-items/:id/vote'
+  const path = VOTE_PATHS[entity]
+  const label = entity === 'user_vouch' ? 'user vouch' : entity.replaceAll('_', ' ')
   return {
     schema: {
       description: isClear
-        ? `Clear your current ${entity.replaceAll('_', ' ')} vote. A vote already cleared succeeds without changing anything.`
-        : `Set your ${entity.replaceAll('_', ' ')} vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.`,
+        ? `Clear your current ${label} vote. A vote already cleared succeeds without changing anything.`
+        : `Set your ${label} vote. A repeated choice succeeds without changing anything.${entity === 'post' ? " A post's allowed choices depend on its election policy." : ''}`,
       parameters: {
         type: 'object',
         properties: {
           id: {
             type: 'string',
             format: 'uuid',
-            description: `The ${entity.replaceAll('_', ' ')} ID.`,
+            description: entity === 'user_vouch' ? 'The user ID.' : `The ${label} ID.`,
           },
           ...(isClear ? {} : { choice: { type: 'string', enum: choices } }),
         },
@@ -108,6 +116,22 @@ export const voteGroup = {
     {
       option: 'clear_rss_feed_item',
       source: voteSource(rssFeedItemVoteOptions, 'rss_feed_item', true, SENTIMENT_CHOICES),
+    },
+    {
+      option: 'set_hostname',
+      source: voteSource(hostnameVoteOptions, 'hostname', false, SENTIMENT_CHOICES),
+    },
+    {
+      option: 'clear_hostname',
+      source: voteSource(hostnameVoteOptions, 'hostname', true, SENTIMENT_CHOICES),
+    },
+    {
+      option: 'set_user_vouch',
+      source: voteSource(userVouchVoteOptions, 'user_vouch', false, SENTIMENT_CHOICES),
+    },
+    {
+      option: 'clear_user_vouch',
+      source: voteSource(userVouchVoteOptions, 'user_vouch', true, SENTIMENT_CHOICES),
     },
   ],
 } as const
