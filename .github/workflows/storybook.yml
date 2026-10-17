@@ -92,6 +92,16 @@ jobs:
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
         run: VITEST_COVERAGE_SCOPE=web-storybook pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-storybook --project web-storybook-component-coverage
         timeout-minutes: 3
+      - name: Upload Storybook snapshot JUnit report
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: storybook-node-test-report
+          path: storybook-test-report.junit.xml
+          retention-days: 1
+          if-no-files-found: warn
       - name: Preserve full web-storybook LCOV
         timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
