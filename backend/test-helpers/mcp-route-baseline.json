@@ -1431,12 +1431,17 @@
     "I164": [["community", "id"]],
     "I165": [["community", "itemId"]],
     "I166": [["after", "community", "limit", "window"]],
+<<<<<<< HEAD
     "I167": [["conversation_id"]],
     "I168": [["after", "conversation_id", "limit"]],
     "I169": [["user_id"], ["user_ids"]],
     "I170": [["conversation_id", "participant_add_policy"]],
     "I171": [["conversation_id", "text"]],
     "I172": [["conversation_id", "user_id"]]
+=======
+    "I167": [["idOrSlug"]],
+    "I168": [["noteId", "userId"]]
+>>>>>>> 038f54d2e (test(mcp): record moderator route provenance)
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -5701,6 +5706,7 @@
         }
       ]
     },
+<<<<<<< HEAD
     "GET:/api/v1/my/messages": {
       "pullRequest": 3181,
       "contracts": [
@@ -5842,6 +5848,85 @@
           "decision": false,
           "inputFields": "I172",
           "requestBodyFields": null
+=======
+    "POST:/api/v1/posts/:idOrSlug/lock": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I167",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "lock_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:idOrSlug/lock": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I167",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "unlock_post"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I163",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "confirm_ban_evasion"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/users/:userId/mod-notes": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I053",
+          "requestBodyFields": ["body", "community_id"],
+          "operation": {
+            "tool": "add_community_moderation",
+            "option": "create_mod_note"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "DELETE:/api/v1/users/:userId/mod-notes/:noteId": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F95",
+          "inputFields": "I168",
+          "requestBodyFields": null,
+          "operation": {
+            "tool": "remove_community_moderation",
+            "option": "delete_mod_note"
+          },
+          "decision": false
+>>>>>>> 038f54d2e (test(mcp): record moderator route provenance)
         }
       ]
     }
