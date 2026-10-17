@@ -1,7 +1,6 @@
-import { assertReviewDisputeDelivered } from './assert-delivered.mts'
+import { rejectUnresolvableDispute } from './assert-delivered.mts'
 import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import assert from 'http-assert'
 import {
   recordModerationTrainingFeedback,
   type ModerationTrainingEvidence,
@@ -20,18 +19,17 @@ export async function dismissReviewDispute(
 ): Promise<ReviewDisputeResponse> {
   const now = new Date()
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
-    await assertReviewDisputeDelivered(disputeId, { query })
     const { rows } = await query(
       sql`/* dismissReviewDispute */
       UPDATE review_disputes
       SET resolved_at = ${now},
           resolved_by_id = ${staffUserId},
           resolution_action = 'dismiss'
-      WHERE id = ${disputeId} AND resolved_at IS NULL
+      WHERE id = ${disputeId} AND sent_at IS NOT NULL AND resolved_at IS NULL
       RETURNING `.append(DISPUTE_RETURNING),
     )
     const row = rows[0] as ReviewDisputeResolutionRow | undefined
-    assert(row, 404, 'Dispute not found or already resolved')
+    if (!row) return rejectUnresolvableDispute(disputeId, { query })
 
     const lifecycleId = await appendLifecycleChange(
       disputeId,

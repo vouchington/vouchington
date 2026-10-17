@@ -23,6 +23,7 @@ export type ReportJudgementContext = {
 }
 
 type ReportContextRow = {
+  fk_column: string
   entity_id: string
   report_count: number
   reports: Array<{ id: string; reason: ModerationReportReason; note: string | null }>
@@ -55,23 +56,12 @@ export async function getReportJudgementContextsForEntitiesBatch(
     }
   }
 
-  const groupedRows = await Promise.all(
-    MODERATION_REPORT_FK_COLUMNS.map(async fkColumn => {
-      const ids = byFk.get(fkColumn)
-      if (!ids) return null
-      const rows = await selectReportContextRows(fkColumn, ids)
-      return { fkColumn, rows }
-    }),
-  )
-  for (const grouped of groupedRows) {
-    if (!grouped) continue
-    const { fkColumn, rows } = grouped
-    for (const row of rows) {
-      const context = buildReportJudgementContext(row.reports, row.report_count)
-      const entityType = entityTypeByFkAndId.get(`${fkColumn}:${row.entity_id}`)
-      if (entityType) {
-        result.set(`${entityType}:${row.entity_id}`, context)
-      }
+  const rows = await selectReportContextRows(byFk)
+  for (const row of rows) {
+    const context = buildReportJudgementContext(row.reports, row.report_count)
+    const entityType = entityTypeByFkAndId.get(`${row.fk_column}:${row.entity_id}`)
+    if (entityType) {
+      result.set(`${entityType}:${row.entity_id}`, context)
     }
   }
 
@@ -86,43 +76,57 @@ function reportReasonSeverityRank(reason: ModerationReportReason): number {
   return REPORT_REASON_SEVERITY_RANK[reason]
 }
 
-async function selectReportContextRows(
-  fkColumn: string,
-  ids: string[],
-): Promise<ReportContextRow[]> {
+/**
+ * One statement for every entity kind: a branch per foreign key column that has ids. An entity
+ * without reports yields no row; the caller fills in the empty context.
+ */
+async function selectReportContextRows(byFk: Map<string, string[]>): Promise<ReportContextRow[]> {
   const query = sql`/* getReportJudgementContextsForEntitiesBatch */
-      WITH entity_ids(entity_id) AS (
-        SELECT unnest(${ids}::uuid[])
-      ),
-      ranked_reports AS (
+      WITH ranked_reports AS (`
+  let first = true
+  for (const fkColumn of MODERATION_REPORT_FK_COLUMNS) {
+    const ids = byFk.get(fkColumn)
+    if (!ids) continue
+    if (!first) query.append(sql` UNION ALL `)
+    first = false
+    query.append(sql`
         SELECT
-          entity_ids.entity_id,
+          ${fkColumn}::text AS fk_column,
+          r.`)
+    query.append(fkColumn)
+    query.append(sql` AS entity_id,
           r.id,
           r.reason,
           r.note,
-          r.created_at,
-          COUNT(r.id) OVER (PARTITION BY entity_ids.entity_id)::integer AS report_count,
+          COUNT(*) OVER (PARTITION BY r.`)
+    query.append(fkColumn)
+    query.append(sql`)::integer AS report_count,
           ROW_NUMBER() OVER (
-            PARTITION BY entity_ids.entity_id
+            PARTITION BY r.`)
+    query.append(fkColumn)
+    query.append(sql`
             ORDER BY r.id DESC
           ) AS report_rank
-        FROM entity_ids
-        LEFT JOIN moderation_reports r ON r.`
-  query.append(fkColumn)
-  query.append(sql` = entity_ids.entity_id
+        FROM moderation_reports r
+        WHERE r.`)
+    query.append(fkColumn)
+    query.append(sql` = ANY(${ids}::uuid[])`)
+  }
+  query.append(sql`
       )
       SELECT
+        fk_column,
         entity_id,
-        COALESCE(MAX(report_count), 0)::integer AS report_count,
+        MAX(report_count)::integer AS report_count,
         COALESCE(
           jsonb_agg(
             jsonb_build_object('id', id, 'reason', reason, 'note', note)
             ORDER BY id DESC
-          ) FILTER (WHERE id IS NOT NULL AND report_rank <= ${MAX_REPORTS_FOR_JUDGEMENT}),
+          ) FILTER (WHERE report_rank <= ${MAX_REPORTS_FOR_JUDGEMENT}),
           '[]'::jsonb
         ) AS reports
       FROM ranked_reports
-      GROUP BY entity_id
+      GROUP BY fk_column, entity_id
     `)
   const { rows } = await read<ReportContextRow>(query)
   return rows

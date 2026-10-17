@@ -3499,6 +3499,9 @@ importers:
       '@services/messaging':
         specifier: workspace:^
         version: link:../services/messaging
+      '@services/moderation-reports':
+        specifier: workspace:^
+        version: link:../services/moderation-reports
       '@services/modmail':
         specifier: workspace:^
         version: link:../services/modmail

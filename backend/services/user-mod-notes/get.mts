@@ -3,7 +3,11 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { isModerationStaff, getModeratedCommunityIds } from './authorization.mts'
+import {
+  isModerationStaff,
+  getModeratedCommunityIds,
+  type ModeratedCommunityIdsOption,
+} from './authorization.mts'
 import type { UserModNote } from './config.mts'
 
 export type ListUserModNotesOptions = {
@@ -14,7 +18,7 @@ export type ListUserModNotesOptions = {
 export async function listUserModNotes(
   currentUser: PrivateUser,
   targetUserId: string,
-  options?: ListUserModNotesOptions & QueryOptions,
+  options?: ListUserModNotesOptions & ModeratedCommunityIdsOption & QueryOptions,
 ): Promise<{ notes: UserModNote[]; hasNextPage: boolean }> {
   const limit = typeof options?.limit === 'number' ? Math.min(Math.max(options.limit, 1), 100) : 20
   const beforeId = options?.beforeId ?? null
@@ -27,7 +31,8 @@ export async function listUserModNotes(
   `
 
   if (!isModerationStaff(currentUser)) {
-    const moderatedIds = await getModeratedCommunityIds(currentUser)
+    const moderatedIds =
+      options?.moderatedCommunityIds ?? (await getModeratedCommunityIds(currentUser))
     assert(moderatedIds.length > 0, 403, 'Forbidden')
     query.append(sql` AND community_id = ANY(${moderatedIds}::uuid[])`)
   }

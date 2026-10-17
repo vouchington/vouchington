@@ -10,13 +10,6 @@ export async function sendApprovedReviewDisputeResolution(
   staffUserId: string,
   disputeId: string,
 ): Promise<ReviewDisputeResponse> {
-  const dispute = await getReviewDisputeByIdFromPrimary(disputeId)
-  assert(dispute, 404, 'Dispute not found')
-  // Legally required invariant: approved_at MUST be set before sending
-  assert(dispute.approved_at != null, 422, 'Dispute must be approved before sending')
-  assert(dispute.sent_at == null, 422, 'Dispute resolution has already been sent')
-  assert(dispute.public_response, 422, 'Dispute has no public response to send')
-
   const now = new Date()
   const { rows } = await write(sql`/* sendApprovedReviewDisputeResolution */
     WITH lifecycle_change_id AS (
@@ -29,6 +22,8 @@ export async function sendApprovedReviewDisputeResolution(
       WHERE id = ${disputeId}
         AND approved_at IS NOT NULL
         AND sent_at IS NULL
+        AND public_response IS NOT NULL
+        AND public_response <> ''
       RETURNING
         id, post_id, topic_id, disputant_user_id, reason, claim_text,
         CASE
@@ -61,15 +56,30 @@ export async function sendApprovedReviewDisputeResolution(
     SELECT * FROM updated
   `)
   const result = rows[0] as ReviewDispute | undefined
-  assert(result, 422, 'Dispute resolution has already been sent')
+  if (!result) return rejectUnsendableDispute(disputeId)
 
   // Deliver the human-approved response to the disputant. Awaited so a delivery
   // failure surfaces to the caller instead of being silently swallowed.
   await createReviewDisputeResolvedNotification(
-    dispute.disputant_user_id,
+    result.disputant_user_id,
     disputeId,
-    dispute.public_response ?? '',
+    result.public_response ?? '',
   )
 
   return getReviewDisputeAfterMutation(disputeId)
+}
+
+/**
+ * Explains a send update that matched no row. The update's predicates guard the success path, so
+ * only a miss reads, and it reports the same precedence a pre-read of the dispute would.
+ */
+async function rejectUnsendableDispute(disputeId: string): Promise<never> {
+  const dispute = await getReviewDisputeByIdFromPrimary(disputeId)
+  assert(dispute, 404, 'Dispute not found')
+  // Legally required invariant: approved_at MUST be set before sending
+  assert(dispute.approved_at != null, 422, 'Dispute must be approved before sending')
+  assert(dispute.sent_at == null, 422, 'Dispute resolution has already been sent')
+  assert(dispute.public_response, 422, 'Dispute has no public response to send')
+  // A concurrent send won between the update and this read.
+  assert(false, 422, 'Dispute resolution has already been sent')
 }

@@ -261,4 +261,16 @@ describe('POST /api/v1/appeals/:id/approval and /delivery', () => {
     const deliveryResponse = await request.post(`/api/v1/appeals/${appealId}/delivery`).expect(200)
     expect(deliveryResponse.body.appeal.sent_at).not.toBeNull()
   })
+
+  it('a second delivery returns 422', async () => {
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    await request.post(`/api/v1/appeals/${appealId}/delivery`).expect(422)
+  })
+
+  it('delivery of an unknown appeal returns 404', async () => {
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    await request.post(`/api/v1/appeals/${crypto.randomUUID()}/delivery`).expect(404)
+  })
 })

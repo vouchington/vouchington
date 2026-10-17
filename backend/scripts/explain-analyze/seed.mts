@@ -87,6 +87,7 @@ import {
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
+import { seedModerationReportContexts } from './seed-data/moderation-report-contexts.mts'
 
 async function main() {
   await seedUsers(20_000)
@@ -130,6 +131,7 @@ async function main() {
   await seedDisabledRssFeed(2500)
   await seedRssFeedItemCategories(5000)
   await checkpointSeed('rss feeds')
+  await seedModerationReportContexts()
   await seedFollowRssFeedRelations(2500)
   await seedFollowTopicRelations(2500)
   await seedHeavyFollowRelations()
