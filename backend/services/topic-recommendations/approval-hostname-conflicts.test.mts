@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { createTestUser, createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  createTestUser,
+  createTestTopic,
+  WEB_PROVENANCE,
+  beginTransaction,
+} from '@voucha/test-helpers'
 import { createTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
-import { beginTransaction } from '@data-stores/psql'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { createTopicRecommendationLinkRelation } from './create-topic-recommendation-link-relation.mts'
 
