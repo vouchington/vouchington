@@ -126,6 +126,7 @@ recovery follow [One current contract](../../AGENTS.md).
 - **A `view_*` view is read only by its key.** Pick ids from indexed base tables, then read the view
   by those ids. Filtering, sorting, paging, or counting on view columns computes every row before
   the page is cut, so cost grows with the table. Whole-table totals read precomputed results.
+  Enforced by `postgres-required-predicates` (`requireColumns`).
 - Never bound ids in SQL with `uuidv7(...)`: it is volatile, so the predicate is only a filter that
   cannot use an index or skip partitions. Pass a TypeScript-computed bound or a STABLE inlinable
   helper.

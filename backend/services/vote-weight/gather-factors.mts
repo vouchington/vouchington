@@ -73,8 +73,9 @@ export async function gatherVoteWeightFactors(
     ) pk
     LEFT JOIN LATERAL (
       SELECT membership.plan
-      FROM view_current_paid_memberships membership
-      WHERE membership.user_id = u.id
+      FROM memberships selected
+      JOIN view_current_paid_memberships membership ON membership.membership_id = selected.id
+      WHERE selected.user_id = u.id AND selected.projection_ended_at IS NULL
     ) ms ON true
     LEFT JOIN LATERAL (
       SELECT EXISTS (

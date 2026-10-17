@@ -4019,6 +4019,98 @@ rules:
             - deleted_at IS NULL
             - merged_into_topic_id IS NULL
 
+  - name: view reads constrain their lookup keys
+    rule: postgres-required-predicates
+    scope: repository
+    options:
+      importSpecifier: '@data-stores/psql'
+      executorFactoryNames:
+        - beginTransaction
+        - beginBoundedTransaction
+      executorTypeNames:
+        - TransactionQuery
+        - QueryExecutor
+      include:
+        - backend/**/*.{ts,mts,js}
+      exclude:
+        - '**/*.test.*'
+        - '**/__tests__/**'
+        - '**/test-helpers/**'
+        - backend/scripts/**
+      unanalyzableSql: ignore
+      relations:
+        - table: view_community_list_items
+          requireColumns:
+            - community_id
+        - table: view_community_metrics
+          requireColumns:
+            - id
+        - table: view_current_paid_memberships
+          requireColumns:
+            - membership_id
+        - table: view_embedded_topics
+          requireColumns:
+            - id
+        - table: view_embedded_users
+          requireColumns:
+            - id
+        - table: view_media_delivery_registry_current_records
+          requireColumns:
+            - media_delivery_registry_record_id
+        - table: view_memberships
+          requireColumns:
+            - id
+        - table: view_oauth_authorization_current_records
+          requireColumns:
+            - id
+        - table: view_post_clearance_status
+          requireColumns:
+            - post_id
+        - table: view_posts
+          requireColumns:
+            - id
+        - table: view_public_post_eligibility
+          requireColumns:
+            - post_id
+        - table: view_publicly_projected_image_placements
+          requireColumns:
+            - placement_id
+            - placement_revision
+            - image_id
+        - table: view_rss_feed_current_states
+          requireColumns:
+            - rss_feed_id
+        - table: view_rss_feed_items
+          requireColumns:
+            - id
+        - table: view_rss_feeds
+          requireColumns:
+            - id
+        - table: view_topic_metrics
+          requireColumns:
+            - id
+        - table: view_topics
+          requireColumns:
+            - id
+        - table: view_url_hostnames
+          requireColumns:
+            - id
+        - table: view_urls
+          requireColumns:
+            - id
+        - table: view_user_list_items
+          requireColumns:
+            - list_id
+        - table: view_user_metrics
+          requireColumns:
+            - id
+        - table: view_users_private
+          requireColumns:
+            - id
+        - table: view_users_public
+          requireColumns:
+            - id
+
   - name: partitioned reads constrain the partition key
     rule: postgres-required-predicates
     scope: repository

@@ -108,7 +108,9 @@ async function selectPaidFollowerTopics(
       SELECT DISTINCT uf.subject_id AS user_id
       FROM relation__user__follow__rss_feed uf
       JOIN item_feeds f ON f.rss_feed_id = uf.object_id
-      JOIN view_current_paid_memberships m ON m.user_id = uf.subject_id
+      JOIN memberships membership ON membership.user_id = uf.subject_id
+        AND membership.projection_ended_at IS NULL
+      JOIN view_current_paid_memberships m ON m.membership_id = membership.id
         AND m.plan = ${plan}
       WHERE uf.deleted_at IS NULL
     ),
