@@ -4,6 +4,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import { buildSearchUrlHostnamesQuery } from './search-query.mts'
 import type { ViewHostname } from './types.mts'
 import type { SearchUrlHostnamesOptions } from './search-types.mts'
+import { readHostnameCandidatePage } from './candidate-page.mts'
 export type { SearchUrlHostnamesOptions } from './search-types.mts'
 
 export const searchUrlHostnames = async (
@@ -53,34 +54,5 @@ export async function searchBlockedHostnames(
     filters.push(`(hostname > $${nameIdx} OR (hostname = $${nameIdx} AND id > $${idIdx}))`)
   }
 
-  const where = `WHERE ${filters.join(' AND ')}`
-  values.push(limit + 1)
-
-  const { rows } = await read(
-    `/* searchBlockedHostnames */
-    WITH candidate_hostnames AS MATERIALIZED (
-    SELECT id, hostname FROM url_hostnames
-    ${where}
-    ORDER BY hostname ASC, id ASC
-    LIMIT $${values.length}
-    )
-    SELECT hydrated.* FROM candidate_hostnames candidate
-    JOIN LATERAL (
-      SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
-    ) hydrated ON true
-    ORDER BY candidate.hostname ASC, candidate.id ASC`,
-    values,
-  )
-
-  const all = rows as ViewHostname[]
-  const hasNextPage = all.length > limit
-  const results = all.slice(0, limit)
-
-  return {
-    results,
-    page_info: buildPageInfo(results, {
-      hasNextPage,
-      getCursor: h => ({ name: h.hostname, id: h.id }),
-    }),
-  }
+  return readHostnameCandidatePage({ filters, values, limit, order: 'hostname' })
 }

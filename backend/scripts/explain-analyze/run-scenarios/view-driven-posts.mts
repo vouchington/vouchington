@@ -1,10 +1,7 @@
 import { SEED_PREFIX, runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import {
-  searchCommunityPosts,
-  searchPendingPosts,
-} from '../../../services/communities/publications/get.mts'
-import { searchCommunityAgentPromptSimulationPosts } from '../../../services/community-agent-prompts/simulations.mts'
+import { searchCommunityPosts, searchPendingPosts } from '@services/communities/publications/get'
+import { searchCommunityAgentPromptSimulationPosts } from '@services/community-agent-prompts/simulations'
 
 export async function runViewDrivenPostScenarios(): Promise<void> {
   const communityId = `${SEED_PREFIX}-1400-7000-8000-000000000000`

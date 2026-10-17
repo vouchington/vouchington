@@ -1,10 +1,7 @@
 import { runAndCapture, seedTopicId } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import { searchTopHostnames } from '../../../services/urls-hostnames/search-top.mts'
-import {
-  searchBlockedHostnames,
-  searchUrlHostnames,
-} from '../../../services/urls-hostnames/search.mts'
+import { searchTopHostnames } from '@services/urls-hostnames/search-top'
+import { searchBlockedHostnames, searchUrlHostnames } from '@services/urls-hostnames/search'
 
 export async function runViewDrivenHostnameScenarios(): Promise<void> {
   registerScenarioContract('search-top-hostnames', {

@@ -3380,6 +3380,9 @@ importers:
       '@services/articles':
         specifier: workspace:^
         version: link:../services/articles
+      '@services/autotagger':
+        specifier: workspace:^
+        version: link:../services/autotagger
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../services/bookmarks
@@ -3395,6 +3398,9 @@ importers:
       '@services/communities':
         specifier: workspace:^
         version: link:../services/communities
+      '@services/community-agent-prompts':
+        specifier: workspace:^
+        version: link:../services/community-agent-prompts
       '@services/conversations-messages':
         specifier: workspace:^
         version: link:../services/conversations-messages
@@ -3440,12 +3446,21 @@ importers:
       '@services/growth-metrics':
         specifier: workspace:^
         version: link:../services/growth-metrics
+      '@services/identity-verification':
+        specifier: workspace:^
+        version: link:../services/identity-verification
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../services/jwt-session
+      '@services/language-detection':
+        specifier: workspace:^
+        version: link:../services/language-detection
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../services/lists
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../services/media-delivery-safety
@@ -3464,6 +3479,9 @@ importers:
       '@services/notifications':
         specifier: workspace:^
         version: link:../services/notifications
+      '@services/oauth':
+        specifier: workspace:^
+        version: link:../services/oauth
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../services/oauth-authorization-server
