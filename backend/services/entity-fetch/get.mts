@@ -43,6 +43,12 @@ export async function getUserPublicByAnyCachedBatch(identifiers: string[]) {
   const activeIds = await getActiveUserIds(users.flatMap(user => (user ? [user.id] : [])))
   return users.map(user => (user && activeIds.has(user.id) ? user : null))
 }
+
+/** For ids the caller's own query already joined to non-deleted users; skips the active-user check. */
+export async function getUserPublicByAnyCachedBatchOfActive(identifiers: string[]) {
+  return getUserPublicByAnyBatchFromCache(identifiers)
+}
+
 export { getTopicByAnyCached, getTopicByAnyCachedBatch } from '@services/topics/get-cached'
 export const getTopicByAnyWithRedirectCached =
   caches.topics_with_redirect.cacheGetByAny(getTopicByAnyWithRedirect)
