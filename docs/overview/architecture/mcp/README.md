@@ -72,6 +72,10 @@ calls are outside this MCP gate. First-party native OAuth clients use the client
 `<site origin>/api/v1/oauth/native-clients/ios`, `/macos`, and `/windows`; see the
 OAuth documentation for redirects and authorization.
 
+Direct messages require exact private-data grants; umbrella scopes exclude them. Reads remain available
+for Free and suspended members; writes require Plus and an active account. Member text is sanitized
+and fenced. AI chat transcripts remain outside this grant.
+
 The plan must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
 field cannot express separate per-surface plans, so a mutating tool cannot share the `mcp`
 and `admin_mcp` surfaces until the metadata model can (enforced by the registry invariant

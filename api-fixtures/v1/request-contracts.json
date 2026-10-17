@@ -14578,6 +14578,16 @@
               "type": "string"
             }
           ]
+        },
+        "profile_image_placement": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/components/schemas/ImagePlacementTuple"
+            }
+          ]
         }
       },
       "required": [
@@ -14585,6 +14595,7 @@
         "created_at",
         "id",
         "profile_image_id",
+        "profile_image_placement",
         "removed_at",
         "role",
         "user_id",
@@ -32675,6 +32686,12 @@
             },
             {
               "type": "null"
+            },
+            {
+              "const": "messages_read"
+            },
+            {
+              "const": "messages_write"
             }
           ]
         },
@@ -49292,6 +49309,64 @@
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "$ref": "#/components/schemas/UserRssFeedImport"
     },
+    "GET:/api/v1/my/messages": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/DirectConversation"
+          }
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        }
+      },
+      "required": ["results", "page_info"],
+      "additionalProperties": false
+    },
+    "GET:/api/v1/my/messages/:conversationId": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "$ref": "#/components/schemas/DirectConversation"
+        }
+      },
+      "required": ["conversation"],
+      "additionalProperties": false
+    },
+    "GET:/api/v1/my/messages/:conversationId/messages": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/DirectMessage"
+          }
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        }
+      },
+      "required": ["results", "page_info"],
+      "additionalProperties": false
+    },
+    "GET:/api/v1/my/messages/:conversationId/participants": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/ConversationParticipant"
+          }
+        },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        }
+      },
+      "required": ["results", "page_info"],
+      "additionalProperties": false
+    },
     "GET:/api/v1/my/notifications/unread": {
       "$ref": "#/components/schemas/NotificationsUnreadSummaryResponseBody"
     },
@@ -49391,6 +49466,17 @@
     "PATCH:/api/v1/hostnames/:id": {
       "$ref": "#/components/schemas/BlockHostnameResult"
     },
+    "PATCH:/api/v1/my/messages/:conversationId": {
+      "type": "object",
+      "properties": {
+        "participant_add_policy": {
+          "type": "string",
+          "enum": ["owner_only", "all_members"]
+        }
+      },
+      "required": ["participant_add_policy"],
+      "additionalProperties": false
+    },
     "POST:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold/rollback": {
       "$ref": "#/components/schemas/AppliedThresholdChange"
     },
@@ -49421,6 +49507,36 @@
     },
     "POST:/api/v1/fediverse/instances": {
       "$ref": "#/components/schemas/CreateInstanceResult"
+    },
+    "POST:/api/v1/my/messages": {
+      "type": "object",
+      "properties": {
+        "conversation": {
+          "$ref": "#/components/schemas/DirectConversation"
+        }
+      },
+      "required": ["conversation"],
+      "additionalProperties": false
+    },
+    "POST:/api/v1/my/messages/:conversationId/messages": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "$ref": "#/components/schemas/DirectMessage"
+        }
+      },
+      "required": ["message"],
+      "additionalProperties": false
+    },
+    "POST:/api/v1/my/messages/:conversationId/participants": {
+      "type": "object",
+      "properties": {
+        "participant": {
+          "$ref": "#/components/schemas/ConversationParticipant"
+        }
+      },
+      "required": ["participant"],
+      "additionalProperties": false
     },
     "POST:/api/v1/rss-feeds": {
       "$ref": "#/components/schemas/CreateSourceResult"

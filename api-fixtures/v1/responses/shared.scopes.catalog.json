@@ -325,6 +325,24 @@
       "surfaces": ["api-key", "oauth"]
     },
     {
+      "action": "read",
+      "audience": "user",
+      "description_key": "messages_read",
+      "requires": null,
+      "resource": "messages",
+      "scope": "messages:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": "messages_write",
+      "requires": "messages:read",
+      "resource": "messages",
+      "scope": "messages:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
       "action": "write",
       "audience": "admin",
       "description_key": null,

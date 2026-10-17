@@ -7,6 +7,786 @@
       "tools": [
         {
           "tool": {
+            "name": "read_my_messages",
+            "title": "Read My Messages",
+            "description": "list: List your direct-message conversations, newest activity first.\nget: Read a direct-message conversation you participate in.\nmessages: Read a conversation’s messages; without a cursor returns the most recent page in chronological order.\nparticipants: Read active participants in a direct-message conversation.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["list"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "description": "Page size; uses the REST default and maximum."
+                        },
+                        "after": {
+                          "type": "string",
+                          "description": "Opaque cursor from this option’s previous page."
+                        }
+                      },
+                      "required": [],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["get"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "conversation_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["conversation_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["messages"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["participants"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "conversation_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Page size; uses the REST default and maximum."
+                    },
+                    "after": {
+                      "type": "string",
+                      "description": "Opaque cursor from this option’s previous page."
+                    }
+                  },
+                  "required": ["conversation_id"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/S1"
+                      }
+                    },
+                    "page_info": {
+                      "$ref": "#/$defs/S2"
+                    }
+                  },
+                  "required": ["results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["conversation"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "body_text": {
+                            "type": "string"
+                          },
+                          "conversation_id": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "created_by_id": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "deleted_at": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "sender_username": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "body_text",
+                          "conversation_id",
+                          "created_at",
+                          "created_by_id",
+                          "deleted_at",
+                          "id",
+                          "updated_at"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "page_info": {
+                      "$ref": "#/$defs/S2"
+                    }
+                  },
+                  "required": ["results", "page_info"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "conversation_id": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "profile_image_id": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "removed_at": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "role": {
+                            "enum": ["admin", "member", "owner"],
+                            "type": "string"
+                          },
+                          "user_id": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "username": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "profile_image_placement": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "image_id": {
+                                    "type": "string"
+                                  },
+                                  "placement_id": {
+                                    "type": "string"
+                                  },
+                                  "placement_revision": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": ["image_id", "placement_id", "placement_revision"],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "conversation_id",
+                          "created_at",
+                          "id",
+                          "profile_image_id",
+                          "profile_image_placement",
+                          "removed_at",
+                          "role",
+                          "user_id",
+                          "username"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "page_info": {
+                      "$ref": "#/$defs/S2"
+                    }
+                  },
+                  "required": ["results", "page_info"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "channel_type": {
+                      "const": "direct_message"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "created_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "participant_add_policy": {
+                      "enum": ["all_members", "owner_only"],
+                      "type": "string"
+                    },
+                    "participant_usernames": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "channel_type",
+                    "created_at",
+                    "created_by_id",
+                    "id",
+                    "title",
+                    "updated_at"
+                  ],
+                  "type": "object"
+                },
+                "S2": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "end_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "has_next_page": {
+                      "type": "boolean"
+                    },
+                    "start_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["end_cursor", "has_next_page", "start_cursor"],
+                  "type": "object"
+                },
+                "S3": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["messages:read"],
+              "voucha/optionOutputPointers": {
+                "list": "#/anyOf/0",
+                "get": "#/anyOf/1",
+                "messages": "#/anyOf/2",
+                "participants": "#/anyOf/3"
+              }
+            }
+          },
+          "plan": "free",
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/messages"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/messages/:conversationId"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/messages/:conversationId/messages"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/messages/:conversationId/participants"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "manage_my_messages",
+            "title": "Manage My Messages",
+            "description": "create: Start or find a direct conversation with user_id, or create a group with user_ids.\nupdate: Change a group’s participant-add policy as its owner.\nsend: Send text to a direct-message conversation.\nadd_participant: Add a recipient to a group, subject to its participant policy and recipient rules.\nremove_participant: Leave a direct-message group or remove a participant when authorized.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["create"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "user_id": {
+                              "type": "string",
+                              "format": "uuid"
+                            }
+                          },
+                          "required": ["user_id"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "minItems": 1,
+                              "maxItems": 25
+                            }
+                          },
+                          "required": ["user_ids"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["update"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "conversation_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "participant_add_policy": {
+                          "type": "string",
+                          "enum": ["owner_only", "all_members"]
+                        }
+                      },
+                      "required": ["conversation_id", "participant_add_policy"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["send"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "conversation_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["conversation_id", "text"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["add_participant"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["remove_participant"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "conversation_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "user_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["conversation_id", "user_id"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "channel_type": {
+                          "const": "direct_message"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "participant_add_policy": {
+                          "enum": ["all_members", "owner_only"],
+                          "type": "string"
+                        },
+                        "participant_usernames": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "channel_type",
+                        "created_at",
+                        "created_by_id",
+                        "id",
+                        "title",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["conversation"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "participant_add_policy": {
+                      "type": "string",
+                      "enum": ["owner_only", "all_members"]
+                    }
+                  },
+                  "required": ["participant_add_policy"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "body_text": {
+                          "type": "string"
+                        },
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "created_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "deleted_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "sender_username": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "body_text",
+                        "conversation_id",
+                        "created_at",
+                        "created_by_id",
+                        "deleted_at",
+                        "id",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["message"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "participant": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "conversation_id": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "profile_image_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "removed_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "role": {
+                          "enum": ["admin", "member", "owner"],
+                          "type": "string"
+                        },
+                        "user_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "username": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "profile_image_placement": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "image_id": {
+                                  "type": "string"
+                                },
+                                "placement_id": {
+                                  "type": "string"
+                                },
+                                "placement_revision": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": ["image_id", "placement_id", "placement_revision"],
+                              "type": "object"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "conversation_id",
+                        "created_at",
+                        "id",
+                        "profile_image_id",
+                        "profile_image_placement",
+                        "removed_at",
+                        "role",
+                        "user_id",
+                        "username"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["participant"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": true,
+              "idempotentHint": false
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["messages:read", "messages:write"],
+              "voucha/optionOutputPointers": {
+                "create": "#/anyOf/0",
+                "update": "#/anyOf/1",
+                "send": "#/anyOf/2",
+                "add_participant": "#/anyOf/3",
+                "remove_participant": "#/anyOf/4"
+              }
+            }
+          },
+          "plan": "plus",
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/my/messages"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/my/messages/:conversationId"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/my/messages/:conversationId/messages"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/my/messages/:conversationId/participants"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/my/messages/:conversationId/participants/:userId"
+            }
+          ]
+        },
+        {
+          "tool": {
             "name": "read_community",
             "title": "Read Community",
             "description": "list_item_counts: Count a public community's curated list entries by item_type (topic, rss_feed, post, url_hostname or url). Counts reflect the signed-out view: unreadable posts are excluded. Use read_community (option list_items) to page through them.\nlist_items: List a public community's curated item_type in list order, as a signed-out reader sees it. entity_id identifies each entry; label gives hostname, URL or feed title where no tool reads by id, or null if unreadable. Unreadable posts are omitted. Read topics with read_topic (option details), posts with read_posts (option details), and totals with read_community (option list_item_counts).\nmembers: List a public community's members as a signed-out reader sees them: owner and moderators always, regular members only when member_roster_visibility is public.\npinned_posts: Get the posts a public community has pinned, in pin order, by its UUID or slug, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. A pinned post the public cannot see is left out.\nposts: List a public community's approved posts as a signed-out reader sees them, newest or hot first. Anonymous posts never name their author. q matches text and #hashtags. Unfiltered pages exclude pins; pinned_post_ids appears only on the first. Read them with read_community (option pinned_posts).\ndetails: Get a public community by UUID or slug, including its rules, owner and public counts. Private, deleted and unknown communities all return Community not found, even for members or owners. Use read_community (options posts, pinned_posts, members) for its contents.",

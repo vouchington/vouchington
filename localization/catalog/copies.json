@@ -6071,6 +6071,8 @@
 {"descriptor":null,"id":"copy.scopeDescription.financialProfileWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpAdminFullAccess"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpUserFullAccess"},
+{"descriptor":null,"id":"copy.scopeDescription.messagesRead"},
+{"descriptor":null,"id":"copy.scopeDescription.messagesWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.spendingRead"},
 {"descriptor":null,"id":"copy.scopeDescription.spendingWrite"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmCurrentDescription"},

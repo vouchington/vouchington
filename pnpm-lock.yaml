@@ -1967,6 +1967,9 @@ importers:
       '@services/memberships':
         specifier: workspace:^
         version: link:../services/memberships
+      '@services/messaging':
+        specifier: workspace:^
+        version: link:../services/messaging
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../services/moderation-analytics
@@ -7411,15 +7414,36 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
+      '@modules/request-client-info':
+        specifier: workspace:^
+        version: link:../../modules/request-client-info
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
+      '@services/users':
+        specifier: workspace:^
+        version: link:../users
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      http-assert:
+        specifier: ^1.5.0
+        version: 1.5.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
