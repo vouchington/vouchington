@@ -40,6 +40,7 @@ export async function runViewDrivenPostScenarios(): Promise<void> {
       ],
       crossPartition: { posts: scenario.description },
     })
+    // no-mistakes-disable-next-line query-reached-per-item: four fixed, separately named EXPLAIN scenarios need independent captures
     await runAndCapture(scenario.id, scenario.run)
   }
 }
