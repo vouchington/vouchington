@@ -1,3 +1,4 @@
+import { ApiError } from '@/lib/api/error'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ImportExportManager } from '../import-export-manager'
@@ -92,7 +93,6 @@ describe('ImportExportManager — file import and stream', () => {
   })
 
   it('reports the server refusal of a file as too large with the server message', async () => {
-    const { ApiError } = await import('@/lib/api/error')
     const refusal = new ApiError('request entity too large', 413)
     mockImportRssFeeds.mockRejectedValueOnce(refusal)
     render(<ImportExportManager feedType='article' />)
@@ -106,6 +106,7 @@ describe('ImportExportManager — file import and stream', () => {
   })
 
   it('does not read a file above the absolute ceiling', async () => {
+    const { toast } = await import('sonner')
     render(<ImportExportManager feedType='article' />)
     const file = new File(['small'], 'huge.opml', { type: 'text/xml' })
     Object.defineProperty(file, 'size', { value: 16 * 1024 * 1024 + 1 })
@@ -114,8 +115,9 @@ describe('ImportExportManager — file import and stream', () => {
     Object.defineProperty(input, 'files', { value: [file] })
     fireEvent.change(input)
     await waitFor(() => {
-      expect(mockOnError).toHaveBeenCalledWith(expect.any(Error), expect.anything())
+      expect(toast.error).toHaveBeenCalledWith('File is too large to import')
     })
+    expect(mockOnError).not.toHaveBeenCalled()
     expect(text).not.toHaveBeenCalled()
     expect(mockImportRssFeeds).not.toHaveBeenCalled()
   })

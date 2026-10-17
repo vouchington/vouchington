@@ -7,11 +7,8 @@ import {
   insertRssFeedImportBatchWithoutRowsForTest,
 } from '@voucha/test-helpers/sql-rss-feeds'
 import type { PrivateUser } from '@services/users/types'
-import {
-  createRssFeedImport,
-  getRssFeedImport,
-  getRssFeedImportRowWithBatch,
-} from './rss-feed-import-records.mts'
+import { createRssFeedImport, getRssFeedImportRowWithBatch } from './rss-feed-import-records.mts'
+import { getRssFeedImport } from './rss-feed-import-status.mts'
 
 describe('RSS feed import records', () => {
   let user: PrivateUser

@@ -113,7 +113,11 @@ export function useImportExportActions({ isTopics, selectedType, state, dispatch
     dispatch({ importingFeeds: true, importProgress: null })
     try {
       // The server enforces the configured limit; this only keeps a huge file from being buffered.
-      if (file.size > MAX_IMPORT_FILE_BYTES) throw new Error('File is too large to import')
+      if (file.size > MAX_IMPORT_FILE_BYTES) {
+        toast.error('File is too large to import')
+        dispatch({ importingFeeds: false })
+        return
+      }
       const contents = await file.text()
       const body = isCsv
         ? { csv: contents, should_follow_imported_feeds: true as const }

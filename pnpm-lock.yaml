@@ -3770,6 +3770,9 @@ importers:
       '@modules/csv':
         specifier: workspace:^
         version: link:../../modules/csv
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors

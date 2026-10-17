@@ -25,6 +25,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@modules/csv": "workspace:^",
+    "@modules/on-error": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/admin-imports": "workspace:^",

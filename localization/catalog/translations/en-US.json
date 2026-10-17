@@ -1622,7 +1622,7 @@
 {"id":"copy.extracted.importExport.importExportManager.importTopics_55c11921","value":"Import Topics"},
 {"id":"copy.extracted.importExport.importExportManager.importUrls_4d4e8026","value":"Import URLs"},
 {"id":"copy.extracted.importExport.importExportManager.newsSources_238ad263","value":"News Sources"},
-{"id":"copy.extracted.importExport.importExportManager.pasteSourceUrlsOnePerLine_f2d86f1f","value":"Paste source URLs (one per line) or upload a file. Max 500 URLs per import."},
+{"id":"copy.extracted.importExport.importExportManager.pasteSourceUrlsOnePerLine_f2d86f1f","value":"Paste source URLs (one per line) or upload a file."},
 {"id":"copy.extracted.importExport.importExportManager.pasteTopicNamesOnePerLine_b5f09ce4","value":"Paste topic names (one per line). Max 500 names per import."},
 {"id":"copy.extracted.importExport.importExportManager.sourceUrlsToImport_6ccfa2d9","value":"Source URLs to import"},
 {"id":"copy.extracted.importExport.importExportManager.technologyFinanceHealthcare_f91b4f35","value":"Technology\nFinance\nHealthcare"},

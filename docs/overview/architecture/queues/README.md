@@ -50,9 +50,9 @@ flowchart LR
   cursor, so no run reads unbounded rows and priority stays meaningful.
 - **A paged import survives a lost dispatcher.** User RSS and admin topic imports are the `imports`
   domain of `background`: each import has its own dispatcher chain, so a large import never starves
-  a small one. A dispatcher that fails every attempt is removed, so a scheduled sweep
-  (`imports-recover-stalled`) re-dispatches unfinished imports whose progress stopped; the stable
-  dispatcher job id and the row deduplication ids make that safe to repeat. An import's status is
+  a small one. A dispatcher can be lost (every attempt failed, or it stalled), so a scheduled sweep
+  (`imports-recover-stalled`) re-dispatches unfinished imports whose progress stopped, reactivating
+  the stable dispatcher job id; that id and the row deduplication ids make the sweep safe to repeat. An import's status is
   counters plus a keyset-paged row list, never every row at once, because imports have no row cap.
 - **Dispatchers rank below tasks.** Recovery and dispatch jobs use the lowest tier so ordinary work
   runs first when both are ready.
