@@ -6740,7 +6740,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "apple_user_email_address": {
@@ -6751,18 +6751,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "apple_user_id": {
           "collation": null,
-          "comment": "Apple's unique user identifier (primary key).",
+          "comment": "Apple's unique external user identifier.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "created_at": {
@@ -6773,7 +6773,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -6784,7 +6784,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the Apple account.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
           "type": "uuid"
         },
         "updated_at": {
@@ -6795,7 +6806,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -6806,7 +6817,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
@@ -6833,10 +6844,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "apple_accounts_pkey": {
+        "apple_accounts_apple_user_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX apple_accounts_pkey ON public.apple_accounts USING btree (apple_user_id)",
+          "definition": "CREATE UNIQUE INDEX apple_accounts_apple_user_id_key ON public.apple_accounts USING btree (apple_user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -6845,6 +6856,26 @@
               "expression": "apple_user_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "apple_accounts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX apple_accounts_pkey ON public.apple_accounts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -6944,14 +6975,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["apple_user_id"],
-        "definition": "PRIMARY KEY (apple_user_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_apple_accounts_updated_at": "CREATE TRIGGER trigger_apple_accounts_updated_at BEFORE UPDATE ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "apple_accounts_apple_user_id_key": {
+          "columns": ["apple_user_id"],
+          "definition": "UNIQUE (apple_user_id)"
+        }
+      }
     },
     "autotagger_agent_run_topics": {
       "checkConstraints": {},
