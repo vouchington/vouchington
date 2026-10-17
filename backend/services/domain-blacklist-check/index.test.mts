@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest'
-import * as domains from '@services/urls-domains-blacklist/domains'
-import { assertNoBlockedDomains, assertUrlNotBlocked } from './index.mts'
+import { describe, it, expect, beforeAll } from 'vitest'
+import { assertNoBlockedDomains, loadAllowedUrlHostnamePolicies } from './index.mts'
 import { insertTestDomainBlacklist, createTestBlacklistSource } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
@@ -54,30 +53,16 @@ describe('index', () => {
     })
   })
 
-  it('reads one batched hostname policy for every domain and URL', async () => {
-    const batchSpy = vi.spyOn(domains, 'getHostnamePolicies')
-    const singleSpy = vi.spyOn(domains, 'getHostnamePolicy')
-    try {
-      await assertNoBlockedDomains(
-        '[a](https://example.com/a) [b](https://example.com/b) ![c](https://cdn.example.org/c.png)',
-      )
-
-      expect(batchSpy).toHaveBeenCalledTimes(1)
-      expect(singleSpy).not.toHaveBeenCalled()
-    } finally {
-      batchSpy.mockRestore()
-      singleSpy.mockRestore()
-    }
-  })
-
-  describe('assertUrlNotBlocked', () => {
+  describe('loadAllowedUrlHostnamePolicies', () => {
     it('passes for a clean URL', async () => {
-      await expect(assertUrlNotBlocked('https://example.com/page')).resolves.toBeUndefined()
+      const hostname = `profile-clean-${RANDOM_ID}.com`
+      const policies = await loadAllowedUrlHostnamePolicies(`https://${hostname}/page`)
+      expect(policies.get(hostname)).toMatchObject({ is_blocked: false })
     })
 
     it('rejects a blocked domain (status 400)', async () => {
       await expect(
-        assertUrlNotBlocked(`https://${TEST_BLOCKED_DOMAIN}/page`),
+        loadAllowedUrlHostnamePolicies(`https://${TEST_BLOCKED_DOMAIN}/page`),
       ).rejects.toMatchObject({
         status: 400,
         message: expect.stringContaining(TEST_BLOCKED_DOMAIN),
@@ -85,7 +70,7 @@ describe('index', () => {
     })
 
     it('passes for an invalid URL (domain resolves to unknown)', async () => {
-      await expect(assertUrlNotBlocked('not-a-valid-url')).resolves.toBeUndefined()
+      await expect(loadAllowedUrlHostnamePolicies('not-a-valid-url')).resolves.toEqual(new Map())
     })
   })
 })

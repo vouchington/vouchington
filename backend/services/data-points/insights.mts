@@ -93,8 +93,11 @@ export async function getTopicDataPointInsightsBatch(
   const uniqueIds = [...new Set(topicIds)]
   if (uniqueIds.length === 0) return new Map()
   const query = buildTopicDataPointInsightsQuery(uniqueIds, options)
-  const statement = sql`/* getTopicDataPointInsights */\n`.append(query)
-  const { rows } = await read(statement)
+  if (!query.text.startsWith('WITH ')) throw new Error('Topic insights SQL must begin with WITH')
+  const { rows } = await read(
+    `/* getTopicDataPointInsights */\n    WITH ${query.text.slice('WITH '.length)}`,
+    query.values,
+  )
   return new Map(rows.map(row => [row.topic_id as string, mapTopicDataPointInsights(row)]))
 }
 
