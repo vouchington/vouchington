@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -30,7 +29,7 @@ describe('column trigger requirements no-mistakes configuration', () => {
   })
 
   it('accepts the posts content clock but rejects missing, malformed, and orphaned clocks', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'column-trigger-requirements-'))
+    const directory = await budget.createRoot('column-trigger-requirements-')
     dirs.push(directory)
     await writeFixture(directory, cleanTables())
 

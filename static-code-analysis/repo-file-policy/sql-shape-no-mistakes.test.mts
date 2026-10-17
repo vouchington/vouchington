@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -34,7 +33,7 @@ describe('SQL offset and shape no-mistakes configuration', () => {
   })
 
   it('rejects OFFSET, NOT IN, COUNT existence checks, and uuidv7 predicates in every SQL scope', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'sql-shape-'))
+    const directory = await budget.createRoot('sql-shape-')
     dirs.push(directory)
     await writeFixture(directory, badSql())
 

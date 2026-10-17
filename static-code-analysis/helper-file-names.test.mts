@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -17,7 +16,7 @@ describe('helper file basename policy', () => {
       .find((rule: { name: string }) => rule.name === 'banned repository paths')
       .options.bannedPaths.find((entry: { glob: string }) => entry.glob === '**/*test-helpers*')
     expect(guard).toBeDefined()
-    const directory = await mkdtemp(join(tmpdir(), 'helper-file-names-'))
+    const directory = await budget.createRoot('helper-file-names-')
     try {
       const rejected = [
         'foo-test-helpers.mts',
