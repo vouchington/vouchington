@@ -10,7 +10,7 @@ import {
   EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB,
 } from '@queues/background/enqueues/email-digests-jobs'
 import type { BackgroundJobDefinition } from '@queues/background/types'
-import { processEmailDigestJob } from './router.mts'
+import { processEmailDigestJob } from './processors/email-digest-job.mts'
 
 const DOMAIN_PREFIX = 'email-digests.'
 

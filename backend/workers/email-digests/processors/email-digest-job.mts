@@ -4,12 +4,12 @@ import { dispatchEngagementEmails } from '@services/engagement-emails/dispatch-e
 import {
   dispatchApiKeyExpiryReminders,
   processSendApiKeyExpiryReminder,
-} from './processors/api-key-expiry.mts'
-import { processSendCommunityModerationSummaryEmail } from './processors/community-moderation-summary.mts'
-import { processSendFollowNewsSourcesEmail } from './processors/follow-news-sources.mts'
-import { processSendFollowTopicsEmail } from './processors/follow-topics.mts'
-import { processSendPostReferralLinkEmail } from './processors/post-referral-link.mts'
-import type { EmailDigestTemplates } from './types.mts'
+} from './api-key-expiry.mts'
+import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
+import { processSendFollowNewsSourcesEmail } from './follow-news-sources.mts'
+import { processSendFollowTopicsEmail } from './follow-topics.mts'
+import { processSendPostReferralLinkEmail } from './post-referral-link.mts'
+import type { EmailDigestTemplates } from '../types.mts'
 
 type EmailDigestDispatchers = {
   dispatchEngagementEmails: typeof dispatchEngagementEmails
