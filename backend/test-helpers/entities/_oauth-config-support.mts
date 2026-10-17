@@ -51,6 +51,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataColumn: 'apple_user_data',
     hasTokenColumns: false,
     hasRefreshToken: false,
+    accountIdColumn: 'id',
   },
   google: {
     table: 'google_accounts',

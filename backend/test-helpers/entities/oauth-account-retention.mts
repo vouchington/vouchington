@@ -1,5 +1,6 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
+import { v7 as uuidv7 } from 'uuid'
 import { providerTableConfigs, type OAuthProvider } from './_oauth-config-support.mts'
 
 export async function setOAuthAccountCreatedAt(
@@ -8,11 +9,14 @@ export async function setOAuthAccountCreatedAt(
   createdAt: Date,
 ): Promise<void> {
   const config = providerTableConfigs[provider]
+  // UUIDv7-backed accounts derive created_at from id, so the fixture moves their key instead.
+  const column = config.accountIdColumn === 'id' ? 'id' : 'created_at'
+  const value = column === 'id' ? uuidv7({ msecs: createdAt.getTime() }) : createdAt
   await write(
     allowUnannotatedQuery(
-      `UPDATE ${config.table} SET created_at = $1 WHERE ${config.providerUserIdColumn} = $2`,
+      `UPDATE ${config.table} SET ${column} = $1 WHERE ${config.providerUserIdColumn} = $2`,
     ),
-    [createdAt, providerUserId],
+    [value, providerUserId],
   )
 }
 

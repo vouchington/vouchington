@@ -913,12 +913,13 @@ COMMENT ON COLUMN user_consents.revoked_at IS 'When the user revoked this consen
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS apple_accounts (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
-  apple_user_id TEXT PRIMARY KEY,
+  apple_user_id TEXT NOT NULL UNIQUE,
   apple_user_email_address TEXT,
   email_domain_hostname_id UUID,
   apple_user_data JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -939,8 +940,9 @@ ON apple_accounts (apple_user_email_address)
 WHERE apple_user_email_address IS NOT NULL;
 
 COMMENT ON TABLE apple_accounts IS 'Apple Sign In accounts linked to users. Stores Apple profile data.';
+COMMENT ON COLUMN apple_accounts.id IS 'Internal UUIDv7 identity of the Apple account.';
 COMMENT ON COLUMN apple_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
-COMMENT ON COLUMN apple_accounts.apple_user_id IS 'Apple''s unique user identifier (primary key).';
+COMMENT ON COLUMN apple_accounts.apple_user_id IS 'Apple''s unique external user identifier.';
 COMMENT ON COLUMN apple_accounts.apple_user_email_address IS 'Email address from the Apple profile.';
 COMMENT ON COLUMN apple_accounts.apple_user_data IS 'Raw JSONB profile data from Apple Sign In.';
 

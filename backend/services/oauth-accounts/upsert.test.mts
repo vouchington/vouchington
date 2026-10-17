@@ -51,6 +51,11 @@ describe('upsertOAuthAccount', () => {
       email,
       is_private_email: true,
     })
+    expect(account.account_id).toMatch(/^[0-9a-f-]{36}$/)
+    await expect(getOAuthAccountByProviderUserId('apple', providerUserId)).resolves.toMatchObject({
+      account_id: account.account_id,
+      provider_user_id: providerUserId,
+    })
   })
 
   it('replaces profile data for providers configured for replacement', async () => {
