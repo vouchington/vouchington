@@ -41,7 +41,11 @@ Use only these non-interactive forms:
 
 - `gh stack init <branch>` — hook-enforced, not just advisory: the pre-tool-use hook hard-blocks
   `init` when `--base`/`-b` names anything but `main`, or when HEAD is not an ancestor of
-  `origin/main` (an off-trunk root).
+  `origin/main` (an off-trunk root), or when local `refs/heads/main` exists and differs from
+  `refs/remotes/origin/main`. gh-stack roots the first layer at local `main`, not `origin/main`,
+  and in a linked worktree `git fetch origin` does not advance it. Fast-forward it with
+  `git fetch origin main:main` only when no worktree has main checked out; otherwise the checkout
+  that has it fast-forwards itself (`git merge --ff-only origin/main`). Never move it from here.
 - `gh stack add <branch>`
 - `gh stack checkout <stack-number>` — imports an existing remote stack into this worktree; a PR
   number also works. Hook-enforced: it takes exactly one numeric stack or PR number. See

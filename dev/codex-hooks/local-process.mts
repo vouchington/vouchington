@@ -66,6 +66,22 @@ export function gitIsAncestor(
   }
 }
 
+// Full object id a fully qualified ref names, or undefined when the ref is missing or git fails.
+export function gitResolveRef(cwd: string, ref: string): string | undefined {
+  try {
+    const text = execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
+      cwd,
+      encoding: 'utf8',
+      env: gitEnvForCwd(),
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5_000,
+    }).trim()
+    return text === '' ? undefined : text
+  } catch {
+    return undefined
+  }
+}
+
 export function gitRemoteVerbose(cwd: string): string | undefined {
   try {
     return execFileSync('git', ['remote', '-v'], {

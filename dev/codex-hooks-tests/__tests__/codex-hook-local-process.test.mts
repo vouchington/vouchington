@@ -10,6 +10,7 @@ import {
   gitHeadPathExists,
   gitIsAncestor,
   gitRemoteVerbose,
+  gitResolveRef,
   oxfmtFailure,
 } from '../../codex-hooks/local-process.mts'
 import { git, withRepo } from '../git-remote-repo.mts'
@@ -49,6 +50,8 @@ describe('codex hook local process boundary', () => {
       git(dir, 'commit', '-q', '--allow-empty', '-m', 'feature')
       expect(gitIsAncestor(dir, 'HEAD', 'origin/main')).toBe(false)
       expect(gitIsAncestor(dir, 'unknown-ref', 'HEAD')).toBeUndefined()
+      expect(gitResolveRef(dir, 'refs/remotes/origin/main')).toMatch(/^[0-9a-f]{40}$/)
+      expect(gitResolveRef(dir, 'refs/heads/missing')).toBeUndefined()
     })
   })
 
