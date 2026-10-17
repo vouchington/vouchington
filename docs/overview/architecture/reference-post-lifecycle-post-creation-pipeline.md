@@ -24,7 +24,7 @@ flowchart TD
   request --> dispatch[classifier-run dispatcher]
   dispatch --> tagging[Tagging classifier run, after the post embedding exists]
   tagging --> relationNotify[Relation notification reconcile]
-  listener --> spam[spam_detection queue]
+  listener --> spam[moderation-signals background domain]
   spam --> clearance
   listener --> comments[Refresh ancestor metrics for comments]
   listener --> reviews[Update topic rating stats for reviews]

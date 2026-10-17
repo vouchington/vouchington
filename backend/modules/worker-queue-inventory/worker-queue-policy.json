@@ -22,8 +22,6 @@
     "psql",
     "bloom-filters",
     "memberships",
-    "spam_detection",
-    "ban_evasion",
     "bedrock-batch-sqs",
     "ses-bounce-sqs",
     "ses-inbound-sqs",

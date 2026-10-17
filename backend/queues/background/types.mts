@@ -26,7 +26,8 @@ export type BackgroundGroup =
 
 export type BackgroundDomainDefinition = {
   readonly domain: BackgroundDomain
-  readonly group: BackgroundGroup
+  /** Omitted when the shared worker's concurrency is the only cap a domain needs. */
+  readonly group?: BackgroundGroup
   /** The baseline worker concurrency this domain had as its own queue; the shared worker sums them. */
   readonly workerConcurrency: number
 }

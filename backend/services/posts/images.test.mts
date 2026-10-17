@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as moderationEnqueues from '@queues/openai-moderation/enqueues'
-import * as spamEnqueues from '@queues/spam-detection/enqueues'
+import * as spamEnqueues from '@queues/moderation-signals/enqueues'
 import { interceptNextEntityListenerAdd } from '../../test-helpers/entity-listener-add-failure.mts'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'

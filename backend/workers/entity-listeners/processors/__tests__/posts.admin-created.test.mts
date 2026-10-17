@@ -17,7 +17,8 @@ import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'
 import { postMentionsQueue } from '@queues/post-mentions/queues'
-import { spam_detection } from '@queues/spam-detection/queues'
+import { MODERATION_SIGNALS_SPAM_DETECTION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
+import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 import '@services/referral-program-link-validations'
 import { createPostModerationContent } from '@services/posts/content'
 import { createPost, getPostByAny } from '@services/posts'
@@ -40,7 +41,7 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostCreated({ id: postId })
 
-    const spamJobs = await readAllQueueJobs(spam_detection)
+    const spamJobs = await readSpamDetectionJobs()
     expect(spamJobs.some(job => (job.data as { id?: string }).id === postId)).toBe(false)
   })
 
@@ -88,7 +89,7 @@ describe('post entity listener creation dispatch', () => {
 
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
-    const spamJobs = await readAllQueueJobs(spam_detection)
+    const spamJobs = await readSpamDetectionJobs()
     const spamJob = spamJobs.find(
       job => job.name === 'post' && (job.data as { id?: string }).id === postId,
     )
@@ -241,7 +242,7 @@ describe('post entity listener creation dispatch', () => {
 
     await processPostUpdated({ id: postId, contentChanged: true })
 
-    const spamJobs = await readAllQueueJobs(spam_detection)
+    const spamJobs = await readSpamDetectionJobs()
     const spamJob = spamJobs.find(
       job => job.name === 'post' && (job.data as { id?: string }).id === postId,
     )
@@ -252,3 +253,8 @@ describe('post entity listener creation dispatch', () => {
     })
   })
 })
+
+async function readSpamDetectionJobs() {
+  const jobs = await readAllQueueJobs(moderationSignalsQueue)
+  return jobs.filter(job => job.name === MODERATION_SIGNALS_SPAM_DETECTION_JOB.name)
+}

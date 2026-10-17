@@ -13,7 +13,8 @@ import { withOwnedPostCommitCompletions } from '@voucha/test-helpers/post-commit
 import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
 import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { background } from '@queues/background/queues'
-import { spam_detection } from '@queues/spam-detection/queues'
+import { MODERATION_SIGNALS_SPAM_DETECTION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
+import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues/classifier-run.mts'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
@@ -77,9 +78,9 @@ describe('create.admin-bypass', () => {
       ),
     ).toEqual([])
     expect(
-      (await readAllQueueJobs(spam_detection)).filter(
+      (await readAllQueueJobs(moderationSignalsQueue)).filter(
         job =>
-          job.name === 'post' &&
+          job.name === MODERATION_SIGNALS_SPAM_DETECTION_JOB.name &&
           job.data !== null &&
           typeof job.data === 'object' &&
           'id' in job.data &&

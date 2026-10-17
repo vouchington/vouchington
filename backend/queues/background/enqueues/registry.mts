@@ -18,6 +18,7 @@ import {
 } from './follower-distributions-jobs.mts'
 import { IMPORTS_DOMAIN, IMPORTS_JOBS } from './imports-jobs.mts'
 import { KAGI_SMALLWEB_DOMAIN, KAGI_SMALLWEB_JOBS } from './kagi-smallweb-jobs.mts'
+import { MODERATION_SIGNALS_DOMAIN, MODERATION_SIGNALS_JOBS } from './moderation-signals-jobs.mts'
 import { NOTIFICATIONS_DOMAIN } from './notifications-domain.mts'
 import { NOTIFICATIONS_JOBS } from './notifications-jobs.mts'
 import {
@@ -64,6 +65,7 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   KAGI_SMALLWEB_DOMAIN,
   EMAIL_DIGESTS_DOMAIN,
   IMPORTS_DOMAIN,
+  MODERATION_SIGNALS_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -88,6 +90,7 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...KAGI_SMALLWEB_JOBS,
   ...EMAIL_DIGESTS_JOBS,
   ...IMPORTS_JOBS,
+  ...MODERATION_SIGNALS_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))

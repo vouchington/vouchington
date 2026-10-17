@@ -9,6 +9,7 @@ import { entityListenersHandlers } from '@workers/entity-listeners/workers'
 import { followerDistributionsHandlers } from '@workers/follower-distributions/workers'
 import { emailDigestsHandlers } from '@workers/email-digests/workers'
 import { kagiSmallWebHandlers } from '@workers/kagi-smallweb/workers'
+import { moderationSignalsHandlers } from '@workers/moderation-signals/workers'
 import { notificationsHandlers } from '@workers/notifications/workers'
 import { oauthAuthorizationExchangeHandlers } from '@workers/oauth-authorization-exchange/workers'
 import { openAiModerationHandlers } from '@workers/openai-moderation/workers'
@@ -46,4 +47,5 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...emailDigestsHandlers,
   ...adminImportsHandlers,
   ...userRssFeedImportsHandlers,
+  ...moderationSignalsHandlers,
 ]

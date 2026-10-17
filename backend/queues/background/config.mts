@@ -35,6 +35,7 @@ export const BACKGROUND_DOMAINS = [
   'kagi-smallweb',
   'email-digests',
   'imports',
+  'moderation-signals',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]

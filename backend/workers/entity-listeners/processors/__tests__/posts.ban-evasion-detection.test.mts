@@ -11,7 +11,8 @@ import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 import { isFirstCommunityPost } from '@services/communities/ban-evasion'
 import { processPostCreated } from '../posts.mts'
-import { ban_evasion } from '@queues/ban-evasion/queues'
+import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
+import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 
 describe('processPostCreated ban-evasion detection', () => {
   let owner: PrivateUser
@@ -41,9 +42,10 @@ describe('processPostCreated ban-evasion detection', () => {
 
     await processPostCreated({ id: postId })
 
-    const waiting = await readAllQueueJobs(ban_evasion)
+    const waiting = await readAllQueueJobs(moderationSignalsQueue)
     expect(
       waiting.some(j => {
+        if (j.name !== MODERATION_SIGNALS_BAN_EVASION_JOB.name) return false
         const data = j.data as { communityId: string; userId: string; postId?: string }
         return (
           data.communityId === community.id && data.userId === member.id && data.postId === postId

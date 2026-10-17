@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   insertTestCommunity,
@@ -17,7 +17,8 @@ import {
   isSimpleCursor,
 } from '@modules/pagination'
 import { encodeUuidCursorBefore } from '@voucha/test-helpers/modules/pagination/uuid-cursors'
-import { ban_evasion } from '@queues/ban-evasion/queues'
+import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
+import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 import { enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts } from '@services/communities/ban-evasion'
 import {
   applyPostBatchUpdates,
@@ -47,10 +48,6 @@ describe('copyExistingLockClause', () => {
 })
 
 describe('post embedding batch ban-evasion follow-up', () => {
-  beforeEach(async () => {
-    await ban_evasion.obliterate({ force: true })
-  })
-
   it('enqueues detection when copying an existing embedding onto a first community post', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
@@ -224,14 +221,15 @@ describe('post embedding batch ban-evasion follow-up', () => {
 async function getBanEvasionJobsFor(communityId: string, userId: string) {
   const jobs = (
     await Promise.all([
-      ban_evasion.getJobs('waiting'),
-      ban_evasion.getJobs('active'),
-      ban_evasion.getJobs('completed'),
-      ban_evasion.getJobs('failed'),
-      ban_evasion.getJobs('delayed'),
+      moderationSignalsQueue.getJobs('waiting'),
+      moderationSignalsQueue.getJobs('active'),
+      moderationSignalsQueue.getJobs('completed'),
+      moderationSignalsQueue.getJobs('failed'),
+      moderationSignalsQueue.getJobs('delayed'),
     ])
   ).flat()
   return jobs.filter(job => {
+    if (job.name !== MODERATION_SIGNALS_BAN_EVASION_JOB.name) return false
     const data = job.data as { communityId?: string; userId?: string }
     return data.communityId === communityId && data.userId === userId
   })

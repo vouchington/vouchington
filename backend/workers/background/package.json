@@ -37,6 +37,7 @@
     "@workers/entity-listeners": "workspace:^",
     "@workers/follower-distributions": "workspace:^",
     "@workers/kagi-smallweb": "workspace:^",
+    "@workers/moderation-signals": "workspace:^",
     "@workers/notifications": "workspace:^",
     "@workers/oauth-authorization-exchange": "workspace:^",
     "@workers/openai-moderation": "workspace:^",

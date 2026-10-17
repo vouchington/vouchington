@@ -1,56 +1,33 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import type { JobOptions } from 'glide-mq'
-import { BAN_EVASION_DEFAULTS, BAN_EVASION_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
-import { ban_evasion } from './queues.mts'
+import { DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from './config.mts'
 
-type BanEvasionJobData = { communityId: string; userId: string; postId?: string }
-type BanEvasionPostEmbeddingTrigger = BanEvasionJobData & {
+type BanEvasionPostEmbeddingTrigger = {
+  communityId: string
+  userId: string
   postId: string
   inputSha256Hex: string
 }
 
-function makeJobOpts(dedupId: string, priority: number): Partial<JobOptions> {
+function makeJobOpts(dedupId: string): Partial<JobOptions> {
   return {
-    priority,
-    deduplication: {
-      id: dedupId,
-      mode: 'debounce',
-      ttl: BAN_EVASION_DEFAULTS.deduplicationTtlMs,
-    },
+    priority: PRIORITY_DEFAULT,
+    deduplication: { id: dedupId, mode: 'debounce', ttl: DEDUPLICATION_TTL_MS },
   }
 }
 
-const defaults = {
-  attempts: BAN_EVASION_DEFAULTS.attempts,
-  backoff: BAN_EVASION_DEFAULTS.backoff,
-  removeOnComplete: BAN_EVASION_DEFAULTS.removeOnComplete,
-  removeOnFail: BAN_EVASION_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
+const enqueueBanEvasionJob = createBackgroundEnqueue(MODERATION_SIGNALS_BAN_EVASION_JOB)
 
-const enqueueBanEvasionJob = createEnqueueFunction<BanEvasionJobData, 'detect'>({
-  queue: ban_evasion,
-  queueName: BAN_EVASION_QUEUE_NAME,
-  jobName: 'detect',
-  defaults,
-})
-
-export const enqueueBulkDetectBanEvasionAfterPostEmbeddings = createBulkEnqueueFunction<
-  BanEvasionPostEmbeddingTrigger,
-  BanEvasionJobData,
-  'detect'
->({
-  queue: ban_evasion,
-  queueName: BAN_EVASION_QUEUE_NAME,
-  jobName: 'detect',
-  defaults,
-  buildJob: item => ({
+export const enqueueBulkDetectBanEvasionAfterPostEmbeddings = createBackgroundBulkEnqueue(
+  MODERATION_SIGNALS_BAN_EVASION_JOB,
+  (item: BanEvasionPostEmbeddingTrigger) => ({
     data: { communityId: item.communityId, userId: item.userId, postId: item.postId },
     opts: makeJobOpts(
       buildPostEmbeddingDedupId(item.communityId, item.userId, item.postId, item.inputSha256Hex),
-      PRIORITY_DEFAULT,
     ),
   }),
-})
+)
 
 /** Enqueue detection for the first community post trigger (debounce-deduped per user+community). */
 export async function enqueueDetectBanEvasion(
@@ -60,7 +37,7 @@ export async function enqueueDetectBanEvasion(
 ): Promise<void> {
   await enqueueBanEvasionJob(
     { communityId, userId, postId },
-    makeJobOpts(`ban_evasion_${communityId}_${userId}`, PRIORITY_DEFAULT),
+    makeJobOpts(`ban_evasion_${communityId}_${userId}`),
   )
 }
 
@@ -79,10 +56,7 @@ export async function enqueueDetectBanEvasionAfterPostEmbedding(
 ): Promise<void> {
   await enqueueBanEvasionJob(
     { communityId, userId, postId },
-    makeJobOpts(
-      buildPostEmbeddingDedupId(communityId, userId, postId, inputSha256Hex),
-      PRIORITY_DEFAULT,
-    ),
+    makeJobOpts(buildPostEmbeddingDedupId(communityId, userId, postId, inputSha256Hex)),
   )
 }
 
@@ -97,7 +71,7 @@ export async function enqueueDetectBanEvasionOnJoin(
 ): Promise<void> {
   await enqueueBanEvasionJob(
     { communityId, userId },
-    makeJobOpts(`ban_evasion_join_${communityId}_${userId}`, PRIORITY_DEFAULT),
+    makeJobOpts(`ban_evasion_join_${communityId}_${userId}`),
   )
 }
 

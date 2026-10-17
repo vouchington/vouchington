@@ -18,7 +18,8 @@ import {
   enqueueBanEvasionDetectionForEmbeddedFirstCommunityPosts,
   isFirstCommunityPost,
 } from '../get.mts'
-import { ban_evasion } from '@queues/ban-evasion/queues'
+import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
+import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 
 describe('isFirstCommunityPost', () => {
   let owner: PrivateUser
@@ -185,8 +186,9 @@ describe('isFirstCommunityPost', () => {
 })
 
 async function getBanEvasionJobsFor(communityId: string, userId: string) {
-  const waiting = await readAllQueueJobs(ban_evasion)
+  const waiting = await readAllQueueJobs(moderationSignalsQueue)
   return waiting.filter(job => {
+    if (job.name !== MODERATION_SIGNALS_BAN_EVASION_JOB.name) return false
     const data = job.data as { communityId?: string; userId?: string }
     return data.communityId === communityId && data.userId === userId
   })
