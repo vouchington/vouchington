@@ -4,7 +4,11 @@ import {
   enqueueBulkSendApiKeyExpiryReminders,
   enqueueDispatchApiKeyExpiryReminders,
 } from './api-key-expiry.mts'
-import { emails } from '../queues.mts'
+import { emailDigests as emails } from '../queues.mts'
+import {
+  EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB,
+  EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB,
+} from '@queues/background/enqueues/email-digests-jobs'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -16,13 +20,17 @@ describe('API-key reminder enqueues with real GlideMQ', () => {
     const apiKeyId = randomUUID()
     const [job] = await enqueueBulkSendApiKeyExpiryReminders([apiKeyId])
     expect(job).toMatchObject({
-      name: 'processSendApiKeyExpiryReminder',
+      name: EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB.name,
       data: { apiKeyId },
       opts: {
         attempts: 3,
         priority: 10,
         backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        deduplication: { id: `api-key-expiry:${apiKeyId}`, mode: 'throttle', ttl: 60_000 },
+        deduplication: {
+          id: `email-digests:api-key-expiry:${apiKeyId}`,
+          mode: 'throttle',
+          ttl: 60_000,
+        },
       },
     })
     await enqueueBulkSendApiKeyExpiryReminders([apiKeyId])
@@ -36,14 +44,19 @@ describe('API-key reminder enqueues with real GlideMQ', () => {
     const first = await enqueueDispatchApiKeyExpiryReminders()
     await expect(enqueueDispatchApiKeyExpiryReminders()).resolves.toBeNull()
     const jobs = (await Promise.all(QUEUE_STATES.map(state => emails.getJobs(state, 0, -1)))).flat()
-    const dispatcher = first ?? jobs.find(job => job.name === 'dispatchApiKeyExpiryReminders')
+    const dispatcher =
+      first ?? jobs.find(job => job.name === EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB.name)
     expect(dispatcher).toMatchObject({
-      name: 'dispatchApiKeyExpiryReminders',
+      name: EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB.name,
       data: {},
       opts: {
         attempts: 3,
         priority: 100,
-        deduplication: { id: 'api-key-expiry-dispatch:root', mode: 'throttle', ttl: 60_000 },
+        deduplication: {
+          id: 'email-digests:api-key-expiry-dispatch:root',
+          mode: 'throttle',
+          ttl: 60_000,
+        },
       },
     })
   })

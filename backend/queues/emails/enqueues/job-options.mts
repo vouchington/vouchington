@@ -1,6 +1,5 @@
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT } from '../config.mts'
-import type { EmailJobs, EmailSendJobs } from '../types.mts'
+import type { EmailJobs } from '../types.mts'
 
 /**
  * Template emails whose payload carries a credential the recipient redeems: a login token, an
@@ -21,12 +20,9 @@ export const SECRET_BEARING_EMAIL_JOBS = [
   'processSendEmailVerificationToken',
   'processSendCommunityInviteEmail',
   'processSendDataExportReadyEmail',
-] as const satisfies readonly EmailSendJobs[]
+] as const satisfies readonly EmailJobs[]
 
-export function getEmailSendJobOptions(
-  jobName: EmailJobs,
-  priority: number = PRIORITY_DEFAULT,
-): Partial<JobOptions> {
+export function getEmailSendJobOptions(jobName: EmailJobs): Partial<JobOptions> {
   const isSecretBearing = (SECRET_BEARING_EMAIL_JOBS as readonly EmailJobs[]).includes(jobName)
-  return isSecretBearing ? { priority, removeOnComplete: true, removeOnFail: true } : { priority }
+  return isSecretBearing ? { removeOnComplete: true, removeOnFail: true } : {}
 }

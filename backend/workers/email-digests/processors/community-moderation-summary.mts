@@ -1,7 +1,5 @@
-import type {
-  EmailTemplateInput,
-  ProcessSendCommunityModerationSummaryEmailVariables,
-} from '@queues/emails/types'
+import type { ProcessSendCommunityModerationSummaryEmailVariables } from '@queues/background/enqueues/email-digests-domain'
+import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderCommunityModerationSummaryEmail } from '@email-templates/core'
 import onError from '@modules/on-error'
 import { getMarketingPostalAddress } from '@modules/utils'
@@ -18,7 +16,7 @@ import {
   markModerationEmailSent,
   releaseUnsentModerationEmailClaim,
 } from '@services/communities/moderation-summary-emails'
-import { resolveEmailRecipient } from './recipient.mts'
+import { resolveEmailRecipient } from '@workers/emails/processors/recipient'
 
 export const processSendCommunityModerationSummaryEmail = async (
   input: EmailTemplateInput,

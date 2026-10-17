@@ -1400,7 +1400,7 @@ rules:
             callee: 'giveUpSweepRun',
           }
         - {
-            file: backend/workers/emails/processors/api-key-expiry.mts,
+            file: backend/workers/email-digests/processors/api-key-expiry.mts,
             callee: 'getApiKeysDueForExpiryReminder',
           }
         - {

@@ -33,6 +33,7 @@ export const BACKGROUND_DOMAINS = [
   'sitemaps',
   'cache-purge',
   'kagi-smallweb',
+  'email-digests',
 ] as const
 
 export type BackgroundDomain = (typeof BACKGROUND_DOMAINS)[number]

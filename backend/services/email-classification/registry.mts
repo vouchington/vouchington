@@ -1,7 +1,11 @@
-import type { EmailSendJobs } from '@queues/emails/types'
+import type { EmailDigestSendJobs, EmailSendJobs } from '@queues/emails/types'
 import type { EmailUnsubscribeCategory } from '@services/users'
 
-export type EmailType = EmailSendJobs | 'processSendRenewalPriceIncreaseEmail' | 'newsDigest'
+export type EmailType =
+  | EmailSendJobs
+  | EmailDigestSendJobs
+  | 'processSendRenewalPriceIncreaseEmail'
+  | 'newsDigest'
 
 type TransactionalEntry = {
   classification: 'transactional'

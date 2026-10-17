@@ -30,7 +30,7 @@
     "@queues/activitypub": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
-    "@queues/emails": "workspace:^",
+    "@queues/email-digests": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@queues/kagi-smallweb": "workspace:^",

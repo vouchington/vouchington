@@ -20,6 +20,7 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/urls-domains-blacklist/enqueues/schedules'),
         import('@queues/sitemaps/enqueues/schedules'),
         import('@queues/kagi-smallweb/enqueues/schedules'),
+        import('@queues/email-digests/enqueues/schedules'),
       ])
       return async () => {
         await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
@@ -37,10 +38,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/rss-feed-maintenance/enqueues/schedules').then(
         module => module.upsertSchedules,
       ),
-  },
-  {
-    queueName: 'emails',
-    load: () => import('@queues/emails/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'psql',

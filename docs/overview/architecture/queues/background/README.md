@@ -56,7 +56,7 @@ Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
 `entity-listeners`, `account-lifecycle`, `article-sync`,
 `oauth-authorization-exchange`, `notifications`, `activitypub`,
 `follower-distributions`, `bluesky-follow-propagation`, `rss-feeds`,
-`urls-domains-blacklist`, `sitemaps`, `cache-purge`, and `kagi-smallweb`.
+`urls-domains-blacklist`, `sitemaps`, `cache-purge`, `kagi-smallweb`, and `email-digests`.
 
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses
 to start when a job has no handler, a handler has no job, or a job has two handlers.

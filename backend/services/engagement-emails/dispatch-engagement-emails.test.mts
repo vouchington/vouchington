@@ -49,7 +49,7 @@ describe('dispatchEngagementEmails', () => {
     expect(observed.claims).toEqual(scopedEngagementClaimResult)
     expect(observed.targetJobs).toMatchObject([
       {
-        name: 'processSendFollowTopicsEmail',
+        name: 'email-digests.processSendFollowTopicsEmail',
         data: {
           input: { userId: user.id },
           variables: {
@@ -93,7 +93,7 @@ describe('dispatchEngagementEmails', () => {
     expect(observed.claims).toEqual(scopedEngagementClaimResult)
     expect(observed.targetJobs).toMatchObject([
       {
-        name: 'processSendFollowNewsSourcesEmail',
+        name: 'email-digests.processSendFollowNewsSourcesEmail',
         data: {
           input: { userId: user.id },
           variables: {
@@ -129,7 +129,7 @@ describe('dispatchEngagementEmails', () => {
     expect(observed.claims).toEqual(scopedEngagementClaimResult)
     expect(observed.targetJobs).toMatchObject([
       {
-        name: 'processSendFollowTopicsEmail',
+        name: 'email-digests.processSendFollowTopicsEmail',
         data: {
           input: { userId: user.id },
           variables: {
@@ -172,7 +172,7 @@ describe('dispatchEngagementEmails', () => {
     expect(observed.claims).toEqual(scopedEngagementClaimResult)
     expect(observed.targetJobs).toMatchObject([
       {
-        name: 'processSendPostReferralLinkEmail',
+        name: 'email-digests.processSendPostReferralLinkEmail',
         data: {
           input: { userId: user.id },
           variables: {

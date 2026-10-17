@@ -23,7 +23,7 @@
     "@email-templates/core": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "@queues/emails": "workspace:^",
+    "@queues/email-digests": "workspace:^",
     "@services/recommended-rss-feeds": "workspace:^",
     "@services/recommended-topics": "workspace:^",
     "@services/rss-feeds": "workspace:^",

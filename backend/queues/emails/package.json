@@ -7,11 +7,6 @@
   "author": "",
   "type": "module",
   "exports": {
-    "./enqueues/schedules": {
-      "types": "./enqueues/schedules.mts",
-      "import": "./enqueues/schedules.mts",
-      "default": "./enqueues/schedules.mts"
-    },
     "./*": {
       "types": "./*.mts",
       "import": "./*.mts",
@@ -29,7 +24,6 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@email-templates/core": "workspace:^",
-    "@modules/scheduled-job-manifest": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.18.0"
   },

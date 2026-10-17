@@ -1760,9 +1760,9 @@ importers:
       '@queues/bloom-filters':
         specifier: workspace:^
         version: link:../../queues/bloom-filters
-      '@queues/emails':
+      '@queues/email-digests':
         specifier: workspace:^
-        version: link:../../queues/emails
+        version: link:../../queues/email-digests
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
@@ -2743,6 +2743,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@email-templates/core':
+        specifier: workspace:^
+        version: link:../../../email-templates
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -2940,6 +2943,24 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/queues/email-digests:
+    dependencies:
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../emails
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+
   backend/queues/emails:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -2948,9 +2969,6 @@ importers:
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -4740,6 +4758,9 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
+      '@queues/email-digests':
+        specifier: workspace:^
+        version: link:../../queues/email-digests
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
@@ -6084,9 +6105,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
-      '@queues/emails':
+      '@queues/email-digests':
         specifier: workspace:^
-        version: link:../../queues/emails
+        version: link:../../queues/email-digests
       '@services/recommended-rss-feeds':
         specifier: workspace:^
         version: link:../recommended-rss-feeds
@@ -9071,6 +9092,9 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
+      '@queues/email-digests':
+        specifier: workspace:^
+        version: link:../../queues/email-digests
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
@@ -12138,6 +12162,9 @@ importers:
       '@workers/cache-purge':
         specifier: workspace:^
         version: link:../cache-purge
+      '@workers/email-digests':
+        specifier: workspace:^
+        version: link:../email-digests
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../entity-listeners
@@ -12193,6 +12220,9 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12690,11 +12720,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
-  backend/workers/emails:
+  backend/workers/email-digests:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates
@@ -12704,15 +12731,15 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
+      '@queues/email-digests':
+        specifier: workspace:^
+        version: link:../../queues/email-digests
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
@@ -12725,15 +12752,52 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../../services/contribution-gating
-      '@services/copyright-notices':
-        specifier: workspace:^
-        version: link:../../services/copyright-notices
       '@services/email-classification':
         specifier: workspace:^
         version: link:../../services/email-classification
       '@services/engagement-emails':
         specifier: workspace:^
         version: link:../../services/engagement-emails
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
+      '@workers/emails':
+        specifier: workspace:^
+        version: link:../emails
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
+  backend/workers/emails:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@email-templates/core':
+        specifier: workspace:^
+        version: link:../../../email-templates
+      '@modules/aws':
+        specifier: workspace:^
+        version: link:../../modules/aws
+      '@modules/queue-config':
+        specifier: workspace:^
+        version: link:../../modules/queue-config
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
+      '@services/contribution-gating':
+        specifier: workspace:^
+        version: link:../../services/contribution-gating
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../../services/copyright-notices
+      '@services/email-classification':
+        specifier: workspace:^
+        version: link:../../services/email-classification
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users

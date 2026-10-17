@@ -71,6 +71,7 @@ describe('background queue domain routes', () => {
         'article-sync',
         'bluesky-follow-propagation',
         'cache-purge',
+        'email-digests',
         'entity-listeners',
         'follower-distributions',
         'kagi-smallweb',

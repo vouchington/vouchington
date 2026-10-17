@@ -80,8 +80,8 @@ Default priorities and grouping live at the job level. See `Active Workers` abov
 | emails                                       | processSendDataExportReadyEmail                                  | —                                           | 10               |
 | emails                                       | processSendEmailAddressLoginToken                                | —                                           | 10               |
 | emails                                       | processSendEmailVerificationToken                                | —                                           | 10               |
-| emails                                       | dispatchEngagementEmails                                         | —                                           | 100              |
-| emails                                       | dispatchCommunityModerationSummaryEmails                         | —                                           | 100              |
+| background                                   | email-digests.dispatchEngagementEmails                           | —                                           | 100              |
+| background                                   | email-digests.dispatchCommunityModerationSummaryEmails           | —                                           | 100              |
 | emails                                       | processSendFollowTopicsEmail                                     | —                                           | 10               |
 | emails                                       | processSendPostReferralLinkEmail                                 | —                                           | 10               |
 | emails                                       | processSendFollowNewsSourcesEmail                                | —                                           | 10               |

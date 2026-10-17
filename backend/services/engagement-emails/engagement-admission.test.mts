@@ -4,8 +4,8 @@ import { withOwnedEngagementAdmissions } from '@voucha/test-helpers/engagement-d
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { onEnqueueAdmission } from '../../data-stores/valkey-glide-mq/glide-mq-admission.mts'
-import { emails } from '@queues/emails/queues'
-import { enqueueSendFollowTopicsEmail } from '@queues/emails/enqueues'
+import { emailDigests } from '@queues/email-digests/queues'
+import { enqueueSendFollowTopicsEmail } from '@queues/email-digests/enqueues'
 import * as ses from '../../modules/aws/ses.mts'
 
 const variables = {
@@ -28,7 +28,7 @@ describe('owned engagement admission lifecycle', () => {
       off()
     })
     off = onEnqueueAdmission(event => {
-      if (event.queue === emails && event.inputs.some(input => owns(input, user.id))) {
+      if (event.queue === emailDigests && event.inputs.some(input => owns(input, user.id))) {
         admissions.push(event.completion)
         void event.completion.then(
           () => {
@@ -48,7 +48,7 @@ describe('owned engagement admission lifecycle', () => {
     await expect(result).rejects.toBe(primary)
     expect(completed).toBe(true)
     expect(admissions).toHaveLength(1)
-    const job = await readEnqueuedJob(emails, await admissions[0]!)
+    const job = await readEnqueuedJob(emailDigests, await admissions[0]!)
     expect(job.data).toEqual({ input: { userId: user.id }, variables })
     expect(ses.sendEmail).toBe(original)
     // The registered real finish hook must join without reporting this handled failure again.
@@ -82,7 +82,7 @@ describe('owned engagement admission lifecycle', () => {
         for (const observer of observers)
           detach.push(
             onEnqueueAdmission(event => {
-              if (event.queue === emails && event.inputs.some(input => owns(input, user.id)))
+              if (event.queue === emailDigests && event.inputs.some(input => owns(input, user.id)))
                 throw observer
               return undefined
             }),
@@ -117,7 +117,10 @@ describe('owned engagement admission lifecycle', () => {
     })
     expect(observed.value).toBe(user.id)
     expect(observed.jobs).toEqual([
-      { name: 'processSendFollowTopicsEmail', data: { input: { userId: user.id }, variables } },
+      {
+        name: 'email-digests.processSendFollowTopicsEmail',
+        data: { input: { userId: user.id }, variables },
+      },
     ])
     expect(ses.sendEmail).toBe(original)
   })

@@ -1,7 +1,5 @@
-import type {
-  EmailTemplateInput,
-  ProcessSendFollowNewsSourcesEmailVariables,
-} from '@queues/emails/types'
+import type { ProcessSendFollowNewsSourcesEmailVariables } from '@queues/background/enqueues/email-digests-domain'
+import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderFollowNewsSourcesEmail } from '@email-templates/core'
 import { isFollowNewsSourcesEmailStillEligible } from '@services/users/engagement-emails'
 import { processEngagementRecommendationEmail } from './engagement-recommendation-email.mts'
