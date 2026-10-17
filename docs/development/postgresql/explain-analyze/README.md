@@ -126,8 +126,10 @@ before explaining its lock, pending-transition and actor-event statements. Both 
 plans must use the UUID-leading failed-membership index and stay within their driving-row budgets.
 Scoped UUID arrays are materialized before the failed-index candidate lookup, preserving the
 ordered seek and page limit when custom planning would expand a constant array into bitmap work.
-Actor-event targets are materialized per selected placement through the placement index so a
-replay page does not scan unrelated notice targets.
+The actor-event statement probes `media_delivery_registry_records_pkey` once per replayed UUID
+through a `LATERAL ... LIMIT 1`, so custom planning cannot flip a large `= ANY(array)` into a
+sequential or bitmap scan of the whole table. Its targets are materialized per selected placement
+through the placement index so a replay page does not scan unrelated notice targets.
 All current-view, lifecycle, retained-identity and FK/trigger partner statistics are refreshed.
 The capture requires exactly those three statements from the committing service call; verification
 and fixture rearming run after capture so they cannot be mistaken for replay queries.

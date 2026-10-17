@@ -86,18 +86,16 @@ describe('media replay read budgets', () => {
     const audit = result(
       'media-delivery-replay-first',
       {
-        'Node Type': 'Bitmap Heap Scan',
+        'Node Type': 'Index Scan',
         'Relation Name': 'media_delivery_registry_records',
-        'Actual Rows': 1000,
-        'Actual Loops': 1,
+        'Index Name': 'media_delivery_registry_records_pkey',
+        'Actual Rows': 1,
+        'Actual Loops': 1000,
       },
-      '/* replayFailedMediaDeliveryRegistryRecords:event */ INSERT INTO copyright_notice_lifecycle_changes SELECT record.id FROM media_delivery_registry_records record WHERE record.id = ANY($2::uuid[])',
+      '/* replayFailedMediaDeliveryRegistryRecords:event */ INSERT INTO copyright_notice_lifecycle_changes SELECT record.id FROM unnest($2::uuid[]) selected(record_id) CROSS JOIN LATERAL (SELECT id FROM media_delivery_registry_records WHERE id = selected.record_id LIMIT 1) record',
     )
     expect(() => assertRequiredPlanShape(audit)).not.toThrow()
-    audit.query_text = audit.query_text.replace(
-      'record.id = ANY($2::uuid[])',
-      'record.id IS NOT NULL',
-    )
-    expect(() => assertRequiredPlanShape(audit)).toThrow('actor audit to replayed UUIDs')
+    audit.query_text = audit.query_text.replace('unnest($2::uuid[])', 'unnest($3::uuid[])')
+    expect(() => assertRequiredPlanShape(audit)).toThrow('each replayed UUID')
   })
 })

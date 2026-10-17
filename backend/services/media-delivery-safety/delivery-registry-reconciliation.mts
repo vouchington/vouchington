@@ -93,14 +93,19 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
         media_delivery_registry_record_id, replay_reason)
       SELECT target.copyright_notice_id, 'media_delivery_registry_replayed', ${input.actorUserId},
         record.id, 'operator_replay'
-      FROM media_delivery_registry_records record
+      FROM unnest(${rows.map(row => row.media_delivery_registry_record_id)}::uuid[]) selected(record_id)
+      CROSS JOIN LATERAL (
+        -- The record id is unique; LIMIT 1 keeps each authority probe keyed to one replayed id.
+        SELECT id, placement_id FROM media_delivery_registry_records
+        WHERE id = selected.record_id
+        LIMIT 1
+      ) record
       CROSS JOIN LATERAL (
         WITH targets AS MATERIALIZED (
           SELECT id, copyright_notice_id FROM copyright_notice_targets
           WHERE placement_id = record.placement_id
         ) SELECT id, copyright_notice_id FROM targets
       ) target
-      WHERE record.id = ANY(${rows.map(row => row.media_delivery_registry_record_id)}::uuid[])
       ORDER BY record.id, target.id
     `)
   }
