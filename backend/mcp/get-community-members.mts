@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { searchCommunityMembers, type CommunityMemberRole } from '@services/communities'
-import { getUserPublicByAnyCachedBatchOfActive } from '@services/entity-fetch'
+import { getUserPublicByAnyBatchFromCache } from '@services/entity-fetch'
 import type { BasicUser } from '@services/users/types'
 import {
   COMMUNITY_NOT_FOUND,
@@ -99,7 +99,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       )
       if (!page) return INVALID_CURSOR_RESULT
       // searchCommunityMembers only returns members whose users are not deleted.
-      const users = await getUserPublicByAnyCachedBatchOfActive(
+      const users = await getUserPublicByAnyBatchFromCache(
         page.results.map(member => member.user_id),
       )
       const usernames = new Map(users.flatMap(user => (user ? [[user.id, user.username]] : [])))

@@ -27,7 +27,8 @@ import { write } from '@data-stores/psql'
 
 const getUserPrivateByAnyFromCache = caches.users_private.cacheGetByAny(getPrivateUserByAny)
 const getUserPublicByAnyFromCache = caches.users_public.cacheGetByAny(getPublicUserByAny)
-const getUserPublicByAnyBatchFromCache =
+// Skips the active-user check: only for ids a caller's own query already joined to live users.
+export const getUserPublicByAnyBatchFromCache =
   caches.users_public.cacheGetByAnyBatch(getPublicUsersByAnyBatch)
 
 export async function getUserPrivateByAnyCached(identifier: string) {
@@ -42,11 +43,6 @@ export async function getUserPublicByAnyCachedBatch(identifiers: string[]) {
   const users = await getUserPublicByAnyBatchFromCache(identifiers)
   const activeIds = await getActiveUserIds(users.flatMap(user => (user ? [user.id] : [])))
   return users.map(user => (user && activeIds.has(user.id) ? user : null))
-}
-
-/** For ids the caller's own query already joined to non-deleted users; skips the active-user check. */
-export async function getUserPublicByAnyCachedBatchOfActive(identifiers: string[]) {
-  return getUserPublicByAnyBatchFromCache(identifiers)
 }
 
 export { getTopicByAnyCached, getTopicByAnyCachedBatch } from '@services/topics/get-cached'
