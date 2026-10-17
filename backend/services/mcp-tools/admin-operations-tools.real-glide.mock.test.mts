@@ -2,7 +2,6 @@ import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { readStaffActionHistory } from '@voucha/test-helpers/staff-action-history'
-import { findQueueByName } from '@services/queue-monitoring/queue-inventory'
 import { getQueueDomainControl, resumeQueueDomain } from '@services/queue-domain-controls'
 import {
   getDynamicConfigNamespace,
@@ -51,36 +50,11 @@ async function expectOperation(actorId: string, action: string) {
 }
 
 describe('registered operational writes on disposable CI boundaries', () => {
-  it('pauses/resumes a managed queue idempotently and audits bounded retry', async () => {
-    expect(workerQueuePrefix).toBe(prefix)
-    const admin = await createTestUserDirect({ administrator: true })
-    // The existing REST pause tests use psql. This managed queue is only enqueued here;
-    // its provider worker is not running in the backend data-store test project.
-    const queue = findQueueByName('kagi-smallweb')!
-    const before = await queue.isPaused()
-    await queue.resume()
-    try {
-      expect((await invoke(admin, 'pause_queue', { name: queue.name })).isError).not.toBe(true)
-      expect(await queue.isPaused()).toBe(true)
-      expect((await invoke(admin, 'pause_queue', { name: queue.name })).isError).not.toBe(true)
-      await expectOperation(admin.id, 'queue_pause')
-      expect((await invoke(admin, 'resume_queue', { name: queue.name })).isError).not.toBe(true)
-      expect(await queue.isPaused()).toBe(false)
-      expect((await invoke(admin, 'resume_queue', { name: queue.name })).isError).not.toBe(true)
-      await expectOperation(admin.id, 'queue_resume')
-      expect(
-        (await invoke(admin, 'retry_failed_queue_jobs', { name: queue.name })).isError,
-      ).not.toBe(true)
-      await expectOperation(admin.id, 'queue_retry_failed')
-    } finally {
-      if (before) await queue.pause()
-      else await queue.resume()
-    }
-  })
   it('controls one domain of the shared background queue through the same tools', async () => {
     expect(workerQueuePrefix).toBe(prefix)
     const admin = await createTestUserDirect({ administrator: true })
-    const domain = 'ses-inbound'
+    // Only enqueued here; the domain's provider worker is not running in the data-store project.
+    const domain = 'kagi-smallweb'
     try {
       // `list_queues` is the `queues` option of the merged `read_queue_catalog` tool.
       const listed = await invoke(admin, 'read_queue_catalog', {

@@ -1,55 +1,57 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
-  BACKFILL_SCHEDULES,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-  SITEMAPS_ORDERING,
-} from '../config.mts'
-import { sitemaps } from '../queues.mts'
-import type { SitemapDispatcherJobs } from '../types.mts'
+  SITEMAPS_MONTHLY_BACKFILL_JOB,
+  SITEMAPS_NIGHTLY_BACKFILL_JOB,
+  SITEMAPS_WEEKLY_BACKFILL_JOB,
+} from '@queues/background/enqueues/sitemaps-jobs'
+import { BACKFILL_SCHEDULES, SITEMAPS_ORDERING } from '../config.mts'
 import {
   enqueueMonthlyBackfillArchiveDispatcher,
   enqueueNightlyBackfillWeekDispatcher,
   enqueueWeeklyBackfillMonthDispatcher,
 } from '../enqueues.mts'
 
+type ScheduleName = (typeof BACKFILL_SCHEDULES)[number]['name']
+
+const jobs = {
+  processNightlyBackfillWeekDispatcher: SITEMAPS_NIGHTLY_BACKFILL_JOB,
+  processWeeklyBackfillMonthDispatcher: SITEMAPS_WEEKLY_BACKFILL_JOB,
+  processMonthlyBackfillArchiveDispatcher: SITEMAPS_MONTHLY_BACKFILL_JOB,
+} satisfies Record<ScheduleName, { name: string; options: object }>
+
 const triggers = {
   processNightlyBackfillWeekDispatcher: enqueueNightlyBackfillWeekDispatcher,
   processWeeklyBackfillMonthDispatcher: enqueueWeeklyBackfillMonthDispatcher,
   processMonthlyBackfillArchiveDispatcher: enqueueMonthlyBackfillArchiveDispatcher,
-} satisfies Record<SitemapDispatcherJobs, () => unknown>
+} satisfies Record<ScheduleName, () => unknown>
 
 const backfillIds = {
   processNightlyBackfillWeekDispatcher: 'sitemaps-nightly-week',
   processWeeklyBackfillMonthDispatcher: 'sitemaps-weekly-month',
   processMonthlyBackfillArchiveDispatcher: 'sitemaps-monthly-archive',
-} satisfies Record<SitemapDispatcherJobs, string>
+} satisfies Record<ScheduleName, string>
 
 const descriptions = {
   processNightlyBackfillWeekDispatcher: 'Nightly sitemap backfill for the week',
   processWeeklyBackfillMonthDispatcher: 'Weekly sitemap backfill for the month',
   processMonthlyBackfillArchiveDispatcher: 'Monthly sitemap archive backfill',
-} satisfies Record<SitemapDispatcherJobs, string>
+} satisfies Record<ScheduleName, string>
 
 export const scheduledJobManifest = defineScheduledJobManifest(
-  QUEUE_NAME,
+  BACKGROUND_QUEUE_NAME,
   BACKFILL_SCHEDULES.map(schedule => ({
     schedulerId: `sitemaps-backfill-${schedule.name}`,
     repeat: { pattern: schedule.pattern },
     template: {
-      name: schedule.name as SitemapDispatcherJobs,
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
+      name: jobs[schedule.name].name,
+      opts: toSchedulerTemplateOptions({
+        ...jobs[schedule.name].options,
         ordering: SITEMAPS_ORDERING.dispatcher,
-      } satisfies JobOptions,
+      }),
     },
     operatorSurfaces: [
       {
@@ -63,7 +65,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(
     ],
   })),
 )
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(sitemaps, scheduledJobManifest)
-}

@@ -6,8 +6,9 @@ type GroupRateLimit = { readonly max: number; readonly duration: number }
 /**
  * How a domain limits itself. A job has one ordering key, so a domain is either capped as a whole
  * (`domain`: every job shares the key named after the domain, and a job may keep its own singleton
- * key outside the group) or ordered per entity (`entity`: each job supplies its own namespaced
- * key), never both. Every domain has a cap: the group concurrency, or the sum of its lanes.
+ * key outside the group) or runs in a fixed set of singleton lanes (`lanes`: every job supplies
+ * its own namespaced lane key and `cap` is the sum of the lane concurrencies), never per-entity
+ * keys beside a domain-wide cap. A domain that needs those keeps its own queue.
  */
 export type BackgroundGroup =
   | {
@@ -21,7 +22,7 @@ export type BackgroundGroup =
        */
       readonly deferral?: 'group' | 'job'
     }
-  | { readonly kind: 'entity' }
+  | { readonly kind: 'lanes'; readonly cap: number }
 
 export type BackgroundDomainDefinition = {
   readonly domain: BackgroundDomain

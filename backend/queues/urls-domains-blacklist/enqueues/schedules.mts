@@ -1,33 +1,26 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import type { ProcessorJobs } from '../types.mts'
-import { urlsDomainsBlacklist } from '../queues.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
-  URLS_DOMAINS_BLACKLIST_ORDERING,
-  URLS_DOMAINS_BLACKLIST_DEFAULTS,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
+  URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB,
+  URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB,
+} from '@queues/background/enqueues/urls-domains-blacklist-jobs'
+import { URLS_DOMAINS_BLACKLIST_ORDERING } from '../config.mts'
 import { enqueueBlacklistDispatcher, enqueueHostnameCacheInvalidationSweep } from '../enqueues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'hostnameCacheInvalidationSweep',
     repeat: { pattern: '*/5 * * * *' },
     template: {
-      name: 'drainHostnameCacheInvalidationWork' as ProcessorJobs,
+      name: URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB.name,
       data: {},
-      opts: {
-        attempts: URLS_DOMAINS_BLACKLIST_DEFAULTS.attempts,
-        backoff: URLS_DOMAINS_BLACKLIST_DEFAULTS.backoff,
-        removeOnComplete: URLS_DOMAINS_BLACKLIST_DEFAULTS.removeOnComplete,
-        removeOnFail: URLS_DOMAINS_BLACKLIST_DEFAULTS.removeOnFail,
-        priority: PRIORITY_DISPATCHER,
+      opts: toSchedulerTemplateOptions({
+        ...URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB.options,
         ordering: URLS_DOMAINS_BLACKLIST_ORDERING.cacheInvalidation,
-      } satisfies JobOptions,
+      }),
     },
     operatorSurfaces: [
       {
@@ -43,16 +36,12 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'blacklistDispatcher',
     repeat: { pattern: '0 2 * * 0' },
     template: {
-      name: 'processBlacklistDispatcher' as ProcessorJobs,
+      name: URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB.name,
       data: {},
-      opts: {
-        attempts: URLS_DOMAINS_BLACKLIST_DEFAULTS.attempts,
-        backoff: URLS_DOMAINS_BLACKLIST_DEFAULTS.backoff,
-        removeOnComplete: URLS_DOMAINS_BLACKLIST_DEFAULTS.removeOnComplete,
-        removeOnFail: URLS_DOMAINS_BLACKLIST_DEFAULTS.removeOnFail,
-        priority: PRIORITY_DISPATCHER,
+      opts: toSchedulerTemplateOptions({
+        ...URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB.options,
         ordering: URLS_DOMAINS_BLACKLIST_ORDERING.dispatcher,
-      } satisfies JobOptions,
+      }),
     },
     operatorSurfaces: [
       {
@@ -65,7 +54,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(urlsDomainsBlacklist, scheduledJobManifest)
-}

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { Job, Queue, type Worker } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection } from '@data-stores/valkey-glide-mq'
@@ -128,7 +129,7 @@ describe('content-analysis worker dispatch', () => {
             admissions.push(event)
           if (
             event.queue === fixtures.purgeQueue &&
-            event.jobName === 'processPurgeCacheTag' &&
+            event.jobName === CACHE_PURGE_TAGS_JOB.name &&
             event.inputs.some(
               input =>
                 typeof input === 'object' &&
@@ -230,7 +231,7 @@ describe('content-analysis worker dispatch', () => {
           ownedImageIds,
           ownedUserTags,
         )
-        expect(purgeJob.name).toBe('processPurgeCacheTag')
+        expect(purgeJob.name).toBe(CACHE_PURGE_TAGS_JOB.name)
         expect(purgeJob.data).toEqual({ tags: fixtures.ownedUserTags })
         expect(
           (await getImageByIdFromPrimary(fixtures.ownedPending, true))?.deleted_at,

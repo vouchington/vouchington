@@ -12,10 +12,8 @@ Central registry and service layer for Valkey-backed `DynamicConfig` namespaces.
 
 ## Key Exports
 
-| Module         | Functions                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `service.mts`  | `listDynamicConfigNamespaces`, `getDynamicConfigNamespace`, `updateDynamicConfigNamespace`, `listDynamicConfigNamespaceHistory` |
-| `registry.mts` | `dynamicConfigRegistry`, `getDynamicConfigRegistryEntry`                                                                        |
+- `service.mts`: `listDynamicConfigNamespaces`, `getDynamicConfigNamespace`, `updateDynamicConfigNamespace`, `listDynamicConfigNamespaceHistory`
+- `registry.mts`: `dynamicConfigRegistry`, `getDynamicConfigRegistryEntry`
 
 ## Adding A Namespace
 
@@ -106,6 +104,7 @@ canonical inventory:
 | `recommended-topics-work-config`          | [recommended-topics limits](../../../../../backend/services/recommended-topics/work-limits.mts)                   |
 | `stripe-work-config`                      | [stripe limits](../../../../../backend/services/stripe/work-limits.mts)                                           |
 | `find-your-friends-work-config`           | [find-your-friends limits](../../../../../backend/queues/find-your-friends/config.mts)                            |
+| `sitemaps-work-config`                    | [sitemaps limits](../../../../../backend/services/sitemaps/work-limits.mts)                                       |
 | `crawl-boilerplate-removal-work-config`   | [crawl boilerplate limits](../../../../../backend/queues/crawl-dispatch/config.mts)                               |
 | `vote-weight-work-config`                 | [vote-weight limits](../../../../../backend/services/vote-weight/work-limits.mts)                                 |
 | `ses-inbound-work-config`                 | [SES inbound limits](../../../../../backend/workers/ses-inbound/work-limits.mts)                                  |

@@ -17,8 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/sitemaps": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",

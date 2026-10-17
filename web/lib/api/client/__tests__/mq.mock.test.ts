@@ -111,7 +111,7 @@ describe('mq client — queues', () => {
         jobs: [
           {
             id: 'kagi-smallweb-sync',
-            queue_name: 'kagi-smallweb',
+            queue_name: 'background',
             job_name: 'sync',
             schedule: '0 5 * * *',
             description: 'Sync Kagi Small Web data',

@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { vi } from 'vitest'
+import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { Job } from 'glide-mq'
 import { userTag } from '../../ts-shared/cache/cache-tags.mts'
 import type { EnqueueAdmission } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
@@ -108,11 +109,11 @@ export async function readOwnedContentAnalysisJob(
     }
     return job
   }
-  if (event.queue === cachePurge && event.jobName === 'processPurgeCacheTag') {
+  if (event.queue === cachePurge && event.jobName === CACHE_PURGE_TAGS_JOB.name) {
     const job = await cachePurge.getJob(admitted.id)
     const data: unknown = job?.data
     if (
-      job?.name !== 'processPurgeCacheTag' ||
+      job?.name !== CACHE_PURGE_TAGS_JOB.name ||
       typeof data !== 'object' ||
       data === null ||
       !('tags' in data) ||

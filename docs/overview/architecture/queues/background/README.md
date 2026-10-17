@@ -35,8 +35,8 @@ registry does not know.
 - **A job has one ordering key, and every domain has a cap.** A domain is capped as a whole
   (`domain`: every job shares the key named after the domain, with the domain's `concurrency` and
   optional `rateLimit`; set to the domain's old worker concurrency) or runs a fixed set of singleton
-  lanes (`entity`: each job supplies a key from `entityOrderingKey`, so the cap is the sum of the
-  lanes). A job of a `domain` group may keep its own singleton key, such as a recovery dispatcher,
+  lanes (`lanes`: each job supplies a singleton key from `entityOrderingKey`, so the cap is the sum of
+  the lanes). A job of a `domain` group may keep its own singleton key, such as a recovery dispatcher,
   which puts it outside the group: the domain then runs at most its group concurrency plus one pass
   per such key. A domain that needs both a domain-wide cap and per-entity keys cannot share the queue
   and keeps its own.
@@ -55,7 +55,8 @@ Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
 `story-post-related-url-projections`, `post-publication`, `vote-aggregation`,
 `entity-listeners`, `account-lifecycle`, `article-sync`,
 `oauth-authorization-exchange`, `notifications`, `activitypub`,
-`follower-distributions`, and `bluesky-follow-propagation`.
+`follower-distributions`, `bluesky-follow-propagation`, `rss-feeds`,
+`urls-domains-blacklist`, `sitemaps`, `cache-purge`, and `kagi-smallweb`.
 
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses
 to start when a job has no handler, a handler has no job, or a job has two handlers.
@@ -68,7 +69,8 @@ pre-run check. A paused domain's job is deferred without spending an attempt:
 
 - a domain with one domain-wide group re-parks the job at the front of its group with
   `job.rateLimitGroup(recheck)`, which blocks only that group;
-- a domain keyed per entity, or not grouped, delays the job with `job.moveToDelayed`.
+- a domain in singleton lanes, or whose group takes `deferral: 'job'`, delays the job with
+  `job.moveToDelayed`.
 
 Neither path uses `RateLimitError` or `worker.rateLimit()`: both sleep the entire shared worker, so
 a provider 429 or a pause on one domain would stop every other domain. The processor therefore
@@ -119,9 +121,9 @@ the queue name `background`; per-domain numbers come from the operator API only.
    both in `registry.mts`.
 2. Build the domain's enqueue helpers on `createBackgroundEnqueue`, export its scheduler manifest,
    and add its handlers to the worker's `handlers.mts`.
-3. Remove the old queue's `queues.mts`, worker singleton, policy entry, schedule registration, and
-   inventory entry, and list the dropped queue name and `WORKER_CONCURRENCY_*` override for
-   infrastructure to pick up.
+3. Point the old package's `queues.mts` at `background` (every queue package keeps one), remove
+   its worker singleton, policy entry, schedule registration, and inventory entry, and list the
+   dropped queue name and `WORKER_CONCURRENCY_*` override for infrastructure to pick up.
 4. Cover the move with a real-GlideMQ test for every limit the old queue relied on.
 
 ## Related

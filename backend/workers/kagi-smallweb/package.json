@@ -14,10 +14,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
-    "@queues/kagi-smallweb": "workspace:^",
-    "@services/kagi-smallweb": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "@queues/background": "workspace:^",
+    "@services/kagi-smallweb": "workspace:^"
   }
 }

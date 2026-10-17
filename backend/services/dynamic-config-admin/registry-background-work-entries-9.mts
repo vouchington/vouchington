@@ -18,6 +18,7 @@ import {
   findYourFriendsWorkMaxValues,
 } from '@queues/find-your-friends/config'
 import { articlesWorkConfig, articlesWorkMaxValues } from '@services/articles/work-limits'
+import { sitemapsWorkConfig, sitemapsWorkMaxValues } from '@services/sitemaps/work-limits'
 
 export const backgroundWorkRegistryEntries9 = {
   'articles-work-config': defineBoundedWorkNamespace({
@@ -70,6 +71,15 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Crawl boilerplate removal',
     maxValues: crawlBoilerplateRemovalWorkMaxValues,
     descriptions: { batch_size: 'HTML snapshots per boilerplate removal batch.' },
+  }),
+  'sitemaps-work-config': defineBoundedWorkNamespace({
+    namespace: 'sitemaps-work-config',
+    config: sitemapsWorkConfig,
+    label: 'Sitemaps',
+    maxValues: sitemapsWorkMaxValues,
+    descriptions: {
+      archive_backfill_day_page_size: 'Days per archive sitemap backfill page.',
+    },
   }),
   'find-your-friends-work-config': defineBoundedWorkNamespace({
     namespace: 'find-your-friends-work-config',

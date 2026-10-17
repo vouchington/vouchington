@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { rss_feeds } from '@queues/rss-feeds/queues'
+import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import {
   insertTestTopic,
   insertTestRssFeed,
@@ -8,15 +9,10 @@ import {
   createTestUser,
   createTestMembership,
   updateTestMembershipExpiresAt,
-  readAllQueueJobs,
 } from '@voucha/test-helpers'
 
 describe('index', () => {
   describe('RSS Feeds Routes', () => {
-    beforeEach(async () => {
-      await rss_feeds.obliterate({ force: true })
-    })
-
     describe('POST /api/v1/rss-feeds/:id/refreshes', () => {
       it('returns 403 for paid users', async () => {
         const paidUser = await createTestUser()
@@ -57,9 +53,12 @@ describe('index', () => {
           rss_feed_id: feedId,
           force: false,
         })
-        const jobs = await readAllQueueJobs(rss_feeds)
+        const jobs = await rssFeedsQueue.searchJobs({
+          name: RSS_FEEDS_FETCH_JOB.name,
+          data: { rssFeedId: feedId },
+        })
         expect(jobs).toHaveLength(1)
-        expect(jobs[0]?.name).toBe('fetchRssFeed')
+        expect(jobs[0]?.name).toBe(RSS_FEEDS_FETCH_JOB.name)
         expect(jobs[0]?.data).toMatchObject({ rssFeedId: feedId, ttl: 60_000 })
       })
 
@@ -83,7 +82,10 @@ describe('index', () => {
           .expect(200)
 
         expect(response.body.force).toBe(true)
-        const jobs = await readAllQueueJobs(rss_feeds)
+        const jobs = await rssFeedsQueue.searchJobs({
+          name: RSS_FEEDS_FETCH_JOB.name,
+          data: { rssFeedId: feedId },
+        })
         expect(jobs).toHaveLength(1)
         expect(jobs[0]?.data).toMatchObject({ rssFeedId: feedId, ttl: 0 })
       })

@@ -63,6 +63,7 @@
     "uuid": "^14.0.3"
   },
   "devDependencies": {
+    "@queues/background": "workspace:^",
     "@queues/cache-purge": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@types/http-errors": "^2.0.5",

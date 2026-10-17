@@ -53,7 +53,7 @@ The materialized view is refreshed by the **psql queue's generic `refreshMateria
 (`backend/queues/psql`), scheduled nightly at 01:00 UTC (`refresh-rss-feed-crawl-tiers`). The job
 takes `{ viewName }` and is allow-listed in
 `backend/data-stores/psql/migration-runner/refresh-materialized-view.mts`. There is no bespoke
-re-tier job on the `rss-feeds` queue.
+re-tier job on the `rss-feeds` domain of the `background` queue.
 
 ## Dispatcher
 

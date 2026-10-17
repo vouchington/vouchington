@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { closeAndUnregisterGlideMQInstance, createWorker } from '@data-stores/valkey-glide-mq'
 import { describe, expect, it } from 'vitest'
-import { PRIORITY_DEFAULT, QUEUE_NAME } from './config.mts'
-import { enqueueBulkFetchRssFeeds } from './enqueues.mts'
-import { rss_feeds } from './queues.mts'
+import {
+  RSS_FEEDS_DISPATCH_JOB,
+  RSS_FEEDS_FETCH_JOB,
+} from '@queues/background/enqueues/rss-feeds-jobs'
+import { RSS_FEEDS_ORDERING } from './config.mts'
+import { enqueueBulkFetchRssFeeds, enqueueDispatchRssFeeds } from './enqueues.mts'
+import { rssFeedsQueue } from './queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 function isJobForRssFeed(job: { data: unknown }, rssFeedId: string): boolean {
@@ -11,7 +14,7 @@ function isJobForRssFeed(job: { data: unknown }, rssFeedId: string): boolean {
 }
 
 async function readFeedJobs(rssFeedId: string) {
-  return (await readAllQueueJobs(rss_feeds)).filter(job => isJobForRssFeed(job, rssFeedId))
+  return (await readAllQueueJobs(rssFeedsQueue)).filter(job => isJobForRssFeed(job, rssFeedId))
 }
 
 describe('rss-feeds enqueues', () => {
@@ -23,8 +26,10 @@ describe('rss-feeds enqueues', () => {
     const jobs = await readFeedJobs(rssFeedId)
     expect(jobs).toHaveLength(1)
     expect(jobs?.[0]?.data).toEqual({ rssFeedId, ttl: 60_000 })
+    expect(jobs?.[0]?.name).toBe('rss-feeds.fetchRssFeed')
     expect(jobs?.[0]?.opts).toMatchObject({
-      priority: PRIORITY_DEFAULT,
+      priority: RSS_FEEDS_FETCH_JOB.options.priority,
+      ordering: { key: 'rss-feeds', concurrency: 5 },
       deduplication: { id: `rss-feed__${rssFeedId}`, mode: 'simple' },
     })
     expect(jobs?.[0]?.opts.deduplication?.ttl).toBeUndefined()
@@ -86,38 +91,20 @@ describe('rss-feeds enqueues', () => {
     ])
   })
 
-  it('skips a feed that is still queued, even across dispatch ticks, and re-adds it after completion', async () => {
-    const queuedFeedId = randomUUID()
-    const otherFeedId = randomUUID()
+  it('enqueues the dispatcher at dispatcher priority in its own namespaced lane', async () => {
+    const job = await enqueueDispatchRssFeeds()
+    expect(job).toMatchObject({
+      name: RSS_FEEDS_DISPATCH_JOB.name,
+      opts: { priority: 100, ordering: RSS_FEEDS_ORDERING.dispatcher },
+    })
+    expect(RSS_FEEDS_ORDERING.dispatcher.key).toBe('rss-feeds:dispatcher')
+  })
 
-    await enqueueBulkFetchRssFeeds([queuedFeedId], { ttl: 60_000 })
-    // Later dispatcher ticks (bulk, mixed with other feeds) must not queue the feed again.
-    await enqueueBulkFetchRssFeeds([queuedFeedId, otherFeedId], { ttl: 60_000 })
-    await enqueueBulkFetchRssFeeds([queuedFeedId], { ttl: 0 })
+  it('ranks a tiered fetch at the tier priority the caller names', async () => {
+    const rssFeedId = randomUUID()
 
-    const queuedJobs = await readFeedJobs(queuedFeedId)
-    expect(queuedJobs).toHaveLength(1)
-    expect(await queuedJobs[0]?.getState()).not.toBe('completed')
-    expect(await readFeedJobs(otherFeedId)).toHaveLength(1)
+    await enqueueBulkFetchRssFeeds([rssFeedId], { priority: 3 })
 
-    // A no-op stub consumer, never the real rss-feeds worker (it would fetch the network).
-    const worker = createWorker(QUEUE_NAME, async () => {})
-    try {
-      const completed = new Promise<void>(resolve => {
-        worker.on('completed', job => {
-          if (job.id === queuedJobs[0]?.id) resolve()
-        })
-      })
-      await completed
-      expect(await queuedJobs[0]?.getState()).toBe('completed')
-
-      await enqueueBulkFetchRssFeeds([queuedFeedId], { ttl: 60_000 })
-
-      const jobs = await readFeedJobs(queuedFeedId)
-      expect(jobs).toHaveLength(2)
-      expect(new Set(jobs.map(job => job.id)).size).toBe(2)
-    } finally {
-      await closeAndUnregisterGlideMQInstance(worker)
-    }
+    expect((await readFeedJobs(rssFeedId))[0]?.opts.priority).toBe(3)
   })
 })

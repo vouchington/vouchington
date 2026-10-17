@@ -15,8 +15,7 @@ index tests in `backend/entrypoints/worker-cpu/` and `backend/entrypoints/worker
 baselines to the helper's resolution behavior.
 
 `ignoreScale: true` is reserved for workers whose concurrency must not move with the global scale
-knob (`psql`, `kagi-smallweb` — they serialize themselves or hit an
-upstream rate-limited API). `account-lifecycle` (baseline 2) and `article-sync` (baseline 1) were
+knob (`psql`, which serializes itself). `account-lifecycle` (baseline 2) and `article-sync` (baseline 1) were
 such workers; as domains of the shared `background` worker they add 3 to its summed baseline,
 which scales, and keep their old caps as domain-wide groups of 2 and 1.
 

@@ -1,5 +1,4 @@
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import onError from '@modules/on-error'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 import { readResponseBody } from '@modules/utils/http'
@@ -7,6 +6,12 @@ import { readResponseBody } from '@modules/utils/http'
 type CachedHeaders = {
   etag: string | null
   lastModified: string | null
+}
+
+/** A list read; its validators are cached only once the caller has admitted the entries it holds. */
+export type FeedListRead = {
+  text: string
+  commitValidators: () => Promise<void>
 }
 
 const FETCH_TIMEOUT_MS = 30_000
@@ -19,8 +24,14 @@ const headerCache = new ValkeyCache({
 })
 
 /* no-mistakes: integration=http */
-export async function fetchFeedList(name: string, url: string): Promise<string | null> {
-  const cached = (await headerCache.get(name)) as CachedHeaders | null
+export async function fetchFeedList(
+  name: string,
+  url: string,
+  options: { conditional?: boolean } = {},
+): Promise<FeedListRead | null> {
+  // A continuation page needs the whole list again, so it never asks for "not modified".
+  const cached =
+    options.conditional === false ? null : ((await headerCache.get(name)) as CachedHeaders | null)
 
   const headers: Record<string, string> = {
     'Accept-Encoding': 'gzip, deflate, br',
@@ -37,9 +48,10 @@ export async function fetchFeedList(name: string, url: string): Promise<string |
 
   if (response.status === 304) return null
 
+  // An error status is a failed read, distinct from the `null` of "not modified": the caller
+  // retries a page that missed a list instead of treating the list as unchanged.
   if (!response.ok) {
-    onError(new Error(`Failed to fetch ${name}: ${response.status} ${response.statusText}`))
-    return null
+    throw new Error(`Failed to fetch ${name}: ${response.status} ${response.statusText}`)
   }
 
   const text = response.body
@@ -50,11 +62,22 @@ export async function fetchFeedList(name: string, url: string): Promise<string |
       })
     : ''
 
-  const newHeaders: CachedHeaders = {
+  const validators: CachedHeaders = {
     etag: response.headers.get('etag'),
     lastModified: response.headers.get('last-modified'),
   }
-  await headerCache.set(name, newHeaders)
+  return {
+    text,
+    // Caching before the page is admitted would let a failed admission hide the list behind a 304.
+    // A continuation page may drop entries at or below its cursor, so it never advances the
+    // validator: the next root read must still see any list that changed since the root read it.
+    commitValidators: async () => {
+      if (options.conditional !== false) await headerCache.set(name, validators)
+    },
+  }
+}
 
-  return text
+/** Drops the cached validators so the next read of these lists is unconditional. */
+export async function forgetFeedListValidators(names: readonly string[]): Promise<void> {
+  await headerCache.delete(...names)
 }

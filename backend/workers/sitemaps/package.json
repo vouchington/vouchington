@@ -22,12 +22,15 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background": "workspace:^",
     "@queues/sitemaps": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/sitemaps": "workspace:^",
     "@voucha/config": "workspace:^",
     "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@ts-shared/utils": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
   }
 }

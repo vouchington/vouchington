@@ -2,7 +2,14 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { kagiSmallWebImportConfig } from './import-config.mts'
 import { describe, it, expect } from 'vitest'
 import { processFeedEntry } from './process-feed-entry.mts'
-import { dispatchKagiSmallWeb } from './sync.mts'
+import { createHash } from 'node:crypto'
+import { dispatchKagiSmallWeb, dispatchKagiSmallWebPage } from './sync.mts'
+import {
+  KAGI_SMALLWEB_PROCESS_FEED_JOB,
+  type KagiFeedJobData,
+} from '@queues/background/enqueues/kagi-smallweb-jobs'
+import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
+import { readAllQueueJobs } from '@voucha/test-helpers'
 import { getExistingRssFeedUrls } from './get-existing-feed-urls.mts'
 import { getTopicByAny } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
@@ -108,5 +115,47 @@ describe('dispatchKagiSmallWeb', () => {
     const result = await dispatchKagiSmallWeb()
     expect(result.disabled).toBe(true)
     expect(result.enqueued).toBe(0)
+  })
+})
+
+describe('dispatchKagiSmallWebPage', () => {
+  it('enqueues bounded pages, continues from the last URL, and covers every new entry once', async () => {
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { candidate_batch_size: 2 })
+    const suffix = randomSuffix()
+    const entries: ParsedFeedEntry[] = ['e', 'b', 'd', 'a', 'c'].map(letter => ({
+      feedUrl: `https://kagi-page-${suffix}-${letter}.example.com/feed.xml`,
+      name: `Kagi Page ${suffix} ${letter}`,
+      slug: `kagi-page-${suffix}-${letter}`,
+      sourceType: 'web',
+    }))
+    const sorted = entries.toSorted((a, b) => (a.feedUrl < b.feedUrl ? -1 : 1))
+    // One of the entries already exists, so its page enqueues one job fewer than its size.
+    await processFeedEntry(sorted[1]!)
+    const urls = new Set(sorted.map(entry => entry.feedUrl))
+    const enqueuedUrls = async () =>
+      (await readAllQueueJobs(kagiSmallWeb))
+        .filter(job => job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name)
+        .map(job => (job.data as KagiFeedJobData).feedUrl)
+        .filter(url => urls.has(url))
+    const continuationId = (cursor: string) =>
+      `kagi_smallweb_sync__${createHash('sha256').update(cursor).digest('hex')}`
+
+    const first = await dispatchKagiSmallWebPage(entries)
+    expect(first).toEqual({ enqueued: 1, total: 5, hasMore: true })
+    expect(await enqueuedUrls()).toEqual([sorted[0]!.feedUrl])
+    const firstContinuation = await kagiSmallWeb.getJob(continuationId(sorted[1]!.feedUrl))
+    expect(firstContinuation?.data).toEqual({ cursor: sorted[1]!.feedUrl })
+
+    const second = await dispatchKagiSmallWebPage(entries, sorted[1]!.feedUrl)
+    expect(second).toEqual({ enqueued: 2, total: 3, hasMore: true })
+
+    const last = await dispatchKagiSmallWebPage(entries, sorted[3]!.feedUrl)
+    expect(last).toEqual({ enqueued: 1, total: 1 })
+
+    expect((await enqueuedUrls()).toSorted()).toEqual(
+      sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
+    )
+    await firstContinuation?.remove()
+    await (await kagiSmallWeb.getJob(continuationId(sorted[3]!.feedUrl)))?.remove()
   })
 })

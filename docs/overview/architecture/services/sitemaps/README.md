@@ -12,7 +12,7 @@ Comprehensive sitemap generation service — builds XML sitemaps for posts by da
 - `putSitemapObjectFile(key, filePath)` — uploads an existing sitemap file to S3 and closes its read handle before returning, so callers can delete the file immediately
 - `isPostPotentiallySitemapEligible(post)` — checks whether a post is potentially eligible for a sitemap. The current reconciliation path selects sitemap candidates from canonical post state; production use of this helper is unconfirmed, and it may be removed after intended-use review.
 - `buildSitemapUrl(path)` / `buildPostUrl(post)` — constructs public sitemap URLs
-- `getNightlyBackfillEntries()` / `getWeeklyBackfillEntries()` / `getMonthlyBackfillEntries()` — returns backfill schedule entries
+- `getNightlyBackfillEntries()` / `getWeeklyBackfillEntries()` / `getMonthlyBackfillPage()` — returns backfill schedule entries; the archive is paged by day (`sitemaps-work-config.archive_backfill_day_page_size`) and continues from the last day of each page
 
 ## Public Routes And Storage Keys
 

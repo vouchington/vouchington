@@ -8,11 +8,13 @@ import {
   BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
   BLUESKY_FOLLOW_PROPAGATION_JOBS,
 } from './bluesky-follow-propagation-jobs.mts'
+import { CACHE_PURGE_DOMAIN, CACHE_PURGE_JOBS } from './cache-purge-jobs.mts'
 import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
 import {
   FOLLOWER_DISTRIBUTIONS_DOMAIN,
   FOLLOWER_DISTRIBUTIONS_JOBS,
 } from './follower-distributions-jobs.mts'
+import { KAGI_SMALLWEB_DOMAIN, KAGI_SMALLWEB_JOBS } from './kagi-smallweb-jobs.mts'
 import { NOTIFICATIONS_DOMAIN } from './notifications-domain.mts'
 import { NOTIFICATIONS_JOBS } from './notifications-jobs.mts'
 import {
@@ -23,11 +25,17 @@ import { OPENAI_MODERATION_DOMAIN, OPENAI_MODERATION_JOBS } from './openai-moder
 import { POST_MENTIONS_DOMAIN, POST_MENTIONS_JOBS } from './post-mentions-jobs.mts'
 import { POST_PUBLICATION_DOMAIN, POST_PUBLICATION_JOBS } from './post-publication-jobs.mts'
 import { assertRegistryInvariants } from './registry-invariants.mts'
+import { RSS_FEEDS_DOMAIN, RSS_FEEDS_JOBS } from './rss-feeds-jobs.mts'
 import { SES_INBOUND_DOMAIN, SES_INBOUND_JOBS } from './ses-inbound-jobs.mts'
+import { SITEMAPS_DOMAIN, SITEMAPS_JOBS } from './sitemaps-jobs.mts'
 import {
   STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN,
   STORY_POST_RELATED_URL_PROJECTIONS_JOBS,
 } from './story-post-related-url-projections-jobs.mts'
+import {
+  URLS_DOMAINS_BLACKLIST_DOMAIN,
+  URLS_DOMAINS_BLACKLIST_JOBS,
+} from './urls-domains-blacklist-jobs.mts'
 import { VOTE_AGGREGATION_DOMAIN, VOTE_AGGREGATION_JOBS } from './vote-aggregation-jobs.mts'
 
 /** The single source of truth for what the `background` queue runs: domains and their jobs. */
@@ -46,6 +54,11 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   ACTIVITYPUB_DOMAIN,
   FOLLOWER_DISTRIBUTIONS_DOMAIN,
   BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
+  RSS_FEEDS_DOMAIN,
+  URLS_DOMAINS_BLACKLIST_DOMAIN,
+  SITEMAPS_DOMAIN,
+  CACHE_PURGE_DOMAIN,
+  KAGI_SMALLWEB_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -63,6 +76,11 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...ACTIVITYPUB_JOBS,
   ...FOLLOWER_DISTRIBUTIONS_JOBS,
   ...BLUESKY_FOLLOW_PROPAGATION_JOBS,
+  ...RSS_FEEDS_JOBS,
+  ...URLS_DOMAINS_BLACKLIST_JOBS,
+  ...SITEMAPS_JOBS,
+  ...CACHE_PURGE_JOBS,
+  ...KAGI_SMALLWEB_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))

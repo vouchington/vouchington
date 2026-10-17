@@ -169,12 +169,12 @@ examples:
 
       export const worker = new Worker('ai_agents', run, { connection })
     isValid: false
-  - file: backend/workers/kagi-smallweb/workers.mts
+  - file: backend/workers/admin-imports/workers.mts
     code: |
       import { createWorker } from '@data-stores/valkey-glide-mq'
       import type { Job } from 'glide-mq'
 
-      export const worker = createWorker('kagi-smallweb', (job: Job) => run(job), {
+      export const worker = createWorker('admin-imports', (job: Job) => run(job), {
         concurrency: 1,
       })
     isValid: true

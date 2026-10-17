@@ -52,21 +52,16 @@
     "@workers/ban-evasion": "workspace:^",
     "@workers/bedrock-batch-sqs": "workspace:^",
     "@workers/bloom-filters": "workspace:^",
-    "@workers/cache-purge": "workspace:^",
     "@workers/crawl-embeds": "workspace:^",
     "@workers/emails": "workspace:^",
     "@workers/find-your-friends": "workspace:^",
-    "@workers/kagi-smallweb": "workspace:^",
     "@workers/memberships": "workspace:^",
     "@workers/psql": "workspace:^",
     "@workers/rss-feed-maintenance": "workspace:^",
-    "@workers/rss-feeds": "workspace:^",
     "@workers/ses-bounce-sqs": "workspace:^",
     "@workers/ses-inbound-sqs": "workspace:^",
-    "@workers/sitemaps": "workspace:^",
     "@workers/spam-detection": "workspace:^",
     "@workers/stripe-events-sqs": "workspace:^",
-    "@workers/urls-domains-blacklist": "workspace:^",
     "@workers/user-rss-feed-imports": "workspace:^"
   }
 }

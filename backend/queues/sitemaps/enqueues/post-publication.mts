@@ -1,31 +1,14 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { SitemapPostType } from '@services/sitemaps/types'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  getSitemapsOrderingKeyForDay,
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  SITEMAPS_ORDERING,
-} from '../config.mts'
-import { sitemaps } from '../queues.mts'
-import type {
-  PostDayJobData,
-  SitemapFamilyJobData,
-  SitemapIndexJobs,
-  SitemapPostDayJobs,
-} from '../types.mts'
+  SITEMAPS_FAMILY_JOB,
+  SITEMAPS_POST_DAY_JOB,
+} from '@queues/background/enqueues/sitemaps-jobs'
+import type { SitemapPostType } from '@services/sitemaps/types'
+import { getSitemapsOrderingKeyForDay, SITEMAPS_ORDERING } from '../config.mts'
+import type { PostDayJobData } from '../types.mts'
 
-const enqueueUpdatePostDaySitemapJob = createEnqueueFunction<PostDayJobData, SitemapPostDayJobs>({
-  queue: sitemaps,
-  queueName: QUEUE_NAME,
-  jobName: 'processUpdatePostDaySitemap',
-})
-const enqueueUpdateFamilySitemapJob = createEnqueueFunction<SitemapFamilyJobData, SitemapIndexJobs>(
-  {
-    queue: sitemaps,
-    queueName: QUEUE_NAME,
-    jobName: 'processUpdateFamilySitemap',
-  },
-)
+const enqueueUpdatePostDaySitemapJob = createBackgroundEnqueue(SITEMAPS_POST_DAY_JOB)
+const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
 
 /**
  * Enqueues without deduplication so acknowledgement always follows a newly accepted durable job.
@@ -34,11 +17,11 @@ const enqueueUpdateFamilySitemapJob = createEnqueueFunction<SitemapFamilyJobData
 export async function enqueueUpdatePostDaySitemapForReconciliation(
   postType: SitemapPostType,
   day: string,
-  priority = PRIORITY_DEFAULT,
+  priority?: number,
 ): Promise<void> {
   const data = { postType, day } satisfies PostDayJobData
   const job = await enqueueUpdatePostDaySitemapJob(data, {
-    priority,
+    ...(priority === undefined ? {} : { priority }),
     ordering: SITEMAPS_ORDERING[getSitemapsOrderingKeyForDay(day)],
   })
   if (!job) throw new Error('Publication reconciliation sitemap job was not accepted')
@@ -48,7 +31,7 @@ export async function enqueueUpdatePostDaySitemapForReconciliation(
 export async function enqueueUpdateLandingPagesSitemapForReconciliation(): Promise<void> {
   const job = await enqueueUpdateFamilySitemapJob(
     { family: 'landing-pages' },
-    { priority: PRIORITY_DEFAULT, ordering: SITEMAPS_ORDERING.indexes },
+    { ordering: SITEMAPS_ORDERING.indexes },
   )
   if (!job) throw new Error('Publication reconciliation landing-pages sitemap job was not accepted')
 }

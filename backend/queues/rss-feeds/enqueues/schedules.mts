@@ -1,33 +1,23 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import type { RssFeedDispatcherJobs } from '../types.mts'
-import { rss_feeds } from '../queues.mts'
-import {
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-  RSS_FEEDS_DEFAULTS,
-  RSS_FEEDS_ORDERING,
-} from '../config.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { RSS_FEEDS_DISPATCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
+import { RSS_FEEDS_ORDERING } from '../config.mts'
 import { enqueueDispatchRssFeeds } from '../enqueues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'dispatchRssFeeds',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'dispatchRssFeeds' as RssFeedDispatcherJobs,
+      name: RSS_FEEDS_DISPATCH_JOB.name,
       data: {},
-      opts: {
-        attempts: RSS_FEEDS_DEFAULTS.attempts,
-        backoff: RSS_FEEDS_DEFAULTS.backoff,
-        removeOnComplete: RSS_FEEDS_DEFAULTS.removeOnComplete,
-        removeOnFail: RSS_FEEDS_DEFAULTS.removeOnFail,
-        priority: PRIORITY_DISPATCHER,
+      opts: toSchedulerTemplateOptions({
+        ...RSS_FEEDS_DISPATCH_JOB.options,
         ordering: RSS_FEEDS_ORDERING.dispatcher,
-      } satisfies JobOptions,
+      }),
     },
     operatorSurfaces: [
       {
@@ -40,7 +30,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(rss_feeds, scheduledJobManifest)
-}

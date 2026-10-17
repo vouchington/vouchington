@@ -22,8 +22,7 @@ Resolves the concurrency for a worker named `name`:
 
 `max` defaults to `25` and can be raised or lowered globally with `WORKER_CONCURRENCY_MAX`. Pass
 `ignoreScale: true` for workers whose concurrency should not move with the global scale knob (for
-example `psql`, which serializes itself, or `kagiSmallWeb`, which is bound by an upstream API rate
-limit).
+example `psql`, which serializes itself).
 
 ```ts
 import { createWorker } from '@data-stores/valkey-glide-mq'

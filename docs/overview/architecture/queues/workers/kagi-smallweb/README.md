@@ -6,7 +6,8 @@ Worker package for Kagi Small Web synchronization jobs.
 
 ## Exports
 
-- `kagiSmallWeb` - worker instance for the `kagi-smallweb` queue.
+- `kagiSmallWebHandlers` - the domain's handlers for the shared
+  [background worker](../background/README.md); there is no per-queue `Worker`.
 
 ## Related
 

@@ -10,5 +10,6 @@ Provider selection, endpoint/player allowlists, SSRF validation, and pinned disp
 Vouchington policy. Queueing, retries, rate limits, and persistence do not live in the platform
 package.
 
-`backfillPendingCrawlEmbeds()` is the recovery path. It cursor-streams only crawls with a saved
-base embed result and unresolved endpoint, then awaits bounded bulk enqueue batches.
+`backfillPendingCrawlEmbeds(afterId)` is the recovery path. Each run reads one page of crawls after
+`afterId` that have a saved base embed result and an unresolved endpoint (the `backfill_batch_size`
+page size), bulk-enqueues them, and chains the next page from the last crawl id it read.

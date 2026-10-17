@@ -10,6 +10,11 @@ import {
   enqueueEmbeddingsBatchPollDispatcher,
 } from '@queues/bedrock-embeddings-batch/enqueues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import {
+  SITEMAPS_MONTHLY_BACKFILL_JOB,
+  SITEMAPS_NIGHTLY_BACKFILL_JOB,
+  SITEMAPS_WEEKLY_BACKFILL_JOB,
+} from '@queues/background/enqueues/sitemaps-jobs'
 import { OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import { enqueueOAuthAuthorizationExchangeDispatcher } from '@queues/oauth-authorization-exchange/enqueues'
 import {
@@ -67,8 +72,8 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'sitemaps-nightly-week',
-    queue_name: 'sitemaps',
-    job_name: 'processNightlyBackfillWeekDispatcher',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: SITEMAPS_NIGHTLY_BACKFILL_JOB.name,
     description: 'Dispatch sitemap backfills for the current week',
     source_table: 'posts',
     trigger: createBackfillDispatcherTrigger(
@@ -78,8 +83,8 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'sitemaps-weekly-month',
-    queue_name: 'sitemaps',
-    job_name: 'processWeeklyBackfillMonthDispatcher',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: SITEMAPS_WEEKLY_BACKFILL_JOB.name,
     description: 'Dispatch sitemap backfills for the current month',
     source_table: 'posts',
     trigger: createBackfillDispatcherTrigger(
@@ -89,8 +94,8 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'sitemaps-monthly-archive',
-    queue_name: 'sitemaps',
-    job_name: 'processMonthlyBackfillArchiveDispatcher',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: SITEMAPS_MONTHLY_BACKFILL_JOB.name,
     description: 'Dispatch sitemap archive backfills',
     source_table: 'posts',
     trigger: createBackfillDispatcherTrigger(

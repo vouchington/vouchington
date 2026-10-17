@@ -1,23 +1,25 @@
-import { createWorker } from '@data-stores/valkey-glide-mq'
-import { getWorkerConcurrency } from '@modules/queue-config'
+import { backgroundHandler } from '@queues/background/enqueues/define-handler'
+import {
+  SITEMAPS_FAMILY_JOB,
+  SITEMAPS_MONTHLY_BACKFILL_JOB,
+  SITEMAPS_NIGHTLY_BACKFILL_JOB,
+  SITEMAPS_POSTS_INDEX_JOB,
+  SITEMAPS_POST_DAY_JOB,
+  SITEMAPS_POST_TYPE_INDEX_JOB,
+  SITEMAPS_ROOT_INDEX_JOB,
+  SITEMAPS_WEEKLY_BACKFILL_JOB,
+} from '@queues/background/enqueues/sitemaps-jobs'
 import {
   processMonthlyBackfillArchiveDispatcher,
-  processUpdateFamilySitemap,
   processNightlyBackfillWeekDispatcher,
-  processUpdatePostTypeIndex,
+  processUpdateFamilySitemap,
   processUpdatePostDaySitemap,
+  processUpdatePostTypeIndex,
   processUpdatePostsIndex,
   processUpdateRootIndex,
   processWeeklyBackfillMonthDispatcher,
 } from './processors.mts'
-import { QUEUE_NAME } from '@queues/sitemaps/config'
-import type {
-  SitemapDispatcherJobs,
-  SitemapIndexJobs,
-  SitemapPostDayJobs,
-} from '@queues/sitemaps/types'
 import { requireJobFamily, requireJobPostType, requireJobString } from './processors/job-data.mts'
-import type { Job } from 'glide-mq'
 
 const sitemapJobProcessors = {
   processUpdatePostDaySitemap,
@@ -32,57 +34,33 @@ const sitemapJobProcessors = {
 
 type SitemapJobProcessors = typeof sitemapJobProcessors
 
-export function processSitemapJob(
-  job: Job,
-  processors: SitemapJobProcessors = sitemapJobProcessors,
-) {
-  const orderingKey = job.opts.ordering?.key
-
-  switch (orderingKey) {
-    case 'post_day_today':
-    case 'post_day_past': {
-      switch (job.name as SitemapPostDayJobs) {
-        case 'processUpdatePostDaySitemap':
-          return processors.processUpdatePostDaySitemap({
-            postType: requireJobPostType(job.data?.postType),
-            day: requireJobString(job.data?.day, 'day'),
-          })
-        default:
-          throw new Error(`Sitemap post-day job ${job.name} not found`)
-      }
-    }
-    case 'indexes': {
-      switch (job.name as SitemapIndexJobs) {
-        case 'processUpdatePostTypeIndex':
-          return processors.processUpdatePostTypeIndex(requireJobPostType(job.data?.postType))
-        case 'processUpdatePostsIndex':
-          return processors.processUpdatePostsIndex()
-        case 'processUpdateFamilySitemap':
-          return processors.processUpdateFamilySitemap(requireJobFamily(job.data?.family))
-        case 'processUpdateRootIndex':
-          return processors.processUpdateRootIndex()
-        default:
-          throw new Error(`Sitemap index job ${job.name} not found`)
-      }
-    }
-    case 'dispatcher': {
-      switch (job.name as SitemapDispatcherJobs) {
-        case 'processNightlyBackfillWeekDispatcher':
-          return processors.processNightlyBackfillWeekDispatcher()
-        case 'processWeeklyBackfillMonthDispatcher':
-          return processors.processWeeklyBackfillMonthDispatcher()
-        case 'processMonthlyBackfillArchiveDispatcher':
-          return processors.processMonthlyBackfillArchiveDispatcher()
-        default:
-          throw new Error(`Sitemap dispatcher job ${job.name} not found`)
-      }
-    }
-    default:
-      throw new Error(`Unknown ordering key: ${orderingKey}`)
-  }
+/** @internal Handlers over the processors; tests pass substitute processors to observe the routing. */
+export function createSitemapsHandlers(processors: SitemapJobProcessors = sitemapJobProcessors) {
+  return [
+    backgroundHandler(SITEMAPS_POST_DAY_JOB, job =>
+      processors.processUpdatePostDaySitemap({
+        postType: requireJobPostType(job.data?.postType),
+        day: requireJobString(job.data?.day, 'day'),
+      }),
+    ),
+    backgroundHandler(SITEMAPS_POST_TYPE_INDEX_JOB, job =>
+      processors.processUpdatePostTypeIndex(requireJobPostType(job.data?.postType)),
+    ),
+    backgroundHandler(SITEMAPS_POSTS_INDEX_JOB, () => processors.processUpdatePostsIndex()),
+    backgroundHandler(SITEMAPS_FAMILY_JOB, job =>
+      processors.processUpdateFamilySitemap(requireJobFamily(job.data?.family)),
+    ),
+    backgroundHandler(SITEMAPS_ROOT_INDEX_JOB, () => processors.processUpdateRootIndex()),
+    backgroundHandler(SITEMAPS_NIGHTLY_BACKFILL_JOB, () =>
+      processors.processNightlyBackfillWeekDispatcher(),
+    ),
+    backgroundHandler(SITEMAPS_WEEKLY_BACKFILL_JOB, () =>
+      processors.processWeeklyBackfillMonthDispatcher(),
+    ),
+    backgroundHandler(SITEMAPS_MONTHLY_BACKFILL_JOB, job =>
+      processors.processMonthlyBackfillArchiveDispatcher(job.data?.afterDay),
+    ),
+  ]
 }
 
-export const sitemaps = createWorker(QUEUE_NAME, processSitemapJob, {
-  dedicatedCommandClient: true,
-  concurrency: getWorkerConcurrency('sitemaps', { baseline: 5 }),
-})
+export const sitemapsHandlers = createSitemapsHandlers()

@@ -1,14 +1,6 @@
-import { afterAll, describe, expect, it, vi } from 'vitest'
-import { processSitemapJob, sitemaps } from './workers.mts'
+import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-
-function makeJob(
-  orderingKey: string,
-  name: string,
-  data: Record<string, unknown> = {},
-): Job<Record<string, unknown>> {
-  return { data, name, opts: { ordering: { key: orderingKey } } } as Job<Record<string, unknown>>
-}
+import { createSitemapsHandlers } from './workers.mts'
 
 function makeProcessors() {
   return {
@@ -23,21 +15,44 @@ function makeProcessors() {
   }
 }
 
-describe('sitemap worker routing', () => {
-  afterAll(async () => {
-    await sitemaps.close()
+/** Runs the handler registered under a local job name with the job's data. */
+function run(
+  processors: ReturnType<typeof makeProcessors>,
+  localName: string,
+  data: Record<string, unknown> = {},
+) {
+  const handler = createSitemapsHandlers(processors).find(
+    candidate => candidate.job.name === `sitemaps.${localName}`,
+  )
+  if (!handler) throw new Error(`No sitemaps handler for ${localName}`)
+  return handler.handle({ data } as Job<never>)
+}
+
+describe('sitemaps handler routing', () => {
+  it('registers one handler for every sitemaps job', () => {
+    expect(
+      createSitemapsHandlers(makeProcessors())
+        .map(handler => handler.job.name)
+        .toSorted(),
+    ).toEqual([
+      'sitemaps.processMonthlyBackfillArchiveDispatcher',
+      'sitemaps.processNightlyBackfillWeekDispatcher',
+      'sitemaps.processUpdateFamilySitemap',
+      'sitemaps.processUpdatePostDaySitemap',
+      'sitemaps.processUpdatePostTypeIndex',
+      'sitemaps.processUpdatePostsIndex',
+      'sitemaps.processUpdateRootIndex',
+      'sitemaps.processWeeklyBackfillMonthDispatcher',
+    ])
   })
 
   it('routes post-day jobs through validated post type and day data', async () => {
     const processors = makeProcessors()
 
-    await processSitemapJob(
-      makeJob('post_day_today', 'processUpdatePostDaySitemap', {
-        postType: 'discussion',
-        day: '2026-06-10',
-      }),
-      processors,
-    )
+    await run(processors, 'processUpdatePostDaySitemap', {
+      postType: 'discussion',
+      day: '2026-06-10',
+    })
 
     expect(processors.processUpdatePostDaySitemap).toHaveBeenCalledWith({
       postType: 'discussion',
@@ -48,16 +63,10 @@ describe('sitemap worker routing', () => {
   it('routes index jobs through validated data', async () => {
     const processors = makeProcessors()
 
-    await processSitemapJob(
-      makeJob('indexes', 'processUpdateFamilySitemap', { family: 'landing-pages' }),
-      processors,
-    )
-    await processSitemapJob(
-      makeJob('indexes', 'processUpdatePostTypeIndex', { postType: 'review' }),
-      processors,
-    )
-    await processSitemapJob(makeJob('indexes', 'processUpdatePostsIndex'), processors)
-    await processSitemapJob(makeJob('indexes', 'processUpdateRootIndex'), processors)
+    await run(processors, 'processUpdateFamilySitemap', { family: 'landing-pages' })
+    await run(processors, 'processUpdatePostTypeIndex', { postType: 'review' })
+    await run(processors, 'processUpdatePostsIndex')
+    await run(processors, 'processUpdateRootIndex')
 
     expect(processors.processUpdateFamilySitemap).toHaveBeenCalledWith('landing-pages')
     expect(processors.processUpdatePostTypeIndex).toHaveBeenCalledWith('review')
@@ -65,41 +74,30 @@ describe('sitemap worker routing', () => {
     expect(processors.processUpdateRootIndex).toHaveBeenCalledWith()
   })
 
-  it('routes dispatcher jobs', async () => {
+  it('routes dispatcher jobs and hands the archive dispatcher its cursor', async () => {
     const processors = makeProcessors()
 
-    await processSitemapJob(
-      makeJob('dispatcher', 'processNightlyBackfillWeekDispatcher'),
-      processors,
-    )
-    await processSitemapJob(
-      makeJob('dispatcher', 'processWeeklyBackfillMonthDispatcher'),
-      processors,
-    )
-    await processSitemapJob(
-      makeJob('dispatcher', 'processMonthlyBackfillArchiveDispatcher'),
-      processors,
-    )
+    await run(processors, 'processNightlyBackfillWeekDispatcher')
+    await run(processors, 'processWeeklyBackfillMonthDispatcher')
+    await run(processors, 'processMonthlyBackfillArchiveDispatcher', { afterDay: '2026-01-31' })
+    await run(processors, 'processMonthlyBackfillArchiveDispatcher')
 
     expect(processors.processNightlyBackfillWeekDispatcher).toHaveBeenCalledWith()
     expect(processors.processWeeklyBackfillMonthDispatcher).toHaveBeenCalledWith()
-    expect(processors.processMonthlyBackfillArchiveDispatcher).toHaveBeenCalledWith()
+    expect(processors.processMonthlyBackfillArchiveDispatcher).toHaveBeenNthCalledWith(
+      1,
+      '2026-01-31',
+    )
+    expect(processors.processMonthlyBackfillArchiveDispatcher).toHaveBeenNthCalledWith(2, undefined)
   })
 
-  it('throws for unsupported job names and ordering keys', () => {
+  it('rejects malformed job data before processing', () => {
     const processors = makeProcessors()
 
-    expect(() => processSitemapJob(makeJob('post_day_today', 'unknown'), processors)).toThrow(
-      'Sitemap post-day job unknown not found',
+    expect(() => run(processors, 'processUpdatePostDaySitemap', { postType: 'unknown' })).toThrow(
+      'Unsupported postType: unknown',
     )
-    expect(() => processSitemapJob(makeJob('indexes', 'unknown'), processors)).toThrow(
-      'Sitemap index job unknown not found',
-    )
-    expect(() => processSitemapJob(makeJob('dispatcher', 'unknown'), processors)).toThrow(
-      'Sitemap dispatcher job unknown not found',
-    )
-    expect(() => processSitemapJob(makeJob('other', 'unknown'), processors)).toThrow(
-      'Unknown ordering key: other',
-    )
+    expect(() => run(processors, 'processUpdateFamilySitemap', {})).toThrow('family is required')
+    expect(processors.processUpdatePostDaySitemap).not.toHaveBeenCalled()
   })
 })

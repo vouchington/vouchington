@@ -6,7 +6,7 @@ import {
   insertTestRssFeedCrawl,
   insertTestRssFeedDirect,
 } from '../../../../backend/test-helpers/index.mts'
-import { rss_feeds } from '../../../../backend/queues/rss-feeds/queues.mts'
+import { rssFeedsQueue } from '../../../../backend/queues/rss-feeds/queues.mts'
 import type { RssFeedResponseBody } from '@/types/api-responses'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 
@@ -77,10 +77,10 @@ describe('client-content-routes', () => {
         rss_feed_id: harness.rssFeedId,
         force: false,
       })
-      const jobs = await rss_feeds.searchJobs({ data: { rssFeedId: harness.rssFeedId } })
+      const jobs = await rssFeedsQueue.searchJobs({ data: { rssFeedId: harness.rssFeedId } })
       expect(jobs).toContainEqual(
         expect.objectContaining({
-          name: 'fetchRssFeed',
+          name: 'rss-feeds.fetchRssFeed',
           data: expect.objectContaining({ rssFeedId: harness.rssFeedId, ttl: 60_000 }),
         }),
       )

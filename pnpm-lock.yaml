@@ -1826,9 +1826,6 @@ importers:
       '@workers/bloom-filters':
         specifier: workspace:^
         version: link:../../workers/bloom-filters
-      '@workers/cache-purge':
-        specifier: workspace:^
-        version: link:../../workers/cache-purge
       '@workers/crawl-embeds':
         specifier: workspace:^
         version: link:../../workers/crawl-embeds
@@ -1838,9 +1835,6 @@ importers:
       '@workers/find-your-friends':
         specifier: workspace:^
         version: link:../../workers/find-your-friends
-      '@workers/kagi-smallweb':
-        specifier: workspace:^
-        version: link:../../workers/kagi-smallweb
       '@workers/memberships':
         specifier: workspace:^
         version: link:../../workers/memberships
@@ -1850,27 +1844,18 @@ importers:
       '@workers/rss-feed-maintenance':
         specifier: workspace:^
         version: link:../../workers/rss-feed-maintenance
-      '@workers/rss-feeds':
-        specifier: workspace:^
-        version: link:../../workers/rss-feeds
       '@workers/ses-bounce-sqs':
         specifier: workspace:^
         version: link:../../workers/ses-bounce-sqs
       '@workers/ses-inbound-sqs':
         specifier: workspace:^
         version: link:../../workers/ses-inbound-sqs
-      '@workers/sitemaps':
-        specifier: workspace:^
-        version: link:../../workers/sitemaps
       '@workers/spam-detection':
         specifier: workspace:^
         version: link:../../workers/spam-detection
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
-      '@workers/urls-domains-blacklist':
-        specifier: workspace:^
-        version: link:../../workers/urls-domains-blacklist
       '@workers/user-rss-feed-imports':
         specifier: workspace:^
         version: link:../../workers/user-rss-feed-imports
@@ -2839,18 +2824,15 @@ importers:
 
   backend/queues/cache-purge:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
+        version: link:../background
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../../../ts-shared/cache
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/content-analysis:
     dependencies:
@@ -3031,18 +3013,22 @@ importers:
 
   backend/queues/kagi-smallweb:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/queues/memberships:
     dependencies:
@@ -3171,18 +3157,19 @@ importers:
 
   backend/queues/rss-feeds:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/queues/ses-inbound:
     dependencies:
@@ -3207,12 +3194,12 @@ importers:
 
   backend/queues/sitemaps:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@services/sitemaps':
         specifier: workspace:^
         version: link:../../services/sitemaps
@@ -3270,21 +3257,18 @@ importers:
 
   backend/queues/urls-domains-blacklist:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@services/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/user-rss-feed-imports:
     dependencies:
@@ -4748,6 +4732,9 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
@@ -5391,6 +5378,9 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../user-referral-program-links
@@ -5774,6 +5764,9 @@ importers:
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
+      '@services/sitemaps':
+        specifier: workspace:^
+        version: link:../sitemaps
       '@services/stories':
         specifier: workspace:^
         version: link:../stories
@@ -6903,6 +6896,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/kagi-smallweb':
         specifier: workspace:^
         version: link:../../queues/kagi-smallweb
@@ -6922,6 +6918,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/services/landing-page-analytics:
     dependencies:
@@ -7125,9 +7124,6 @@ importers:
       '@services/feeds':
         specifier: workspace:^
         version: link:../feeds
-      '@services/queue-monitoring':
-        specifier: workspace:^
-        version: link:../queue-monitoring
       '@services/stories':
         specifier: workspace:^
         version: link:../stories
@@ -7777,6 +7773,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
@@ -8874,9 +8873,6 @@ importers:
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../../queues/bluesky-follow-propagation
-      '@queues/cache-purge':
-        specifier: workspace:^
-        version: link:../../queues/cache-purge
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -9652,6 +9648,9 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -11914,12 +11913,18 @@ importers:
       '@workers/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../bluesky-follow-propagation
+      '@workers/cache-purge':
+        specifier: workspace:^
+        version: link:../cache-purge
       '@workers/entity-listeners':
         specifier: workspace:^
         version: link:../entity-listeners
       '@workers/follower-distributions':
         specifier: workspace:^
         version: link:../follower-distributions
+      '@workers/kagi-smallweb':
+        specifier: workspace:^
+        version: link:../kagi-smallweb
       '@workers/notifications':
         specifier: workspace:^
         version: link:../notifications
@@ -11935,12 +11940,21 @@ importers:
       '@workers/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@workers/rss-feeds':
+        specifier: workspace:^
+        version: link:../rss-feeds
       '@workers/ses-inbound':
         specifier: workspace:^
         version: link:../ses-inbound
+      '@workers/sitemaps':
+        specifier: workspace:^
+        version: link:../sitemaps
       '@workers/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../story-post-related-url-projections
+      '@workers/urls-domains-blacklist':
+        specifier: workspace:^
+        version: link:../urls-domains-blacklist
       '@workers/vote-aggregation':
         specifier: workspace:^
         version: link:../vote-aggregation
@@ -11954,9 +11968,18 @@ importers:
       '@modules/http-signatures':
         specifier: workspace:^
         version: link:../../modules/http-signatures
+      '@queues/cache-purge':
+        specifier: workspace:^
+        version: link:../../queues/cache-purge
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
+      '@queues/rss-feeds':
+        specifier: workspace:^
+        version: link:../../queues/rss-feeds
+      '@queues/sitemaps':
+        specifier: workspace:^
+        version: link:../../queues/sitemaps
       '@services/activitypub-delivery':
         specifier: workspace:^
         version: link:../../services/activitypub-delivery
@@ -11981,9 +12004,15 @@ importers:
       '@services/remote-actors':
         specifier: workspace:^
         version: link:../../services/remote-actors
+      '@services/rss-feeds':
+        specifier: workspace:^
+        version: link:../../services/rss-feeds
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12187,18 +12216,12 @@ importers:
 
   backend/workers/cache-purge:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
-      '@queues/cache-purge':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/cache-purge
+        version: link:../../queues/background
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../../services/entity-cache
@@ -12214,6 +12237,9 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -12747,21 +12773,12 @@ importers:
 
   backend/workers/kagi-smallweb:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/kagi-smallweb':
-        specifier: workspace:^
-        version: link:../../queues/kagi-smallweb
+        version: link:../../queues/background
       '@services/kagi-smallweb':
         specifier: workspace:^
         version: link:../../services/kagi-smallweb
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/memberships:
     dependencies:
@@ -13047,21 +13064,15 @@ importers:
 
   backend/workers/rss-feeds:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../../services/rss-feeds
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/ses-bounce-sqs:
     dependencies:
@@ -13164,12 +13175,9 @@ importers:
 
   backend/workers/sitemaps:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
@@ -13185,6 +13193,13 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
 
   backend/workers/spam-detection:
     dependencies:
@@ -13278,12 +13293,9 @@ importers:
 
   backend/workers/urls-domains-blacklist:
     dependencies:
-      '@data-stores/valkey-glide-mq':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../../queues/urls-domains-blacklist
@@ -13296,9 +13308,6 @@ importers:
       '@services/urls-domains-blacklist-sync':
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist-sync
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

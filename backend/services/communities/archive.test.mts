@@ -6,19 +6,17 @@ import {
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
+import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import * as cachePurgeEnqueues from '@queues/cache-purge/enqueues'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getCommunity } from './get.mts'
 import { setCommunityArchiveState, updateCommunityAndSetArchiveState } from './archive.mts'
 
-const QUEUE_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
-
 async function getCachePurgeTagsForCommunityKeys(keys: string[]): Promise<string[]> {
   const expectedTags = new Set(keys.map(key => `community:${key}`))
-  const jobs = await Promise.all(QUEUE_STATES.map(state => cachePurge.getJobs(state)))
+  const jobs = await cachePurge.searchJobs({ name: CACHE_PURGE_TAGS_JOB.name })
   return jobs
-    .flat()
     .flatMap(job => (job.data as { tags?: unknown[] } | undefined)?.tags ?? [])
     .filter((tag): tag is string => typeof tag === 'string' && expectedTags.has(tag))
 }

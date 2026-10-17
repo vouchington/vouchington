@@ -916,6 +916,278 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
+        "description": "Dispatch RSS feed fetching",
+        "id": "dispatchRssFeeds",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "dispatchRssFeeds",
+    "template": {
+      "data": {},
+      "name": "rss-feeds.dispatchRssFeeds",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "rss-feeds:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Drain durable hostname-policy cache invalidations",
+        "id": "hostnameCacheInvalidationSweep",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "hostnameCacheInvalidationSweep",
+    "template": {
+      "data": {},
+      "name": "urls-domains-blacklist.drainHostnameCacheInvalidationWork",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "urls-domains-blacklist:cache-invalidation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch URL/domain blacklist syncing (weekly)",
+        "id": "blacklistDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 2 * * 0",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 2 * * 0",
+    },
+    "schedulerId": "blacklistDispatcher",
+    "template": {
+      "data": {},
+      "name": "urls-domains-blacklist.processBlacklistDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "urls-domains-blacklist:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Nightly sitemap backfill for the week",
+        "id": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 7 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "sitemaps-nightly-week",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 7 * * *",
+    },
+    "schedulerId": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
+    "template": {
+      "name": "sitemaps.processNightlyBackfillWeekDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "sitemaps:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Weekly sitemap backfill for the month",
+        "id": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 7 * * 0",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "sitemaps-weekly-month",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 7 * * 0",
+    },
+    "schedulerId": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
+    "template": {
+      "name": "sitemaps.processWeeklyBackfillMonthDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "sitemaps:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Monthly sitemap archive backfill",
+        "id": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 7 1 * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "sitemaps-monthly-archive",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 7 1 * *",
+    },
+    "schedulerId": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
+    "template": {
+      "name": "sitemaps.processMonthlyBackfillArchiveDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "sitemaps:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Sync Kagi Small Web data",
+        "id": "kagi-smallweb-sync",
+        "kind": "scheduled-jobs",
+        "schedule": "0 5 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "kagi-smallweb-sync",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 5 * * *",
+    },
+    "schedulerId": "kagi-smallweb-sync",
+    "template": {
+      "data": {},
+      "name": "kagi-smallweb.sync",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 30000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "kagi-smallweb:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
         "description": "Copy reusable topic embeddings from the centralized table",
         "id": "reconcile_existing_topics",
         "kind": "scheduled-jobs",
@@ -1659,47 +1931,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 1000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Sync Kagi Small Web data",
-        "id": "kagi-smallweb-sync",
-        "kind": "scheduled-jobs",
-        "schedule": "0 5 * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "kagi-smallweb-sync",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "kagi-smallweb",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 5 * * *",
-    },
-    "schedulerId": "kagi-smallweb-sync",
-    "template": {
-      "data": {},
-      "name": "sync",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 30000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2536,43 +2767,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Dispatch RSS feed fetching",
-        "id": "dispatchRssFeeds",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "rss-feeds",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "dispatchRssFeeds",
-    "template": {
-      "data": {},
-      "name": "dispatchRssFeeds",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Drain durable RSS item category snapshots",
         "id": "reconcileRssFeedItemCategorySnapshots",
         "kind": "scheduled-jobs",
@@ -2647,126 +2841,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Nightly sitemap backfill for the week",
-        "id": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 7 * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "sitemaps-nightly-week",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "sitemaps",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 7 * * *",
-    },
-    "schedulerId": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
-    "template": {
-      "name": "processNightlyBackfillWeekDispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Weekly sitemap backfill for the month",
-        "id": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 7 * * 0",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "sitemaps-weekly-month",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "sitemaps",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 7 * * 0",
-    },
-    "schedulerId": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
-    "template": {
-      "name": "processWeeklyBackfillMonthDispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Monthly sitemap archive backfill",
-        "id": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 7 1 * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "sitemaps-monthly-archive",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "sitemaps",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 7 1 * *",
-    },
-    "schedulerId": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
-    "template": {
-      "name": "processMonthlyBackfillArchiveDispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
         "id": "unfurl_referral_links_dispatcher",
         "kind": "scheduled-jobs",
@@ -2789,80 +2863,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Drain durable hostname-policy cache invalidations",
-        "id": "hostnameCacheInvalidationSweep",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "urls-domains-blacklist",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "hostnameCacheInvalidationSweep",
-    "template": {
-      "data": {},
-      "name": "drainHostnameCacheInvalidationWork",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "cache-invalidation",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Dispatch URL/domain blacklist syncing (weekly)",
-        "id": "blacklistDispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 2 * * 0",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "urls-domains-blacklist",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 2 * * 0",
-    },
-    "schedulerId": "blacklistDispatcher",
-    "template": {
-      "data": {},
-      "name": "processBlacklistDispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2974,8 +2974,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch RSS feed fetching",
     "id": "dispatchRssFeeds",
-    "job_name": "dispatchRssFeeds",
-    "queue_name": "rss-feeds",
+    "job_name": "rss-feeds.dispatchRssFeeds",
+    "queue_name": "background",
     "schedule": "* * * * *",
     "triggerName": "enqueueDispatchRssFeeds",
   },
@@ -3102,8 +3102,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Sync Kagi Small Web data",
     "id": "kagi-smallweb-sync",
-    "job_name": "sync",
-    "queue_name": "kagi-smallweb",
+    "job_name": "kagi-smallweb.sync",
+    "queue_name": "background",
     "schedule": "0 5 * * *",
     "triggerName": "enqueueKagiSmallWebSync",
   },
@@ -3222,16 +3222,16 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch URL/domain blacklist syncing (weekly)",
     "id": "blacklistDispatcher",
-    "job_name": "processBlacklistDispatcher",
-    "queue_name": "urls-domains-blacklist",
+    "job_name": "urls-domains-blacklist.processBlacklistDispatcher",
+    "queue_name": "background",
     "schedule": "0 2 * * 0",
     "triggerName": "enqueueBlacklistDispatcher",
   },
   {
     "description": "Drain durable hostname-policy cache invalidations",
     "id": "hostnameCacheInvalidationSweep",
-    "job_name": "drainHostnameCacheInvalidationWork",
-    "queue_name": "urls-domains-blacklist",
+    "job_name": "urls-domains-blacklist.drainHostnameCacheInvalidationWork",
+    "queue_name": "background",
     "schedule": "*/5 * * * *",
     "triggerName": "enqueueHostnameCacheInvalidationSweep",
   },
@@ -3430,24 +3430,24 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Nightly sitemap backfill for the week",
     "id": "sitemaps-backfill-processNightlyBackfillWeekDispatcher",
-    "job_name": "processNightlyBackfillWeekDispatcher",
-    "queue_name": "sitemaps",
+    "job_name": "sitemaps.processNightlyBackfillWeekDispatcher",
+    "queue_name": "background",
     "schedule": "0 7 * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Weekly sitemap backfill for the month",
     "id": "sitemaps-backfill-processWeeklyBackfillMonthDispatcher",
-    "job_name": "processWeeklyBackfillMonthDispatcher",
-    "queue_name": "sitemaps",
+    "job_name": "sitemaps.processWeeklyBackfillMonthDispatcher",
+    "queue_name": "background",
     "schedule": "0 7 * * 0",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Monthly sitemap archive backfill",
     "id": "sitemaps-backfill-processMonthlyBackfillArchiveDispatcher",
-    "job_name": "processMonthlyBackfillArchiveDispatcher",
-    "queue_name": "sitemaps",
+    "job_name": "sitemaps.processMonthlyBackfillArchiveDispatcher",
+    "queue_name": "background",
     "schedule": "0 7 1 * *",
     "triggerName": "[anonymous]",
   },

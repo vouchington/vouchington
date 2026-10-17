@@ -1,4 +1,4 @@
-import { createQueue } from '@data-stores/valkey-glide-mq'
-import { QUEUE_NAME } from './config.mts'
+import { background } from '@queues/background/queues'
 
-export const kagiSmallWeb = createQueue(QUEUE_NAME, { priorityKind: 'ranked' })
+// The domain's queue is the shared `background` queue; this names it for the domain's own code.
+export const kagiSmallWeb = background

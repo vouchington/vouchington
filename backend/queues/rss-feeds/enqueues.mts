@@ -1,15 +1,10 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-  RSS_FEEDS_DEFAULTS,
-  RSS_FEEDS_ORDERING,
-} from './config.mts'
-import { rss_feeds } from './queues.mts'
-import type { RssFeedDispatcherJobs, RssFeedsJobs } from './types.mts'
+  RSS_FEEDS_DISPATCH_JOB,
+  RSS_FEEDS_FETCH_JOB,
+} from '@queues/background/enqueues/rss-feeds-jobs'
+import type { EnqueueReturnType } from '@voucha/types'
+import { RSS_FEEDS_ORDERING } from './config.mts'
 
 /**
  * `dispatch` (the default) is the dispatcher's backlog key. `request` is for a fetch someone asked
@@ -25,33 +20,14 @@ type FetchRssFeedInput = {
   deduplicationScope?: FetchRssFeedDeduplicationScope
 }
 
-type FetchRssFeedData = {
-  rssFeedId: string
-  ttl?: number
-}
-
-const defaults = {
-  attempts: RSS_FEEDS_DEFAULTS.attempts,
-  backoff: RSS_FEEDS_DEFAULTS.backoff,
-  removeOnComplete: RSS_FEEDS_DEFAULTS.removeOnComplete,
-  removeOnFail: RSS_FEEDS_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
-
 const buildRssFeedJobId = (
   rssFeedId: string,
   scope: FetchRssFeedDeduplicationScope = 'dispatch',
 ) => (scope === 'request' ? `rss-feed-request__${rssFeedId}` : `rss-feed__${rssFeedId}`)
 
-const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
-  FetchRssFeedInput,
-  FetchRssFeedData,
-  RssFeedsJobs
->({
-  queue: rss_feeds,
-  queueName: QUEUE_NAME,
-  jobName: 'fetchRssFeed',
-  defaults,
-  buildJob: data => ({
+const enqueueBulkFetchRssFeedJobs = createBackgroundBulkEnqueue(
+  RSS_FEEDS_FETCH_JOB,
+  (data: FetchRssFeedInput) => ({
     data: { rssFeedId: data.rssFeedId, ttl: data.ttl },
     opts: {
       // `simple` dedup skips a feed while its fetch job is waiting, active, or retrying and admits
@@ -69,20 +45,11 @@ const enqueueBulkFetchRssFeedJobs = createBulkEnqueueFunction<
               mode: 'simple' as const,
             },
           }),
-      ordering: RSS_FEEDS_ORDERING.fetch,
     },
   }),
-})
+)
 
-const enqueueDispatchRssFeedsJob = createEnqueueFunction<
-  Record<string, never>,
-  RssFeedDispatcherJobs
->({
-  queue: rss_feeds,
-  queueName: QUEUE_NAME,
-  jobName: 'dispatchRssFeeds',
-  defaults,
-})
+const enqueueDispatchRssFeedsJob = createBackgroundEnqueue(RSS_FEEDS_DISPATCH_JOB)
 
 export const enqueueBulkFetchRssFeeds = (
   rssFeedIds: string[],
@@ -96,16 +63,10 @@ export const enqueueBulkFetchRssFeeds = (
   const { ttl, priority, skipDeduplication, deduplicationScope } = opts ?? {}
   return enqueueBulkFetchRssFeedJobs(
     rssFeedIds.map(rssFeedId => ({ rssFeedId, ttl, skipDeduplication, deduplicationScope })),
-    { priority: priority ?? PRIORITY_DEFAULT },
+    priority === undefined ? {} : { priority },
   )
 }
 
 export function enqueueDispatchRssFeeds(): EnqueueReturnType {
-  return enqueueDispatchRssFeedsJob(
-    {},
-    {
-      priority: PRIORITY_DISPATCHER,
-      ordering: RSS_FEEDS_ORDERING.dispatcher,
-    },
-  )
+  return enqueueDispatchRssFeedsJob({}, { ordering: RSS_FEEDS_ORDERING.dispatcher })
 }

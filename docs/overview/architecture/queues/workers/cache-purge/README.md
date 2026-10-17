@@ -8,12 +8,11 @@ Jobs require the canonical `{ tags: string[] }` payload; the retired single-tag 
 
 ## Exports
 
-- `cachePurge` - worker instance for the `cache-purge` queue. Concurrency baseline 5, plus a
-  Valkey-backed `CACHE_PURGE_LIMITER` (`{ max: 4, duration: 60_000 }`, 4 req/min) because
-  Workers Cache purge always uses Free-tier 5 req/min regardless of zone plan — the limiter
-  throttles the aggregate rate across every worker replica, not per-instance, so concurrency is
-  left unchanged. See
-  [queue README](../../cache-purge/README.md#queue-configuration) for the full rationale.
+- `cachePurgeHandlers` - the domain's handlers for the shared
+  [background worker](../background/README.md); there is no per-queue `Worker`. The Workers Cache
+  purge rate limit (`CACHE_PURGE_RATE_LIMIT`, 4 req/min) is the domain's group in the registry, not a
+  worker option. See [queue README](../../cache-purge/README.md#queue-configuration) for the full
+  rationale.
 
 ## Related
 

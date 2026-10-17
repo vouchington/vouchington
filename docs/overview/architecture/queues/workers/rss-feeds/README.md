@@ -10,7 +10,8 @@ worker-side re-tier or manual refresh.
 
 ## Exports
 
-- `rss_feeds` - worker instance for the `rss-feeds` queue.
+- `rssFeedsHandlers` - the domain's handlers for the shared
+  [background worker](../background/README.md); there is no per-queue `Worker`.
 
 ## Related
 

@@ -38,7 +38,6 @@
     "@services/dynamic-config-admin": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/feeds": "workspace:^",
-    "@services/queue-monitoring": "workspace:^",
     "@services/stories": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",

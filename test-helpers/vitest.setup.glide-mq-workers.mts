@@ -6,13 +6,14 @@ Logger.setLoggerConfig('error')
 
 // Start a subset of queue workers in-process for backend tests.
 // These are internal/data-only workers needed for side effects that many tests expect.
-// Do not import post-publication, cache-purge, or crawl-embeds here: their processors run real
+// Never serve post-publication, cache-purge, or crawl-embeds from here: their handlers run real
 // side effects (reconciliation, cache purge, embed crawling) on every job enqueued anywhere in this
-// isolate:false fork, not just in the file that imports them. worker-io definition identity tests
-// close those singletons after loading them (#10984). post-publication is now a domain of the shared
-// `background` queue: never serve it from a global worker; a test that needs its jobs drained builds
-// its own `createBackgroundWorker({ handlers, domains: ['post-publication'] })` (with a stub handler
-// unless it wants real reconciliation) and closes it with `closeAndUnregisterGlideMQInstance` (#11013).
+// isolate:false fork, not just in the file that imports them. post-publication and cache-purge are
+// domains of the shared `background` queue, as are rss-feeds, urls-domains-blacklist, and sitemaps
+// (real network and storage work): never serve them from a global worker; a test that needs a
+// domain's jobs drained builds its own `createBackgroundWorker({ handlers, domains: [...] })` (with
+// a stub handler unless it wants the real work) and closes it with
+// `closeAndUnregisterGlideMQInstance` (#11013).
 // See docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#live-glidemq-workers-must-not-leak-across-isolatefalse-files.
 import '@workers/bloom-filters/workers'
 

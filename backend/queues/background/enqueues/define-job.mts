@@ -15,6 +15,9 @@ export function defineBackgroundDomain(
   if (definition.group.kind === 'domain') {
     assertPositiveInteger(`${definition.domain} group concurrency`, definition.group.concurrency)
   }
+  if (definition.group.kind === 'lanes') {
+    assertPositiveInteger(`${definition.domain} lane cap`, definition.group.cap)
+  }
   return definition
 }
 

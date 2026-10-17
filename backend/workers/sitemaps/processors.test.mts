@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import {
   processUpdateFamilySitemap,
+  processMonthlyBackfillArchiveDispatcher,
   processNightlyBackfillWeekDispatcher,
   processUpdatePostDaySitemap,
   processUpdatePostTypeIndex,
@@ -15,7 +16,11 @@ import {
   enqueueBulkUpdatePostDaySitemaps as realEnqueueBulkUpdatePostDaySitemaps,
   enqueueUpdateFamilySitemap as realEnqueueUpdateFamilySitemap,
 } from '@queues/sitemaps/enqueues'
+import * as sitemapStorage from '@services/sitemaps/storage'
 import type { PostDayManifest } from '@services/sitemaps/storage'
+import { sitemapsWorkConfig } from '@services/sitemaps/work-limits'
+import { getPreviousUtcDays } from '@ts-shared/utils/dates'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 const manifest: PostDayManifest = {
   active_page_count: 1,
@@ -106,6 +111,7 @@ describe('sitemap processors', () => {
 
       await processNightlyBackfillWeekDispatcher({
         enqueueBulkUpdatePostDaySitemaps: bulkSpy,
+        enqueueMonthlyBackfillArchiveContinuation: vi.fn<VitestLooseMock>(),
         enqueueUpdateFamilySitemap: familySpy,
       })
 
@@ -168,5 +174,56 @@ describe('sitemap processors', () => {
       // leak into whatever unrelated test file next runs in the same worker fork.
       vi.restoreAllMocks()
     }
+  })
+
+  it('pages the archive backfill: one page per run, chained by the last day, covering every day once', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(sitemapsWorkConfig, { archive_backfill_day_page_size: 2 }),
+    )
+    // Four archive days: 33 through 30 days ago, the newest being the archive's last day.
+    const earliestDay = getPreviousUtcDays(34).at(-1)!
+    vi.spyOn(sitemapStorage, 'getTrackedDayRange').mockResolvedValue({
+      earliestDay,
+      latestDay: earliestDay,
+    })
+    const bulkSpy = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+    const continuationSpy = vi.fn<VitestLooseMock>().mockResolvedValue(undefined)
+    const dependencies = {
+      enqueueBulkUpdatePostDaySitemaps: bulkSpy,
+      enqueueMonthlyBackfillArchiveContinuation: continuationSpy,
+      enqueueUpdateFamilySitemap: vi.fn<VitestLooseMock>(),
+    }
+    const daysOf = (call: number) => [
+      ...new Set(bulkSpy.mock.calls[call]![0].map((entry: { day: string }) => entry.day)),
+    ]
+
+    const first = await processMonthlyBackfillArchiveDispatcher(undefined, dependencies)
+    expect(daysOf(0)).toHaveLength(2)
+    expect(first).toEqual({ enqueued: SITEMAP_CONFIG.POST_TYPES.length * 2, hasMore: true })
+    expect(continuationSpy).toHaveBeenCalledExactlyOnceWith(daysOf(0).toSorted().at(-1))
+
+    const second = await processMonthlyBackfillArchiveDispatcher(
+      continuationSpy.mock.calls[0]![0],
+      dependencies,
+    )
+    expect(second.hasMore).toBe(false)
+    expect(continuationSpy).toHaveBeenCalledTimes(1)
+    expect(new Set([...daysOf(0), ...daysOf(1)]).size).toBe(4)
+  })
+
+  it('enqueues nothing for the archive when no day has been tracked', async () => {
+    vi.spyOn(sitemapStorage, 'getTrackedDayRange').mockResolvedValue(null)
+    const bulkSpy = vi.fn<VitestLooseMock>()
+    const continuationSpy = vi.fn<VitestLooseMock>()
+
+    await expect(
+      processMonthlyBackfillArchiveDispatcher(undefined, {
+        enqueueBulkUpdatePostDaySitemaps: bulkSpy,
+        enqueueMonthlyBackfillArchiveContinuation: continuationSpy,
+        enqueueUpdateFamilySitemap: vi.fn<VitestLooseMock>(),
+      }),
+    ).resolves.toEqual({ enqueued: 0, hasMore: false })
+    expect(bulkSpy).not.toHaveBeenCalled()
+    expect(continuationSpy).not.toHaveBeenCalled()
   })
 })

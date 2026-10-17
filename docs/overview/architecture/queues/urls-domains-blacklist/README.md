@@ -9,24 +9,25 @@ eviction clears only the claimed generation. The sweep retries work left by cach
 
 ## Architecture
 
-### Queues
+### Domain
 
-1. **Dispatcher Queue** (`urls-domains-blacklist-dispatchers`)
-   - Global concurrency: 1
-   - Handles main weekly dispatcher
-
-2. **Sync Queue** (`urls-domains-blacklist-sync`)
-   - Global concurrency: 5
-   - Handles per-source sync jobs
+Domain `urls-domains-blacklist` of the shared [`background` queue](../background/README.md); job
+names are `urls-domains-blacklist.<name>`. The source syncs share the domain-wide group of 5
+(priority 10), the old worker concurrency. The dispatcher runs in the namespaced lane
+`urls-domains-blacklist:dispatcher` (concurrency 1, priority 100) and the hostname cache-invalidation
+sweep (`urls-domains-blacklist.drainHostnameCacheInvalidationWork`, every five minutes, priority 100)
+drains in `urls-domains-blacklist:cache-invalidation` (concurrency 1), both outside the group, so the
+domain runs at most seven jobs. It adds a worker baseline of
+five. `WORKER_CONCURRENCY_URLS_DOMAINS_BLACKLIST` and the old queue no longer exist.
 
 ### Dispatcher Pattern
 
-1. **Level 1: Blacklist Dispatcher** (`processBlacklistDispatcher`)
+1. **Level 1: Blacklist Dispatcher** (`urls-domains-blacklist.processBlacklistDispatcher`)
    - Runs weekly (every Sunday at 2 AM)
-   - Fetches all blacklist sources from the database
+   - Fetches the blacklist sources from the database; they are the fixed, code-defined set seeded from `BLACKLISTS`, so one run is bounded by the code and needs no continuation
    - Enqueues a sync job for each source with 1-hour delays between them
 
-2. **Level 2: Source Sync** (`processBlacklistSourceSync`)
+2. **Level 2: Source Sync** (`urls-domains-blacklist.processBlacklistSourceSync`)
    - Downloads the blacklist file with conditional HTTP requests (etag/last-modified)
    - Skips processing if the file hasn't changed (304)
    - Writes new domains to a local sorted CSV file
