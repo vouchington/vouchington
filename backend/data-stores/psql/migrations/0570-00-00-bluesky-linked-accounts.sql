@@ -114,7 +114,7 @@ COMMENT ON COLUMN bluesky_linked_accounts.session_ciphertext IS 'AES-256-GCM cip
 COMMENT ON COLUMN bluesky_linked_accounts.disconnect_requested_at IS 'Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked.';
 
 CREATE TABLE IF NOT EXISTS bluesky_link_completions (
-  authorization_id UUID PRIMARY KEY REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE,
+  account_link_authorization_id UUID PRIMARY KEY REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   handle TEXT NOT NULL CHECK (char_length(handle) > 0 AND char_length(handle) <= 253),
   token_hash TEXT NOT NULL CHECK (char_length(token_hash) = 64),
@@ -129,13 +129,13 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_bluesky_link_completions__expiry
-ON bluesky_link_completions (expires_at, authorization_id);
+ON bluesky_link_completions (expires_at, account_link_authorization_id);
 
 CREATE INDEX IF NOT EXISTS idx_bluesky_link_completions__user_id
 ON bluesky_link_completions (user_id);
 
 COMMENT ON TABLE bluesky_link_completions IS 'Short-lived one-time native handoffs for an exact handoff_ready authorization. Bearer token plus the app-held proof verifier are required.';
-COMMENT ON COLUMN bluesky_link_completions.authorization_id IS 'Exact native authorization and account generation consumed at most once.';
+COMMENT ON COLUMN bluesky_link_completions.account_link_authorization_id IS 'Exact native authorization and account generation consumed at most once.';
 COMMENT ON COLUMN bluesky_link_completions.user_id IS 'Authenticated initiating Voucha user; portable callback URLs cannot transfer ownership.';
 COMMENT ON COLUMN bluesky_link_completions.handle IS 'Display handle captured at authorization begin.';
 COMMENT ON COLUMN bluesky_link_completions.token_hash IS 'Purpose-bound HMAC-SHA256 of the custom-scheme bearer token; plaintext is never persisted.';

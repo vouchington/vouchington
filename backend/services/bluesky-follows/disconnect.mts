@@ -38,7 +38,7 @@ async function deleteBlueskyFollowRecordsForFollower(
         receipt.follower_user_id,
         receipt.followee_user_id,
         receipt.follower_bluesky_did,
-        receipt.follower_authorization_id,
+        receipt.follower_account_link_authorization_id,
       )
     } catch (err) {
       onError(err instanceof Error ? err : new Error(String(err)))

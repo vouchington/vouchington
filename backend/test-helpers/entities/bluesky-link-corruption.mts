@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 export async function deleteTestBlueskyLinkCompletion(flowId: string): Promise<void> {
   await write(sql`/* deleteTestBlueskyLinkCompletion */
-    DELETE FROM bluesky_link_completions WHERE authorization_id = ${flowId}`)
+    DELETE FROM bluesky_link_completions WHERE account_link_authorization_id = ${flowId}`)
 }
 
 export async function expireTestBlueskyLinkAuthorization(flowId: string): Promise<void> {

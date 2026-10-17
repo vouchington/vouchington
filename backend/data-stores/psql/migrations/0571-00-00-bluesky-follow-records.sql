@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS bluesky_follow_records (
   follower_user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   followee_user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   PRIMARY KEY (follower_user_id, followee_user_id),
-  follower_authorization_id UUID NOT NULL REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE,
+  follower_account_link_authorization_id UUID NOT NULL REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE,
   record_uri TEXT NOT NULL,
   CHECK (record_uri LIKE 'at://%' AND char_length(record_uri) <= 8192),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -28,11 +28,11 @@ CREATE TABLE IF NOT EXISTS bluesky_follow_records (
 -- followee_user_id is only the second column of the PK, so it has no RI-usable leading index of
 -- its own (see docs/development/postgres-schema-rules.md).
 CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__followee_user_id ON bluesky_follow_records (followee_user_id);
-CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__follower_authorization_id
-  ON bluesky_follow_records (follower_authorization_id);
+CREATE INDEX IF NOT EXISTS idx_bluesky_follow_records__follower_account_auth
+  ON bluesky_follow_records (follower_account_link_authorization_id);
 
 COMMENT ON TABLE bluesky_follow_records IS 'Receipt of a live app.bsky.graph.follow record created on Bluesky on behalf of a Voucha follow relation. Presence = record exists on Bluesky; absence = it does not. Reconciled against relation__user__follow__user by @workers/bluesky-follow-propagation. Never holds a self-chosen rkey — Bluesky''s PDS mints it server-side (see table comment).';
 COMMENT ON COLUMN bluesky_follow_records.follower_user_id IS 'The Voucha user whose linked Bluesky account holds the follow record in its own PDS repo (the record''s `repo`).';
 COMMENT ON COLUMN bluesky_follow_records.followee_user_id IS 'The Voucha user being followed; resolved to a Bluesky DID (the record''s `subject`) via bluesky_linked_accounts at reconcile time.';
-COMMENT ON COLUMN bluesky_follow_records.follower_authorization_id IS 'Exact linked-account generation whose credential created record_uri; its foreign key removes stale receipts when that credential is unlinked.';
+COMMENT ON COLUMN bluesky_follow_records.follower_account_link_authorization_id IS 'Exact linked-account generation whose credential created record_uri; its foreign key removes stale receipts when that credential is unlinked.';
 COMMENT ON COLUMN bluesky_follow_records.record_uri IS 'The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api''s Agent.deleteFollow(uri) parses it directly.';

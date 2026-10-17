@@ -15,7 +15,7 @@ import {
 } from './native-user-state.mts'
 
 type CompletionRow = {
-  authorization_id: string
+  account_link_authorization_id: string
   user_id: string
   bluesky_did: string
   handle: string
@@ -48,7 +48,7 @@ export async function finalizeNativeBlueskyAccountLink(
   })
   await write(
     sql`/* finalizeNativeBlueskyAccountLink:consume */
-        DELETE FROM bluesky_link_completions WHERE authorization_id = ${flowId}`,
+        DELETE FROM bluesky_link_completions WHERE account_link_authorization_id = ${flowId}`,
     { query },
   )
 
@@ -60,8 +60,8 @@ async function findCompletion(flowId: string): Promise<{ bluesky_did: string } |
   const { rows } = await read<{ bluesky_did: string }>(sql`/* findNativeBlueskyLinkCompletion */
     SELECT account.bluesky_did
     FROM bluesky_link_completions completion
-    JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.authorization_id
-    WHERE completion.authorization_id = ${flowId}`)
+    JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.account_link_authorization_id
+    WHERE completion.account_link_authorization_id = ${flowId}`)
   return rows[0]
 }
 
@@ -71,11 +71,11 @@ async function getLockedCompletion(
 ): Promise<CompletionRow> {
   const { rows } = await read<CompletionRow>(
     sql`/* getLockedNativeBlueskyLinkCompletion */
-      SELECT completion.authorization_id, completion.user_id, account.bluesky_did,
+      SELECT completion.account_link_authorization_id, completion.user_id, account.bluesky_did,
              completion.handle, completion.token_hash, completion.expires_at
       FROM bluesky_link_completions completion
-      JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.authorization_id
-      WHERE completion.authorization_id = ${flowId}
+      JOIN bluesky_linked_accounts account ON account.link_authorization_id = completion.account_link_authorization_id
+      WHERE completion.account_link_authorization_id = ${flowId}
       FOR UPDATE OF completion`,
     { query },
   )

@@ -11,7 +11,7 @@ export interface BlueskyFollowReceipt {
   follower_user_id: string
   followee_user_id: string
   follower_bluesky_did: string
-  follower_authorization_id: string
+  follower_account_link_authorization_id: string
   record_uri: string
   created_at: Date
 }
@@ -27,14 +27,14 @@ export async function getBlueskyFollowReceipt(
     sql`/* getBlueskyFollowReceipt */
       SELECT receipt.follower_user_id, receipt.followee_user_id,
              account.bluesky_did AS follower_bluesky_did,
-             receipt.follower_authorization_id, receipt.record_uri, receipt.created_at
+             receipt.follower_account_link_authorization_id, receipt.record_uri, receipt.created_at
       FROM bluesky_follow_records receipt
       JOIN bluesky_linked_accounts account
-        ON account.link_authorization_id = receipt.follower_authorization_id
+        ON account.link_authorization_id = receipt.follower_account_link_authorization_id
       WHERE receipt.follower_user_id = ${followerUserId}
         AND receipt.followee_user_id = ${followeeUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
-        AND receipt.follower_authorization_id = ${followerAuthorizationId}`,
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
     options,
   )
   return (rows[0] as BlueskyFollowReceipt | undefined) ?? null
@@ -52,7 +52,7 @@ export async function saveBlueskyFollowReceipt(
     await lockActiveUserSubjectsForMutation(query, [followerUserId, followeeUserId])
     const { rowCount } = await query(sql`/* saveBlueskyFollowReceipt */
       INSERT INTO bluesky_follow_records (
-        follower_user_id, followee_user_id, follower_authorization_id, record_uri
+        follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri
       )
       SELECT ${followerUserId}, ${followeeUserId}, account.link_authorization_id, ${recordUri}
       FROM bluesky_linked_accounts account
@@ -61,7 +61,7 @@ export async function saveBlueskyFollowReceipt(
         AND account.user_id = ${followerUserId}
       ON CONFLICT (follower_user_id, followee_user_id)
         DO UPDATE SET
-          follower_authorization_id = EXCLUDED.follower_authorization_id,
+          follower_account_link_authorization_id = EXCLUDED.follower_account_link_authorization_id,
           record_uri = EXCLUDED.record_uri`)
     if (rowCount !== 1) throw new Error('Exact Bluesky account generation is missing')
   })
@@ -80,8 +80,8 @@ export async function deleteBlueskyFollowReceipt(
       USING bluesky_linked_accounts account
       WHERE receipt.follower_user_id = ${followerUserId}
         AND receipt.followee_user_id = ${followeeUserId}
-        AND receipt.follower_authorization_id = ${followerAuthorizationId}
-        AND account.link_authorization_id = receipt.follower_authorization_id
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}
+        AND account.link_authorization_id = receipt.follower_account_link_authorization_id
         AND account.bluesky_did = ${followerBlueskyDid}`,
     options,
   )
@@ -102,13 +102,13 @@ export async function listBlueskyFollowReceiptsForFollower(
     sql`/* listBlueskyFollowReceiptsForFollower */
       SELECT receipt.follower_user_id, receipt.followee_user_id,
              account.bluesky_did AS follower_bluesky_did,
-             receipt.follower_authorization_id, receipt.record_uri, receipt.created_at
+             receipt.follower_account_link_authorization_id, receipt.record_uri, receipt.created_at
       FROM bluesky_follow_records receipt
       JOIN bluesky_linked_accounts account
-        ON account.link_authorization_id = receipt.follower_authorization_id
+        ON account.link_authorization_id = receipt.follower_account_link_authorization_id
       WHERE receipt.follower_user_id = ${followerUserId}
         AND account.bluesky_did = ${followerBlueskyDid}
-        AND receipt.follower_authorization_id = ${followerAuthorizationId}`,
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
     options,
   )
   return rows as BlueskyFollowReceipt[]

@@ -76,7 +76,7 @@ export function candidatePageQuery(
       SELECT receipt.follower_user_id, receipt.followee_user_id
       FROM bluesky_follow_records receipt
       JOIN bluesky_linked_accounts follower_account
-        ON follower_account.link_authorization_id = receipt.follower_authorization_id
+        ON follower_account.link_authorization_id = receipt.follower_account_link_authorization_id
        AND follower_account.user_id = receipt.follower_user_id
       JOIN bluesky_linked_accounts followee_account
         ON followee_account.user_id = receipt.followee_user_id

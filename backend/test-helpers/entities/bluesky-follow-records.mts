@@ -8,7 +8,7 @@ export async function insertTestBlueskyFollowReceipt(
 ): Promise<void> {
   await write(sql`/* insertTestBlueskyFollowReceipt */
     INSERT INTO bluesky_follow_records (
-      follower_user_id, followee_user_id, follower_authorization_id, record_uri
+      follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri
     )
     SELECT
       ${followerUserId},

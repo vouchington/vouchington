@@ -37,12 +37,12 @@ export async function resolveNativeBlueskyCallbackFailure(
       SELECT
         EXISTS (
           SELECT 1 FROM bluesky_link_completions
-          WHERE authorization_id = ${flowId}
+          WHERE account_link_authorization_id = ${flowId}
             AND expires_at > CURRENT_TIMESTAMP
         ) AS valid_present,
         EXISTS (
           SELECT 1 FROM bluesky_link_completions
-          WHERE authorization_id = ${flowId}
+          WHERE account_link_authorization_id = ${flowId}
             AND token_hash = ${tokenHash}
             AND expires_at > CURRENT_TIMESTAMP
         ) AS matching_present,
@@ -68,7 +68,7 @@ export async function resolveNativeBlueskyCallbackFailure(
       const expiresAt = new Date(Date.now() + COMPLETION_TTL_MS)
       const { rowCount } = await query(sql`/* resolveNativeBlueskyCallbackFailure:persist */
         INSERT INTO bluesky_link_completions (
-          authorization_id, user_id, handle, token_hash, expires_at
+          account_link_authorization_id, user_id, handle, token_hash, expires_at
         )
         SELECT ${flowId}, ${authorization.user_id}, ${authorization.handle}, ${tokenHash}, ${expiresAt}
         WHERE EXISTS (
@@ -77,7 +77,7 @@ export async function resolveNativeBlueskyCallbackFailure(
             AND account.link_authorization_id = ${flowId}
             AND account.user_id IS NULL
         )
-        ON CONFLICT (authorization_id) DO UPDATE
+        ON CONFLICT (account_link_authorization_id) DO UPDATE
         SET token_hash = EXCLUDED.token_hash
         WHERE bluesky_link_completions.token_hash = EXCLUDED.token_hash`)
       if (rowCount) {
@@ -91,7 +91,7 @@ export async function resolveNativeBlueskyCallbackFailure(
 
     if (result === 'rejected') {
       await query(sql`/* resolveNativeBlueskyCallbackFailure:completionDelete */
-        DELETE FROM bluesky_link_completions WHERE authorization_id = ${flowId}`)
+        DELETE FROM bluesky_link_completions WHERE account_link_authorization_id = ${flowId}`)
       if (authorization.claimed_did) {
         await query(sql`/* resolveNativeBlueskyCallbackFailure:accountDelete */
           DELETE FROM bluesky_linked_accounts
