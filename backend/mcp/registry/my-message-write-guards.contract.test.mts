@@ -171,12 +171,12 @@ describe('manage_my_messages guards — real DB', () => {
   })
 
   it('rejects the same oversized UTF-8 message body as REST without persisting it', async () => {
-    const owner = plus(await createTestUser())
+    const owner = await createTestUser()
     const peer = await createTestUser()
     const conversation = await createTestDirectConversation({ user1Id: owner.id, user2Id: peer.id })
     const text = 'é'.repeat(5121)
     await rejectedWrite(
-      owner,
+      plus(owner),
       'send',
       { conversation_id: conversation.id, text },
       { status: 413, message: 'Request entity too large' },
