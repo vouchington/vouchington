@@ -23,6 +23,14 @@ const MAX_ROBOTS_TXT_BYTES = 512 * 1024
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 1000 // 1 second
 
+/** `rules` and `unavailable` are cacheable decisions. `unreachable` must not use that cache. */
+export type RobotsFetchKind = 'rules' | 'unavailable' | 'unreachable'
+
+export type RobotsFetchOutcome = {
+  body: string
+  kind: RobotsFetchKind
+}
+
 export type RobotsDependencies = PinnedRobotsFetchDependencies & {
   fetchWithTimeoutSimple: typeof fetchWithTimeoutSimple
   readResponseBody: typeof readResponseBody
@@ -45,10 +53,30 @@ export const defaultRobotsDependencies: RobotsDependencies = {
   retryDelayMs: RETRY_DELAY_MS,
 }
 
+export async function fetchRobotsTxtOutcome(
+  domain: string,
+  dependencyOverrides: Partial<RobotsDependencies> = {},
+): Promise<RobotsFetchOutcome> {
+  const dependencies = { ...defaultRobotsDependencies, ...dependencyOverrides }
+  if (await dependencies.checkDomainBlacklisted(domain)) {
+    return robotsOutcome('rules', DISALLOW_ROBOTS_TXT)
+  }
+  return fetchRobotsTxtWithRetryOutcome(domain, dependencies)
+}
+
+/** @internal Body-only retry entrypoint for transport tests. */
 export async function fetchRobotsTxtWithRetry(
   domain: string,
   dependencies: RobotsDependencies,
 ): Promise<string> {
+  const outcome = await fetchRobotsTxtWithRetryOutcome(domain, dependencies)
+  return outcome.body
+}
+
+export async function fetchRobotsTxtWithRetryOutcome(
+  domain: string,
+  dependencies: RobotsDependencies,
+): Promise<RobotsFetchOutcome> {
   const url = `https://${domain}/robots.txt`
   let lastStatus: number | undefined
 
@@ -61,17 +89,18 @@ export async function fetchRobotsTxtWithRetry(
       lastStatus = response.status
 
       if (response.status >= 200 && response.status < 300) {
-        if (!response.body) return ALLOW_ROBOTS_TXT
+        if (!response.body) return robotsOutcome('rules', ALLOW_ROBOTS_TXT)
         try {
           // oxlint-disable-next-line no-await-in-loop -- body consumption belongs to the current retry response
-          return await dependencies.readResponseBody({
+          const body = await dependencies.readResponseBody({
             response,
             url,
             maxSizeBytes: MAX_ROBOTS_TXT_BYTES,
             signal: bodySignal,
           })
+          return robotsOutcome('rules', body)
         } catch (err) {
-          if (err instanceof HttpResponseSizeError) return ALLOW_ROBOTS_TXT
+          if (err instanceof HttpResponseSizeError) return robotsOutcome('rules', ALLOW_ROBOTS_TXT)
           throw err
         }
       }
@@ -81,7 +110,8 @@ export async function fetchRobotsTxtWithRetry(
       // dispatcher body timeout.
       releaseUnreadRobotsBody(response, dependencies)
       if (response.status >= 400 && response.status < 500) {
-        return ALLOW_ROBOTS_TXT
+        // RFC 9309 unavailable, including 429: the crawler may access the resources.
+        return robotsOutcome('unavailable', ALLOW_ROBOTS_TXT)
       }
 
       if (response.status >= 500 && response.status < 600) {
@@ -98,7 +128,7 @@ export async function fetchRobotsTxtWithRetry(
         `Failed to fetch robots.txt for ${domain}: ${status}${statusText ? ` ${statusText}` : ''}`,
       )
     } catch (err) {
-      if (err instanceof RobotsUnsafeTargetError) return DISALLOW_ROBOTS_TXT
+      if (err instanceof RobotsUnsafeTargetError) return robotsOutcome('rules', DISALLOW_ROBOTS_TXT)
 
       if (dependencies.isNetworkError(err)) {
         if (attempt < MAX_RETRIES) {
@@ -106,7 +136,8 @@ export async function fetchRobotsTxtWithRetry(
           await delay(dependencies.retryDelayMs)
           continue
         }
-        return ALLOW_ROBOTS_TXT
+        // RFC 9309 unreachable: a network failure is complete disallow, not an allow-all.
+        return robotsOutcome('unreachable', DISALLOW_ROBOTS_TXT)
       }
 
       if (dependencies.isRetryableError(err, lastStatus) && attempt < MAX_RETRIES) {
@@ -119,7 +150,12 @@ export async function fetchRobotsTxtWithRetry(
     }
   }
 
-  return ALLOW_ROBOTS_TXT
+  // RFC 9309 unreachable: exhausted HTTP 5xx is complete disallow, not an allow-all.
+  return robotsOutcome('unreachable', DISALLOW_ROBOTS_TXT)
+}
+
+function robotsOutcome(kind: RobotsFetchKind, body: string): RobotsFetchOutcome {
+  return { body, kind }
 }
 
 function fetchRobotsResponse(

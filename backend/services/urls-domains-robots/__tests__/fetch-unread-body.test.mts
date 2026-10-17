@@ -86,7 +86,7 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
       retryDependencies(fetchWithTimeoutSimple)
 
     await expect(fetchRobotsTxtWithRetry('example.com', dependencies)).resolves.toBe(
-      ALLOW_ROBOTS_TXT,
+      'User-agent: *\nDisallow: /',
     )
 
     expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)

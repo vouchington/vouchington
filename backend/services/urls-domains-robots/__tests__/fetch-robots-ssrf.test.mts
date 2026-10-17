@@ -89,7 +89,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
     expect(fetchWithTimeout).not.toHaveBeenCalled()
   })
 
-  it('allows the domain after DNS timeouts are exhausted', async () => {
+  it('disallows the domain after DNS timeouts are exhausted', async () => {
     const timeout = new Error('DNS lookup for slow.test timed out after 5000ms')
     timeout.name = 'AbortError'
     const fetchWithTimeout = vi.fn<FetchWithTimeoutFn>()
@@ -104,7 +104,7 @@ describe('fetchRobotsTxt SSRF policy', () => {
         isNetworkError,
         isRetryableError,
       }),
-    ).resolves.toBe(ALLOW_ROBOTS_TXT)
+    ).resolves.toBe(DISALLOW_ROBOTS_TXT)
 
     expect(validateUrl).toHaveBeenCalledTimes(3)
     expect(fetchWithTimeout).not.toHaveBeenCalled()

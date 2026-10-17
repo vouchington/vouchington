@@ -29,10 +29,9 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 
 - User-Agent: `voucha-bot https://voucha.ai/article/voucha-bot`
 - robots.txt groups match the `voucha-bot` product token, not the comment URL in that header
-- Robots.txt cached in Valkey for 24 hours
-- RFC 9309 §2.4: 4xx → ALLOW (bot cannot access rules file)
-- 5xx after 3 retries → ALLOW (temporary server error)
-- Network error after 3 retries → ALLOW
+- Robots.txt rules cached in Valkey for 24 hours
+- RFC 9309 unavailable rules file (HTTP 4xx, including 429) → ALLOW
+- RFC 9309 unreachable rules file (HTTP 5xx or a network error after 3 retries) → complete disallow for 15 minutes, unless a cached robots.txt body is still inside its 24-hour entry
 - Blacklisted domain → DISALLOW (before fetch)
 - SSRF-rejected robots.txt target, including a private redirect, → DISALLOW before that request. See [robots.txt fetches](services/urls-domains-robots/README.md#notes)
 

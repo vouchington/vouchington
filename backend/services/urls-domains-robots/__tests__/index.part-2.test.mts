@@ -109,7 +109,7 @@ describe('fetchRobotsTxt', () => {
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(2)
   })
 
-  it('returns permissive robots content after exhausting 5xx retries', async () => {
+  it('returns complete disallow after exhausting 5xx retries', async () => {
     const domain = randomDomain()
     mockFetchWithTimeoutSimple.mockResolvedValue({
       status: 503,
@@ -121,7 +121,7 @@ describe('fetchRobotsTxt', () => {
 
     const result = await fetchRobotsTxtForTest(domain)
 
-    expect(result).toBe('User-agent: *\nAllow: /')
+    expect(result).toBe('User-agent: *\nDisallow: /')
     expect(mockFetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
   })
 
@@ -190,7 +190,7 @@ describe('fetchRobotsTxt', () => {
 })
 
 describe('real terminated robots response bodies', () => {
-  it('retries real terminated response bodies before allowing the owned domain', async () => {
+  it('retries real terminated response bodies before disallowing the owned domain', async () => {
     const domain = `robots-${randomUUID()}.example.com`
     await withTruncatedHttpResponseForTest(
       `https://${domain}/robots.txt`,
@@ -198,7 +198,7 @@ describe('real terminated robots response bodies', () => {
         const result = await fetchRobotsTxt(domain, {
           fetchWithTimeoutSimple: url => transport(url),
         })
-        expect(result).toBe('User-agent: *\nAllow: /')
+        expect(result).toBe('User-agent: *\nDisallow: /')
         expect(requestCount()).toBe(3)
       },
     )
