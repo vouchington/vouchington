@@ -1,7 +1,5 @@
 # Auto Harness automation
 
-[Back to Workflow Reference](WORKFLOWS.md#auto-harness-automation)
-
 Repository automation uses [Auto Harness](https://github.com/jonathanong/auto-harness) as a
 fire-and-forget agent dispatcher. Vouchington retains trigger authorization, source freshness,
 transient retry, deduplication, prompt rendering, immediate failure reporting, and Shepherd

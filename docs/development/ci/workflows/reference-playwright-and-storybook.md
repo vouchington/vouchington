@@ -1,7 +1,5 @@
 # Playwright And Storybook
 
-[Back to Workflow Reference](WORKFLOWS.md#playwright-and-storybook)
-
 | Workflow                                                                                         | Type       | Runner             | Docker | Purpose                                                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------------ | ---------- | ------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Playwright Tests](../../../../.github/workflows/tests-playwright.yml)                           | Reusable   | `ubuntu-24.04-arm` | Yes    | Selects related specs, shards browser tests, and emits optional trusted Sentry/OTel artifacts.                                                                                                                                           |

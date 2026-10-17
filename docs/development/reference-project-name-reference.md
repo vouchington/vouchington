@@ -73,6 +73,6 @@ preflight each smaller batch, and investigate the smallest reproducer with Vites
 
 The `include` and `exclude` arrays in [`vitest.config.mts`](../../vitest.config.mts) and
 [`test-helpers/vitest-config/`](../../test-helpers/vitest-config/) are authoritative for which
-project owns a file, and [`VITEST.md`](ci/workflows/VITEST.md) maps projects to workflows.
+project owns a file.
 `backend-modules` does **not** use a DB `globalSetup`: a module that needs a database belongs in
 `backend/data-stores/` or `backend/services/`, with its tests in `backend-data-stores`.

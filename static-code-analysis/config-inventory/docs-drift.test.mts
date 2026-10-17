@@ -24,9 +24,6 @@ describe('typed env contract docs drift', () => {
       [ENVIRONMENT_VARIABLES_INDEX]: './dev/config-inventory\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'docs/development/local-development/README.md':
-        '[Command Catalog](reference-command-catalog.md)\n',
-      'docs/development/local-development/reference-command-catalog.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
       'ts-shared/env-contract/index.mts': `
         export function collectTypedEnvContractEntries() {
@@ -76,9 +73,6 @@ describe('typed env contract docs drift', () => {
       [ENVIRONMENT_VARIABLES_INDEX]: './dev/config-inventory\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'docs/development/local-development/README.md':
-        '[Command Catalog](reference-command-catalog.md)\n',
-      'docs/development/local-development/reference-command-catalog.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
       'ts-shared/env-contract/index.mts': 'throw new Error("broken contract")\n',
       'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
@@ -94,9 +88,6 @@ describe('typed env contract docs drift', () => {
       [ENVIRONMENT_VARIABLES_INDEX]: './dev/config-inventory\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'docs/development/local-development/README.md':
-        '[Command Catalog](reference-command-catalog.md)\n',
-      'docs/development/local-development/reference-command-catalog.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
       'ts-shared/env-contract/index.mts': `
         export function collectTypedEnvContractEntries() {

@@ -9,7 +9,7 @@ identifiers; quote search values that contain punctuation. Batch the initial ana
 known compatible file, including files in different workspaces. Use one invocation per command,
 config, framework, and environment; reserve single-file calls for focused post-batch diagnosis.
 Validate with the full suites of the touched areas: `<project-a>` and `<project-b>` stand for each
-owning Vitest project in [VITEST.md](../../../docs/development/ci/workflows/VITEST.md), matching what CI runs.
+owning Vitest project in `ci/vitest/project-ownership.mts`, matching what CI runs.
 
 ## Endpoint Migration
 

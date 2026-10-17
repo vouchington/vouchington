@@ -4049,39 +4049,9 @@ rules:
       requiredFiles:
         - docs/development/dependency-updates.md
         - docs/development/reference-dependency-updates-supply-chain-policy.md
-        - docs/development/reference-dependency-updates-first-party-release-gate-exemptions.md
-        - docs/development/first-party-dependencies.md
       requiredSubstrings:
         - file: docs/development/dependency-updates.md
           substring: '[Supply-chain policy](reference-dependency-updates-supply-chain-policy.md)'
-        - file: docs/development/reference-dependency-updates-supply-chain-policy.md
-          substring: '[First-party release-gate exemptions](reference-dependency-updates-first-party-release-gate-exemptions.md)'
-
-  - name: permanent package documentation stays synchronized
-    rule: finite-set-consistency
-    scope: repository
-    options:
-      sets:
-        - name: permanentPackages
-          file: .no-mistakes.yml
-          kind: yaml-string-selector
-          key: rules.[].options.permanentPackages.[].name
-          minSize: 1
-        - name: releaseAgeExemptionTable
-          file: docs/development/reference-dependency-updates-first-party-release-gate-exemptions.md
-          kind: markdown-table-code-cells
-          minSize: 1
-        - name: firstPartyDependencyTable
-          file: docs/development/first-party-dependencies.md
-          kind: markdown-table-code-cells
-          minSize: 1
-      comparisons:
-        - left: permanentPackages
-          right: releaseAgeExemptionTable
-          mode: equal-set
-        - left: permanentPackages
-          right: firstPartyDependencyTable
-          mode: equal-set
 
   - name: remaining split-requirement parents link canonical children
     rule: markdown-child-links

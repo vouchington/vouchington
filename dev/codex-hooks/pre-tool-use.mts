@@ -1,3 +1,20 @@
+// PreToolUse hook entrypoint shared by Claude Code, Codex, Cursor and Grok.
+//
+// Runtime and payload dialects: each harness config appends an argv runtime token (`claude` from
+// .claude/settings.json, `codex` from .codex/config.toml). Cursor and Grok also run the Claude
+// config, so they are detected first from their own env/payload markers (hook-payload.mts,
+// cursor-payload.mts). Cursor names its shell tool `Shell` and reports `tool_output`; that is
+// normalized to Claude's `Bash` + `tool_response` shape when the payload is read, so policy sees
+// one dialect.
+//
+// Working directory: the worktree root comes from this script's own location, never from the Bash
+// tool call's cwd, so a `cd` earlier in the session cannot change which checkout the policy judges.
+//
+// Home owners: `sessionHomeOwners` resolves the GitHub owners that the session's checkout belongs
+// to (its remotes plus the root package.json `repository`). It is injected lazily into the policy
+// so only `gh pr create/new/edit` and `gh issue create` aimed at a different owner skip the repository
+// content rules; when the owners cannot be determined, every content rule stays enforced.
+
 import * as path from 'node:path'
 
 import { persistHookRealSessionId } from '../agent-session-id/persist.mts'

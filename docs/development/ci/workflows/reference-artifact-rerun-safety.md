@@ -1,7 +1,5 @@
 # Artifact Rerun Safety
 
-[Back to Workflow Reference](WORKFLOWS.md)
-
 Area workflows use full LCOV artifacts only as a same-run handoff to their own patch-coverage job.
 A failed attempt may leave an unfinalized artifact name, so callers retry the upload once under a
 `-retry` name and then make a terminal outcome assertion. A selected area cannot pass its required

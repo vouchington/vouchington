@@ -1,19 +1,15 @@
 # Vitest
 
-[Back to Workflow Reference](WORKFLOWS.md#vitest)
-
 Each area workflow starts when its area path filter matches, when a pull request changes
 `.github/workflows/**` or `.github/actions/**`, and on every merge group; each started workflow runs
 its full suite and never runs for docs-only pull requests. `test-backend-unit`, `test-web`, and
 `test-web-api` size shards from the live file count; `test-web-integration` keeps a one-shard
-matrix. See [VITEST.md](VITEST.md) for the canonical project → workflow/job ownership table and
-[area test suites](../../ci.md#area-test-suites) for the trigger model.
+matrix. See [area test suites](../../ci.md#area-test-suites) for the trigger model.
 
 The all-route localization bounds project also runs independently for its catalog, web, extraction,
 and test/configuration inputs. The Tooling workflow passes `run_tooling: false` to
 `tests-tooling.yml` for a bounds-only run, so no regular tooling tests or coverage artifacts are
-produced. Direct reusable and manual invocations default to running both jobs. See the
-[pull-request routing](reference-workflow-automation-pull-requests.md).
+produced. Direct reusable and manual invocations default to running both jobs.
 
 The PR and merge-group orchestrator calls `checks-static.yml` once per application area and gates
 that area's tests on static success. No test waits on another: shared TypeScript, backend, web,

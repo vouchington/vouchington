@@ -2,8 +2,9 @@ Create or update issues for at most one confirmed first-party dependency workaro
 
 <!-- harness-scheduled-completion: issue -->
 
-Use [First-Party Dependencies](../../development/first-party-dependencies.md) as the ownership
-source of truth. This run is an evidence-gathering and issue-maintenance task, not dependency
+Use `pnpm-release-age-policy.permanentPackages` in [.no-mistakes.yml](../../../.no-mistakes.yml) as the
+list of first-party packages. Resolve each package's owning repository from the `repository` field of
+its published `package.json` (`npm view <package> repository.url`), never from a remembered mapping. This run is an evidence-gathering and issue-maintenance task, not dependency
 maintenance or workaround removal. The [upstream adoption prompt](upstream-adoption.md) removes a
 workaround once its fix is released.
 
@@ -21,8 +22,7 @@ workaround once its fix is released.
 
 1. Run `pnpm run no-mistakes` and retain its output as audit evidence.
 2. Read the authoritative `pnpm-release-age-policy` `permanentPackages` registry in
-   `.no-mistakes.yml` and compare it with the
-   ownership table and these npm policy surfaces:
+   `.no-mistakes.yml` and compare it with these npm policy surfaces:
    - direct `dependencies`, `devDependencies`, and `optionalDependencies` in every root and
      workspace `package.json`;
    - `pnpm-workspace.yaml` `minimumReleaseAgeExclude` entries;

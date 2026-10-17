@@ -89,9 +89,6 @@ describe('config inventory', () => {
       [environmentVariablesReference]: '`LATE_ENV_VAR`\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': './dev/config-inventory\n',
-      'docs/development/local-development/README.md':
-        '[Command Catalog](reference-command-catalog.md)\n',
-      'docs/development/local-development/reference-command-catalog.md': './dev/config-inventory\n',
       'docs/development/quality/static-code-analysis/README.md': './dev/config-inventory\n',
       'web/late.mts': 'const value = process.env.LATE_ENV_VAR\n',
       'pnpm-workspace.yaml':
@@ -248,8 +245,6 @@ describe('config inventory', () => {
       [environmentVariablesIndexDoc]: './dev/config-inventory\n`AMBIGUOUS_SETTING`\n',
       'docs/overview/architecture/dynamic-config.md': './dev/config-inventory\n',
       'docs/development/local-env-vars.md': 'no link\n',
-      'docs/development/local-development/README.md': 'no link\n',
-      'docs/development/local-development/reference-command-catalog.md': 'no link\n',
       'docs/development/quality/static-code-analysis/README.md': 'no link\n',
       'pnpm-workspace.yaml': 'minimumReleaseAge: 2880\n',
     })

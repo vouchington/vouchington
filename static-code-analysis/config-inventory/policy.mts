@@ -10,18 +10,14 @@ import { checkWorkflowEnvReferences } from './workflow-env-policy.mts'
 
 const ENV_VAR_INDEX_DOC = 'docs/overview/infrastructure/environment-variables.md'
 const LOCAL_ENV_VAR_DOC = 'docs/development/local-env-vars.md'
-const DEV_README = 'docs/development/local-development/README.md'
-const DEV_COMMAND_CATALOG_DOC = 'docs/development/local-development/reference-command-catalog.md'
 const DOC_CROSS_LINKS = [
   ENV_VAR_INDEX_DOC,
   'docs/overview/architecture/dynamic-config.md',
   LOCAL_ENV_VAR_DOC,
-  DEV_COMMAND_CATALOG_DOC,
   'docs/development/quality/static-code-analysis/README.md',
 ] as const
 
 const CONFIG_INVENTORY_LINK_RE = /\.?\/?dev\/config-inventory/
-const DEV_COMMAND_CATALOG_ROUTE = '[Command Catalog](reference-command-catalog.md)'
 
 type CanonicalDocReader = (path: string) => Promise<unknown>
 
@@ -104,11 +100,6 @@ export async function checkConfigInventoryPolicy(
     if (content !== null && !CONFIG_INVENTORY_LINK_RE.test(content)) {
       errors.push(`${file} must mention ./dev/config-inventory`)
     }
-  }
-
-  const devReadme = await readCrossLinkedDoc(ctx, DEV_README, errors, readDoc)
-  if (devReadme !== null && !devReadme.includes(DEV_COMMAND_CATALOG_ROUTE)) {
-    errors.push(`${DEV_README} must link to ${DEV_COMMAND_CATALOG_DOC}`)
   }
 
   return { errors }
