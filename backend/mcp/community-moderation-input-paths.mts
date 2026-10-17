@@ -14,6 +14,9 @@ export const communityModerationUuidPaths: Readonly<Record<string, string>> = {
   resolve_report: 'reportId',
   lift_ban: 'userId',
   dismiss_ban_evasion: 'userId',
+  confirm_ban_evasion: 'userId',
+  create_mod_note: 'userId',
+  delete_mod_note: 'userId',
   lift_restriction: 'id',
   delete_saved_reply: 'id',
 }

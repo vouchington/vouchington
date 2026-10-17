@@ -1,5 +1,7 @@
 /** Approved update-remove community moderator REST routes for issue #2546. */
 export const communityModerationUpdateRemoveRoutes = [
+  { method: 'DELETE', path: '/api/v1/posts/:idOrSlug/lock', option: 'unlock_post' },
+  { method: 'DELETE', path: '/api/v1/users/:userId/mod-notes/:noteId', option: 'delete_mod_note' },
   { method: 'PATCH', path: '/api/v1/communities/:idOrSlug', option: 'update_community_settings' },
   {
     method: 'PATCH',

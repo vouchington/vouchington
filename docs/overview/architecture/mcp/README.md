@@ -83,6 +83,15 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ---
 
+## Community moderator actions
+
+Exact community-moderation grants keep moderator capabilities out of umbrella-granted apps.
+Post locks, ban-evasion confirmation, and moderator notes share the existing moderator write
+tools because their scope, plan, and conservative hints agree. Each option retains its REST
+permissions: locking checks post visibility and the caller's community role; note access permits
+moderation staff or moderators of any community before applying the note's own community rules;
+ban-evasion confirmation remains staff-only. This avoids making MCP moderation stricter than REST.
+
 ## Generated Artifacts
 
 The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:

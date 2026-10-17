@@ -14,6 +14,9 @@ import {
 } from './community-moderation-output-parts.mts'
 
 const noContent = new Set([
+  'lock_post',
+  'unlock_post',
+  'confirm_ban_evasion',
   'dismiss_automod_flag',
   'escalate_post',
   'escalate_report',
@@ -55,6 +58,10 @@ const warning = () => changeComponent('UserWarning', {}, ['user_id', 'case_id'])
 export function communityModerationWriteOutput(option: string): ToolOutputSchema | null {
   if (noContent.has(option)) return object({ success: { const: true } })
   switch (option) {
+    case 'create_mod_note':
+      return object({ note: component('UserModNote') })
+    case 'delete_mod_note':
+      return object({ ok: { const: true } })
     case 'ban_user':
       return object({ community_ban: ban() })
     case 'add_domain_to_list':

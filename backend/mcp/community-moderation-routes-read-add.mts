@@ -1,5 +1,12 @@
 /** Approved read-add community moderator REST routes for issue #2546. */
 export const communityModerationReadAddRoutes = [
+  { method: 'POST', path: '/api/v1/posts/:idOrSlug/lock', option: 'lock_post' },
+  {
+    method: 'POST',
+    path: '/api/v1/communities/:idOrSlug/ban-evasion/:userId',
+    option: 'confirm_ban_evasion',
+  },
+  { method: 'POST', path: '/api/v1/users/:userId/mod-notes', option: 'create_mod_note' },
   {
     method: 'GET',
     path: '/api/v1/communities/:idOrSlug/applications',

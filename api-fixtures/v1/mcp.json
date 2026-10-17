@@ -16076,10 +16076,86 @@
           "tool": {
             "name": "add_community_moderation",
             "title": "add community moderation",
-            "description": "ban_user: POST /api/v1/communities/:idOrSlug/bans\nadd_domain_to_list: POST /api/v1/communities/:idOrSlug/list-items/domains\nadd_post_to_list: POST /api/v1/communities/:idOrSlug/list-items/posts\nadd_rss_feed_to_list: POST /api/v1/communities/:idOrSlug/list-items/rss-feeds\nadd_topic_to_list: POST /api/v1/communities/:idOrSlug/list-items/topics\nadd_url_to_list: POST /api/v1/communities/:idOrSlug/list-items/urls\ndismiss_automod_flag: POST /api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal\nescalate_post: POST /api/v1/communities/:idOrSlug/posts/:postId/escalation\nopen_post_mod_internal_thread: POST /api/v1/communities/:idOrSlug/posts/:postId/mod-internal-thread\nescalate_report: POST /api/v1/communities/:idOrSlug/reports/:reportId/escalation\nopen_report_mod_internal_thread: POST /api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread\nactivate_restrictions: POST /api/v1/communities/:idOrSlug/restrictions\ncreate_saved_reply: POST /api/v1/communities/:idOrSlug/saved-replies\nissue_warning: POST /api/v1/communities/:idOrSlug/warnings",
+            "description": "lock_post: POST /api/v1/posts/:idOrSlug/lock\nconfirm_ban_evasion: POST /api/v1/communities/:idOrSlug/ban-evasion/:userId\ncreate_mod_note: POST /api/v1/users/:userId/mod-notes\nban_user: POST /api/v1/communities/:idOrSlug/bans\nadd_domain_to_list: POST /api/v1/communities/:idOrSlug/list-items/domains\nadd_post_to_list: POST /api/v1/communities/:idOrSlug/list-items/posts\nadd_rss_feed_to_list: POST /api/v1/communities/:idOrSlug/list-items/rss-feeds\nadd_topic_to_list: POST /api/v1/communities/:idOrSlug/list-items/topics\nadd_url_to_list: POST /api/v1/communities/:idOrSlug/list-items/urls\ndismiss_automod_flag: POST /api/v1/communities/:idOrSlug/posts/:postId/automod-flag/dismissal\nescalate_post: POST /api/v1/communities/:idOrSlug/posts/:postId/escalation\nopen_post_mod_internal_thread: POST /api/v1/communities/:idOrSlug/posts/:postId/mod-internal-thread\nescalate_report: POST /api/v1/communities/:idOrSlug/reports/:reportId/escalation\nopen_report_mod_internal_thread: POST /api/v1/communities/:idOrSlug/reports/:reportId/mod-internal-thread\nactivate_restrictions: POST /api/v1/communities/:idOrSlug/restrictions\ncreate_saved_reply: POST /api/v1/communities/:idOrSlug/saved-replies\nissue_warning: POST /api/v1/communities/:idOrSlug/warnings",
             "inputSchema": {
               "type": "object",
               "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["lock_post"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "idOrSlug": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["idOrSlug"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["confirm_ban_evasion"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "userId": {
+                          "$ref": "#/$defs/S4"
+                        }
+                      },
+                      "required": ["community", "userId"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["create_mod_note"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "userId": {
+                          "$ref": "#/$defs/S4"
+                        },
+                        "body": {
+                          "type": "string"
+                        },
+                        "community_id": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["userId", "body"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
                 {
                   "type": "object",
                   "properties": {
@@ -16099,10 +16175,7 @@
                           "type": ["string", "null"]
                         },
                         "user_id": {
-                          "type": "string",
-                          "format": "uuid",
-                          "minLength": 36,
-                          "maxLength": 36
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["community", "user_id"],
@@ -16432,12 +16505,38 @@
                   },
                   "required": ["community", "reportId"],
                   "additionalProperties": false
+                },
+                "S4": {
+                  "type": "string",
+                  "format": "uuid",
+                  "minLength": 36,
+                  "maxLength": 36
                 }
               }
             },
             "outputSchema": {
               "type": "object",
               "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "note": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["note"],
+                  "additionalProperties": false
+                },
                 {
                   "type": "object",
                   "properties": {
@@ -16539,16 +16638,6 @@
                     }
                   },
                   "required": ["community_list_item"],
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "const": true
-                    }
-                  },
-                  "required": ["success"],
                   "additionalProperties": false
                 },
                 {
@@ -16807,26 +16896,41 @@
             "_meta": {
               "voucha/requiredScopes": ["community-moderation:read", "community-moderation:write"],
               "voucha/optionOutputPointers": {
-                "ban_user": "#/anyOf/0",
-                "add_domain_to_list": "#/anyOf/1",
-                "add_post_to_list": "#/anyOf/1",
-                "add_rss_feed_to_list": "#/anyOf/1",
-                "add_topic_to_list": "#/anyOf/1",
-                "add_url_to_list": "#/anyOf/1",
-                "dismiss_automod_flag": "#/anyOf/2",
-                "escalate_post": "#/anyOf/2",
-                "open_post_mod_internal_thread": "#/anyOf/3",
-                "escalate_report": "#/anyOf/2",
-                "open_report_mod_internal_thread": "#/anyOf/3",
-                "activate_restrictions": "#/anyOf/4",
-                "create_saved_reply": "#/anyOf/5",
-                "issue_warning": "#/anyOf/6"
+                "lock_post": "#/anyOf/0",
+                "confirm_ban_evasion": "#/anyOf/0",
+                "create_mod_note": "#/anyOf/1",
+                "ban_user": "#/anyOf/2",
+                "add_domain_to_list": "#/anyOf/3",
+                "add_post_to_list": "#/anyOf/3",
+                "add_rss_feed_to_list": "#/anyOf/3",
+                "add_topic_to_list": "#/anyOf/3",
+                "add_url_to_list": "#/anyOf/3",
+                "dismiss_automod_flag": "#/anyOf/0",
+                "escalate_post": "#/anyOf/0",
+                "open_post_mod_internal_thread": "#/anyOf/4",
+                "escalate_report": "#/anyOf/0",
+                "open_report_mod_internal_thread": "#/anyOf/4",
+                "activate_restrictions": "#/anyOf/5",
+                "create_saved_reply": "#/anyOf/6",
+                "issue_warning": "#/anyOf/7"
               }
             }
           },
           "plan": "plus",
           "roles": null,
           "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/posts/:idOrSlug/lock"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/communities/:idOrSlug/ban-evasion/:userId"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/users/:userId/mod-notes"
+            },
             {
               "method": "POST",
               "path": "/api/v1/communities/:idOrSlug/bans"
@@ -18015,10 +18119,53 @@
           "tool": {
             "name": "remove_community_moderation",
             "title": "remove community moderation",
-            "description": "dismiss_ban_evasion: DELETE /api/v1/communities/:idOrSlug/ban-evasion/:userId\nlift_ban: DELETE /api/v1/communities/:idOrSlug/bans/:userId\nrevoke_invite: DELETE /api/v1/communities/:idOrSlug/invites/:id\nremove_domain_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/domains/:itemId\nremove_post_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/posts/:itemId\nremove_rss_feed_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId\nremove_topic_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/topics/:itemId\nremove_url_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/urls/:itemId\nremove_member: DELETE /api/v1/communities/:idOrSlug/members/:userId\nclear_moderator_vacation: DELETE /api/v1/communities/:idOrSlug/moderator-vacation\nrelease_post_claim: DELETE /api/v1/communities/:idOrSlug/posts/:postId/claim\ndeescalate_post: DELETE /api/v1/communities/:idOrSlug/posts/:postId/escalation\nrelease_report_claim: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/claim\ndeescalate_report: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/escalation\nlift_restriction: DELETE /api/v1/communities/:idOrSlug/restrictions/:id\ndelete_saved_reply: DELETE /api/v1/communities/:idOrSlug/saved-replies/:id",
+            "description": "unlock_post: DELETE /api/v1/posts/:idOrSlug/lock\ndelete_mod_note: DELETE /api/v1/users/:userId/mod-notes/:noteId\ndismiss_ban_evasion: DELETE /api/v1/communities/:idOrSlug/ban-evasion/:userId\nlift_ban: DELETE /api/v1/communities/:idOrSlug/bans/:userId\nrevoke_invite: DELETE /api/v1/communities/:idOrSlug/invites/:id\nremove_domain_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/domains/:itemId\nremove_post_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/posts/:itemId\nremove_rss_feed_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/rss-feeds/:itemId\nremove_topic_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/topics/:itemId\nremove_url_from_list: DELETE /api/v1/communities/:idOrSlug/list-items/urls/:itemId\nremove_member: DELETE /api/v1/communities/:idOrSlug/members/:userId\nclear_moderator_vacation: DELETE /api/v1/communities/:idOrSlug/moderator-vacation\nrelease_post_claim: DELETE /api/v1/communities/:idOrSlug/posts/:postId/claim\ndeescalate_post: DELETE /api/v1/communities/:idOrSlug/posts/:postId/escalation\nrelease_report_claim: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/claim\ndeescalate_report: DELETE /api/v1/communities/:idOrSlug/reports/:reportId/escalation\nlift_restriction: DELETE /api/v1/communities/:idOrSlug/restrictions/:id\ndelete_saved_reply: DELETE /api/v1/communities/:idOrSlug/saved-replies/:id",
             "inputSchema": {
               "type": "object",
               "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["unlock_post"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "idOrSlug": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["idOrSlug"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["delete_mod_note"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "noteId": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "userId": {
+                          "$ref": "#/$defs/S3"
+                        }
+                      },
+                      "required": ["userId", "noteId"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
                 {
                   "type": "object",
                   "properties": {
@@ -18336,13 +18483,28 @@
             },
             "outputSchema": {
               "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": ["ok"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["success"],
-              "additionalProperties": false
+              ]
             },
             "annotations": {
               "readOnlyHint": false,
@@ -18352,28 +18514,38 @@
             "_meta": {
               "voucha/requiredScopes": ["community-moderation:read", "community-moderation:write"],
               "voucha/optionOutputPointers": {
-                "dismiss_ban_evasion": "#",
-                "lift_ban": "#",
-                "revoke_invite": "#",
-                "remove_domain_from_list": "#",
-                "remove_post_from_list": "#",
-                "remove_rss_feed_from_list": "#",
-                "remove_topic_from_list": "#",
-                "remove_url_from_list": "#",
-                "remove_member": "#",
-                "clear_moderator_vacation": "#",
-                "release_post_claim": "#",
-                "deescalate_post": "#",
-                "release_report_claim": "#",
-                "deescalate_report": "#",
-                "lift_restriction": "#",
-                "delete_saved_reply": "#"
+                "unlock_post": "#/anyOf/0",
+                "delete_mod_note": "#/anyOf/1",
+                "dismiss_ban_evasion": "#/anyOf/0",
+                "lift_ban": "#/anyOf/0",
+                "revoke_invite": "#/anyOf/0",
+                "remove_domain_from_list": "#/anyOf/0",
+                "remove_post_from_list": "#/anyOf/0",
+                "remove_rss_feed_from_list": "#/anyOf/0",
+                "remove_topic_from_list": "#/anyOf/0",
+                "remove_url_from_list": "#/anyOf/0",
+                "remove_member": "#/anyOf/0",
+                "clear_moderator_vacation": "#/anyOf/0",
+                "release_post_claim": "#/anyOf/0",
+                "deescalate_post": "#/anyOf/0",
+                "release_report_claim": "#/anyOf/0",
+                "deescalate_report": "#/anyOf/0",
+                "lift_restriction": "#/anyOf/0",
+                "delete_saved_reply": "#/anyOf/0"
               }
             }
           },
           "plan": "plus",
           "roles": null,
           "api": [
+            {
+              "method": "DELETE",
+              "path": "/api/v1/posts/:idOrSlug/lock"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/users/:userId/mod-notes/:noteId"
+            },
             {
               "method": "DELETE",
               "path": "/api/v1/communities/:idOrSlug/ban-evasion/:userId"
