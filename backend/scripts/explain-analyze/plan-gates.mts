@@ -74,6 +74,22 @@ function evaluateExpectation(
         )
       return
     }
+    case 'usesAnyIndex': {
+      if (expectation.queryContains && !result.query_text.includes(expectation.queryContains))
+        return
+      const found = expectation.indexes.some(index =>
+        nodes.some(node => node['Index Name'] === index),
+      )
+      if (
+        !found ||
+        (expectation.noSort &&
+          nodes.some(node => stringFromUnknown(node['Node Type']).includes('Sort')))
+      )
+        throw new Error(
+          `${result.name} must use one of index(es) ${expectation.indexes.join(', ')}${expectation.noSort ? ' without an explicit Sort' : ''}`,
+        )
+      return
+    }
     case 'queryBinds':
       if (!new RegExp(String.raw`\b${expectation.token}\b`).test(result.query_text))
         throw new Error(`${result.name} must constrain the query through ${expectation.token}`)

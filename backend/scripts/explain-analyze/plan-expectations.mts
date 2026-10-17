@@ -5,6 +5,7 @@ import { isKnownCustomPlanCheck } from './plan-custom-checks.mts'
 export type PlanExpectation =
   | { kind: 'maxProcessedRows'; relation: string; max: number }
   | { kind: 'usesIndexes'; indexes: readonly string[]; queryContains?: string; noSort?: boolean }
+  | { kind: 'usesAnyIndex'; indexes: readonly string[]; queryContains?: string; noSort?: boolean }
   | { kind: 'queryBinds'; token: string }
   | { kind: 'forbidCorrelatedAggregates' }
   | { kind: 'singleLeaf'; parent: string; key?: string }
@@ -59,6 +60,7 @@ export function assertExpectationKinds(id: string, contract: ScenarioPlanContrac
   const kinds = new Set([
     'maxProcessedRows',
     'usesIndexes',
+    'usesAnyIndex',
     'queryBinds',
     'forbidCorrelatedAggregates',
     'singleLeaf',
@@ -70,6 +72,11 @@ export function assertExpectationKinds(id: string, contract: ScenarioPlanContrac
       throw new Error(`Unknown plan expectation kind: ${expectation.kind} in ${id}`)
     else if (expectation.kind === 'custom' && !isKnownCustomPlanCheck(expectation.name))
       throw new Error(`Unknown custom plan check: ${expectation.name} in ${id}`)
+    else if (
+      (expectation.kind === 'usesIndexes' || expectation.kind === 'usesAnyIndex') &&
+      (expectation.indexes.length === 0 || expectation.indexes.some(index => index.trim() === ''))
+    )
+      throw new Error(`${id} needs at least one nonempty index name`)
     else if (
       expectation.kind === 'maxFunctionCalls' &&
       (expectation.function.trim() === '' ||

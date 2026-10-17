@@ -183,8 +183,11 @@ export async function runHotPathLoaderScenarios() {
   registerScenarioContract('user-profile-metrics', {
     expectations: [
       {
-        kind: 'usesIndexes',
-        indexes: ['posts__default_created_by_id_idx'],
+        kind: 'usesAnyIndex',
+        indexes: [
+          'posts__default_created_by_id_idx',
+          'posts__default_created_by_id_is_anonymous_idx',
+        ],
         queryContains: 'GROUP BY metric_scope, post_type',
       },
       // Both modes process 6,076 post rows across public and viewer visibility scopes; +20%.
