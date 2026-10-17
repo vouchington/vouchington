@@ -198,6 +198,8 @@ postgres-schema:
   - 'backend/services/entity-relations/**'
   - 'backend/services/agents/**'
   - 'ts-shared/**'
+  - 'ci/run-bounded.py'
+  - 'ci/run_bounded_process.py'
 ts-shared:
   - '.github/ci-path-filters.yml'
   - 'ts-shared/**'
