@@ -2,15 +2,17 @@ import {
   enqueueVoteWeightAgeMilestones,
   enqueueVoteWeightMembershipExpirations,
   enqueueVoteWeightFamilySourceChanges,
+  enqueueVoteWeightDirtyMarkers,
 } from '@queues/vote-aggregation/enqueues/vote-weight'
 import onError from '@modules/on-error'
 
 async function main() {
   console.log('Enqueuing vote weight signal dispatchers...')
   await Promise.all([
-    enqueueVoteWeightAgeMilestones(),
-    enqueueVoteWeightMembershipExpirations(),
-    enqueueVoteWeightFamilySourceChanges(),
+    enqueueVoteWeightAgeMilestones({ fullReplay: true }),
+    enqueueVoteWeightMembershipExpirations({ fullReplay: true }),
+    enqueueVoteWeightFamilySourceChanges({ fullReplay: true }),
+    enqueueVoteWeightDirtyMarkers({}),
   ])
   console.log('Done. Dispatcher jobs enqueued.')
 }
