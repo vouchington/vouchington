@@ -50,39 +50,7 @@ export function parseBasicAuthCredentials(envValue: string | undefined): Set<str
  * browser. Exemptions are scoped to the HTTP method the origin route actually
  * serves so wrong-method probes do not bypass staging Basic Auth before
  * reaching origin-level 404/405 handling.
- *
- * NOTE: This Set is not used at runtime. It exists for static analysis
- * and test synchronization assertions. The runtime
- * exemption source of truth is BASIC_AUTH_EXEMPT_METHODS_BY_PATH below.
  */
-const BASIC_AUTH_EXEMPT_PATHS = new Set([
-  '/api/v1/mcp',
-  '/api/v1/admin/mcp',
-  '/api/v1/memberships/apple-app-store/notifications',
-  '/api/v1/memberships/google-play/notifications',
-  '/.well-known/webfinger',
-  '/.well-known/nodeinfo',
-  '/.well-known/oauth-authorization-server',
-  '/.well-known/oauth-protected-resource/api/v1/mcp',
-  '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
-  '/nodeinfo/2.0',
-  '/ap/users/{id}',
-  '/ap/inbox',
-  '/client-metadata.json',
-  '/auth/callback/facebook/broker',
-  '/auth/callback/x/broker',
-  '/auth/callback/github/broker',
-  '/auth/callback/google/broker',
-  '/auth/callback/linkedin/broker',
-  '/auth/callback/microsoft/broker',
-  '/register',
-  '/revoke',
-  '/token',
-  '/infra/ping',
-  '/infra/cache-purge',
-  '/manifest.webmanifest',
-])
-
 const BASIC_AUTH_EXEMPT_METHODS_BY_PATH: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ['/api/v1/mcp', new Set(['POST'])],
   ['/api/v1/admin/mcp', new Set(['POST'])],
@@ -112,7 +80,6 @@ const BASIC_AUTH_EXEMPT_METHODS_BY_PATH: ReadonlyMap<string, ReadonlySet<string>
 ])
 
 export const basicAuthTestExports = {
-  BASIC_AUTH_EXEMPT_PATHS,
   BASIC_AUTH_EXEMPT_METHODS_BY_PATH,
 } as const
 

@@ -84,19 +84,11 @@ describe('isBasicAuthExemptRequest', () => {
     expect(isBasicAuthExemptRequest('POST', '/manifest.webmanifest')).toBe(false)
   })
 
-  it('keeps exempt paths synchronized and lowercase', () => {
-    const { BASIC_AUTH_EXEMPT_METHODS_BY_PATH, BASIC_AUTH_EXEMPT_PATHS } = basicAuthTestExports
-
-    expect(BASIC_AUTH_EXEMPT_PATHS.size).toBe(BASIC_AUTH_EXEMPT_METHODS_BY_PATH.size)
-
-    for (const path of BASIC_AUTH_EXEMPT_PATHS) {
-      expect(path).toBe(path.toLowerCase())
-      expect(BASIC_AUTH_EXEMPT_METHODS_BY_PATH.has(path)).toBe(true)
-    }
+  it('keeps exempt paths lowercase', () => {
+    const { BASIC_AUTH_EXEMPT_METHODS_BY_PATH } = basicAuthTestExports
 
     for (const path of BASIC_AUTH_EXEMPT_METHODS_BY_PATH.keys()) {
       expect(path).toBe(path.toLowerCase())
-      expect(BASIC_AUTH_EXEMPT_PATHS.has(path)).toBe(true)
     }
   })
 })
