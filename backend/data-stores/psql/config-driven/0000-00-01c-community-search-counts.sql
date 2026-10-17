@@ -59,3 +59,38 @@ CREATE OR REPLACE TRIGGER trigger_project_community_proxy_follow_count
 CREATE OR REPLACE TRIGGER trigger_project_community_proxy_mute_count
   AFTER INSERT OR UPDATE OF object_id, deleted_at OR DELETE ON relation__user__proxy_mute__community
   FOR EACH ROW EXECUTE FUNCTION fn_project_community_virtual_subscription_count();
+
+CREATE OR REPLACE FUNCTION fn_project_community_list_item_count() RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    IF OLD.removed_at IS NULL THEN
+      UPDATE community_search_counts SET list_item_count = list_item_count - 1
+      WHERE community_id = OLD.community_id;
+    END IF;
+  END IF;
+  IF TG_OP <> 'DELETE' THEN
+    IF NEW.removed_at IS NULL THEN
+      UPDATE community_search_counts SET list_item_count = list_item_count + 1
+      WHERE community_id = NEW.community_id;
+    END IF;
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trigger_project_community_list_topics_count
+  AFTER INSERT OR UPDATE OF community_id, removed_at OR DELETE ON community_list_topics
+  FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count();
+CREATE OR REPLACE TRIGGER trigger_project_community_list_rss_feeds_count
+  AFTER INSERT OR UPDATE OF community_id, removed_at OR DELETE ON community_list_rss_feeds
+  FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count();
+CREATE OR REPLACE TRIGGER trigger_project_community_list_posts_count
+  AFTER INSERT OR UPDATE OF community_id, removed_at OR DELETE ON community_list_posts
+  FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count();
+CREATE OR REPLACE TRIGGER trigger_project_community_list_url_hostnames_count
+  AFTER INSERT OR UPDATE OF community_id, removed_at OR DELETE ON community_list_url_hostnames
+  FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count();
+CREATE OR REPLACE TRIGGER trigger_project_community_list_urls_count
+  AFTER INSERT OR UPDATE OF community_id, removed_at OR DELETE ON community_list_urls
+  FOR EACH ROW EXECUTE FUNCTION fn_project_community_list_item_count();

@@ -2,6 +2,7 @@ import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
 import type { SearchRssFeedsOptions, ViewRssFeed } from './types.mts'
+import { mutedPublisherTypeFilter, publisherTypeCandidateJoin } from './search-publisher-types.mts'
 export type { SearchRssFeedsOptions }
 
 export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
@@ -42,6 +43,10 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     }
   }
 
+  const joinTopicDescendants =
+    effectiveTopicIds.length > 0 &&
+    include_descendants &&
+    !(effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1)
   if (effectiveTopicIds.length > 0 && include_descendants) {
     if (effectiveTopicMatch === 'all' && effectiveTopicIds.length > 1) {
       filters.push(sql`(
@@ -49,12 +54,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         FROM topic_descendants
         WHERE topic_descendants.topic_id = rss_feeds.topic_id
       ) = ${effectiveTopicIds.length}`)
-    } else {
-      filters.push(sql`EXISTS (
-        SELECT 1
-        FROM topic_descendants
-        WHERE topic_descendants.topic_id = rss_feeds.topic_id
-      )`)
     }
   }
 
@@ -62,42 +61,17 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     filters.push(sql`rss_feeds.topic_id = ${hashtagTopicId}`)
   }
 
+  let joinPublisherTypes = false
   if (effectivePublisherTypeIds.length > 0) {
     if (publisher_type_match === 'all' && effectivePublisherTypeIds.length > 1) {
       filters.push(sql`FALSE`)
     } else {
-      filters.push(sql`(
-        SELECT relation.object_id
-        FROM relation__topic__publisher_type__topic relation
-        JOIN topics publisher_type ON publisher_type.id = relation.object_id
-        WHERE relation.subject_id = rss_feeds.topic_id
-          AND relation.deleted_at IS NULL
-          AND relation.votes_score_net > 0
-          AND publisher_type.deleted_at IS NULL
-        ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id ASC
-        LIMIT 1
-      ) = ANY(${effectivePublisherTypeIds})`)
+      joinPublisherTypes = true
     }
   }
 
   if (current_user_id) {
-    filters.push(sql`NOT EXISTS (
-      SELECT 1
-      FROM relation__user__mute__topic mute
-      WHERE mute.subject_id = ${current_user_id}
-        AND mute.deleted_at IS NULL
-        AND mute.object_id = (
-          SELECT relation.object_id
-          FROM relation__topic__publisher_type__topic relation
-          JOIN topics publisher_type ON publisher_type.id = relation.object_id
-          WHERE relation.subject_id = rss_feeds.topic_id
-            AND relation.deleted_at IS NULL
-            AND relation.votes_score_net > 0
-            AND publisher_type.deleted_at IS NULL
-          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id ASC
-          LIMIT 1
-        )
-    )`)
+    filters.push(mutedPublisherTypeFilter(current_user_id))
   }
 
   if (feed_type) filters.push(sql`rss_feeds.feed_type = ${feed_type}`)
@@ -135,26 +109,37 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     // Use CTE to compute tsquery once and reuse it
     filters.push(sql`(
       rss_feeds.search_vector @@ search_tsquery.tsquery
-      OR LOWER(rss_feeds.title) LIKE LOWER(${`%${searchQuery}%`})
+      OR LOWER(rss_feeds.title) LIKE search_tsquery.title_pattern
     )`)
     sortBy = sql`ts_rank(rss_feeds.search_vector, search_tsquery.tsquery) DESC, rss_feeds.id DESC`
 
     query.append(sql`
-      search_tsquery AS (
-        SELECT websearch_to_tsquery('voucha_english', ${searchQuery}) AS tsquery
+      search_tsquery AS MATERIALIZED (
+        SELECT websearch_to_tsquery('voucha_english', ${searchQuery}) AS tsquery,
+          LOWER(${`%${searchQuery}%`}) AS title_pattern
       ),
-      rss_feed_ids AS (
+      rss_feed_ids AS MATERIALIZED (
         SELECT id
-        FROM rss_feeds
-        CROSS JOIN search_tsquery
     `)
   } else {
     query.append(sql`
-      rss_feed_ids AS (
+      rss_feed_ids AS MATERIALIZED (
         SELECT id
-        FROM rss_feeds
     `)
   }
+  if (joinTopicDescendants) {
+    // Active topic_id is unique, so each descendant contributes at most one feed.
+    query.append(sql` FROM (SELECT DISTINCT topic_id FROM topic_descendants) selected_topics
+      JOIN LATERAL (
+        SELECT * FROM rss_feeds feed
+        WHERE feed.topic_id = selected_topics.topic_id AND feed.deleted_at IS NULL
+        LIMIT 1
+      ) rss_feeds ON TRUE`)
+  } else {
+    query.append(sql` FROM rss_feeds`)
+  }
+  if (hasTextSearch) query.append(sql` CROSS JOIN search_tsquery`)
+  if (joinPublisherTypes) query.append(publisherTypeCandidateJoin(effectivePublisherTypeIds))
 
   if (filters.length > 0) {
     query.append(sql` WHERE `)
@@ -174,8 +159,12 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     SELECT
       view_rss_feeds.*
     FROM rss_feed_ids
-    JOIN view_rss_feeds
-      ON view_rss_feeds.id = rss_feed_ids.id
+    JOIN LATERAL (
+      WITH keyed_feed AS MATERIALIZED (
+        SELECT * FROM view_rss_feeds WHERE id = rss_feed_ids.id
+      )
+      SELECT * FROM keyed_feed
+    ) view_rss_feeds ON TRUE
   `)
 
   // Browse path: outer ORDER BY for deterministic end_cursor (join doesn't preserve CTE order).

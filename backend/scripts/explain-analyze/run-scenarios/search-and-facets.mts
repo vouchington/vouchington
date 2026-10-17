@@ -3,7 +3,6 @@ import {
   heavyFollowUser,
   runAndCapture,
   seedHostnameIds,
-  seedParentTopicId,
   seedPostId,
   seedTopicId,
   seedUser,
@@ -12,6 +11,7 @@ import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { runRssItemSearchScenarios } from './rss-item-search.mts'
+import { runRssFeedSearchScopeScenarios } from './rss-feed-search.mts'
 import {
   runSemanticPostSearchScenarios,
   runSimilarPostSearchScenarios,
@@ -24,7 +24,6 @@ const {
   getPostFacets,
   getPostIds,
   getRecommendedTopics,
-  searchRssFeeds,
   searchUrls,
 } = services
 
@@ -56,32 +55,7 @@ export async function runSearchAndFacetScenarios() {
 
   await runRssItemSearchScenarios()
 
-  registerScenarioContract('rss-feed-search-by-topic', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search-by-topic', () =>
-    searchRssFeeds({ topic_ids: [seedTopicId], limit: 25 }),
-  )
-
-  registerScenarioContract('rss-feed-search-by-topic-descendants', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search-by-topic-descendants', () =>
-    searchRssFeeds({ topic_ids: [seedParentTopicId], include_descendants: true, limit: 25 }),
-  )
-
-  registerScenarioContract('rss-feed-search-by-publisher-type', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search-by-publisher-type', () =>
-    searchRssFeeds({ publisher_type_ids: [seedTopicId], limit: 25 }),
-  )
-  registerScenarioContract('rss-feed-search-current-user', {
-    expectations: [{ kind: 'custom', name: 'rssStateProjection' }],
-  })
-  await runAndCapture('rss-feed-search-current-user', () =>
-    searchRssFeeds({ current_user_id: seedUser.id, limit: 25 }),
-  )
+  await runRssFeedSearchScopeScenarios()
 
   // Post search — text search with heavy-follow user
   registerScenarioContract('post-search-text-heavy-follows', {

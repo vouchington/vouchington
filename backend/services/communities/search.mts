@@ -10,6 +10,7 @@ import { mapCommunitySearchResult } from './search/result-mapper.mts'
 import { appendEligiblePostTypeFilter } from './search/eligible-post-type-filter.mts'
 import { parseCommunitySearchCursor } from './search/cursor.mts'
 import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
+import { startCommunityCandidates } from './search/candidate-query.mts'
 import { communityColumns } from './columns.mts'
 import type { CommunityRootPostType } from './post-type-settings.mts'
 import type {
@@ -48,13 +49,13 @@ export async function searchCommunities(
   const sort = options?.sort ?? 'name'
 
   const { cursorName, cursorId, cursorScore } = parseCommunitySearchCursor(options?.after, sort)
-
-  const searchQuery = sql`/* searchCommunities */
-    WITH candidate_communities AS MATERIALIZED (
-      SELECT c.id, c.name, counts.member_count, counts.virtual_subscription_count
-      FROM communities c
-      JOIN community_search_counts counts ON counts.community_id = c.id
-      WHERE c.deleted_at IS NULL`
+  const listedVirtual = !!options?.hasListItems && sort === 'virtual_subscriptions'
+  const searchQuery = startCommunityCandidates(
+    sort,
+    !!options?.hasListItems,
+    limit,
+    options?.search,
+  )
 
   appendEligiblePostTypeFilter(searchQuery, options?.currentUser, options?.eligiblePostType)
   if (options?.hashtagHasNoMatches) searchQuery.append(sql` AND FALSE`)
@@ -116,12 +117,6 @@ export async function searchCommunities(
     }
   }
 
-  if (options?.search) {
-    searchQuery.append(
-      sql` AND c.search_vector @@ websearch_to_tsquery('voucha_english', ${options.search})`,
-    )
-  }
-
   if (options?.listType) {
     searchQuery.append(sql` AND c.list_type = ${options.listType}`)
   }
@@ -131,13 +126,7 @@ export async function searchCommunities(
   }
 
   if (options?.hasListItems) {
-    searchQuery.append(sql` AND (
-      EXISTS (SELECT 1 FROM community_list_topics item WHERE item.community_id = c.id AND item.removed_at IS NULL)
-      OR EXISTS (SELECT 1 FROM community_list_rss_feeds item WHERE item.community_id = c.id AND item.removed_at IS NULL)
-      OR EXISTS (SELECT 1 FROM community_list_posts item WHERE item.community_id = c.id AND item.removed_at IS NULL)
-      OR EXISTS (SELECT 1 FROM community_list_url_hostnames item WHERE item.community_id = c.id AND item.removed_at IS NULL)
-      OR EXISTS (SELECT 1 FROM community_list_urls item WHERE item.community_id = c.id AND item.removed_at IS NULL)
-    )`)
+    searchQuery.append(sql` AND counts.list_item_count > 0`)
   }
 
   appendFeedCategoryFilter(searchQuery, options?.feedCategory)
@@ -163,11 +152,12 @@ export async function searchCommunities(
         sql` AND (counts.virtual_subscription_count, c.id) < (${cursorScore}, ${cursorId})`,
       )
     }
-    searchQuery.append(sql`
-    ORDER BY counts.virtual_subscription_count DESC, c.id DESC
-    LIMIT ${limit + 1}`)
+    searchQuery.append(sql` ORDER BY counts.virtual_subscription_count DESC, c.id DESC`)
+    if (listedVirtual) searchQuery.append(sql` LIMIT search_input.page_limit`)
+    else searchQuery.append(sql` LIMIT ${limit + 1}`)
   }
 
+  if (listedVirtual) searchQuery.append(sql` ) picked`)
   searchQuery.append(sql`
     )
     SELECT `)
@@ -187,13 +177,14 @@ export async function searchCommunities(
     FROM candidate_communities selected
     JOIN communities c ON c.id = selected.id
     LEFT JOIN users u ON u.id = c.created_by_id`)
-  searchQuery.append(sql` JOIN view_community_metrics vm ON vm.id = selected.id`)
+  searchQuery.append(sql` JOIN LATERAL (
+    WITH keyed_metrics AS MATERIALIZED (SELECT * FROM view_community_metrics WHERE id = selected.id)
+    SELECT * FROM keyed_metrics
+  ) vm ON TRUE`)
   if (sort === 'name') searchQuery.append(sql` ORDER BY selected.name ASC, selected.id ASC`)
   else if (sort === 'members')
     searchQuery.append(sql` ORDER BY selected.member_count DESC, selected.id DESC`)
   else searchQuery.append(sql` ORDER BY selected.virtual_subscription_count DESC, selected.id DESC`)
-
   const { rows } = await read(searchQuery, options)
-
   return mapCommunitySearchResult(rows, { limit, needsMetrics: true, sort })
 }

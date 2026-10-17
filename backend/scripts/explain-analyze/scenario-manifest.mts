@@ -1,5 +1,6 @@
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
+import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
@@ -136,14 +137,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'rss-feed-items-search-semantic-cursor',
   'rss-feed-items-search-media',
   'rss-feed-items-search-text',
-  'rss-feed-search',
-  'rss-feed-search-all-enable-states',
-  'rss-feed-search-by-publisher-type',
-  'rss-feed-search-by-topic',
-  'rss-feed-search-by-topic-descendants',
-  'rss-feed-search-current-user',
-  'rss-feed-search-disabled',
-  'rss-feed-text-search',
+  ...RSS_SEARCH_SCENARIOS,
   'search-admin-users',
   'search-admin-users-uuid',
   'search-admin-users-email',

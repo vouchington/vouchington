@@ -5,7 +5,17 @@ import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runAdminUserSearchScenarios(): Promise<void> {
-  await runAndCapture('search-users', () => searchUsers('seeduser', { limit: 25 }))
+  registerScenarioContract('search-users', {
+    expectations: [
+      { kind: 'usesIndexes', indexes: ['idx_users__username'] },
+      { kind: 'maxProcessedRows', relation: 'users', max: 95 },
+    ],
+  })
+  await runAndCapture('search-users', async () => {
+    const page = await searchUsers('seeduser', { limit: 25 })
+    if (page.results.some(user => user.id === seedUuid(20_000, '01')))
+      throw new Error('Public user search returned the deleted seed user')
+  })
   await runAndCapture(
     'search-admin-users',
     () => searchAdminUsers('seeduser', { limit: 25 }),

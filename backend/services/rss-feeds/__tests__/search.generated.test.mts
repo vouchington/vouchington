@@ -177,7 +177,6 @@ describe('search.generated', () => {
     const allResults = await searchRssFeeds({ topic_id: topic.id })
     expect(allResults.find(r => r.id === feed.id)).toBeDefined()
   })
-
   it('searchRssFeeds only applies publisher type mutes to dominant type', async () => {
     const user = await createTestUser()
     const random = Math.random().toString(36).slice(2, 15)
@@ -200,11 +199,12 @@ describe('search.generated', () => {
     await addRssFeedTopicPublisherTypeWithScore(topic.id, dominantType.id, 2)
     await addRssFeedTopicPublisherTypeWithScore(topic.id, mutedType.id, 1)
     await insertEntityRelation('relation__user__mute__topic', user.id, mutedType.id)
-
     const results = await searchRssFeeds({ topic_id: topic.id, current_user_id: user.id })
     expect(results.find(r => r.id === feed.id)).toBeDefined()
+    await insertEntityRelation('relation__user__mute__topic', user.id, dominantType.id)
+    const afterDominantMute = await searchRssFeeds({ topic_id: topic.id, current_user_id: user.id })
+    expect(afterDominantMute.find(r => r.id === feed.id)).toBeUndefined()
   })
-
   it('searchRssFeeds filters by dominant publisher type only', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({ hostname: `dominant-filter-${random}.example.com` })

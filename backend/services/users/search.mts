@@ -15,26 +15,39 @@ export async function searchUsers(
 
   const limit = Math.max(0, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT))
   const lowerQuery = query.toLowerCase()
-  const escapedQuery = escapeLikePattern(lowerQuery)
-
-  const values: Array<string | number> = [`${escapedQuery}%`]
+  const values: Array<string | number> = [lowerQuery, `${escapeLikePattern(lowerQuery)}%`]
   const afterFilter =
-    options.after !== undefined ? ` AND LOWER(users.username) > $${values.push(options.after)}` : ''
+    options.after !== undefined ? ` AND LOWER(users.username) > search_input.after` : ''
+  const afterInput =
+    options.after !== undefined ? `, $${values.push(options.after)}::text AS after` : ''
+  const limitInput = `$${values.push(limit + 1)}::int AS page_limit`
 
   const { rows } = await read(
     `/* searchUsers */
-    WITH matched_users AS MATERIALIZED (
-      SELECT users.id, LOWER(users.username) AS username_sort
-      FROM users
-      WHERE users.deleted_at IS NULL
-        AND users.username IS NOT NULL
-        AND LOWER(users.username) LIKE $1 ESCAPE '\\'${afterFilter}
-      ORDER BY LOWER(users.username)
-      LIMIT $${values.push(limit + 1)}
+    WITH search_input AS MATERIALIZED (
+      SELECT $1::text AS prefix, $2::text AS pattern${afterInput}, ${limitInput}
+    ), matched_users AS MATERIALIZED (
+      SELECT matched.id, matched.username_sort
+      FROM search_input
+      CROSS JOIN LATERAL (
+        SELECT users.id, LOWER(users.username) AS username_sort
+        FROM users
+        WHERE users.deleted_at IS NULL
+          AND users.username IS NOT NULL
+          AND LOWER(users.username) >= search_input.prefix
+          AND LOWER(users.username) LIKE search_input.pattern ESCAPE '\\'${afterFilter}
+        ORDER BY LOWER(users.username)
+        LIMIT search_input.page_limit
+      ) matched
     )
     SELECT vup.*
     FROM matched_users
-    JOIN view_users_public vup ON vup.id = matched_users.id
+    JOIN LATERAL (
+      WITH keyed_user AS MATERIALIZED (
+        SELECT * FROM view_users_public WHERE id = matched_users.id
+      )
+      SELECT * FROM keyed_user
+    ) vup ON TRUE
     ORDER BY matched_users.username_sort`,
     values,
   )

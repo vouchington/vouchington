@@ -789,15 +789,20 @@ CREATE INDEX IF NOT EXISTS idx_community_applications__created_via_oauth_client_
 CREATE TABLE IF NOT EXISTS community_search_counts (
   community_id UUID PRIMARY KEY REFERENCES communities(id) ON DELETE CASCADE,
   member_count INTEGER NOT NULL DEFAULT 0 CHECK (member_count >= 0),
-  virtual_subscription_count INTEGER NOT NULL DEFAULT 0 CHECK (virtual_subscription_count >= 0)
+  virtual_subscription_count INTEGER NOT NULL DEFAULT 0 CHECK (virtual_subscription_count >= 0),
+  list_item_count INTEGER NOT NULL DEFAULT 0 CHECK (list_item_count >= 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_community_search_counts__members
   ON community_search_counts (member_count DESC, community_id DESC);
 CREATE INDEX IF NOT EXISTS idx_community_search_counts__virtual_subscriptions
   ON community_search_counts (virtual_subscription_count DESC, community_id DESC);
+CREATE INDEX IF NOT EXISTS idx_community_search_counts__listed_virtual_subscriptions
+  ON community_search_counts (virtual_subscription_count DESC, community_id DESC)
+  WHERE list_item_count > 0;
 
 COMMENT ON TABLE community_search_counts IS 'Transactionally maintained counts used to select indexed community search pages before hydrating metrics.';
 COMMENT ON COLUMN community_search_counts.community_id IS 'Community whose search counts are projected.';
 COMMENT ON COLUMN community_search_counts.member_count IS 'Active members, matching view_community_metrics.member_count.';
 COMMENT ON COLUMN community_search_counts.virtual_subscription_count IS 'Active proxy follows plus proxy mutes, matching view_community_metrics.virtual_subscription_count.';
+COMMENT ON COLUMN community_search_counts.list_item_count IS 'Active list items across the five community list relations.';

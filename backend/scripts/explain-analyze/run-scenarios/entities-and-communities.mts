@@ -2,6 +2,7 @@ import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
+import { seedUuid } from '../seed-data/common.mts'
 import * as services from '../run-services.mts'
 import { runPartitionPruningScenarios } from './partition-pruning.mts'
 import { runEntityTailScenarios } from './entity-tail.mts'
@@ -109,7 +110,12 @@ export async function runEntityAndCommunityScenarios() {
 
   // Community search — JOIN with metrics view, sorted by members
   registerScenarioContract('search-communities', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 39 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 3600 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1295 },
+    ],
   })
   await runAndCapture(
     'search-communities',
@@ -117,7 +123,12 @@ export async function runEntityAndCommunityScenarios() {
     'members',
   )
   registerScenarioContract('search-communities-virtual-subscriptions', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 39 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 3600 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1295 },
+    ],
   })
   await runAndCapture(
     'search-communities-virtual-subscriptions',
@@ -125,7 +136,12 @@ export async function runEntityAndCommunityScenarios() {
     'virtual-subscriptions',
   )
   registerScenarioContract('search-communities-has-list-items', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 348 },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 720 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 249 },
+    ],
   })
   await runAndCapture(
     'search-communities-has-list-items',
@@ -135,16 +151,28 @@ export async function runEntityAndCommunityScenarios() {
 
   // Community search — text search variant
   registerScenarioContract('search-communities-text', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      { kind: 'custom', name: 'communityTextCandidates' },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 692 },
+    ],
   })
   await runAndCapture(
     'search-communities-text',
-    () => searchCommunities({ search: 'seed', sort: 'name', limit: 25 }),
+    async () => {
+      const page = await searchCommunities({ search: 'seed', sort: 'name', limit: 25 })
+      if (page.results.some(community => community.id === seedUuid(5, '14')))
+        throw new Error('Public community search returned the private seed community')
+    },
     'text',
   )
 
   registerScenarioContract('search-communities-member', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
+    expectations: [
+      { kind: 'custom', name: 'searchCommunitiesEligibility' },
+      { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 720 },
+      { kind: 'maxProcessedRows', relation: 'communities', max: 245 },
+    ],
   })
   await runAndCapture(
     'search-communities-member',

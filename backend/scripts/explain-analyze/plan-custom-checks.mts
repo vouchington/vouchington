@@ -38,6 +38,8 @@ const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = 
   trendingCommunities: assertTrendingCommunitiesIsCandidateBounded,
   universalTopicCandidates: result => assertCorePlanCheck('universalTopicCandidates', result),
   rssStateProjection: result => assertCorePlanCheck('rssStateProjection', result),
+  rssTextCandidates: result => assertCorePlanCheck('rssTextCandidates', result),
+  communityTextCandidates: result => assertCorePlanCheck('communityTextCandidates', result),
   relationListingOrder: result => assertCorePlanCheck('relationListingOrder', result),
   entityRelationVotes: result => assertCorePlanCheck('entityRelationVotes', result),
   userRemovedPosts: result => assertCorePlanCheck('userRemovedPosts', result),
