@@ -54,6 +54,7 @@ describe('no-mistakes forbidden-calls config', () => {
     }
 
     expect(rules.map(candidate => candidate.name)).toEqual([
+      'Durable app-owned IDs in creation paths use UUIDv7',
       'Vitest tests do not invoke real timers',
       'Playwright tests do not invoke fixed sleeps',
       'Vitest tests do not poll or wait on timers',
