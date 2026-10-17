@@ -1,5 +1,6 @@
 'use client'
 
+import type { PageInfo } from '@/types/api-responses'
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import { clientFetch } from './raw-fetch'
@@ -37,7 +38,9 @@ export interface RssFeedImportSummary {
 
 export interface RssFeedImportStatus {
   import: RssFeedImportSummary
+  /** One page of rows; pass `page_info.end_cursor` as `after` for the next. */
   rows: ImportResult[]
+  page_info: PageInfo
 }
 
 export interface RssFeedImportSubmission {
@@ -64,8 +67,12 @@ export async function importRssFeeds(body: RssFeedImportBody): Promise<RssFeedIm
   return clientApi.post<RssFeedImportSubmission>('/api/v1/my/import/rss-feeds', body)
 }
 
-export function getRssFeedImport(importId: string): Promise<RssFeedImportStatus> {
-  return clientApi.get<RssFeedImportStatus>(`/api/v1/my/import/rss-feeds/${importId}`)
+export function getRssFeedImport(
+  importId: string,
+  options: { after?: string } = {},
+): Promise<RssFeedImportStatus> {
+  const query = options.after ? `?after=${encodeURIComponent(options.after)}` : ''
+  return clientApi.get<RssFeedImportStatus>(`/api/v1/my/import/rss-feeds/${importId}${query}`)
 }
 
 export function importTopics(body: { names: string[] }): Promise<{ results: TopicImportResult[] }> {

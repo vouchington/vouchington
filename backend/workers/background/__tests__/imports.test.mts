@@ -7,6 +7,7 @@ import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
+  IMPORTS_RECOVER_STALLED_JOB,
   type AdminTopicImportRowData,
   type UserRssFeedImportRowData,
 } from '@queues/background/enqueues/imports-jobs'
@@ -48,6 +49,8 @@ const importHandlers: BackgroundHandler[] = [
   ...userRssFeedImportsHandlers.filter(
     handler => handler.job.name === IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.name,
   ),
+  // The sweep has its own tests; here it only has to be a registered job.
+  { job: IMPORTS_RECOVER_STALLED_JOB, handle: () => undefined },
   {
     job: IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB,
     handle: recordRow(adminRows) as BackgroundHandler<AdminTopicImportRowData>['handle'],

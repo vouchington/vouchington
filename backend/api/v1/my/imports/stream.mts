@@ -11,7 +11,7 @@ import {
   getImportBatch,
   getImportBatchProgress,
 } from '@services/admin-imports'
-import { getRssFeedImport } from '@services/user-import-export/rss-feed-imports'
+import { getRssFeedImportSummary } from '@services/user-import-export/rss-feed-imports'
 import {
   subscribeImportProgress,
   type ImportProgressSubscription,
@@ -31,7 +31,7 @@ app.route('/api/v1/imports/:batchId/stream').get(async (ctx: Context) => {
   const batchId = validateUUIDParam(ctx, 'batchId')
 
   const batch = await getImportBatch(batchId)
-  const userRssFeedImport = batch ? null : await getRssFeedImport(currentUser.id, batchId)
+  const userRssFeedImport = batch ? null : await getRssFeedImportSummary(currentUser.id, batchId)
   ctx.assert(
     currentUserCanViewImportBatch(currentUser, batch) || userRssFeedImport,
     404,

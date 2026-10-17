@@ -28,7 +28,7 @@ export function createSourceFromUrl(
   rssFeedUrl: string,
   options: CreateSourceOptions = {},
 ): Promise<CreateSourceResult> {
-  return raceFeedBudget(options.signal, createSource(currentUser, provenance, rssFeedUrl, options))
+  return createSource(currentUser, provenance, rssFeedUrl, options)
 }
 
 async function createSource(
@@ -46,13 +46,14 @@ async function createSource(
 ): Promise<CreateSourceResult> {
   assert(isPublicRssFeedUrl(rssFeedUrl), 422, 'rss_feed_url must be a valid URL')
   assert(hopCount <= MAX_REDIRECT_HOPS, 422, 'Too many redirects while resolving RSS feed URL')
-  await assertUrlAllowedByWebRisk(rssFeedUrl, { signal })
+  // The budget races only remote work, which can hang; a database write is never abandoned.
+  await raceFeedBudget(signal, assertUrlAllowedByWebRisk(rssFeedUrl, { signal }))
 
   if (new URL(rssFeedUrl).protocol === 'http:') {
     const httpsUrl = normalizeUrlForUrlTable(rssFeedUrl).href
     const httpUrl = normalizeUrlForUrlTable(rssFeedUrl, { preserveHttp: true }).href
     const existingHttps = await findExistingFeedByUrl(httpsUrl)
-    if (existingHttps) await assertUrlAllowedByWebRisk(httpsUrl, { signal })
+    if (existingHttps) await raceFeedBudget(signal, assertUrlAllowedByWebRisk(httpsUrl, { signal }))
     const existing = existingHttps ?? (await findExistingFeedByUrl(httpUrl))
     if (existing) {
       await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
@@ -72,17 +73,19 @@ async function createSource(
 
   // Resolve the effective URL (prefer https, fall back to http) and classify the feed
   let firstAttempt = true
-  const { resolvedUrl, classification } = await resolveProtocolAndClassify(rssFeedUrl, {
-    beforeFetch: url => {
-      const alreadyChecked = firstAttempt && url === rssFeedUrl
-      firstAttempt = false
-      // Reuse only this attempt's initial proof; protocol fallback and later hops revalidate.
-      return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url, { signal })
-    },
-    fetchAndClassifyFeedImpl,
-    signal,
-  })
-  await assertUrlAllowedByWebRisk(resolvedUrl, { signal })
+  const { resolvedUrl, classification } = await raceFeedBudget(signal, 
+    resolveProtocolAndClassify(rssFeedUrl, {
+      beforeFetch: url => {
+        const alreadyChecked = firstAttempt && url === rssFeedUrl
+        firstAttempt = false
+        // Reuse only this attempt's initial proof; protocol fallback and later hops revalidate.
+        return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url, { signal })
+      },
+      fetchAndClassifyFeedImpl,
+      signal,
+    }),
+  )
+  await raceFeedBudget(signal, assertUrlAllowedByWebRisk(resolvedUrl, { signal }))
   const isHttpUrl = new URL(resolvedUrl).protocol === 'http:'
 
   if (classification.kind === 'redirect') {
@@ -141,8 +144,7 @@ async function createSource(
     }
   }
 
-  // The budget is checked before the writes: an aborted call must not create a source that the
-  // retried job then races against.
+  // Checked before the writes: an aborted call must not create a source the retried job races.
   assertWithinFeedBudget(signal)
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertContributionLimit?.()

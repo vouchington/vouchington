@@ -19,7 +19,7 @@ import { getUserActivePlan } from '@services/memberships'
 import { assertWithinContributionDailyLimit } from '@services/contribution-gating/limits'
 type CompletedImportRssFeedStatus = Exclude<ImportRssFeedStatus, 'error'>
 
-export { getRssFeedImport } from './rss-feed-import-records.mts'
+export { getRssFeedImport, getRssFeedImportSummary } from './rss-feed-import-records.mts'
 
 export async function submitRssFeedImport(
   currentUser: BasicUser,

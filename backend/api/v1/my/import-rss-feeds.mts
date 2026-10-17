@@ -11,8 +11,11 @@ import {
 import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
 import { getUserImportExportConfig } from '@services/user-import-export/config'
 import { isUUID } from '@modules/utils'
+import { createPaginationParser } from '@modules/pagination'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isAdminUser } from '@services/users'
-import { apiResponse } from '../../response-contract.mts'
+import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 type ImportRssFeedsRequest =
@@ -73,14 +76,30 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   )
 })
 
+// A page never exceeds `import_status_page_size`; `limit` can only narrow it.
+const importStatusPagination = createPaginationParser({
+  cursor: { type: 'simple', paramName: 'after' },
+  limit: { default: 100, max: 1000 },
+})
+
 app.route('/api/v1/my/import/rss-feeds/:importId').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/my/import/rss-feeds/:importId', importStatusPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/import/rss-feeds/:importId')
-  validateRequestContract(ctx, 'GET:/api/v1/my/import/rss-feeds/:importId', { path: ctx.params })
+  const page = parseRuntimePagination(importStatusPagination, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, importStatusPagination.queryContract)
+  if (ctx.query.limit !== undefined) query.limit = page.limit
+  validateRequestContract(ctx, 'GET:/api/v1/my/import/rss-feeds/:importId', {
+    path: ctx.params,
+    query,
+  })
   // The path schema is a plain string, so the UUID format is checked here.
   const importId = ctx.params.importId!
   ctx.assert(isUUID(importId), 400, 'Invalid import ID')
 
-  const result = await getRssFeedImport(currentUser.id, importId)
+  const result = await getRssFeedImport(currentUser.id, importId, {
+    limit: ctx.query.limit === undefined ? undefined : page.limit,
+    after: page.after,
+  })
   ctx.assert(result, 404, 'RSS feed import not found')
   ctx.json(result)
 })

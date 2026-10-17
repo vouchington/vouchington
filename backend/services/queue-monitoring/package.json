@@ -64,6 +64,7 @@
     "@queues/story-post-related-url-projections": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@queues/urls-domains-blacklist": "workspace:^",
+    "@queues/user-rss-feed-imports": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@services/queue-domain-controls": "workspace:^",

@@ -9,6 +9,8 @@ export type UserImportExportConfig = {
   import_dispatch_page_size: number
   /** Rows one INSERT statement writes when an import is submitted. */
   import_insert_chunk_size: number
+  /** Rows one page of an import's status lists. */
+  import_status_page_size: number
   /** Time one imported feed gets, from Web Risk through both protocol attempts. */
   rss_feed_import_budget_ms: number
 }
@@ -20,6 +22,7 @@ export const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
   import_max_body_bytes: 2 * 1024 * 1024,
   import_dispatch_page_size: 100,
   import_insert_chunk_size: 1_000,
+  import_status_page_size: 100,
   rss_feed_import_budget_ms: 15_000,
 }
 
@@ -28,6 +31,7 @@ export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
   import_max_body_bytes: 1_024,
   import_dispatch_page_size: 1,
   import_insert_chunk_size: 1,
+  import_status_page_size: 1,
   rss_feed_import_budget_ms: 1_000,
 }
 
@@ -38,6 +42,7 @@ export const USER_IMPORT_EXPORT_MAX_VALUES: UserImportExportConfig = {
   import_max_body_bytes: 16 * 1024 * 1024,
   import_dispatch_page_size: 1_000,
   import_insert_chunk_size: 10_000,
+  import_status_page_size: 1_000,
   rss_feed_import_budget_ms: 25_000,
 }
 
@@ -46,6 +51,7 @@ const fieldTypes: Record<keyof UserImportExportConfig, 'number'> = {
   import_max_body_bytes: 'number',
   import_dispatch_page_size: 'number',
   import_insert_chunk_size: 'number',
+  import_status_page_size: 'number',
   rss_feed_import_budget_ms: 'number',
 }
 

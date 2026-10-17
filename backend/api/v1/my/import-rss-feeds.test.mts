@@ -43,6 +43,31 @@ describe('RSS feed import status and line-list parsing', () => {
     await stranger.get(statusUrl).expect(404)
   })
 
+  it('pages the rows of an import by cursor, never listing more than the configured page', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(userImportExportConfig, { import_status_page_size: 2 }),
+    )
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const urls = [feedUrl(), feedUrl(), feedUrl()]
+    const created = await request.post('/api/v1/my/import/rss-feeds').send({ urls }).expect(201)
+    const statusUrl = created.body.status_url as string
+
+    const first = await request.get(`${statusUrl}?limit=1000`).expect(200)
+    expect(first.body.import).toMatchObject({ total_rows: 3, pending_rows: 3 })
+    expect(first.body.rows.map((row: { input: string }) => row.input)).toEqual(urls.slice(0, 2))
+    expect(first.body.page_info.has_next_page).toBe(true)
+
+    const second = await request
+      .get(`${statusUrl}?after=${encodeURIComponent(first.body.page_info.end_cursor)}`)
+      .expect(200)
+    expect(second.body.rows.map((row: { input: string }) => row.input)).toEqual(urls.slice(2))
+    expect(second.body.page_info.has_next_page).toBe(false)
+
+    await request.get(`${statusUrl}?limit=0`).expect(400)
+    await request.get(`${statusUrl}?after=not-a-cursor`).expect(400)
+  })
+
   it('rejects a malformed import id and reports an unknown one', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

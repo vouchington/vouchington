@@ -36805,6 +36805,9 @@
         "import": {
           "$ref": "#/components/schemas/UserRssFeedImportSummary"
         },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "rows": {
           "items": {
             "$ref": "#/components/schemas/UserRssFeedImportRowResult"
@@ -36812,7 +36815,7 @@
           "type": "array"
         }
       },
-      "required": ["import", "rows"],
+      "required": ["import", "page_info", "rows"],
       "type": "object"
     },
     "UserRssFeedImportRowResult": {
@@ -42437,6 +42440,20 @@
           }
         },
         "required": ["importId"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
         "type": "object"
       }
     },

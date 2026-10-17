@@ -118,6 +118,11 @@ EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at');
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__user_id__id_desc
 ON user_rss_feed_import_batches (user_id, id DESC);
 
+-- Recovery finds unfinished imports whose progress has stopped, oldest first.
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__unfinished_updated_at
+ON user_rss_feed_import_batches (updated_at)
+WHERE completed_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_batches__created_via_oauth_client_id
 ON user_rss_feed_import_batches (created_via_oauth_client_id)
 WHERE created_via_oauth_client_id IS NOT NULL;
