@@ -56,7 +56,6 @@ repository when resource shapes, deployment configuration, or cost data change.
 - [Infrastructure reference](reference-infrastructure-s3-buckets.md)
 - [Networking reference](reference-networking-aws-application-endpoint-inventory.md)
 - [Networking reference](reference-networking-decision-per-task-ip-vs-managed-nat-gateway.md)
-- [Networking reference](reference-networking-production-server-external-api-inventory.md)
 - [Networking reference](reference-networking-status-summary.md)
 - [S3 Buckets × Lifecycle Matrix reference](reference-s3-buckets-table-a-buckets-purpose-configuration.md)
 - [S3 Buckets × Lifecycle Matrix reference](reference-s3-buckets-table-b-buckets-lifecycle-post-cost-review-rules.md)

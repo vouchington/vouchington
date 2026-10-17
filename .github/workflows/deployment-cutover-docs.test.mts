@@ -50,17 +50,6 @@ describe('post-cutover deployment documentation', () => {
     expect(runbook).not.toContain('curl ')
   })
 
-  it('uses exact saved-plan authorization for global recovery', () => {
-    const recovery = read(
-      'docs/operations/reference-private-docs-site-rotation-and-recovery.md',
-    ).replace(/\s+/g, ' ')
-
-    expect(recovery).toContain('operator-controlled procedure')
-    expect(recovery).toContain('separate authorization for that exact plan')
-    expect(recovery).toContain('global CI apply workflow and its trust remain disabled')
-    expect(recovery).not.toContain('full global plan/apply workflow')
-  })
-
   it('routes staging database resets to the private operator runbook', () => {
     const stagingQa = read('.agents/skills/staging-qa/SKILL.md').replace(/\s+/g, ' ')
     const ciCd = read('docs/overview/infrastructure/reference-deployment-ci-cd-flow.md').replace(

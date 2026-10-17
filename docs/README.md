@@ -13,7 +13,6 @@ into this page and `docs/catalog/README.md`.
 - [Runbooks](runbooks/README.md) — operational procedures.
 - [Checklists](checklists/README.md) — commit, package, CI, infrastructure, and backend queue checklists.
 - [Agent and automation prompts](prompts/README.md) — automation templates and scheduled prompts; the complete scheduled list is [SCHEDULED.md](prompts/SCHEDULED.md).
-- [Strategy](strategy/README.md) — product and engineering strategy.
 - [Focused agent-facing references](catalog/README.md) — cross-cutting pages directly routed from workspace instructions.
 
 ## Documentation rules

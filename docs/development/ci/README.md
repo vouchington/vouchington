@@ -24,7 +24,6 @@ Use these owner indexes for the detailed subdomains.
 - [Fix Main dependency policy](workflows/reference-fix-main-dependency-policy.md)
 - [Fixed-Branch Automation PRs](workflows/reference-fixed-branch-automation-prs.md)
 - [GitHub Actions Concurrency Locks](workflows/reference-github-actions-concurrency-locks.md)
-- [Auto Harness automation accepted boundary](workflows/reference-harness-automation-accepted-risk.md)
 - [Auto Harness automation](workflows/reference-harness-automation.md)
 - [Maintenance, Security, And Utilities](workflows/reference-maintenance-security-and-utilities.md)
 - [Merge Queue Run Cancellation](workflows/reference-merge-queue-run-cancellation.md)

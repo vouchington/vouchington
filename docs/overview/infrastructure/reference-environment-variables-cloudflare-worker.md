@@ -52,5 +52,4 @@ put`; deploys inherit it without copying the credential into GitHub Actions or S
 The private reference sites use a separate operator-held list with the same binding name. Its exact
 value is copied interactively into the docs Worker, Pages production, and Pages preview encrypted
 bindings. OpenTofu manages only the R2 bucket, Pages project, and `fail_open=false` configuration;
-GitHub Actions preserves or consumes the bindings without receiving the credential value. See
-[Private Internal Reference Sites](../../operations/private-docs-site.md).
+GitHub Actions preserves or consumes the bindings without receiving the credential value.

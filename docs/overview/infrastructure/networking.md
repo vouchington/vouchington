@@ -6,7 +6,6 @@ repository.
 ## Contents
 
 - <a id="decision-per-task-ip-vs-managed-nat-gateway"></a>[Decision: Per-Task IP vs. Managed NAT Gateway](reference-networking-decision-per-task-ip-vs-managed-nat-gateway.md)
-- <a id="production-server-external-api-inventory"></a>[Production Server External API Inventory](reference-networking-production-server-external-api-inventory.md)
 - <a id="aws-application-endpoint-inventory"></a>[AWS Application Endpoint Inventory](reference-networking-aws-application-endpoint-inventory.md)
 - <a id="ipv6-only-staging-verification-gate"></a>[IPv6-only Staging Verification Gate](reference-networking-aws-application-endpoint-inventory.md)
 - <a id="alb-ipv6-frontend"></a>[ALB IPv6 Frontend](reference-networking-aws-application-endpoint-inventory.md)

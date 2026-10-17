@@ -21,10 +21,7 @@ export const SPEND_CAP_MAX_VALUES: Record<SpendCapNumberField, number> = {
 }
 
 // DynamicConfig over an env var deliberately: the point of a spend cap is lowering it *now*,
-// without a deploy. $10/day default in scale-six USD microunits (MONEY_SCALE, @ts-shared/money) --
-// conservative headroom over the modeled ~$77/month (~$2.60/day) production forecast (kept in
-// the private vouchington/vouchington-docs repository), well under the ~$2,160/month OPENAI_TPM
-// structurally permits today.
+// without a deploy. default is in scale-six USD microunits (MONEY_SCALE, @ts-shared/money).
 //
 // This figure is a pre-launch estimate, not a measurement against real billing (#8773: production
 // has never deployed, so there is no billing cycle to measure against yet). Deliberately shipped

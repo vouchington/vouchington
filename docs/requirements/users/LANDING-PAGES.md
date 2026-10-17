@@ -4,8 +4,7 @@ Landing pages let a member curate profile links, reviews, referral links, topic 
 links into an ordered public page. Web, Swift, and .NET use the same authenticated API contract and
 must preserve the draft and refresh behavior defined here.
 
-See [Landing Pages Strategy](../../strategy/landing-pages-strategy.md) for the growth objective and
-[Referral Links](REFERRAL-LINKS.md) for referral ownership and attribution.
+See [Referral Links](REFERRAL-LINKS.md) for referral ownership and attribution.
 
 ## Item selection
 

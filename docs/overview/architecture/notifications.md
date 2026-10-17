@@ -112,7 +112,7 @@ RSS item notifications store the external article URL in PostgreSQL, but push pa
 
 ## Planned Notification Types
 
-The following notification concepts have underlying signals tracked in the database, but user-facing notifications for them are not yet implemented. See [Feedback Loops](../../strategy/feedback-loops.md) for context on why these matter for growth.
+The following notification concepts have underlying signals tracked in the database, but user-facing notifications for them are not yet implemented.
 
 | Type                | Trigger                                       | Issue                      |
 | ------------------- | --------------------------------------------- | -------------------------- |
