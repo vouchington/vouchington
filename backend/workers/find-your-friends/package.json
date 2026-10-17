@@ -25,5 +25,11 @@
     "@services/oauth-github": "workspace:^",
     "@services/oauth-x": "workspace:^",
     "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@services/oauth": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
   }
 }

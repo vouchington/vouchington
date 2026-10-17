@@ -12656,6 +12656,19 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@services/oauth':
+        specifier: workspace:^
+        version: link:../../services/oauth
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../../services/oauth-accounts
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+      undici:
+        specifier: ^8.11.2
+        version: 8.11.2
 
   backend/workers/follower-distributions:
     dependencies:
