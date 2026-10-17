@@ -50,6 +50,7 @@
     "test:cloudflare-worker": "node ci/run-vitest-project-group.mts cloudflare-worker",
     "test:portability": "VITEST_COVERAGE_SCOPE=portability node ci/run-vitest-project-group.mts portability",
     "ci:topology": "no-mistakes ci topology",
+    "agent-blackboard": "agent-blackboard",
     "vouchington": "vouchington",
     "email:preview": "pnpm --dir email-templates run preview --",
     "test:smoke": "pnpm --dir backend test:smoke",
