@@ -454,7 +454,7 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   refresh_token_ciphertext TEXT,
   access_token_expires_at TIMESTAMPTZ,
   friends_synced_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE github_accounts
