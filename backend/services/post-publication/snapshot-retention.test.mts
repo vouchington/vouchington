@@ -234,17 +234,23 @@ describe('bounded publication receipt retention and reclamation', () => {
     const incomplete = await materializePostPublicationIdentitySnapshot(current, candidate, 1)
     expect(incomplete.complete).toBe(false)
     await expireTestPostPublicationDirtyWorkLease(current.id)
-    const traversalBound = await getTestPublicationCleanupTraversalBound(2)
+    const traversalBound = await getTestPublicationCleanupTraversalBound(1)
+    let sawPartiallyReclaimedStaleSnapshot = false
     for (
       let page = 0;
       page < traversalBound && (await hasTestPublicationSnapshot(stale.snapshotId));
       page += 1
     ) {
-      const reclaimed = await cleanupPostPublicationIdentitySnapshots(2)
-      expect(reclaimed.keys).toBeLessThanOrEqual(2)
-      expect(reclaimed.snapshots).toBeLessThanOrEqual(2)
-      expect(reclaimed.scanned).toBeLessThanOrEqual(2)
+      const reclaimed = await cleanupPostPublicationIdentitySnapshots(1)
+      expect(reclaimed.keys).toBeLessThanOrEqual(1)
+      expect(reclaimed.snapshots).toBeLessThanOrEqual(1)
+      expect(reclaimed.scanned).toBeLessThanOrEqual(1)
+      if (await hasTestPublicationSnapshot(stale.snapshotId)) {
+        const remainingKeys = (await readTestPublicationSnapshot(stale.snapshotId)).keys.length
+        if (remainingKeys === 1) sawPartiallyReclaimedStaleSnapshot = true
+      }
     }
+    expect(sawPartiallyReclaimedStaleSnapshot).toBe(true)
     expect(await hasTestPublicationSnapshot(stale.snapshotId)).toBe(false)
     expect(await hasTestPublicationSnapshot(incomplete.snapshotId)).toBe(true)
     const finalLease = await claimPostPublicationDirtyWork(currentPending, 120)
