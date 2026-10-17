@@ -16,6 +16,8 @@ const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/
 export interface SeedAnchor {
   // Noon UTC on the anchor day: a post never lands more than ~12h off "now" on the day the seed
   // runs, safely inside the `time_range: '1w'` window the heavy feed scenarios filter on.
+  // seed-clock.mts pins the scenario callbacks' `Date` to this instant, so time-range cutoffs
+  // do not drift with the run's time of day.
   dayAnchorMs: number
   // 8-hex UUIDv7 prefix of mid-month noon UTC in the anchor day's month, so a crawl id never
   // straddles a month boundary the way a per-process clock read would.
