@@ -1,3 +1,4 @@
+import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
@@ -31,7 +32,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'comment-tree-best',
   'comment-tree-new',
   'conversation-messages',
-  'copyright-statement-facts',
+  ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
   'direct-message-inbox-page',
   'community-activity-digest-aggregation',
   'community-activity-digest-recipients',

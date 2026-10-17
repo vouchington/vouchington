@@ -3,7 +3,10 @@ import { buildPageInfo } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'
 import { decryptCopyrightText } from './erased-ciphertext.mts'
-import { getTerritorialInformedWindow } from './territorial-informed-at.mts'
+import {
+  complaintWindowRequests,
+  getTerritorialInformedWindows,
+} from './territorial-informed-at.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import type { TerritorialCopyrightJurisdiction } from './territorial-fields.mts'
 
@@ -99,10 +102,24 @@ export async function selectTerritorialStaffComplaintPages(
       else rowsByDecision.set(row.decision_id, [row])
     }
   }
-  const pages = await Promise.all(
-    cases.map(async (item): Promise<[string, ComplaintPage]> => {
+  const listed = cases.map(item => ({
+    item,
+    decided:
+      item.decisionId && item.decidedAt
+        ? { ...item, decisionId: item.decisionId, decidedAt: item.decidedAt }
+        : null,
+    fetched: (item.decisionId && rowsByDecision.get(item.decisionId)) || [],
+  }))
+  const windowRequests = listed.flatMap(({ decided, fetched }) =>
+    decided
+      ? fetched.slice(0, options.limit).flatMap(row => complaintWindowRequests(decided, row))
+      : [],
+  )
+  const windows = (await getTerritorialInformedWindows(windowRequests, query)).values()
+  return new Map(
+    listed.map(({ item, decided, fetched }): [string, ComplaintPage] => {
       // A decisionless case has no complaints. This is an actual empty collection, not truncation.
-      if (!item.decisionId || !item.decidedAt)
+      if (!decided)
         return [
           item.noticeId,
           {
@@ -110,49 +127,34 @@ export async function selectTerritorialStaffComplaintPages(
             page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
           },
         ]
-      const fetched = rowsByDecision.get(item.decisionId) ?? []
+      const caseWindows = fetched
+        .slice(0, options.limit)
+        .map(row =>
+          row.filed_by === 'reviewer'
+            ? { informed_at: null, window_ends_at: null }
+            : windows.next().value!,
+        )
       return [
         item.noticeId,
-        await toComplaintPage(
-          { ...item, decisionId: item.decisionId, decidedAt: item.decidedAt },
-          { fetched, limit: options.limit, query },
-        ),
+        toComplaintPage(decided, { fetched, limit: options.limit, windows: caseWindows }),
       ]
     }),
   )
-  return new Map(pages)
 }
 
-async function toComplaintPage(
-  {
-    noticeId,
-    decisionId,
-    decidedAt,
-    jurisdiction,
-  }: ComplaintCase & { decisionId: string; decidedAt: Date },
-  input: { fetched: ComplaintRow[]; limit: number; query: TransactionQuery },
-): Promise<ComplaintPage> {
+function toComplaintPage(
+  { noticeId, decisionId, jurisdiction }: ComplaintCase & { decisionId: string },
+  input: {
+    fetched: ComplaintRow[]
+    limit: number
+    windows: Awaited<ReturnType<typeof getTerritorialInformedWindows>>
+  },
+): ComplaintPage {
   const rows = input.fetched.slice(0, input.limit)
   const labels = territorialLabels(jurisdiction)
-  const windows = await Promise.all(
-    rows.map(row =>
-      row.filed_by === 'reviewer'
-        ? Promise.resolve({ informed_at: null, window_ends_at: null })
-        : getTerritorialInformedWindow(
-            {
-              noticeId,
-              decidedAt,
-              notifier: row.filed_by === 'notifier',
-              posterUserId:
-                row.filed_by === 'poster' ? (row.submitted_by_id ?? undefined) : undefined,
-            },
-            input.query,
-          ),
-    ),
-  )
   const result: CopyrightTerritorialStaffComplaint[] = []
   for (const [index, row] of rows.entries()) {
-    const window = windows[index]!
+    const window = input.windows[index]!
     result.push({
       id: row.id,
       filed_by: row.filed_by,

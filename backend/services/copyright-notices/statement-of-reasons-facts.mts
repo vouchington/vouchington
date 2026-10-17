@@ -12,7 +12,7 @@ import { decryptCopyrightText } from './erased-ciphertext.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import { territorialDecisionIsLiveSql } from './territorial-redress-sql.mts'
 
-type CopyrightStatementFacts = Pick<
+export type CopyrightStatementFacts = Pick<
   CopyrightStatementInput,
   | 'noticeId'
   | 'receivedAt'
@@ -25,12 +25,27 @@ type CopyrightStatementFacts = Pick<
   | 'explanation'
 >
 
+export type CopyrightStatementAuthority = {
+  restrictionId?: string
+  assessmentId?: string
+  targetId?: string
+}
+
 /** Only public case facts enter a statement. Durable screening provenance survives moderator erasure. */
 export async function selectCopyrightStatementFacts(
   noticeId: string,
   transaction: TransactionQuery,
-  authority: { restrictionId?: string; assessmentId?: string; targetId?: string } = {},
+  authority: CopyrightStatementAuthority = {},
 ): Promise<CopyrightStatementFacts> {
+  return (await selectCopyrightStatementFactsBatch(noticeId, transaction, [authority]))[0]!
+}
+
+/** One statement reads the facts for every authority of one notice; results align with `authorities`. */
+export async function selectCopyrightStatementFactsBatch(
+  noticeId: string,
+  transaction: TransactionQuery,
+  authorities: readonly CopyrightStatementAuthority[],
+): Promise<CopyrightStatementFacts[]> {
   const { rows } = await transaction<{
     id: string
     received_at: Date
@@ -46,17 +61,17 @@ export async function selectCopyrightStatementFacts(
     SELECT notice.id, notice.received_at, notice.jurisdiction, notice.legal_basis,
       notice.claimant_user_id IS NOT NULL AS claimant_has_account,
       ARRAY(SELECT target.hosted_use_url FROM copyright_notice_targets target
-        WHERE target.copyright_notice_id = notice.id AND target.id = ${authority.targetId ?? null}
+        WHERE target.copyright_notice_id = notice.id AND target.id = authority.target_id
           AND `
       .append(copyrightPlacementPublicVisibleSql())
       .append(sql` ORDER BY target.id) AS target_urls,
       (`)
       .append(
-        sql`EXISTS (SELECT 1 FROM copyright_notice_submission_assessments assessment WHERE assessment.id = ${authority.assessmentId ?? null} AND (`,
+        sql`EXISTS (SELECT 1 FROM copyright_notice_submission_assessments assessment WHERE assessment.id = authority.assessment_id AND (`,
       )
       .append(automatedAssessmentSql())
       .append(
-        sql`)) OR EXISTS (SELECT 1 FROM copyright_restrictions restriction WHERE restriction.id = ${authority.restrictionId ?? null} AND (`,
+        sql`)) OR EXISTS (SELECT 1 FROM copyright_restrictions restriction WHERE restriction.id = authority.restriction_id AND (`,
       )
       .append(automaticRestrictionSql())
       .append('))) AS automated_decision, ')
@@ -64,7 +79,12 @@ export async function selectCopyrightStatementFacts(
       .append(
         sql` AS ai_guidance,
       territorial_decision.public_explanation_ciphertext
-    FROM copyright_notices notice
+    FROM unnest(
+      ${authorities.map(authority => authority.targetId ?? null)}::uuid[],
+      ${authorities.map(authority => authority.restrictionId ?? null)}::uuid[],
+      ${authorities.map(authority => authority.assessmentId ?? null)}::uuid[]
+    ) WITH ORDINALITY AS authority(target_id, restriction_id, assessment_id, position)
+    JOIN copyright_notices notice ON notice.id = ${noticeId}
     LEFT JOIN LATERAL (
       SELECT decision.public_explanation_ciphertext
       FROM copyright_territorial_decisions decision
@@ -72,23 +92,21 @@ export async function selectCopyrightStatementFacts(
         AND decision.jurisdiction = notice.jurisdiction
         AND `.append(territorialDecisionIsLiveSql()).append(sql`
         AND (
-          (${authority.assessmentId ?? null}::uuid IS NULL
-            AND ${authority.restrictionId ?? null}::uuid IS NULL)
+          (authority.assessment_id IS NULL AND authority.restriction_id IS NULL)
           OR decision.copyright_notice_submission_assessment_id = COALESCE(
-            ${authority.assessmentId ?? null}::uuid,
+            authority.assessment_id,
             (SELECT restriction.authorizing_assessment_id FROM copyright_restrictions restriction
-              WHERE restriction.id = ${authority.restrictionId ?? null}::uuid)
+              WHERE restriction.id = authority.restriction_id)
           )
         )
       LIMIT 1
     ) territorial_decision ON true
-    WHERE notice.id = ${noticeId}
+    ORDER BY authority.position
   `),
       ),
   )
-  const row = rows[0]
-  assert(row, 404, 'Copyright notice not found')
-  return {
+  assert(rows.length === authorities.length, 404, 'Copyright notice not found')
+  return rows.map(row => ({
     noticeId: row.id,
     receivedAt: row.received_at,
     jurisdiction: row.jurisdiction,
@@ -105,5 +123,5 @@ export async function selectCopyrightStatementFacts(
             `${territorialLabels(row.jurisdiction).publicExplanationPurpose}:${noticeId}`,
           ) ?? undefined)
         : undefined,
-  }
+  }))
 }

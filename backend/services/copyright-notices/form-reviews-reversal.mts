@@ -2,7 +2,8 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { enqueueBulkApplyCopyrightActions } from '@queues/notifications/enqueues'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
-import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outcome-notices.mts'
+import { buildCopyrightReviewOutcomeDeliveries } from './review-outcome-notices.mts'
+import { createCopyrightStatementDeliveriesInTransaction } from './statement-delivery.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
 
 export async function reverseAutomatedCopyrightRestrictions(
@@ -77,12 +78,19 @@ export async function reverseAutomatedCopyrightRestrictionsInTransaction(
       restriction.id,
       transaction,
     )
-    // oxlint-disable-next-line no-await-in-loop -- each newly reviewed restriction requires durable notices.
-    await createCopyrightReviewOutcomeNoticesInTransaction(
-      { noticeId, restrictionId: restriction.id, action: 'reverse' },
-      transaction,
-    )
     intentIds.push(intent.id)
   }
+  // Each newly reviewed restriction requires durable notices, created together.
+  await createCopyrightStatementDeliveriesInTransaction(
+    await buildCopyrightReviewOutcomeDeliveries(
+      rows.map(restriction => ({
+        noticeId,
+        restrictionId: restriction.id,
+        action: 'reverse' as const,
+      })),
+      transaction,
+    ),
+    transaction,
+  )
   return { restrictionIds: rows.map(restriction => restriction.id), intentIds }
 }

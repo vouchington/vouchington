@@ -23,6 +23,7 @@ import { runMembershipRefundScenarios } from './run-scenarios/memberships.mts'
 import { runRemoteFollowerScenarios } from './run-scenarios/remote-followers.mts'
 import { runReviewSuccessionScenarios } from './run-scenarios/review-successions.mts'
 import { runClassifierHumanVoteComparisonScenarios } from './run-scenarios/classifier-human-vote-comparison.mts'
+import { runCopyrightDeliveryBatchScenarios } from './run-scenarios/copyright-delivery-batches.mts'
 import { runCopyrightStatementFactsScenarios } from './run-scenarios/copyright-statement-facts.mts'
 import { runTopicImportAttemptScenarios } from './run-scenarios/topic-import-attempts.mts'
 import { runSearchAndFacetScenarios } from './run-scenarios/search-and-facets.mts'
@@ -61,6 +62,7 @@ async function main() {
     await runReviewSuccessionScenarios()
     await runClassifierHumanVoteComparisonScenarios()
     await runCopyrightStatementFactsScenarios()
+    await runCopyrightDeliveryBatchScenarios()
     await runEmbeddingReconciliationScenarios()
     await seedMediaDeliveryReplay()
     await runMediaDeliveryReplayScenarios()
