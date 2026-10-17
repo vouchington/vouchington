@@ -42349,12 +42349,12 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "facebook_account_id": {
@@ -42365,7 +42365,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "facebook_friend_id": {
@@ -42376,7 +42376,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         },
         "friend_facebook_account_id": {
@@ -42387,7 +42387,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the observed friend relation.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
           "type": "uuid"
         },
         "last_observed_at": {
@@ -42398,7 +42409,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -42409,7 +42420,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         }
       },
@@ -42436,10 +42447,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "facebook_friends_pkey": {
+        "facebook_friends_facebook_account_id_facebook_friend_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX facebook_friends_pkey ON public.facebook_friends USING btree (facebook_account_id, facebook_friend_id)",
+          "definition": "CREATE UNIQUE INDEX facebook_friends_facebook_account_id_facebook_friend_id_key ON public.facebook_friends USING btree (facebook_account_id, facebook_friend_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -42455,6 +42466,26 @@
               "expression": "facebook_friend_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "facebook_friends_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX facebook_friends_pkey ON public.facebook_friends USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -42507,14 +42538,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["facebook_account_id", "facebook_friend_id"],
-        "definition": "PRIMARY KEY (facebook_account_id, facebook_friend_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_facebook_friends_updated_at": "CREATE TRIGGER trigger_facebook_friends_updated_at BEFORE UPDATE ON public.facebook_friends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "facebook_friends_facebook_account_id_facebook_friend_id_key": {
+          "columns": ["facebook_account_id", "facebook_friend_id"],
+          "definition": "UNIQUE (facebook_account_id, facebook_friend_id)"
+        }
+      }
     },
     "fediverse_instance_integration_changes": {
       "checkConstraints": {
