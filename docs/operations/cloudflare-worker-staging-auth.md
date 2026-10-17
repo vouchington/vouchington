@@ -49,6 +49,7 @@ signature, bearer, OAuth-state, or public-discovery boundary remains in force.
 | `/auth/callback/facebook/broker`                         | `GET`         | Facebook OAuth      | OAuth state                          |
 | `/auth/callback/x/broker`                                | `GET`         | X OAuth             | OAuth state                          |
 | `/auth/callback/github/broker`                           | `GET`         | GitHub OAuth        | OAuth state                          |
+| `/auth/callback/google/broker`                           | `GET`         | Google OAuth        | OAuth state                          |
 | `/auth/callback/linkedin/broker`                         | `GET`         | LinkedIn OAuth      | OAuth state                          |
 | `/auth/callback/microsoft/broker`                        | `GET`         | Microsoft OAuth     | OAuth state                          |
 | `/register`                                              | `POST`        | OAuth clients       | DCR metadata validation              |
