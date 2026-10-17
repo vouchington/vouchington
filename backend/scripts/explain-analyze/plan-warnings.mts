@@ -46,11 +46,11 @@ export function functionCallReports(
   })
 }
 
-function parentRelationName(relationName: string): string {
+export function parentRelationName(relationName: string): string {
   return relationName.replace(/__(?:default|p_\w+)$/, '')
 }
 
-function isLargeTable(relationName: string): boolean {
+export function isLargeTable(relationName: string): boolean {
   return LARGE_TABLES.has(parentRelationName(relationName))
 }
 

@@ -1,6 +1,7 @@
 import type { ExplainResult } from '@data-stores/psql'
 import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
 import { BASELINE_FINGERPRINTS } from './seq-scan-baseline-data.mts'
+import { isSeqScanNearTie } from './seq-scan-ties.mts'
 
 export type SeqScanBaseline = Readonly<Record<string, readonly string[]>>
 
@@ -62,7 +63,12 @@ export function assertNoNewSeqScans(
       .filter(([identity]) => isCapturedCompareIdentity(identity))
       .flatMap(([identity, relations]) => relations.map(relation => `${identity}:${relation}`)),
   )
-  const added = [...stable].filter(fingerprint => !allowed.has(fingerprint)).toSorted()
+  // A scan whose statement priced within SEQ_SCAN_TIE_RATIO of its no-seq-scan plan is a coin
+  // flip across databases, not a missing index; it is advisory until a clear margin appears.
+  const nearTies = getSeqScanNearTies(firstResults, repeatedResults)
+  const added = [...stable]
+    .filter(fingerprint => !allowed.has(fingerprint) && !nearTies.includes(fingerprint))
+    .toSorted()
   const stale = [
     ...[...allowed].filter(
       fingerprint => !gatedFirst.has(fingerprint) && !gatedRepeated.has(fingerprint),
@@ -78,6 +84,14 @@ export function assertNoNewSeqScans(
       `Large-table sequential scan baseline changed: new [${added.join(', ')}]; stale [${stale.join(', ')}]`,
     )
   return { onlyFirst, onlyRepeated }
+}
+
+export function getSeqScanNearTies(
+  firstResults: readonly ExplainResult[],
+  repeatedResults: readonly ExplainResult[],
+): string[] {
+  const tied = [...firstResults, ...repeatedResults].filter(isSeqScanNearTie)
+  return [...scanFingerprints(tied)].toSorted()
 }
 
 function scanFingerprints(results: readonly ExplainResult[]): Set<string> {

@@ -9,7 +9,8 @@ import {
 import { assertRequiredPlanShape } from './plan-gates.mts'
 import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 import { getScenarioContract } from './plan-expectations.mts'
-import { getLargeTableRelations } from './plan-warnings.mts'
+import { getLargeTableRelations, getLargeTableSeqScanRelations } from './plan-warnings.mts'
+import { costWithoutSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
 type Capture = {
   name: string
@@ -31,6 +32,20 @@ const seedPlanDiagnosticScenarios = new Set([
 
 export function resetRepeatedResults(): void {
   repeatedResults.length = 0
+}
+
+// The paired captures share one database, so they cannot show that a sequential scan is a coin
+// flip across databases. Price the same statement without sequential scans, plan only, so the
+// gate can tell a near-tie from a missing index (see seq-scan-ties.mts).
+async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResult) {
+  const scannedRelations = getLargeTableSeqScanRelations(result)
+  if (scannedRelations.length === 0) return
+  const probe = await explainAnalyze(input.name, input.text, input.values, {
+    localSettings: { ...input.localSettings, enable_seqscan: 'off' },
+    planCacheMode: input.planCacheMode,
+    planOnly: true,
+  })
+  result.no_seq_scan_total_cost = costWithoutSeqScan(probe.plan, scannedRelations)
 }
 
 async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> {
@@ -75,6 +90,7 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
   }
   result.scenario_id = input.scenarioId
   result.capture_index = input.captureIndex
+  await probeSeqScanAlternative(input, result)
   return result
 }
 

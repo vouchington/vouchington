@@ -129,6 +129,8 @@ export async function runAnalyze(): Promise<void> {
     '/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic", "rss_feeds", "rss_feed_item_categories", "topics", "post_review_topic_ratings", "post_data_point_topics"',
   )
   const relationNames = [
+    // Heap size and `id` correlation decide the posts window-scan plans; CI logs never carried them.
+    'posts__default',
     'relation__post__category__topic',
     'relation__post__category__topic__default',
     'rss_feeds',

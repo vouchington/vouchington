@@ -6,8 +6,14 @@ import { connectWithRetry } from './connect-with-retry.mts'
 import { readPool } from './setup.mts'
 import { LEADING_QUERY_ANNOTATION_PATTERN } from './prepared-statement-name.mts'
 import { buildExplainPreparedStatementText, buildPreparedArgumentSql } from './explain-prepared.mts'
+import {
+  functionCallsSince,
+  readTransactionFunctionCalls,
+  type FunctionCall,
+} from './explain-function-calls.mts'
 
 export { buildExplainPreparedStatementText } from './explain-prepared.mts'
+export { functionCallsSince, type FunctionCall } from './explain-function-calls.mts'
 export {
   clearCapturedQueries,
   disableQueryCapture,
@@ -29,53 +35,6 @@ export interface ExplainResult {
   capture_index?: number
   function_calls?: FunctionCall[]
   function_calls_serial?: boolean
-}
-
-export interface FunctionCall {
-  funcname: string
-  calls: number
-  total_time: number
-  self_time: number
-}
-
-interface TrackedFunctionRow {
-  funcid: string
-  funcname: string
-  calls: string
-  total_time: number
-  self_time: number
-}
-
-export function functionCallsSince(
-  before: readonly TrackedFunctionRow[],
-  after: readonly TrackedFunctionRow[],
-): FunctionCall[] {
-  const baseline = new Map(before.map(row => [row.funcid, row]))
-  return after
-    .flatMap(row => {
-      const previous = baseline.get(row.funcid)
-      const calls = Number(row.calls) - Number(previous?.calls ?? 0)
-      if (calls <= 0) return []
-      return [
-        {
-          funcname: row.funcname,
-          calls,
-          total_time: row.total_time - (previous?.total_time ?? 0),
-          self_time: row.self_time - (previous?.self_time ?? 0),
-        },
-      ]
-    })
-    .toSorted((a, b) => b.calls - a.calls || a.funcname.localeCompare(b.funcname))
-}
-
-async function readTransactionFunctionCalls(
-  client: Awaited<ReturnType<typeof connectWithRetry>>,
-): Promise<TrackedFunctionRow[]> {
-  const { rows } = await client.query<TrackedFunctionRow>(`/* explainAnalyzeFunctionCalls */
-    SELECT funcid::text AS funcid, funcname::text AS funcname, calls,
-           total_time, self_time
-    FROM pg_stat_xact_user_functions`)
-  return rows
 }
 
 export type ExplainPlanCacheMode = 'auto' | 'force_custom_plan' | 'force_generic_plan'
@@ -110,6 +69,7 @@ export async function explainAnalyze(
     jit?: 'on' | 'off'
     planCacheMode?: ExplainPlanCacheMode
     localSettings?: Readonly<Record<string, string>>
+    planOnly?: boolean // EXPLAIN without executing; callers read only plan costs
   } = {},
 ): Promise<ExplainResult> {
   let text: string
@@ -152,7 +112,11 @@ export async function explainAnalyze(
     await client.query(`/* explainAnalyze */ ${prepareText}`)
     prepared = true
     const argumentSql = await buildPreparedArgumentSql(client, preparedStatementName, values ?? [])
-    const explainText = buildExplainPreparedStatementText(preparedStatementName, argumentSql)
+    const explainText = buildExplainPreparedStatementText(
+      preparedStatementName,
+      argumentSql,
+      options.planOnly,
+    )
     const beforeFunctions = await readTransactionFunctionCalls(client)
     const queryResult = await client.query(explainText)
     functionCalls = functionCallsSince(beforeFunctions, await readTransactionFunctionCalls(client))

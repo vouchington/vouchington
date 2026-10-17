@@ -317,6 +317,18 @@ entries, while default `auto` captures keep sequential scans advisory because th
 from CI compare-mode captures. One-pass scans stay advisory, as do estimate-mismatch, append,
 planning-ratio, and buffer warnings.
 
+The two captures share one database, so they cannot show that a scan is a coin flip across
+databases. In run 38992808434 the same one-week `posts` window cost 10676 as a sequential scan in
+one CI database and chose a bitmap scan over a 12208 sequential scan in another: the same table's
+scan cost moved 14%, and `post-search-hot` flipped. Each capture that scans a large table is
+therefore also planned, without executing, under `enable_seqscan = off`, and the cost is saved as
+`no_seq_scan_total_cost` when that plan really avoids the scan. A scan is a near-tie when avoiding
+it adds at most a quarter (`SEQ_SCAN_TIE_RATIO`) of the scan's own cost; the gate does not fail a
+near-tie that is missing from the baseline and `analyze.mts` lists it as advisory. A missing index
+keeps the scan in the probe plan, and a real regression costs far more than a quarter, so both
+still fail. Baseline entries are unchanged: a near-tie entry can still go stale when its scan flips
+to an index in both captures.
+
 After bulk seeding, fixture maintenance vacuums and analyzes the six seeded relations whose
 plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,
 topics, post review topic ratings, and post data-point topics. This settles their visibility maps
