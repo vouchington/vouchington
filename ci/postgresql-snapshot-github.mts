@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { promisify } from 'node:util'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 import {
   assertCurrentPullRequest,
   postgresImageFromWorkflow,
@@ -13,7 +14,7 @@ export async function githubGet<T>(path: string): Promise<T> {
   const token = process.env.GH_TOKEN
   if (!token) throw new Error('GH_TOKEN is required')
   const { stdout } = await execFile('gh', ['api', path], {
-    env: { ...process.env, GH_TOKEN: token },
+    env: { ...ghSpawnEnv(), GH_TOKEN: token },
     maxBuffer: 8_000_000,
   })
   return JSON.parse(stdout) as T

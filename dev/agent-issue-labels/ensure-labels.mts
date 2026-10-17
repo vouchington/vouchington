@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
@@ -77,16 +78,11 @@ if (import.meta.main) {
   }
 
   const labelEndpointBase = repo ? `repos/${repo}/labels` : 'repos/{owner}/{repo}/labels'
-  const { stdout } = await execFileAsync('gh', [
-    'api',
-    '--paginate',
-    '--slurp',
-    '-X',
-    'GET',
-    labelEndpointBase,
-    '-F',
-    'per_page=100',
-  ])
+  const { stdout } = await execFileAsync(
+    'gh',
+    ['api', '--paginate', '--slurp', '-X', 'GET', labelEndpointBase, '-F', 'per_page=100'],
+    { env: ghSpawnEnv() },
+  )
   const existing = new Set(
     (JSON.parse(stdout) as Array<Array<{ name: string }>>).flat().map(({ name }) => name),
   )

@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 
 import type {
   DeploymentBranchRule,
@@ -8,13 +9,18 @@ import type { VerifyWorkflowSecretsDependencies } from './verify-workflow-secret
 
 function execFileAsync(command: string, args: string[]): Promise<{ stdout: string }> {
   return new Promise((resolvePromise, rejectPromise) => {
-    execFile(command, args, { encoding: 'utf8', maxBuffer: 1024 * 1024 }, (error, stdout) => {
-      if (error) {
-        rejectPromise(error instanceof Error ? error : new Error(error.message, { cause: error }))
-        return
-      }
-      resolvePromise({ stdout })
-    })
+    execFile(
+      command,
+      args,
+      { encoding: 'utf8', env: ghSpawnEnv(), maxBuffer: 1024 * 1024 },
+      (error, stdout) => {
+        if (error) {
+          rejectPromise(error instanceof Error ? error : new Error(error.message, { cause: error }))
+          return
+        }
+        resolvePromise({ stdout })
+      },
+    )
   })
 }
 

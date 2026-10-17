@@ -168,7 +168,7 @@
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.4",
-    "vouchington-tooling": "^0.44.0",
+    "vouchington-tooling": "^0.46.0",
     "yaml": "^2.9.1"
   },
   "engines": {

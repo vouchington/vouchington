@@ -1,5 +1,6 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 
@@ -103,7 +104,7 @@ async function main(): Promise<void> {
     readManifest: sessionDir => readFile(join(sessionDir, 'manifest.json'), 'utf8'),
     readBody: path => readFile(path, 'utf8'),
     runGh: async ghArgs => {
-      const { stdout, stderr } = await execFileAsync('gh', ghArgs)
+      const { stdout, stderr } = await execFileAsync('gh', ghArgs, { env: ghSpawnEnv() })
       if (stderr.length > 0) process.stderr.write(stderr)
       return stdout
     },

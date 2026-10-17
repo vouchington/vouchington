@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { ghSpawnEnv } from 'vouchington-tooling/gh-cli'
 
 import {
   auditCiJobRuntime as auditPublished,
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
     JSON.parse(
       execFileSync('gh', ['api', request.endpoint, '--jq', request.jq], {
         encoding: 'utf8',
+        env: ghSpawnEnv(),
         maxBuffer: 16 * 1024 * 1024,
       }),
     ) as unknown
