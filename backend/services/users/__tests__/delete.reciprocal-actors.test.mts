@@ -4,8 +4,9 @@ import {
   getTestUserDeletedById,
   holdTestRetainedUserIdentityLocks,
   listTestUserDeletionRequestActorIds,
-  waitForTestUserDeletionBackendsBlockedBehind,
+  lockTestRetainedUserIdentityKeyShareNowait,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
+import { TestUserDeletionWriterAborted } from '@voucha/test-helpers/entities/user-deletion'
 import { deleteUser } from '../delete.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 
@@ -15,15 +16,28 @@ describe('deleteUser reciprocal administrator deletions', () => {
       createTestUser({ administrator: true }),
       createTestUser({ administrator: true }),
     ])
-    // Both deletions stall at the retained-identity foreign-key check that follows their `users`
-    // row locks, so the formerly cyclic schedule is forced rather than left to timing.
+    // Hold both retained identities, observe the KEY SHARE conflict, then abort and join that
+    // rollback before awaiting the deletions so cleanup cannot race the open lock.
     const gate = await holdTestRetainedUserIdentityLocks([first.id, second.id])
     const settled = Promise.allSettled([deleteUser(first, second), deleteUser(second, first)])
+    const aborted = gate.completed.then(
+      () => {
+        throw new Error('Expected the retained-identity lock to abort before cleanup')
+      },
+      (err: unknown) => {
+        if (!(err instanceof TestUserDeletionWriterAborted)) throw err
+      },
+    )
     try {
-      await waitForTestUserDeletionBackendsBlockedBehind(gate.holderProcessId, 2)
+      await expect(lockTestRetainedUserIdentityKeyShareNowait(first.id)).rejects.toMatchObject({
+        code: '55P03',
+      })
+      await expect(lockTestRetainedUserIdentityKeyShareNowait(second.id)).rejects.toMatchObject({
+        code: '55P03',
+      })
     } finally {
-      gate.release()
-      await gate.completed
+      gate.abort()
+      await aborted
     }
     const outcomes = await settled
 

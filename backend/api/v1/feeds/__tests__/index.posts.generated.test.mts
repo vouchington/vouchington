@@ -8,7 +8,7 @@ import {
   createTestPost,
   createTestTopic,
   relatePostToTopic,
-  waitForFollowTopicsFeedPost,
+  readCommittedFollowTopicsFeedPost,
 } from '@voucha/test-helpers'
 
 import {
@@ -125,7 +125,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
 
     // Relate post to topic
     await relatePostToTopic(postCreator, post, topic)
-    await waitForFollowTopicsFeedPost(user, post.id, getPostFeedIds)
+    await readCommittedFollowTopicsFeedPost(user, post.id, getPostFeedIds)
 
     const request = createRequest()
     await request.authenticateAs(user)
@@ -147,7 +147,7 @@ describe('GET /api/v1/feeds/posts/:feed_type', () => {
 
     const post = await createTestPost({ user: postCreator })
     await relatePostToTopic(postCreator, post, topic)
-    await waitForFollowTopicsFeedPost(user, post.id, getPostFeedIds)
+    await readCommittedFollowTopicsFeedPost(user, post.id, getPostFeedIds)
 
     const request = createRequest()
     await request.authenticateAs(user)

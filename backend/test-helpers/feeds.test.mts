@@ -1,34 +1,47 @@
 import { describe, expect, it, vi } from 'vitest'
-import { waitForFollowTopicsFeedPost } from './feeds.mts'
+import { readCommittedFollowTopicsFeedPost } from './feeds.mts'
 
-const user = { id: 'test-user' } as Parameters<typeof waitForFollowTopicsFeedPost>[0]
-type ReadFollowTopicsFeed = Parameters<typeof waitForFollowTopicsFeedPost>[2]
+const user = { id: 'test-user' } as Parameters<typeof readCommittedFollowTopicsFeedPost>[0]
+type ReadFollowTopicsFeed = Parameters<typeof readCommittedFollowTopicsFeedPost>[2]
 
-describe('waitForFollowTopicsFeedPost', () => {
-  it('polls until the requested post appears', async () => {
+describe('readCommittedFollowTopicsFeedPost', () => {
+  it('returns when the single read includes the committed post', async () => {
     const readFollowTopicsFeed = vi
       .fn<ReadFollowTopicsFeed>()
-      .mockResolvedValueOnce({ results: [] })
       .mockResolvedValueOnce({ results: [{ entity_id: 'post-id' }] })
 
-    await waitForFollowTopicsFeedPost(user, 'post-id', readFollowTopicsFeed, {
-      intervalMs: 0,
-    })
+    await readCommittedFollowTopicsFeedPost(user, 'post-id', readFollowTopicsFeed)
 
-    expect(readFollowTopicsFeed).toHaveBeenCalledTimes(2)
-    expect(readFollowTopicsFeed).toHaveBeenLastCalledWith(user, {
+    expect(readFollowTopicsFeed).toHaveBeenCalledTimes(1)
+    expect(readFollowTopicsFeed).toHaveBeenCalledWith(user, {
       feed_type: 'follow_topics',
       limit: 100,
     })
   })
 
-  it('fails with the missing post id after the timeout', async () => {
-    const readFollowTopicsFeed = vi.fn<ReadFollowTopicsFeed>().mockResolvedValue({ results: [] })
+  it('fails with the missing post id without reading again', async () => {
+    const readFollowTopicsFeed = vi
+      .fn<ReadFollowTopicsFeed>()
+      .mockResolvedValueOnce({ results: [] })
+      .mockResolvedValueOnce({ results: [{ entity_id: 'missing-post' }] })
 
     await expect(
-      waitForFollowTopicsFeedPost(user, 'missing-post', readFollowTopicsFeed, {
-        timeoutMs: 0,
-      }),
-    ).rejects.toThrow('Timed out waiting for post missing-post in the follow-topics feed')
+      readCommittedFollowTopicsFeedPost(user, 'missing-post', readFollowTopicsFeed),
+    ).rejects.toThrow('Post missing-post was not in the follow-topics feed after commit')
+    expect(readFollowTopicsFeed).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes the requested limit on that single read', async () => {
+    const readFollowTopicsFeed = vi
+      .fn<ReadFollowTopicsFeed>()
+      .mockResolvedValueOnce({ results: [{ entity_id: 'post-id' }] })
+
+    await readCommittedFollowTopicsFeedPost(user, 'post-id', readFollowTopicsFeed, { limit: 5 })
+
+    expect(readFollowTopicsFeed).toHaveBeenCalledTimes(1)
+    expect(readFollowTopicsFeed).toHaveBeenCalledWith(user, {
+      feed_type: 'follow_topics',
+      limit: 5,
+    })
   })
 })

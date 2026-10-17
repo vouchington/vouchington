@@ -1,10 +1,15 @@
-import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-import { pollUntilNotNull } from '../polling.mts'
+import { beginTransaction, write, type QueryInput, type TransactionQuery } from '@data-stores/psql'
+import { createUserDeletionRequest } from '@services/user-deletions'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 import { startPausedTestUserDeletionWriter } from './user-deletion.mts'
 
-type HeldTestLock = { completed: Promise<void>; holderProcessId: number; release(): void }
+type HeldTestLock = {
+  abort(): void
+  completed: Promise<void>
+  holderProcessId: number
+  release(): void
+}
 
 async function holdTestLock(
   lockRows: (query: TransactionQuery) => Promise<void>,
@@ -62,39 +67,59 @@ export async function isTestUserRowLocked(
   }
 }
 
-/**
- * Waits until `expected` account-deletion statements are blocked by `holderProcessId`, directly or
- * through one intermediate deletion transaction that the holder blocks.
- */
-export async function waitForTestUserDeletionBackendsBlockedBehind(
-  holderProcessId: number,
-  expected: number,
-): Promise<void> {
-  await pollUntilNotNull(
-    async () => {
-      const { rows } = await write<{ count: number }>(sql`
-        /* waitForTestUserDeletionBackendsBlockedBehind */
-        SELECT COUNT(*)::int AS count
-        FROM pg_stat_activity activity
-        WHERE activity.pid <> pg_backend_pid()
-          AND activity.state = 'active'
-          AND activity.wait_event_type = 'Lock'
-          AND activity.query LIKE ANY (ARRAY['%/* deleteUser%', '%/* createUserDeletionRequest%'])
-          AND (
-            ${holderProcessId}::int = ANY(pg_blocking_pids(activity.pid))
-            OR EXISTS (
-              SELECT 1
-              FROM unnest(pg_blocking_pids(activity.pid)) AS blocker(pid)
-              WHERE ${holderProcessId}::int = ANY(pg_blocking_pids(blocker.pid))
-            )
-          )
-      `)
-      return (rows[0]?.count ?? 0) >= expected ? true : null
-    },
-    10_000,
-    10,
-    `${expected} account deletions blocked behind the test lock`,
+/** Takes the deletion request's retained-identity key share and fails immediately when blocked. */
+export async function lockTestRetainedUserIdentityKeyShareNowait(userId: string): Promise<void> {
+  await using query = await beginTransaction()
+  await query(sql`/* lockTestRetainedUserIdentityKeyShareNowait */
+    SELECT id FROM retained_user_identities WHERE id = ${userId} FOR KEY SHARE NOWAIT
+  `)
+  await query.commit()
+}
+
+function isSqlStatement(statement: QueryInput): statement is SQLStatement {
+  return typeof statement === 'object' && Array.isArray(statement.strings)
+}
+
+function rewriteRetainedIdentityKeyShare(statement: SQLStatement): void {
+  const index = statement.strings.findIndex(part => part.includes('FOR KEY SHARE OF identity'))
+  const fragment = statement.strings[index]
+  if (index < 0 || fragment === undefined) {
+    throw new Error('Deletion request validation no longer takes FOR KEY SHARE OF identity')
+  }
+  statement.strings[index] = fragment.replace(
+    'FOR KEY SHARE OF identity',
+    'FOR KEY SHARE OF identity NOWAIT',
   )
+}
+
+/**
+ * Runs the real deletion-request producer. Its retained-identity `KEY SHARE` is `NOWAIT`, so a
+ * conflicting holder fails with `55P03` instead of waiting.
+ */
+export async function createTestUserDeletionRequestWithoutWaiting(
+  userId: string,
+  requestedById: string,
+): Promise<void> {
+  await using query = await beginTransaction()
+  let rewroteKeyShare = false
+  const producer = Object.assign(
+    async (statement: QueryInput, values?: ReadonlyArray<unknown>) => {
+      if (
+        isSqlStatement(statement) &&
+        statement.text.includes('/* createUserDeletionRequest:validateUsers */')
+      ) {
+        rewriteRetainedIdentityKeyShare(statement)
+        rewroteKeyShare = true
+      }
+      return query(statement, values)
+    },
+    { client: query.client },
+  ) as TransactionQuery
+  await createUserDeletionRequest(userId, requestedById, { query: producer })
+  if (!rewroteKeyShare) {
+    throw new Error('Deletion request did not validate the retained identity')
+  }
+  await query.commit()
 }
 
 export async function getTestUserDeletedById(userId: string): Promise<string | null> {
