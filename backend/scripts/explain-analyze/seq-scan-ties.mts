@@ -50,15 +50,10 @@ export function costWithoutSeqScan(
   return planTotalCost(probePlan)
 }
 
-function seqScanCost(plan: unknown, relation?: string): number {
+function seqScanCost(plan: unknown): number {
   return collectNodes(plan).reduce(
     (sum, node) =>
-      node.seqScan &&
-      node.relationName &&
-      isLargeTable(node.relationName) &&
-      (relation === undefined || parentRelationName(node.relationName) === relation)
-        ? sum + node.cost
-        : sum,
+      node.seqScan && node.relationName && isLargeTable(node.relationName) ? sum + node.cost : sum,
     0,
   )
 }
@@ -69,10 +64,16 @@ function seqScanCost(plan: unknown, relation?: string): number {
  * proves nothing about the baselined scan.
  */
 export function forcedSeqScan(probePlan: unknown, relation: string): ForcedSeqScan | undefined {
-  const scanCost = seqScanCost(probePlan, relation)
+  const scans = collectNodes(probePlan).filter(
+    node =>
+      node.seqScan &&
+      node.relationName &&
+      isLargeTable(node.relationName) &&
+      parentRelationName(node.relationName) === relation,
+  )
   const totalCost = planTotalCost(probePlan)
-  return scanCost > 0 && totalCost !== undefined
-    ? { total_cost: totalCost, scan_cost: scanCost }
+  return scans.length > 0 && totalCost !== undefined
+    ? { total_cost: totalCost, scan_cost: scans.reduce((sum, node) => sum + node.cost, 0) }
     : undefined
 }
 
