@@ -3,6 +3,10 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 import { searchTopHostnames } from '@services/urls-hostnames/search-top'
 import { searchBlockedHostnames, searchUrlHostnames } from '@services/urls-hostnames/search'
 
+// This seeded substring matches 111 of the 1,000 hostnames, leaving enough rows for a second page.
+const hostnameTextQuery = 'host-2'
+const hostnameTextPageLimit = 25
+
 export async function runViewDrivenHostnameScenarios(): Promise<void> {
   registerScenarioContract('search-top-hostnames', {
     expectations: [
@@ -36,8 +40,18 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
   })
   let textCursor: string | undefined
   await runAndCapture('url-hostname-search-text', async () => {
-    const page = await searchUrlHostnames({ query: 'seed-host-', limit: 25 })
-    textCursor = page.page_info.end_cursor ?? undefined
+    const page = await searchUrlHostnames({
+      query: hostnameTextQuery,
+      limit: hostnameTextPageLimit,
+    })
+    if (
+      page.results.length !== hostnameTextPageLimit ||
+      !page.page_info.has_next_page ||
+      !page.page_info.end_cursor
+    ) {
+      throw new Error('Seeded hostname text search has no full first page and continuation cursor')
+    }
+    textCursor = page.page_info.end_cursor
   })
   if (!textCursor) throw new Error('Seeded hostname text search has no continuation cursor')
   registerScenarioContract('url-hostname-search-text-cursor', {
@@ -47,7 +61,18 @@ export async function runViewDrivenHostnameScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 2432 },
     ],
   })
-  await runAndCapture('url-hostname-search-text-cursor', () =>
-    searchUrlHostnames({ query: 'seed-host-', limit: 25, after: textCursor }),
-  )
+  await runAndCapture('url-hostname-search-text-cursor', async () => {
+    const page = await searchUrlHostnames({
+      query: hostnameTextQuery,
+      limit: hostnameTextPageLimit,
+      after: textCursor,
+    })
+    if (
+      page.results.length !== hostnameTextPageLimit ||
+      !page.page_info.has_next_page ||
+      !page.page_info.end_cursor
+    ) {
+      throw new Error('Seeded hostname text search cursor has no full continuation page')
+    }
+  })
 }
