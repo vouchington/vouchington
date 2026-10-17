@@ -2,9 +2,11 @@ import { createTestUser, softDeleteUser } from '@voucha/test-helpers/entities/us
 import { toEntityRelationElectionTable } from '@services/elections-votes/entity-relation/target'
 import { describe, expect, it } from 'vitest'
 import { createSameIdElectionRelations } from '@voucha/test-helpers/entities/entity-relation-election-collisions'
-import { insertTestEntityRelationVote } from '@voucha/test-helpers/entities/entity-relation-votes'
+import {
+  insertTestEntityRelationVote,
+  readTestEntityRelationUserVotePage,
+} from '@voucha/test-helpers/entities/entity-relation-votes'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
-import { readEntityRelationUserVotePage } from '@services/elections-votes/entity-relation/read-user-vote-page'
 import { enqueueElectionUpdatePageForUser } from './enqueue-election-updates.mts'
 import type { UserElectionFanOutCursor } from '@queues/vote-aggregation/enqueues/types-vote-weight'
 import { findUsersForElectionVoteReplay } from './relation-election-updates.mts'
@@ -23,7 +25,7 @@ describe('relation election fanout', () => {
       userId: fixture.viewer.id,
       score: 1,
     })
-    const before = await readEntityRelationUserVotePage(
+    const before = await readTestEntityRelationUserVotePage(
       fixture.viewer.id,
       fixture.topicRelated.relationTable,
       { limit: 3 },
@@ -59,7 +61,7 @@ describe('relation election fanout', () => {
     )
     expect(targets).toHaveLength(3)
     await expect(
-      readEntityRelationUserVotePage(fixture.viewer.id, fixture.topicRelated.relationTable, {
+      readTestEntityRelationUserVotePage(fixture.viewer.id, fixture.topicRelated.relationTable, {
         limit: 3,
       }),
     ).resolves.toEqual(before)

@@ -1,3 +1,4 @@
+import { getEntityRelationVoteTableIdentifier } from '@data-stores/psql/config-driven/utils/election-sql-identifiers'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, write } from '@data-stores/psql'
 import {
@@ -44,4 +45,20 @@ export async function getLatestTestEntityRelationVoteScore(options: {
         AND user_id = ${options.userId} ORDER BY id DESC LIMIT 1`),
   )
   return rows[0]?.score
+}
+
+/** Read only this fixture user's bounded ballot page for replay assertions. */
+export async function readTestEntityRelationUserVotePage(
+  userId: string,
+  relationTable: string,
+  pagination: { limit: number; after?: string },
+): Promise<Array<{ id: string; entity_relation_id: string; score: number | null }>> {
+  const statement = sql`/* readTestEntityRelationUserVotePage */
+    SELECT id, entity_relation_id, score FROM `
+  statement.append(getEntityRelationVoteTableIdentifier(relationTable))
+  statement.append(sql` WHERE user_id = ${userId}`)
+  if (pagination.after) statement.append(sql` AND id > ${pagination.after}::uuid`)
+  statement.append(sql` ORDER BY id LIMIT ${pagination.limit}`)
+  return (await read<{ id: string; entity_relation_id: string; score: number | null }>(statement))
+    .rows
 }
