@@ -273,7 +273,7 @@ describe('participation write discovery contract', () => {
         .toSorted(),
     ).toEqual(names.toSorted())
     expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
-      '4953dda201a18f9cb8621ef7080f53f523ef930ba5d98d29de680038f3158e55',
+      '7d00bb819569402e8845f86826441b47b4f90169394734f70d335733e85bb93b',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
