@@ -23,7 +23,7 @@ export async function claimOAuthAuthorizationExchange(
   flowId: string,
 ): Promise<ClaimedOAuthAuthorization | null> {
   const claimId = uuidv7()
-  return withLockedOAuthAuthorization(flowId, async transaction => {
+  return withLockedOAuthAuthorization(flowId, async (transaction: OwnedTransaction) => {
     await prepareOAuthAuthorizationClaim(
       transaction,
       flowId,
@@ -77,24 +77,27 @@ export async function validateOAuthAuthorizationExchangeClaim(
   flowId: string,
   claimId: string,
 ): Promise<void> {
-  const valid = await withLockedOAuthAuthorization(flowId, async transaction => {
-    await settleOAuthAuthorizationExpiry(
-      transaction,
-      flowId,
-      X_MAX_QUEUE_DELAY_SECONDS,
-      STALE_EXCHANGE_CLAIM_SECONDS,
-    )
-    const { rows } = await transaction<{ id: string }>(
-      `/* validateOAuthAuthorizationExchangeClaim */ SELECT id
+  const valid = await withLockedOAuthAuthorization(
+    flowId,
+    async (transaction: OwnedTransaction) => {
+      await settleOAuthAuthorizationExpiry(
+        transaction,
+        flowId,
+        X_MAX_QUEUE_DELAY_SECONDS,
+        STALE_EXCHANGE_CLAIM_SECONDS,
+      )
+      const { rows } = await transaction<{ id: string }>(
+        `/* validateOAuthAuthorizationExchangeClaim */ SELECT id
        FROM view_oauth_authorization_current_records
        WHERE id = $1 AND status = 'exchanging' AND exchange_claim_id = $2
          AND expires_at > clock_timestamp()
          AND exchange_started_at >= clock_timestamp() - make_interval(secs => $3)
          AND (provider <> 'x' OR callback_received_at > clock_timestamp() - make_interval(secs => $4))`,
-      [flowId, claimId, STALE_EXCHANGE_CLAIM_SECONDS, X_MAX_QUEUE_DELAY_SECONDS],
-    )
-    return rows.length === 1
-  })
+        [flowId, claimId, STALE_EXCHANGE_CLAIM_SECONDS, X_MAX_QUEUE_DELAY_SECONDS],
+      )
+      return rows.length === 1
+    },
+  )
   if (!valid) throw new Error('OAuth provider admission lost its current unexpired claim')
 }
 
@@ -102,7 +105,7 @@ export async function rejectExhaustedOAuthAuthorizationExchange(
   flowId: string,
   claimId: string,
 ): Promise<boolean> {
-  return withLockedOAuthAuthorization(flowId, async transaction => {
+  return withLockedOAuthAuthorization(flowId, async (transaction: OwnedTransaction) => {
     const { rowCount } = await transaction(
       `/* rejectExhaustedOAuthAuthorizationExchange */ UPDATE oauth_authorizations
      SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
@@ -124,7 +127,7 @@ export async function releaseOAuthAuthorizationExchangeClaim(
   flowId: string,
   claimId: string,
 ): Promise<void> {
-  await withLockedOAuthAuthorization(flowId, async transaction => {
+  await withLockedOAuthAuthorization(flowId, async (transaction: OwnedTransaction) => {
     await transaction(
       `/* releaseOAuthAuthorizationExchangeClaim */ UPDATE oauth_authorizations
      SET exchange_claim_id = NULL

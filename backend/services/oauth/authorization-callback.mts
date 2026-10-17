@@ -56,12 +56,19 @@ export async function receiveOAuthAuthorizationCallback(options: {
   return result
 
   async function receiveCallbackInTransaction(): Promise<ReceiveOAuthAuthorizationCallbackTransactionResult> {
-    const { rows } = await query(
-      `/* receiveOAuthAuthorizationCallback */ SELECT *
-       FROM view_oauth_authorization_current_records
+    const { rows: selected } = await query<{ id: string }>(
+      `/* receiveOAuthAuthorizationCallback:lock */ SELECT id
+       FROM oauth_authorizations
        WHERE state_hash = $1 AND provider = $2
        FOR UPDATE`,
       [hashOAuthAuthorizationState(options.state), options.provider],
+    )
+    if (!selected[0]) throw createHttpError(400, 'OAuth callback is invalid')
+    // A fresh statement sees any callback committed while this transaction waited for the lock.
+    const { rows } = await query(
+      `/* receiveOAuthAuthorizationCallback */ SELECT *
+       FROM view_oauth_authorization_current_records WHERE id = $1`,
+      [selected[0].id],
     )
     const authorization = rows[0] as OAuthAuthorizationRow | undefined
     if (!authorization) throw createHttpError(400, 'OAuth callback is invalid')
