@@ -32,3 +32,5 @@ page says which layer owns what.
   See [pagination](../pagination.md).
 - **The Rust native module targets the deployed Linux architecture,** and the backend runs
   TypeScript natively through type-stripping, so there is no build step.
+
+Test project names for focused runs are in the [project name reference](../../../development/reference-project-name-reference.md).
