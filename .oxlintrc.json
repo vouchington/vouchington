@@ -46,6 +46,10 @@
     "respectEslintDisableDirectives": true
   },
   "rules": {
+    "no-mistakes/vitest-timeout-cap": [
+      "error",
+      { "defaultMax": 30000, "overrideMax": 30000, "unknownValues": "finding" }
+    ],
     "import/consistent-type-specifier-style": "off", // Policy: Both inline and separate type imports are supported.
     "import/exports-last": "off", // Policy: Exports remain next to the declarations they describe.
     "import/extensions": "off", // Policy: Web extensionless imports and backend .mts imports follow their own resolvers.
@@ -1205,6 +1209,23 @@
     "__filename": "readonly"
   },
   "overrides": [
+    {
+      "files": ["**/vitest.config.*"],
+      "excludeFiles": ["**/*/vitest.config.*"],
+      "rules": {
+        // Imported project configuration is checked by the effective-project SDK admission gate.
+        // Known excessive values and unresolved test/runtime carriers still fail native analysis.
+        "no-mistakes/vitest-timeout-cap": [
+          "error",
+          {
+            "defaultMax": 30000,
+            "overrideMax": 30000,
+            "unknownValues": "finding",
+            "configUnknownValues": "defer-to-runner"
+          }
+        ]
+      }
+    },
     {
       "files": [
         "**/.husky/**/*.{mts,ts,tsx}",

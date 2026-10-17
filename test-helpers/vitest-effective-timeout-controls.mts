@@ -1,16 +1,14 @@
 import assert from 'node:assert/strict'
-import { access, cp, mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { access, cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { mergeConfig, type ViteUserConfig } from 'vitest/config'
 import { createVitest, type CliOptions } from 'vitest/node'
-import { effectiveTimeoutCap } from './vitest-effective-timeout-cap.mts'
 
 type Profile = {
   name: string
   admitted: boolean
   options?: CliOptions
-  overrides?: ViteUserConfig
+  configHookTimeout?: number
   child?: boolean
   withoutGuard?: boolean
 }
@@ -22,8 +20,8 @@ const profiles: Profile[] = [
   { name: 'oversized-cli', options: { testTimeout: 30_001 }, admitted: false },
   { name: 'disabled-test', options: { testTimeout: 0 }, admitted: false },
   { name: 'infinite-test', options: { testTimeout: Infinity }, admitted: false },
-  { name: 'disabled-hook', overrides: { test: { hookTimeout: 0 } }, admitted: false },
-  { name: 'infinite-hook', overrides: { test: { hookTimeout: Infinity } }, admitted: false },
+  { name: 'disabled-hook', configHookTimeout: 0, admitted: false },
+  { name: 'infinite-hook', configHookTimeout: Infinity, admitted: false },
   { name: 'unused-root-zero', child: true, admitted: true },
   {
     name: 'reporter-does-not-bypass',
@@ -38,6 +36,26 @@ const profiles: Profile[] = [
     admitted: true,
   },
 ]
+
+export function assertCanonicalRootVitestConfig(files: readonly string[]): void {
+  assert.deepEqual(files.filter(file => file.startsWith('vitest.config.')).toSorted(), [
+    'vitest.config.mts',
+  ])
+}
+
+export function checkCanonicalRootVitestConfigControls() {
+  const cases = [
+    { name: 'canonical', files: ['README.md', 'vitest.config.mts'], admitted: true },
+    { name: 'missing', files: ['README.md'], admitted: false },
+    { name: 'alternate', files: ['vitest.config.ts'], admitted: false },
+    { name: 'additional', files: ['vitest.config.mts', 'vitest.config.ts'], admitted: false },
+  ]
+  for (const control of cases) {
+    if (control.admitted) assertCanonicalRootVitestConfig(control.files)
+    else assert.throws(() => assertCanonicalRootVitestConfig(control.files))
+  }
+  return cases.map(({ name, admitted }) => ({ name, admitted }))
+}
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -70,23 +88,35 @@ export async function checkFiniteTimeoutProfiles(repoRoot: string) {
         hookTimeout: 5000,
         globalSetup: [join(root, 'setup.mts')],
       }
-      const config: ViteUserConfig = {
-        root,
-        plugins: profile.withoutGuard ? [] : [effectiveTimeoutCap()],
-        test: profile.child
-          ? { testTimeout: 0, hookTimeout: 0, projects: [{ extends: true, test }] }
-          : test,
-      }
+      // Deliberately unsafe configurations belong to this owned runtime fixture, not a
+      // repository helper exemption. The normal public config loader imports the real guard.
+      const configFile = join(root, 'vitest.config.mts')
+      const guardModule = new URL('./vitest-effective-timeout-cap.mts', import.meta.url).href
+      await writeFile(
+        configFile,
+        `import { effectiveTimeoutCap } from ${JSON.stringify(guardModule)};
+const test = { ...${JSON.stringify(test)}, hookTimeout: ${String(profile.configHookTimeout ?? 5000)} };
+export default {
+  root: ${JSON.stringify(root)},
+  plugins: ${profile.withoutGuard ? '[]' : '[effectiveTimeoutCap()]'},
+  test: ${profile.child ? '{ testTimeout: 0, hookTimeout: 0, projects: [{ extends: true, test }] }' : 'test'},
+};
+`,
+      )
       let context: Awaited<ReturnType<typeof createVitest>> | undefined
       let rejected = false
       let rejection: unknown
       let result: Awaited<ReturnType<Awaited<ReturnType<typeof createVitest>>['start']>> | undefined
       const closeErrors: unknown[] = []
       try {
-        context = await createVitest(
-          { root, config: false, watch: false, run: true, reporters: [], ...profile.options },
-          profile.overrides ? mergeConfig(config, profile.overrides) : config,
-        )
+        context = await createVitest({
+          root,
+          config: configFile,
+          watch: false,
+          run: true,
+          reporters: [],
+          ...profile.options,
+        })
         result = await context.start()
       } catch (err) {
         rejected = true

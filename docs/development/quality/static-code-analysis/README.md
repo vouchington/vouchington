@@ -15,22 +15,29 @@ in [AGENTS.md](../../../../static-code-analysis/AGENTS.md).
 
 ## Tooling Vitest timeout overrides
 
-The released `no-mistakes/vitest-timeout-cap` Oxlint rule checks Vitest calls in `ci/`,
-`dev/`, `static-code-analysis/`, `.husky/`, `.pr-shepherd/`, `.agents/catalog/`,
-`.github/actions/`, `.github/workflows/`, `backend/dependency-cruiser-rules/`,
-and root `test-helpers/*.test.mts`,
-including aliased registrars, same-file expressions,
-individual tests, hooks, and runtime timeout updates. Unresolved admitted timeout carriers
-fail rather than silently escaping the cap. The normal Oxlint gate owns enforcement;
-`ci/vitest-timeout-policy.test.mts` exercises finite accepted and rejected inputs.
+The released `no-mistakes/vitest-timeout-cap` Oxlint rule checks Vitest source carriers
+repository-wide with a thirty-second maximum for configured defaults, individual tests,
+hooks, and runtime updates. Aliased registrars and same-file expressions are included;
+unresolved admitted timeout carriers fail rather than silently escaping the cap.
+Existing tooling scopes retain their stricter five-second default policy. Other projects
+may keep bounded fifteen- or thirty-second defaults during the separate default rollout.
+The normal Oxlint gate owns enforcement; `ci/vitest-timeout-policy.test.mts` exercises
+finite accepted, rejected, unresolved, and scope-boundary inputs.
+
+The root `vitest.config.*` family defers unresolved imported configuration to the public
+SDK effective-project admission gate described below. That gate first requires the canonical
+`vitest.config.mts` to be the only tracked root family member, with missing, alternate, and additional
+configuration controls; adding an unguarded alternative therefore fails before SDK setup. Known excessive configuration values
+and unresolved test or runtime overrides still fail native analysis, and nested configuration
+files receive no such deferral.
 
 The `git-hooks` project declares five-second test and hook defaults. Longer individual
 tests or hooks require explicit overrides within the thirty-second ceiling.
 `ci/vitest-tooling-project-defaults.test.mts` checks the resolved project contract.
 The `dev-tools`, `ci-tools`, `github-actions`, and `docker-deploy` projects also declare
 five-second test and hook defaults, checked by `ci/vitest-operations-project-defaults.test.mts`.
-Other project defaults, global runtime enforcement, and the frozen ast-grep baseline outside
-this scope remain separate rollout work.
+Other projects' five-second defaults remain separate rollout work. The frozen ast-grep baseline
+is unchanged and is not a count of violations or evidence of complete timeout enforcement.
 
 ## Full-schema generation in Vitest
 
@@ -55,9 +62,10 @@ unused zero-valued root placeholders. Project defaults are unchanged.
 
 `node ci/check-effective-vitest-timeouts.mts` verifies every resolved project and finite
 framework controls outside Vitest, including pre-setup rejection and a removed-guard negative.
-This admission check does not cover individual test, hook, or fixture overrides or later runtime
-changes. It does not replace native source-carrier analysis; unresolved findings remain open rather
-than receiving new ignores.
+This admission check does not cover individual test or hook overrides or later runtime changes;
+the native source-carrier rule owns those recognized calls. Vitest's public fixture options do not
+expose a separate fixture timeout. Playwright's distinct tuple deadlines are guarded by its own
+public-runtime boundary. Unresolved native findings remain open rather than receiving new ignores.
 
 ## Dependency License Policy
 
