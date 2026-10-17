@@ -17,7 +17,6 @@ describe('withSeedAnchorClock', () => {
   it('gives time-range filters one anchor-derived cutoff', async () => {
     vi.stubEnv('EXPLAIN_SEED_ANCHOR_DATE', '2026-10-17')
     const first = await withSeedAnchorClock(async () => buildTimeRangeFilter('1w', 'posts.id'))
-    await new Promise<void>(resolve => setImmediate(resolve))
     const second = await withSeedAnchorClock(async () => buildTimeRangeFilter('1w', 'posts.id'))
     expect(first?.values).toEqual(second?.values)
     const cutoffTimestampHex = String(first?.values[0]).replace('-', '').slice(0, 12)
