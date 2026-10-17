@@ -26,15 +26,17 @@ import {
 } from './authorization.mts'
 import { lockDelegatedPostThread, lockDelegatedPostCommunity } from './delegated-write-locks.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
+import type { PostPreparationOptions } from './create/preparation-options.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
   provenance: ContentProvenance,
   input: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan = null,
-  options: { query?: TransactionQuery; delegated?: boolean } = {},
+  options: PostPreparationOptions = {},
 ) => {
   const isAdminCreator = creator.roles.includes('administrator')
-  const defaults = await validateCreatePostInput(creator, input, membershipPlan)
+  const defaults =
+    options.validatedDefaults ?? (await validateCreatePostInput(creator, input, membershipPlan))
   const shouldValidateResolvedLinkCategories = defaults.postType === 'link' && !input.title?.trim()
   let communityReviews: CommunityPostReview[] = []
   let resolvedUrlStrings: string[] = []
@@ -87,7 +89,6 @@ export const preparePostWithCommunityReviews = async (
         updates = { ...updates, title: input.url!.slice(0, 255).trim() }
       }
     }
-    // Resolve a stored link's title on the writer connection.
     if (defaults.postType === 'link' && updates.url_id && !updates.title?.trim()) {
       const { rows: titleRows } = await query<{ resolved_title: string | null }>(
         sql`/* createPost.resolveLinkTitle */
@@ -124,11 +125,12 @@ export const preparePostWithCommunityReviews = async (
       updates = { ...updates, title: updates.title.slice(0, 255).trim() }
     }
     if (shouldValidateResolvedLinkCategories) {
-      await validatePostCategories(creator, membershipPlan, updates)
+      const categoryOptions = { loadedTopics: defaults.loadedTopics }
+      await validatePostCategories(creator, membershipPlan, updates, categoryOptions)
     }
-
     // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-    const scope = await resolvePostScope({ creator, defaults, options, updates })
+    const scopeInput = { creator, defaults, options, updates }
+    const scope = await resolvePostScope({ ...scopeInput, communityLockHeld: delegated })
     const insertedPost = await insertPost({
       creator,
       provenance,
@@ -157,7 +159,6 @@ export const preparePostWithCommunityReviews = async (
     )
     return getPostByAny(insertedPost.id, options)
   }
-
   async function createInOwnedTransaction() {
     await using query = await beginTransaction()
     const result = await createInTransaction(query)
@@ -179,7 +180,6 @@ export const preparePostWithCommunityReviews = async (
     }
     throw err
   })
-
   const response = { post: post!, communityReviews }
   const finalize = async () => {
     // The records were committed with the placement rows. Queue admission is best-effort only;
@@ -195,6 +195,5 @@ export const preparePostWithCommunityReviews = async (
       updates,
     })
   }
-
   return { response, finalize }
 }

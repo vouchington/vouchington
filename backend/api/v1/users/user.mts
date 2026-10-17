@@ -1,10 +1,8 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
-  currentUserCanAccessUser,
   getPublicUserByAny,
   getPublicUserByIdOrSlug,
-  getPrivateUserByAny,
   getPrivateUserByIdOrSlug,
   isAdminUser,
   updateUser,
@@ -52,7 +50,7 @@ app
 
     // Check if user is requesting their own profile (by ID or username)
     const isSelf =
-      currentUser?.id === idOrSlug ||
+      currentUser?.id.toLowerCase() === idOrSlug.toLowerCase() ||
       (currentUser?.username && idOrSlug.toLowerCase() === currentUser.username.toLowerCase())
 
     const selfUser = isSelf ? currentUser : null
@@ -60,12 +58,12 @@ app
     if (isSelf) {
       ctx.assert(selfUser, 404, 'User not found')
       resolvedUser = selfUser
+    } else if (isAdminUser(currentUser ?? null)) {
+      resolvedUser = await getPrivateUserByIdOrSlug(idOrSlug)
+      ctx.assert(resolvedUser, 404, 'User not found')
     } else {
       const publicUser = await getPublicUserByIdOrSlug(idOrSlug)
-      ctx.assert(publicUser, 404, 'User not found')
-      resolvedUser = currentUserCanAccessUser(currentUser ?? null, publicUser.id)
-        ? await getPrivateUserByAny(publicUser.id)
-        : publicUser
+      resolvedUser = publicUser && currentUser?.id === publicUser.id ? currentUser : publicUser
       ctx.assert(resolvedUser, 404, 'User not found')
     }
 
@@ -117,7 +115,8 @@ app
     validateRequestContract(ctx, 'DELETE:/api/v1/users/:idOrSlug', { path: ctx.params })
     const idOrSlug = ctx.params.idOrSlug!
     const isSelf =
-      currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+      currentUser.id.toLowerCase() === idOrSlug.toLowerCase() ||
+      currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
     const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
     ctx.assert(user, 404, 'User not found')
     if (currentUser.id !== user.id) assertNotSuspended(currentUser)

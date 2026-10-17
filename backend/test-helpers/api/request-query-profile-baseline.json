@@ -80,9 +80,14 @@
     "issue": 2612
   },
   {
+    "annotation": "canViewDelegatedPostsBatch",
+    "reason": "Delegated create, update and delete recheck thread access after lockDelegatedPostThread acquires lifecycle and post locks",
+    "issue": 3113
+  },
+  {
     "annotation": "canViewPostsBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "Anonymous outbound-federation visibility is rechecked after the vote transaction commits; independent MCP calls keep their own result and retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.abandonExpiredAttempt",
@@ -336,7 +341,7 @@
   },
   {
     "annotation": "getCommunityById",
-    "reason": "Community update and archive flows reload the row after each write to return current settings and archive state",
+    "reason": "Community settings/archive output is read after writes; independent MCP calls retain separately retried community snapshots",
     "issue": 3113
   },
   {
@@ -346,8 +351,8 @@
   },
   {
     "annotation": "getCommunityWithViewerById",
-    "reason": "Community and viewer re-fetched after the route preamble",
-    "issue": 2544
+    "reason": "Community post creation reloads community and membership after admission begins its write transaction; delegated creation also holds lifecycle and membership locks; independent MCP calls own separately retried snapshots",
+    "issue": 3113
   },
   {
     "annotation": "getCrawlerForHostnameId",
@@ -421,13 +426,8 @@
   },
   {
     "annotation": "getPostByAny",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
-    "annotation": "getPostCacheKeys",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "Post mutations reload after locks and writes; follower sends revalidate in their independent write transaction after route preflight; approval and vote federation reread after committed mutations",
+    "issue": 3113
   },
   {
     "annotation": "getPostProvenanceFacts",
@@ -435,13 +435,8 @@
     "issue": 2613
   },
   {
-    "annotation": "getPostsByAnyBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "getPrivateUserByAny",
-    "reason": "Self profile and collection preambles reuse the authenticated user; unresolved repeats remain in identity, moderation, relation, MCP, and user mutation flows (#3113)",
+    "reason": "Authenticated self and report actors reuse loaded rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside postwrite and independent-tool reloads",
     "issue": 3113
   },
   {
@@ -451,8 +446,8 @@
   },
   {
     "annotation": "getPublicUsersByAnyBatch",
-    "reason": "Batched MCP tool calls can each hydrate users once per tool call",
-    "issue": 2611
+    "reason": "Independent MCP calls own separate JSON-RPC results, errors and client retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "getRelatablePostIds",
@@ -521,26 +516,11 @@
   },
   {
     "annotation": "getTopicByAny",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "getTopicCacheKeys",
-    "reason": "Alias mutation invalidation resolves final alias and redirect keys after writes; independent RSS source and category transactions invalidate their own committed identities",
+    "reason": "Topic create and update return state after topic/alias writes; merged destination output is reloaded after the merge transaction commits",
     "issue": 3113
   },
   {
     "annotation": "getTopicDataPointInsights",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "getTopicsByAnyBatch",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "getUrlById",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612
   },
@@ -953,6 +933,11 @@
     "annotation": "runContributionAdmission.recordAttemptResult",
     "reason": "Contribution admission steps repeat per admitted item",
     "issue": 2608
+  },
+  {
+    "annotation": "searchCommunityMembers",
+    "reason": "Independent MCP tools/call messages return separately addressed member pages with separate result, error and retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "selectCopyrightStatementFacts",

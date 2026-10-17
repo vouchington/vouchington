@@ -47,6 +47,10 @@ describe('Users API Routes', () => {
 
       expect(response.body.user.id).toBe(user!.id)
       expect(response.body.user.email_address).toBeDefined()
+      const uppercaseIdResponse = await request
+        .get(`/api/v1/users/${user.id.toUpperCase()}`)
+        .expect(200)
+      expect(uppercaseIdResponse.body.user.email_address).toBe(response.body.user.email_address)
       expect(response.headers['cache-control'] || '').not.toContain('public')
     })
 

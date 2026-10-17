@@ -10,7 +10,8 @@ export const updateUser = async (
   changes: UpdateUserOptions,
 ) => {
   const isSelf =
-    currentUser?.id === idOrSlug || currentUser?.username?.toLowerCase() === idOrSlug.toLowerCase()
+    currentUser?.id.toLowerCase() === idOrSlug.toLowerCase() ||
+    currentUser?.username?.toLowerCase() === idOrSlug.toLowerCase()
   const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   assert(user, 404, 'User not found')
   assert(currentUserCanUpdateUser(currentUser, user), 403, 'Forbidden')

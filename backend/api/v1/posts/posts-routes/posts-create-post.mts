@@ -13,7 +13,11 @@ import {
 import { isHoneypotTriggered } from '@services/honeypot'
 import type { CreatePostInput } from '@services/posts'
 import { executeCreatePostContribution } from '@services/posts/execute-contribution'
-import { isSupportedPostType, validateCreatePostInput } from '@services/posts/create/validation'
+import {
+  isSupportedPostType,
+  validateCreatePostInput,
+  type CreatePostDefaults,
+} from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
@@ -118,6 +122,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
   )
   const admissionPostType = isSupportedPostType(body.post_type) ? body.post_type : 'discussion'
   let isBareOneClickLink = false
+  let validatedDefaults: CreatePostDefaults | undefined
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,
@@ -146,7 +151,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
         !body.title?.trim() &&
         !body.markdown?.trim() &&
         !body.images?.length
-      await validateCreatePostInput(currentUser, body, membershipPlan)
+      validatedDefaults = await validateCreatePostInput(currentUser, body, membershipPlan)
       if (!isBareOneClickLink)
         await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'posts.create' })
     },
@@ -158,7 +163,14 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
         ip: ctx.ip,
       }),
     execute: query =>
-      executeCreatePostContribution(query, currentUser, provenance, body, membershipPlan),
+      executeCreatePostContribution(
+        query,
+        currentUser,
+        provenance,
+        body,
+        membershipPlan,
+        validatedDefaults,
+      ),
   })
   if (admission.kind === 'in_progress') {
     ctx.set('Retry-After', String(admission.retryAfterSeconds))

@@ -19,7 +19,7 @@ export async function validatePostCategories(
     loadedTopics?: ReadonlyMap<string, Topic | null | undefined>
     standingCounts?: { existing: number; final: number }
   } = {},
-): Promise<void> {
+): Promise<ReadonlyMap<string, Topic | null | undefined>> {
   if (updates.categories !== undefined) {
     assert(Array.isArray(updates.categories), 422, 'categories must be an array')
   }
@@ -69,7 +69,7 @@ export async function validatePostCategories(
       options.standingCounts.existing,
       options.standingCounts.final,
     )
-    return
+    return loadedTopics
   }
   await assertWithinTagAddLimit(
     creator,
@@ -79,4 +79,5 @@ export async function validatePostCategories(
     new Set([...topicIds, ...(options.dataPointTopicIds ?? [])]).size +
       getPostHashtagKeys(updates).length,
   )
+  return loadedTopics
 }

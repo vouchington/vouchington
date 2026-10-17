@@ -3,7 +3,6 @@ import { validateUUID } from '@modules/utils'
 import { isAdminUser } from '@services/users'
 import {
   loadCommunityForViewer,
-  getCommunityOrThrow,
   communityAllowsPostType,
   isCommunityRootPostType,
 } from '@services/communities'
@@ -16,7 +15,7 @@ import {
   executePreparedContribution,
 } from '@services/contribution-gating'
 import { preparePostWithCommunityReviews, type CreatePostInput, type Post } from '@services/posts'
-import { validateCreatePostInput } from '@services/posts/create/validation'
+import { validateCreatePostInput, type CreatePostDefaults } from '@services/posts/create/validation'
 import { assertCanCreateAdminOnlyPostType } from '@services/posts/create/admin-only-post-type'
 import {
   assertOfficialAccountCanCreatePost,
@@ -89,6 +88,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     if (communityId) {
       assert(isCommunityRootPostType(postType), 422, 'Unsupported community post_type')
     }
+    let validatedDefaults: CreatePostDefaults | undefined
     const admitted = await admitDelegatedContribution<AdmittedPost>({
       authority,
       currentUser: user,
@@ -113,8 +113,9 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         )
         assert(body.url == null || body.url_id == null, 422, 'Send either url or url_id, not both')
         if (communityId) {
-          await loadCommunityForViewer(user, communityId)
-          const currentCommunity = await getCommunityOrThrow(communityId, { readOnly: false })
+          const { community: currentCommunity } = await loadCommunityForViewer(user, communityId, {
+            readOnly: false,
+          })
           assert(
             isCommunityRootPostType(postType) &&
               communityAllowsPostType(currentCommunity, postType),
@@ -125,7 +126,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         assert(body.slug === undefined || isAdminUser(user), 403, 'Only admins can set a post slug')
         assertCanCreateAdminOnlyPostType(user, postType)
         assertOfficialAccountCanCreatePost(user, body.post_type)
-        await validateCreatePostInput(user, body, membershipPlan)
+        validatedDefaults = await validateCreatePostInput(user, body, membershipPlan)
         if (body.parent_post_id) await loadWritablePost(user, body.parent_post_id, false)
       },
       execute: query =>
@@ -135,7 +136,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
             getRequestContentProvenance(),
             body,
             membershipPlan,
-            { query, delegated: true },
+            { query, delegated: true, validatedDefaults },
           )
           if (communityId) return prepared
           return {

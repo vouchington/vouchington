@@ -2,6 +2,7 @@ import { createTopicAliases } from '@services/topics/aliases'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
 
 describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
   it('returns 401 for unauthenticated users', async () => {
@@ -108,6 +109,14 @@ describe('POST /api/v1/topics/:sourceIdOrSlug/merges', () => {
       .post(`/api/v1/topics/${source.id}/merges`)
       .send({ destination_id_or_slug: other.id })
       .expect(409)
+    await request
+      .post(`/api/v1/topics/${source.id}/merges`)
+      .send({ destination_id_or_slug: 'invalid!' })
+      .expect(409)
+    await request
+      .post(`/api/v1/topics/${randomUUID()}/merges`)
+      .send({ destination_id_or_slug: 'invalid!' })
+      .expect(404)
 
     const newSource = await createTestTopic({
       user: admin,

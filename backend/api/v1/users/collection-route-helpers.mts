@@ -37,7 +37,7 @@ export async function resolveTargetUser(
   const currentUser = await ctx.getCurrentUser()
   const idOrSlug = ctx.params.idOrSlug!
   const isSelf =
-    currentUser?.id === idOrSlug ||
+    currentUser?.id.toLowerCase() === idOrSlug.toLowerCase() ||
     (currentUser?.username && idOrSlug.toLowerCase() === currentUser.username.toLowerCase())
 
   if (options.privateCollection) {

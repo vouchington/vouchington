@@ -4,12 +4,11 @@ import { requireAuth, validateRequestContract } from '../../response-helpers.mts
 import { apiHeaders } from '../../response-contract.mts'
 import {
   communityAllowsPostType,
-  getCommunityOrThrow,
   isCommunityRootPostType,
   loadCommunityForViewer,
 } from '@services/communities'
 import { preparePostWithCommunityReviews, type CreatePostInput } from '@services/posts'
-import { validateCreatePostInput } from '@services/posts/create/validation'
+import { validateCreatePostInput, type CreatePostDefaults } from '@services/posts/create/validation'
 import {
   currentUserCanCreatePost,
   getAuthorizedPostContributionMembershipPlan,
@@ -67,7 +66,8 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   // ast-grep-ignore: no-three-sequential-awaits -- route handler validates auth/input before dependent mutation or response work
-  const { community } = await loadCommunityForViewer(currentUser, idOrSlug)
+  const loadedCommunity = await loadCommunityForViewer(currentUser, idOrSlug, { readOnly: false })
+  const { community } = loadedCommunity
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
@@ -93,6 +93,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
   const postType = body.post_type ?? 'discussion'
   ctx.assert(isCommunityRootPostType(postType), 422, 'Unsupported community post_type')
   const input = { ...body, community_id: community.id }
+  let validatedDefaults: CreatePostDefaults | undefined
   const admission = await admitRouteContribution({
     currentUser,
     membershipPlan,
@@ -102,9 +103,8 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
     idempotencyKeyHeader: ctx.req.headers['idempotency-key'],
     intent: { route: 'communities.posts.create', community_id: community.id, body: input },
     beforeCapacity: async () => {
-      const currentCommunity = await getCommunityOrThrow(community.id, { readOnly: false })
       ctx.assert(
-        communityAllowsPostType(currentCommunity, postType),
+        communityAllowsPostType(community, postType),
         403,
         `${postType} posts are not enabled for this community`,
       )
@@ -113,7 +113,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
         403,
         'Only admins can set a post slug',
       )
-      await validateCreatePostInput(currentUser, input, membershipPlan)
+      validatedDefaults = await validateCreatePostInput(currentUser, input, membershipPlan)
       await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'communities.create-post' })
     },
     beforeCommit: () =>
@@ -125,7 +125,10 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
       }),
     execute: query =>
       executePreparedContribution(query, () =>
-        preparePostWithCommunityReviews(currentUser, provenance, input, membershipPlan, { query }),
+        preparePostWithCommunityReviews(currentUser, provenance, input, membershipPlan, {
+          query,
+          validatedDefaults,
+        }),
       ),
   })
   if (admission.kind === 'in_progress') {

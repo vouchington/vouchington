@@ -4,6 +4,7 @@ import type { ContributionLimitMembershipPlan } from '@services/contribution-gat
 import { executePreparedContribution } from '@services/contribution-gating'
 import { preparePostWithCommunityReviews } from './create.mts'
 import type { CreatePostInput } from './types.mts'
+import type { CreatePostDefaults } from './create/validation.mts'
 
 type AdmissionQuery = Parameters<typeof executePreparedContribution>[0]
 
@@ -13,6 +14,7 @@ export function executeCreatePostContribution(
   provenance: ContentProvenance,
   body: CreatePostInput,
   membershipPlan: ContributionLimitMembershipPlan,
+  validatedDefaults?: CreatePostDefaults,
 ) {
   return executePreparedContribution(query, async () => {
     const prepared = await preparePostWithCommunityReviews(
@@ -20,7 +22,7 @@ export function executeCreatePostContribution(
       provenance,
       body,
       membershipPlan,
-      { query },
+      { query, validatedDefaults },
     )
     return {
       response: prepared.response.post,

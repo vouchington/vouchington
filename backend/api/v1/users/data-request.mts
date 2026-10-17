@@ -48,7 +48,8 @@ app.route('/api/v1/users/:idOrSlug/data-request').post(async (ctx: Context) => {
 
   const idOrSlug = ctx.params.idOrSlug!
   const isSelf =
-    currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+    currentUser.id.toLowerCase() === idOrSlug.toLowerCase() ||
+    currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
   const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   ctx.assert(user, 404, 'User not found')
   if (currentUser.id !== user.id) assertNotSuspended(currentUser)
@@ -79,7 +80,8 @@ app.route('/api/v1/users/:idOrSlug/data-request').get(async (ctx: Context) => {
 
   const idOrSlug = ctx.params.idOrSlug!
   const isSelf =
-    currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+    currentUser.id.toLowerCase() === idOrSlug.toLowerCase() ||
+    currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
   const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   ctx.assert(user, 404, 'User not found')
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')
@@ -112,7 +114,8 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
 
   const idOrSlug = ctx.params.idOrSlug!
   const isSelf =
-    currentUser.id === idOrSlug || currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
+    currentUser.id.toLowerCase() === idOrSlug.toLowerCase() ||
+    currentUser.username?.toLowerCase() === idOrSlug.toLowerCase()
   const user = isSelf ? currentUser : await getPrivateUserByIdOrSlug(idOrSlug)
   ctx.assert(user, 404, 'User not found')
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')

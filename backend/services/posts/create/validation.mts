@@ -19,6 +19,8 @@ import { validatePostCategories } from './validation-categories.mts'
 export { validatePostCategories } from './validation-categories.mts'
 
 export type CreatePostDefaults = {
+  /** Topic rows validated before this admission attempt's topic-dependent mutations. */
+  loadedTopics?: ReadonlyMap<string, Topic | null | undefined>
   broadcast: NonNullable<CreatePostInput['broadcast']>
   isAnonymous: boolean
   postType: NonNullable<CreatePostInput['post_type']>
@@ -93,7 +95,7 @@ export async function validateCreatePostInput(
   if (postType === 'review' && !creator.roles.includes('administrator')) {
     assertValidReviewContent(updates.markdown ?? '')
   }
-  await validatePostCategories(creator, membershipPlan, updates, {
+  const validatedTopics = await validatePostCategories(creator, membershipPlan, updates, {
     dataPointTopicIds,
     loadedTopics,
   })
@@ -104,7 +106,7 @@ export async function validateCreatePostInput(
     422,
     'declared_language must be a string or null',
   )
-  return defaults
+  return { ...defaults, loadedTopics: validatedTopics }
 }
 
 async function validateStructuredData(

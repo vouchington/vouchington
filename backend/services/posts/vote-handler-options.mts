@@ -1,6 +1,6 @@
 import { getPostElectionVote, upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getPostByAnyCached } from './get-cached.mts'
-import { canViewPost } from '@services/posts/check-privacy-access'
+import { canViewPost, canViewPostsBatch } from '@services/posts/check-privacy-access'
 import type { Post } from './types.mts'
 import { enqueueDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import onError from '@modules/on-error'
@@ -48,10 +48,11 @@ export const postVoteOptions: CreateVoteHandlerOptions<
       commentRecommendationRoot?.post_type === 'topic_recommendation'
         ? commentRecommendationRoot
         : routeAccessPost
+    const visible = accessPost
+      ? await canViewPostsBatch(currentUser, [targetPost, accessPost])
+      : new Map()
     ctx.assert(
-      accessPost &&
-        (await canViewPost(currentUser, targetPost)) &&
-        (accessPost.id === targetPost.id || (await canViewPost(currentUser, accessPost))),
+      accessPost && visible.get(targetPost.id) && visible.get(accessPost.id),
       404,
       'Post not found',
     )
