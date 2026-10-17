@@ -1411,7 +1411,13 @@
     "I163": [["community", "userId"]],
     "I164": [["community", "id"]],
     "I165": [["community", "itemId"]],
-    "I166": [["after", "community", "limit", "window"]]
+    "I166": [["after", "community", "limit", "window"]],
+    "I167": [["id", "order_index", "rating", "topic_id"]],
+    "I168": [["id", "topic_id"]],
+    "I169": [
+      ["audience", "id", "recipient_user_ids"],
+      ["audience", "id"]
+    ]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4075,8 +4081,8 @@
           "title"
         ],
         "operation": {
-          "tool": "update_post",
-          "option": null
+          "tool": "act_on_post",
+          "option": "edit"
         },
         "decision": false
       }
@@ -5669,6 +5675,118 @@
           "operation": {
             "tool": "vote",
             "option": "clear_user_vouch"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/ratings": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "add_rating"
+          },
+          "decision": false,
+          "inputFields": "I167",
+          "requestBodyFields": ["order_index", "rating", "topic_id"]
+        }
+      ]
+    },
+    "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "edit_rating"
+          },
+          "decision": false,
+          "inputFields": "I167",
+          "requestBodyFields": ["order_index", "rating"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "delete_rating"
+          },
+          "decision": false,
+          "inputFields": "I168",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/shares": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "share"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/sends": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "send"
+          },
+          "decision": false,
+          "inputFields": "I169",
+          "requestBodyFields": ["audience", "recipient_user_ids"]
+        }
+      ]
+    },
+    "PUT:/api/v1/posts/:id/read": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "read"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:id/read": {
+      "pullRequest": 3113,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "unread"
           },
           "decision": false,
           "inputFields": "I001",

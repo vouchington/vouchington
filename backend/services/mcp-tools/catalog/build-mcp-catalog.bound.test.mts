@@ -58,9 +58,9 @@ const grants: {
 // Owner-approved mcp.all caps: compact UTF-16 sizes plus 1.5%, rounded up to 1,000.
 const caps = {
   mcp: {
-    all: { count: 78, list: 301000, core: 120000, output: 283000 },
+    all: { count: 78, list: 305000, core: 124000, output: 286000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
-    Plus: { count: 70, list: 217000, core: 110000, output: 240000 },
+    Plus: { count: 70, list: 223000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
   admin_mcp: {
@@ -237,6 +237,7 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
 })
 
 const names = [
+  'act_on_post',
   'vote',
   'set_rss_feed_item_read',
   'share_rss_feed_item',
@@ -256,7 +257,7 @@ describe('participation write discovery contract', () => {
     expect(JSON.stringify(listing)).toHaveLength(54252)
     expect(hash(listing)).toBe('6581aa2f8113cbe93e857afc30f77f8c5178c12d69c1ddefb2b5b527bda1cd0b')
   })
-  it('keeps the five approved participation tools in the paid listing', () => {
+  it('keeps the approved participation tools in the paid listing', () => {
     const paid = listMcpToolsForUser(
       { ...caller, membership_plan: 'plus' },
       scopes,
@@ -271,7 +272,7 @@ describe('participation write discovery contract', () => {
         .toSorted(),
     ).toEqual(names.toSorted())
     expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
-      '4953dda201a18f9cb8621ef7080f53f523ef930ba5d98d29de680038f3158e55',
+      '8095b126905766bfd2f54a363e66b7a50314690dcd422f77824c902d1ffd09a0',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(

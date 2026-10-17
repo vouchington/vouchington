@@ -93,6 +93,7 @@ const NON_TOOL_FILES = new Set([
   'tool-schema-contract.mts',
   'tool-schema-traversal.mts',
   'untrusted-output.mts',
+  'follower-distribution-tool-support.mts',
 ])
 
 describe('tool registry', () => {

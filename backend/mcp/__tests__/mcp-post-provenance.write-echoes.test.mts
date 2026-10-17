@@ -55,8 +55,8 @@ const updatePost = async (user: typeof author, id: string) =>
   (
     await callStructuredMcpTool(
       user,
-      'update_post',
-      { id, title: `Edited ${randomBytes(4).toString('hex')}` },
+      'act_on_post',
+      { option: 'edit', arguments: { id, title: `Edited ${randomBytes(4).toString('hex')}` } },
       SCOPES,
       oauthOrigin(),
     )
@@ -125,7 +125,7 @@ describe('MCP post provenance on write tools', () => {
     })
   })
 
-  describe('update_post', () => {
+  describe('act_on_post edit', () => {
     it('labels an edited post written through an OAuth client', async () => {
       const seeded = await createTestPost({ user: author, provenance: mcpFact() })
       expect((await updatePost(author, seeded.id)).provenance).toEqual({

@@ -7,7 +7,11 @@ import {
   insertTestCommunityPostReview,
   insertTestPost,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+  postWriteCall,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import {
   withConcurrentCommunityMembershipRemovalForTest,
   withConcurrentCommunityArchiveForTest,
@@ -74,9 +78,10 @@ describe('delegated private community membership fences', () => {
           : tool === 'update_post'
             ? { id, markdown: 'Refused' }
             : { id }
+      const [name, call] = postWriteCall(tool, args)
       expect(
         await withConcurrentCommunityMembershipRemovalForTest(community.id, user.id, () =>
-          callRejectedMcpTool(user, tool, args, SCOPES),
+          callRejectedMcpTool(user, name, call, SCOPES),
         ),
       ).toContain('Post not found')
       expect((await getPostByAny(id, { readOnly: false }))?.markdown).toBe('Own comment')
@@ -105,14 +110,13 @@ describe('delegated archived community mutations', () => {
         postId: id,
         submittedById: user.id,
       })
+      const [name, call] = postWriteCall(tool, {
+        id,
+        ...(tool === 'update_post' ? { title: 'Updated' } : {}),
+      })
       expect(
         await withConcurrentCommunityArchiveForTest(community.id, () =>
-          callStructuredMcpTool(
-            user,
-            tool,
-            { id, ...(tool === 'update_post' ? { title: 'Updated' } : {}) },
-            SCOPES,
-          ),
+          callStructuredMcpTool(user, name, call, SCOPES),
         ),
       ).toMatchObject({ success: true })
       const post = await getPostByAny(id, { readOnly: false })

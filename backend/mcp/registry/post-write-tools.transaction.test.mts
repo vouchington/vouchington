@@ -9,7 +9,12 @@ import {
   softDeleteUser,
   getPostDeletedById,
 } from '@voucha/test-helpers'
-import { callStructuredMcpTool, callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callStructuredMcpTool,
+  callRejectedMcpTool,
+  optionArgs,
+  postWriteCall,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import {
   withConcurrentActorSuspensionForTest,
   withConcurrentCommunityReviewDisableForTest,
@@ -39,11 +44,8 @@ describe('delegated post mutation contracts and transaction fences', () => {
     expect(
       await callRejectedMcpTool(
         await caller(),
-        'update_post',
-        {
-          id: crypto.randomUUID(),
-          [field as string]: value,
-        },
+        'act_on_post',
+        optionArgs('edit', { id: crypto.randomUUID(), [field as string]: value }),
         SCOPES,
       ),
     ).toContain('Invalid tool arguments')
@@ -85,9 +87,14 @@ describe('delegated post mutation contracts and transaction fences', () => {
         parentId: root,
         clearanceStatus: 'approved',
       })
-      expect(await callRejectedMcpTool(user, 'update_post', { id, ...changes }, SCOPES)).toContain(
-        'Comments inherit their thread audience',
-      )
+      expect(
+        await callRejectedMcpTool(
+          user,
+          'act_on_post',
+          optionArgs('edit', { id, ...changes }),
+          SCOPES,
+        ),
+      ).toContain('Comments inherit their thread audience')
     },
   )
 
@@ -194,9 +201,11 @@ describe('delegated post mutation contracts and transaction fences', () => {
               markdown: 'Reply',
             }
           : { id: root, ...(name === 'update_post' ? { title: 'Changed' } : {}) }
+      const [tool, call] =
+        name === 'create_post' ? ([name, args] as const) : postWriteCall(name, args)
       expect(
         await withConcurrentCommunityDeletionForTest(community.id, () =>
-          callRejectedMcpTool(user, name, args, SCOPES),
+          callRejectedMcpTool(user, tool, call, SCOPES),
         ),
       ).toContain('Post not found')
     },
@@ -254,8 +263,9 @@ describe('delegated actor suspension fences', () => {
           : tool === 'update_post'
             ? { id, title: 'Refused' }
             : { id }
+      const [name, call] = postWriteCall(tool, args)
       const result = await withConcurrentActorSuspensionForTest(user.id, () =>
-        callRejectedMcpTool(user, tool, args, SCOPES),
+        callRejectedMcpTool(user, name, call, SCOPES),
       )
       expect(result).toContain('Your account has been suspended')
       const post = await getPostByAny(id, { readOnly: false })

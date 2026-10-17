@@ -8,7 +8,11 @@ import {
 } from '@voucha/test-helpers'
 import { getTestOAuthClientRowId as oauthClientRowId } from '@voucha/test-helpers/entities/oauth-client-management'
 import { createTestPendingOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
-import { callStructuredMcpTool, callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callStructuredMcpTool,
+  callRejectedMcpTool,
+  optionArgs,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { runWithCredentialRequestContext } from '@modules/request-client-info'
 import { getPostByAny } from '@services/posts'
 import createTool from '../create-post.mts'
@@ -55,14 +59,24 @@ describe('post and comment MCP writes — real services', () => {
     expect(
       await callStructuredMcpTool(
         user,
-        'update_post',
-        { id: comment.id, markdown: 'Edited reply' },
+        'act_on_post',
+        optionArgs('edit', { id: comment.id, markdown: 'Edited reply' }),
         SCOPES,
       ),
     ).toMatchObject({ post: { id: comment.id, markdown: expect.stringContaining('Edited reply') } })
-    await callStructuredMcpTool(user, 'update_post', { id: post.id, archive: true }, SCOPES)
+    await callStructuredMcpTool(
+      user,
+      'act_on_post',
+      optionArgs('edit', { id: post.id, archive: true }),
+      SCOPES,
+    )
     expect((await getPostByAny(post.id, { readOnly: false }))?.archived_at).toBeTruthy()
-    await callStructuredMcpTool(user, 'update_post', { id: post.id, archive: false }, SCOPES)
+    await callStructuredMcpTool(
+      user,
+      'act_on_post',
+      optionArgs('edit', { id: post.id, archive: false }),
+      SCOPES,
+    )
     expect((await getPostByAny(post.id, { readOnly: false }))?.archived_at).toBeNull()
     expect(await callStructuredMcpTool(user, 'delete_post', { id: comment.id }, SCOPES)).toEqual({
       success: true,
@@ -126,7 +140,7 @@ describe('post and comment MCP writes — real services', () => {
     const [author, admin] = await Promise.all([caller(), caller(true)])
     const post = await createTestPost({ user: author })
     for (const [name, args] of [
-      ['update_post', { id: post.id, title: 'Not mine' }],
+      ['act_on_post', optionArgs('edit', { id: post.id, title: 'Not mine' })],
       ['delete_post', { id: post.id }],
     ] as const) {
       expect(await callRejectedMcpTool(admin, name, args, SCOPES)).toContain('Forbidden')

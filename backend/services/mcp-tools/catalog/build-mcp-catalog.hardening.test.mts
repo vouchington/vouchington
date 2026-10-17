@@ -19,8 +19,8 @@ const names = [
 ]
 // Pin #2545 listings after main's approved schema, description and option-pointer updates.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  '401a6fde95e330d7fe2d9d7bfae3e3fdbb1abe64afd72650910663df867bde7f'
-const UMBRELLA_ONLY_DIGEST = '2b3614724eb8fd9cc422649965063d0610b913a7c8f22b38366c5f285e7b758b'
+  '015d3f96f72712e2894cf9aebf150fef562e2272c9bc7275f5c92611cb752d55'
+const UMBRELLA_ONLY_DIGEST = 'c1cf175846905846005abd53c7d4fa29427ff0576821e2a74ba88ac246c983c5'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
