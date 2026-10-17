@@ -30,7 +30,6 @@ export async function joinCommunity(
   // Serialize against a concurrent ban for this user so the check + insert are atomic.
   await lockCommunityUser(communityId, currentUserId, options)
   const member = await insertJoinedCommunityMember(communityId, currentUserId, options)
-  await deletePendingInvitesForMember(communityId, currentUserId, options)
 
   await query.commit()
 
@@ -103,5 +102,6 @@ async function insertJoinedCommunityMember(
     options,
   )
 
+  await deletePendingInvitesForMember(communityId, currentUserId, options)
   return rows[0] as CommunityMember
 }
