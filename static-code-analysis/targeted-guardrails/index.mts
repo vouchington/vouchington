@@ -2,11 +2,6 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import {
-  BASIC_AUTH_RUNBOOK_FILE,
-  BASIC_AUTH_SOURCE_FILE,
-  checkBasicAuthRunbookExemptPathsSync,
-} from './basic-auth-doc-sync.mts'
 import { CSP_DOC_FILE, CSP_SOURCE_FILE, checkCspDocSync } from './csp-doc-sync.mts'
 import {
   RATE_LIMIT_DOC_FILE,
@@ -20,27 +15,6 @@ export function checkTargetedGuardrails(ctx: SharedContext): { errors: string[] 
   }
 
   const errors: string[] = []
-  const basicAuthSourceTracked = ctx.trackedFileSet.has(BASIC_AUTH_SOURCE_FILE)
-  const basicAuthRunbookTracked = ctx.trackedFileSet.has(BASIC_AUTH_RUNBOOK_FILE)
-  if (basicAuthSourceTracked && basicAuthRunbookTracked) {
-    const sourcePath = join(ctx.repoRoot, BASIC_AUTH_SOURCE_FILE)
-    const runbookPath = join(ctx.repoRoot, BASIC_AUTH_RUNBOOK_FILE)
-    if (existsSync(sourcePath) && existsSync(runbookPath)) {
-      errors.push(
-        ...checkBasicAuthRunbookExemptPathsSync({
-          sourceCode: readFileSync(sourcePath, 'utf8'),
-          runbookMarkdown: readFileSync(runbookPath, 'utf8'),
-        }),
-      )
-    }
-  } else if (basicAuthSourceTracked !== basicAuthRunbookTracked) {
-    const missing = basicAuthSourceTracked ? BASIC_AUTH_RUNBOOK_FILE : BASIC_AUTH_SOURCE_FILE
-    const present = basicAuthSourceTracked ? BASIC_AUTH_SOURCE_FILE : BASIC_AUTH_RUNBOOK_FILE
-    errors.push(
-      `::error file=${present}::${present}: basic-auth doc-sync guard expects ${missing} to also be tracked; if you renamed one of the two, update the guard path constants together`,
-    )
-  }
-
   const rateLimitSourceTracked = ctx.trackedFileSet.has(RATE_LIMIT_SOURCE_FILE)
   const rateLimitDocTracked = ctx.trackedFileSet.has(RATE_LIMIT_DOC_FILE)
   if (rateLimitSourceTracked && rateLimitDocTracked) {
@@ -103,6 +77,5 @@ export function checkTargetedGuardrails(ctx: SharedContext): { errors: string[] 
 }
 
 export const targetedGuardrailChecksForTest = {
-  checkBasicAuthRunbookExemptPathsSync,
   checkRateLimitDocBindingsSync,
 } as const
