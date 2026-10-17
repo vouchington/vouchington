@@ -28,6 +28,13 @@ export function PodcastEpisodePlayer({ episode }: PodcastEpisodePlayerProps) {
     playEpisode(episode)
   }, [playEpisode, episode])
 
+  const visibleLabel = t('extracted.feed.podcastEpisodePlayer.playEpisode_b717b4ae')
+  const titledLabel = t('extracted.feed.podcastEpisodePlayer.playTitle_64010fec', {
+    title: episode.title,
+  })
+  // WCAG 2.5.3 requires the visible label, in this order, inside the accessible name.
+  const accessibleName = `${visibleLabel}, ${titledLabel}`
+
   return (
     <div
       className='rounded-md border bg-muted/30 p-4'
@@ -38,9 +45,7 @@ export function PodcastEpisodePlayer({ episode }: PodcastEpisodePlayerProps) {
         size='sm'
         className='gap-2'
         onClick={handlePlay}
-        aria-label={t('extracted.feed.podcastEpisodePlayer.playTitle_64010fec', {
-          title: episode.title,
-        })}
+        aria-label={accessibleName}
       >
         <ListenIcon data-icon='inline-start' />
         {t('extracted.feed.podcastEpisodePlayer.playEpisode_b717b4ae')}

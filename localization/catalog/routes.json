@@ -77725,7 +77725,6 @@
 {"alias":"extracted.moderationAnalytics.moderationTransparencyPanel.moderationTransparency_0e1d33a9","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.navbar.intentSwitcher.menu_99af6606","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.navbar.intentSwitcher.navigateIntentsLabel_920e75d7","consumer":"web","pattern":"web.chrome"},
-{"alias":"extracted.navbar.intentSwitcher.navigateIntents_496c1f7e","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.navbar.profileMenu.identity_999f23fc","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.navbar.profileMenu.landingPages_6e8d0e5d","consumer":"web","pattern":"web.chrome"},
 {"alias":"extracted.navbar.profileMenu.openProfileMenu_4a239d3d","consumer":"web","pattern":"web.chrome"},

@@ -29,6 +29,11 @@ export function LinkSelectDropdown({
   ariaLabel: string
   dataPw?: string
 }) {
+  // WCAG 2.5.3 requires the visible label, in this order, inside the accessible name.
+  const accessibleName = ariaLabel.toLowerCase().includes(label.toLowerCase())
+    ? ariaLabel
+    : `${ariaLabel}: ${label}`
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -36,7 +41,7 @@ export function LinkSelectDropdown({
           type='button'
           variant='outline'
           size='touchSm'
-          aria-label={ariaLabel}
+          aria-label={accessibleName}
           className={cn('w-auto whitespace-nowrap', FILTER_CONTROL_HEIGHT)}
           data-pw={dataPw}
         >

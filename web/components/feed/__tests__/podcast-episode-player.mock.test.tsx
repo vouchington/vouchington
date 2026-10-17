@@ -36,7 +36,7 @@ describe('PodcastEpisodePlayer', () => {
 
   it('calls playEpisode with the episode when the play button is clicked', () => {
     const { getByRole } = render(<PodcastEpisodePlayer episode={episode} />)
-    fireEvent.click(getByRole('button', { name: /play episode one/i }))
+    fireEvent.click(getByRole('button', { name: 'Play episode, Play Episode One' }))
     expect(mockPlayEpisode).toHaveBeenCalledWith(episode)
   })
 
