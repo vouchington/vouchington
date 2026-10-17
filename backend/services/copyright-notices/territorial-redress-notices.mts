@@ -1,18 +1,20 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getCopyrightClaimantEmail } from './claimant-email.mts'
-import { createCopyrightStatementDeliveryInTransaction } from './statement-delivery.mts'
+import type { CopyrightStatementDeliveryInput } from './statement-delivery.mts'
+
+type TerritorialRedressNoticeInput = {
+  noticeId: string
+  redressId: string
+  disposition: 'maintain' | 'revoke'
+  rationale: string
+}
 
 /** A reasoned complaint outcome goes only to the complainant, after decision consequences exist. */
-export async function createTerritorialRedressDecisionNotice(
-  input: {
-    noticeId: string
-    redressId: string
-    disposition: 'maintain' | 'revoke'
-    rationale: string
-  },
+export async function buildTerritorialRedressDecisionDelivery(
+  input: TerritorialRedressNoticeInput,
   transaction: TransactionQuery,
-): Promise<void> {
+): Promise<CopyrightStatementDeliveryInput | null> {
   const { rows } = await transaction<{
     jurisdiction: 'eu_dsa' | 'uk'
     filed_by: 'notifier' | 'poster' | 'reviewer'
@@ -26,7 +28,7 @@ export async function createTerritorialRedressDecisionNotice(
     WHERE request.id = ${input.redressId} AND request.copyright_notice_id = ${input.noticeId}
   `)
   const request = rows[0]
-  if (!request || request.jurisdiction !== 'eu_dsa' || request.filed_by === 'reviewer') return
+  if (!request || request.jurisdiction !== 'eu_dsa' || request.filed_by === 'reviewer') return null
 
   const result =
     input.disposition === 'maintain'
@@ -40,19 +42,16 @@ export async function createTerritorialRedressDecisionNotice(
     'You may seek out-of-court dispute settlement under DSA Article 21 or judicial redress through a court.',
   ].join('\n\n')
   const notifier = request.filed_by === 'notifier'
-  await createCopyrightStatementDeliveryInTransaction(
-    {
-      noticeId: input.noticeId,
-      recipientUserId: request.submitted_by_id,
-      recipientRole: notifier ? 'claimant' : 'poster',
-      recipientEmail: notifier
-        ? await getCopyrightClaimantEmail(input.noticeId, transaction)
-        : undefined,
-      deliveryKind: 'redress_decision_notice',
-      correspondenceKind: 'decision_notice',
-      key: `copyright-redress-decision:${input.redressId}`,
-      text,
-    },
-    transaction,
-  )
+  return {
+    noticeId: input.noticeId,
+    recipientUserId: request.submitted_by_id,
+    recipientRole: notifier ? 'claimant' : 'poster',
+    recipientEmail: notifier
+      ? await getCopyrightClaimantEmail(input.noticeId, transaction)
+      : undefined,
+    deliveryKind: 'redress_decision_notice',
+    correspondenceKind: 'decision_notice',
+    key: `copyright-redress-decision:${input.redressId}`,
+    text,
+  }
 }

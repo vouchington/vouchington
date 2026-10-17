@@ -1,5 +1,5 @@
 import { beginTransaction, read } from '@data-stores/psql'
-import { selectCopyrightStatementFacts } from '@services/copyright-notices/statement-of-reasons-facts'
+import { selectCopyrightStatementFactsBatch } from '@services/copyright-notices/statement-of-reasons-facts'
 import { runAndCapture } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 
@@ -33,11 +33,13 @@ export async function runCopyrightStatementFactsScenarios(): Promise<void> {
     'copyright-statement-facts',
     async () => {
       await using transaction = await beginTransaction()
-      const facts = await selectCopyrightStatementFacts(seeded.notice_id, transaction, {
-        targetId: seeded.target_id,
-      })
+      const facts = await selectCopyrightStatementFactsBatch(
+        seeded.notice_id,
+        transaction,
+        Array.from({ length: 3 }, () => ({ targetId: seeded.target_id })),
+      )
       await transaction.rollback()
-      if (facts.targetUrls.length !== 1) {
+      if (facts.length !== 3 || facts.some(row => row.targetUrls.length !== 1)) {
         throw new Error('Expected the seeded post-image target to have a public page')
       }
     },

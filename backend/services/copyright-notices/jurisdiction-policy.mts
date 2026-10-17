@@ -69,11 +69,21 @@ export async function getCopyrightJurisdictionAvailability(query: QueryExecutor 
   eu_dsa: boolean
   uk: boolean
 }> {
-  const [euDsa, uk] = await Promise.all([
-    findCurrentCopyrightJurisdictionPolicy('eu_dsa', query),
-    findCurrentCopyrightJurisdictionPolicy('uk', query),
-  ])
-  return { eu_dsa: euDsa !== null, uk: uk !== null }
+  const { rows } = await query<{ jurisdiction: TerritorialCopyrightJurisdiction }>(sql`
+    /* getCopyrightJurisdictionAvailability */
+    SELECT territory.jurisdiction
+    FROM unnest(ARRAY['eu_dsa', 'uk']::copyright_jurisdictions[]) AS territory(jurisdiction)
+    WHERE EXISTS (
+      SELECT 1 FROM copyright_jurisdiction_policy_approvals approval
+      WHERE approval.jurisdiction = territory.jurisdiction
+        AND NOT EXISTS (
+          SELECT 1 FROM copyright_jurisdiction_policy_withdrawals withdrawal
+          WHERE withdrawal.copyright_jurisdiction_policy_approval_id = approval.id
+        )
+    )
+  `)
+  const available = new Set(rows.map(row => row.jurisdiction))
+  return { eu_dsa: available.has('eu_dsa'), uk: available.has('uk') }
 }
 
 export async function lockCurrentCopyrightJurisdictionPolicy(

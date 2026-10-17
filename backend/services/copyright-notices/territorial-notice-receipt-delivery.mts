@@ -1,6 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { createDeterministicCopyrightCorrespondenceInTransaction } from './correspondence.mts'
-import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import { createCopyrightDeliveryIntents } from './delivery-intent-batch.mts'
 import { copyrightEuReceiptText } from './statement-of-reasons-wording.mts'
 
 /** Store the EU receipt and both delivery obligations with the filing transaction. */
@@ -17,32 +17,33 @@ export async function createEuCopyrightReceiptDelivery(
     },
     transaction,
   )
-  await createCopyrightDeliveryIntent(
-    {
-      noticeId: input.noticeId,
-      submissionId: null,
-      correspondenceId: correspondence.id,
-      recipientUserId: input.requesterUserId,
-      recipientRole: 'claimant',
-      deliveryKind: 'claimant_receipt',
-      channel: 'email',
-      idempotencyKey: `copyright-notice:${input.noticeId}:claimant-email-receipt`,
-      recipientEmail: input.notifierEmail,
-    },
+  const receipt = {
+    noticeId: input.noticeId,
+    submissionId: null,
+    recipientUserId: input.requesterUserId,
+    recipientRole: 'claimant' as const,
+    deliveryKind: 'claimant_receipt' as const,
+  }
+  await createCopyrightDeliveryIntents(
+    [
+      {
+        ...receipt,
+        correspondenceId: correspondence.id,
+        channel: 'email',
+        idempotencyKey: `copyright-notice:${input.noticeId}:claimant-email-receipt`,
+        recipientEmail: input.notifierEmail,
+      },
+      ...(input.requesterUserId
+        ? [
+            {
+              ...receipt,
+              correspondenceId: correspondence.id,
+              channel: 'in_app' as const,
+              idempotencyKey: `copyright-notice:${input.noticeId}:claimant-in-app-receipt`,
+            },
+          ]
+        : []),
+    ],
     transaction,
   )
-  if (input.requesterUserId)
-    await createCopyrightDeliveryIntent(
-      {
-        noticeId: input.noticeId,
-        submissionId: null,
-        correspondenceId: correspondence.id,
-        recipientUserId: input.requesterUserId,
-        recipientRole: 'claimant',
-        deliveryKind: 'claimant_receipt',
-        channel: 'in_app',
-        idempotencyKey: `copyright-notice:${input.noticeId}:claimant-in-app-receipt`,
-      },
-      transaction,
-    )
 }
