@@ -119,7 +119,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_04 = [
   { key: 'native.dotnet.csharpCommunities.aiAgents', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.allocate', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.allocated', consumers: ['dotnet'] },
-  { key: 'native.dotnet.csharpCommunities.anyoneWithCode', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.applicationId', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.applications', consumers: ['dotnet'] },
   { key: 'native.dotnet.csharpCommunities.apply', consumers: ['dotnet'] },
