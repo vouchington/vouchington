@@ -954,7 +954,7 @@ CREATE TABLE IF NOT EXISTS google_accounts (
   google_user_email_address TEXT,
   email_domain_hostname_id UUID,
   google_user_data JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
