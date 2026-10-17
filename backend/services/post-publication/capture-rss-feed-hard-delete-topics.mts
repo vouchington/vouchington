@@ -36,6 +36,8 @@ export async function retainRssFeedHardDeleteTopicImpacts(
     await retainPostPublicationImpactKeys(query, dirtyWorkId, {
       topicIds: rows.map(row => row.topic_id),
     })
+    // A short keyset page is the last page, so no terminal empty-page read is needed.
+    if (rows.length < RSS_FEED_HARD_DELETE_CAPTURE_BATCH_SIZE) return
     afterTopicId = rows.at(-1)!.topic_id
   }
 }

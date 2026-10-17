@@ -50,16 +50,6 @@
     "issue": 2763
   },
   {
-    "annotation": "backfillCategoriesForTopicAliases",
-    "reason": "One update per nonempty bounded category page; empty terminal pages skip the update",
-    "issue": 2605
-  },
-  {
-    "annotation": "backfillCategoriesForTopicAliases.candidateItems",
-    "reason": "Bounded category backfill scans each page and a terminal page to establish exhaustion",
-    "issue": 2605
-  },
-  {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "reason": "Each bounded discovery follows the preceding publication-locked relation deletion and must find only the remaining active rows",
     "issue": 2612
@@ -181,8 +171,8 @@
   },
   {
     "annotation": "createPublicationAliasIdentityStaging",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each alias claim stages its source posts in its own claim sequence; merging claims needs a batched alias capture (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "createTopicRecommendationLinkRelation",
@@ -191,8 +181,8 @@
   },
   {
     "annotation": "createTopicRevision",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Topic create and alias-link revisions record different completed writes, and a merge inserts source then destination revisions (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "createTotpAuthenticator",
@@ -266,8 +256,8 @@
   },
   {
     "annotation": "fencePublicationIdentityBridgeCapture",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "fetchElectionVoteRowsByUser",
@@ -440,11 +430,6 @@
     "issue": 2613
   },
   {
-    "annotation": "getRssFeedHardDeleteTopicImpacts",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
-  },
-  {
     "annotation": "getRssFeedImport",
     "reason": "The user RSS import SSE request polls owned progress until completion or disconnect",
     "issue": 2613
@@ -455,19 +440,14 @@
     "issue": 2613
   },
   {
-    "annotation": "getRssFeedScopesForCategoryPublicationLocks",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
-  },
-  {
     "annotation": "getTerritorialInformedWindow",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
   },
   {
     "annotation": "getTopicAliasesForMergeRevision",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "The destination aliases are re-read after the alias move and source-slug alias writes, so the after snapshot must see them",
+    "issue": 3114
   },
   {
     "annotation": "getTopicByAny",
@@ -521,28 +501,28 @@
   },
   {
     "annotation": "listDescendantPostPublicationSitemapPage",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "listPostPublicationIdentityNativeSourcePage",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Eight source branches page sequentially under one row budget and cursor; one statement would change page boundaries (#3114 question 2)",
+    "issue": 3114
   },
   {
     "annotation": "listPublicationIdentityFeedItem",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "listPublicationIdentityFeedSourcePage",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Feed items page under the shared source row budget and cursor; one statement would change page boundaries (#3114 question 2)",
+    "issue": 3114
   },
   {
     "annotation": "listTopicAliasPublicationPostImpacts",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each alias retains its own ownership pages under its own dirty-work row (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
@@ -591,8 +571,8 @@
   },
   {
     "annotation": "lockExistingTopicAliasPublicationScopes",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each alias claim locks its alias scope before its own row lock and rechecks after it (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "lockImageAssetAdmission:reserve",
@@ -621,38 +601,23 @@
   },
   {
     "annotation": "lockPostPublicationCaptures",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
-  },
-  {
-    "annotation": "lockPostPublicationRssFeedScopes",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "lockPostPublicationScope",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Author, post and feed scope locks are distinct keys taken at separate sites, and the nested rss-feed state change re-locks its feed as its own entry point (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "lockPreparedPublicationScopes",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
-  },
-  {
-    "annotation": "lockRssFeedItemsForStoryPublicationChanges",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
-  },
-  {
-    "annotation": "lockStoryLifecycles",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "The capture re-reads category aliases after the feed lifecycle and row locks to catch aliases added since the first read",
+    "issue": 3114
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
@@ -661,8 +626,8 @@
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each alias capture locks its scope before its own write; merging needs a batched alias capture (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "markImageDeliveryAuthorityStarted",
@@ -681,18 +646,18 @@
   },
   {
     "annotation": "orderPostPublicationRetainedKeyInput",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "pagePublicationAliasIdentityStaging",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each alias claim pages its own staged post identities in global UUID order (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "pagePublicationAliasSourceIdentities",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Authored and relation sources are separate keyset walks per alias; one statement would change plans and cursors (#3114 question 3)",
+    "issue": 3114
   },
   {
     "annotation": "persistFinalizedContributionResponse",
@@ -761,8 +726,8 @@
   },
   {
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each relation write resolves canonical topics at its own write boundary; merging writes needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
@@ -831,28 +796,28 @@
   },
   {
     "annotation": "resolvePublicationPostScopeLiveOwner",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "retainCurrentRssFeedPublicationKeys",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "The topic-change capture runs after the feed UPDATE and must see the new topic that the earlier state-change capture did not",
+    "issue": 3114
   },
   {
     "annotation": "retainPostPublicationDirtyWorkKeys",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "retainPublicationIdentityBridges",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "retainPublicationIdentityRoots",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "revokeAllAuthenticatedSessions",
@@ -936,8 +901,8 @@
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "stageImagePlacementDeliveryRecord",
@@ -981,8 +946,8 @@
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",
-    "reason": "Publication identity bookkeeping runs once per affected scope",
-    "issue": 2605
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
   },
   {
     "annotation": "upsertUrlHostnames",

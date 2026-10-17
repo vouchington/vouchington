@@ -47,6 +47,8 @@ export async function lockRssFeedItemsForStoryPublicationChanges(
 /**
  * Coalesces category topic remaps by story without refreshing an unbounded story projection in
  * the category writer's transaction. The publication reconciler owns that later projection refresh.
+ * Callers hold `lockRssFeedItemsForStoryPublicationChanges` for every changed item before they
+ * write the category rows, so this capture does not repeat the feed-scope and item locks.
  */
 export async function recordStoryPublicationChangesForCategoryTopics(
   query: TransactionQuery,
@@ -60,7 +62,6 @@ export async function recordStoryPublicationChangesForCategoryTopics(
   if (topicChanges.length === 0) return
 
   const itemIds = [...new Set(topicChanges.map(change => change.rss_feed_item_id))].toSorted()
-  await lockRssFeedItemsForStoryPublicationChanges(query, itemIds)
   const affectedStoryIds = new Set<string>()
   for (let offset = 0; offset < itemIds.length; offset += STORY_CATEGORY_ITEM_BATCH_SIZE) {
     const batch = itemIds.slice(offset, offset + STORY_CATEGORY_ITEM_BATCH_SIZE)

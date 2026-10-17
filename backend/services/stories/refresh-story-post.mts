@@ -38,8 +38,9 @@ export type StoryPostRefreshResult = {
  * re-enqueue the story-post summarisation agent with force=true so a stale
  * ai_summary_markdown is overwritten.
  *
- * Assignment, removal, and clustering callers include this refresh in their transaction. If no story post
- * exists yet (the story was never turned into a post), this is a no-op.
+ * Assignment, removal, and clustering callers include this refresh in their transaction and hold the
+ * story lifecycle lock first; without `options.query` the refresh locks the story in its own transaction.
+ * If no story post exists yet (the story was never turned into a post), this is a no-op.
  */
 export async function refreshStoryPostForStory(
   storyId: string,
@@ -49,6 +50,7 @@ export async function refreshStoryPostForStory(
   const query = options.query
   if (!query) {
     await using query = await beginTransaction()
+    await lockStoryLifecycles(query, [storyId])
     const result = await refreshStoryPostForStoryInTransaction(storyId, { query })
     await query.commit()
     if (result) {
@@ -65,7 +67,6 @@ async function refreshStoryPostForStoryInTransaction(
   storyId: string,
   options: RefreshStoryPostTransactionOptions,
 ): Promise<StoryPostRefreshResult | null> {
-  await lockStoryLifecycles(options.query, [storyId])
   const postStory = await getPostStoryByStoryId(storyId, options)
   if (!postStory) return null
 
