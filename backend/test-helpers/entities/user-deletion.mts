@@ -17,21 +17,32 @@ export async function countTestBlueskyLinkAuthorizationsForUser(userId: string):
   return rows[0]?.count ?? 0
 }
 
+export class TestUserDeletionWriterAborted extends Error {
+  constructor() {
+    super('Test user-deletion writer aborted before cleanup')
+    this.name = 'TestUserDeletionWriterAborted'
+  }
+}
+
 export async function startPausedTestUserDeletionWriter(
   writeWithinTransaction: (query: TransactionQuery) => Promise<void>,
-): Promise<{ release(): void; completed: Promise<void> }> {
+): Promise<{ abort(): void; release(): void; completed: Promise<void> }> {
   const inserted = Promise.withResolvers<void>()
-  const release = Promise.withResolvers<void>()
+  const decision = Promise.withResolvers<'abort' | 'commit'>()
   const completed = (async () => {
     await using query = await beginTransaction()
     await writeWithinTransaction(query)
     inserted.resolve()
-    await release.promise
+    if ((await decision.promise) === 'abort') throw new TestUserDeletionWriterAborted()
     await query.commit()
   })()
   void completed.catch(inserted.reject)
   await inserted.promise
-  return { release: () => release.resolve(), completed }
+  return {
+    abort: () => decision.resolve('abort'),
+    release: () => decision.resolve('commit'),
+    completed,
+  }
 }
 
 /** Holds the production user-lifecycle lock across an uncommitted soft deletion. */
