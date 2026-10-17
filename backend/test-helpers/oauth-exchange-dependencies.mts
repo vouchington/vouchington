@@ -44,6 +44,7 @@ export function createTestOAuthExchangeDependencies(
       if (provider === 'x' && providerFailure) throw providerFailure
       return successfulAccount
     }),
+    upsertGoogle: vi.fn<ExchangeDependencies['upsertGoogle']>(async () => successfulAccount),
     rejectExhausted: vi.fn<ExchangeDependencies['rejectExhausted']>(async () => false),
     releaseClaim: vi.fn<ExchangeDependencies['releaseClaim']>(async () => undefined),
   }

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,
@@ -12,6 +12,7 @@ import {
 
 describe('OAuth authorization broker config', () => {
   afterEach(async () => {
+    vi.unstubAllEnvs()
     await closeScopedDynamicConfigContext([oauthAuthorizationBrokerConfig])
   })
 
@@ -38,6 +39,11 @@ describe('OAuth authorization broker config', () => {
         purposes: ['authenticate', 'connect'],
       },
       microsoft: {
+        version: 1,
+        modes: { web: false, native: false },
+        purposes: ['authenticate', 'connect'],
+      },
+      google: {
         version: 1,
         modes: { web: false, native: false },
         purposes: ['authenticate', 'connect'],
@@ -69,8 +75,16 @@ describe('OAuth authorization broker config', () => {
     expect(assertBrokerOAuthProvider('github')).toBe('github')
     expect(assertBrokerOAuthProvider('linkedin')).toBe('linkedin')
     expect(assertBrokerOAuthProvider('microsoft')).toBe('microsoft')
-    expect(() => assertBrokerOAuthProvider('google')).toThrow(
-      expect.objectContaining({ status: 404 }),
-    )
+    expect(assertBrokerOAuthProvider('google')).toBe('google')
+  })
+
+  it('requires the server secret before enabling Google broker capability', () => {
+    vi.stubEnv('GOOGLE_CLIENT_SECRET', '')
+    overrideDynamicConfigFieldsForTest(oauthAuthorizationBrokerConfig, {
+      google_native_enabled: true,
+    })
+    expect(isOAuthAuthorizationBrokerEnabled('google', 'native', ['google'])).toBe(false)
+    vi.stubEnv('GOOGLE_CLIENT_SECRET', 'test-server-secret')
+    expect(isOAuthAuthorizationBrokerEnabled('google', 'native', ['google'])).toBe(true)
   })
 })

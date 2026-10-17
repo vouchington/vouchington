@@ -7,13 +7,13 @@ describe('completeOAuthAuthorizationExchange', () => {
   it('rejects providers outside the durable broker', async () => {
     await expect(
       completeOAuthAuthorizationExchange(
-        'google',
+        'apple',
         randomUUID(),
         randomUUID(),
-        'google-user',
+        'apple-user',
         queryWithRowCount(1),
       ),
-    ).rejects.toThrow('OAuth authorization broker does not support google')
+    ).rejects.toThrow('OAuth authorization broker does not support apple')
   })
 
   it('fails a stale fencing claim without overwriting newer exchange state', async () => {
@@ -66,6 +66,27 @@ describe('completeOAuthAuthorizationExchange', () => {
       authorizationId,
       '00000000-0000-7000-8000-000000000123',
       'linkedin',
+      claimId,
+    ])
+  })
+
+  it('binds a Google account to the same fenced completion update', async () => {
+    const authorizationId = randomUUID()
+    const claimId = randomUUID()
+    const query = queryWithRowCount(1)
+
+    await completeOAuthAuthorizationExchange(
+      'google',
+      authorizationId,
+      claimId,
+      '00000000-0000-7000-8000-000000000123',
+      query,
+    )
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('google_account_id = $2'), [
+      authorizationId,
+      '00000000-0000-7000-8000-000000000123',
+      'google',
       claimId,
     ])
   })

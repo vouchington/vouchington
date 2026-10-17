@@ -43,6 +43,14 @@ const authorizationAccountIdentifiers = {
     emailColumn: 'microsoft_user_email_address',
     dataColumn: 'microsoft_user_data',
   },
+  google: {
+    table: 'google_accounts',
+    providerUserIdColumn: 'google_user_id',
+    accountIdColumn: 'id',
+    authorizationAccountColumn: 'google_account_id',
+    emailColumn: 'google_user_email_address',
+    dataColumn: 'google_user_data',
+  },
 } as const satisfies Record<
   BrokerOAuthProvider,
   {

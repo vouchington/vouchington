@@ -19,3 +19,30 @@ describe('LinkedIn authorization URL', () => {
     expect(native.searchParams.get('scope')).toBe(web.searchParams.get('scope'))
   })
 })
+
+describe('Google authorization URL', () => {
+  it('requests minimal OIDC scopes with S256 PKCE and the confidential callback', () => {
+    const authorization = new URL(
+      buildProviderAuthorizationUrl({
+        provider: 'google',
+        callbackMode: 'native',
+        clientId: 'google-client',
+        redirectUri: 'https://example.com/auth/callback/google/broker',
+        state: 'opaque-state',
+        codeChallenge: 'challenge',
+      }),
+    )
+    expect(authorization.origin + authorization.pathname).toBe(
+      'https://accounts.google.com/o/oauth2/v2/auth',
+    )
+    expect(Object.fromEntries(authorization.searchParams)).toMatchObject({
+      client_id: 'google-client',
+      redirect_uri: 'https://example.com/auth/callback/google/broker',
+      response_type: 'code',
+      scope: 'openid profile email',
+      state: 'opaque-state',
+      code_challenge: 'challenge',
+      code_challenge_method: 'S256',
+    })
+  })
+})

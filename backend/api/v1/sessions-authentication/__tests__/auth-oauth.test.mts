@@ -43,6 +43,11 @@ describe('OAuth Authentication Routes', () => {
           modes: { web: false, native: false },
           purposes: ['authenticate', 'connect'],
         },
+        google: {
+          version: 1,
+          modes: { web: false, native: false },
+          purposes: ['authenticate', 'connect'],
+        },
       },
     })
     expect(response.headers['cache-control']).toBe('no-store')

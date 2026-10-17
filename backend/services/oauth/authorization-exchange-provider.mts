@@ -14,6 +14,7 @@ import type { upsertGithubAccount } from '@services/oauth-github'
 import type { upsertLinkedInAccount } from '@services/oauth-linkedin'
 import type { upsertMicrosoftAccount } from '@services/oauth-microsoft'
 import type { upsertXAccount } from '@services/oauth-x'
+import type { upsertGoogleAuthorizationCodeAccount } from '@services/oauth-google'
 
 export type OAuthAuthorizationExchangeDependencies = {
   validateClaim: typeof validateOAuthAuthorizationExchangeClaim
@@ -25,6 +26,7 @@ export type OAuthAuthorizationExchangeDependencies = {
   upsertLinkedIn: typeof upsertLinkedInAccount
   upsertMicrosoft: typeof upsertMicrosoftAccount
   upsertX: typeof upsertXAccount
+  upsertGoogle: typeof upsertGoogleAuthorizationCodeAccount
   rejectExhausted: typeof rejectExhaustedOAuthAuthorizationExchange
   releaseClaim: typeof releaseOAuthAuthorizationExchangeClaim
 }
@@ -95,6 +97,14 @@ export async function exchangeClaimedOAuthAuthorization(
         code,
         authorization.redirect_uri,
         providerInput.codeVerifier,
+        completionOptions,
+      )
+      break
+    case 'google':
+      await dependencies.upsertGoogle(
+        code,
+        authorization.redirect_uri,
+        providerInput.codeVerifier!,
         completionOptions,
       )
       break

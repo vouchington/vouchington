@@ -47,6 +47,8 @@ describe('environment contract', () => {
     )
     expect(envNamesForSurface('ecs-worker-secret')).toContain('OPENROUTER_API_KEY')
     expect(envNamesForSurface('ecs-backend-secret')).toContain('OPENROUTER_API_KEY')
+    expect(envNamesForSurface('ecs-backend-secret')).toContain('GOOGLE_CLIENT_SECRET')
+    expect(envNamesForSurface('ecs-worker-secret')).toContain('GOOGLE_CLIENT_SECRET')
     expect(envNamesForSurface('ecs-backend-secret')).not.toContain(
       'APPLE_APP_STORE_SERVER_API_PRIVATE_KEY',
     )
@@ -123,6 +125,7 @@ describe('environment contract', () => {
     expect(knownSecretEnvNames()).toContain('APPLE_APP_STORE_SERVER_API_PRIVATE_KEY')
     expect(knownSecretEnvNames()).toContain('LIGHTPANDA_TOKEN')
     expect(knownSecretEnvNames()).toContain('OPENROUTER_API_KEY')
+    expect(knownSecretEnvNames()).toContain('GOOGLE_CLIENT_SECRET')
     expect(knownSecretEnvNames()).not.toContain('SENTRY_DSN')
   })
 

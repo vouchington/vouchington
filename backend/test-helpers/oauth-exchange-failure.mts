@@ -3,6 +3,7 @@ import { upsertFacebookAuthorizationCodeAccount } from '../services/oauth-facebo
 import { upsertGithubAccount } from '../services/oauth-github/index.mts'
 import { upsertLinkedInAccount } from '../services/oauth-linkedin/index.mts'
 import { upsertMicrosoftAccount } from '../services/oauth-microsoft/index.mts'
+import { upsertGoogleAuthorizationCodeAccount } from '../services/oauth-google/index.mts'
 import { upsertXAccount } from '../services/oauth-x/index.mts'
 import { processOAuthAuthorizationExchange } from '../services/oauth/authorization-exchange.mts'
 import {
@@ -58,6 +59,7 @@ export async function captureTestOAuthExchangeMutationFailure(
       upsertGithub: upsertGithubAccount,
       upsertLinkedIn: upsertLinkedInAccount,
       upsertMicrosoft: upsertMicrosoftAccount,
+      upsertGoogle: upsertGoogleAuthorizationCodeAccount,
       upsertX: upsertXAccount,
       async rejectExhausted(id, claimedId) {
         let rejected: boolean

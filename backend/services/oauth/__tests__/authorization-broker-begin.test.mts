@@ -89,6 +89,32 @@ describe('OAuth authorization broker begin', () => {
     )
     expect(redirect.searchParams.get('state')).toEqual(expect.any(String))
     expect(await getTestOAuthAuthorization(result.flow_id)).toMatchObject({ status: 'pending' })
+
+    const google = await beginOAuthAuthorization(
+      {
+        provider: 'google',
+        purpose: 'authenticate',
+        callbackMode: 'native',
+        completionProofChallenge: 'B'.repeat(43),
+        deviceId: randomUUID(),
+        sessionId: randomUUID(),
+        expectedOrigin: 'https://example.com',
+      },
+      {
+        getClientId: provider => `test-${provider}-client`,
+        isProviderEnabled: () => true,
+      },
+    )
+    cleanup.authorizationIds.push(google.flow_id)
+    const googleRedirect = new URL(google.redirect_url)
+    expect(googleRedirect.origin + googleRedirect.pathname).toBe(
+      'https://accounts.google.com/o/oauth2/v2/auth',
+    )
+    expect(googleRedirect.searchParams.get('code_challenge_method')).toBe('S256')
+    expect(await getTestOAuthAuthorization(google.flow_id)).toMatchObject({
+      status: 'pending',
+      google_account_id: null,
+    })
   })
 
   it('fails closed when a provider and callback mode are disabled', async () => {
