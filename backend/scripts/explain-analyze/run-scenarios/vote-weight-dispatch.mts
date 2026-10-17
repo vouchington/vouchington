@@ -124,10 +124,10 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
           : [
               {
                 kind: 'usesIndexes',
-                indexes: ['idx_membership_source_states__observation_id'],
+                indexes: ['idx_membership_sources__lineage_id'],
                 noSort: true,
               },
-              { kind: 'maxProcessedRows', relation: 'membership_source_states', max: 520 },
+              { kind: 'maxProcessedRows', relation: 'membership_sources', max: 520 },
             ],
     })
     // no-mistakes-disable-next-line query-reached-per-item: fixed branch scenarios serialize process-global query capture

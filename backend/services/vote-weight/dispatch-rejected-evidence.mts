@@ -6,7 +6,12 @@ import type {
   VoteWeightRejectedEvidenceKeyset,
 } from '@queues/vote-aggregation/enqueues/types-dispatch'
 
-type Evidence = { at: string; id: string; observation_id: string | null }
+type Evidence = {
+  at: string
+  id: string
+  lineage_id: string | null
+  source_kind: 'direct' | 'family' | null
+}
 type Source = { membership_source_id: string; user_id: string | null }
 
 export async function findRejectedEvidenceEvents(
@@ -16,9 +21,11 @@ export async function findRejectedEvidenceEvents(
 ): Promise<{ events: VoteWeightDispatchEvent[]; next: VoteWeightRejectedEvidenceKeyset | null }> {
   const evidenceQuery = sql`/* dispatchVoteWeightFamilySourceChanges:rejected_at:evidence */
     SELECT evidence.rejected_at::text AS at, evidence.id,
-      (SELECT id FROM membership_provider_observations
-       WHERE membership_provider_evidence_record_id = evidence.id LIMIT 1) AS observation_id
+      observation.membership_provider_lineage_id AS lineage_id, observation.source_kind
     FROM membership_provider_evidence_records evidence
+    LEFT JOIN membership_provider_observations observation
+      ON observation.membership_provider_evidence_record_id = evidence.id
+      AND observation.membership_provider_lineage_id = evidence.membership_provider_lineage_id
     WHERE evidence.rejected_at IS NOT NULL
       AND evidence.rejected_at <= ${window.windowEnd}::timestamptz`
   if (window.windowStart)
@@ -33,15 +40,21 @@ export async function findRejectedEvidenceEvents(
   const evidence = (await write<Evidence>(evidenceQuery)).rows[0]
   if (!evidence) return { events: [], next: null }
 
-  if (!evidence.observation_id) return { events: [], next: { at: evidence.at, id: evidence.id } }
+  if (!evidence.lineage_id || !evidence.source_kind)
+    return { events: [], next: { at: evidence.at, id: evidence.id } }
+  // The source-state FK ties its lineage to this source; the lateral PK check keeps source-id order.
   const sourceQuery = sql`/* dispatchVoteWeightFamilySourceChanges:rejected_at:sources */
-    SELECT source_state.membership_source_id, source.user_id
-    FROM membership_source_states source_state
-    INNER JOIN membership_sources source ON source.id = source_state.membership_source_id
-    WHERE source_state.membership_provider_observation_id = ${evidence.observation_id}::uuid`
-  if (after?.afterSourceId)
-    sourceQuery.append(sql` AND source_state.membership_source_id > ${after.afterSourceId}::uuid`)
-  sourceQuery.append(sql` ORDER BY source_state.membership_source_id LIMIT ${cap}`)
+    SELECT source.id AS membership_source_id, source.user_id
+    FROM membership_sources source
+    CROSS JOIN LATERAL (
+      SELECT membership_source_id FROM membership_source_states
+      WHERE membership_source_id = source.id
+      LIMIT 1
+    ) source_state
+    WHERE source.membership_provider_lineage_id = ${evidence.lineage_id}::uuid
+      AND source.source_kind = ${evidence.source_kind}::membership_source_kinds`
+  if (after?.afterSourceId) sourceQuery.append(sql` AND source.id > ${after.afterSourceId}::uuid`)
+  sourceQuery.append(sql` ORDER BY source.id LIMIT ${cap}`)
   const { rows } = await write<Source>(sourceQuery)
   const last = rows.at(-1)
   const next =

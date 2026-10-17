@@ -8,13 +8,14 @@ import {
   createVoteWeightDispatchUser,
   getVoteWeightEvidenceRejectedAtExact,
   rejectVoteWeightEvidenceExact,
+  supersedeVoteWeightFamilyObservation,
 } from '@voucha/test-helpers/vote-weight-dispatch'
 import { rejectMembershipProviderEvidence } from '../memberships/invalidate-provider-evidence.mts'
 import { dispatchVoteWeightFamilySourceChanges } from './dispatch-family-source-changes.mts'
 import { voteWeightWorkConfig } from './work-limits.mts'
 
 describe('dispatchVoteWeightFamilySourceChanges', () => {
-  it('recovers rejected family evidence after the rejection retires its live projection', async () => {
+  it('recovers older rejected family evidence after its observation advances and projection retires', async () => {
     const user = await createVoteWeightDispatchUser()
     const family = await createVoteWeightDispatchFamily({
       userId: user.id,
@@ -22,6 +23,7 @@ describe('dispatchVoteWeightFamilySourceChanges', () => {
       expiresAt: new Date('2090-01-01T00:00:00.000Z'),
       updatedAt: new Date('2020-01-01T00:00:00.000Z'),
     })
+    await supersedeVoteWeightFamilyObservation(family.sourceId)
 
     await expect(
       rejectMembershipProviderEvidence(family.evidenceId, 'Family evidence rejected'),

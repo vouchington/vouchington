@@ -2,6 +2,7 @@ import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { VoteWeightDispatchWindow } from '@queues/vote-aggregation/enqueues/types-dispatch'
 import { getVoteWeightWindowOverlapSeconds } from './work-limits.mts'
+import { getVoteWeightFamilyCommitBoundary } from './dispatch-commit-boundary.mts'
 
 export type VoteWeightDispatcher =
   | 'age_milestones'
@@ -27,7 +28,10 @@ export async function beginVoteWeightDispatch(
   return {
     previousThroughAt: rows[0]?.previous_through_at ?? null,
     windowStart: options.fullReplay ? null : (rows[0]?.window_start ?? null),
-    windowEnd: now.toISOString(),
+    windowEnd:
+      dispatcher === 'family_source_changes'
+        ? await getVoteWeightFamilyCommitBoundary(now)
+        : now.toISOString(),
   }
 }
 

@@ -73,6 +73,52 @@ export async function getVoteWeightEvidenceRejectedAtExact(evidenceId: string): 
   return rows[0].at
 }
 
+export async function supersedeVoteWeightFamilyObservation(sourceId: string): Promise<void> {
+  const revision = randomUUID()
+  const evidenceLookupSha256 = randomUUID().replaceAll('-', '').padEnd(64, 'd')
+  const { rowCount } = await write(sql`/* supersedeVoteWeightFamilyObservation */
+    WITH current_observation AS (
+      SELECT observation.*
+      FROM membership_source_states source_state
+      INNER JOIN membership_provider_observations observation
+        ON observation.id = source_state.membership_provider_observation_id
+      WHERE source_state.membership_source_id = ${sourceId} AND source_state.source_kind = 'family'
+    ), evidence AS (
+      INSERT INTO membership_provider_evidence_records (
+        membership_provider_context_id, membership_provider_lineage_id,
+        evidence_lookup_sha256, encrypted_evidence, verified_at
+      )
+      SELECT membership_provider_context_id, membership_provider_lineage_id,
+        ${evidenceLookupSha256}, ${Buffer.from([2])}, CURRENT_TIMESTAMP
+      FROM current_observation
+      RETURNING id
+    ), newer_observation AS (
+      INSERT INTO membership_provider_observations (
+        membership_provider_context_id, membership_provider_evidence_record_id,
+        membership_provider_lineage_id, membership_provider_product_id,
+        membership_product_id, observed_price_minor_units, observed_price_currency_code,
+        provider_revision, provider_order, source_kind, effective_at, expires_at,
+        should_auto_renew
+      )
+      SELECT current_observation.membership_provider_context_id, evidence.id,
+        current_observation.membership_provider_lineage_id,
+        current_observation.membership_provider_product_id,
+        current_observation.membership_product_id,
+        current_observation.observed_price_minor_units,
+        current_observation.observed_price_currency_code,
+        ${revision}, current_observation.provider_order + 1,
+        current_observation.source_kind, current_observation.effective_at,
+        current_observation.expires_at, current_observation.should_auto_renew
+      FROM current_observation CROSS JOIN evidence
+      RETURNING id
+    )
+    UPDATE membership_source_states source_state
+    SET membership_provider_observation_id = newer_observation.id
+    FROM newer_observation
+    WHERE source_state.membership_source_id = ${sourceId}`)
+  if (rowCount !== 1) throw new Error('Vote-weight family observation was not superseded')
+}
+
 export async function getVoteWeightDispatchCursorForTest(
   dispatcher: string,
 ): Promise<string | null> {

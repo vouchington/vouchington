@@ -2,6 +2,7 @@ import { registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueRecalculateVoteWeightEvents } from '@queues/vote-aggregation/enqueues/vote-weight'
 import sql from 'sql-template-strings'
 import { isTerminalMembershipStatus } from '../update-result.mts'
+import { markVoteWeightDirtyInTransaction } from '../mark-vote-weight-dirty.mts'
 import type { MembershipStatus } from '../types.mts'
 
 type Source = {
@@ -95,6 +96,7 @@ export async function upsertMembershipSourceState(
     | undefined
   if (state?.user_id && source.kind === 'family') {
     const userId = state.user_id
+    await markVoteWeightDirtyInTransaction(userId, query)
     const jobId = `voteWeight__${userId}__familySource__${source.id}__${state.updated_at.getTime()}`
     registerPostCommitAction(query, async () => {
       await enqueueRecalculateVoteWeightEvents([{ userId, jobId }])

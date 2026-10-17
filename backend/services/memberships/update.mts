@@ -13,6 +13,7 @@ import {
   type MembershipUpdateRow,
 } from './update-result.mts'
 import { appendLifecycleSetClauses } from './update-lifecycle.mts'
+import { markVoteWeightDirtyInTransaction } from './mark-vote-weight-dirty.mts'
 import type {
   MembershipEventUpdateOptions,
   RecordMembershipUpdateEventChange,
@@ -124,7 +125,9 @@ export async function updateMembershipFromEvent(
     const { rows } = await transaction(query)
     const updated = parseMembershipUpdateRow(rows[0] as MembershipUpdateRow | undefined)
     if (!updated) return null
-    await transaction(sql`/* updateMembershipFromEvent:sourceState */
+    const { rows: sourceStates } = await transaction<{
+      source_kind: string
+    }>(sql`/* updateMembershipFromEvent:sourceState */
       UPDATE membership_source_states state
       SET membership_product_id = membership.membership_product_id,
           effective_at = membership.effective_at,
@@ -140,7 +143,10 @@ export async function updateMembershipFromEvent(
       FROM memberships membership
       WHERE membership.id = ${options.membershipId}
         AND state.membership_source_id = membership.membership_source_id
+      RETURNING state.source_kind
     `)
+    if (sourceStates[0]?.source_kind === 'family')
+      await markVoteWeightDirtyInTransaction(updated.current.user_id, transaction)
     const retainsPaidAccess = (await recordChange(updated, transaction)) ?? false
     const resumedAccess =
       !['active', 'past_due'].includes(updated.current.status) &&

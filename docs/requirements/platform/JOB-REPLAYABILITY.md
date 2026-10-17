@@ -33,7 +33,8 @@ reactivate retained terminal records. Family timestamp branches retain their own
 all branches finish, and only then commit the dispatch position. Direct account changes enqueue a
 new event, while an operator force request can reactivate its stable id.
 
-OAuth post-commit enqueue failures retain a dirty marker until recalculation succeeds. Its indexed
+OAuth and family mutations retain a transactional dirty marker until recalculation succeeds, so
+recovery does not depend on publication success or a commit falling within an overlap. Its indexed
 recovery dispatcher reactivates a stable per-user job and restarts from the dirty set on each run.
 
 See also the [backend queue reference](../../overview/architecture/queues/README.md).

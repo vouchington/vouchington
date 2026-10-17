@@ -73,13 +73,16 @@ windows and durable positions. They enqueue the same idempotent recalculation fr
 expiration also includes direct memberships, whose recalculated weight may stay unchanged.
 Family changes read each timestamp independently, including rejected provider evidence of any kind.
 A bounded continuation preserves the original window and each unfinished branch's keyset.
-Rejected evidence also preserves a recipient keyset because one observation can serve several
-family sources. The
-position advances with compare-and-set only after all child enqueues succeed. An overlap catches
-late commits while event-keyed job ids identify repeated reads of the same trigger.
+Rejected evidence resolves durable lineage owners even after newer observations or retired
+projections replace the rejected entitlement; its recipient keyset handles shared family sources. The
+position advances with compare-and-set only after all child enqueues succeed. An overlap covers
+ordinary dispatch races while event-keyed job ids identify repeated reads of the same trigger. Family windows stop before open writer transactions because transaction timestamps
+can precede commit by more than the overlap. The writer must expose activity for every connected
+role that can update family sources; dispatch refuses to advance without that visibility.
 
-OAuth linking also leaves a durable dirty marker in the account transaction. A separate indexed
-recovery pass selects unrecalculated live accounts without administrator overrides. Successful
+OAuth linking and family mutations also leave a durable dirty marker in their transaction. This
+protects changes that commit beyond the overlap or coalesce with an active event job. A separate
+indexed recovery pass selects unrecalculated live accounts without administrator overrides. Successful
 recalculation removes them from that set, so this pass needs no persisted timestamp cursor.
 
 Source writers enqueue after commit. Operator backfills replay the full signal history through

@@ -49,7 +49,8 @@ flowchart LR
 ## Decisions worth knowing
 
 Vote-weight maintenance separates indexed trigger selection from idempotent recalculation of current
-facts. Source writes enqueue after commit; overlapping persisted windows provide recovery. See
+facts. Source writes enqueue after commit; overlapping windows and transactionally retained dirty
+markers provide recovery when publication or timestamp visibility loses a trigger. See
 [vote-weight recovery](../queues/README.md#vote-weight-recovery) for continuation and replay semantics.
 
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means

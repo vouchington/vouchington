@@ -369,7 +369,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__direct_lineage ON memb
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__current_family_lineage_user ON membership_sources (membership_provider_lineage_id, user_id) WHERE membership_provider_lineage_id IS NOT NULL AND user_id IS NOT NULL AND source_kind = 'family';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_sources__lineage_id ON membership_sources (membership_provider_lineage_id) WHERE membership_provider_lineage_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_sources__lineage_id
+  ON membership_sources (membership_provider_lineage_id, source_kind, id) INCLUDE (user_id)
+  WHERE membership_provider_lineage_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_sources__id_source_kind ON membership_sources (id, source_kind);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -410,7 +412,7 @@ CREATE INDEX IF NOT EXISTS idx_membership_source_states__product_id ON membershi
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__lineage_id ON membership_source_states (membership_provider_lineage_id) WHERE membership_provider_lineage_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_membership_source_states__observation_id ON membership_source_states (membership_provider_observation_id, membership_source_id) WHERE membership_provider_observation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_membership_source_states__observation_id ON membership_source_states (membership_provider_observation_id) WHERE membership_provider_observation_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__family_updated_at
   ON membership_source_states (updated_at, membership_source_id) WHERE source_kind = 'family';

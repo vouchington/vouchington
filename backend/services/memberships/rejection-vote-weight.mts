@@ -1,12 +1,14 @@
 import { registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueRecalculateVoteWeightEvents } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { markVoteWeightDirtyInTransaction } from './mark-vote-weight-dirty.mts'
 
-export function enqueueRejectedFamilyVoteWeightAfterCommit(
+export async function markAndEnqueueRejectedFamilyVoteWeight(
   query: QueryExecutor,
   target: { source_kind: string; user_id: string },
   evidenceId: string,
-): void {
+): Promise<void> {
   if (target.source_kind !== 'family') return
+  await markVoteWeightDirtyInTransaction(target.user_id, query)
   registerPostCommitAction(query, async () => {
     await enqueueRecalculateVoteWeightEvents([
       {

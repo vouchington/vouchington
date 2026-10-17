@@ -1,5 +1,5 @@
 import {
-  enqueueRejectedFamilyVoteWeightAfterCommit,
+  markAndEnqueueRejectedFamilyVoteWeight,
   validateMembershipEvidenceRejectionReason,
 } from './rejection-vote-weight.mts'
 import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
@@ -60,7 +60,7 @@ async function rejectMembershipProviderEvidenceInTransaction(
   )
   if (!rejectedAt) return { audited: false, invalidated: false, membershipId: null }
 
-  enqueueRejectedFamilyVoteWeightAfterCommit(query, lockedTarget, evidenceId)
+  await markAndEnqueueRejectedFamilyVoteWeight(query, lockedTarget, evidenceId)
 
   await query(sql`/* rejectMembershipProviderEvidence: cancel source */
     UPDATE membership_source_states
