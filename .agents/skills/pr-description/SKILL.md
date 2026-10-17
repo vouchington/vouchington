@@ -13,8 +13,9 @@ Claude Code and Codex load `vouchington-workflow:pr-description`; Grok, Cursor, 
 
 Use the `pr_create`, `pr_update`, and `pr_validate` tools of the `vouchington-tooling` MCP server
 rather than raw `gh pr create` or `gh pr edit --body*`, which the Codex hook blocks. The tools take
-the structured `title`, `summary`, `impact`, `relatedIssues`, `details`, `agent`, and
-`workspaceSetup` input (the server derives the trusted `mode` from its launch environment) and
+the structured `title`, `summary`, `impact`, `relatedIssues`, `details`, and `workspaceSetup`
+input (the server derives the trusted `mode` and the `Agent:` line from its own environment; omit
+`agent` and `model`) and
 render the H2 body themselves, so put no `##` headings or provenance
 lines in those fields. `details` entries may use `###` headings where a workflow names required
 sections (for example `### Root cause`, `### Implementation choice`, `### Options considered`).
