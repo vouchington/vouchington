@@ -9,6 +9,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExplainResult } from '@data-stores/psql'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 
 const OUTPUT_DIR = join(import.meta.dirname, 'output')
 
@@ -112,6 +113,10 @@ function main() {
     console.log(`\nSQL:\n${r.query_text}\n`)
     console.log(`Plan:`)
     console.log(formatPlan(r.plan))
+    const completeness = hasLaunchedParallelWorkers(r.plan)
+      ? ' (incomplete: leader-local counts omit parallel workers)'
+      : ''
+    console.log(`Function calls${completeness}: ${JSON.stringify(r.function_calls ?? [])}`)
     console.log('')
   }
 

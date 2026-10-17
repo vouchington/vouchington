@@ -8,6 +8,7 @@ export interface NodeStats {
   childCount: number
   rowsRemovedByFilter: number
   actualLoops: number
+  workersLaunched: number
   sharedHitBlocks: number
   sharedReadBlocks: number
   sharedDirtiedBlocks: number
@@ -78,6 +79,7 @@ export function collectNodes(node: unknown, stats: NodeStats[] = []): NodeStats[
       childCount: Array.isArray(plans) ? plans.length : 0,
       rowsRemovedByFilter: (planNode['Rows Removed by Filter'] as number) ?? 0,
       actualLoops: (planNode['Actual Loops'] as number) ?? 1,
+      workersLaunched: (planNode['Workers Launched'] as number) ?? 0,
       sharedHitBlocks,
       sharedReadBlocks,
       sharedDirtiedBlocks,
@@ -94,4 +96,11 @@ export function collectNodes(node: unknown, stats: NodeStats[] = []): NodeStats[
   for (const child of children) collectNodes(child, stats)
 
   return stats
+}
+
+export function hasLaunchedParallelWorkers(plan: unknown): boolean {
+  return collectNodes(plan).some(
+    node =>
+      (node.nodeType === 'Gather' || node.nodeType === 'Gather Merge') && node.workersLaunched > 0,
+  )
 }

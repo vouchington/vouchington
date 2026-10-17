@@ -1,7 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExplainResult } from '@data-stores/psql'
-import { analyzeResult, getResourcePressureFingerprints } from './plan-warnings.mts'
+import {
+  analyzeResult,
+  functionCallReports,
+  getResourcePressureFingerprints,
+} from './plan-warnings.mts'
 import {
   RESOURCE_PRESSURE_BASELINE,
   type ResourcePressureBaseline,
@@ -117,6 +121,17 @@ function main() {
     console.log(
       `| ${displayName} | ${user} | ${r.execution_time_ms.toFixed(1)} | ${r.planning_time_ms.toFixed(1)} | ${warningStr} |`,
     )
+  }
+
+  const callReports = functionCallReports(sorted)
+  if (callReports.length > 0) {
+    console.log('\n### Function-call findings\n')
+    for (const { result, busiest } of callReports) {
+      const detail = busiest
+        ? `${busiest.funcname} called ${busiest.calls} times`
+        : 'incomplete: parallel workers omit calls from leader-local counts'
+      console.log(`- ${result.name}: ${detail}`)
+    }
   }
 
   // Print detailed warnings section

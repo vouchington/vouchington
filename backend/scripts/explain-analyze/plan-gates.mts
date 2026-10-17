@@ -12,6 +12,8 @@ import {
   type ScenarioPlanContract,
 } from './plan-expectations.mts'
 import { assertCustomPlanCheck } from './plan-custom-checks.mts'
+import { assertFunctionCallCap } from './plan-function-calls.mts'
+export { assertScenarioFunctionCalls } from './plan-function-calls.mts'
 
 /** Above the current ~102k-post fixture; larger unbounded fixtures must use indexes. */
 export const SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD = 150_000
@@ -85,6 +87,10 @@ function evaluateExpectation(
     case 'singleLeaf':
       assertSingleLeaf(result, nodes, expectation.parent, expectation.key)
       return
+    case 'maxFunctionCalls': {
+      assertFunctionCallCap(result, expectation)
+      return
+    }
     case 'custom':
       assertCustomPlanCheck(expectation.name, result)
       return
