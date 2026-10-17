@@ -56,7 +56,12 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
   candidates.append(after ? sql`(SELECT page_size FROM replay_cursor)` : sql`${limit}`)
   candidates.append(sql`
     ) SELECT record.id FROM candidates
-      JOIN media_delivery_registry_records record ON record.id = candidates.media_delivery_registry_record_id
+      -- The materialized UUID page drives one authority probe and lock per id, in page order.
+      CROSS JOIN LATERAL (
+        SELECT id FROM media_delivery_registry_records
+        WHERE id = candidates.media_delivery_registry_record_id
+        LIMIT 1
+      ) record
     ORDER BY record.id FOR UPDATE OF record
   `)
   const { rows: locked } = await transaction<{ id: string }>(candidates)
@@ -69,8 +74,15 @@ export async function replayFailedMediaDeliveryRegistryRecords(input?: {
     WITH inserted AS (
       INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, changed_by_id, failure_message)
       SELECT media_delivery_registry_record_id, generation, 'pending', ${input?.actorUserId ?? null}, 'Reopened by media delivery reconciliation.'
-      FROM view_media_delivery_registry_current_records
-      WHERE media_delivery_registry_record_id = ANY(${ids}::uuid[]) AND state = 'failed'
+      FROM unnest(${ids}::uuid[]) selected(record_id)
+      CROSS JOIN LATERAL (
+        -- The record id is unique; LIMIT 1 keeps each view probe keyed to one locked id.
+        SELECT media_delivery_registry_record_id, generation, state
+        FROM view_media_delivery_registry_current_records
+        WHERE media_delivery_registry_record_id = selected.record_id
+        LIMIT 1
+      ) current_record
+      WHERE state = 'failed'
       ORDER BY media_delivery_registry_record_id
       RETURNING media_delivery_registry_record_id
     ) SELECT media_delivery_registry_record_id FROM inserted

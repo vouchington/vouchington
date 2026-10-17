@@ -123,9 +123,12 @@ export async function rearmMediaDeliveryReplayPage(ids: readonly string[]): Prom
 
 /** Includes current-view, lifecycle join, retained-actor and FK/trigger partners. */
 export async function analyzeMediaDeliveryReplayRelations(): Promise<void> {
+  // Rearming a page changes the partial failed index; settle its visibility before each capture.
+  await write(`/* analyzeMediaDeliveryReplayRelations */ VACUUM (ANALYZE)
+    media_delivery_registry_projection_work_items`)
   await write(`/* analyzeMediaDeliveryReplayRelations */ ANALYZE
-    media_delivery_registry_projection_work_items, media_delivery_registry_records,
-    media_delivery_registry_changes, copyright_notice_targets, copyright_notices,
+    media_delivery_registry_records, media_delivery_registry_changes,
+    copyright_notice_targets, copyright_notices,
     copyright_notice_lifecycle_changes, users, retained_user_identities,
     media_placements, retained_image_placement_bindings, retained_image_identities`)
 }

@@ -3,7 +3,6 @@ import {
   disableQueryCapture,
   getCapturedQueries,
   clearCapturedQueries,
-  explainAnalyze,
   extractQueryName,
   read,
   type ExplainPlanCacheMode,
@@ -16,6 +15,11 @@ import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gat
 import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { SEED_ANCHOR_DATE_ENV } from './seed-data/seed-anchor.mts'
+import {
+  captureScenarioTwice,
+  resetRepeatedResults,
+  writeSecondPassResults,
+} from './capture-passes.mts'
 
 export const SEED_PREFIX = '019e0000'
 export const OUTPUT_DIR = join(import.meta.dirname, 'output')
@@ -59,6 +63,7 @@ export function getResults(): readonly ExplainResult[] {
 
 export function resetResults(): void {
   results.length = 0
+  resetRepeatedResults()
 }
 
 export function assertCapturedQueries(
@@ -90,14 +95,8 @@ export function getCompletedScenarioIds(): readonly string[] {
   return completedScenarioIds
 }
 
-// seed.mts and run.mts are separate `node` process invocations that must derive the same ids from
-// the one anchor day pinned by EXPLAIN_SEED_ANCHOR_DATE (see seed-data/seed-anchor.mts). CI sets
-// it once per job; with it unset, each process falls back to its own current UTC day, so a UTC
-// midnight between them (or a different value handed to each, or a seed step that silently didn't
-// run) makes every seedUuid(_, '05')-derived id here miss its row. A scenario that queries a
-// missing post by id still issues exactly one query matching zero rows, which
-// assertCapturedQueries can't distinguish from a real profiled query — so that failure mode is
-// otherwise silent. Check the anchor once, up front, instead of leaving it undetectable.
+// Both processes need the same seed anchor; a UTC rollover can make a derived post id miss.
+// Zero-row SQL still counts as captured, so verify the seeded anchor before profiling.
 export async function assertSeedAnchorMatches(postId: string = seedPostId): Promise<void> {
   const { rows } = await read<{ id: string }>(
     `/* explainAnalyzeAssertSeedAnchor */ SELECT id FROM posts WHERE id = $1`,
@@ -168,26 +167,26 @@ export async function runAndCapture(
   )
   assertCapturedQueries(label, captured)
 
-  for (const [captureIndex, cq] of captured.entries()) {
+  const inputs = captured.flatMap((cq, captureIndex) => {
     const baseName = extractQueryName(cq.text) ?? label
-    for (const planCacheMode of getExplainPlanCacheModes()) {
+    return getExplainPlanCacheModes().map(planCacheMode => {
       const suffixes = [nameSuffix, planCacheMode === 'auto' ? undefined : planCacheMode].filter(
         Boolean,
       )
-      const name = suffixes.length > 0 ? `${baseName}:${suffixes.join(':')}` : baseName
-      const result = await explainAnalyze(name, cq.text, cq.values, {
-        localSettings: explainOptions.localSettings,
+      return {
+        name: suffixes.length > 0 ? `${baseName}:${suffixes.join(':')}` : baseName,
+        text: cq.text,
+        values: cq.values,
+        scenarioId: label,
+        captureIndex,
         planCacheMode,
-      })
-      result.scenario_id = label
-      result.capture_index = captureIndex
-      collectAndGate(result)
-      console.log(
-        `  [${name}] exec=${result.execution_time_ms.toFixed(1)}ms plan=${result.planning_time_ms.toFixed(1)}ms`,
-      )
-    }
-  }
+        localSettings: explainOptions.localSettings,
+      }
+    })
+  })
+  const secondResults = await captureScenarioTwice(inputs, collectAndGate)
   assertScenarioFunctionCalls(label, results)
+  assertScenarioFunctionCalls(label, secondResults)
   completedScenarioIds.push(label)
 }
 
@@ -195,6 +194,7 @@ export function writeResults() {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const outputPath = join(OUTPUT_DIR, `results-${timestamp}.json`)
   writeFileSync(outputPath, JSON.stringify({ results, completedScenarioIds }, null, 2))
+  writeSecondPassResults(outputPath, completedScenarioIds)
   console.log(`\nResults written to: ${outputPath}`)
   console.log(`Total queries explained: ${results.length}`)
 }

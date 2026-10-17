@@ -284,6 +284,7 @@ Reads the latest result file and prints:
 
 - Summary table sorted by execution time
 - Seq scan warnings on large tables
+- New or stale large-table sequential-scan fingerprints relative to the checked-in baseline
 - Row estimate mismatch warnings (>10x)
 - Costliest node per query
 - New resource-pressure fingerprints relative to the checked-in baseline
@@ -293,6 +294,27 @@ Scenario contracts can use `maxFunctionCalls` with a function name and maximum c
 checks every captured query in both plan-cache modes; a cap that no query in its scenario exercises
 also fails, so a removed function cannot leave a stale budget. `explain:dump` prints the complete
 function-call list, including an empty list when no user function ran.
+
+The sequential-scan baseline keys each captured query and plan-cache mode to its scanned large
+relations. Monthly and default partition children use their parent relation name, so partition
+rollover does not create a new fingerprint. For each scenario, the harness captures the same SQL,
+parameters, plan-cache mode, and local settings twice, with `ANALYZE` of the touched large
+relations between captures. The service callback and fixture cleanup run only before the pair;
+EXPLAIN rolls back each statement's database writes, although PostgreSQL may still change physical
+visibility information. The diagnostic log hashes selected captured parameters and seeded relation
+keys and records relation and column statistics for plan comparisons. A fingerprint present in both
+captures but absent from the baseline fails in captured forced plan-cache modes; a baseline entry
+fails as stale only when both captures miss it. A single forced mode checks only its own baseline
+entries, while default `auto` captures keep sequential scans advisory because the baseline comes
+from CI compare-mode captures. One-pass scans stay advisory, as do estimate-mismatch, append,
+planning-ratio, and buffer warnings.
+
+After bulk seeding, fixture maintenance vacuums and analyzes the six seeded relations whose
+plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,
+topics, post review topic ratings, and post data-point topics. This settles their visibility maps
+and statistics before
+the first capture instead of depending on autovacuum timing. The `ANALYZE` between paired captures
+still tests plan stability on the same seeded rows; production planner settings are unchanged.
 
 ```bash
 pnpm run explain:analyze
