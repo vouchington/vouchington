@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY,
+  VALID_PARTIAL_BATCH_BODY,
   VALID_PR_BODY,
 } from '../../test-helpers/pr-description/valid-pr-body.mts'
-import { extractFixMainInterimClassifierRootCauseRef } from '../scheduled-no-source.mts'
+import { extractPartialBatchSourceRef } from '../partial-batch.mts'
 import { validatePrBody } from '../validate.mts'
 
 function withCore(core: string): string {
@@ -87,13 +87,13 @@ This supplemental heading must not count as another core section.
     expect(validatePrBody(body).ok).toBe(true)
   })
 
-  it('accepts and resolves the Fix Main representation after collapsed supporting headings', () => {
-    const body = VALID_FIX_MAIN_INTERIM_CLASSIFIER_BODY.replace(
-      'Refs #456',
-      '<details>\n<summary>Context</summary>\n\n## Background\n\nSupporting context.\n\n</details>\n\nRefs #456',
+  it('accepts and resolves the partial-batch representation after collapsed supporting headings', () => {
+    const body = VALID_PARTIAL_BATCH_BODY.replace(
+      '- Refs #456',
+      '<details>\n<summary>Context</summary>\n\n## Background\n\nSupporting context.\n\n</details>\n\n- Refs #456',
     )
     expect(validatePrBody(body).ok).toBe(true)
-    expect(extractFixMainInterimClassifierRootCauseRef(body)?.number).toBe(456)
+    expect(extractPartialBatchSourceRef(body)?.number).toBe(456)
   })
 
   it('retains case-insensitive Related issues headings', () => {

@@ -21,16 +21,18 @@ and `## Impact`.
 Prose, lists, and populated tables count; comments, code examples, images, summary labels, and
 collapsed-only content do not. Headings inside `<details>` do not create or terminate visible
 sections, and malformed details containers fail validation. Existing issue-reference and provenance
-rules still apply. Closing and non-closing references and the scheduled/Fix Main exceptions use
+rules still apply. Closing and non-closing references and the no-source and partial-batch exceptions use
 the same Related issues section boundaries; supporting headings cannot truncate any of those paths.
 Updates preserve the canonical Shepherd Journal exactly.
 
-An incomplete batch of a larger source issue uses a standalone reference followed by this exact
-declaration in `## Related issues`:
+An incomplete batch of a larger source issue passes its source as the only `relatedIssues` entry,
+with `relation: "refs"`, plus `noSourceIssue: { reason: "partial batch" }`. The tools render the
+reference directly above the exact declaration in `## Related issues`:
 
 ```markdown
-Refs #123
-Partial batch; source issue remains open for remaining work.
+- Refs #123 — Batch plan; later batches finish it.
+  Partial batch; source issue remains open for remaining work.
+
 <!-- related-issues-validation: partial-batch -->
 ```
 

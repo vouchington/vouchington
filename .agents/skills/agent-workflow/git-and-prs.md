@@ -83,9 +83,9 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 - Under `## Related issues`, close only real source issues this PR fully resolves. Validate supplied
   references and unchecked tasks. Explain why non-closing references remain open. For a direct
   interactive request without a source issue, use the exact representation in the PR skill;
-  scheduled and Fix Main automation keep their own template contracts.
+  scheduled automation keeps its own template contract.
   An incomplete batch uses the [partial-batch representation](../../../docs/development/local-development/reference-pr-description-helper.md)
-  with a standalone `Refs` source issue and explains the remaining work; the completing batch
+  with its source issue as the only `refs` entry and explains the remaining work; the completing batch
   carries a truthful closing reference.
 - Keep a plan outside Git: the PR description, an existing issue/comment, or a persistent native
   plan file can be its sole record. A Plan issue is optional. When an actual multi-PR Plan issue
