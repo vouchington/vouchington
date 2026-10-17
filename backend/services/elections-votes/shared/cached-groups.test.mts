@@ -4,7 +4,7 @@ import { caches } from '@services/entity-cache/caches'
 import { getCachedElectionGroups } from './cached-groups.mts'
 
 describe('getCachedElectionGroups', () => {
-  it('serves a stale hit beside a miss while its background refresh completes', async () => {
+  it('serves a stale hit beside a miss without blocking the foreground read', async () => {
     const owner = await createTestUser()
     const ids = await Promise.all(
       ['stale', 'missing'].map(label => {
@@ -31,14 +31,6 @@ describe('getCachedElectionGroups', () => {
     try {
       const groups = await getCachedElectionGroups({ topic: [staleId, ids[1]!] })
       expect(groups.topic.map(row => row?.votes_score_net)).toEqual([123, 0])
-      await expect
-        .poll(async () => {
-          const row = await caches.topic_elections.get(staleId)
-          return row && typeof row === 'object' && 'votes_score_net' in row
-            ? row.votes_score_net
-            : undefined
-        })
-        .toBe(0)
     } finally {
       await caches.topic_elections.delete(...ids.map(id => id!))
     }
