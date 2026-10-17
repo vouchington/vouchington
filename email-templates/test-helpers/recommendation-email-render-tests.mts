@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
 import type { EmailRenderResultPromise } from '../types.mts'
+import { omitReactEmailPreviewPadding } from './omit-react-email-preview-padding.mts'
 
 const recommendationEmailShell = {
   unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
@@ -59,7 +60,7 @@ export function registerRecommendationEmailRenderTests<TProps extends Recommenda
     const result = await render(previewProps)
 
     expect(result.subject).toBe(subject)
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL(`__snapshots__/${snapshotStem}.html`, testModuleUrl)),
     )
     await expect(result.text).toMatchFileSnapshot(

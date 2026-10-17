@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { emailCopy } from './catalog-copy.mts'
 import { renderLoginTokenEmail } from './login-token-renderer.mts'
 import LoginTokenEmail from './login-token.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderLoginTokenEmail', () => {
   it.each([
@@ -22,7 +23,7 @@ describe('renderLoginTokenEmail', () => {
     const result = await renderLoginTokenEmail(LoginTokenEmail.PreviewProps!)
 
     expect(result.subject).toBe('Your Voucha One-Time Password Login')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/login-token.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

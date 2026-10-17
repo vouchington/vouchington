@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 import { renderWelcomeEmail } from './welcome-renderer.mts'
 import WelcomeEmail from './welcome.tsx'
 
@@ -8,7 +9,7 @@ describe('renderWelcomeEmail', () => {
     const result = await renderWelcomeEmail(WelcomeEmail.PreviewProps!)
 
     expect(result.subject).toBe('Welcome to Voucha — here\u2019s what you can do')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/welcome.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

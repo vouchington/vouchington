@@ -2,13 +2,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderEmailVerificationEmail } from './email-verification-renderer.mts'
 import EmailVerificationEmail from './email-verification.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderEmailVerificationEmail', () => {
   it('renders the expected subject and snapshots', async () => {
     const result = await renderEmailVerificationEmail(EmailVerificationEmail.PreviewProps!)
 
     expect(result.subject).toBe('Verify Your Email Address')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/email-verification.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

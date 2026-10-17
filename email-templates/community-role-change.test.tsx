@@ -2,13 +2,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderCommunityRoleChangeEmail } from './community-role-change-renderer.mts'
 import CommunityRoleChangeEmail from './community-role-change.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderCommunityRoleChangeEmail', () => {
   it('renders the expected subject and snapshots', async () => {
     const result = await renderCommunityRoleChangeEmail(CommunityRoleChangeEmail.PreviewProps!)
 
     expect(result.subject).toBe('Your role in Travel Hackers has changed')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/community-role-change.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(
