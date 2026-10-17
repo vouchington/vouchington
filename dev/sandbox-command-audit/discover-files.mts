@@ -15,7 +15,7 @@ export type DiscoverOptions = {
   sinceDays?: number
   now?: number
   // Narrows discovery to a single session's transcript(s) — mirrors
-  // dev/retrospective-transcript-facts/resolve.mts's session-scoped globs. Validated
+  // vouchington-tooling's resolveTranscriptFile session-scoped globs. Validated
   // with agent-session-id/valid-id.mts before it ever reaches here. An explicit
   // session id is already an exact target, so it bypasses repo scoping below — a
   // caller asking for one specific session should never lose it to an unresolved cwd.
@@ -132,7 +132,7 @@ async function discoverForRoot(
 // special-cased handling in the extractor.
 //
 // When sessionId is set, both roots narrow to that session's file(s) instead of
-// scanning everything, mirroring resolve.mts's session-scoped globs. Claude needs
+// scanning everything, mirroring resolveTranscriptFile's session-scoped globs. Claude needs
 // two separate patterns rather than one broader glob: the top-level transcript
 // (<projectsDir>/**/<id>.jsonl) and its subagent transcripts
 // (<projectsDir>/**/<id>/subagents/*.jsonl) live under different path shapes, and a

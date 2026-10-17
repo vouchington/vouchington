@@ -3,8 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { finished } from 'node:stream/promises'
 
-import { asRecord } from '../retrospective-transcript-facts/compute-shared.mts'
-import { openTranscriptLines } from '../retrospective-transcript-facts/resolve.mts'
+import { asRecord, openTranscriptLines } from 'vouchington-tooling/retrospective-transcript'
 import { createCodexRecordExtractor, type CodexExtraction } from './codex-extract.mts'
 import { MAX_INHERITED_CODEX_SPOOL_BYTES } from './limits.mts'
 

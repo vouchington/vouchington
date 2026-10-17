@@ -1,4 +1,4 @@
-import { normalizeCommandPrefix } from '../retrospective-transcript-facts/command-prefix.mts'
+import { normalizeCommandPrefix } from 'vouchington-tooling/retrospective-transcript'
 import { isCoveredByPolicy } from './policy.mts'
 
 export type PrefixCount = { prefix: string; count: number }

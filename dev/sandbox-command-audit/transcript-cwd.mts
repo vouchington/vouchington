@@ -8,7 +8,7 @@
 import { globSync } from 'node:fs'
 import { open } from 'node:fs/promises'
 import { join, relative, sep } from 'node:path'
-import { openTranscriptLines } from '../retrospective-transcript-facts/resolve.mts'
+import { openTranscriptLines } from 'vouchington-tooling/retrospective-transcript'
 
 const PREFIX_BYTES = 64 * 1024
 

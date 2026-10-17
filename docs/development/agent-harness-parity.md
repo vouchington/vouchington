@@ -72,7 +72,7 @@ flowchart LR
 
 Ambient Blackboard identity is owned by
 `dev/agent-session-id/`; transcript discovery
-deliberately keeps its separate caller-owned order in `dev/retrospective-transcript-facts/resolve.mts`.
+uses `resolveTranscriptFile` from `vouchington-tooling/retrospective-transcript`.
 
 ## How Grok reuses Claude rules
 

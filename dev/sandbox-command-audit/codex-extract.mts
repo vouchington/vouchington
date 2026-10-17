@@ -1,10 +1,10 @@
-import { asRecord } from '../retrospective-transcript-facts/compute-shared.mts'
+import { asRecord } from 'vouchington-tooling/retrospective-transcript'
 import { isGitMetadataPermissionDenial } from './git-metadata-denial.mts'
 import type { CodexSandboxFailureRecord } from './types.mts'
 import { appendBounded, emptyRawRetention, truncateRawText, type RawRetention } from './limits.mts'
 
 // Mirrors the JSON.parse/try-catch structure of directCommand in
-// dev/retrospective-transcript-facts/codex-calls.mts (a sibling extractor here, not a
+// vouchington-tooling's retrospective-transcript codex extractor (a sibling extractor here, not a
 // modification of that file — this one targets a normalized CommandExecution's
 // `command` field, a different signal than that file's command-text extraction). Unlike
 // directCommand, which only accepts a string `command`, this must also accept the

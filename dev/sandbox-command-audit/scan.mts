@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
 
-import { openTranscriptLines } from '../retrospective-transcript-facts/resolve.mts'
+import { openTranscriptLines } from 'vouchington-tooling/retrospective-transcript'
 import { createClaudeRecordExtractor, type ClaudeExtraction } from './claude-extract.mts'
 import { scanCodexFile, type CodexFileResult } from './codex-scan.mts'
 import { discoverTranscriptFiles, type DiscoverOptions } from './discover-files.mts'
