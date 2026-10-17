@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
 import { BACKEND_UNIT_FILE_PROGRESS_PREFIX } from '../test-helpers/vitest-file-progress-reporter.mts'
 
 const EVENT_PATTERN = /^event=(start|finish) module=("(?:[^"\\]|\\.)*")/u
@@ -25,7 +24,7 @@ export function formatDeadlineReport(progress: string): string {
   return `${lines.join('\n')}\n`
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+if (import.meta.main) {
   const progressFile = process.argv[2]
   let progress = ''
   try {
