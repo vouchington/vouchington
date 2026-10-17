@@ -25,7 +25,7 @@ type SetBookmarkResult = {
 const tool: MergedToolSource<BookmarkToolArgs, SetBookmarkResult> = {
   schema: {
     description:
-      "Save, follow, mute or block an entity for the current user. Repeating a relation changes nothing. Muting or blocking a topic, user or feed removes the user's follow. Posts must be visible to the user; their own private posts also require private-post consent.",
+      "Save, follow, mute or block an entity for the current user. Repeating a relation changes nothing. Muting or blocking a topic, user or feed removes the user's follow. Posts must be visible to the user; their own private posts also require the post-relations.owned-private:write consent scope.",
     parameters: BOOKMARK_TOOL_PARAMETERS,
   },
   meta: {

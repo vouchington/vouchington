@@ -8524,7 +8524,7 @@
           "tool": {
             "name": "manage_bookmark",
             "title": "Manage Bookmark",
-            "description": "remove: Remove a saved, followed, muted, or blocked relation the current user set on an entity. Removing a relation that is not set changes nothing, and the entity does not have to be visible any more.\nset: Save, follow, mute or block an entity for the current user. Repeating a relation changes nothing. Muting or blocking a topic, user or feed removes the user's follow. Posts must be visible to the user; their own private posts also require private-post consent.",
+            "description": "remove: Remove a saved, followed, muted, or blocked relation the current user set on an entity. Removing a relation that is not set changes nothing, and the entity does not have to be visible any more.\nset: Save, follow, mute or block an entity for the current user. Repeating a relation changes nothing. Muting or blocking a topic, user or feed removes the user's follow. Posts must be visible to the user; their own private posts also require the post-relations.owned-private:write consent scope.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
