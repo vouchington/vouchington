@@ -5613,7 +5613,7 @@
       ]
     },
     "PUT:/api/v1/hostnames/:id/vote": {
-      "pullRequest": 3130,
+      "pullRequest": 3131,
       "contracts": [
         {
           "surface": "mcp",
@@ -5629,7 +5629,7 @@
       ]
     },
     "DELETE:/api/v1/hostnames/:id/vote": {
-      "pullRequest": 3130,
+      "pullRequest": 3131,
       "contracts": [
         {
           "surface": "mcp",
@@ -5645,7 +5645,7 @@
       ]
     },
     "PUT:/api/v1/users/:id/vouch-vote": {
-      "pullRequest": 3130,
+      "pullRequest": 3131,
       "contracts": [
         {
           "surface": "mcp",
@@ -5661,7 +5661,7 @@
       ]
     },
     "DELETE:/api/v1/users/:id/vouch-vote": {
-      "pullRequest": 3130,
+      "pullRequest": 3131,
       "contracts": [
         {
           "surface": "mcp",
