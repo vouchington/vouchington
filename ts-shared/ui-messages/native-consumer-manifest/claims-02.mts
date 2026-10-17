@@ -3,6 +3,10 @@ import type { NativeConsumerManifestEntry } from './types.mts'
 /** Canonical native consumer claims, kept in code-point key order. */
 export const NATIVE_CONSUMER_MANIFEST_CLAIMS_02 = [
   {
+    key: 'extracted.my.audienceSelect.loggedInUsers_81dac12b',
+    consumers: ['swift'],
+  },
+  {
     key: 'extracted.my.friendRecommendationsList.connectYourFacebookXOrGithub_e3d61a65',
     consumers: ['dotnet'],
   },

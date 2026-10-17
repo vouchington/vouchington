@@ -34,6 +34,36 @@ describe('MCP result catalog generation', () => {
     expect(() => buildMcpResultFixtures(complete, [datedFeed])).toThrow('structuredContent')
   })
 
+  it.each(['wrong option', 'wrong type', 'missing setting', 'unknown setting'])(
+    'rejects a general preferences fixture with %s',
+    invalid => {
+      const complete = buildMcpCatalog(ALL_TOOLS)
+      const general = structuredClone(
+        optionMcpResultCases.find(
+          fixture => fixture.id === 'native.mcp.read-my-preferences.general',
+        ),
+      )
+      expect(general).toBeDefined()
+      if (!general) throw new Error('Missing canonical general preferences fixture')
+      const settings = general.structuredContent['settings'] as Record<string, unknown>
+      switch (invalid) {
+        case 'wrong option':
+          general.arguments['option'] = 'email'
+          break
+        case 'wrong type':
+          settings['should_import_hacker_news_discussions'] = 'false'
+          break
+        case 'missing setting':
+          delete settings['country']
+          break
+        case 'unknown setting':
+          settings['username'] = 'must-not-be-exposed'
+          break
+      }
+      expect(() => buildMcpResultFixtures(complete, [general])).toThrow('structuredContent')
+    },
+  )
+
   it('rejects a case for a tool absent from the exported catalog', () => {
     expect(() =>
       buildMcpResultFixtures(catalog, [{ ...financialMcpResultCases[0]!, tool: 'missing_tool' }]),
