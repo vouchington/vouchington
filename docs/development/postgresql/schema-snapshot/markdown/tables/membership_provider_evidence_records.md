@@ -45,6 +45,7 @@ _none_
 - `idx_membership_provider_evidence_records__id_context`: `CREATE UNIQUE INDEX idx_membership_provider_evidence_records__id_context ON public.membership_provider_evidence_records USING btree (id, membership_provider_context_id)`
 - `idx_membership_provider_evidence_records__id_lineage_context`: `CREATE UNIQUE INDEX idx_membership_provider_evidence_records__id_lineage_context ON public.membership_provider_evidence_records USING btree (id, membership_provider_lineage_id, membership_provider_context_id)`
 - `idx_membership_provider_evidence_records__lineage_id`: `CREATE INDEX idx_membership_provider_evidence_records__lineage_id ON public.membership_provider_evidence_records USING btree (membership_provider_lineage_id, id DESC)`
+- `idx_membership_provider_evidence_records__rejected_at`: `CREATE INDEX idx_membership_provider_evidence_records__rejected_at ON public.membership_provider_evidence_records USING btree (rejected_at, id) WHERE (rejected_at IS NOT NULL)`
 - `membership_provider_evidence_records_pkey`: `CREATE UNIQUE INDEX membership_provider_evidence_records_pkey ON public.membership_provider_evidence_records USING btree (id)`
 
 **Triggers:**
