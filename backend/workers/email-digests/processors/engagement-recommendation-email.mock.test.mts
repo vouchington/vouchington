@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import {
   createTestUser,
@@ -23,8 +23,15 @@ const notificationEmailFooter = {
 
 describe('engagement email delivery guarantees', () => {
   beforeEach(() => {
-    process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS = 'test:raw32:this fake test key is not secret'
+    vi.stubEnv(
+      'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
+      'test:raw32:this fake test key is not secret',
+    )
     vi.mocked(ses.sendEmail).mockReset()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('reports when an engagement email delivery state is missing', async () => {

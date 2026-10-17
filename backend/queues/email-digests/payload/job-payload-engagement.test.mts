@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { communityCountKeys } from './job-payload-engagement.mts'
-import { parseEmailJob } from './job-payload.mts'
+import { parseEmailDigestJob } from './job-payload.mts'
 
 const address = { emailAddress: 'owner@example.test' }
 const links = {
@@ -10,7 +10,7 @@ const links = {
 
 describe('engagement email payloads', () => {
   it('validates engagement and moderation variables', () => {
-    const topic = parseEmailJob('processSendFollowTopicsEmail', {
+    const topic = parseEmailDigestJob('processSendFollowTopicsEmail', {
       input: address,
       variables: {
         ...links,
@@ -22,7 +22,7 @@ describe('engagement email payloads', () => {
     })
     expect(topic.kind).toBe('template')
     expect(
-      parseEmailJob('processSendPostReferralLinkEmail', {
+      parseEmailDigestJob('processSendPostReferralLinkEmail', {
         input: address,
         variables: {
           ...links,
@@ -31,7 +31,7 @@ describe('engagement email payloads', () => {
       }).kind,
     ).toBe('template')
     expect(
-      parseEmailJob('processSendFollowNewsSourcesEmail', {
+      parseEmailDigestJob('processSendFollowNewsSourcesEmail', {
         input: address,
         variables: {
           ...links,
@@ -40,7 +40,7 @@ describe('engagement email payloads', () => {
       }).kind,
     ).toBe('template')
     expect(
-      parseEmailJob('processSendCommunityModerationSummaryEmail', {
+      parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
         input: address,
         variables: {
           ...links,
@@ -58,34 +58,34 @@ describe('engagement email payloads', () => {
       }).kind,
     ).toBe('template')
     expect(() =>
-      parseEmailJob('processSendFollowTopicsEmail', { input: address, variables: [] }),
+      parseEmailDigestJob('processSendFollowTopicsEmail', { input: address, variables: [] }),
     ).toThrow(/variables must be an object/)
     expect(() =>
-      parseEmailJob('processSendFollowTopicsEmail', {
+      parseEmailDigestJob('processSendFollowTopicsEmail', {
         input: address,
         variables: { ...links, topics: [], extra: true },
       }),
     ).toThrow(/unexpected property extra/)
     expect(() =>
-      parseEmailJob('processSendFollowTopicsEmail', {
+      parseEmailDigestJob('processSendFollowTopicsEmail', {
         input: address,
         variables: { ...links, topics: 'none' },
       }),
     ).toThrow(/topics must be an array/)
     expect(() =>
-      parseEmailJob('processSendFollowTopicsEmail', {
+      parseEmailDigestJob('processSendFollowTopicsEmail', {
         input: address,
         variables: { ...links, userName: 1, topics: [] },
       }),
     ).toThrow(/userName must be a string/)
     expect(() =>
-      parseEmailJob('processSendFollowTopicsEmail', {
+      parseEmailDigestJob('processSendFollowTopicsEmail', {
         input: address,
         variables: { ...links, uiLocale: 1, topics: [] },
       }),
     ).toThrow(/uiLocale must be a string or null/)
     expect(() =>
-      parseEmailJob('processSendFollowTopicsEmail', {
+      parseEmailDigestJob('processSendFollowTopicsEmail', {
         input: address,
         variables: {
           ...links,
@@ -94,7 +94,7 @@ describe('engagement email payloads', () => {
       }),
     ).toThrow(/reason must be a string/)
     expect(() =>
-      parseEmailJob('processSendPostReferralLinkEmail', {
+      parseEmailDigestJob('processSendPostReferralLinkEmail', {
         input: address,
         variables: {
           ...links,
@@ -103,7 +103,7 @@ describe('engagement email payloads', () => {
       }),
     ).toThrow(/linkCount must be a number/)
     expect(() =>
-      parseEmailJob('processSendFollowNewsSourcesEmail', {
+      parseEmailDigestJob('processSendFollowNewsSourcesEmail', {
         input: address,
         variables: {
           ...links,
@@ -112,13 +112,13 @@ describe('engagement email payloads', () => {
       }),
     ).toThrow(/description must be a string/)
     expect(() =>
-      parseEmailJob('processSendCommunityModerationSummaryEmail', {
+      parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
         input: address,
         variables: { ...links, generatedForDate: '2026-09-27', communities: 'none' },
       }),
     ).toThrow(/communities must be an array/)
     expect(() =>
-      parseEmailJob('processSendCommunityModerationSummaryEmail', {
+      parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
         input: address,
         variables: {
           ...links,
@@ -135,7 +135,7 @@ describe('engagement email payloads', () => {
       }),
     ).toThrow(/topDiscussionTitle must be a string or null/)
     expect(() =>
-      parseEmailJob('processSendCommunityModerationSummaryEmail', {
+      parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
         input: address,
         variables: {
           ...links,

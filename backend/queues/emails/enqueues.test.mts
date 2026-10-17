@@ -19,7 +19,6 @@ describe('copyright notice email enqueues', () => {
         backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
         removeOnComplete: 100,
         removeOnFail: 100,
-        priority: 10,
         deduplication: {
           id: `copyright-delivery:${intentId}:email`,
           mode: 'throttle',

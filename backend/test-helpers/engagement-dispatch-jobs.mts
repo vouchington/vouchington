@@ -5,8 +5,13 @@ import {
   onEnqueueAdmission,
   type EnqueueAdmission,
 } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
-import { emails } from '../queues/emails/queues.mts'
-import { QUEUE_NAME } from '../queues/emails/config.mts'
+import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
+import {
+  EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB,
+  EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB,
+  EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB,
+} from '../queues/background/enqueues/email-digests-jobs.mts'
+import { background } from '../queues/background/queues.mts'
 import { dispatchEngagementEmails } from '../services/engagement-emails/dispatch-engagement-emails.mts'
 import {
   claimEngagementEmailSend,
@@ -23,9 +28,9 @@ export const scopedEngagementClaimResult = {
 
 type EmailType = 'follow_topics' | 'post_referral_link' | 'follow_news_sources'
 const jobNames = new Set([
-  'processSendFollowTopicsEmail',
-  'processSendPostReferralLinkEmail',
-  'processSendFollowNewsSourcesEmail',
+  EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB.name,
+  EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB.name,
+  EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB.name,
 ])
 type Outcome<T> = { ok: true; value: T } | { ok: false; error: unknown }
 
@@ -49,9 +54,9 @@ export async function ownedEngagementDispatch(
     }
   })
   const targetJobName = {
-    follow_topics: 'processSendFollowTopicsEmail',
-    post_referral_link: 'processSendPostReferralLinkEmail',
-    follow_news_sources: 'processSendFollowNewsSourcesEmail',
+    follow_topics: EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB.name,
+    post_referral_link: EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB.name,
+    follow_news_sources: EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB.name,
   }[emailType]
   // Dispatch evaluates every kind for both owned recipients; preserve and drain them all.
   const targetJobs = observed.jobs.filter(job => job.name === targetJobName)
@@ -83,8 +88,8 @@ export async function withOwnedEngagementAdmissions<T>(
   try {
     detach = onEnqueueAdmission(event => {
       if (
-        event.queue !== emails ||
-        event.queueName !== QUEUE_NAME ||
+        event.queue !== background ||
+        event.queueName !== BACKGROUND_QUEUE_NAME ||
         !jobNames.has(event.jobName) ||
         !event.inputs.some(input => ownsRecipient(input, userIds))
       )
@@ -132,7 +137,7 @@ export async function withOwnedEngagementAdmissions<T>(
           continue
         }
         try {
-          const job = await readEnqueuedJob(emails, admission.value)
+          const job = await readEnqueuedJob(background, admission.value)
           jobs.push({ name: job.name, data: job.data })
         } catch (err) {
           errors.push(err)

@@ -1,7 +1,5 @@
-import type {
-  EmailTemplateInput,
-  ProcessSendPostReferralLinkEmailVariables,
-} from '@queues/emails/types'
+import type { ProcessSendPostReferralLinkEmailVariables } from '@queues/background/enqueues/email-digests-domain'
+import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderPostReferralLinkEmail } from '@email-templates/core'
 import { isPostReferralLinkEmailStillEligible } from '@services/users/engagement-emails'
 import { processEngagementRecommendationEmail } from './engagement-recommendation-email.mts'

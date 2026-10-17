@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import {
   createTestUser,
@@ -17,9 +17,16 @@ import { processSendCommunityModerationSummaryEmail } from './community-moderati
 
 describe('processSendCommunityModerationSummaryEmail', () => {
   beforeEach(() => {
-    process.env.VOUCHA_STORED_SECRET_ENCRYPTION_KEYS = 'test:raw32:this fake test key is not secret'
+    vi.stubEnv(
+      'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',
+      'test:raw32:this fake test key is not secret',
+    )
     vi.restoreAllMocks()
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('skips moderation summaries already marked as sent', async () => {

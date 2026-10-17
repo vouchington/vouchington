@@ -43,6 +43,7 @@
     "@queues/crawl-embeds": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
     "@queues/crawler": "workspace:^",
+    "@queues/email-digests": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",

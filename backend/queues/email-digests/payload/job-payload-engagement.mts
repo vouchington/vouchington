@@ -2,7 +2,7 @@ import type {
   ProcessSendFollowNewsSourcesEmailVariables,
   ProcessSendFollowTopicsEmailVariables,
   ProcessSendPostReferralLinkEmailVariables,
-} from '../types.mts'
+} from '@queues/background/enqueues/email-digests-domain'
 import {
   communityItemVariableKeys,
   moderationVariableKeys,
@@ -13,7 +13,7 @@ import {
   topicItemVariableKeys,
   topicsVariableKeys,
 } from './job-payload-contract.mts'
-import { JobPayloadError } from './job-payload-error.mts'
+import { JobPayloadError } from '@queues/emails/payload/job-payload-error'
 
 const communityCountKeyList: string[] = []
 for (const [key, kind] of Object.entries(communityItemVariableKeys)) {

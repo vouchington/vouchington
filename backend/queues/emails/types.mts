@@ -1,13 +1,9 @@
 import type {
   CommunityApplicationDecisionEmailProps,
-  CommunityModerationSummaryEmailProps,
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
   DataExportReadyEmailProps,
   EmailVerificationEmailProps,
-  FollowNewsSourcesEmailProps,
-  FollowTopicsEmailProps,
-  PostReferralLinkEmailProps,
   WelcomeEmailProps,
 } from '@email-templates/core'
 
@@ -49,44 +45,6 @@ export type ProcessSendDataExportReadyEmailVariables = DataExportReadyEmailProps
 
 export type ProcessSendEmailVerificationTokenVariables = EmailVerificationEmailProps
 
-// Legacy queue payloads enqueued before physicalAddress became a required
-// render prop may still be in-flight when new worker code deploys — queue
-// payloads are a trust boundary, so the field is optional here and backfilled
-// by the processor. See follow-topics.mts, post-referral-link.mts, and
-// follow-news-sources.mts.
-export type ProcessSendFollowTopicsEmailVariables = Omit<
-  FollowTopicsEmailProps,
-  'physicalAddress'
-> & {
-  physicalAddress?: string
-}
-
-export type ProcessSendPostReferralLinkEmailVariables = Omit<
-  PostReferralLinkEmailProps,
-  'physicalAddress'
-> & {
-  physicalAddress?: string
-}
-
-export type ProcessSendFollowNewsSourcesEmailVariables = Omit<
-  FollowNewsSourcesEmailProps,
-  'physicalAddress'
-> & {
-  physicalAddress?: string
-}
-
-// Legacy queue payloads enqueued before unsubscribeUrl/physicalAddress became
-// required render props may still be in-flight when new worker code deploys —
-// queue payloads are a trust boundary, so these two fields are optional here
-// and backfilled by the processor. See community-moderation-summary.mts.
-export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
-  CommunityModerationSummaryEmailProps,
-  'unsubscribeUrl' | 'physicalAddress'
-> & {
-  unsubscribeUrl?: string
-  physicalAddress?: string
-}
-
 export type ProcessSendWelcomeEmailVariables = WelcomeEmailProps
 export type ProcessSendCopyrightNoticeEmailVariables = { intentId: string }
 
@@ -98,38 +56,38 @@ export type ProcessSendCommunityRoleChangeEmailVariables = CommunityRoleChangeEm
 export type ProcessSendCommunityOwnershipTransferEmailVariables =
   CommunityOwnershipTransferEmailProps
 
+/** Event-triggered sends in the `emails` queue: a person's action enqueues each one directly. */
 export type EmailSendJobs =
   | 'processSendCommunityInviteEmail'
   | 'processSendEmailAddressLoginToken'
   | 'processSendDataExportReadyEmail'
   | 'processSendEmailVerificationToken'
-  | 'processSendFollowTopicsEmail'
-  | 'processSendPostReferralLinkEmail'
-  | 'processSendFollowNewsSourcesEmail'
-  | 'processSendCommunityModerationSummaryEmail'
   | 'processSendWelcomeEmail'
   | 'processSendCommunityApplicationDecisionEmail'
   | 'processSendCommunityRoleChangeEmail'
   | 'processSendCommunityOwnershipTransferEmail'
   | 'processSendCopyrightNoticeEmail'
+
+/** Sends a dispatcher fans out in the `email-digests` domain of the `background` queue. */
+export type EmailDigestSendJobs =
+  | 'processSendFollowTopicsEmail'
+  | 'processSendPostReferralLinkEmail'
+  | 'processSendFollowNewsSourcesEmail'
+  | 'processSendCommunityModerationSummaryEmail'
   | 'processSendApiKeyExpiryReminder'
 
-export type EmailDispatcherJobs =
+export type EmailDigestDispatcherJobs =
   | 'dispatchEngagementEmails'
   | 'dispatchCommunityModerationSummaryEmails'
   | 'dispatchApiKeyExpiryReminders'
 
-export type EmailJobs = EmailSendJobs | EmailDispatcherJobs
+export type EmailJobs = EmailSendJobs
 
 type EmailTemplateVariables = {
   processSendCommunityInviteEmail: ProcessSendCommunityInviteEmailVariables
   processSendEmailAddressLoginToken: ProcessSendEmailAddressLoginTokenVariables
   processSendDataExportReadyEmail: ProcessSendDataExportReadyEmailVariables
   processSendEmailVerificationToken: ProcessSendEmailVerificationTokenVariables
-  processSendFollowTopicsEmail: ProcessSendFollowTopicsEmailVariables
-  processSendPostReferralLinkEmail: ProcessSendPostReferralLinkEmailVariables
-  processSendFollowNewsSourcesEmail: ProcessSendFollowNewsSourcesEmailVariables
-  processSendCommunityModerationSummaryEmail: ProcessSendCommunityModerationSummaryEmailVariables
   processSendWelcomeEmail: ProcessSendWelcomeEmailVariables
   processSendCommunityApplicationDecisionEmail: ProcessSendCommunityApplicationDecisionEmailVariables
   processSendCommunityRoleChangeEmail: ProcessSendCommunityRoleChangeEmailVariables
@@ -137,10 +95,8 @@ type EmailTemplateVariables = {
 }
 
 export type EmailJobsTemplates = {
-  [
-    JobName in Exclude<
-      EmailSendJobs,
-      'processSendCopyrightNoticeEmail' | 'processSendApiKeyExpiryReminder'
-    >
-  ]: (input: EmailTemplateInput, variables: EmailTemplateVariables[JobName]) => Promise<unknown>
+  [JobName in Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>]: (
+    input: EmailTemplateInput,
+    variables: EmailTemplateVariables[JobName],
+  ) => Promise<unknown>
 }

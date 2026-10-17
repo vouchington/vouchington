@@ -43,6 +43,16 @@ describe('background registry', () => {
     }
   })
 
+  it('keeps the email-digests dispatchers the lowest tier, behind every send', () => {
+    const jobs = BACKGROUND_JOBS.filter(job => job.domain === 'email-digests')
+    const dispatchers = jobs.filter(job => job.name.includes('.dispatch'))
+    expect(dispatchers).toHaveLength(3)
+    expect(dispatchers.every(job => job.options.priority === 100)).toBe(true)
+    expect(jobs.filter(job => !dispatchers.includes(job)).map(job => job.options.priority)).toEqual(
+      [10, 10, 10, 10, 10],
+    )
+  })
+
   it('lists a domain’s job names and sums the worker baselines it replaced', () => {
     for (const domain of BACKGROUND_DOMAINS) {
       expect(getBackgroundJobNames(domain)).toEqual(

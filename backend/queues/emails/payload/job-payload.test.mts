@@ -4,51 +4,11 @@ import { parseEmailJob } from './job-payload.mts'
 const address = { emailAddress: 'owner@example.test' }
 
 describe('parseEmailJob', () => {
-  it('accepts empty dispatcher payloads and rejects unknown jobs', () => {
-    expect(parseEmailJob('dispatchEngagementEmails', null)).toEqual({
-      kind: 'dispatcher',
-      data: {},
-      name: 'dispatchEngagementEmails',
-    })
-    expect(parseEmailJob('dispatchCommunityModerationSummaryEmails', undefined)).toEqual({
-      kind: 'dispatcher',
-      data: {},
-      name: 'dispatchCommunityModerationSummaryEmails',
-    })
-    expect(parseEmailJob('dispatchEngagementEmails', {}).kind).toBe('dispatcher')
-    expect(() => parseEmailJob('dispatchEngagementEmails', { extra: true })).toThrow(
-      /unexpected property extra/,
-    )
+  it('rejects unknown jobs, including the email-digests jobs that left this queue', () => {
     expect(() => parseEmailJob('missingJob', {})).toThrow(/unknown job missingJob/)
-    expect(parseEmailJob('dispatchApiKeyExpiryReminders', { afterId: 'owned-cursor' })).toEqual({
-      kind: 'dispatcher',
-      name: 'dispatchApiKeyExpiryReminders',
-      data: { afterId: 'owned-cursor' },
-    })
-    expect(() => parseEmailJob('dispatchApiKeyExpiryReminders', { afterId: 1 })).toThrow(
-      /afterId must be a string/,
-    )
-  })
-
-  it('accepts only a durable UUID for API-key expiry jobs', () => {
-    const apiKeyId = '00000000-0000-7000-8000-000000000042'
-    expect(parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId })).toEqual({
-      kind: 'api-key-expiry',
-      apiKeyId,
-    })
-    expect(() => parseEmailJob('processSendApiKeyExpiryReminder', {})).toThrow(/must be a UUID/)
-    expect(() => parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId: 42 })).toThrow(
-      /must be a UUID/,
-    )
-    expect(() =>
-      parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId: 'not-a-uuid' }),
-    ).toThrow(/must be a UUID/)
-    expect(() =>
-      parseEmailJob('processSendApiKeyExpiryReminder', { apiKeyId, rawKey: 'secret' }),
-    ).toThrow(/unexpected property rawKey/)
-    expect(() => parseEmailJob('dispatchApiKeyExpiryReminders', { apiKeyId })).toThrow(
-      /unexpected property apiKeyId/,
-    )
+    expect(() => parseEmailJob('dispatchEngagementEmails', {})).toThrow(/unknown job/)
+    expect(() => parseEmailJob('processSendFollowTopicsEmail', {})).toThrow(/unknown job/)
+    expect(() => parseEmailJob('toString', {})).toThrow(/unknown job toString/)
   })
 
   it('accepts exactly one copyright delivery intent identifier', () => {

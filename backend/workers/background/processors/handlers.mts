@@ -6,6 +6,7 @@ import { cachePurgeHandlers } from '@workers/cache-purge/workers'
 import { blueskyFollowPropagationHandlers } from '@workers/bluesky-follow-propagation/workers'
 import { entityListenersHandlers } from '@workers/entity-listeners/workers'
 import { followerDistributionsHandlers } from '@workers/follower-distributions/workers'
+import { emailDigestsHandlers } from '@workers/email-digests/workers'
 import { kagiSmallWebHandlers } from '@workers/kagi-smallweb/workers'
 import { notificationsHandlers } from '@workers/notifications/workers'
 import { oauthAuthorizationExchangeHandlers } from '@workers/oauth-authorization-exchange/workers'
@@ -40,4 +41,5 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...sitemapsHandlers,
   ...cachePurgeHandlers,
   ...kagiSmallWebHandlers,
+  ...emailDigestsHandlers,
 ]

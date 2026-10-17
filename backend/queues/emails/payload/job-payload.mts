@@ -1,5 +1,4 @@
 import type {
-  EmailDispatcherJobs,
   EmailJobInput,
   EmailSendJobs,
   ProcessSendCommunityInviteEmailVariables,
@@ -7,8 +6,6 @@ import type {
   ProcessSendEmailVerificationTokenVariables,
   ProcessSendWelcomeEmailVariables,
 } from '../types.mts'
-import { dispatcherPayload, getEmailJobKind } from './job-payload-dispatcher.mts'
-import { parseEngagementVariables } from './job-payload-engagement.mts'
 import {
   inviteVariableKeys,
   loginVariableKeys,
@@ -16,12 +13,8 @@ import {
   welcomeVariableKeys,
 } from './job-payload-contract.mts'
 import { JobPayloadError } from './job-payload-error.mts'
-import {
-  asRecord,
-  assertExactKeys,
-  optionalNullableString,
-  optionalString,
-} from './job-payload-read.mts'
+import { parseEmailInput } from './job-payload-input.mts'
+import { asRecord, assertExactKeys } from './job-payload-read.mts'
 import {
   applicationDecisionVariables,
   dataExportVariables,
@@ -32,15 +25,10 @@ import {
 
 export { JobPayloadError }
 
-type TemplateName = Exclude<
-  EmailSendJobs,
-  'processSendCopyrightNoticeEmail' | 'processSendApiKeyExpiryReminder'
->
+type TemplateName = Exclude<EmailSendJobs, 'processSendCopyrightNoticeEmail'>
 
 export type ParsedEmailJob =
-  | { kind: 'dispatcher'; name: EmailDispatcherJobs; data: { afterId?: string } }
   | { kind: 'copyright'; data: { intentId: string } }
-  | { kind: 'api-key-expiry'; apiKeyId: string }
   | {
       kind: 'template'
       name: TemplateName
@@ -70,26 +58,11 @@ const templateParsers = {
   processSendCommunityApplicationDecisionEmail: applicationDecisionVariables,
   processSendCommunityRoleChangeEmail: roleChangeVariables,
   processSendCommunityOwnershipTransferEmail: ownershipVariables,
-  ...parseEngagementVariables,
 } as const satisfies Record<TemplateName, (data: unknown) => Record<string, unknown>>
 
 export function parseEmailJob(name: string, data: unknown): ParsedEmailJob {
-  if (isDispatcher(name)) {
-    return { kind: 'dispatcher', name, data: dispatcherPayload(name, data) }
-  }
   if (name === 'processSendCopyrightNoticeEmail') {
     return { kind: 'copyright', data: copyrightPayload(data) }
-  }
-  if (name === 'processSendApiKeyExpiryReminder') {
-    const record = asRecord(data, 'payload')
-    assertExactKeys(record, ['apiKeyId'])
-    if (
-      typeof record.apiKeyId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(record.apiKeyId)
-    ) {
-      throw new JobPayloadError('apiKeyId must be a UUID')
-    }
-    return { kind: 'api-key-expiry', apiKeyId: record.apiKeyId }
   }
   if (!isTemplate(name)) throw new JobPayloadError(`unknown job ${name}`)
   const record = asRecord(data, 'payload')
@@ -97,17 +70,13 @@ export function parseEmailJob(name: string, data: unknown): ParsedEmailJob {
   return {
     kind: 'template',
     name,
-    input: emailInput(record.input),
+    input: parseEmailInput(record.input),
     variables: templateParsers[name](record.variables),
   }
 }
 
-function isDispatcher(name: string): name is EmailDispatcherJobs {
-  return getEmailJobKind(name) === 'dispatcher'
-}
-
 function isTemplate(name: string): name is TemplateName {
-  return getEmailJobKind(name) === 'template'
+  return Object.hasOwn(templateParsers, name)
 }
 
 function copyrightPayload(data: unknown): { intentId: string } {
@@ -116,62 +85,4 @@ function copyrightPayload(data: unknown): { intentId: string } {
   const intentId = record.intentId
   if (typeof intentId !== 'string') throw new JobPayloadError('copyright payload must set intentId')
   return { intentId }
-}
-
-function emailInput(data: unknown): EmailJobInput {
-  const record = asRecord(data, 'input')
-  assertExactKeys(record, [
-    'emailAddress',
-    'userId',
-    'trackingKey',
-    'windowStart',
-    'windowEnd',
-    'uiLocale',
-    'subject',
-    'text',
-    'html',
-  ])
-  const emailAddress = record.emailAddress
-  const userId = record.userId
-  optionalInputMetadata(record)
-  const metadata = inputMetadata(record)
-  if (typeof emailAddress === 'string' && userId === undefined) return { emailAddress, ...metadata }
-  if (typeof userId === 'string' && emailAddress === undefined) return { userId, ...metadata }
-  throw new JobPayloadError('input must set emailAddress or userId')
-}
-
-function inputMetadata(record: Record<string, unknown>): {
-  trackingKey?: string
-  windowStart?: string
-  windowEnd?: string
-  uiLocale?: string | null
-  subject?: string
-  text?: string
-  html?: string
-} {
-  return {
-    ...(typeof record.trackingKey === 'string' ? { trackingKey: record.trackingKey } : {}),
-    ...(typeof record.windowStart === 'string' ? { windowStart: record.windowStart } : {}),
-    ...(typeof record.windowEnd === 'string' ? { windowEnd: record.windowEnd } : {}),
-    ...(typeof record.subject === 'string' ? { subject: record.subject } : {}),
-    ...(typeof record.text === 'string' ? { text: record.text } : {}),
-    ...(typeof record.html === 'string' ? { html: record.html } : {}),
-    ...(record.uiLocale === null || typeof record.uiLocale === 'string'
-      ? { uiLocale: record.uiLocale }
-      : {}),
-  }
-}
-
-function optionalInputMetadata(record: Record<string, unknown>): void {
-  for (const key of [
-    'trackingKey',
-    'windowStart',
-    'windowEnd',
-    'subject',
-    'text',
-    'html',
-  ] as const) {
-    optionalString(record, key)
-  }
-  optionalNullableString(record, 'uiLocale')
 }
