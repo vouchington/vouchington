@@ -65,7 +65,9 @@ export async function searchBlockedHostnames(
     LIMIT $${values.length}
     )
     SELECT hydrated.* FROM candidate_hostnames candidate
-    JOIN view_url_hostnames hydrated ON hydrated.id = candidate.id
+    JOIN LATERAL (
+      SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
+    ) hydrated ON true
     ORDER BY candidate.hostname ASC, candidate.id ASC`,
     values,
   )

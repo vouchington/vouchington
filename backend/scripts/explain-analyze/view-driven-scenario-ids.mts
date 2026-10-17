@@ -1,0 +1,17 @@
+export const VIEW_DRIVEN_SCENARIO_IDS = [
+  'active-community-agent-prompts',
+  'autotagger-agent-candidate-topics',
+  'detect-rss-feed-item-language',
+  'detect-rss-feed-item-language-batch',
+  'import-community-list',
+  'identity-verification-attempt-membership-gate',
+  'moderation-summary-recipients',
+  'recoverable-oauth-authorizations',
+  'search-blocked-hostnames',
+  'search-community-agent-simulation-posts',
+  'search-community-posts-hot',
+  'search-list-items',
+  'search-pending-community-posts',
+  'url-hostname-search-text',
+  'url-hostname-search-text-cursor',
+] as const

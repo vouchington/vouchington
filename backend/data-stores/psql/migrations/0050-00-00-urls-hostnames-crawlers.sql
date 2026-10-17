@@ -191,6 +191,12 @@ CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked
   ON url_hostnames (hostname text_pattern_ops)
   WHERE is_blocked;
 
+-- Blocked-hostname pages sort by hostname under the default collation. The
+-- text_pattern_ops lookup index above cannot provide that ordering.
+CREATE INDEX IF NOT EXISTS idx_url_hostnames__blocked_page
+  ON url_hostnames (hostname, id)
+  WHERE is_blocked;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_url_hostnames__skip_web_risk
   ON url_hostnames (hostname text_pattern_ops)

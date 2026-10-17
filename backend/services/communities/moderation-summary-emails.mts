@@ -198,7 +198,7 @@ export async function hasModerationEmailSent(userId: string, sendKey: string): P
   return rows.length > 0
 }
 
-async function getModerationSummaryRecipients(now: Date): Promise<ModerationRecipientRow[]> {
+export async function getModerationSummaryRecipients(now: Date): Promise<ModerationRecipientRow[]> {
   const WORK_PAGE_SIZE = getCommunitiesWorkLimit('summary_email_batch_size')
   const { rows } = await read(sql`/* getModerationSummaryRecipients */
     SELECT DISTINCT

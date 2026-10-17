@@ -1,6 +1,8 @@
 import { RELATION_SCENARIOS } from './relation-scenarios.mts'
+import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
+  ...VIEW_DRIVEN_SCENARIO_IDS,
   'bloom-repair-window',
   'bloom-repair-capped',
   'bloom-repair-resumed',
@@ -152,11 +154,8 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-communities-virtual-subscriptions',
   'search-community-posts',
   'search-data-points',
-  'search-pending-community-posts',
-  'search-top-hostnames',
-  'search-top-hostnames-by-topic',
-  'search-topic-aliases',
-  'search-users',
+  ...(['search-top-hostnames', 'search-top-hostnames-by-topic'] as const),
+  ...(['search-topic-aliases', 'search-users'] as const),
   'topic-by-slug',
   'topic-data-point-insights',
   'topic-import-attempts-retention',

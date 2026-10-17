@@ -127,8 +127,9 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
       rfis.created_at ASC
     LIMIT 1
   ) best_source ON true
-  JOIN view_rss_feeds primary_feed
-    ON primary_feed.id = best_source.rss_feed_id
+  JOIN LATERAL (
+    SELECT * FROM view_rss_feeds WHERE id = best_source.rss_feed_id LIMIT 1
+  ) primary_feed ON true
   -- Aggregate all source feeds as a JSON array, same ordering as primary selection.
   LEFT JOIN LATERAL (
     SELECT json_agg(
@@ -141,7 +142,9 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     ) AS rss_feed_sources
     FROM rss_feed_item_sources rfis2
     JOIN rss_feeds rf2 ON rf2.id = rfis2.rss_feed_id
-    JOIN view_rss_feeds vrf ON vrf.id = rfis2.rss_feed_id
+    JOIN LATERAL (
+      SELECT * FROM view_rss_feeds WHERE id = rfis2.rss_feed_id LIMIT 1
+    ) vrf ON true
     JOIN topics t2 ON t2.id = rf2.topic_id
     WHERE rfis2.rss_feed_item_id = rss_feed_items.id
   ) all_sources ON true

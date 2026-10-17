@@ -130,7 +130,11 @@ async function captureHydration(
     caches.rss_feed_item_elections.invalidateCacheGetByAny(...selected),
   ])
   registerScenarioContract(scenarioId, {
-    expectations: [{ kind: 'custom', name: 'storyMemberPages' }],
+    expectations: [
+      { kind: 'custom', name: 'storyMemberPages' },
+      { kind: 'maxProcessedRows', relation: 'rss_feed_item_sources', max: selected.length * 6 },
+      { kind: 'maxProcessedRows', relation: 'rss_feeds', max: selected.length * 20 },
+    ],
     crossPartition: {
       crawls: 'Selected-item embed hydration finds source crawls across retained months.',
     },

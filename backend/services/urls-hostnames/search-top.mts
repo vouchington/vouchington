@@ -50,7 +50,9 @@ export async function searchTopHostnames(
     LIMIT $${values.length}
     )
     SELECT hydrated.* FROM candidate_hostnames candidate
-    JOIN view_url_hostnames hydrated ON hydrated.id = candidate.id
+    JOIN LATERAL (
+      SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
+    ) hydrated ON true
     ORDER BY candidate.votes_score_net DESC, candidate.id DESC`,
     values,
   )

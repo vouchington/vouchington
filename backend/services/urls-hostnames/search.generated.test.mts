@@ -72,6 +72,19 @@ describe('search.generated', () => {
     expect(results.length).toBeLessThanOrEqual(2)
   })
 
+  it('paginates text matches with a name cursor', async () => {
+    const query = `search-page-${suffix}`
+    const hostnames = [`${query}-1.com`, `${query}-2.com`, `${query}-3.com`]
+    await upsertUrlHostnames(null, hostnames)
+
+    const first = await searchUrlHostnames({ query, limit: 2 })
+    expect(first.results.map(row => row.hostname)).toEqual(hostnames.slice(0, 2))
+    expect(first.page_info.end_cursor).toBeTruthy()
+
+    const second = await searchUrlHostnames({ query, limit: 2, after: first.page_info.end_cursor! })
+    expect(second.results.map(row => row.hostname)).toEqual(hostnames.slice(2))
+  })
+
   it('searchUrlHostnames returns empty array when no matches', async () => {
     const { results } = await searchUrlHostnames({ query: 'nonexistent-hostname-xyz-123' })
     expect(results).toEqual([])

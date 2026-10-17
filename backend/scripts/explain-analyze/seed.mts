@@ -81,6 +81,11 @@ import {
   seedUserAgentStrings,
 } from './seed-data/round-trip-shapes.mts'
 import { seedTopHashtags } from './seed-data/top-hashtags.mts'
+import { seedViewDrivenCommunityPosts } from './seed-data/view-driven-community-posts.mts'
+import { seedViewDrivenLists } from './seed-data/view-driven-lists.mts'
+import { seedViewDrivenPrompts } from './seed-data/view-driven-prompts.mts'
+import { seedViewDrivenOAuth } from './seed-data/view-driven-oauth.mts'
+import { seedViewDrivenIdentity } from './seed-data/view-driven-identity.mts'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
@@ -155,9 +160,12 @@ async function main() {
   await seedFollowerDistributions()
   await seedProfileLinks(1000)
   await seedCommunities(5, 200)
+  await seedViewDrivenLists()
+  await seedViewDrivenPrompts()
   await seedCommunityListItemTopic()
   await seedCommunityPosts()
   await seedTrendingCommunityPostIds()
+  await seedViewDrivenCommunityPosts()
   await seedCommunityProxyFollowsAndMutes()
   await seedConversationPaginationRows(1000)
   await seedPostDataPointTopics(1000)
@@ -169,6 +177,8 @@ async function main() {
   await seedBloomReconciliation()
   await checkpointSeed('final writes')
   await seedOAuthClientVerification()
+  await seedViewDrivenOAuth()
+  await seedViewDrivenIdentity()
   await seedClassifierHumanVoteComparison()
   await seedRelationVoteReads()
   await runAnalyze()

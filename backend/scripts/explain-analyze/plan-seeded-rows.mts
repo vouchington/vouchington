@@ -6,7 +6,7 @@ const ANCILLARY_SEED_ROW_UPPER_BOUND = 1_000
 
 export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   url_hostname_cache_invalidation_work_items: 20_000,
-  users: 20_000,
+  users: 20_004,
   follower_distributions: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   follower_distribution_deliveries: FOLLOWER_DISTRIBUTION_SEED_COUNT,
   user_email_addresses: 40_000,
@@ -43,7 +43,12 @@ export const SEEDED_ROWS_BY_RELATION: Readonly<Record<string, number>> = {
   crawl_chunks: 1_500,
   topic_aliases: 2_756,
   user_profile_links: 3_000,
-  community_post_reviews: 2_000,
+  community_post_reviews: 2_050,
+  community_agent_prompts: 4,
+  agent_prompts: 4,
+  user_lists: 3,
+  user_list_posts: 1_080,
+  oauth_authorizations: 3,
   communities: 261,
   community_list_topics: 1,
   community_members: 100,
