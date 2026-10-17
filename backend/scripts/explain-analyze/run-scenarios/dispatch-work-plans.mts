@@ -16,6 +16,20 @@ import { registerScenarioContract } from '../plan-expectations.mts'
 
 export async function runDispatchWorkPlanScenarios(): Promise<void> {
   const crawl = await prepareCrawlDispatchScale()
+  for (const id of [
+    'dispatch-hostname-url-selectivity',
+    'dispatch-tier1-url-selectivity',
+    'dispatch-tier2-url-selectivity',
+  ]) {
+    registerScenarioContract(id, {
+      seededRows: crawl.seededRows,
+      crossPartition: {
+        crawls:
+          'URL-keyed recrawl eligibility checks embedding completion across crawl creation partitions; crawl IDs do not bound completion time.',
+      },
+      expectations: [{ kind: 'custom', name: 'dispatchUrlSelectivity' }],
+    })
+  }
   const cursor = { afterId: crawl.afterId, sweepStartedAt: crawl.sweepStartedAt }
   const restoreCrawl = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
     batch_size: 1,
@@ -112,20 +126,6 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
   }
 }
 
-for (const id of [
-  'dispatch-hostname-url-selectivity',
-  'dispatch-tier1-url-selectivity',
-  'dispatch-tier2-url-selectivity',
-]) {
-  registerScenarioContract(id, {
-    seededRows: { urls: 10026 },
-    crossPartition: {
-      crawls:
-        'URL-keyed recrawl eligibility checks embedding completion across crawl creation partitions; crawl IDs do not bound completion time.',
-    },
-    expectations: [{ kind: 'custom', name: 'dispatchUrlSelectivity' }],
-  })
-}
 registerScenarioContract('dispatch-referral-crawl-due-selectivity', {
   seededRows: { user_referral_program_links: 10004 },
   expectations: [{ kind: 'custom', name: 'dispatchReferralCrawlSelectivity' }],

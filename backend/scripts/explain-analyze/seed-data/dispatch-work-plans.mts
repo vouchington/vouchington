@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { write } from '@data-stores/psql'
 import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
 import { createTestUser } from '@voucha/test-helpers/entities/users'
 import { createTestPost } from '@voucha/test-helpers/entities/create-test-entities'
@@ -16,6 +17,7 @@ import {
   analyzeTestUnfurlDispatchPlanTable,
 } from '@voucha/test-helpers/entities/unfurl-dispatch-plans'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
+import { getEntityRelationUrlTables } from '@services/entity-relations/url-tables'
 
 /** Realistic selectivity belongs to the standalone EXPLAIN runner, never unit fixtures. */
 export async function prepareCrawlDispatchScale() {
@@ -54,8 +56,30 @@ export async function prepareCrawlDispatchScale() {
     votesScoreUp: 0,
   })
   await analyzeTestCrawlDispatchPlanTables()
+  const seededRows = await countCrawlDispatchCandidateRows()
   const sweepStartedAt = ownedSweepAfter([target.id, ...eligibleIds, ...tier2Ids], 1)
-  return { hostnameId: target.hostname.id, afterId: target.id, sweepStartedAt }
+  return { hostnameId: target.hostname.id, afterId: target.id, sweepStartedAt, seededRows }
+}
+
+async function countCrawlDispatchCandidateRows(): Promise<Record<string, number>> {
+  const tables = [
+    'urls',
+    'url_hostnames',
+    'crawls',
+    'user_profile_links',
+    ...getEntityRelationUrlTables(),
+  ]
+  const seededRows: Record<string, number> = {}
+  for (const table of tables) {
+    const result = await write<{ count: string }>(
+      `/* countCrawlDispatchCandidateRows */ SELECT COUNT(*)::text AS count FROM "${table}"`,
+    )
+    const count = Number(result.rows[0]?.count)
+    if (!Number.isSafeInteger(count) || count < 0)
+      throw new Error(`Missing candidate row count for ${table}`)
+    seededRows[table] = count
+  }
+  return seededRows
 }
 
 export async function prepareReferralCrawlScale() {
