@@ -37,6 +37,12 @@ export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
       max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_insert_chunk_size,
       integer: true,
     },
+    import_recovery_batch_size: {
+      description: 'Stalled RSS feed imports one recovery sweep re-dispatches.',
+      min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_recovery_batch_size,
+      max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_recovery_batch_size,
+      integer: true,
+    },
     import_status_page_size: {
       description: 'Rows one page of an RSS feed import status lists.',
       min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_status_page_size,
