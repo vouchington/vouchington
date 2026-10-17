@@ -28,6 +28,14 @@ export async function seedUsers(count = 2000): Promise<void> {
 
     await transaction.commit()
   }
+  // Matches the search prefix and sorts before active seed users, but public search must skip it.
+  await using transaction = await beginTransaction()
+  await transaction(
+    `/* seedExplainData */ INSERT INTO users (id, username, deleted_at)
+     VALUES ($1, 'seeduser-0', CURRENT_TIMESTAMP) ON CONFLICT DO NOTHING`,
+    [seedUuid(count, '01')],
+  )
+  await transaction.commit()
 }
 export async function seedHostnames(count = HOSTNAME_COUNT): Promise<void> {
   console.log(`Seeding ${count} hostnames...`)

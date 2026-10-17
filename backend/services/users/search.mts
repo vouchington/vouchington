@@ -19,14 +19,23 @@ export async function searchUsers(
 
   const values: Array<string | number> = [`${escapedQuery}%`]
   const afterFilter =
-    options.after !== undefined ? ` AND LOWER(username) > $${values.push(options.after)}` : ''
+    options.after !== undefined ? ` AND LOWER(users.username) > $${values.push(options.after)}` : ''
 
   const { rows } = await read(
     `/* searchUsers */
-    SELECT * FROM view_users_public
-    WHERE LOWER(username) LIKE $1 ESCAPE '\\'${afterFilter}
-    ORDER BY LOWER(username)
-    LIMIT $${values.push(limit + 1)}`,
+    WITH matched_users AS MATERIALIZED (
+      SELECT users.id, LOWER(users.username) AS username_sort
+      FROM users
+      WHERE users.deleted_at IS NULL
+        AND users.username IS NOT NULL
+        AND LOWER(users.username) LIKE $1 ESCAPE '\\'${afterFilter}
+      ORDER BY LOWER(users.username)
+      LIMIT $${values.push(limit + 1)}
+    )
+    SELECT vup.*
+    FROM matched_users
+    JOIN view_users_public vup ON vup.id = matched_users.id
+    ORDER BY matched_users.username_sort`,
     values,
   )
 

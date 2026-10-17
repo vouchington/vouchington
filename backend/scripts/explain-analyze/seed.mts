@@ -1,5 +1,6 @@
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
+import { seedPrivateSearchCommunity } from './seed-data/community-search-exclusions.mts'
 import { seedViewPostsHydration } from './seed-data/view-posts-hydration.mts'
 import { seedParentHistory } from './seed-data/parent-history.mts'
 import { seedFollowerDistributions } from './seed-data/follower-distributions.mts'
@@ -164,6 +165,7 @@ async function main() {
   await seedModerationSummaryRecipient()
   await seedViewDrivenLists()
   await seedViewDrivenPrompts()
+  await seedPrivateSearchCommunity()
   await seedCommunityListItemTopic()
   await seedCommunityPosts()
   await seedTrendingCommunityPostIds()

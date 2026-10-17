@@ -26,7 +26,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
 
   const filters: ReturnType<typeof sql>[] = [sql`rss_feeds.deleted_at IS NULL`]
   let sortBy = sql`rss_feeds.id DESC`
-  const shouldJoinCurrentState = is_enabled !== null || discoverable !== null
   const effectiveTopicIds = Array.from(new Set([...(topic_id ? [topic_id] : []), ...topic_ids]))
   const effectiveTopicMatch = topic_id && effectiveTopicIds.length > 1 ? 'all' : topic_match
   const effectivePublisherTypeIds = Array.from(
@@ -111,14 +110,14 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   if (cursorId) filters.push(sql`rss_feeds.id < ${cursorId}::uuid`)
   // is_enabled/discoverable === null means no filter
   if (is_enabled === true) {
-    filters.push(sql`current_state.is_enabled = TRUE`)
+    filters.push(sql`rss_feeds.is_enabled = TRUE`)
   } else if (is_enabled === false) {
-    filters.push(sql`current_state.is_enabled = FALSE`)
+    filters.push(sql`rss_feeds.is_enabled = FALSE`)
   }
   if (discoverable === true) {
-    filters.push(sql`current_state.is_discoverable = TRUE`)
+    filters.push(sql`rss_feeds.is_discoverable = TRUE`)
   } else if (discoverable === false) {
-    filters.push(sql`current_state.is_discoverable = FALSE`)
+    filters.push(sql`rss_feeds.is_discoverable = FALSE`)
   }
 
   const hasTextSearch = text_search_query && typeof text_search_query === 'string'
@@ -155,12 +154,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
         SELECT id
         FROM rss_feeds
     `)
-  }
-
-  if (shouldJoinCurrentState) {
-    query.append(sql`
-        JOIN view_rss_feed_current_states current_state
-          ON current_state.rss_feed_id = rss_feeds.id`)
   }
 
   if (filters.length > 0) {
