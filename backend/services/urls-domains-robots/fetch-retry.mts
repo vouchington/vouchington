@@ -64,6 +64,7 @@ export async function fetchRobotsTxtOutcome(
   return fetchRobotsTxtWithRetryOutcome(domain, dependencies)
 }
 
+/** @internal Body-only retry entrypoint for transport tests. */
 export async function fetchRobotsTxtWithRetry(
   domain: string,
   dependencies: RobotsDependencies,
