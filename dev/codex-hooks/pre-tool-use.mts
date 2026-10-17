@@ -12,7 +12,7 @@
 //
 // Home owners: `sessionHomeOwners` resolves the GitHub owners that the session's checkout belongs
 // to (its remotes plus the root package.json `repository`). It is injected lazily into the policy
-// so only `gh pr create/edit` and `gh issue create` aimed at a different owner skip the repository
+// so only `gh pr create/new/edit` and `gh issue create` aimed at a different owner skip the repository
 // content rules; when the owners cannot be determined, every content rule stays enforced.
 
 import * as path from 'node:path'
