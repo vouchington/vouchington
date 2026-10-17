@@ -34,6 +34,7 @@ import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mt
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
+import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 
 async function main() {
   prepareOutputDir()
@@ -54,6 +55,7 @@ async function main() {
     await runViewDrivenReadScenarios()
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()
+    await runSharedLoaderScenarios()
     await runMembershipRefundScenarios()
     await runRemoteFollowerScenarios()
     await runReviewSuccessionScenarios()

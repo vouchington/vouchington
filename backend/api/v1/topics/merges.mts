@@ -1,7 +1,9 @@
+import { isSlug, isUUID } from '@modules/utils'
 import type { Context } from '@jongleberry/api-server'
 import {
   currentUserCanMergeTopic,
   getTopicByAnyWithRedirect,
+  getTopicsByAnyWithRedirectBatch,
   mergeTopicAliases,
 } from '@services/topics'
 import { attachWrittenTopicProvenance } from '@services/content-provenance'
@@ -30,12 +32,20 @@ app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => 
   )
   const destination = destinationIdOrSlug
 
-  const sourceResult = await getTopicByAnyWithRedirect(ctx.params.sourceIdOrSlug!)
+  // Keep source 404/409 ahead of a malformed destination while batching ordinary inputs.
+  const validDestination = isUUID(destination.trim()) || isSlug(destination.trim().toLowerCase())
+  const batch = await getTopicsByAnyWithRedirectBatch([
+    ctx.params.sourceIdOrSlug!,
+    ...(validDestination ? [destination] : []),
+  ])
+  const sourceResult = batch[0]
   ctx.assert(sourceResult, 404, 'Source topic not found')
   const source = sourceResult
   ctx.assert(!source.topic_redirect, 409, 'Source topic has already been merged')
 
-  const destinationResult = await getTopicByAnyWithRedirect(destination)
+  const destinationResult = validDestination
+    ? batch[1]
+    : await getTopicByAnyWithRedirect(destination)
   ctx.assert(destinationResult, 404, 'Destination topic not found')
   const target = destinationResult
   ctx.assert(!target.topic_redirect, 409, 'Destination topic has already been merged')

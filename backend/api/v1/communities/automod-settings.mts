@@ -18,7 +18,13 @@ app.route('/api/v1/communities/:idOrSlug/automod-settings').patch(async (ctx: Co
     body,
   })
 
-  const updated = await updateCommunityAutomodSettings(currentUser, community.id, body, membership)
+  const updated = await updateCommunityAutomodSettings(
+    currentUser,
+    community.id,
+    body,
+    membership,
+    community,
+  )
   const { owner: _owner, ...communityData } = updated
   ctx.json({ community: await attachWrittenCommunityProvenance(communityData, currentUser) })
 })

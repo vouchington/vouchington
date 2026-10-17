@@ -24,12 +24,11 @@ export const followRssFeedRelation = getEntityRelationMetadataOrThrow({
   objectType: 'rss_feed',
   predicate: 'follow',
 })
-
-type ClaimedTopicAlias = Awaited<ReturnType<typeof topicAliases.claimTopicAlias>>
 export type CreateSourceTransactionResult = {
   topicId: string
   rssFeedId: string
-  claimedAlias: ClaimedTopicAlias
+  claimedAlias: Awaited<ReturnType<typeof topicAliases.claimTopicAlias>>
+  topic: Awaited<ReturnType<typeof getTopicByAny>>
 }
 type CreateSourceWithRetryArgs = {
   provenance: ContentProvenance
@@ -98,8 +97,9 @@ export async function createSourceInTransaction(
       claimTopicAlias(topicId, slug, options),
       linkHostnameToSourceTopic(topicId, hostnameId, options),
     ])
+    let topic: CreateSourceTransactionResult['topic'] = null
     if (createdById) {
-      const topic = (await getTopicByAny(topicId, options))!
+      topic = (await getTopicByAny(topicId, options))!
       const changes = computeTopicChanges(null, topic)
       await createTopicRevision(topicId, 'create', changes, createdById, options)
     }
@@ -117,7 +117,7 @@ export async function createSourceInTransaction(
     const rssFeedId = feedRows[0].id as string
     await createInitialRssFeedStateChanges(rssFeedId, options)
 
-    const result = { topicId, rssFeedId, claimedAlias }
+    const result = { topicId, rssFeedId, claimedAlias, topic }
     await query.commit()
     return result
   } catch (err) {
@@ -153,7 +153,7 @@ export async function createRssFeedSource(
   )
   if (!result) return null
   await topicAliases.finalizeClaimedTopicAliases(result.topicId, [result.claimedAlias])
-  const topic = await getTopicByAny(result.topicId)
+  const topic = result.topic ?? (await getTopicByAny(result.topicId))
   if (topic) {
     finalizeCreatedTopic(topic, { name: args.topicName, slug: args.slug, topic_type: 'rss_feed' })
   }

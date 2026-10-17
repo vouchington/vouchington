@@ -7,10 +7,10 @@ import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import {
-  getPostByAnyCachedBatch,
   getPostElectionByIdCachedBatch,
   getPostMetricsByAnyCachedBatch,
 } from '@services/entity-fetch'
+import { getPostsWithRootsByAnyCached } from '@services/posts/get-cached-with-roots'
 import { getPostIdsCached } from '@services/entity-fetch/search-caches'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
@@ -86,19 +86,11 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
     result.results = result.results.filter(result => publicPostIds.has(result.id))
   }
   const postIds = result.results.map((r: { id: string }) => r.id)
-  const postIdSet = new Set(postIds)
-  const rawPostsPromise = getPostByAnyCachedBatch(postIds)
+  const postsAndRootsPromise = getPostsWithRootsByAnyCached(postIds)
+  const rawPostsPromise = postsAndRootsPromise.then(result => result.posts)
   const postsPromise = rawPostsPromise.then(posts => labelAndMaskPosts(posts, currentUser))
-  const postsWithRootsPromise = Promise.all([rawPostsPromise, postsPromise]).then(
-    async ([rawPosts, posts]) => {
-      const rootPostIds = [
-        ...new Set(rawPosts.flatMap(post => (post?.root_post_id ? [post.root_post_id] : []))),
-      ].filter(rootPostId => !postIdSet.has(rootPostId))
-      if (rootPostIds.length === 0) return posts
-      const rawRootPosts = await getPostByAnyCachedBatch(rootPostIds)
-      const rootPosts = await labelAndMaskPosts(rawRootPosts, currentUser)
-      return [...posts, ...rootPosts]
-    },
+  const postsWithRootsPromise = Promise.all([postsAndRootsPromise, postsPromise]).then(
+    async ([{ roots }, posts]) => [...posts, ...(await labelAndMaskPosts(roots, currentUser))],
   )
   if (!currentUser) {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)

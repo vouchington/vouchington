@@ -4,17 +4,12 @@ import { isUUID, isSlug } from '@modules/utils'
 import type { Topic } from './types.mts'
 import createError from 'http-errors'
 
-export type TopicRedirect = {
-  source_topic_id: string
-  source_topic_slug: string
-  source_topic_type: Topic['topic_type']
-  destination_topic_id: string
-}
-
-export type TopicWithRedirect = {
-  topic: Topic
-  topic_redirect?: TopicRedirect
-}
+import {
+  mapTopicWithRedirect,
+  type TopicWithRedirect,
+  type TopicRedirectRow,
+} from './get-with-redirect-mapping.mts'
+export type { TopicWithRedirect } from './get-with-redirect-mapping.mts'
 
 export async function getTopicBySlug(slug: string): Promise<Topic | null> {
   const { rows } = await read<Topic>(
@@ -166,25 +161,7 @@ export const getTopicByAnyWithRedirect = async (
   const row = rows[0]
   if (!row) return null
 
-  const { source_topic_id, source_topic_slug, source_topic_type, ...topic } = row as Topic & {
-    source_topic_id?: string | null
-    source_topic_slug?: string | null
-    source_topic_type?: Topic['topic_type'] | null
-  }
-
-  if (!source_topic_id || !source_topic_slug || !source_topic_type) {
-    return { topic }
-  }
-
-  return {
-    topic,
-    topic_redirect: {
-      source_topic_id,
-      source_topic_slug,
-      source_topic_type,
-      destination_topic_id: topic.id,
-    },
-  }
+  return mapTopicWithRedirect(row as TopicRedirectRow)
 }
 
 export const getTopicByAny = async (

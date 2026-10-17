@@ -112,8 +112,7 @@ export async function unlinkTopicAlias(
 
   if (result && !options.skipSideEffects && result.previousTopicId) {
     await Promise.all([
-      invalidate.topics(result.previousTopicId, result.alias.alias),
-      invalidate.topic_metrics(result.previousTopicId),
+      invalidate.topicsWithMetrics(result.previousTopicId, result.alias.alias),
       invalidatePostsForTopicAliases([result.alias.id]),
     ])
     if (normalizeHashtag(result.alias.alias)) {

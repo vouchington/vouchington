@@ -2,7 +2,8 @@ import { read, sqlOrGroup } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import onError from '@modules/on-error'
 import { createSlugFromTitle } from '@modules/utils/slugs'
-import { getTopicByAny } from '@services/topics'
+import { getTopicsByAnyBatch } from '@services/topics'
+import { isUUID, isSlug } from '@modules/utils'
 import { toolsSearchTopicsSemantic } from '@services/topics/tools/semantic'
 import sql from 'sql-template-strings'
 
@@ -17,12 +18,12 @@ export type FindTopicRecommendationDuplicatesResult = {
 }
 
 type FindTopicRecommendationDependencies = {
-  getTopicByAny: typeof getTopicByAny
+  getTopicsByAnyBatch: typeof getTopicsByAnyBatch
   toolsSearchTopicsSemantic: typeof toolsSearchTopicsSemantic
 }
 
 const defaultFindTopicRecommendationDependencies: FindTopicRecommendationDependencies = {
-  getTopicByAny,
+  getTopicsByAnyBatch,
   toolsSearchTopicsSemantic,
 }
 
@@ -84,15 +85,9 @@ async function findExactTopic(
   options: QueryOptions,
   dependencies: FindTopicRecommendationDependencies,
 ): Promise<ExactTopic | null> {
-  const bySlug = await Promise.all(
-    candidateSlugs.map(slug =>
-      dependencies.getTopicByAny(slug, options).catch((err: unknown) => {
-        if (typeof err === 'object' && err !== null && 'status' in err && err.status === 422) {
-          return null
-        }
-        throw err
-      }),
-    ),
+  const bySlug = await dependencies.getTopicsByAnyBatch(
+    candidateSlugs.filter(slug => isUUID(slug) || isSlug(slug)),
+    options,
   )
   const slugMatch = bySlug.find(t => t != null) ?? null
   if (slugMatch)

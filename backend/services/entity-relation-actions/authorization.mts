@@ -1,13 +1,13 @@
 import { getPublicUserByIdOrSlug } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import {
-  getPostByAnyCached,
   getRssFeedByIdCached,
   getTopicByAnyWithRedirectCached,
   getUrlByAnyCached,
   getUrlHostnameByAnyCached,
 } from '@services/entity-fetch'
 import { canViewPost, BLOCKED_POST_TYPES } from '@services/posts'
+import { getRoutePostByAnyCached } from '@services/posts/route-access'
 import { getRssFeedItemById } from '@services/rss-feed-items'
 import { loadCommunityForViewerOrApplicant } from '@services/communities'
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
@@ -21,9 +21,9 @@ export async function currentUserCanBookmarkTarget(
 ): Promise<boolean> {
   switch (entityType) {
     case 'post': {
-      const post = await getPostByAnyCached(entityId)
+      const { post, root } = await getRoutePostByAnyCached(entityId)
       if (!post || post.deleted_at || BLOCKED_POST_TYPES.has(post.post_type)) return false
-      const rootPost = await getPostByAnyCached(post.root_post_id ?? post.id)
+      const rootPost = post.root_post_id ? root : post
       if (!rootPost || rootPost.deleted_at || BLOCKED_POST_TYPES.has(rootPost.post_type)) {
         return false
       }

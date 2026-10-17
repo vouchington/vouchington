@@ -2,7 +2,7 @@ import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
-
+import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
   'bloom-repair-window',
@@ -50,6 +50,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'friend-trusted-hostnames',
   'individual-cards-page',
   ...USER_PROFILE_SCENARIO_IDS,
+  ...SHARED_LOADER_SCENARIO_IDS,
   'membership-refunds-already-refunded-batch',
   'point-valuations-page',
   'spending-categories-page',

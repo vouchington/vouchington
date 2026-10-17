@@ -10,7 +10,10 @@ import {
   overrideDynamicConfigFieldsForTest,
   snapshotDynamicConfigFieldsForTest,
   executeTestAdmittedPost,
+  archiveTestCommunity,
+  removeTestCommunityMember,
 } from '@voucha/test-helpers'
+import { updateCommunity } from '@services/communities/update'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from '@services/contribution-gating/config'
@@ -122,6 +125,50 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
       }),
     )
   })
+
+  it.each(['archived', 'removed', 'private'] as const)(
+    'rechecks community state changed to %s while CAPTCHA is pending',
+    async state => {
+      const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+      const community = await insertTestCommunity({ createdById: user.id })
+      const membership = await insertTestCommunityMember({
+        communityId: community.id,
+        userId: user.id,
+        role: 'owner',
+      })
+      const request = createRequest()
+      await request.authenticateAs(user)
+      mockFetch.mockImplementationOnce(async () => {
+        if (state === 'archived') {
+          await archiveTestCommunity({ communityId: community.id, archivedById: user.id })
+        } else if (state === 'removed') {
+          await removeTestCommunityMember(community.id, user.id)
+        } else {
+          await updateCommunity(user, community.id, { visibility: 'private' }, membership)
+        }
+        return new UndiciResponse(JSON.stringify({ success: true }))
+      })
+      const response = await request
+        .post(`/api/v1/communities/${community.slug}/posts`)
+        .send({
+          post_type: 'discussion',
+          title: `Changed community ${state}`,
+          markdown: 'Community changed during verification.',
+          cf_turnstile_response: TEST_CAPTCHA_TOKEN,
+        })
+        .expect(state === 'private' ? 422 : 403)
+      expect(response.body.message).toContain(
+        state === 'archived'
+          ? 'Community is archived'
+          : state === 'removed'
+            ? 'You cannot post in this community'
+            : 'Private community posts must be private',
+      )
+      await expect(
+        getContributionAdmissionConsumptionCountForTest(user.id, 'discussion'),
+      ).resolves.toBe(0)
+    },
+  )
 
   it('rejects exhausted capacity before purchasing another reCAPTCHA assessment', async () => {
     const restoreConfig = snapshotDynamicConfigFieldsForTest([

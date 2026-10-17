@@ -34,7 +34,10 @@ export const preparePostWithCommunityReviews = async (
   options: { query?: TransactionQuery; delegated?: boolean } = {},
 ) => {
   const isAdminCreator = creator.roles.includes('administrator')
-  const defaults = await validateCreatePostInput(creator, input, membershipPlan)
+  const defaults = await validateCreatePostInput(creator, input, membershipPlan, {
+    query: options.query,
+    readOnly: false,
+  })
   const shouldValidateResolvedLinkCategories = defaults.postType === 'link' && !input.title?.trim()
   let communityReviews: CommunityPostReview[] = []
   let resolvedUrlStrings: string[] = []
@@ -87,7 +90,6 @@ export const preparePostWithCommunityReviews = async (
         updates = { ...updates, title: input.url!.slice(0, 255).trim() }
       }
     }
-    // Resolve a stored link's title on the writer connection.
     if (defaults.postType === 'link' && updates.url_id && !updates.title?.trim()) {
       const { rows: titleRows } = await query<{ resolved_title: string | null }>(
         sql`/* createPost.resolveLinkTitle */
@@ -124,11 +126,11 @@ export const preparePostWithCommunityReviews = async (
       updates = { ...updates, title: updates.title.slice(0, 255).trim() }
     }
     if (shouldValidateResolvedLinkCategories) {
-      await validatePostCategories(creator, membershipPlan, updates)
+      await validatePostCategories(creator, membershipPlan, updates, { queryOptions: options })
     }
-
-    // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-    const scope = await resolvePostScope({ creator, defaults, options, updates })
+    const scopeInput = { creator, defaults, options, updates }
+    // ast-grep-ignore: no-three-sequential-awaits -- scope validation, insert and source URL relation depend on each other inside the same transaction
+    const scope = await resolvePostScope({ ...scopeInput, communityLockHeld: delegated })
     const insertedPost = await insertPost({
       creator,
       provenance,
@@ -157,7 +159,6 @@ export const preparePostWithCommunityReviews = async (
     )
     return getPostByAny(insertedPost.id, options)
   }
-
   async function createInOwnedTransaction() {
     await using query = await beginTransaction()
     const result = await createInTransaction(query)
@@ -179,7 +180,6 @@ export const preparePostWithCommunityReviews = async (
     }
     throw err
   })
-
   const response = { post: post!, communityReviews }
   const finalize = async () => {
     // The records were committed with the placement rows. Queue admission is best-effort only;
@@ -195,6 +195,5 @@ export const preparePostWithCommunityReviews = async (
       updates,
     })
   }
-
   return { response, finalize }
 }

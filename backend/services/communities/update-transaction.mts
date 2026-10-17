@@ -16,7 +16,7 @@ export async function updateCommunityInTransaction(input: {
   update: UpdateCommunityInput
   statement: { text: string; values: unknown[] }
   query: TransactionQuery
-}): Promise<void> {
+}): Promise<{ visibility: CommunityVisibility; slug: string } | null> {
   const { locked, rowCount } = await applyLockedCommunityUpdate(input)
   if ((rowCount ?? 0) > 0 && locked && publicationChanged(input.update, locked)) {
     await recordPostPublicationChange(input.query, {
@@ -26,6 +26,7 @@ export async function updateCommunityInTransaction(input: {
       footprint: { priorCommunityId: input.communityId, priorCommunitySlug: locked.slug },
     })
   }
+  return (rowCount ?? 0) > 0 ? locked : null
 }
 
 async function applyLockedCommunityUpdate(

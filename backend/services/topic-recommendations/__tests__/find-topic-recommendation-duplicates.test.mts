@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTestTopic } from '@voucha/test-helpers'
-import type { Topic } from '@services/topics/types'
+import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 
 const mockToolsSearchTopicsSemantic =
   vi.fn<
@@ -31,7 +31,7 @@ describe('findTopicRecommendationDuplicates', () => {
       },
       {},
       {
-        getTopicByAny: async () => null,
+        getTopicsByAnyBatch,
         toolsSearchTopicsSemantic: mockToolsSearchTopicsSemantic,
       },
     )
@@ -63,7 +63,7 @@ describe('findTopicRecommendationDuplicates', () => {
       },
       {},
       {
-        getTopicByAny: async slug => (slug === topic.slug ? (topic as unknown as Topic) : null),
+        getTopicsByAnyBatch,
         toolsSearchTopicsSemantic: mockToolsSearchTopicsSemantic,
       },
     )
@@ -90,7 +90,7 @@ describe('findTopicRecommendationDuplicates', () => {
       },
       {},
       {
-        getTopicByAny: async () => null,
+        getTopicsByAnyBatch,
         toolsSearchTopicsSemantic: mockToolsSearchTopicsSemantic,
       },
     )

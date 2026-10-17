@@ -30,14 +30,14 @@
     "issue": 2612
   },
   {
-    "annotation": "assertReportablePost",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
-  },
-  {
     "annotation": "assertReferralProgramExists",
     "reason": "The create-and-link transaction rechecks the program after inserting the new link-validation row, so it sees the write and rejects a program merged or deleted before the relation is added (backend/services/referral-program-link-validations/create-and-link.mts:76-79, backend/services/topics/validation.mts:126-150)",
     "issue": 3120
+  },
+  {
+    "annotation": "assertReportablePost",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
   },
   {
     "annotation": "assertUrlsHaveNoBlockedHostnames",
@@ -80,9 +80,14 @@
     "issue": 2612
   },
   {
+    "annotation": "canViewDelegatedPostsBatch",
+    "reason": "Delegated create, update and delete recheck thread access after lockDelegatedPostThread acquires lifecycle and post locks",
+    "issue": 3113
+  },
+  {
     "annotation": "canViewPostsBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "Anonymous outbound-federation visibility is rechecked after the vote transaction commits; independent MCP calls keep their own result and retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.abandonExpiredAttempt",
@@ -336,18 +341,18 @@
   },
   {
     "annotation": "getCommunityById",
-    "reason": "Community re-fetch; #2544 covers only part of the routes",
-    "issue": 2614
+    "reason": "Community settings/archive output is read after writes; independent MCP calls retain separately retried community snapshots",
+    "issue": 3113
   },
   {
     "annotation": "getCommunityMember",
-    "reason": "Community re-fetch; #2544 covers only part of the routes",
-    "issue": 2614
+    "reason": "Membership authority is read after pair advisory locks; bans recheck target membership after the kick UPDATE to reject concurrent role promotion",
+    "issue": 3113
   },
   {
     "annotation": "getCommunityWithViewerById",
-    "reason": "Community and viewer re-fetched after the route preamble",
-    "issue": 2544
+    "reason": "Community post creation reloads community and membership after admission begins its write transaction; delegated creation also holds lifecycle and membership locks; independent MCP calls own separately retried snapshots",
+    "issue": 3113
   },
   {
     "annotation": "getCrawlerForHostnameId",
@@ -421,13 +426,8 @@
   },
   {
     "annotation": "getPostByAny",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
-    "annotation": "getPostCacheKeys",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "Post mutations reload after locks and writes; follower sends revalidate in their independent write transaction after route preflight; approval and vote federation reread after committed mutations",
+    "issue": 3113
   },
   {
     "annotation": "getPostProvenanceFacts",
@@ -435,24 +435,19 @@
     "issue": 2613
   },
   {
-    "annotation": "getPostsByAnyBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "getPrivateUserByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Authenticated self reads and same-phase mutation inputs reuse rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside fresh report authorization after CAPTCHA/admission, post-body target resolution, postwrite and independent-tool reloads",
+    "issue": 3113
   },
   {
     "annotation": "getPublicUserByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Follow commits before its independent best-effort trust vote checks the target; ban-evasion flag claiming and banning have separate committed retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "getPublicUsersByAnyBatch",
-    "reason": "Batched MCP tool calls can each hydrate users once per tool call",
-    "issue": 2611
+    "reason": "Independent MCP calls own separate JSON-RPC results, errors and client retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "getRelatablePostIds",
@@ -521,13 +516,8 @@
   },
   {
     "annotation": "getTopicByAny",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "getTopicCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Topic create and update return state after topic/alias writes; merged destination output is reloaded after the merge transaction commits",
+    "issue": 3113
   },
   {
     "annotation": "getTopicDataPointInsights",
@@ -536,23 +526,18 @@
   },
   {
     "annotation": "getTopicsByAnyBatch",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "reason": "Post creation rechecks active topic state on the primary execution transaction after CAPTCHA/admission; link title resolution also rechecks categories after URL writes",
+    "issue": 3113
   },
   {
     "annotation": "getUrlById",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "reason": "Stored URL existence is checked again in the intentional execution transaction after CAPTCHA and the separately committed capacity transaction (contribution-gating/admission.mts:69-79), so removed URLs reject before the post insert",
+    "issue": 3113
   },
   {
     "annotation": "getUrlsByIds",
-    "reason": "Root URL creation loads the inserted URL for each approved hostname",
-    "issue": 2612
-  },
-  {
-    "annotation": "getUserCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Root URL creation hydrates URLs after their upserts in the shared approval transaction before writing each ordered relation",
+    "issue": 3113
   },
   {
     "annotation": "getUserTagRelationById",
@@ -958,6 +943,11 @@
     "annotation": "runContributionAdmission.recordAttemptResult",
     "reason": "Contribution admission steps repeat per admitted item",
     "issue": 2608
+  },
+  {
+    "annotation": "searchCommunityMembers",
+    "reason": "Independent MCP tools/call messages return separately addressed member pages with separate result, error and retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "selectCopyrightStatementFacts",

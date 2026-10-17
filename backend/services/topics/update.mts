@@ -112,8 +112,9 @@ export const updateTopic = async (
 
   if (changes.slug !== undefined) {
     await finalizeClaimedTopicAliases(topic.id, claimedAliases)
+  } else {
+    await invalidate.topics(topic.id, topic.slug)
   }
-  await invalidate.topics(topic.id, topic.slug, changes.slug)
   if (topic.hostname_id || topic2?.hostname_id) {
     await invalidate.url_hostnames(topic.hostname_id, topic2?.hostname_id)
   }

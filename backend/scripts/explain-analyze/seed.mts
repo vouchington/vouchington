@@ -87,6 +87,7 @@ import {
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
+import { seedSharedLoaders } from './seed-data/shared-loaders.mts'
 
 async function main() {
   await seedUsers(20_000)
@@ -149,6 +150,7 @@ async function main() {
   await checkpointSeed('crawls')
   await seedPostSlugs(1000)
   await seedTopicAliases(2500)
+  await seedSharedLoaders()
   await seedTopHashtags()
   await seedFollowerDistributions()
   await seedProfileLinks(1000)

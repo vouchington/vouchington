@@ -5,6 +5,7 @@ import assert from 'http-assert'
 import type { LoadedCommunity } from '../load-with-viewer.mts'
 import { getCommunityMember } from '../members/get.mts'
 import { getPublicUserByAny } from '@services/users/get'
+import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCommunityInviteEmail } from '@queues/emails/enqueues'
 import onError from '@modules/on-error'
 import type { CommunityInvite, CreatedCommunityInvite } from '../types.mts'
@@ -24,8 +25,9 @@ export async function createInvite(
   currentUserId: string,
   loaded: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
+  inviter?: Pick<PrivateUser, 'username'>,
 ): Promise<CreatedCommunityInvite> {
-  const { invite } = await createInviteWithEmailEnqueue(currentUserId, loaded, input)
+  const { invite } = await createInviteWithEmailEnqueue(currentUserId, loaded, input, inviter)
   return invite
 }
 
@@ -33,6 +35,7 @@ export async function createInviteWithEmailEnqueue(
   currentUserId: string,
   { community, membership }: Pick<LoadedCommunity, 'community' | 'membership'>,
   input: CreateInviteInput,
+  loadedInviter?: Pick<PrivateUser, 'username'>,
 ): Promise<{
   invite: CreatedCommunityInvite
   emailEnqueue: ReturnType<typeof enqueueSendCommunityInviteEmail> | null
@@ -66,7 +69,7 @@ export async function createInviteWithEmailEnqueue(
   }
 
   // Look up inviter's display name for email
-  const inviter = await getPublicUserByAny(currentUserId)
+  const inviter = loadedInviter ?? (await getPublicUserByAny(currentUserId))
   if (inviter?.username) inviterName = inviter.username
 
   const code = generateInviteCode()
