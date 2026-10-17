@@ -96,7 +96,7 @@ describe('tooling dependency-cruiser runner', () => {
       scripts: Record<string, string>
     }
     const workflow = readFileSync('.github/workflows/static-code-analysis.yml', 'utf8')
-    const ciLocalTargets = readFileSync('ci/ci-local/targets.mts', 'utf8')
+    const ciLocalTargets = readFileSync('ci/ci-local/static-commands.mts', 'utf8')
     const command = 'node static-code-analysis/run-tooling-dependency-cruiser.mts'
 
     expect(packageJson.scripts['dep-cruise:scripts']).toContain(command)
