@@ -115,6 +115,54 @@ describe('view lookup predicate no-mistakes configuration', () => {
     expect(result.status).toBe(1)
     expect(findings(result)).toHaveLength(statements.length)
   })
+
+  it('finds missing keys inside production transaction-typed helpers', async () => {
+    const configured = await configuredRule()
+    const mutations = [
+      {
+        path: 'backend/services/identity-verification/attempts.mts',
+        marker: '    const { rows: membershipRows } =',
+        probe: '    await query(sql`/* viewPredicateProbe */ SELECT id FROM view_memberships`)\n',
+        relation: 'view_memberships',
+      },
+      {
+        path: 'backend/services/oauth/authorization-exchange-recovery-ownership.mts',
+        marker: '  const { rows } = await transaction<',
+        probe:
+          "  await transaction('/* viewPredicateProbe */ SELECT id FROM view_oauth_authorization_current_records')\n",
+        relation: 'view_oauth_authorization_current_records',
+      },
+      {
+        path: 'backend/services/oauth/authorization-exchange-state.mts',
+        marker: '    await prepareOAuthAuthorizationClaim(',
+        probe:
+          "    await transaction('/* viewPredicateProbe */ SELECT id FROM view_oauth_authorization_current_records')\n",
+        relation: 'view_oauth_authorization_current_records',
+      },
+    ] as const
+    const sources: Record<string, string> = {}
+    for (const { path, marker, probe } of mutations) {
+      const source = await readFile(join(repository, path), 'utf8')
+      expect(source.split(marker)).toHaveLength(2)
+      sources[path] = source.replace(marker, probe + marker)
+    }
+    const directory = await fixture(directories, configured, [], sources)
+
+    const result = await budget.check(cli, directory)
+    expect(result.status).toBe(1)
+    const diagnostics = findings(result)
+    expect(diagnostics).toHaveLength(mutations.length)
+    expect(
+      diagnostics.every(diagnostic => diagnostic.rule === 'postgres-required-predicates'),
+    ).toBe(true)
+    for (const { path, relation } of mutations) {
+      expect(
+        diagnostics.some(
+          diagnostic => diagnostic.file === path && diagnostic.message.includes(relation),
+        ),
+      ).toBe(true)
+    }
+  })
 })
 
 async function configuredRule(): Promise<{ rule: Rule; relations: ViewRelation[] }> {
@@ -135,17 +183,20 @@ async function fixture(
   directories: string[],
   configured: { rule: Rule; relations: ViewRelation[] },
   statements: string[],
+  sources?: Record<string, string>,
 ): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'view-required-predicates-'))
   directories.push(directory)
-  const file = join(directory, runtimePath)
-  await mkdir(dirname(file), { recursive: true })
-  await writeFile(
-    file,
-    `import { read } from '@data-stores/psql'\nexport async function run() {\n${statements
+  const fixtureSources = sources ?? {
+    [runtimePath]: `import { read } from '@data-stores/psql'\nexport async function run() {\n${statements
       .map(statement => `  await read(\`${statement}\`)`)
       .join('\n')}\n}\n`,
-  )
+  }
+  for (const [path, content] of Object.entries(fixtureSources)) {
+    const file = join(directory, path)
+    await mkdir(dirname(file), { recursive: true })
+    await writeFile(file, content)
+  }
   await writeFile(join(directory, '.no-mistakes.yml'), stringify({ rules: [configured.rule] }))
   expect(budget.git(['init', '-q', directory]).status).toBe(0)
   expect(budget.git(['-C', directory, 'add', '.']).status).toBe(0)
