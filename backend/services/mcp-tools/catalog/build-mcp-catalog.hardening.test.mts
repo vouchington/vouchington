@@ -17,10 +17,10 @@ const names = [
   'update_community_moderation',
   'remove_community_moderation',
 ]
-// Pin both pre-moderation listings from #2545's generated catalog.
+// Pin #2545 listings after main's approved schema projection and option-pointer updates.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  'c1e606309d25e03e81674d6ab9daa7bfe53b05fd0d231f76b9616ed8267df09e'
-const UMBRELLA_ONLY_DIGEST = '842513bcbf6e80432c57b7e6ccd6f9d3b63f054b613624ec6c8515f88947af91'
+  '23cf8bde6fd70b6df72d6d7c5d69cb0d42e2f1d4c148e185096516675ee6c374'
+const UMBRELLA_ONLY_DIGEST = '6cbaecc57fac4e8d933f1006c07cf15f7cc9effa2a4053b95fd2ae0b48d166f7'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {

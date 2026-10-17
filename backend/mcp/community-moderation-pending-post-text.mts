@@ -1,6 +1,60 @@
 import type { Post } from '@services/posts'
 import { externalText, sanitizedTitle } from './mcp-read-output.mts'
-import { sanitizedPostText } from './topic-recommendation-post-text.mts'
+
+const SOURCE = 'post'
+type Rating = NonNullable<Post['review_topic_ratings']>[number]
+
+const sanitizedAll = <T,>(items: T[] | undefined, sanitize: (item: T) => Promise<T>) =>
+  items && Promise.all(items.map(sanitize))
+
+async function sanitizedRating(rating: Rating): Promise<Rating> {
+  const { topic } = rating
+  if (!topic) return rating
+  const markdown = await externalText(topic.markdown, 'topic', 'topic_markdown')
+  return {
+    ...rating,
+    topic: { ...topic, name: await sanitizedTitle(topic.name), markdown: markdown ?? '' },
+  }
+}
+
+/** Sanitize every free-text field on the full moderation Post without projecting away its fields. */
+async function sanitizedPostText(post: Post): Promise<Partial<Post>> {
+  const [summary, clearanceReason, html, images, hashtags, categories, relatedTopics, ratings] =
+    await Promise.all([
+      externalText(post.ai_summary_markdown, SOURCE, 'ai_summary_markdown'),
+      externalText(post.clearance_reason, SOURCE, 'clearance_reason'),
+      post.html === undefined ? undefined : externalText(post.html, SOURCE, 'html'),
+      sanitizedAll(post.images, async image => ({
+        ...image,
+        caption: await sanitizedTitle(image.caption),
+      })),
+      sanitizedAll(post.post_hashtags, async tag => ({
+        ...tag,
+        key: await sanitizedTitle(tag.key),
+        display_token: await sanitizedTitle(tag.display_token),
+      })),
+      sanitizedAll(post.post_explicit_categories, async category =>
+        category.type === 'topic'
+          ? { ...category, topic_name: await sanitizedTitle(category.topic_name) }
+          : { ...category, hashtag: await sanitizedTitle(category.hashtag) },
+      ),
+      sanitizedAll(post.post_related_topics, async topic => ({
+        ...topic,
+        name: await sanitizedTitle(topic.name),
+      })),
+      post.review_topic_ratings && Promise.all(post.review_topic_ratings.map(sanitizedRating)),
+    ])
+  return {
+    ai_summary_markdown: summary ?? '',
+    clearance_reason: clearanceReason,
+    ...(html === undefined ? {} : { html: html ?? '' }),
+    ...(images === undefined ? {} : { images }),
+    ...(hashtags === undefined ? {} : { post_hashtags: hashtags }),
+    ...(categories === undefined ? {} : { post_explicit_categories: categories }),
+    ...(relatedTopics === undefined ? {} : { post_related_topics: relatedTopics }),
+    ...(ratings === undefined ? {} : { review_topic_ratings: ratings }),
+  }
+}
 
 /** Preserve typed data-point values while fencing its one user-authored free-text field. */
 async function sanitizedStructuredData(value: unknown): Promise<unknown> {
@@ -23,9 +77,8 @@ export async function sanitizePendingPost(
   post: Post | null | undefined,
 ): Promise<Post | null | undefined> {
   if (!post) return post
-  // sanitizedPostText only reads these fields from Post; its recommendation subtype is incidental.
   const [postText, structuredData] = await Promise.all([
-    sanitizedPostText(post as Parameters<typeof sanitizedPostText>[0]),
+    sanitizedPostText(post),
     sanitizedStructuredData(post.structured_data),
   ])
   const recommendation = post.topic_recommendation

@@ -13410,6 +13410,9 @@
                       "additionalProperties": {
                         "additionalProperties": false,
                         "properties": {
+                          "__entity_type": {
+                            "const": "community_invite"
+                          },
                           "accepted_at": {
                             "$ref": "#/$defs/S2"
                           },
@@ -13442,6 +13445,7 @@
                           }
                         },
                         "required": [
+                          "__entity_type",
                           "accepted_at",
                           "accepted_by_id",
                           "community_id",

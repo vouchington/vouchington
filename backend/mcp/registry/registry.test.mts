@@ -196,9 +196,7 @@ describe('tool registry', () => {
     const missing = ALL_TOOLS.filter(tool => {
       const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
       if (!surfaces.has('mcp')) return false
-      // Anything not explicitly read-only is treated as a mutation, not just destructiveHint:
-      // true, so a future write annotated only readOnlyHint: false (or left to idempotentHint)
-      // can't slip past this gate ungated.
+      // Treat every tool without an explicit read-only hint as a mutation.
       if (tool.meta?.annotations?.readOnlyHint === true) return false
       return tool.meta?.plan !== 'plus' && tool.meta?.plan !== 'pro'
     })
@@ -217,9 +215,7 @@ describe('tool registry', () => {
   })
 
   it('rejects a mutating tool that shares the user and admin MCP surfaces', () => {
-    // meta.plan is a single field: it cannot express "plus on mcp, free on admin_mcp". A
-    // mutating tool exposed on both surfaces is unsupported until the model can encode
-    // separate per-surface plans, whether or not it declares a plan at all.
+    // One meta.plan cannot express "plus on mcp, free on admin_mcp" for a shared mutation.
     const sharedMutation: Tool = {
       schema: {
         name: 'shared_mutation_fixture',

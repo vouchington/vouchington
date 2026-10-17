@@ -45,6 +45,12 @@ describe('community moderation MCP list reads — real PostgreSQL and Valkey', (
     expect(
       (page.community_invites as Record<string, Record<string, unknown>>)[invite.id],
     ).not.toHaveProperty('code')
+    expect(
+      (page.community_invites as Record<string, Record<string, unknown>>)[invite.id],
+    ).not.toHaveProperty('code_hash')
+    expect(page.community_invites).toMatchObject({
+      [invite.id]: { __entity_type: 'community_invite' },
+    })
     expect(JSON.stringify(page)).not.toContain(invite.code)
   })
 })

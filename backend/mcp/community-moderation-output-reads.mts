@@ -132,11 +132,7 @@ export function communityModerationReadOutput(option: string): ToolOutputSchema 
     case 'list_bans':
       return indexed('community_ban', 'community_bans', ban(), true)
     case 'list_invites':
-      return indexed(
-        'community_invite',
-        'community_invites',
-        changeComponent('CommunityInvite', {}, ['__entity_type', 'code']),
-      )
+      return indexed('community_invite', 'community_invites', component('CommunityInvite'))
     case 'read_moderation_analytics':
       return component('ModerationAnalytics')
     case 'read_moderator_stats':

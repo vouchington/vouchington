@@ -20,6 +20,7 @@ import {
   callStructuredMcpTool,
   optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
+import type { Post } from '@services/posts'
 import { sanitizePendingPost } from './community-moderation-pending-post-text.mts'
 import { communityModerationOutput } from './community-moderation-contract.mts'
 
@@ -107,10 +108,43 @@ describe('community moderation MCP pending report reads — real PostgreSQL and 
         data_point_vertical: 'credit_card',
         structured_data: creditCardData,
       })
+      const relatedTopics = [
+        {
+          __entity_type: 'topic',
+          id: cardTopic.id,
+          name: hostile,
+          slug: 'related-card',
+          topic_type: 'card',
+        },
+      ] satisfies NonNullable<Post['post_related_topics']>
+      const ratings = [
+        {
+          topic_id: cardTopic.id,
+          rating: 5,
+          order_index: 0,
+          updated_at: new Date().toISOString(),
+          topic: {
+            __entity_type: 'topic',
+            id: cardTopic.id,
+            name: hostile,
+            slug: 'rated-card',
+            markdown: hostile,
+            topic_type: 'card',
+            created_at: new Date().toISOString(),
+          },
+        },
+        {
+          topic_id: topic.id,
+          rating: 4,
+          order_index: 1,
+          updated_at: new Date().toISOString(),
+        },
+      ] satisfies NonNullable<Post['review_topic_ratings']>
       const sanitized = await sanitizePendingPost({
         ...cardPost,
         title: hostile,
         markdown: hostile,
+        ai_summary_markdown: hostile,
         html: hostile,
         clearance_reason: hostile,
         post_hashtags: [
@@ -120,12 +154,34 @@ describe('community moderation MCP pending report reads — real PostgreSQL and 
           { type: 'topic', topic_id: topic.id, topic_name: hostile },
           { type: 'hashtag', hashtag: hostile },
         ],
+        post_related_topics: relatedTopics,
+        review_topic_ratings: ratings,
       })
       expect(sanitized?.structured_data).toEqual(creditCardData)
-      expect(sanitized?.html).toMatch(/^<external-content source="topic_recommendation"/)
-      expect(sanitized?.clearance_reason).toMatch(
-        /^<external-content source="topic_recommendation"/,
-      )
+      expect(sanitized?.ai_summary_markdown).toMatch(/^<external-content source="post"/)
+      expect(sanitized?.html).toMatch(/^<external-content source="post"/)
+      expect(sanitized?.clearance_reason).toMatch(/^<external-content source="post"/)
+      expect(sanitized?.post_related_topics).toEqual([
+        expect.objectContaining({
+          id: cardTopic.id,
+          slug: 'related-card',
+          name: expect.not.stringContaining(injection),
+        }),
+      ])
+      expect(sanitized?.review_topic_ratings?.[0]).toMatchObject({
+        topic_id: cardTopic.id,
+        rating: 5,
+        topic: {
+          id: cardTopic.id,
+          name: expect.not.stringContaining(injection),
+          markdown: expect.stringMatching(/^<external-content source="topic"/),
+        },
+      })
+      expect(sanitized?.review_topic_ratings?.[1]).toEqual(ratings[1])
+      expect(
+        (await sanitizePendingPost({ ...cardPost, review_topic_ratings: null }))
+          ?.review_topic_ratings,
+      ).toBeNull()
       const wrapped = (await communityModerationOutput(sanitized)) as Record<string, unknown>
       expect(wrapped.markdown).toMatch(/^<external-content source="api_response"/)
       expect(JSON.stringify(wrapped)).not.toContain(injection)
