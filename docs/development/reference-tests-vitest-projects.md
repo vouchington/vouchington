@@ -71,6 +71,12 @@ synchronous child tools.
 
 Run any single project directly: `pnpm exec vitest run --project <name>`.
 
+The `lambdas`, `lambdas-portability`, and `lambdas-mocks` projects use five-second
+test and hook defaults. Their declared budgets are checked in
+`ci/vitest-lambda-project-defaults.test.mts`; project routing, synthetic bucket settings,
+and mock isolation stay with their existing owners. This scoped rollout does not change
+Web or Cloudflare project defaults or establish global timeout enforcement.
+
 Reusable root scripts call [`ci/run-vitest-project-group.mts`](../../ci/run-vitest-project-group.mts), whose typed catalog is also used by local coverage. The runner starts one Vitest process for the selected projects and removes exactly one leading separator inserted by `pnpm run`, so both `pnpm run test:backend:default -- <files>` and forwarded Vitest flags work. Keep durable scripts project-based; filename lists are appropriate only for one-off local commands.
 
 `pnpm run test:backend:modules` runs the Docker-free backend group: local analytics, modules,
