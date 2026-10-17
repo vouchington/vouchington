@@ -175,28 +175,14 @@ is never the agent's decision.
 
 ### Who runs the stack
 
-One worker per native stack. That worker implements the stack and runs its shepherd poll. The parent
-does not run `pnpm exec pr-shepherd`. The parent reconciles open stacks, starts a worker when the
-stack's first owned pull request exists, and asks the human each merge question.
-
-Independent stacks run at the same time, one worker each. Only work that
-[must stack](../agent-workflow/git-and-prs.md#branch-and-commit) is the next layer
-of the same stack (`gh stack add`), in the same worktree, within the
-[length limits](../agent-workflow/git-and-prs.md#branch-and-commit). A second stack whose base is an
-unmerged head is not a stack this procedure can drain.
-
-A lower layer is in decent shape when it is committed, the before-push checks have passed, its pull
-request is open with an updated body, and the worker has started shepherding. Start the next layer
-then. Decent shape does not require green CI, ready-for-review, the ready-delay, or a merge.
-
-Work bottom-up. Write layers in stack order; never start a layer before the one below it is in
-decent shape. On each shepherd result, act on the lowest owned layer that is not ready before any
-higher layer, and put each fix on the lowest layer that owns it. A bottom layer that reaches ready
-early frees the ready prefix above it to merge in one command.
-
-A ready, mergeable, or queued lower layer blocks only a git operation that would rewrite that layer.
-Keep shepherding and reviewing every other owned layer. One poll process runs for the stack. The
-parent does not start a second poll for it.
+Bottom-up ordering, the decent-shape rule, layer counting against the cap, lower-layer blocking,
+worker ownership, and one poll per stack are canonical:
+[Work bottom-up](../../../node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#work-bottom-up)
+and [Ownership and workers](../../../node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#ownership-and-workers).
+Vouchington adds: the parent never runs `pnpm exec pr-shepherd` for a stack; the layer cap and
+[must-stack decision](../agent-workflow/git-and-prs.md#branch-and-commit) stay in Git And PRs;
+a layer is "decent shape" when its before-push checks have passed. Dependent work is the next layer
+of the same stack (`gh stack add`) in the same worktree.
 
 The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn another stack.
 

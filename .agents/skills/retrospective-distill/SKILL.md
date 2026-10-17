@@ -17,11 +17,9 @@ Use the local session, readiness, archive, and summary rules below as the consum
 implementation of the portable workflow.
 
 Accept optional `--retro-days <N>` (default 1) and `--session-days <N>` (default 7) invocation args.
-Reject either flag before exporting or processing any session unless its value is a finite,
-non-negative number: a negative or non-numeric `N` produces a cutoff in the future — or makes every
-comparison false — and these flags gate destructive archival. The root computes two ISO cutoffs
-once — `retroCutoff = now - retro-days` and `sessionCutoff = now - session-days` — and passes both
-into every partition prompt so inspectors never read their own clock.
+Reject an invalid day count and compute the two cutoffs once, per the canonical
+[session shapes and eligibility](../../../node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility);
+pass both into every partition prompt so inspectors never read their own clock.
 
 Use the machine-registered `vouchington-tooling` MCP server. First drain every worktree's outbox:
 for each path that `git worktree list` prints, call `outbox_flush` and then `outbox_status` with
@@ -32,13 +30,9 @@ retained record would never be distilled. Then call `snapshot_export` with the r
 `sessionId`; it always exports only non-archived sessions and returns a private local snapshot
 path, counts, checksum, and terminal manifest, never the records. If the server is not connected,
 stop and report it rather than falling back to a CLI command or paginated session reads.
-Never pass `selection.inactiveForHours` to `snapshot_export`: a session with zero entries never
-matches that filter (`lastEntryAt === null`), so filtering server-side would permanently hide the
-feedback gaps in retro-less sessions this workflow exists to sweep up. Always export unfiltered and classify
-effective age from deduplicated entry timestamps, falling back to session `createdAt` when empty;
-the cutoffs below supply the delay for outboxes in removed worktrees or on other machines. Full
-records come only from the exported file's partitions, never from `journal_entries`, which reads one
-session at a time with no checksum or manifest.
+Export unfiltered (canonical rule: never `selection.inactiveForHours`). Full records come only
+from the exported file's partitions, never from `journal_entries`, which reads one session at a
+time with no checksum or manifest.
 Before delegation, the root verifies the snapshot against the returned checksum, counts, and
 terminal manifest and stops on any mismatch rather than treating missing records as absent. It
 checks `manifest.schemaVersion === 1`, `manifest.status === "complete"`,
@@ -64,44 +58,24 @@ OpenCode dispatch conventions are unspecified here. Before reading any entry by 
 runs `node dev/retrospective-distill.mts <partition> --retro-cutoff <retroCutoff> --session-cutoff
 <sessionCutoff>` against its assigned partition — a read-only, pure-local classifier that needs no
 MCP call — and hand-reads only the sessions it reports as `journal-only` or `retrospective`; every
-other shape below is fully determined structurally and needs no entry content inspection. Each
+other shape is fully determined structurally and needs no entry content inspection. Each
 subagent then returns one compact disposition summary: partition index, deduplicated evidence
 themes — each carrying the session IDs that contributed to it, a mapping the root preserves through
-every later merge and deduplication — and each session's disposition. Classify a session's entries
-by `data.type`, per `dev/retrospective-distill/retrospective-entry.mts` (`data.type === "retrospective"`
-marks a retrospective entry), `dev/retrospective-distill/checkpoint-entry.mts` (`isCheckpointEntry`
-marks a historic hook-written journal entry via a structural `data.checkpoint` field, never the
-rendered `## Auto-append: ` heading; hooks no longer append these, so they remain only until
-archived), and
-[agent-blackboard.md](../../../docs/development/agent-blackboard.md) (the CLI's `--file` convenience
-omits `type` entirely). A session is an **entry-type-unresolved** session when it has at least one
-entry whose `type` is missing or is anything other than `"journal"`/`"retrospective"`, or whose
-versioned feedback envelope fails the shared validator — even if it
-also has a retrospective entry — report it separately and give it no issue-filing pass or archival
-this run, regardless of its age, rather than treating an untyped entry as journal evidence; a
-**retrospective** session when it has a retrospective entry and no unresolved entry; report quarantine counts/reasons and continue clean unrelated sessions.
-Deduplicate versioned source events by session and `sourceEventId` before theme counting; copies that
-differ only in the server-assigned `timestamp` are one event, and any other difference is a
-conflicting payload that stays quarantined. A
-**checkpoint-only** session when it has at least one entry, no retrospective entry, and
-every entry satisfies `isCheckpointEntry` (historic hook-written journal noise, #9337); a **journal-only**
-session when it has at least one entry, no retrospective entry, and at least one entry is not a
-checkpoint; a **zero-entry-child** session when it has no entries and a non-null `parentSessionId`;
-and a **zero-entry-root** session when it has no entries and a null `parentSessionId`. The
-zero-entry split names a session-topology fact, not a completion signal: a delegated child that dies
-mid-task is a `zero-entry-child` session too, indistinguishable here from one that finished its
-bounded assignment cleanly (see [the `blackboard` skill](../blackboard/SKILL.md)'s child
-`session_ensure` handshake) — do not read `zero-entry-child` as "completed normally". Compute
-`retroAt` as the newest retrospective entry's `createdAt`, and `lastActive` as
-the newest normalized entry's `createdAt` (falling back to `session.createdAt` when there
-are no entries). An identical replay does not advance effective activity; a new source event does.
+every later merge and deduplication — and each session's disposition. Classify each session by the canonical
+[session shapes and eligibility](../../../node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility)
+(shape definitions, `retroAt`/`lastActive`, cutoff eligibility, entry-type-unresolved handling,
+deduplication by `sourceEventId`, and the zero-entry topology caveat). Vouchington sources for the
+`data.type` check: `dev/retrospective-distill/retrospective-entry.mts` (`data.type ===
+"retrospective"`), `dev/retrospective-distill/checkpoint-entry.mts` (`isCheckpointEntry` marks a
+historic hook-written journal entry via a structural `data.checkpoint` field, never the rendered
+`## Auto-append: ` heading; hooks no longer append these, so they remain only until archived), and
+[agent-blackboard.md](../../../docs/development/agent-blackboard.md) (the CLI's `--file`
+convenience omits `type` entirely). Report quarantine counts and reasons and continue clean
+unrelated sessions. A checkpoint-only session is historic hook-written journal noise (#9337). A
+delegated child's `session_ensure` handshake is in [the `blackboard` skill](../blackboard/SKILL.md).
 Leave the verified snapshot file in place until cleanup: it is the reference for the archival check
-below. Every shape except entry-type-unresolved is **eligible**
-when `(has a retrospective AND retroAt < retroCutoff) OR (lastActive < sessionCutoff)` — eligible on
-session age alone covers a checkpoint-only, journal-only, or zero-entry session that has simply gone
-stale, which is the case a retro-only gate used to leave stuck forever. Everything else is **not yet
-eligible** and must be skipped, with a reason. The subagent must not invoke MCP, create issues,
-archive sessions, edit files, or retain a copy of the partition.
+below. Skip sessions that are not yet eligible, with a reason. The subagent must not invoke MCP,
+create issues, archive sessions, edit files, or retain a copy of the partition.
 
 The root agent merges the summaries — preserving each theme's contributing session IDs through
 merging and deduplication — performs the current-repository and duplicate checks below, then creates

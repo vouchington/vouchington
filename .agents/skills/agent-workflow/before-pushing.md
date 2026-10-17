@@ -1,10 +1,9 @@
 # Before pushing
 
-- Review the complete diff and saved requirements. Use independent review for cross-cutting,
-  security-sensitive, or uncertain behavior; a mechanical edit does not need a separate reviewer.
-  Resolve blocking correctness, security, and scope findings before pushing.
-- For a discovered semantic defect, inspect sibling sites in the changed surface and verify the
-  same defect is not repeated. For client/API changes, use the relevant [impact recipe](impact-recipes.md).
+- Review the diff, sibling sites, and independent-review need per the canonical
+  [evidence sweep](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md)
+  and [review](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/review.md).
+  For client/API changes, use the relevant [impact recipe](impact-recipes.md).
 - Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint for changed
   TypeScript, directly changed tests, scope inspection, and formatting. CI owns full area suites;
   run broader local checks when the change or a failure requires them. List the static gates CI

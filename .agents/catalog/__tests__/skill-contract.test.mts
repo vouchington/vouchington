@@ -86,8 +86,7 @@ describe('Vouchington workflow skill adapters', () => {
 
     expect(skill).toContain('`vouchington/vouchington`')
     expect(skill).toContain('`github-issue-agent`')
-    expect(skill).toContain('`#N: title -- url`')
-    expect(skill).toContain('`Duplicate of #N: <url>`')
+    expect(skill).toContain('vouchington-tooling/skills/github-issue/SKILL.md#bounded-output')
     expect(skill).toContain('`preflight`')
     expect(skill).not.toContain('vouchington/*')
   })
@@ -101,13 +100,12 @@ describe('Vouchington workflow skill adapters', () => {
     )
   })
 
-  it.each([
-    ['blackboard', ['[ -n "${VAR+x}" ]']],
-    ['retrospective', ['≤10 tool calls', 'unknown — no journal']],
-  ] as const)('%s retains its Vouchington-only safety invariants', (name, invariants) => {
-    const skill = read(`.agents/skills/${name}/SKILL.md`)
+  it('retrospective retains its Vouchington-only safety invariants', () => {
+    const skill = read('.agents/skills/retrospective/SKILL.md')
 
-    for (const invariant of invariants) expect(skill).toContain(invariant)
+    for (const invariant of ['≤10 tool calls', 'unknown — no journal']) {
+      expect(skill).toContain(invariant)
+    }
   })
 
   it('keeps the spawned-child identity contract fail closed', () => {
@@ -115,8 +113,6 @@ describe('Vouchington workflow skill adapters', () => {
 
     expect(skill).toContain('`CODEX_THREAD_ID`')
     expect(skill).toContain('`CLAUDE_CODE_SESSION_ID`')
-    expect(skill).toContain('`session_ensure`')
-    expect(skill).toContain('`parentSessionId`')
     expect(skill).toContain('isValidSessionId')
   })
 

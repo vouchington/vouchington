@@ -30,7 +30,8 @@
   sandbox error is not evidence that credentials are missing. Do not inspect or print secrets. Retry only the authorized action with the needed access.
 - Keep the tmux title current with `./dev/tmux-name <topic>` outside the sandbox; add `-pr<number>`
   after PR creation. Follow the tmux reminder hook rather than duplicating its state.
-- Keep large logs and analysis results in private temporary artifacts and return bounded summaries.
+- Keep large logs outside context and report bounded findings (canonical
+  [evidence sweep](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md)).
   For CI diagnosis use [review-ci-logs](../review-ci-logs/SKILL.md).
 - Use `rg` for text, `fd` for paths, and structural tools when needed. For TypeScript impact use
   [planning discovery](../planning/references/impact-discovery.md). Run `pnpm exec` serially;
