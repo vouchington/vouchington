@@ -69,15 +69,23 @@ async function countCrawlDispatchCandidateRows(): Promise<Record<string, number>
     'user_profile_links',
     ...getEntityRelationUrlTables(),
   ]
+  const counts = tables.map(
+    (table, index) =>
+      `SELECT $${index + 1}::text AS relation, COUNT(*)::text AS count FROM "${table}"`,
+  )
+  const result = await write<{ relation: string; count: string }>(
+    `/* countCrawlDispatchCandidateRows */ ${counts.join(' UNION ALL ')}`,
+    tables,
+  )
+  if (result.rows.length !== tables.length) throw new Error('Missing candidate row counts')
   const seededRows: Record<string, number> = {}
-  for (const table of tables) {
-    const result = await write<{ count: string }>(
-      `/* countCrawlDispatchCandidateRows */ SELECT COUNT(*)::text AS count FROM "${table}"`,
-    )
-    const count = Number(result.rows[0]?.count)
+  for (const row of result.rows) {
+    if (!tables.includes(row.relation) || seededRows[row.relation] !== undefined)
+      throw new Error(`Unexpected candidate relation ${row.relation}`)
+    const count = Number(row.count)
     if (!Number.isSafeInteger(count) || count < 0)
-      throw new Error(`Missing candidate row count for ${table}`)
-    seededRows[table] = count
+      throw new Error(`Missing candidate row count for ${row.relation}`)
+    seededRows[row.relation] = count
   }
   return seededRows
 }
