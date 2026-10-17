@@ -48,9 +48,9 @@ immediately before every write; transport helpers never grant authority. A denie
 the copy-ready external report, unless the caller opts out. Pass `TARGET_REPO` to every issue call and
 `PR_REPO` to every PR call.
 
-Keep agent output bounded and stable: searches return at most five `#N: title -- url` lines, a
-near-duplicate returns `Duplicate of #N: <url>`, and mutations return action, URL, labels,
-milestone, project, and verification.
+Keep agent output bounded per the canonical
+Bounded output (`node_modules/vouchington-tooling/skills/github-issue/SKILL.md#bounded-output`)
+rules.
 
 Before filing in Vouchington, verify every existing `## Files / areas` path against `HEAD`. Mark
 proposed paths as `New` and verify their owning parent/module. Reject absolute and parent-traversal

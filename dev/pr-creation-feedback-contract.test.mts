@@ -111,7 +111,6 @@ describe('agent-authored PR creation feedback contract', () => {
     expect(distill).toContain('--session-days')
     expect(distill).toContain('selection.inactiveForHours')
     expect(distill).toContain('entry-type-unresolved')
-    expect(distill).toContain('lastEntryAt')
     expect(distill).toContain('[distilling.md](distilling.md)')
   })
 

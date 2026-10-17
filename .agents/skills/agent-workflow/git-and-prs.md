@@ -14,10 +14,8 @@
   the same merge-queue batch.
 - When a stack is required, stack without asking, whatever its length: add the work as the next
   layer, or rebase it onto the open PR and run `gh stack link <lower> <upper>` before either PR is
-  enqueued. Never grow a stack beyond 10 PRs. Before each `gh stack add` or `gh stack link`, add
-  the open layers from the forge to every layer the command would add; above 10, open work that
-  does not depend on the stack as its own PR on `main`, and hold dependent work until the bottom
-  layers merge.
+  enqueued. Never grow a stack beyond 10 PRs; layer counting and overflow follow the canonical
+  stacked-prs (`node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#work-bottom-up`) skill.
   Put ready layers at the bottom and append later work on top. Never ask whether to stack, or for
   an exception to stacking. Ask the human only when no option above resolves the conflict.
 - `pr_create` flags about 5,000 added or 20,000 deleted lines (against `origin/<base>`) for a split decision. Split only
@@ -47,29 +45,12 @@
 
 ### Reading the four refs
 
-Before any rebase or a lease push, name the four refs and read how they differ. Publish this branch. Do not open a replacement pull request.
-
-Run `git fetch origin main <branch>` as its own command. Do not chain that fetch with rebase, reset, or merge. A missing `.stack` field means membership is unknown, not unstacked. HEAD must be the branch being updated. `gh stack checkout` leaves the top layer checked out, so check out the layer first.
-
-Print `git rev-parse` of HEAD, `origin/<branch>`, `origin/main`, and local `main` when that ref exists. Local main is not the rebase target. When local `main` exists, print `git rev-list --left-right --count main...origin/main`. A nonzero right count means local `main` is behind `origin/main`.
-
-Print `git rev-list --left-right --count HEAD...origin/<branch>` (left = commits only on the local branch, right = commits only on `origin/<branch>`), `git log --oneline --left-right HEAD...origin/<branch>`, `git cherry -v origin/<branch> HEAD`, and `git cherry -v HEAD origin/<branch>`. A leading `-` is the same patch under another SHA. A leading `+` is a patch the other side lacks. `git range-diff` may be read from the base those commits were built on. git range-diff is a reading aid, not the rebase cut. Do not run it from the new stack parent: after a stack rebase that parent makes old parent commits look like unique local work.
-
-A dirty worktree stops you before fast-forward, reset, or rebase. Do not switch branches. Continue a conflict with `GIT_EDITOR=true git rebase --continue`.
-
-Capture `<sha>` with `git rev-parse origin/<branch>` after this fetch and before any rewrite. Push a non-fast-forward with `git push --force-with-lease=<branch>:<sha>`. The capture-before-fetch note above still applies when another agent may push during the fetch. If HEAD equals that SHA, do not push. If the lease push or a non-force push is rejected, fetch again and re-read. It is still this branch.
-
-**Unstacked.** After every move onto `origin/<branch>`, repeat `git merge-base --is-ancestor origin/main HEAD`. Exit 0 means the branch already contains `origin/main`. Nonzero means `./dev/rebase-onto-main`, then the lease push.
-
-- `0 0` and `origin/main` is already an ancestor: stop.
-- `0 N`: `git merge --ff-only origin/<branch>`, then the ancestor check.
-- `N 0`: read `git log --oneline origin/<branch>..HEAD` before pushing. Those commits are what a push would add, including a remote rewind back to an ancestor. If they are this pull request's unpushed work and `origin/main` is already an ancestor, `git push`. If not, `./dev/rebase-onto-main`, then the lease push. If the log is a rewind you did not make, stop and ask.
-- Diverged, and the local-only commits are rewritten copies (cherry `-`, or the same subjects on both sides) with no unique local work: clean tree, `git reset --hard origin/<branch>`, then the ancestor check.
-- Diverged, and origin has new patches to keep and HEAD has unique local commits: `git rebase origin/<branch>` as its own command, then the ancestor check. This is the one added unstacked rebase target. It is not a license to rebase onto an arbitrary ref. If the rewrite changed patches and unique local work is mixed in, stop and ask.
-
-Unmatched commits on origin/<branch> are new commits someone pushed.
-
-**Stacked.** A stack rebase is the usual reason origin/<branch> was rewritten. Another agent or a human can rewrite an unstacked branch the same way. On a diverged stack layer, adopt `origin/<branch>` with `git reset --hard` when that layer is checked out, or `git branch -f` when it is not, when the left-right log is the pre-rebase copies (the same layer subjects on both sides, old parent subjects only on the left). Do not `git rebase origin/<branch>` on a stack layer: that replays parent commits onto the layer. Do not run `./dev/rebase-onto-main` without `--stack` on a mid-stack branch. If this layer has unpushed commits that are not the old parent and not already on origin under a new SHA, stop and ask. After adopting the rewritten tip, run `./dev/rebase-onto-main --stack` only when the stack still needs to move onto `origin/main`.
+Before any rebase or lease push, follow the canonical
+four refs (`node_modules/vouchington-tooling/skills/agent-workflow/references/four-refs.md`)
+procedure (setup, ref reading, lease push, unstacked and stacked tables). Vouchington overrides:
+the rebase target step is `./dev/rebase-onto-main` (`--stack` for a layer), and the stacked
+adoption's follow-up is `./dev/rebase-onto-main --stack`, only when the stack still needs to move
+onto `origin/main`; never run the non-stack form on a mid-stack branch.
 
 ## Publish and review
 
@@ -123,21 +104,9 @@ Unmatched commits on origin/<branch> are new commits someone pushed.
 
 ## Close-out
 
-- Report actual validation, open PRs, and remaining blockers.
-- **Hand-off retrospective.** When you hand a PR to the human as ready, write one
-  [retrospective](../retrospective/SKILL.md) for it, from the session that did the work: it reads
-  that session's transcripts and journal. A native stack gets one retrospective when the stack is
-  handed off, covering every layer. Do not write one per layer or for an intermediate commit. Give
-  each hand-off its own `sourceEventId`, such as `handoff-pr<number>` (a stack uses its top PR's
-  number), on both `retrospective_check` and `retrospective_save`: the default `retrospective-<session-id>` fits only the first
-  hand-off in a session, and a second one would be mistaken for it.
-- **Merge note.** If you are still running when the merge happens and it changes the outcome, such
-  as a merge-queue ejection and its fix, a follow-up push, or review comments addressed after
-  hand-off, append one short journal note to the same session with the
-  [blackboard skill](../blackboard/SKILL.md). Name the PR and the retrospective's
-  source event in the note, and give it its own `sourceEventId` (for example `merge-pr<number>`):
-  the writer rejects the retrospective's ID reused for different content. Never write a second
-  retrospective.
+- Follow the canonical Close-out (`node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md#close-out`)
+  rules for validation reporting, the hand-off retrospective, and the merge note. A stack's
+  retrospective uses its top PR's number in `handoff-pr<number>`.
 - Hook mechanics and limitations belong in [agent sandbox](../../../docs/development/agent-sandbox.md)
   and [harness parity](../../../docs/development/agent-harness-parity.md). Do not restate their parser
   implementation here or add new auto-formatting hooks as part of ordinary feature work.
