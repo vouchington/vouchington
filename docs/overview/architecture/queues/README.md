@@ -71,6 +71,9 @@ flowchart LR
 
 - Content and publication: `post-publication`, `post-mentions`, `content-analysis`, `image-uploads`,
   `sitemaps`, `cache-purge`, `story-post-related-url-projections`.
+- Imports: the `imports` domain of `background` (user RSS feed imports and admin topic imports,
+  each with its own dispatcher chain, plus the `imports-recover-stalled` sweep). It replaced the
+  dedicated `admin-imports` and `user-rss-feed-imports` queues.
 - Crawling: `crawler`, `crawl-*`, `rss-feed*`, `rss-feeds`, `kagi-smallweb`, `unfurl-referral-links`,
   `urls-domains-blacklist`.
 - AI: `ai-agents`, `openai-moderation`, `bedrock-embeddings*`. See the [AI platform](../ai-platform.md).
