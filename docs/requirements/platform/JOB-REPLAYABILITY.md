@@ -26,4 +26,10 @@ truth. Two requirements enforce this.
 - The registry test validates structure, not completeness against the queue list; keeping the
   registry complete is a review responsibility.
 
+Vote-weight dispatchers persist independent positions for age, membership expiry, and family-source
+signals. Their backfills resume bounded windows; child jobs use entity-and-event ids and can
+reactivate retained terminal records. Family timestamp branches retain their own keysets until
+all branches finish, and only then commit the dispatch position. Direct account changes enqueue a
+new event, while an operator force request can reactivate its stable id.
+
 See also the [backend queue reference](../../overview/architecture/queues/README.md).

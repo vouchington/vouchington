@@ -189,6 +189,9 @@ function voteAdmissionKind(name: string): string {
       return 'vote-integrity'
     case 'vote-aggregation.processRecalculateUserVoteWeight':
     case 'vote-aggregation.processRecalculateVoteWeightDispatcher':
+    case 'vote-aggregation.processVoteWeightAgeMilestones':
+    case 'vote-aggregation.processVoteWeightMembershipExpirations':
+    case 'vote-aggregation.processVoteWeightFamilySourceChanges':
     case 'vote-aggregation.enqueueUserElectionUpdates':
       return 'vote-weight'
     default:

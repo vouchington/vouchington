@@ -87,6 +87,7 @@ import {
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
+import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 
 async function main() {
   await seedUsers(20_000)
@@ -94,6 +95,7 @@ async function main() {
   await seedTopicImportAttempts()
   await seedMembershipProducts()
   await seedMemberships()
+  await seedVoteWeightDispatch()
   await seedMembershipChange()
   await seedMembershipRefunds()
   await checkpointSeed('memberships')

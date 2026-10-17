@@ -1,4 +1,5 @@
-import type { QueryExecutor } from '@data-stores/psql'
+import { registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
+import { enqueueRecalculateVoteWeightEvents } from '@queues/vote-aggregation/enqueues/vote-weight'
 import sql from 'sql-template-strings'
 import { isTerminalMembershipStatus } from '../update-result.mts'
 import type { MembershipStatus } from '../types.mts'
@@ -87,8 +88,18 @@ export async function upsertMembershipSourceState(
           AND (incoming_observation.provider_order, incoming_observation.provider_revision)
             > (current_observation.provider_order, current_observation.provider_revision)
       )
-    RETURNING effective_at`)
-  const state = rows[0] as { effective_at: Date } | undefined
+    RETURNING effective_at, updated_at,
+      (SELECT user_id FROM membership_sources WHERE id = membership_source_states.membership_source_id) AS user_id`)
+  const state = rows[0] as
+    | { effective_at: Date; updated_at: Date; user_id: string | null }
+    | undefined
+  if (state?.user_id && source.kind === 'family') {
+    const userId = state.user_id
+    const jobId = `voteWeight__${userId}__familySource__${source.id}__${state.updated_at.getTime()}`
+    registerPostCommitAction(query, async () => {
+      await enqueueRecalculateVoteWeightEvents([{ userId, jobId }])
+    })
+  }
   return { advanced: state !== undefined, effectiveAt: state?.effective_at ?? null }
 }
 

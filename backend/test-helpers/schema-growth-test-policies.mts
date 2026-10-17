@@ -55,6 +55,10 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
   rationale,
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
+  [
+    'vote_weight_recalculation_cursors',
+    naturalOrProviderId('The finite dispatcher enum is the primary key.'),
+  ],
   ...SHARED_PARENT_ID_POLICIES,
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],

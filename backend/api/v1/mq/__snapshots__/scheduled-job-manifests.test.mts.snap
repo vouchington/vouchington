@@ -365,14 +365,14 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Recalculate vote weights",
-        "id": "dailyVoteWeightRecalculation",
+        "description": "Dispatch vote-weight age milestones",
+        "id": "voteWeightAgeMilestones",
         "kind": "scheduled-jobs",
         "schedule": "0 4 * * *",
         "trigger": "[function]",
       },
       {
-        "backfillId": "vote-weight-dispatch",
+        "backfillId": "vote-weight-age-milestones",
         "kind": "backfill",
       },
     ],
@@ -381,14 +381,91 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "repeat": {
       "pattern": "0 4 * * *",
     },
-    "schedulerId": "dailyVoteWeightRecalculation",
+    "schedulerId": "voteWeightAgeMilestones",
     "template": {
-      "name": "vote-aggregation.processRecalculateVoteWeightDispatcher",
+      "name": "vote-aggregation.processVoteWeightAgeMilestones",
       "opts": {
         "attempts": 3,
         "backoff": {
           "delay": 1000,
-          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 10,
+          "key": "vote-aggregation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch expired memberships for vote weights",
+        "id": "voteWeightMembershipExpirations",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "vote-weight-membership-expirations",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "voteWeightMembershipExpirations",
+    "template": {
+      "name": "vote-aggregation.processVoteWeightMembershipExpirations",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 10,
+          "key": "vote-aggregation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Dispatch family source changes for vote weights",
+        "id": "voteWeightFamilySourceChanges",
+        "kind": "scheduled-jobs",
+        "schedule": "0 4 * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "vote-weight-family-source-changes",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 4 * * *",
+    },
+    "schedulerId": "voteWeightFamilySourceChanges",
+    "template": {
+      "name": "vote-aggregation.processVoteWeightFamilySourceChanges",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
           "type": "exponential",
         },
         "ordering": {
@@ -3088,12 +3165,28 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "triggerName": "enqueueReconcilePostModeration",
   },
   {
-    "description": "Recalculate vote weights",
-    "id": "dailyVoteWeightRecalculation",
-    "job_name": "vote-aggregation.processRecalculateVoteWeightDispatcher",
+    "description": "Dispatch vote-weight age milestones",
+    "id": "voteWeightAgeMilestones",
+    "job_name": "vote-aggregation.processVoteWeightAgeMilestones",
     "queue_name": "background",
     "schedule": "0 4 * * *",
-    "triggerName": "enqueueRecalculateVoteWeightDispatcher",
+    "triggerName": "enqueueVoteWeightAgeMilestones",
+  },
+  {
+    "description": "Dispatch expired memberships for vote weights",
+    "id": "voteWeightMembershipExpirations",
+    "job_name": "vote-aggregation.processVoteWeightMembershipExpirations",
+    "queue_name": "background",
+    "schedule": "0 4 * * *",
+    "triggerName": "enqueueVoteWeightMembershipExpirations",
+  },
+  {
+    "description": "Dispatch family source changes for vote weights",
+    "id": "voteWeightFamilySourceChanges",
+    "job_name": "vote-aggregation.processVoteWeightFamilySourceChanges",
+    "queue_name": "background",
+    "schedule": "0 4 * * *",
+    "triggerName": "enqueueVoteWeightFamilySourceChanges",
   },
   {
     "description": "Enforce database and local analytics retention policies",

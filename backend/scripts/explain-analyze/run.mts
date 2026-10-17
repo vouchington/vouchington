@@ -35,6 +35,7 @@ import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mt
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
+import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
 
 async function main() {
   prepareOutputDir()
@@ -53,6 +54,7 @@ async function main() {
     await runFollowerDistributionScenarios()
     await runEntityAndCommunityScenarios()
     await runViewDrivenReadScenarios()
+    await runVoteWeightDispatchScenarios()
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()
     await runMembershipRefundScenarios()
