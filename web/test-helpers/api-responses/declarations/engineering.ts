@@ -3,6 +3,10 @@ import adminArticleSyncTriggerDefault from '../../../../api-fixtures/v1/response
 import adminMqBackfillsDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.backfills.default.json'
 import adminMqBackfillsTriggerDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.backfills.trigger.default.json'
 import adminMqQueuesDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.default.json'
+import adminMqQueueDomains from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.domains.default.json'
+import adminMqQueueDomainPause from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.domains.pause.default.json'
+import adminMqQueueDomainResume from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.domains.resume.default.json'
+import adminMqQueueDomainRetry from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.domains.retry-failed.default.json'
 import adminMqQueuesPauseDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.pause.default.json'
 import adminMqQueuesResumeDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.queues.resume.default.json'
 import adminMqScheduledJobsDefault from '../../../../api-fixtures/v1/responses/web.admin.mq.scheduled-jobs.default.json'
@@ -17,7 +21,13 @@ import adminValkeyCachesClearDefault from '../../../../api-fixtures/v1/responses
 import adminValkeyFlushDefault from '../../../../api-fixtures/v1/responses/web.admin.valkey.flush.default.json'
 import growthMetricsDefault from '../../../../api-fixtures/v1/responses/web.growth-metrics.default.json'
 import rssFeedCategoriesDefault from '../../../../api-fixtures/v1/responses/web.rss-feed-categories.default.json'
-import type { Backfill, QueueStats, QueueStatsSummary, ScheduledJob } from '@/lib/api/client/mq'
+import type {
+  Backfill,
+  QueueDomain,
+  QueueStats,
+  QueueStatsSummary,
+  ScheduledJob,
+} from '@/lib/api/client/mq'
 import type { ArticleSyncJobStatus } from '@/lib/api/client/admin'
 import type { FlushValkeyResponseBody } from '@/types/api-responses'
 import type {
@@ -33,6 +43,27 @@ import type { UnmappedCategoryListResponse } from '@/types/rss-feed-categories'
 import { defineWebApiFixture, type WebApiFixtureDeclaration } from './declaration'
 
 export const ENGINEERING_DECLARATIONS = [
+  defineWebApiFixture<{ domains: QueueDomain[] }>()(
+    'web.admin.mq.queues.domains.default',
+    adminMqQueueDomains,
+    context => context.client.mq.fetchQueueDomains('background'),
+  ),
+  defineWebApiFixture<{ success: boolean }>()(
+    'web.admin.mq.queues.domains.pause.default',
+    adminMqQueueDomainPause,
+    context => context.client.mq.pauseQueueDomain('background', 'openai-moderation', 'Maintenance'),
+  ),
+  defineWebApiFixture<{ success: boolean }>()(
+    'web.admin.mq.queues.domains.resume.default',
+    adminMqQueueDomainResume,
+    context => context.client.mq.resumeQueueDomain('background', 'openai-moderation'),
+  ),
+  defineWebApiFixture<{ success: boolean; retried: number }>()(
+    'web.admin.mq.queues.domains.retry-failed.default',
+    adminMqQueueDomainRetry,
+    context => context.client.mq.retryFailedDomainJobs('background', 'openai-moderation'),
+  ),
+
   defineWebApiFixture<{ jobId: string }>()(
     'web.admin.article-syncs.trigger.default',
     adminArticleSyncTriggerDefault,
