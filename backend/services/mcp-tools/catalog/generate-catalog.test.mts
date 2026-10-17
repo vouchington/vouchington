@@ -16,7 +16,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { runCatalogGeneration } from './generate-catalog.mts'
 
 const markdown = 'docs/overview/architecture/mcp/catalog.md'
-const artifacts = ['api-fixtures/v1/mcp.json', 'api-fixtures/v1/mcp-results.json', markdown]
+const artifacts = [
+  'api-fixtures/v1/mcp.json',
+  'api-fixtures/v1/mcp-results.json',
+  'api-fixtures/v1/mcp-date-time.json',
+  markdown,
+]
 const tools: readonly Tool[] = [
   {
     schema: {
@@ -83,41 +88,42 @@ describe('catalog generation with owned filesystem resources', () => {
     expect(JSON.parse(before[0]!).servers[0].tools[0].tool.name).toBe('tiny_read')
   })
 
-  it.each(['api-fixtures/v1/mcp.json', 'api-fixtures/v1/mcp-results.json'])(
-    'rejects stale %s without rewriting any artifact',
-    async stalePath => {
-      await runCatalogGeneration([], {
+  it.each([
+    'api-fixtures/v1/mcp.json',
+    'api-fixtures/v1/mcp-results.json',
+    'api-fixtures/v1/mcp-date-time.json',
+  ])('rejects stale %s without rewriting any artifact', async stalePath => {
+    await runCatalogGeneration([], {
+      root,
+      tools,
+      cases: [],
+      ready: Promise.resolve(),
+      closeResources: [],
+    })
+    await writeFile(join(root, stalePath), '{}\n')
+    await Promise.all(artifacts.map(path => utimes(join(root, path), new Date(0), new Date(0))))
+    const times = await Promise.all(
+      artifacts.map(async path => (await stat(join(root, path), { bigint: true })).mtimeNs),
+    )
+    const before = await Promise.all(artifacts.map(path => readFile(join(root, path), 'utf8')))
+    await expect(
+      runCatalogGeneration(['--check'], {
         root,
         tools,
         cases: [],
         ready: Promise.resolve(),
         closeResources: [],
-      })
-      await writeFile(join(root, stalePath), '{}\n')
-      await Promise.all(artifacts.map(path => utimes(join(root, path), new Date(0), new Date(0))))
-      const times = await Promise.all(
+      }),
+    ).rejects.toThrow('Stale MCP catalog artifacts')
+    expect(await Promise.all(artifacts.map(path => readFile(join(root, path), 'utf8')))).toEqual(
+      before,
+    )
+    expect(
+      await Promise.all(
         artifacts.map(async path => (await stat(join(root, path), { bigint: true })).mtimeNs),
-      )
-      const before = await Promise.all(artifacts.map(path => readFile(join(root, path), 'utf8')))
-      await expect(
-        runCatalogGeneration(['--check'], {
-          root,
-          tools,
-          cases: [],
-          ready: Promise.resolve(),
-          closeResources: [],
-        }),
-      ).rejects.toThrow('Stale MCP catalog artifacts')
-      expect(await Promise.all(artifacts.map(path => readFile(join(root, path), 'utf8')))).toEqual(
-        before,
-      )
-      expect(
-        await Promise.all(
-          artifacts.map(async path => (await stat(join(root, path), { bigint: true })).mtimeNs),
-        ),
-      ).toEqual(times)
-    },
-  )
+      ),
+    ).toEqual(times)
+  })
 
   it.each([['--unknown'], ['--check', '--check']])(
     'rejects invalid arguments %j and closes its resource',

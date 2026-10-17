@@ -85,13 +85,14 @@ user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet —
 
 ## Generated Artifacts
 
-The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for all three committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
 
-| Artifact                                                                           | Contents                                                                                                      |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)                 | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
-| [`catalog.md`](catalog.md)                                                         | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
-| [`api-fixtures/v1/mcp-results.json`](../../../../api-fixtures/v1/mcp-results.json) | Versioned MCP result cases with tool arguments and structured results validated against the catalog schemas   |
+| Artifact                                                                               | Contents                                                                                                      |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)                     | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
+| [`catalog.md`](catalog.md)                                                             | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
+| [`api-fixtures/v1/mcp-results.json`](../../../../api-fixtures/v1/mcp-results.json)     | Versioned MCP result cases with tool arguments and structured results validated against the catalog schemas   |
+| [`api-fixtures/v1/mcp-date-time.json`](../../../../api-fixtures/v1/mcp-date-time.json) | Shared date-time acceptance cases for the producer and native clients                                         |
 
 The live check asserts that each server's catalog equals what `tools/list` returns to a caller
 holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,
@@ -162,3 +163,14 @@ these reasons:
 A tool result that includes member-authored or third-party text must mark that text with
 `wrapExternalContent()` from `@jongleberry/vurst-prompt` before returning it to a model; for
 example, `read_topic(details)` marks topic markdown and `read_posts(search)` and `read_posts(details)` mark posts.
+
+## Date-time compatibility
+
+MCP date-time validation shares one acceptance contract with native clients so tool results cannot
+pass the server boundary and fail only in an app. Leap seconds use the structural UTC month-end
+placement rule from [RFC 3339 section 5.7](https://www.rfc-editor.org/rfc/rfc3339#section-5.7),
+including the UTC date after applying a numeric offset. This checks possible placement; it does
+not verify that IERS announced an insertion, predict future insertions, or authorize generating
+unannounced leap-second timestamps. Other accepted syntax and calendar validation remain owned
+by Ajv's full date-time format. The shared generated fixture keeps this boundary explicit without
+introducing an announcement table or a network dependency.

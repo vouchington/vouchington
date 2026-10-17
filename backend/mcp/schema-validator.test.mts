@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { findSchemaViolation } from './schema-validator.mts'
+import { mcpDateTimeFixtures } from '../test-helpers/mcp-date-time-cases.mts'
 
 const SCHEMA = {
   type: 'object',
@@ -109,5 +110,23 @@ describe('findSchemaViolation', () => {
     }
 
     expect(findSchemaViolation(schema, { action: 'other', arguments: {} })).not.toBeNull()
+  })
+})
+
+describe('shared MCP date-time contract', () => {
+  it.each(mcpDateTimeFixtures.cases)('$id', ({ value, valid }) => {
+    expect(findSchemaViolation(mcpDateTimeFixtures.schema, value) === null).toBe(valid)
+  })
+
+  it('enforces the format through nested references and cached schemas', () => {
+    const schema = {
+      type: 'object',
+      properties: { timestamp: { $ref: '#/$defs/Timestamp' } },
+      $defs: { Timestamp: mcpDateTimeFixtures.schema },
+    }
+    expect(findSchemaViolation(schema, { timestamp: '1990-12-31T23:59:60Z' })).toBeNull()
+    expect(findSchemaViolation(schema, { timestamp: '2026-10-09T23:59:60Z' })).toBe(
+      '/timestamp must match format "date-time"',
+    )
   })
 })
