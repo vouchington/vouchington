@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { join, resolve } from 'node:path'
 
 import pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
+
+import { createMigrationPlatformFixture } from '@voucha/test-helpers/migration-platform'
 
 import { read, readPool, write } from './index.mts'
 import type { QueryExecutor, QueryInput } from './types.mts'
@@ -154,12 +156,14 @@ describe('applyAllMigrations', () => {
     }
   })
 
-  it('applies package SQL migrations through the platform runner', async () => {
-    await runMigrations()
-    const { rows } = await read<{ count: number }>(
-      '/* verifyRunMigrationsLedger */ SELECT count(*)::integer AS count FROM migrations',
-    )
-    expect(rows[0]?.count).toBeGreaterThan(0)
+  it('forwards the canonical package SQL folder and logger to the public platform runner', async () => {
+    const run = vi
+      .fn<NonNullable<Parameters<typeof runMigrations>[0]>['runMigrations']>()
+      .mockResolvedValue(undefined)
+    await runMigrations({ runMigrations: run })
+    expect(run).toHaveBeenCalledExactlyOnceWith(resolve(import.meta.dirname, 'migrations'), {
+      logger: console,
+    })
   })
 
   it('initializes SQL tooling for forced views through the public entry point', async () => {
@@ -208,61 +212,57 @@ describe('applyAllMigrations', () => {
     }
   })
 
-  it('serializes fixed, generated, and view migrations under one runner lock', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'voucha-all-migrations-'))
-    const suffix = randomUUID().replaceAll('-', '')
-    const baseTable = `all_migrations_base_${suffix}`
-    const generatedTable = `all_migrations_generated_${suffix}`
-    const view = `all_migrations_view_${suffix}`
-    const migration = `9999-${suffix}.sql`
-
+  it('awaits fixed migrations and forwards one owned client through generated and view phases', async () => {
+    const client = Object.assign(new pg.Client(), { release: () => {} })
+    const fixture = await createMigrationPlatformFixture(client)
+    const logger = { error: vi.fn<() => void>(), log: vi.fn<() => void>() }
+    const operation = applyAllMigrations(fixture.root, { logger, platform: fixture.platform })
+    // Observe rejection immediately, while the fixed phase is deliberately gated.
+    const settled = operation.then(
+      () => ({ status: 'fulfilled' as const }),
+      err => ({ status: 'rejected' as const, reason: err }),
+    )
+    let primary: unknown
+    let failed = false
     try {
-      await Promise.all(
-        ['migrations', 'config-driven', 'views'].map(folder =>
-          mkdir(join(root, folder), { recursive: true }),
-        ),
-      )
-      await Promise.all([
-        writeFile(
-          join(root, 'migrations', migration),
-          `CREATE TABLE ${baseTable} (id integer PRIMARY KEY);`,
-        ),
-        writeFile(
-          join(root, 'config-driven', '9999-generated.sql'),
-          `CREATE TABLE IF NOT EXISTS ${generatedTable} (id integer PRIMARY KEY);`,
-        ),
-        writeFile(
-          join(root, 'views', '9999-view.sql'),
-          `CREATE OR REPLACE VIEW ${view} AS SELECT id FROM ${baseTable};`,
-        ),
+      await Promise.race([fixture.fixedStarted, operation])
+      expect(fixture.calls).toEqual([
+        {
+          phase: 'fixed',
+          client: fixture.client,
+          input: join(fixture.root, 'migrations'),
+          logger,
+        },
       ])
-      // The runner rejects a directory that omits an applied ledger file.
-      // Symlinks keep generator imports resolving from the real migrations tree.
-      await linkAppliedFixedMigrations(join(root, 'migrations'))
-
-      const logger = { error: () => {}, log: () => {} }
-      await expect(
-        Promise.all([applyAllMigrations(root, { logger }), applyAllMigrations(root, { logger })]),
-      ).resolves.toEqual([undefined, undefined])
-
-      const { rows } = await read<{ ledger_count: number; relations_present: boolean }>(
-        `/* verifyAllMigrationRunnerState */
-          SELECT
-            (SELECT count(*)::integer FROM migrations WHERE id = $1) AS ledger_count,
-            to_regclass($2) IS NOT NULL AND to_regclass($3) IS NOT NULL AS relations_present`,
-        [migration, generatedTable, view],
+      fixture.releaseFixed()
+      await operation
+      expect(fixture.sessions).toBe(1)
+      expect(fixture.calls.every(call => call.client === fixture.client)).toBe(true)
+      const sql = fixture.calls.filter(call => call.phase === 'write').map(call => call.input)
+      expect(sql).toContain('/* runConfigDrivenStatements */ SELECT 41 AS generated')
+      expect(sql).toContain('/* runViews */ SELECT 42 AS view_phase')
+      expect(sql.indexOf('/* runConfigDrivenStatements */ SELECT 41 AS generated')).toBeLessThan(
+        sql.indexOf('/* runViews */ SELECT 42 AS view_phase'),
       )
-      expect(rows).toEqual([{ ledger_count: 1, relations_present: true }])
-    } finally {
-      await write(`/* cleanupAllMigrationRunnerState */ DROP VIEW IF EXISTS ${view}`)
-      await write(
-        `/* cleanupAllMigrationRunnerState */ DROP TABLE IF EXISTS ${generatedTable}, ${baseTable}`,
-      )
-      await write(`/* cleanupAllMigrationRunnerState */ DELETE FROM migrations WHERE id = $1`, [
-        migration,
-      ])
-      await rm(root, { force: true, recursive: true })
+    } catch (err) {
+      primary = err
+      failed = true
     }
+    fixture.releaseFixed()
+    const outcome = await settled
+    const errors: unknown[] = failed ? [primary] : []
+    if (outcome.status === 'rejected' && (!failed || !Object.is(outcome.reason, primary)))
+      errors.push(outcome.reason)
+    try {
+      await fixture.close()
+    } catch (err) {
+      errors.push(err)
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1)
+      throw new AggregateError(errors, 'Migration forwarding and cleanup failed', {
+        cause: errors[0],
+      })
   })
 })
 
@@ -271,20 +271,4 @@ function makeMigrationWriter(statements: string[]): QueryExecutor {
     statements.push(stringFromUnknown(input))
     return Promise.resolve({ command: '', fields: [], oid: 0, rowCount: 0, rows: [] })
   }
-}
-
-async function linkAppliedFixedMigrations(migrationsDir: string): Promise<void> {
-  const { rows } = await read<{ id: string }>(
-    '/* listAppliedFixedMigrations */ SELECT id FROM migrations ORDER BY id',
-  )
-  const sourceDir = join(import.meta.dirname, 'migrations')
-  await Promise.all(
-    rows.map(row => {
-      const fileName = row.id
-      if (fileName !== basename(fileName)) {
-        throw new Error(`Applied migration id is not a file name: ${fileName}`)
-      }
-      return symlink(join(sourceDir, fileName), join(migrationsDir, fileName))
-    }),
-  )
 }

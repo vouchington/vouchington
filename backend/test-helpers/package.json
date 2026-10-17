@@ -60,6 +60,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.2.0",
     "@vouchington/localization-compiler": "^0.2.2",
+    "@vouchington/postgres": "^0.0.15",
     "glide-mq": "^0.18.0",
     "jose": "^6.2.12",
     "no-mistakes": "^0.91.2",

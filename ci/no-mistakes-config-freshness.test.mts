@@ -86,6 +86,7 @@ describe('no-mistakes config freshness', () => {
     expect(ciCoverage?.options?.projectFilters).toMatchObject({
       'backend-no-data-mocks': ['backend'],
       'backend-real-glide-mq': ['backend'],
+      'backend-migration-initializers': ['backend'],
     })
   })
 

@@ -10,6 +10,7 @@ import {
   type OwnedPruningDatabase,
 } from './database-lifecycle.mts'
 
+import { assertMigrationRunnerControls } from './migration-controls.mts'
 import { assertPruningDatabaseLifecycleControls } from './database-lifecycle-controls.mts'
 
 const exec = promisify(execFile)
@@ -49,12 +50,16 @@ async function runPruningProof(): Promise<void> {
   const results: ExplainResult[] = []
   const retirementControls: string[] = []
   const lifecycleControls: string[] = []
+  const migrationControls: string[] = []
+  const migrationDatabases: string[] = []
   const lifecycleDatabases: string[] = []
   const evidence: Record<string, unknown> = {
     database: name,
     results,
     retirementControls,
     lifecycleControls,
+    migrationControls,
+    migrationDatabases,
     lifecycleDatabases,
   }
   const outputDirectory = join(import.meta.dirname, '..', 'output')
@@ -71,6 +76,13 @@ async function runPruningProof(): Promise<void> {
   let closePools: (() => Promise<void>) | undefined
   const errors: unknown[] = []
   try {
+    await assertMigrationRunnerControls(
+      sourceUrl,
+      connectionEnvironment,
+      control => migrationControls.push(control),
+      database => migrationDatabases.push(database),
+    )
+    if (migrationControls.length !== 2) throw new Error('Expected both native migration controls')
     await assertPruningDatabaseLifecycleControls(
       sourceUrl,
       connectionEnvironment,

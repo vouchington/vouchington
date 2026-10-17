@@ -2,6 +2,12 @@ name: EXPLAIN ANALYZE
 
 on:
   workflow_call:
+    inputs:
+      publish_coverage:
+        description: Collect and publish native migration LCOV for backend coverage
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -145,7 +151,40 @@ jobs:
           --reporter json --reporter json-summary --reporter lcovonly
           --extension .mts --all --src backend
           --include 'backend/data-stores/psql/migration-runner/retire-monthly-partitions.mts'
-          --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction}.mts'
+          --include 'backend/data-stores/psql/migrate.mts'
+          --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts'
+      - name: Preserve full native migration LCOV
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        run: |
+          mkdir -p coverage-full
+          cp backend/scripts/explain-analyze/output/retirement-coverage/lcov.info coverage-full/lcov.info
+      - name: Upload full native migration LCOV (attempt 1)
+        id: full-lcov-1
+        if: ${{ inputs.publish_coverage }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: backend-native-migrations
+      - name: Upload full native migration LCOV (attempt 2)
+        id: full-lcov-1-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: backend-native-migrations
+          name-suffix: -retry
+      - name: Require persisted native migration LCOV
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: backend-native-migrations
+          FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Upload EXPLAIN ANALYZE results
         if: always()
         continue-on-error: true
