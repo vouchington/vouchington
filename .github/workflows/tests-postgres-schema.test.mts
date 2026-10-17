@@ -44,6 +44,19 @@ describe('PostgreSQL Schema Tests workflow', () => {
     )
   })
 
+  it('checks the staging RSS seed after one staging migration and before schema tests', () => {
+    const migrateStep = workflow.indexOf(
+      '      - working-directory: backend\n        env:\n          ENVIRONMENT: staging\n        run: node data-stores/psql/migrate.mts',
+    )
+    const check = workflow.indexOf('node data-stores/psql/check-staging-rss-bootstrap.mts')
+    const schemaTests = workflow.indexOf('      - name: Run PostgreSQL schema tests')
+
+    expect(migrateStep).toBeGreaterThanOrEqual(0)
+    expect(check).toBeGreaterThan(migrateStep)
+    expect(schemaTests).toBeGreaterThan(check)
+    expect(workflow.match(/node data-stores\/psql\/migrate\.mts/gu)).toHaveLength(1)
+  })
+
   it('checks the schema snapshot after schema tests, even when Vitest is skipped', () => {
     const tests = workflow.indexOf(
       'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',

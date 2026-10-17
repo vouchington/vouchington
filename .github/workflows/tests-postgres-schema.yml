@@ -55,8 +55,14 @@ jobs:
         run: pnpm exec squawk backend/data-stores/psql/migrations/*.sql backend/data-stores/psql/config-driven/*.sql backend/data-stores/psql/views/*.sql
         timeout-minutes: 2
       - working-directory: backend
+        env:
+          ENVIRONMENT: staging
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
+      - name: Check staging RSS fresh bootstrap
+        working-directory: backend
+        run: node data-stores/psql/check-staging-rss-bootstrap.mts
+        timeout-minutes: 1
       - name: Run PostgreSQL schema tests
         # The command keeps the previous 180s step budget. The extra minute lets
         # run-bounded reap the process group and flush the log. GitHub's
