@@ -6,13 +6,13 @@ Receipt of a live app.bsky.graph.follow record created on Bluesky on behalf of a
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                                                                                                                      |
-| --------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `follower_user_id`          | `uuid`                     | no       |                     |          |           |           | The Voucha user whose linked Bluesky account holds the follow record in its own PDS repo (the record's `repo`).                                                                                                                              |
-| `followee_user_id`          | `uuid`                     | no       |                     |          |           |           | The Voucha user being followed; resolved to a Bluesky DID (the record's `subject`) via bluesky_linked_accounts at reconcile time.                                                                                                            |
-| `follower_authorization_id` | `uuid`                     | no       |                     |          |           |           | Exact linked-account generation whose credential created record_uri; its foreign key removes stale receipts when that credential is unlinked.                                                                                                |
-| `record_uri`                | `text`                     | no       |                     |          |           |           | The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly. |
-| `created_at`                | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                                                                                                              |
+| Column                                   | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                                                                                                                      |
+| ---------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `follower_user_id`                       | `uuid`                     | no       |                     |          |           |           | The Voucha user whose linked Bluesky account holds the follow record in its own PDS repo (the record's `repo`).                                                                                                                              |
+| `followee_user_id`                       | `uuid`                     | no       |                     |          |           |           | The Voucha user being followed; resolved to a Bluesky DID (the record's `subject`) via bluesky_linked_accounts at reconcile time.                                                                                                            |
+| `follower_account_link_authorization_id` | `uuid`                     | no       |                     |          |           |           | Exact linked-account generation whose credential created record_uri; its foreign key removes stale receipts when that credential is unlinked.                                                                                                |
+| `record_uri`                             | `text`                     | no       |                     |          |           |           | The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly. |
+| `created_at`                             | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                                                                                                              |
 
 **Primary key:** `PRIMARY KEY (follower_user_id, followee_user_id)`
 
@@ -26,14 +26,14 @@ _none_
 **Foreign keys:**
 
 - `bluesky_follow_records_followee_user_id_fkey`: `FOREIGN KEY (followee_user_id) REFERENCES users(id) ON DELETE CASCADE`
-- `bluesky_follow_records_follower_authorization_id_fkey`: `FOREIGN KEY (follower_authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE`
+- `bluesky_follow_records_follower_account_link_authorization_fkey`: `FOREIGN KEY (follower_account_link_authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE`
 - `bluesky_follow_records_follower_user_id_fkey`: `FOREIGN KEY (follower_user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `bluesky_follow_records_pkey`: `CREATE UNIQUE INDEX bluesky_follow_records_pkey ON public.bluesky_follow_records USING btree (follower_user_id, followee_user_id)`
 - `idx_bluesky_follow_records__followee_user_id`: `CREATE INDEX idx_bluesky_follow_records__followee_user_id ON public.bluesky_follow_records USING btree (followee_user_id)`
-- `idx_bluesky_follow_records__follower_authorization_id`: `CREATE INDEX idx_bluesky_follow_records__follower_authorization_id ON public.bluesky_follow_records USING btree (follower_authorization_id)`
+- `idx_bluesky_follow_records__follower_account_auth`: `CREATE INDEX idx_bluesky_follow_records__follower_account_auth ON public.bluesky_follow_records USING btree (follower_account_link_authorization_id)`
 
 **Triggers:**
 

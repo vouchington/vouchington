@@ -8238,7 +8238,7 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "follower_authorization_id": {
+        "follower_account_link_authorization_id": {
           "collation": null,
           "comment": "Exact linked-account generation whose credential created record_uri; its foreign key removes stale receipts when that credential is unlinked.",
           "defaultExpression": null,
@@ -8283,9 +8283,9 @@
           "referencedTable": "users",
           "validated": true
         },
-        "bluesky_follow_records_follower_authorization_id_fkey": {
-          "columns": ["follower_authorization_id"],
-          "definition": "FOREIGN KEY (follower_authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE",
+        "bluesky_follow_records_follower_account_link_authorization_fkey": {
+          "columns": ["follower_account_link_authorization_id"],
+          "definition": "FOREIGN KEY (follower_account_link_authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["link_authorization_id"],
@@ -8351,16 +8351,16 @@
           "unique": false,
           "valid": true
         },
-        "idx_bluesky_follow_records__follower_authorization_id": {
+        "idx_bluesky_follow_records__follower_account_auth": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bluesky_follow_records__follower_authorization_id ON public.bluesky_follow_records USING btree (follower_authorization_id)",
+          "definition": "CREATE INDEX idx_bluesky_follow_records__follower_account_auth ON public.bluesky_follow_records USING btree (follower_account_link_authorization_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "follower_authorization_id",
+              "column": "follower_account_link_authorization_id",
               "descending": false,
-              "expression": "follower_authorization_id",
+              "expression": "follower_account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -8699,7 +8699,7 @@
         "bluesky_link_completions_token_hash_check": "CHECK ((char_length(token_hash) = 64))"
       },
       "columns": {
-        "authorization_id": {
+        "account_link_authorization_id": {
           "collation": null,
           "comment": "Exact native authorization and account generation consumed at most once.",
           "defaultExpression": null,
@@ -8779,9 +8779,9 @@
       },
       "comment": "Short-lived one-time native handoffs for an exact handoff_ready authorization. Bearer token plus the app-held proof verifier are required.",
       "foreignKeys": {
-        "bluesky_link_completions_authorization_id_fkey": {
-          "columns": ["authorization_id"],
-          "definition": "FOREIGN KEY (authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE",
+        "bluesky_link_completions_account_link_authorization_id_fkey": {
+          "columns": ["account_link_authorization_id"],
+          "definition": "FOREIGN KEY (account_link_authorization_id) REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
           "referencedColumns": ["link_authorization_id"],
@@ -8803,13 +8803,13 @@
         "bluesky_link_completions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX bluesky_link_completions_pkey ON public.bluesky_link_completions USING btree (authorization_id)",
+          "definition": "CREATE UNIQUE INDEX bluesky_link_completions_pkey ON public.bluesky_link_completions USING btree (account_link_authorization_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "authorization_id",
+              "column": "account_link_authorization_id",
               "descending": false,
-              "expression": "authorization_id",
+              "expression": "account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -8823,7 +8823,7 @@
         "idx_bluesky_link_completions__expiry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bluesky_link_completions__expiry ON public.bluesky_link_completions USING btree (expires_at, authorization_id)",
+          "definition": "CREATE INDEX idx_bluesky_link_completions__expiry ON public.bluesky_link_completions USING btree (expires_at, account_link_authorization_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -8834,9 +8834,9 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "authorization_id",
+              "column": "account_link_authorization_id",
               "descending": false,
-              "expression": "authorization_id",
+              "expression": "account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -8871,8 +8871,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["authorization_id"],
-        "definition": "PRIMARY KEY (authorization_id)"
+        "columns": ["account_link_authorization_id"],
+        "definition": "PRIMARY KEY (account_link_authorization_id)"
       },
       "relationKind": "table",
       "triggers": {

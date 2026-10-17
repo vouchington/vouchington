@@ -8537,7 +8537,7 @@
           "nullable": false,
           "ordinalPosition": 2
         },
-        "follower_authorization_id": {
+        "follower_account_link_authorization_id": {
           "comment": "Exact linked-account generation whose credential created record_uri; its foreign key removes stale receipts when that credential is unlinked.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -8578,8 +8578,8 @@
           "referencedTable": "users",
           "validated": true
         },
-        "bluesky_follow_records_follower_authorization_id_fkey": {
-          "columns": ["follower_authorization_id"],
+        "bluesky_follow_records_follower_account_link_authorization_fkey": {
+          "columns": ["follower_account_link_authorization_id"],
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["link_authorization_id"],
@@ -8651,17 +8651,17 @@
           "unique": false,
           "valid": true
         },
-        "idx_bluesky_follow_records__follower_authorization_id": {
+        "idx_bluesky_follow_records__follower_account_auth": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bluesky_follow_records__follower_authorization_id ON public.bluesky_follow_records USING btree (follower_authorization_id)",
+          "definition": "CREATE INDEX idx_bluesky_follow_records__follower_account_auth ON public.bluesky_follow_records USING btree (follower_account_link_authorization_id)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "follower_authorization_id",
+              "column": "follower_account_link_authorization_id",
               "descending": false,
-              "expression": "follower_authorization_id",
+              "expression": "follower_account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -9046,7 +9046,7 @@
         }
       },
       "columns": {
-        "authorization_id": {
+        "account_link_authorization_id": {
           "comment": "Exact native authorization and account generation consumed at most once.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -9119,8 +9119,8 @@
       },
       "comment": "Short-lived one-time native handoffs for an exact handoff_ready authorization. Bearer token plus the app-held proof verifier are required.",
       "foreignKeys": {
-        "bluesky_link_completions_authorization_id_fkey": {
-          "columns": ["authorization_id"],
+        "bluesky_link_completions_account_link_authorization_id_fkey": {
+          "columns": ["account_link_authorization_id"],
           "onDelete": "CASCADE",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["link_authorization_id"],
@@ -9140,14 +9140,14 @@
         "bluesky_link_completions_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX bluesky_link_completions_pkey ON public.bluesky_link_completions USING btree (authorization_id)",
+          "definition": "CREATE UNIQUE INDEX bluesky_link_completions_pkey ON public.bluesky_link_completions USING btree (account_link_authorization_id)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "authorization_id",
+              "column": "account_link_authorization_id",
               "descending": false,
-              "expression": "authorization_id",
+              "expression": "account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -9163,7 +9163,7 @@
         "idx_bluesky_link_completions__expiry": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_bluesky_link_completions__expiry ON public.bluesky_link_completions USING btree (expires_at, authorization_id)",
+          "definition": "CREATE INDEX idx_bluesky_link_completions__expiry ON public.bluesky_link_completions USING btree (expires_at, account_link_authorization_id)",
           "immediate": true,
           "keys": [
             {
@@ -9177,9 +9177,9 @@
             },
             {
               "collation": null,
-              "column": "authorization_id",
+              "column": "account_link_authorization_id",
               "descending": false,
-              "expression": "authorization_id",
+              "expression": "account_link_authorization_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -9218,7 +9218,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["authorization_id"]
+        "columns": ["account_link_authorization_id"]
       },
       "relationKind": "table",
       "triggers": {
