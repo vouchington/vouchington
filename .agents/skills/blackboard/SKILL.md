@@ -30,7 +30,7 @@ every tool. An id that the user or task assigns explicitly (for
 example a child id its assignment names) wins over the printed line. When the line is absent, take the id from your own
 harness only. Claude Code exports `CLAUDE_CODE_SESSION_ID` and Codex exports `CODEX_THREAD_ID`.
 Cursor and Grok shells export no session id, so read the worktree-local file their SessionStart
-hook persisted, the same source `dev/agent-session-id` uses: `.local/cursor-session-id` for
+hook persisted: `.local/cursor-session-id` for
 Cursor, `.local/grok-session-id` for Grok. If none of these resolves, do not journal: stop and
 report that no session id is available (an automated run continues its primary work and reports
 it, see Automated runs). Never guess, derive, or synthesize an id, and never read another
@@ -156,9 +156,7 @@ retrospective persistence with `journal_append`.
 
 Pass the parent's own session id in the assignment prompt at spawn time. A spawned child resolves
 its own session id from its runtime environment (for example `CODEX_THREAD_ID` for Codex,
-`CLAUDE_CODE_SESSION_ID` for Claude Code) through the shared
-`dev/agent-session-id/resolve.mts` identity policy, the same way any other Vouchington blackboard
-consumer does, and calls `session_ensure` with that resolved `sessionId`, the `parentSessionId` it
+`CLAUDE_CODE_SESSION_ID` for Claude Code), as described above, and calls `session_ensure` with that resolved `sessionId`, the `parentSessionId` it
 was given, its own `agent` name, and its version before any blackboard-aware or substantive work.
 If the runtime environment supplies no session identity, or the ensure fails, the child stops and
 reports the blocker rather than guessing an ID or substituting its canonical task path. A resolved

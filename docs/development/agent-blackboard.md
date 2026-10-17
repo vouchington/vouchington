@@ -229,10 +229,7 @@ approves a retired `agent-blackboard` tool.
 
 A spawned delegation child resolves its own session id
 from its runtime environment — Codex's `CODEX_THREAD_ID`, Claude Code's `CLAUDE_CODE_SESSION_ID`, and
-so on — the same way any other Vouchington blackboard consumer does
-(`dev/agent-session-id/resolve.mts`). The resolver keeps one coherent harness, agent label, and
-session selection: explicit Claude wins; Claude-compat recognizes live Grok and Codex-child signals;
-ordinary direct sessions prefer Codex, Grok, then Cursor; persisted files are only the final fallback.
+so on — as the [`blackboard` skill](../../.agents/skills/blackboard/SKILL.md) describes.
 There is no
 identity round-trip: the parent passes its own session id in the spawn assignment, and the child
 calls `session_ensure` with its own resolved id, the parent id it was given, its agent name, and
