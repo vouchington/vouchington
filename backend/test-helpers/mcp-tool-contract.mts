@@ -89,10 +89,3 @@ export async function callStructuredMcpTool(
 export function optionArgs(option: string, args: Record<string, unknown> = {}) {
   return { option, arguments: args }
 }
-
-/** The tool call for a post write; the legacy `update_post` name is the `edit` option of `act_on_post`. */
-export function postWriteCall(name: string, args: Record<string, unknown>) {
-  return name === 'update_post'
-    ? (['act_on_post', optionArgs('edit', args)] as const)
-    : ([name, args] as const)
-}

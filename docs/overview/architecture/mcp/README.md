@@ -150,12 +150,10 @@ the referral link and topic recommendation tools do too; see Relation, Referral 
 
 ## Post Actions
 
-`act_on_post` holds the member actions on a post (edit, topic ratings, share, send, read state) as
-options of one tool. Options in a merged tool must share scopes, plan and annotations, and `edit`
-already declared the most conservative hints, so these actions joined it instead of adding tools.
-Each option calls the service its REST twin calls, so guards and limits cannot drift; ratings follow
-REST's review author or administrator rule, not the exact-ownership rule of `edit`. Post lock waits
-for the moderation-family decision on #208.
+Member actions on a post (edit, topic ratings, share, send, read state) are options of `act_on_post`
+because options in a merged tool must share scopes, plan and annotations, and `edit` already
+declared the most conservative hints. Ratings follow REST's author-or-administrator rule, not the
+exact-ownership rule of `edit`.
 
 ---
 

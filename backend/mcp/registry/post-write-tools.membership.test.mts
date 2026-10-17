@@ -10,7 +10,7 @@ import {
 import {
   callRejectedMcpTool,
   callStructuredMcpTool,
-  postWriteCall,
+  optionArgs,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import {
   withConcurrentCommunityMembershipRemovalForTest,
@@ -23,7 +23,7 @@ import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 const SCOPES = ['posts:read', 'posts:write'] as const
 
 describe('delegated private community membership fences', () => {
-  it.each(['create_post', 'update_post', 'delete_post'] as const)(
+  it.each(['create_post', 'act_on_post', 'delete_post'] as const)(
     '%s refuses revoked membership after preflight',
     async tool => {
       const user = { ...(await createTestUser()), membership_plan: 'plus' as const }
@@ -75,13 +75,12 @@ describe('delegated private community membership fences', () => {
               parent_post_id: root,
               markdown: 'Refused',
             }
-          : tool === 'update_post'
-            ? { id, markdown: 'Refused' }
+          : tool === 'act_on_post'
+            ? optionArgs('edit', { id, markdown: 'Refused' })
             : { id }
-      const [name, call] = postWriteCall(tool, args)
       expect(
         await withConcurrentCommunityMembershipRemovalForTest(community.id, user.id, () =>
-          callRejectedMcpTool(user, name, call, SCOPES),
+          callRejectedMcpTool(user, tool, args, SCOPES),
         ),
       ).toContain('Post not found')
       expect((await getPostByAny(id, { readOnly: false }))?.markdown).toBe('Own comment')
@@ -90,7 +89,7 @@ describe('delegated private community membership fences', () => {
 })
 
 describe('delegated archived community mutations', () => {
-  it.each(['update_post', 'delete_post'] as const)(
+  it.each(['act_on_post', 'delete_post'] as const)(
     '%s preserves own-user REST mutation access after community archival',
     async tool => {
       const user = { ...(await createTestUser()), membership_plan: 'plus' as const }
@@ -110,13 +109,10 @@ describe('delegated archived community mutations', () => {
         postId: id,
         submittedById: user.id,
       })
-      const [name, call] = postWriteCall(tool, {
-        id,
-        ...(tool === 'update_post' ? { title: 'Updated' } : {}),
-      })
+      const args = tool === 'act_on_post' ? optionArgs('edit', { id, title: 'Updated' }) : { id }
       expect(
         await withConcurrentCommunityArchiveForTest(community.id, () =>
-          callStructuredMcpTool(user, name, call, SCOPES),
+          callStructuredMcpTool(user, tool, args, SCOPES),
         ),
       ).toMatchObject({ success: true })
       const post = await getPostByAny(id, { readOnly: false })
