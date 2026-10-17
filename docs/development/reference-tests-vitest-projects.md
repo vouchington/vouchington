@@ -101,6 +101,13 @@ and Valkey clients. The isolation-helper contract, `dynamic-config.test.mts`, im
 Valkyries clients through its helper. Both belong to the initialized `backend-data-stores`
 project with its ordinary budgets; their business assertions remain unchanged.
 
+The Docker-free `backend-modules` and `backend-no-data-mocks` projects use five-second test
+and hook defaults, checked by `ci/vitest-backend-pure-project-defaults.test.mts`. Their routing,
+provider mocks and isolation remain unchanged. DNS retry tests pass the upstream public clock
+through the internal resolver wrapper and advance only fake timeout timers; the production DNS
+deadline and retry policy remain unchanged. This cohort does not change other project defaults
+or establish timing evidence for their hooks.
+
 Do not force a reporter for local Vitest runs; Vitest's default reporter behavior automatically uses `minimal` when it detects an AI coding agent. CI reporter wiring lives in `vitest.config.mts` and is activated by workflow env vars.
 
 Backend Vitest projects alias `glide-mq` to an inline test shim. The shim drain waits for flushed
