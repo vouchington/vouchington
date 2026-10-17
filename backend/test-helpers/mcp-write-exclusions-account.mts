@@ -1,8 +1,7 @@
 import { exclusions } from './mcp-write-exclusions-builder.mts'
 
-const profileDoc = 'docs/overview/architecture/mcp/profile-notification-write-tools.md'
 const profile = (reason: string, routes: string[]) =>
-  exclusions('sensitive-account', `${reason} (recorded in ${profileDoc})`, routes)
+  exclusions('sensitive-account', reason, routes)
 
 export const accountExclusions = [
   ...exclusions(
@@ -127,12 +126,12 @@ export const accountExclusions = [
   ),
   ...exclusions(
     'recorded-no-tool',
-    'Casting is request-bound (rate limit, contribution gating, quota) and has no policy for a token (docs/overview/architecture/mcp/relation-referral-recommendation-write-tools.md)',
+    'Casting is request-bound (rate limit, contribution gating, quota) and has no policy for a token',
     ['PUT /entity-relations/:id/vote'],
   ),
   ...exclusions(
     'recorded-no-tool',
-    'Invitations are not in scope; join_community covers public communities (docs/overview/architecture/mcp/community-report-appeal-write-tools.md)',
+    'Invitations are not in scope; join_community covers public communities',
     ['POST /communities/:idOrSlug/invites', 'POST /communities/invite-redemptions'],
   ),
 ]
