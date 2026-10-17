@@ -51,8 +51,10 @@ const writeSql = `/* ${prefix} */ WITH inserted AS (
   ) current_record WHERE state = 'failed'
 ) SELECT media_delivery_registry_record_id FROM inserted`
 const eventSql = `/* ${prefix}:event */ INSERT INTO copyright_notice_lifecycle_changes
-  SELECT record.id FROM media_delivery_registry_records record
-  WHERE record.id = ANY($2::uuid[])`
+  SELECT record.id FROM unnest($2::uuid[]) selected(record_id) CROSS JOIN LATERAL (
+    SELECT id FROM media_delivery_registry_records
+    WHERE id = selected.record_id LIMIT 1
+  ) record`
 
 type ReplayStatement = 'lock' | 'write' | 'event'
 type PlanMode = 'force_custom_plan' | 'force_generic_plan'
@@ -102,10 +104,11 @@ function captured(statement: ReplayStatement, mode: PlanMode): ExplainResult {
           ]
         : [
             {
-              'Node Type': 'Bitmap Heap Scan',
+              'Node Type': 'Index Scan',
               'Relation Name': 'media_delivery_registry_records',
-              'Actual Rows': 1000,
-              'Actual Loops': 1,
+              'Index Name': 'media_delivery_registry_records_pkey',
+              'Actual Rows': 1,
+              'Actual Loops': 1000,
             },
           ]
   return {
@@ -184,9 +187,7 @@ describe('media replay captured statement budgets', () => {
 
   it('does not let the event bitmap budget classify a mislabeled main write', () => {
     const write = captured('write', 'force_custom_plan')
-    write.query_text = write.query_text
-      .replace(`/* ${prefix} */`, `/* ${prefix}:event */`)
-      .concat(' WHERE record.id = ANY($2::uuid[])')
+    write.query_text = write.query_text.replace(`/* ${prefix} */`, `/* ${prefix}:event */`)
     expect(() => assertMediaDeliveryReplayPlan(write)).toThrow('actor-audit event insert')
     const event = captured('event', 'force_custom_plan')
     event.query_text = event.query_text.replace(`/* ${prefix}:event */`, `/* ${prefix} */`)
@@ -201,11 +202,8 @@ describe('media replay captured statement budgets', () => {
     write.query_text = write.query_text.replace('unnest($2::uuid[])', 'unnest($3::uuid[])')
     expect(() => assertMediaDeliveryReplayPlan(write)).toThrow('each locked UUID')
     const event = captured('event', 'force_generic_plan')
-    event.query_text = event.query_text.replace(
-      'record.id = ANY($2::uuid[])',
-      'record.id = ANY($3::uuid[])',
-    )
-    expect(() => assertMediaDeliveryReplayPlan(event)).toThrow('actor audit to replayed UUIDs')
+    event.query_text = event.query_text.replace('unnest($2::uuid[])', 'unnest($3::uuid[])')
+    expect(() => assertMediaDeliveryReplayPlan(event)).toThrow('each replayed UUID')
   })
 
   it('rejects an authority full scan, even alongside a valid unrelated primary-key probe', () => {
@@ -222,8 +220,14 @@ describe('media replay captured statement budgets', () => {
     })
     expect(() => assertMediaDeliveryReplayPlan(write)).toThrow('probe only locked authority ids')
     const event = captured('event', 'force_generic_plan')
-    Object.assign(scan(event, 0), { 'Node Type': 'Seq Scan', 'Actual Rows': 17000 })
-    expect(() => assertMediaDeliveryReplayPlan(event)).toThrow('driving-row budget')
+    Object.assign(scan(event, 0), {
+      'Node Type': 'Seq Scan',
+      'Index Name': undefined,
+      'Actual Rows': 1000,
+      'Rows Removed by Filter': 16000,
+      'Actual Loops': 1,
+    })
+    expect(() => assertMediaDeliveryReplayPlan(event)).toThrow('probe only locked authority ids')
   })
 
   it('keeps the locked page, primary-key probes, history, and event row budgets separate', () => {
@@ -250,14 +254,14 @@ describe('media replay captured statement budgets', () => {
     scan(history, 1)['Actual Loops'] = 1001
     expect(() => assertMediaDeliveryReplayPlan(history)).toThrow('driving-row budget')
     const event = captured('event', 'force_custom_plan')
-    scan(event, 0)['Actual Rows'] = 2001
-    expect(() => assertMediaDeliveryReplayPlan(event)).toThrow('driving-row budget')
+    scan(event, 0)['Actual Loops'] = 1001
+    expect(() => assertMediaDeliveryReplayPlan(event)).toThrow('probe only locked authority ids')
     const twoEventScans = captured('event', 'force_generic_plan')
     scans(twoEventScans).push({
       'Node Type': 'Index Scan',
       'Relation Name': 'media_delivery_registry_records',
       'Index Name': 'media_delivery_registry_records_pkey',
-      'Actual Rows': 1001,
+      'Actual Rows': 1,
       'Actual Loops': 1,
     })
     expect(() => assertMediaDeliveryReplayPlan(twoEventScans)).toThrow('driving-row budget')

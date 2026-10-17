@@ -58,8 +58,13 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       )
     )
       throw new Error(`${result.name} must be the actor-audit event insert`)
-    if (!statement.includes('record.id = ANY($2::uuid[])'))
-      throw new Error(`${result.name} must constrain actor audit to replayed UUIDs`)
+    if (
+      !statement.includes('FROM unnest($2::uuid[]) selected(record_id)') ||
+      !statement.includes('CROSS JOIN LATERAL (') ||
+      !statement.includes('WHERE id = selected.record_id') ||
+      !statement.includes('LIMIT 1')
+    )
+      throw new Error(`${result.name} must constrain actor audit to each replayed UUID`)
   } else if (statement.startsWith('/* replayFailedMediaDeliveryRegistryRecords */')) {
     if (
       !/^\/\* replayFailedMediaDeliveryRegistryRecords \*\/\s+WITH inserted AS \(\s+INSERT INTO media_delivery_registry_changes\b/.test(
@@ -74,25 +79,25 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
       !result.query_text.includes('LIMIT 1')
     )
       throw new Error(`${result.name} must constrain replay writes to each locked UUID`)
-    const authorityScans = nodes.filter(
-      node => baseRelationName(node) === 'media_delivery_registry_records',
-    )
-    if (
-      authorityScans.length === 0 ||
-      authorityScans.some(
-        node =>
-          node['Node Type'] !== 'Index Scan' ||
-          node['Index Name'] !== RECORD_PRIMARY_KEY ||
-          !Number.isFinite(Number(node['Actual Loops'])) ||
-          Number(node['Actual Loops']) > MEDIA_REPLAY_PAGE_SIZE ||
-          !Number.isFinite(Number(node['Actual Rows'])) ||
-          Number(node['Actual Rows']) > 1,
-      )
-    )
-      throw new Error(
-        `${result.name} must probe only locked authority ids through ${RECORD_PRIMARY_KEY}`,
-      )
   } else throw new Error(`${result.name} has an unknown media replay statement annotation`)
+  const authorityScans = nodes.filter(
+    node => baseRelationName(node) === 'media_delivery_registry_records',
+  )
+  if (
+    authorityScans.length === 0 ||
+    authorityScans.some(
+      node =>
+        node['Node Type'] !== 'Index Scan' ||
+        node['Index Name'] !== RECORD_PRIMARY_KEY ||
+        !Number.isFinite(Number(node['Actual Loops'])) ||
+        Number(node['Actual Loops']) > MEDIA_REPLAY_PAGE_SIZE ||
+        !Number.isFinite(Number(node['Actual Rows'])) ||
+        Number(node['Actual Rows']) > 1,
+    )
+  )
+    throw new Error(
+      `${result.name} must probe only locked authority ids through ${RECORD_PRIMARY_KEY}`,
+    )
   for (const relation of [
     'media_delivery_registry_records',
     'media_delivery_registry_changes',
@@ -102,13 +107,11 @@ export function assertMediaDeliveryReplayPlan(result: ExplainResult): void {
     const scans = nodes.filter(
       node => baseRelationName(node) === relation && node['Node Type'] !== 'ModifyTable',
     )
-    const budget =
-      relation === 'media_delivery_registry_records'
-        ? 2 * MEDIA_REPLAY_PAGE_SIZE
-        : MEDIA_REPLAY_PAGE_SIZE
     if (
-      scans.some(node => node['Node Type'] === 'Seq Scan' && processedRows(node) > budget) ||
-      scans.reduce((sum, node) => sum + processedRows(node), 0) > budget
+      scans.some(
+        node => node['Node Type'] === 'Seq Scan' && processedRows(node) > MEDIA_REPLAY_PAGE_SIZE,
+      ) ||
+      scans.reduce((sum, node) => sum + processedRows(node), 0) > MEDIA_REPLAY_PAGE_SIZE
     )
       throw new Error(`${result.name} exceeded its scoped ${relation} driving-row budget`)
   }
