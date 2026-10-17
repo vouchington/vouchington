@@ -17,6 +17,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/psql": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",
