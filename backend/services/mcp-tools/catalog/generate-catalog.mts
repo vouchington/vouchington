@@ -6,6 +6,7 @@ import { format } from 'oxfmt'
 import { renderCatalogTable, spliceCatalogTable } from './agent-tool-catalog.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
 import { buildMcpResultFixtures } from './mcp-result-cases.mts'
+import { mcpDateTimeFixtures } from '@voucha/test-helpers/mcp-date-time-cases'
 import {
   nativeMcpResultCases,
   type McpResultFixtureCase,
@@ -29,6 +30,7 @@ async function generate(
   const catalog = buildMcpCatalog(tools)
   const artifacts = [
     { path: repoPath('api-fixtures/v1/mcp.json'), raw: toJson(catalog) },
+    { path: repoPath('api-fixtures/v1/mcp-date-time.json'), raw: toJson(mcpDateTimeFixtures) },
     {
       path: repoPath('api-fixtures/v1/mcp-results.json'),
       raw: toJson(buildMcpResultFixtures(catalog, cases)),

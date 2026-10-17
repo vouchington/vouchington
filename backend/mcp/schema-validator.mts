@@ -1,6 +1,8 @@
 import * as AjvModule from 'ajv'
-import type { ValidateFunction } from 'ajv'
+import type { FormatDefinition, ValidateFunction } from 'ajv'
 import * as AddFormatsModule from 'ajv-formats'
+import type { FormatsPlugin } from 'ajv-formats'
+import { hasValidLeapSecondPlacement } from './date-time-leap-placement.mts'
 
 // One Ajv setup for everything the MCP surface validates: tool arguments on the way in and
 // declared output schemas on the way out. Validators are cached per schema object identity.
@@ -8,8 +10,7 @@ const validators = new WeakMap<object, ValidateFunction>()
 const selectedSchemas = new WeakMap<object, Map<object, object>>()
 type AjvConstructor = typeof AjvModule.Ajv
 const AjvCtor = (AjvModule.default ?? AjvModule) as unknown as AjvConstructor
-type AddFormats = (ajv: InstanceType<AjvConstructor>) => InstanceType<AjvConstructor>
-const addFormats = (AddFormatsModule.default ?? AddFormatsModule) as unknown as AddFormats
+const addFormats = (AddFormatsModule.default ?? AddFormatsModule) as unknown as FormatsPlugin
 
 /**
  * The first violation of `schema` by `value`, or null when it conforms. The text names where and
@@ -50,5 +51,17 @@ function findSelectedArgumentViolation(schema: object, value: unknown): string |
 function compileValidator(schema: object): ValidateFunction {
   const ajv = new AjvCtor({ allErrors: false, strict: false })
   addFormats(ajv)
+  const dateTime = addFormats.get('date-time') as FormatDefinition<string>
+  if (
+    typeof dateTime !== 'object' ||
+    !('validate' in dateTime) ||
+    typeof dateTime.validate !== 'function'
+  )
+    throw new Error('MCP date-time validation requires the synchronous Ajv full format')
+  const validateDateTime = dateTime.validate
+  ajv.addFormat('date-time', {
+    ...dateTime,
+    validate: (value: string) => validateDateTime(value) && hasValidLeapSecondPlacement(value),
+  })
   return ajv.compile(schema)
 }
