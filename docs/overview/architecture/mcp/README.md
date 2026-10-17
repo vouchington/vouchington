@@ -148,15 +148,6 @@ the referral link and topic recommendation tools do too; see Relation, Referral 
 
 ---
 
-## Post Actions
-
-Member actions on a post (edit, topic ratings, share, send, read state) are options of `act_on_post`
-because options in a merged tool must share scopes, plan and annotations, and `edit` already
-declared the most conservative hints. Ratings follow REST's author-or-administrator rule, not the
-exact-ownership rule of `edit`.
-
----
-
 ## Server-Only Tools Rationale
 
 Tools with `surfaces: ['internal']` are excluded from external MCP surfaces for one of
