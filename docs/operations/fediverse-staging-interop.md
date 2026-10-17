@@ -2,8 +2,7 @@
 
 Validate Voucha's public ActivityPub discovery, inbound follow lifecycle, Accept delivery, and
 outbound transport against controlled Mastodon, Lemmy, and PeerTube instances on staging only.
-Architecture is in [federation architecture](../overview/architecture/fediverse-federation.md) and
-[fediverse requirements](../requirements/content/FEDIVERSE.md). Staging keeps
+Architecture is in [federation architecture](../overview/architecture/fediverse-federation.md). Staging keeps
 [Basic Auth](cloudflare-worker-staging-auth.md) enabled; only the machine routes under test are exempt.
 
 Needs a staging user, a Voucha admin, deployment and log access, and admin access to each controlled
