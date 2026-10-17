@@ -81,17 +81,16 @@ COMMENT ON COLUMN bluesky_link_authorizations.claimed_did IS 'DID exclusively cl
 COMMENT ON COLUMN bluesky_link_authorizations.expires_at IS 'Authorization deadline. Cleanup uses this timestamp and status, never UUID ordering.';
 
 CREATE TABLE IF NOT EXISTS bluesky_linked_accounts (
-  bluesky_did TEXT PRIMARY KEY,
+  link_authorization_id UUID PRIMARY KEY REFERENCES bluesky_link_authorizations ON DELETE RESTRICT,
+  bluesky_did TEXT NOT NULL UNIQUE,
   CHECK (bluesky_did LIKE 'did:%' AND char_length(bluesky_did) <= 2048),
   user_id UUID REFERENCES users ON DELETE CASCADE,
   handle TEXT,
   CHECK (handle IS NULL OR (char_length(handle) > 0 AND char_length(handle) <= 253)),
-  link_authorization_id UUID NOT NULL REFERENCES bluesky_link_authorizations ON DELETE RESTRICT,
   session_ciphertext TEXT NOT NULL,
   disconnect_requested_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (bluesky_did, link_authorization_id)
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(link_authorization_id)) VIRTUAL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE OR REPLACE TRIGGER trigger_bluesky_linked_accounts_updated_at
@@ -101,9 +100,6 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bluesky_linked_accounts__user_id
 ON bluesky_linked_accounts (user_id) WHERE user_id IS NOT NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_bluesky_linked_accounts__link_authorization_id
-ON bluesky_linked_accounts (link_authorization_id);
 
 CREATE INDEX IF NOT EXISTS idx_bluesky_linked_accounts__pending_disconnect
 ON bluesky_linked_accounts (disconnect_requested_at, link_authorization_id)
@@ -118,16 +114,13 @@ COMMENT ON COLUMN bluesky_linked_accounts.session_ciphertext IS 'AES-256-GCM cip
 COMMENT ON COLUMN bluesky_linked_accounts.disconnect_requested_at IS 'Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked.';
 
 CREATE TABLE IF NOT EXISTS bluesky_link_completions (
-  authorization_id UUID PRIMARY KEY REFERENCES bluesky_link_authorizations ON DELETE CASCADE,
+  account_link_authorization_id UUID PRIMARY KEY REFERENCES bluesky_linked_accounts(link_authorization_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
-  bluesky_did TEXT NOT NULL,
   handle TEXT NOT NULL CHECK (char_length(handle) > 0 AND char_length(handle) <= 253),
   token_hash TEXT NOT NULL CHECK (char_length(token_hash) = 64),
   expires_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (bluesky_did, authorization_id)
-    REFERENCES bluesky_linked_accounts (bluesky_did, link_authorization_id) ON DELETE CASCADE
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE OR REPLACE TRIGGER trigger_bluesky_link_completions_updated_at
@@ -136,18 +129,14 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_bluesky_link_completions__expiry
-ON bluesky_link_completions (expires_at, authorization_id);
+ON bluesky_link_completions (expires_at, account_link_authorization_id);
 
 CREATE INDEX IF NOT EXISTS idx_bluesky_link_completions__user_id
 ON bluesky_link_completions (user_id);
 
-CREATE INDEX IF NOT EXISTS idx_bluesky_link_completions__account
-ON bluesky_link_completions (bluesky_did, authorization_id);
-
 COMMENT ON TABLE bluesky_link_completions IS 'Short-lived one-time native handoffs for an exact handoff_ready authorization. Bearer token plus the app-held proof verifier are required.';
-COMMENT ON COLUMN bluesky_link_completions.authorization_id IS 'Exact native authorization and account generation consumed at most once.';
+COMMENT ON COLUMN bluesky_link_completions.account_link_authorization_id IS 'Exact native authorization and account generation consumed at most once.';
 COMMENT ON COLUMN bluesky_link_completions.user_id IS 'Authenticated initiating Voucha user; portable callback URLs cannot transfer ownership.';
-COMMENT ON COLUMN bluesky_link_completions.bluesky_did IS 'DID claimed by the matching authorization callback.';
 COMMENT ON COLUMN bluesky_link_completions.handle IS 'Display handle captured at authorization begin.';
 COMMENT ON COLUMN bluesky_link_completions.token_hash IS 'Purpose-bound HMAC-SHA256 of the custom-scheme bearer token; plaintext is never persisted.';
 COMMENT ON COLUMN bluesky_link_completions.expires_at IS 'Handoff deadline checked independently from the parent authorization deadline.';

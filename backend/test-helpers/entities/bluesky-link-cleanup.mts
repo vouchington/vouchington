@@ -10,7 +10,7 @@ export async function deleteTestBlueskyLinkFixtures(options: {
     const query = transaction
     await query(sql`/* deleteTestBlueskyLinkFixtures:completions */
         DELETE FROM bluesky_link_completions
-        WHERE authorization_id = ANY(${options.authorizationIds}::uuid[])`)
+        WHERE account_link_authorization_id = ANY(${options.authorizationIds}::uuid[])`)
     await query(sql`/* deleteTestBlueskyLinkFixtures:accounts */
         DELETE FROM bluesky_linked_accounts
         WHERE link_authorization_id = ANY(${options.authorizationIds}::uuid[])`)

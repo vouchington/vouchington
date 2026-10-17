@@ -96,12 +96,12 @@ export async function setTestBlueskyLinkCompletionExpiresAt(
   await write(sql`/* setTestBlueskyLinkCompletionExpiresAt */
     UPDATE bluesky_link_completions
     SET expires_at = ${expiresAt}
-    WHERE authorization_id = ${flowId}`)
+    WHERE account_link_authorization_id = ${flowId}`)
 }
 
 export async function testBlueskyLinkCompletionExists(flowId: string): Promise<boolean> {
   const { rows } = await read(sql`/* testBlueskyLinkCompletionExists */
-    SELECT 1 FROM bluesky_link_completions WHERE authorization_id = ${flowId}`)
+    SELECT 1 FROM bluesky_link_completions WHERE account_link_authorization_id = ${flowId}`)
   return rows.length > 0
 }
 
@@ -109,7 +109,7 @@ export async function getTestBlueskyLinkCompletionTokenHash(
   flowId: string,
 ): Promise<string | null> {
   const { rows } = await read(sql`/* getTestBlueskyLinkCompletionTokenHash */
-    SELECT token_hash FROM bluesky_link_completions WHERE authorization_id = ${flowId}`)
+    SELECT token_hash FROM bluesky_link_completions WHERE account_link_authorization_id = ${flowId}`)
   return (rows[0]?.token_hash as string | undefined) ?? null
 }
 
@@ -142,11 +142,10 @@ export async function insertTestBlueskyLinkCompletion(options: {
   }
   await write(sql`/* insertTestBlueskyLinkCompletion */
     INSERT INTO bluesky_link_completions (
-      authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
+      account_link_authorization_id, user_id, handle, token_hash, expires_at
     ) VALUES (
       ${options.flowId},
       ${options.userId},
-      ${options.did},
       ${options.handle ?? `${v7()}.bsky.social`},
       ${tokenHash},
       ${options.expiresAt ?? new Date(Date.now() + 10 * 60 * 1000)}

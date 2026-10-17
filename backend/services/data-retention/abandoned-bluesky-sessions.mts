@@ -51,10 +51,10 @@ async function deleteExpiredNonHandoffCompletions(
   const statement = sql`/* deleteExpiredNonHandoffCompletions */
     DELETE FROM bluesky_link_completions completion
     USING (
-      SELECT completion.authorization_id
+      SELECT completion.account_link_authorization_id
       FROM bluesky_link_completions completion
       JOIN bluesky_link_authorizations link_auth
-        ON link_auth.id = completion.authorization_id
+        ON link_auth.id = completion.account_link_authorization_id
       WHERE completion.expires_at < ${cutoffDate}
   `
   if (lowerBoundDate !== undefined) {
@@ -62,11 +62,11 @@ async function deleteExpiredNonHandoffCompletions(
   }
   statement.append(sql`
         AND link_auth.status <> 'handoff_ready'
-      ORDER BY completion.expires_at, completion.authorization_id
+      ORDER BY completion.expires_at, completion.account_link_authorization_id
       LIMIT ${batchSize}
       FOR UPDATE OF completion SKIP LOCKED
     ) target
-    WHERE completion.authorization_id = target.authorization_id`)
+    WHERE completion.account_link_authorization_id = target.account_link_authorization_id`)
   const { rowCount } = await query(statement)
   const result = rowCount ?? 0
 

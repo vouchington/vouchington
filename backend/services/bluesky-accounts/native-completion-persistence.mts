@@ -45,7 +45,7 @@ async function readNativePersistenceState(
                AND account.user_id IS NULL
            ) AS account_present
     FROM bluesky_link_authorizations link_auth
-    LEFT JOIN bluesky_link_completions completion ON completion.authorization_id = link_auth.id
+    LEFT JOIN bluesky_link_completions completion ON completion.account_link_authorization_id = link_auth.id
     WHERE link_auth.id = ${input.flowId}
       AND link_auth.user_id = ${input.userId}
       AND link_auth.claimed_did = ${input.did}
@@ -94,12 +94,12 @@ export async function persistNativeBlueskyLinkCompletion(
     } else {
       const { rowCount } = await write(
         sql`/* createNativeBlueskyLinkCompletion */
-        -- One authorization_id is supplied per native completion; the SELECT can yield at most one row.
+        -- One account_link_authorization_id is supplied per native completion; the SELECT can yield at most one row.
         /* no-mistakes: deadlock-safe */
         INSERT INTO bluesky_link_completions (
-          authorization_id, user_id, bluesky_did, handle, token_hash, expires_at
+          account_link_authorization_id, user_id, handle, token_hash, expires_at
         )
-        SELECT ${input.flowId}, ${input.userId}, ${input.did}, ${input.handle}, ${input.tokenHash}, ${expiresAt}
+        SELECT ${input.flowId}, ${input.userId}, ${input.handle}, ${input.tokenHash}, ${expiresAt}
         FROM bluesky_link_authorizations link_auth
         WHERE link_auth.id = ${input.flowId}
           AND link_auth.user_id = ${input.userId}
@@ -113,10 +113,9 @@ export async function persistNativeBlueskyLinkCompletion(
               AND account.link_authorization_id = link_auth.id
               AND account.user_id IS NULL
           )
-        ON CONFLICT (authorization_id) DO UPDATE
+        ON CONFLICT (account_link_authorization_id) DO UPDATE
         SET token_hash = EXCLUDED.token_hash
         WHERE bluesky_link_completions.user_id = EXCLUDED.user_id
-          AND bluesky_link_completions.bluesky_did = EXCLUDED.bluesky_did
           AND bluesky_link_completions.token_hash = EXCLUDED.token_hash`,
         { query },
       )
@@ -147,8 +146,8 @@ async function rejectNativeAuthorization(
   await query(sql`/* rejectNativeAuthorization */
     WITH deleted_completion AS (
       DELETE FROM bluesky_link_completions
-      WHERE authorization_id = ${input.flowId}
-      RETURNING authorization_id
+      WHERE account_link_authorization_id = ${input.flowId}
+      RETURNING account_link_authorization_id
     ), deleted_account AS (
       DELETE FROM bluesky_linked_accounts
       WHERE bluesky_did = ${input.did}

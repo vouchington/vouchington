@@ -11,7 +11,7 @@ export interface BlueskyFollowReceipt {
   follower_user_id: string
   followee_user_id: string
   follower_bluesky_did: string
-  follower_authorization_id: string
+  follower_account_link_authorization_id: string
   record_uri: string
   created_at: Date
 }
@@ -25,13 +25,16 @@ export async function getBlueskyFollowReceipt(
 ): Promise<BlueskyFollowReceipt | null> {
   const { rows } = await read(
     sql`/* getBlueskyFollowReceipt */
-      SELECT follower_user_id, followee_user_id, follower_bluesky_did,
-             follower_authorization_id, record_uri, created_at
-      FROM bluesky_follow_records
-      WHERE follower_user_id = ${followerUserId}
-        AND followee_user_id = ${followeeUserId}
-        AND follower_bluesky_did = ${followerBlueskyDid}
-        AND follower_authorization_id = ${followerAuthorizationId}`,
+      SELECT receipt.follower_user_id, receipt.followee_user_id,
+             account.bluesky_did AS follower_bluesky_did,
+             receipt.follower_account_link_authorization_id, receipt.record_uri, receipt.created_at
+      FROM bluesky_follow_records receipt
+      JOIN bluesky_linked_accounts account
+        ON account.link_authorization_id = receipt.follower_account_link_authorization_id
+      WHERE receipt.follower_user_id = ${followerUserId}
+        AND receipt.followee_user_id = ${followeeUserId}
+        AND account.bluesky_did = ${followerBlueskyDid}
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
     options,
   )
   return (rows[0] as BlueskyFollowReceipt | undefined) ?? null
@@ -47,20 +50,20 @@ export async function saveBlueskyFollowReceipt(
 ): Promise<void> {
   await withTransactionOptions(options, async query => {
     await lockActiveUserSubjectsForMutation(query, [followerUserId, followeeUserId])
-    await query(sql`/* saveBlueskyFollowReceipt */
+    const { rowCount } = await query(sql`/* saveBlueskyFollowReceipt */
       INSERT INTO bluesky_follow_records (
-        follower_user_id, followee_user_id, follower_bluesky_did,
-        follower_authorization_id, record_uri
+        follower_user_id, followee_user_id, follower_account_link_authorization_id, record_uri
       )
-      VALUES (
-        ${followerUserId}, ${followeeUserId}, ${followerBlueskyDid},
-        ${followerAuthorizationId}, ${recordUri}
-      )
+      SELECT ${followerUserId}, ${followeeUserId}, account.link_authorization_id, ${recordUri}
+      FROM bluesky_linked_accounts account
+      WHERE account.link_authorization_id = ${followerAuthorizationId}
+        AND account.bluesky_did = ${followerBlueskyDid}
+        AND account.user_id = ${followerUserId}
       ON CONFLICT (follower_user_id, followee_user_id)
         DO UPDATE SET
-          follower_bluesky_did = EXCLUDED.follower_bluesky_did,
-          follower_authorization_id = EXCLUDED.follower_authorization_id,
+          follower_account_link_authorization_id = EXCLUDED.follower_account_link_authorization_id,
           record_uri = EXCLUDED.record_uri`)
+    if (rowCount !== 1) throw new Error('Exact Bluesky account generation is missing')
   })
 }
 
@@ -73,11 +76,13 @@ export async function deleteBlueskyFollowReceipt(
 ): Promise<void> {
   await write(
     sql`/* deleteBlueskyFollowReceipt */
-      DELETE FROM bluesky_follow_records
-      WHERE follower_user_id = ${followerUserId}
-        AND followee_user_id = ${followeeUserId}
-        AND follower_bluesky_did = ${followerBlueskyDid}
-        AND follower_authorization_id = ${followerAuthorizationId}`,
+      DELETE FROM bluesky_follow_records receipt
+      USING bluesky_linked_accounts account
+      WHERE receipt.follower_user_id = ${followerUserId}
+        AND receipt.followee_user_id = ${followeeUserId}
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}
+        AND account.link_authorization_id = receipt.follower_account_link_authorization_id
+        AND account.bluesky_did = ${followerBlueskyDid}`,
     options,
   )
 }
@@ -95,12 +100,15 @@ export async function listBlueskyFollowReceiptsForFollower(
 ): Promise<BlueskyFollowReceipt[]> {
   const { rows } = await read(
     sql`/* listBlueskyFollowReceiptsForFollower */
-      SELECT follower_user_id, followee_user_id, follower_bluesky_did,
-             follower_authorization_id, record_uri, created_at
-      FROM bluesky_follow_records
-      WHERE follower_user_id = ${followerUserId}
-        AND follower_bluesky_did = ${followerBlueskyDid}
-        AND follower_authorization_id = ${followerAuthorizationId}`,
+      SELECT receipt.follower_user_id, receipt.followee_user_id,
+             account.bluesky_did AS follower_bluesky_did,
+             receipt.follower_account_link_authorization_id, receipt.record_uri, receipt.created_at
+      FROM bluesky_follow_records receipt
+      JOIN bluesky_linked_accounts account
+        ON account.link_authorization_id = receipt.follower_account_link_authorization_id
+      WHERE receipt.follower_user_id = ${followerUserId}
+        AND account.bluesky_did = ${followerBlueskyDid}
+        AND receipt.follower_account_link_authorization_id = ${followerAuthorizationId}`,
     options,
   )
   return rows as BlueskyFollowReceipt[]

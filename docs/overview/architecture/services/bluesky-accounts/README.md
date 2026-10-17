@@ -7,6 +7,12 @@ Owns the `bluesky_linked_accounts` table and the account-linking business logic 
 only the `@atproto/oauth-client-node` SDK boundary; this package owns storage (Postgres + Valkey)
 and orchestration.
 
+Each linked account is keyed by its UUIDv7 `link_authorization_id`, which references the exact
+authorization generation. The Bluesky DID remains unique external identity and the AES-GCM
+session purpose remains `bluesky:session:<bluesky_did>`. Native completions and follow receipts
+reference the account generation by UUID; reads join the account to obtain its DID for provider
+calls and public responses. Removing an account cascades its completion and receipts.
+
 Interactive begin and web/native callback completion run in the API process. The provider-scoped
 egress flag selects the guarded direct transport or HTTP CONNECT proxy for SDK requests.
 Callback completion is mode-specific and resumes from the durable `callback_claimed` state, so a

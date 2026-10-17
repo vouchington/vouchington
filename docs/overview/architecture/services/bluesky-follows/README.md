@@ -43,6 +43,9 @@ Receipt persistence takes both users' active-user mutation fences in determinist
 provider response that arrives after either account crosses the deletion privacy fence therefore
 cannot restore a local receipt after the deletion worker's bounded credential batch has passed. A
 database trigger enforces the same fence for old application processes during rolling deployment.
+Each receipt references the exact linked-account generation through
+`follower_account_link_authorization_id`. Its follower DID is read from that account for Bluesky operations;
+deleting the account cascades its receipts.
 
 ## What lives here
 

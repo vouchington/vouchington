@@ -6,22 +6,22 @@ Encrypted Bluesky OAuth sessions. Each row belongs to one exact durable link aut
 
 Not partitioned — growth: unbounded.
 
-| Column                    | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                                   |
-| ------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bluesky_did`             | `text`                     | no       |                     |          |           |           | Permanent AT Protocol account DID; handles are mutable display data.                                                                                      |
-| `user_id`                 | `uuid`                     | yes      |                     |          |           |           | Attached Voucha user. NULL only while the referenced authorization is callback_claimed or handoff_ready.                                                  |
-| `handle`                  | `text`                     | yes      |                     |          |           |           | Cached display handle, populated on attachment.                                                                                                           |
-| `link_authorization_id`   | `uuid`                     | no       |                     |          |           |           | Exact authorization generation owning this credential. Lifecycle state lives in bluesky_link_authorizations.                                              |
-| `session_ciphertext`      | `text`                     | no       |                     |          |           |           | AES-256-GCM ciphertext of the SDK session using purpose bluesky:session:<bluesky_did>. Every mutation validates exact authorization status and owner.     |
-| `disconnect_requested_at` | `timestamp with time zone` | yes      |                     |          |           |           | Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked. |
-| `created_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                           |
-| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                                           |
+| Column                    | Type                       | Nullable | Default                                         | Identity | Generated | Collation | Comment                                                                                                                                                   |
+| ------------------------- | -------------------------- | -------- | ----------------------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `link_authorization_id`   | `uuid`                     | no       |                                                 |          |           |           | Exact authorization generation owning this credential. Lifecycle state lives in bluesky_link_authorizations.                                              |
+| `bluesky_did`             | `text`                     | no       |                                                 |          |           |           | Permanent AT Protocol account DID; handles are mutable display data.                                                                                      |
+| `user_id`                 | `uuid`                     | yes      |                                                 |          |           |           | Attached Voucha user. NULL only while the referenced authorization is callback_claimed or handoff_ready.                                                  |
+| `handle`                  | `text`                     | yes      |                                                 |          |           |           | Cached display handle, populated on attachment.                                                                                                           |
+| `session_ciphertext`      | `text`                     | no       |                                                 |          |           |           | AES-256-GCM ciphertext of the SDK session using purpose bluesky:session:<bluesky_did>. Every mutation validates exact authorization status and owner.     |
+| `disconnect_requested_at` | `timestamp with time zone` | yes      |                                                 |          |           |           | Durable unlink intent. Requested rows are hidden immediately and replayed by bluesky-follow-propagation until the exact credential generation is revoked. |
+| `created_at`              | `timestamp with time zone` | yes      | `uuid_extract_timestamp(link_authorization_id)` |          | virtual   |           |                                                                                                                                                           |
+| `updated_at`              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                             |          |           |           |                                                                                                                                                           |
 
-**Primary key:** `PRIMARY KEY (bluesky_did)`
+**Primary key:** `PRIMARY KEY (link_authorization_id)`
 
 **Unique constraints:**
 
-- `bluesky_linked_accounts_bluesky_did_link_authorization_id_key`: `UNIQUE (bluesky_did, link_authorization_id)`
+- `bluesky_linked_accounts_bluesky_did_key`: `UNIQUE (bluesky_did)`
 
 **Check constraints:**
 
@@ -35,9 +35,8 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
-- `bluesky_linked_accounts_bluesky_did_link_authorization_id_key`: `CREATE UNIQUE INDEX bluesky_linked_accounts_bluesky_did_link_authorization_id_key ON public.bluesky_linked_accounts USING btree (bluesky_did, link_authorization_id)`
-- `bluesky_linked_accounts_pkey`: `CREATE UNIQUE INDEX bluesky_linked_accounts_pkey ON public.bluesky_linked_accounts USING btree (bluesky_did)`
-- `idx_bluesky_linked_accounts__link_authorization_id`: `CREATE UNIQUE INDEX idx_bluesky_linked_accounts__link_authorization_id ON public.bluesky_linked_accounts USING btree (link_authorization_id)`
+- `bluesky_linked_accounts_bluesky_did_key`: `CREATE UNIQUE INDEX bluesky_linked_accounts_bluesky_did_key ON public.bluesky_linked_accounts USING btree (bluesky_did)`
+- `bluesky_linked_accounts_pkey`: `CREATE UNIQUE INDEX bluesky_linked_accounts_pkey ON public.bluesky_linked_accounts USING btree (link_authorization_id)`
 - `idx_bluesky_linked_accounts__pending_disconnect`: `CREATE INDEX idx_bluesky_linked_accounts__pending_disconnect ON public.bluesky_linked_accounts USING btree (disconnect_requested_at, link_authorization_id) WHERE (disconnect_requested_at IS NOT NULL)`
 - `idx_bluesky_linked_accounts__user_id`: `CREATE UNIQUE INDEX idx_bluesky_linked_accounts__user_id ON public.bluesky_linked_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 

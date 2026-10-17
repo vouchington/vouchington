@@ -144,7 +144,7 @@ describe('getBlueskyLinkedAccountForUser', () => {
     expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
   })
 
-  // bluesky_did is the row's primary key and the AT Protocol's permanent identifier; handle is
+  // bluesky_did uniquely identifies the AT Protocol account; handle is
   // mutable cached display data (see the bluesky_linked_accounts migration's column comment).
   // Resolution must stay keyed on the DID even after Bluesky's own handle for the account changes.
   it('still resolves the same bluesky_did after the linked handle changes', async () => {
