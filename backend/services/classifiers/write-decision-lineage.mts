@@ -36,10 +36,10 @@ export async function insertClassifierDecisionBatch(
     'batchId' | 'classifierId' | 'promptVersionId' | 'scope' | 'subject'
   >,
 ): Promise<boolean> {
-  // ON CONFLICT (id) does not absorb a concurrent duplicate PostgreSQL reports against a
-  // composite unique index that exists only so a foreign key can reference this batch.
+  // ON CONFLICT (id) misses a concurrent duplicate on a composite unique index. Hash
+  // canonical uuid text so mixed-case spellings of one batch take that same lock.
   await query(sql`/* insertClassifierDecisionBatch:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended('classifier-decision-batch:' || ${input.batchId}::text, 0))
+    SELECT pg_advisory_xact_lock(hashtextextended('classifier-decision-batch:' || ${input.batchId}::uuid::text, 0))
   `)
   const { rowCount } = await query(sql`
     /* insertClassifierDecisionBatch */
