@@ -23,8 +23,11 @@ treated as review policy until their replacement issue lands.
 The required `static` workflow is the always-on pre-merge static-analysis matrix. Workspace typecheck and dependency-cruiser for backend, web, lambdas, and the Cloudflare Worker run in `checks-static.yml`.
 
 The root `pnpm run no-mistakes` script is the canonical local full-check entrypoint. Its command
-execution deadline remains 60 seconds and no-mistakes' separate default lock-wait timeout remains
-30 seconds. CI has exactly one production CLI invocation, the static-analysis full check, which
+execution deadline is 180 seconds, and its separate lock-wait timeout is 55 seconds. The full
+check outgrew 60 seconds as PostgreSQL annotation analysis expanded. With no-mistakes 0.91, it
+took 48 seconds on an idle 24-core Linux host, and about 94 seconds (excluding lock wait) on a Mac
+while another analyzer was running ([#2922](https://github.com/vouchington/vouchington/issues/2922)).
+CI has exactly one production CLI invocation, the static-analysis full check, which
 disables both no-mistakes' execution deadline and its machine-wide lock-wait deadline.
 The full-check step has a four-minute deadline: a three-minute deadline killed the scan in
 [PR #2709's Static run](https://github.com/vouchington/vouchington/actions/runs/38209235486/job/114679473629),
