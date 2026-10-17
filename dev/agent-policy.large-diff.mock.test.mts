@@ -78,6 +78,22 @@ describe('validatePullRequest large-diff gate', () => {
     expect(empty.errors.join('\n')).toContain('### Large diff')
   })
 
+  it.each([
+    ['a fenced example', acknowledged('```\nhidden\n```')],
+    ['an HTML comment', acknowledged('<!-- hidden -->')],
+    [
+      'a heading inside a fence',
+      VALID_PR_BODY.replace(
+        'Workspace setup:',
+        '```\n### Large diff\nhidden\n```\n\nWorkspace setup:',
+      ),
+    ],
+  ])('refuses an acknowledgement hidden in %s', async (_name, body) => {
+    diff(3)
+    const result = await validatePullRequest({ ...base, body }, { thresholds })
+    expect(result.errors.join('\n')).toContain('### Large diff')
+  })
+
   it('does not gate updates', async () => {
     diff(3)
     gh.runGh.mockImplementation(async args => {

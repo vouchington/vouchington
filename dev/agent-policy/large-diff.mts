@@ -13,6 +13,7 @@ import {
 } from '../pr-description/diff-summary.mts'
 import { createLocalPackageJsonReader } from '../pr-description/package-json-source.mts'
 import { currentRepo } from '../pr-description/related-issues.mts'
+import { sanitizedLines } from '../pr-description/sanitized-lines.mts'
 import { runAdvisorySupersessionSearch } from '../pr-description/supersession.mts'
 
 export type LargeDiffOptions = {
@@ -33,9 +34,14 @@ async function localSupersessionHints(summary: DiffSummary): Promise<string> {
 const ACKNOWLEDGEMENT_HEADING = /^###[ \t]+Large diff[ \t]*$/i
 const SECTION_END = /^(?:#{1,6}[ \t]|Workspace setup:)/
 
-/** True when a `### Large diff` details section carries at least one line of explanation. */
+const COMMENT_LINE = /^<!--.*-->$/
+
+/**
+ * True when a visible `### Large diff` details section carries at least one visible line of
+ * explanation: fenced code, HTML blocks, and comments neither open the section nor explain it.
+ */
 export function hasLargeDiffAcknowledgement(body: string): boolean {
-  const lines = body.split('\n')
+  const lines = sanitizedLines(body).map(line => (COMMENT_LINE.test(line.trim()) ? '' : line))
   const start = lines.findIndex(line => ACKNOWLEDGEMENT_HEADING.test(line.trimEnd()))
   if (start === -1) return false
   for (const line of lines.slice(start + 1)) {

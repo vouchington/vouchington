@@ -162,8 +162,8 @@ export function createSupersessionAuditor(
 }
 
 /**
- * Advisory-only counterpart for `create`/`update`: same vocabulary and search as the blocking
- * `validate <pr>` auditor, but never throws — a search failure must not block drafting a PR body.
+ * Advisory counterpart for `pr_create`: same vocabulary and search as the blocking update-time
+ * auditor. It throws on a failed search; the caller turns that into a warning so it never blocks.
  */
 export async function runAdvisorySupersessionSearch(
   runGh: RunGh,
@@ -171,11 +171,7 @@ export async function runAdvisorySupersessionSearch(
   summary: DiffSummary,
   readPackageJson: PackageJsonReader,
 ): Promise<string> {
-  try {
-    const terms = await buildRemovalTerms(summary, readPackageJson)
-    if (terms.length === 0) return ''
-    return formatHints(await findSupersessionHits(runGh, repo, terms))
-  } catch {
-    return ''
-  }
+  const terms = await buildRemovalTerms(summary, readPackageJson)
+  if (terms.length === 0) return ''
+  return formatHints(await findSupersessionHits(runGh, repo, terms))
 }
