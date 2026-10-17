@@ -32,12 +32,10 @@ export async function completeBlueskyAccountLink(
   params: URLSearchParams,
   currentUserId: string,
   flowId: string,
-  authorization?: BlueskyLinkAuthorization,
 ): Promise<{ did: string; handle: string }> {
   return completeWebBlueskyAccountLinkDurably({
     params: params.toString(),
     flowId,
     currentUserId,
-    authorization,
   })
 }

@@ -13,12 +13,9 @@ export async function completeWebBlueskyAccountLinkDurably(input: {
   params: string
   flowId: string
   currentUserId: string
-  authorization?: BlueskyLinkAuthorization
 }): Promise<{ did: string; handle: string }> {
-  let authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(
-    input.flowId,
-    input.authorization,
-  )
+  // Web callbacks authenticate the user after peeking app state, so never reuse that earlier read.
+  let authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(input.flowId)
   if (authorization.callback_mode !== 'web') {
     await rejectBlueskyCallbackGeneration(authorization)
     throw createHttpError(400, 'Invalid Bluesky OAuth state')

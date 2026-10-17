@@ -125,12 +125,7 @@ app.route('/api/v1/auth/bluesky/callback').get(async (ctx: Context) => {
     if (appState?.callbackMode !== 'web' || !appState.flowId) {
       throw createHttpError(400, 'Unable to identify Bluesky OAuth callback flow')
     }
-    await completeBlueskyAccountLink(
-      params,
-      currentUser.id,
-      appState.flowId,
-      appState.authorization,
-    )
+    await completeBlueskyAccountLink(params, currentUser.id, appState.flowId)
     redirectToLinkUi(ctx, { bluesky: 'linked' })
   } catch (err) {
     let callbackError = err
