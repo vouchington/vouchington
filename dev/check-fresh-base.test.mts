@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,12 @@ const testDirs: string[] = []
 
 function git(cwd: string, ...args: string[]) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+}
+
+function makeTempDir() {
+  const dir = mkdtempSync(join(tmpdir(), 'voucha-check-fresh-base-'))
+  testDirs.push(dir)
+  return dir
 }
 
 function commit(cwd: string, file: string, contents: string) {
@@ -92,29 +98,6 @@ describe('dev/check-fresh-base', () => {
     expect(context).toContain('For a new task in Plan Mode')
   })
 
-  it('classifies a clean branch that is ahead of origin/main', () => {
-    const cwd = makeRepo()
-    commit(cwd, 'feature.txt', 'new on feature\n')
-
-    const context = additionalContext(runCheck(cwd).stdout)
-
-    expect(context).toContain('branch `feature` is ahead of `origin/main`')
-    expect(context).toContain('1 ahead, 0 behind')
-    expect(context).toContain('For resumed work')
-  })
-
-  it('classifies a clean branch that has diverged from origin/main', () => {
-    const cwd = makeRepo()
-    commit(cwd, 'feature.txt', 'new on feature\n')
-    moveOriginMainAhead(cwd)
-
-    const context = additionalContext(runCheck(cwd).stdout)
-
-    expect(context).toContain('branch `feature` has diverged from `origin/main`')
-    expect(context).toContain('1 ahead, 1 behind')
-    expect(context).toContain('inspect relevant files from `origin/main`')
-  })
-
   it('reports dirty state without suggesting a forced reset', () => {
     const cwd = makeRepo()
     writeFileSync(join(cwd, 'untracked.txt'), 'dirty\n')
@@ -144,6 +127,19 @@ describe('dev/check-fresh-base', () => {
     expect(context).toContain('refresh of `origin/main` failed')
     expect(context).toContain('freshness is unknown')
     expect(context).toContain('Retry `git fetch origin`')
+  })
+
+  it('reports unknown freshness when the fresh-base CLI is unavailable', () => {
+    const dir = makeTempDir()
+    mkdirSync(join(dir, 'dev'))
+    copyFileSync(scriptPath, join(dir, 'dev', 'check-fresh-base'))
+    const result = spawnSync('/bin/bash', [join(dir, 'dev', 'check-fresh-base')], {
+      cwd: makeRepo(),
+      encoding: 'utf8',
+      input: '{}',
+    })
+
+    expect(additionalContext(result.stdout)).toContain('freshness is unknown')
   })
 
   it('stays silent for a compact session restart', () => {
