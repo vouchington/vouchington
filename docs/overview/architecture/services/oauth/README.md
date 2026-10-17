@@ -154,6 +154,7 @@ stateDiagram-v2
   state "provider_code_expired" as CodeExpired
   state "provider_exchange_outcome_unknown" as OutcomeUnknown
   state "provider_exchange_failed" as ExchangeFailed
+  state "missing" as Missing
 
   [*] --> Claimed: PostgreSQL claim
   Claimed --> Owned: persist exchangeClaimId
@@ -163,7 +164,9 @@ stateDiagram-v2
   Owned --> Released: unarmed failure releases the claim
   Owned --> ExchangeFailed: known unarmed exhaustion
 
-  Armed --> Settle: provider failure keeps the claim
+  Armed --> Settle: deadline, revalidation or provider failure keeps the claim
+  Owned --> Settle: unarmed continuation carrying the claim
+  Settle --> Missing: retention deleted the authorization
   Settle --> Expired: authorization expiry first
   Settle --> CodeExpired: X code expiry next
   Settle --> OutcomeUnknown: armed or indeterminate claim
@@ -176,6 +179,7 @@ stateDiagram-v2
   CodeExpired --> Terminal
   OutcomeUnknown --> Terminal
   ExchangeFailed --> Terminal
+  Missing --> [*]: clear ownership without provider replay
 ```
 
 Exchange jobs persist the authorization ID and claim ID before decrypting. Immediately before
@@ -201,7 +205,12 @@ Authorization expiry precedes all unconsumed dispositions, including `completion
 callback/completion ciphertext without altering an already consumed `completed` result. X code expiry
 comes next. A retained armed marker or an otherwise indeterminate stale claim is then rejected as
 `provider_exchange_outcome_unknown`, even at the attempt limit. Only a known unarmed exhausted
-claim is rejected as `provider_exchange_failed`.
+claim is rejected as `provider_exchange_failed`. Arming precedes the abort-deadline and claim
+revalidation checks, so a failure there is also retained and settles as
+`provider_exchange_outcome_unknown` even though no provider request was made. A continuation
+without the armed marker still enters settlement and may end `released` or exhausted. If retention
+deleted the authorization while a job still carried its claim, settlement returns `missing`; the
+job clears its ownership and exits without replaying the provider.
 
 The dispatcher checks the bounded locked page against actual retained queue jobs before stale
 terminalization. Only an exact authorization/job/claim identity with no armed marker in a live or
