@@ -169,8 +169,12 @@ Each replay sets `track_functions = all` inside its rollback-only transaction an
 the readings immediately before and after the explained statement, so preparation work is excluded.
 Inlined SQL functions do not appear in PostgreSQL's function statistics. The harness role must be
 allowed to set `track_functions`; the CI PostgreSQL service connects as its superuser.
-Function-call caps reject plans that launched parallel workers; frequent-call reports mark those
-results incomplete because transaction-local counters omit calls made in worker backends.
+For scenarios with `maxFunctionCalls` caps, each plan capture is followed by a separate replay with
+`SET LOCAL max_parallel_workers_per_gather = 0`. The serial replay supplies `function_calls` for the
+cap, while the original plan and its shape gates retain the scenario's planner settings. Such
+results carry `function_calls_serial: true`, including when the original plan launched workers.
+Uncapped captures retain their original counts; frequent-call reports mark them incomplete if the
+plan launched workers because transaction-local counters omit worker-backend calls.
 
 ```bash
 pnpm run explain:run
@@ -293,7 +297,11 @@ Reads the latest result file and prints:
 Scenario contracts can use `maxFunctionCalls` with a function name and maximum count. The gate
 checks every captured query in both plan-cache modes; a cap that no query in its scenario exercises
 also fails, so a removed function cannot leave a stale budget. `explain:dump` prints the complete
-function-call list, including an empty list when no user function ran.
+function-call list, including an empty list when no user function ran. Measure hydration scenarios
+with `EXPLAIN_PLAN_CACHE_MODE=compare`, then set each function's cap to
+`ceil(2 × max(custom-plan calls, generic-plan calls))` across its captured queries. This allows
+small plan changes while exposing per-row or per-image call growth. The serial replay makes those
+counts complete without changing the plan-shape capture.
 
 The sequential-scan baseline keys each captured query and plan-cache mode to its scanned large
 relations. Monthly and default partition children use their parent relation name, so partition

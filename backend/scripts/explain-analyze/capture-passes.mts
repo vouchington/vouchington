@@ -7,6 +7,8 @@ import {
   type ExplainResult,
 } from '@data-stores/psql'
 import { assertRequiredPlanShape } from './plan-gates.mts'
+import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
+import { getScenarioContract } from './plan-expectations.mts'
 import { getLargeTableRelations } from './plan-warnings.mts'
 
 type Capture = {
@@ -55,6 +57,22 @@ async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> 
     localSettings: input.localSettings,
     planCacheMode: input.planCacheMode,
   })
+  if (
+    getScenarioContract(input.scenarioId).expectations.some(
+      expectation => expectation.kind === 'maxFunctionCalls',
+    )
+  ) {
+    // Keep the plan capture and its shape gates on the caller's settings. PostgreSQL's
+    // transaction-local function counters omit calls in parallel worker backends.
+    const serial = await explainAnalyze(input.name, input.text, input.values, {
+      localSettings: { ...input.localSettings, max_parallel_workers_per_gather: '0' },
+      planCacheMode: input.planCacheMode,
+    })
+    if (hasLaunchedParallelWorkers(serial.plan))
+      throw new Error(`${input.name} launched parallel workers during serial function-call capture`)
+    result.function_calls = serial.function_calls
+    result.function_calls_serial = true
+  }
   result.scenario_id = input.scenarioId
   result.capture_index = input.captureIndex
   return result

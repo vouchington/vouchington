@@ -8,7 +8,7 @@ export function assertFunctionCallCap(
   result: ExplainResult,
   expectation: FunctionCallExpectation,
 ): void {
-  if (hasLaunchedParallelWorkers(result.plan))
+  if (!result.function_calls_serial && hasLaunchedParallelWorkers(result.plan))
     throw new Error(
       `${result.name} launched parallel workers; transaction-local function counts omit worker calls`,
     )

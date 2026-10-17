@@ -223,6 +223,10 @@ describe('plan expectation registry', () => {
     ]
     expect(() => assertRequiredPlanShape(captured)).toThrow('parallel workers')
 
+    captured.function_calls_serial = true
+    expect(() => assertRequiredPlanShape(captured)).not.toThrow()
+    captured.function_calls_serial = false
+
     captured.plan = result('post-search-new', {
       'Node Type': 'Gather',
       'Workers Launched': 0,

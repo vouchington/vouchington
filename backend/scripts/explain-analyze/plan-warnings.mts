@@ -39,7 +39,8 @@ export function functionCallReports(
   results: readonly ExplainResult[],
 ): Array<{ result: ExplainResult; busiest: FunctionCall | null }> {
   return results.flatMap<{ result: ExplainResult; busiest: FunctionCall | null }>(result => {
-    if (hasLaunchedParallelWorkers(result.plan)) return [{ result, busiest: null }]
+    if (!result.function_calls_serial && hasLaunchedParallelWorkers(result.plan))
+      return [{ result, busiest: null }]
     const busiest = busiestFunctionCall(result)
     return busiest && busiest.calls >= 50 ? [{ result, busiest }] : []
   })

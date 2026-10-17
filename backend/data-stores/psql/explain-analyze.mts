@@ -28,6 +28,7 @@ export interface ExplainResult {
   scenario_id?: string
   capture_index?: number
   function_calls?: FunctionCall[]
+  function_calls_serial?: boolean
 }
 
 export interface FunctionCall {
