@@ -84,11 +84,13 @@ describe('isBasicAuthExemptRequest', () => {
     expect(isBasicAuthExemptRequest('POST', '/manifest.webmanifest')).toBe(false)
   })
 
-  it('keeps exempt paths lowercase', () => {
+  it('keeps exempt paths lowercase and without a trailing slash', () => {
     const { BASIC_AUTH_EXEMPT_METHODS_BY_PATH } = basicAuthTestExports
 
+    // Lookups strip one trailing slash, so a key ending in '/' would never match.
     for (const path of BASIC_AUTH_EXEMPT_METHODS_BY_PATH.keys()) {
       expect(path).toBe(path.toLowerCase())
+      expect(path.length > 1 && path.endsWith('/')).toBe(false)
     }
   })
 })
