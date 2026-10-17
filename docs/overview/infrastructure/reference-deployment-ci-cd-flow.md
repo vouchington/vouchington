@@ -20,19 +20,9 @@ on pull requests, then publish the tested immutable images with provenance from 
 groups. Main reuses each image whose attestation verifies; only a missing manifest permits a missing-only
 build fallback.
 
-The completed source-run receiver emits exactly one route-specific event for each successful
+The completed source-run receiver emits one route-specific event for each successful
 default-branch source workflow. Backend and web validation-only runs are exceptions:
 `backend-deploy-intent` or `web-deploy-intent` is skipped and no deployment event is sent.
-
-| Source workflow          | Event type                                |
-| ------------------------ | ----------------------------------------- |
-| `main-backend`           | `vouchington-deploy-backend-v2`           |
-| `main-web`               | `vouchington-deploy-web-v2`               |
-| `main-lambdas`           | `vouchington-deploy-lambdas-v2`           |
-| `main-cloudflare-worker` | `vouchington-deploy-cloudflare-worker-v2` |
-| `sync-articles`          | `vouchington-publish-articles-v2`         |
-| `main-storybook`         | `vouchington-publish-storybook-v2`        |
-| `docs-publish`           | `vouchington-publish-docs-v2`             |
 
 ### Ownership boundary
 

@@ -81,11 +81,11 @@ sequenceDiagram
 
 ## Batch Minimum Size
 
-AWS Bedrock batches require at least `min_records_per_job` records per job (default 100, configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace). When a creation cycle streams fewer than the minimum, the batch **defers** — nothing is submitted, and the next `creation_dispatcher` cycle (every 5 minutes) re-streams pending entities until the minimum is met. The batch pipeline is only used for entity updates (and as the sole path for `crawl_chunk` / `image`), so waiting is correct: real-time creation flows already cover the user-visible path through the single pipeline.
+AWS Bedrock batches require at least `min_records_per_job` records per job(configurable in the (configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace). When a creation cycle streams fewer than the minimum, the batch **defers** — nothing is submitted, and the next `creation_dispatcher` cycle (every 5 minutes) re-streams pending entities until the minimum is met. The batch pipeline is only used for entity updates (and as the sole path for `crawl_chunk` / `image`), so waiting is correct: real-time creation flows already cover the user-visible path through the single pipeline.
 
 ## Depth-Driven Creation Trigger
 
-The `backlog_dispatcher` runs every minute and reads the single-queue depth (`waiting + active`) via `getQueueStats`. When depth meets or exceeds `backlog_threshold` (default 1000, configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace), it enqueues an extra `creation_dispatcher` so a fresh batch is built well before the next 5-minute tick. This shortens the worst-case time-to-first-batch when a bulk import dumps a large pile of single-embedding jobs.
+The `backlog_dispatcher` runs on a short schedule and reads the single-queue depth (`waiting + active`) via `getQueueStats`. When depth meets or exceeds `backlog_threshold` (configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace), it enqueues an extra `creation_dispatcher` so a fresh batch is built well before the next 5-minute tick. This shortens the worst-case time-to-first-batch when a bulk import dumps a large pile of single-embedding jobs.
 
 ## Downstream Consumers
 
@@ -110,9 +110,9 @@ Bedrock access is role-based in ECS. `vouchington-infra` OpenTofu creates the ba
 
 ## Related
 
-- [docs/overview/architecture/services/bedrock-embeddings/README.md](services/bedrock-embeddings/README.md) — Dedup contract, centralized table, bloom filter, testing
-- [docs/overview/architecture/queues/bedrock-embeddings/README.md](queues/bedrock-embeddings/README.md) — Real-time single pipeline queue config and processors
-- [docs/overview/architecture/queues/bedrock-embeddings-batch/README.md](queues/bedrock-embeddings-batch/README.md) — Batch pipeline schedulers, ordering lanes, and processors
+- docs/overview/architecture/services/README.md — Dedup contract, centralized table, bloom filter, testing
+- docs/overview/architecture/queues/README.md — Real-time single pipeline queue config and processors
+- docs/overview/architecture/queues/README.md — Batch pipeline schedulers, ordering lanes, and processors
 - [Backend rules](../../../backend/AGENTS.md) — workspace service and data conventions
 - [AI Agents rules](../../../backend/agents/AGENTS.md) — agent patterns and single-call design
 - [Backend services rules](../../../backend/services/AGENTS.md) — mocking policy for external API calls

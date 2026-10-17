@@ -1,9 +1,0 @@
-# ActivityPub queue
-
-Source entrypoint: [backend/queues/activitypub](../../../../../backend/queues/activitypub/README.md).
-
-`activitypub` is a domain of the shared [`background` queue](../background/README.md), not a queue of its own. Its jobs are `activitypub.distributeActivity` and `activitypub.deliverActivity` (outbound) plus `activitypub.processDelivery`, `activitypub.recoverDeliveries`, `activitypub.rearmFailedDeliveries`, and `activitypub.cleanupExpiredDeliveries` (inbound). The domain has one domain-wide group of 10, the old worker concurrency. Outbound distribution no longer has a per-activity ordering key, because each distribute page already runs under a durable lease that a second holder cannot take. Inbox processing keeps durable lease-token job IDs; recovery, rearm, and cleanup keep priority 100, while ordinary delivery uses priority 10. Scheduler IDs and deduplication IDs keep their existing stable identities.
-
-Fan-out is bounded. `distributeActivity` already enqueues one durable keyset page of follower inboxes and continues from a PostgreSQL cursor. `rearmFailedDeliveries` re-arms one page of failed inbox deliveries (page size `delivery_transition_recovery_batch_size` in `ap-inbox-activities-work-config`) and, when the page is full, enqueues a continuation job that carries the last delivery id as its cursor. Its job id is `activitypub-inbox-failed-backfill__<afterId>`, so a retried job cannot enqueue a second continuation. Recovery and cleanup already read one bounded page or a fixed batch budget per run.
-
-The [shared worker](../workers/activitypub/README.md) handles both directions through the background worker pool, and the domain can be paused, retried, and counted per domain through the operator API. A burst in either direction can occupy the shared pool and delay the other; monitor queue age and delivery latency before changing concurrency.

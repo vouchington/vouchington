@@ -1,178 +1,85 @@
 # Services
 
-Source entrypoint: [backend/services/README.md](../../../../backend/services/README.md)
+Orientation for `backend/services/`. Each package carries its own contract in code, tests and
+[`backend/services/AGENTS.md`](../../../../backend/services/AGENTS.md); this page says where things
+live and why the layering exists. Read the package, not a copy of it.
 
-Services contain business logic and are re-used across APIs, job queues, and other entry points.
+## Boundaries
 
-## Service Scope
-
-Each service encapsulates domain and business logic for its area, including SQL queries and external integrations. Do not define logic that operates on unrelated domains. When in doubt, create a new service.
-
-## Authorization
-
-Boolean authorization checks must be in `authorization.mts` and named `currentUserCan*`. Additional assertion helpers (e.g. `assertCan*`) may also be exported from this file.
-
-### Pattern
-
-```typescript
-// backend/services/posts/authorization.mts
-import type { PrivateUser } from '@services/users/types'
-import type { Post } from './types.mts'
-
-export function currentUserCanUpdatePost(currentUser: PrivateUser | null, post: Post): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  return post.created_by_id === currentUser.id
-}
+```mermaid
+flowchart LR
+  API[api routes and MCP tools] --> S[services]
+  W[queue workers] --> S
+  Q[queue producers] --> S
+  S --> DS[data-stores: PostgreSQL, Valkey]
+  S --> P[provider modules: Stripe, SES, model providers]
+  S -.->|register / getRegistered| R[service-registrations]
 ```
 
-### Usage in APIs
+- A **service** owns one domain's business rules, its SQL and its external integrations. Routes,
+  MCP tools and workers are thin callers, so a rule exists once and REST and MCP cannot diverge.
+- A service never reaches into another domain's tables. When a domain is unrelated, it is a new
+  service.
+- **Queues** (`backend/queues/`) only enqueue; **workers** (`backend/workers/`) only unwrap a job and
+  call a service. See the [queues map](../queues/README.md).
+- **Data stores** (`backend/data-stores/`) own connection and schema access; services import them,
+  never the reverse.
 
-```typescript
-import { currentUserCanUpdatePost } from '@services/posts/authorization'
-import createHttpError from 'http-errors'
+## Where to look
 
-if (!currentUserCanUpdatePost(currentUser, post)) {
-  throw createHttpError(403, 'Forbidden')
-}
-```
+- Identity and access: `users`, `jwt-session`, `oauth*`, `passkeys`, `totp`, `mfa`, `api-keys`,
+  `app-attestation`, `captcha`, `recaptcha`, `user-consents`, `account-data-requests`.
+- Content: `posts`, `comments`, `stories`, `topics`, `communities`, `lists`, `bookmarks`, `images`,
+  `markdown`, `post-publication`, `post-revisions`, `search`, `feeds`, `sitemaps`.
+- Social graph and messaging: `entity-relations`, `messaging`, `modmail`, `conversations-messages`,
+  `notifications*`, `engagement-emails`.
+- Moderation and trust ([moderation reports](moderation-reports/README.md)): `moderation-*`, `review-disputes`, `user-warnings`, `copyright-notices`,
+  `spam-detection`, `vote-weight`, `vote-integrity`, `elections-votes`, `report-integrity`.
+- AI and classification: `classifier-runs`, `classifiers`, `post-classifier`, `autotagger`,
+  `ai-usage`, `openai-*`, `bedrock-embeddings*`.
+- Crawling and referral links: `crawl*`, `crawler-*`, `urls*`, `rss-feed*`, `referral-*`,
+  `*-referral-program-links`.
+- Federation: `activitypub-delivery`, `ap-*`, `remote-actors`, `bluesky-*`, `fediverse-*`. See
+  [fediverse federation](../fediverse-federation.md).
+- Money: `memberships`, `stripe`, `stripe-event-processing`, `user-financial-profiles`. See
+  [monetary values](../monetary-values.md).
+- Platform: `dynamic-config-*`, `feature-flags`, `queue-domain-controls`, `route-rate-limits`,
+  `user-rate-limits`, `data-retention`, `psql-admin`, `valkey-admin`, `session-advisory-lock`.
 
-### Authorization Patterns
+## Decisions worth knowing
 
-- **Ownership checks**: `entity.created_by_id === currentUser.id`
-- **Role-based**: `currentUser.roles.includes('administrator')`
-- **Combined**: Owners OR admins
-- **SQL-based**: Build SQL filters (see `buildDraftVisibilitySQL` in [posts/authorization.mts](../../../../backend/services/posts/authorization.mts))
-
-## Error Handling
-
-### Structured Error Properties
-
-**Avoid checking `error.message`** for internally created errors. Use `error.name`, `error.code`, or `error.status` instead.
-
-### HTTP Errors
-
-Use `http-errors` or `http-assert` for creating errors. Use `createCodedError` when the client needs to branch on the error type:
-
-```typescript
-import createHttpError from 'http-errors'
-import assert from 'http-assert'
-import { createCodedError } from '@modules/on-error/create-coded-error'
-import { RATE_LIMIT } from '@modules/on-error/error-codes'
-
-throw createHttpError(404, 'Post not found')
-throw createCodedError(429, 'Rate limit exceeded', RATE_LIMIT)
-assert(post, 404, 'Post not found')
-
-// With cause
-try {
-  await externalAPI()
-} catch (error) {
-  throw createHttpError(500, 'External API failed', { cause: error })
-}
-```
-
-### Centralized Error Handling
-
-```typescript
-import onError from '@modules/on-error'
-
-try {
-  await riskyOperation()
-} catch (error) {
-  onError(error, {
-    context: { userId, operation: 'createPost' },
-    tags: { critical: true },
-  })
-  throw error
-}
-```
-
-## Data Deduplication
-
-Deduplicate expensive operations (API calls, computations) using content hashing.
-
-### Pattern: Content SHA256
-
-```typescript
-import { createHash } from 'node:crypto'
-
-const content = JSON.stringify(data)
-const contentSha256 = createHash('sha256').update(content).digest()
-
-const existing = await findByContentHash(contentSha256)
-if (existing) {
-  return { ...existing, reused: true }
-}
-
-const result = await expensiveOperation(data)
-await storeResult(contentSha256, result)
-return result
-```
-
-### Examples
-
-- [openai-moderation/posts.mts](../../../../backend/services/openai-moderation/posts.mts) — Reuse moderation results for identical content
-- [bedrock-embeddings/README.md](./bedrock-embeddings/README.md) — Reuse embeddings for identical text
-
-## Session advisory locks
-
-Callers that hold a PostgreSQL session advisory lock across work on other pooled connections share
-one connect, lock, unlock, and client-release protocol. Each caller still supplies its own lock
-SQL, so two-integer keys and one-bigint keys stay disjoint. See
-[session advisory lock](./session-advisory-lock/README.md).
-
-## Batch Lookups
-
-Services that accept ordered identifier lists should use the shared helpers in
-[batch-lookup/README.md](./batch-lookup/README.md) to normalize typed identifiers, build ordered SQL
-input CTEs, and scatter query rows back into caller order.
-
-## Dependency-Inversion Registries
-
-A service that needs a handler owned by another service — without creating a workspace-package
-dependency edge back to it — exposes a `register*()`/`getRegistered*()` pair (a
-`*-registry.mts` file) instead of importing that service directly. The owning service wires its
-handler in by calling `register*()` at module-top-level inside a `register-*.mts` file; the
-registry's `getRegistered*()` getter throws a coded `*_UNREGISTERED` error
-(`backend/modules/on-error/error-codes.mts`) if nothing has registered yet.
-
-That throw is a runtime assertion on a load-time invariant, so every `register-*.mts` module must
-actually be imported for its side effect by every process entrypoint — not conditionally, by
-whichever deep import path an entrypoint happens to pull in. `backend/service-registrations/` is
-the single place this happens: its `index.mts` imports every registrar for its side effect, and
-`backend/entrypoints/{api,worker-cpu,worker-io}/index.mts` and `backend/scripts/seed/index.mts`
-each import `@backend/service-registrations` once, unconditionally, as their first import. Adding a
-registry means adding one import to `backend/service-registrations/index.mts` — nothing else needs
-to change per-entrypoint.
-
-`.no-mistakes.yml`'s `required-entrypoint-reachability` rules enforce both halves statically: every
-`backend/services/**/register-*.mts` must be reachable from `backend/service-registrations/index.mts`,
-and `backend/service-registrations/index.mts` must in turn be reachable from every process
-entrypoint. A new registrar that isn't wired into the registration root, or an entrypoint that stops
-importing it, fails `pnpm run no-mistakes` instead of failing silently at runtime. See
-[reference-tests-linters-and-static-analysis.md](../../../development/reference-tests-linters-and-static-analysis.md)
-for the full static-analysis catalog.
+- **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
+  the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong
+  there too. Branch on `error.name`, `code` or `status`, never `error.message`.
+- **Dependency-inversion registries.** A service that needs a handler owned by another service
+  exposes `register*()`/`getRegistered*()` instead of importing it, so the workspace dependency
+  graph stays acyclic. Because a missing registration is a runtime failure, every process
+  entrypoint imports `backend/service-registrations` once; `.no-mistakes.yml` enforces both halves.
+- **Dedupe expensive work by content hash.** Moderation and embeddings reuse a result for
+  byte-identical input rather than paying the provider twice.
+- **Human approval gates AI drafts.** Dispute and appeal responses are drafted by an agent but are
+  never delivered until a human approves; final resolution waits for delivery. This is a legal
+  invariant of the moderation workflow, not a convenience, and the services enforce it in SQL.
+- **Retained identities.** Audit and money rows (memberships, refunds, moderation history) point at
+  `retained_user_identities`, so they survive account deletion without authorizing the deleted
+  user. See the [PostgreSQL schema rules](../../../development/postgres-schema-rules.md).
+- **Classifier runs share one receipt table.** Every fixed classifier uses one lifecycle (receipt,
+  lease, attempt cap, completion, sweep) so a new classifier is an adapter plus a row, not a table.
+  See the [AI platform](../ai-platform.md).
+- **Account linking differs by protocol.** Google and Apple link in one request because the browser
+  already holds an ID token. AT Protocol OAuth is a server-side redirect, so linking is two
+  functions and a stored authorization row whose callback re-checks the signed-in user; the
+  authorization URL is portable, so possession of it must never decide who gets linked.
+- **Hash uploads after upload.** The client cannot be trusted to report a hash, and the server has
+  to read the bytes to validate format anyway.
+- **Referral card catalogs are curated seeds, not scraped,** because the provider's page cannot be
+  enumerated reliably by a headless browser.
+- **Bloom filters can be rebuilt and lost.** Startup hygiene gives orphaned build keys a TTL so a
+  crashed rebuild cannot sit on a no-eviction Valkey forever.
 
 ## Related
 
-- [OAuth authorization server](oauth-authorization-server/README.md) — Issued OAuth credentials, consent, rotation, and validation
-- [Classifier runs](classifier-runs/README.md) — Shared receipt, lease, attempt, completion, dispatch and sweep lifecycle for fixed classifiers
-- [Post classifier](post-classifier/README.md) — C5 adapter: fixed classifier configuration and durable vote and tag effects
-- [Post publication reconciliation](post-publication/README.md) — Durable capture, projection, and shadow-repair services
-- [Runtime request validation](runtime-request-validation/README.md) — Generated-contract validation for third-party API routes
-- [Backend Vitest test authoring skill](../../../../.agents/skills/backend-vitest-test-authoring/SKILL.md) — Tests, fixtures, integration boundaries, and provider mocks
-- [Agent conventions](../../../../backend/services/AGENTS.md) — Service authoring rules for agents
-- [Systems (Job Queues)](../queues/README.md) — Background job processing
-- [API Routes](../../../../backend/api/AGENTS.md) — HTTP endpoint conventions
-- [Data Stores](../../../development/postgresql/README.md) — PostgreSQL schema and migrations
-- [Error Module](../backend/modules/on-error/README.md) — Centralized error handling
-- [Documentation](../../../README.md) — Full documentation index
-
-## Reference index
-
-- [App Attestation](../../../../backend/services/app-attestation/README.md)
-- [@services/feature-flags](../../../../backend/services/feature-flags/README.md)
-- [Markdown](../../../../backend/services/markdown/README.md)
-- [Queue Monitoring Service](../../../../backend/services/queue-monitoring/README.md)
-- [@services/spam-detection](../../../../backend/services/spam-detection/README.md)
+- [Backend README](../../../../backend/services/README.md) and [AGENTS.md](../../../../backend/services/AGENTS.md)
+- [Queues map](../queues/README.md) and [AI platform](../ai-platform.md)
+- [MCP tools](../mcp/README.md) and [API conventions](../../../../backend/api/AGENTS.md)
+- Requirements behind the services: [trust system](../../../requirements/trust-safety/reference-trust-system-overview.md)

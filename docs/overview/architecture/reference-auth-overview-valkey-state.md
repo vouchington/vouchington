@@ -8,7 +8,7 @@
 | ----------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `voucha:jwt-revoked:{sid}`                | Revoked session flag                  | Longest supported session lifetime — see `REVOCATION_EXPIRATION_SECONDS` in [`session-revocation-keys.mts`](../../../backend/services/jwt-session/session-revocation-keys.mts) |
 | `voucha:jwt-user-revoked-before:{userId}` | User-wide revocation cutoff timestamp | `REVOCATION_EXPIRATION_SECONDS` in [`session-revocation-keys.mts`](../../../backend/services/jwt-session/session-revocation-keys.mts)                                          |
-| `voucha:jwt-stale:{userId}`               | Stale claims flag                     | 2 days                                                                                                                                                                         |
+| `voucha:jwt-stale:{userId}`               | Stale claims flag                     | session lifetime                                                                                                                                                               |
 
 Session and device creation and refresh events are emitted to the `auth_sessions` analytics table (see [analytics-pipeline.md](analytics-pipeline.md)) for daily active user, device, and session counts in S3 Tables. Event types distinguish newly created sessions from authenticated and anonymous refreshes.
 

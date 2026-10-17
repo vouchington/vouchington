@@ -23,7 +23,7 @@ the tools; the staff REST decision routes are unaffected.
 Email approval through MCP takes the same body as the staff route. Read the raw email in the staff web
 interface first, then supply every claimant field, statutory declaration, and hosted image yourself.
 The recommendation is guidance only and is not compared with your values. Every decision requires a
-rationale, retained only in the encrypted per-call [MCP audit](../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+rationale, retained only in the encrypted per-call [MCP audit](../overview/architecture/services/README.md).
 
 ## DSA statement database
 
@@ -44,7 +44,7 @@ configuration and the error class before replaying, and never put tokens or resp
 An administrator replays a dead-lettered item through the replay route; a payload-build failure is
 rebuilt first and returns `{ replayed: false }` while the data still cannot be built. See the
 API contract and
-[queue recovery matrix](../overview/architecture/queues/notifications/README.md#dsa-statement-database).
+[queue recovery matrix](../overview/architecture/queues/README.md).
 
 ## DSA transparency report
 
@@ -338,7 +338,7 @@ hand. If the placement revision changed, abandon the stale intent through the do
 create no replacement until staff confirms the new placement is within the case. For an edge mismatch
 after a failed publication, use the media-delivery worker's durable exact-key repair reconciliation;
 never manufacture an allow or advance a generation by hand (see the
-[media-delivery safety protocol](../overview/architecture/services/media-delivery-safety/README.md)).
+[media-delivery safety protocol](../overview/architecture/services/README.md)).
 After investigating a provider failure, use the registry replay control to reopen failed records.
 
 The copyright action reconciler automatically recovers historical blocked restores once a court or CCB

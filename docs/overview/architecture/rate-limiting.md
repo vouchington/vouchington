@@ -1,11 +1,6 @@
 # Rate Limiting
 
-Rate limiting operates at four layers, each protecting against different abuse patterns.
-
-Contribution authoring has a separate action-policy registry. Its Safety/Pro/Plus/Free matrix is
-pure configuration; the registry now resolves an internal global `authored_post` policy together
-with a mapped type policy, while atomic dual-counter enforcement and public telemetry remain a
-separate rollout.
+Rate limiting operates in layers, each protecting against different abuse patterns.
 
 The diagram below traces a single request through all four layers in order; Layer 4's threshold
 lookup consumes Layer 3's trust-tier config directly (`getRateLimitThreshold`), so the two aren't
@@ -39,6 +34,3 @@ flowchart TD
 - <a id="layer-4-per-route-rate-limiting-backend"></a>[Layer 4: Per-Route Rate Limiting (Backend)](reference-rate-limiting-layer-4-per-route-rate-limiting-backend.md)
 - <a id="mcp-tool-calls-and-rest-route-limits"></a>[MCP Tool Calls and REST Route Limits](reference-rate-limiting-mcp-tool-calls-and-rest-route-limits.md)
 - <a id="rest-usage-quota"></a>[REST Usage Quota](reference-rate-limiting-rest-usage-quota.md)
-- <a id="creation-gates"></a>[Creation Gates](reference-rate-limiting-creation-gates.md)
-- <a id="pagination-limits-anti-scraping"></a>[Pagination Limits (Anti-Scraping)](reference-rate-limiting-creation-gates.md#pagination-limits-anti-scraping)
-- <a id="related"></a>[Related](reference-rate-limiting-creation-gates.md#related)

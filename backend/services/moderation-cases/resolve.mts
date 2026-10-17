@@ -6,7 +6,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
  * Unconditionally marks a case as resolved.
  *
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/moderation-cases/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function resolveCase(
   caseId: string,

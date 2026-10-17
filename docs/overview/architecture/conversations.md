@@ -51,9 +51,9 @@ assistant placeholder; incomplete placeholders remain readable in history.
 The shared decode examples are generated under `api-fixtures/v1/responses/native.chat.*.json` for
 Swift, Android, .NET and web; clients adopt them through clients#149 and clients#150 independently.
 The backend also offers a synchronous title endpoint through
-[`@agents/conversation-title`](ai-agents/conversation-title/README.md). It reads up to two recent messages,
+`@agents/conversation-title`. It reads up to two recent messages,
 sanitizes them as external prompt content and records the model call's usage. SSE streams elsewhere
-in the API use the shared [cycle-expiry signal](backend/modules/sse-lifecycle/README.md).
+in the API use the shared cycle-expiry signal.
 
 Native agents use the user MCP server over OAuth for agent tools. Conversation transcripts remain
 on the REST API described above. See [MCP Tools](mcp/README.md).
@@ -68,5 +68,6 @@ Conversations can be linked to entities for contextual lookup:
 ## Related Services
 
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
-- [docs/overview/architecture/services/conversations-messages/README.md](services/conversations-messages/README.md) -- conversation and message CRUD, client-generated turns
-- [docs/overview/architecture/queues/psql/README.md](queues/psql/README.md) -- partition cleanup jobs
+- docs/overview/architecture/services/README.md -- conversation and message CRUD, client-generated turns
+- docs/requirements/api/v1/conversations/README.md -- API endpoints
+- docs/overview/architecture/queues/README.md -- partition cleanup jobs

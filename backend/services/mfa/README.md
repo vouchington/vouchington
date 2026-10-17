@@ -1,3 +1,3 @@
 # @services/mfa
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/mfa/README.md).
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/README.md).

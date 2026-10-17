@@ -17,12 +17,12 @@ sequenceDiagram
   Note over C,B: 1. Attestation (once per device key)
   C->>C: generateKey() -> keyId
   C->>B: POST /app-attestation/challenge (type=attestation)
-  B-->>C: challengeId, challenge (Valkey, 5-min TTL)
+  B-->>C: challengeId, challenge (Valkey, short TTL)
   C->>Ap: attestKey(keyId, SHA256(challenge))
   Ap-->>C: attestation statement
   C->>B: POST /app-attestation/attest (keyId, attestation, challengeId)
   B->>B: verify statement, store key/did/publicKey, signCount=0
-  B-->>C: re-mint dt/st (deviceClass=attested, 30-day session)
+  B-->>C: re-mint dt/st (deviceClass=attested, extended session)
 
   Note over C,B: 2. Assertion (once per gated request)
   C->>B: POST /app-attestation/challenge (type=assertion)
@@ -70,12 +70,12 @@ decision path:
 Only the bypass decision is gated by config. `POST /api/v1/app-attestation/challenge` and
 `POST /api/v1/app-attestation/attest` are always reachable (anonymous, rate-limited) regardless of
 the `enabled`/`require_attestation_for_bypass` flags, since a device needs to attest before an
-operator turns the bypass on, and a successful `/attest` call always grants the 30-day session
+operator turns the bypass on, and a successful `/attest` call always grants the extended session
 regardless of those flags.
 
 The eight gated actions and their Swift-side `AppAttestActionTag` values are listed in
 [captcha.md § Action × provider matrix](captcha.md#action--provider-matrix) and the
-[captcha service README's protected-endpoints table](services/captcha/README.md#protected-endpoints) —
+captcha service README's protected-endpoints table —
 keep both in sync with
 [`AppAttestActionTag.swift`](https://github.com/vouchington/vouchington-clients/tree/main/swift-clients/core/Sources/VouchaAuth).
 

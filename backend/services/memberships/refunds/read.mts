@@ -5,7 +5,7 @@ import type { MembershipRefund, MembershipRefundRow } from '../types.mts'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getMembershipRefunds(userId: string): Promise<MembershipRefund[]> {
   const { rows } = await read(sql`/* getMembershipRefunds */

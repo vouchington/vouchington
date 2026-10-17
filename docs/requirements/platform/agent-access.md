@@ -37,7 +37,7 @@ How Voucha steers AI agents to its API and MCP server instead of the website.
   the MCP catalog page on the docs site, because that page requires Basic Auth.
 - Every call to the user MCP server, with either credential, is recorded in the durable per-call
   audit log before it runs; see the
-  [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+  [MCP tools architecture](../../overview/architecture/services/README.md).
 - The admin MCP server never appears in public discovery. Staff docs own it, in the
   admin API README. It accepts OAuth access tokens only, never
   API keys, and audits every call.
@@ -73,7 +73,7 @@ appeal and community application) keep the same required key, replay and conflic
 `admitDelegatedCreate`, which holds them in the same admission ledger as posts: one key space per
 credential owner, the create and its stored response in one transaction, a renewed lease and the
 same replay retention. See
-[Community, Report, Dispute and Appeal Tools](../../overview/architecture/mcp/community-report-appeal-write-tools.md#creation-and-idempotency).
+[Community, Report, Dispute and Appeal Tools](../../overview/architecture/mcp/README.md).
 
 ## Related
 

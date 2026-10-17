@@ -15,7 +15,7 @@ type SupportedSitemapPost = SitemapEligibilityPost & {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/sitemaps/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function isPostPotentiallySitemapEligible(
   post: SitemapEligibilityPost,

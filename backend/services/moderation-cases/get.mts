@@ -4,7 +4,7 @@ import { caseEntityFkColumn, type ModerationCase, type ModerationCaseEntity } fr
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/moderation-cases/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getCaseById(caseId: string): Promise<ModerationCase | null> {
   const { rows } = await read<ModerationCase>(

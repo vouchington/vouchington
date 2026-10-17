@@ -18,7 +18,7 @@ type FetchRssFeedDependencies = {
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/workers/rss-feeds/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
  */
 export async function processRssFeedsDispatcher(
   dependencies?: Partial<RssFeedsDispatcherDependencies>,
@@ -64,7 +64,7 @@ export async function processRssFeedsDispatcher(
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/queues/workers/rss-feeds/README.md`.
+ * Evidence: `docs/overview/architecture/queues/README.md`.
  */
 export async function processFetchRssFeed(
   rssFeedId: string,

@@ -7,7 +7,7 @@ import sql from 'sql-template-strings'
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/crawlers/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export const deleteCrawler = async (
   deleter: PrivateUser,

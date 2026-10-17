@@ -115,14 +115,6 @@ Each concrete relation vote parent enforces its composite relation FK and uses R
 fan out over the fixed relation metadata using bounded `(user_id, id)` keyset pages. Export merges
 event ids across families; vote-weight maintenance persists continuation jobs for later pages.
 
-The [isolated EXPLAIN pruning proof](../../development/postgresql/explain-analyze/README.md#explicit-range-pruning)
-uses a disposable migrated sibling database with two populated explicit ranges and the default
-for review ratings, conversation messages, and relation votes. Actual review, conversation, and
-vote-stat service calls must execute only their target leaves in forced custom and generic plans.
-The vote-stat batch binds both the exact target set and its UUID range bounds because joining
-only that id list did not prune RANGE children. This is query evidence for retaining the
-current production default-only layout until growth or measured pressure warrants explicit ranges.
-
 `web_push_endpoint_owners` is intentionally unpartitioned: its SHA-256 endpoint key is the global
 serialization and uniqueness point across the user-partitioned `web_push_subscriptions` table.
 `notification_push_intent_subscription_receipts` retains delivery outcomes by exact subscription
@@ -218,7 +210,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
 - Publication identity snapshots: `post_publication_identity_snapshots` and
   `post_publication_identity_snapshot_keys`. Accepted receipts retain one exact snapshot per post;
   abandoned and superseded attempts are reclaimed by the bounded cyclic sweep in
-  [post-publication](services/post-publication/README.md). Snapshot and native key
+  post-publication. Snapshot and native key
   indexes keep pages selective; revisit partitioning under the registry's growth trigger while
   preserving globally unique receipt pointers and bounded reclamation.
 - Publication repair identities: `post_publication_post_identities` is UUIDv7 range-partitioned
@@ -226,19 +218,19 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   RSS feed, RSS item, topic alias, and story identity bridge tables retain only active work/key
   references; a cyclic raw-capped sweep reclaims unreferenced bridges. Their selective live-FK,
   work-scope, and retained-impact indexes support deletion and cleanup. See the
-  [publication ownership model](services/post-publication/README.md); reconsider
+  publication ownership model; reconsider
   non-post partitioning if that backlog invariant changes or measured planner/write pressure warrants it.
 - Notification push effects: `notification_push_intents` and
   `notification_push_intent_subscription_receipts`.
   Pending intents remain durable recovery work. Delivered and suppressed intents are deleted after
-  90 days in locked batches using their terminal timestamp, and generation receipts cascade with
+  a retention window in locked batches using their terminal timestamp, and generation receipts cascade with
   the parent intent; this bounds retained terminal delivery evidence without touching pending work.
 - Global idempotency keys: `ai_usage_provider_response_keys`. Partitioning cannot preserve the
   response-ID unique constraint's global uniqueness; reconsider only if the replacement enforces that
   invariant across every ledger partition.
 - Work queue (drains to empty): `activitypub_inbox_delivery_work_items`. Rows are deleted on success and rejection.
   Unverified envelopes expire after one hour; operational failures expire seven days after their
-  immutable first failure. A five-minute cleanup deletes at most 10,000 rows per run in locked
+  immutable first failure. A scheduled cleanup deletes a bounded number of rows per run in locked
   batches, so table size remains bounded work rather than retained history.
 - Singleton aggregate: `activitypub_inbox_delivery_storage_counters`. Its true-valued primary key permits
   exactly one row, which statement triggers maintain as the exact retained and unverified row/byte
@@ -346,14 +338,7 @@ a stronger invariant. The typed registry owns the rationale and trigger.
   `relation__user__subscribe__user`, `relation__user__subscribe_posts__topic`,
   `relation__user__subscribe_rss_feed_items__topic`.
 
-`session_referral_attributions` is `RANGE (id)`-partitioned with a default partition only (see the
-inventory above) — this was the structural half of a change formerly filed as
-jonathanong/filaments#8750. The retention question is now
-settled too: anonymous (`user_id IS NULL`) rows are deleted after 30 days by
-`deleteOldReferralAttributionBatch()`, while user-linked rows are retained for the life of the
-account — `deleteUser` nulls `user_id`, which drops the row into the same 30-day sweep. See the
-[attribution service README](services/attribution/README.md#retention--dedup) for
-the dedup/move-to-latest design that keeps the anonymous set bounded by traffic as well.
+`session_referral_attributions` ages out anonymous (`user_id IS NULL`) rows by batch deletion; user-linked rows live with the account, and `deleteUser` nulls `user_id` so they join the sweep.
 
 A monthly-partition, partition-drop retention model is permanently off the table for this table:
 a `DROP` is unconditional and cannot honor the `user_id IS NULL` predicate, so it would delete
@@ -371,5 +356,6 @@ partition-status API and `pg_total_relation_size()`.
 
 - [Partition Pruning Hints](partition-pruning-hints.md)
 - [Database Rules](../../../backend/data-stores/psql/AGENTS.md)
-- [PostgreSQL queue](queues/psql/README.md)
+- PostgreSQL queue
+- [RSS feed crawling](../../requirements/content/RSS-FEED-CRAWLING.md)
 - [PostgreSQL schema-growth prompt](../../prompts/scheduled/postgresql-schema-growth.md) — recurring schema-growth classification audit against this policy.

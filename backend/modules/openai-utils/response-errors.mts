@@ -84,7 +84,7 @@ const TRANSIENT_OPENAI_STATUSES = new Set([408, 409, 429])
  * so that the failures which indicate a real regression — a retired model, a rejected key, a
  * changed response shape, a blown timeout budget, a failed assertion — are never tolerated.
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/openai-utils/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export function describeOpenAIUpstreamFailure(error: unknown): OpenAIUpstreamFailure | null {
   // Our own abort or timeout is our budget being exceeded, not the provider being down.

@@ -8,8 +8,8 @@ Feature flags use the `DynamicConfig` class from `@data-stores/valkey`, which st
 
 1. **Storage**: Flags are stored in a Valkey hash at key `dynamic-config:feature-flags`
 2. **Propagation**: When a flag changes, a Lua script atomically writes (HSET) and publishes (PUBLISH) the change. All subscribed instances receive the update immediately.
-3. **Fallback refresh**: A periodic timer re-reads the full hash from Valkey (default: every 60 seconds) as a safety net if pub/sub messages are missed.
-4. **Persistence**: The Dynamic Config Valkey instance uses `appendonly yes` with `appendfsync everysec`, so flags survive restarts with at most 1 second of data loss.
+3. **Fallback refresh**: A periodic timer re-reads the full hash from Valkey as a safety net if pub/sub messages are missed.
+4. **Persistence**: The Dynamic Config Valkey instance uses `appendonly yes` with `appendfsync everysec`, so flags survive restarts with at most a second of data loss.
 
 ## Current Flags
 
@@ -96,7 +96,7 @@ namespace value. Public reads started after that write remain eligible to refres
 
 ## Related Services
 
-- [docs/overview/architecture/services/feature-flags/README.md](services/feature-flags/README.md) -- flag reading, cookie parsing, update logic
+- docs/overview/architecture/services/README.md -- flag reading, cookie parsing, update logic
 - [ts-shared/feature-flags](../../../ts-shared/feature-flags/index.mts) -- Voucha cookie-name and
   compatibility facade over the environment-agnostic platform primitives
 - [@vouchington/utils feature flags](https://github.com/vouchington/vouchington-platform/tree/main/packages/utils) -- dependency-free cookie codec mechanics

@@ -2124,6 +2124,9 @@ rules:
     exclude:
       - '**/AGENTS.md'
       - articles/**
+      # Backend package READMEs are required beside code by required-local-docs and point at the
+      # architecture maps; they are not linked from an index.
+      - backend/**/README.md
       - '**/fixtures/**/*.md'
       - '**/__fixtures__/**/*.md'
       - '**/snapshots/**/*.md'

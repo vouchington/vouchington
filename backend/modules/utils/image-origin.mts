@@ -17,7 +17,7 @@ export function getImageOrigin(): string {
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/utils/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export function getSideloadImageUrlPrefix(): string {
   return `${getImageOrigin()}${CURRENT_SIDELOAD_PATH_PREFIX}`

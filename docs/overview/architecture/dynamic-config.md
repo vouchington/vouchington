@@ -66,7 +66,8 @@ vars that are good future Dynamic Config candidates: [local-env-vars.md](../../d
 ## Related
 
 - [DynamicConfig test isolation](../../development/reference-dynamicconfig-cleanup.md)
-- [docs/overview/architecture/services/dynamic-config-admin/README.md](services/dynamic-config-admin/README.md)
+- docs/overview/architecture/services/README.md
+- docs/requirements/api/v1/dynamic-config/README.md
 - [Local environment variables](../../development/local-env-vars.md)
 - [Feature flags](feature-flags.md)
 - [Staging Turnstile always-approve](../../operations/staging-turnstile-always-approve.md)

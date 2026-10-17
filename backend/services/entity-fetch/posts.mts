@@ -16,7 +16,7 @@ const EMPTY_ELECTION_VOTES = new Map<string, ElectionVote>()
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/entity-fetch/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function fetchPostsWithMetadata(
   postIds: string[],

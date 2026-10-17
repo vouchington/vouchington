@@ -12,17 +12,17 @@ no `dc` field. `dc` instead controls the _session token's expiry_, via `sessionE
 
 | `dc`         | Session (`st`) expiry | Device (`dt`) expiry |
 | ------------ | --------------------- | -------------------- |
-| unset        | 2 days                | 30 days              |
-| `'attested'` | 30 days               | 30 days (unchanged)  |
+| unset        | default               | long                 |
+| `'attested'` | extended              | long (unchanged)     |
 
 The verified device token's `dc` is re-read and threaded through every session refresh
-(`backend/services/jwt-session/flows.mts`), so an attested device keeps getting 30-day sessions on
+(`backend/services/jwt-session/flows.mts`), so an attested device keeps getting extended sessions on
 every warm/cold refresh for as long as its device token still carries `dc: 'attested'` — the
 device does not need to re-attest on every session renewal, only when it needs a new key (e.g.
 after Keychain data loss forces a fresh `generateKey()`).
 
 See [auth-overview.md § Tokens](auth-overview.md#tokens) and
-[jwt-session/README.md](services/jwt-session/README.md) for the general
+jwt-session/README.md for the general
 device/session token model this extends.
 
 ## Native Device Identity
@@ -43,7 +43,7 @@ token `did` differs from the key's stored binding. There is no current
 
 - **Single-use challenge** — `storeAppAttestChallenge`/`getAndDeleteAppAttestChallenge`
   (`backend/services/app-attestation/challenges.mts`) store the challenge in Valkey
-  (`app-attest-challenge:{type}:{key}`, 5-minute TTL) and consume it atomically with a Lua
+  (`app-attest-challenge:{type}:{key}`, short TTL) and consume it atomically with a Lua
   `GETDEL` script, so a challenge can back at most one attestation or assertion.
 - **Monotonic `sign_count`** — every assertion must carry a strictly greater `sign_count` than the
   value stored for that key. This is checked twice: once inside `node-app-attest` itself, and

@@ -2,7 +2,7 @@ import { gzip } from 'node:zlib'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/utils/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export function gzipBytes(value: Uint8Array): Promise<Uint8Array> {
   return transformBytes(value, gzip)

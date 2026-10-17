@@ -9,7 +9,7 @@ authenticity to the backend without a user-facing challenge. Voucha uses it for 
 - **Sign every request** from an attested device so that a stolen bearer `dt` cookie alone cannot
   act as that device — each request carries an Enclave-signed proof-of-possession header set (see
   [Per-Request Signing](#per-request-signing) below).
-- **Extend the session cookie** from the default 2-day expiry to 30 days once a device completes
+- **Extend the session cookie** from the default expiry to the extended device lifetime once a device completes
   attestation (see [Session Duration](#session-duration-the-dc-claim) below).
 
 Native Turnstile friction and the short default session are the motivating problems: without App
@@ -27,7 +27,7 @@ hard requirement. See [native-clients.md](native-clients.md) for the client-side
 - <a id="session-duration-the-dc-claim"></a>[Session Duration (the `dc` claim)](reference-app-attestation-session-duration-the-dc-claim.md)
 - <a id="native-device-identity"></a>[Native Device Identity](reference-app-attestation-session-duration-the-dc-claim.md#native-device-identity)
 - <a id="replay-defenses"></a>[Replay Defenses](reference-app-attestation-session-duration-the-dc-claim.md#replay-defenses)
-- <a id="configuration"></a>[Configuration](reference-app-attestation-configuration.md)
-- <a id="supported-devices"></a>[Supported Devices](reference-app-attestation-supported-devices.md)
-- <a id="not-yet-implemented"></a>[Not Yet Implemented](reference-app-attestation-supported-devices.md#not-yet-implemented)
-- <a id="related"></a>[Related](reference-app-attestation-supported-devices.md#related)
+- <a id="configuration"></a>Configuration
+- <a id="supported-devices"></a>Supported Devices
+- <a id="not-yet-implemented"></a>Not Yet Implemented
+- <a id="related"></a>Related

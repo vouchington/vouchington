@@ -1,33 +1,15 @@
 # AI Agent Architecture
 
-Shared provider, safety, billing, and testing guidance plus package-level agent references. The
-[AI platform overview](../ai-platform.md) owns the shared classifier invariants, provider boundary
-and measurement method; [AI agents](../ai-agents.md) links the surrounding pipelines.
+Agent packages live in `backend/agents/`; read the package for its contract. The
+[AI platform overview](../ai-platform.md) owns shared classifier invariants, the provider boundary
+and measurement, and [AI agents](../ai-agents.md) links the surrounding pipelines.
 
-## Shared references
-
-- [Choosing an Agent Pattern](_shared/reference-choosing-an-agent-pattern.md)
-- [Exports](_shared/reference-exports.md)
-- [Usage Tracking](_shared/reference-usage-tracking.md)
-- [Used by](_shared/reference-used-by.md)
-- [Agent Patterns](reference-agent-patterns.md)
-- [How to Add a New Tool](reference-how-to-add-a-new-tool.md)
-- [Tests](reference-tests.md)
-
-## Agent packages
-
-- [Appeal Resolution](appeal-resolution/README.md)
-- [Autotagger](autotagger/README.md)
-- [Classifier Runs](classifier-runs/README.md)
-- [Classifiers](classifiers/README.md)
-- [Community Moderation](community-moderation/README.md)
-- [Conversation Title](conversation-title/README.md)
-- [Copyright Appeal Recommendation](copyright-appeal-recommendation/README.md)
-- [Copyright Email Intake](copyright-email-intake/README.md)
-- [Copyright Form Screening](copyright-form-screening/README.md)
-- [Copyright Submission Guidance](copyright-submission-guidance/README.md)
-- [Dispute Resolution](dispute-resolution/README.md)
-- [Post Classifier](post-classifier/README.md)
-- [Report Judgement](report-judgement/README.md)
-- [Story Clustering](story-clustering/README.md)
-- [Story Post](story-post/README.md)
+- Pick the simplest pattern that fits. Most agents are a single schema-constrained call through the
+  model-provider layer; no provider SDK appears in an agent and no agent has a hidden default model.
+- There is no shared tool loop. The one tool-using agent owns its bounded loop, and a decision that
+  scores content belongs in a classifier instead.
+- Agent output is advisory. Drafts for disputes, appeals, reports and copyright intake never change
+  state or reach a user without human approval.
+- Tools exposed to agents wrap existing services and are registered in the MCP catalog; no new
+  business logic lives in a tool.
+- Sanitize external content before it reaches an agent.

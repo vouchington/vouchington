@@ -1,6 +1,6 @@
 // ECS one-off diagnostic task entry (`aws ecs run-task` + `containerOverrides`), invoked per the
 // staging verification gate in
-// docs/overview/infrastructure/reference-networking-aws-application-endpoint-inventory.md. IPv6-only
+// docs/overview/infrastructure/README.md. IPv6-only
 // tasks have no ECS Exec, and the distroless image has neither a shell nor `dig` — this replaces
 // shelling out to those tools with the equivalent checks via Node's own dns/fetch, the same way
 // migrate.mts replaces a psql shell session for the migration task. Checking logic lives in

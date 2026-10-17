@@ -7,7 +7,7 @@ type UpdateUrlOptions = {
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/urls/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export const updateUrl = (id: string, options: UpdateUrlOptions) => {
   const sets: string[] = []

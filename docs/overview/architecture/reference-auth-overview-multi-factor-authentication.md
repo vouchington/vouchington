@@ -22,7 +22,7 @@ When a user who has MFA enrolled completes primary authentication (email OTP or 
 
 ### Login Attempt Storage
 
-Pending MFA login state is stored in Valkey under the key `mfa-login-attempt:{uuid}` with a 5-minute TTL. The key is read-and-deleted atomically (Lua script) to prevent replay attacks.
+Pending MFA login state is stored in Valkey under the key `mfa-login-attempt:{uuid}` with a short TTL. The key is read-and-deleted atomically (Lua script) to prevent replay attacks.
 
 Stored payload: `{ userId, deviceId, sessionId }`.
 
@@ -41,7 +41,7 @@ Stored payload: `{ userId, deviceId, sessionId }`.
 
 ### TOTP
 
-TOTP uses the **otpauth** library with the following parameters: SHA1 algorithm, 6-digit codes, 30-second period. The secret is a 20-byte random value encoded as base32 and stored as authenticated ciphertext. An `otpauth://` URI is generated for QR code display during setup and is only returned once (at setup time). See [docs/overview/architecture/services/totp/README.md](services/totp/README.md).
+TOTP uses the **otpauth** library with the following parameters: SHA1 algorithm, 6-digit codes, 30-second period. The secret is a 20-byte random value encoded as base32 and stored as authenticated ciphertext. An `otpauth://` URI is generated for QR code display during setup and is only returned once (at setup time). See docs/overview/architecture/services/README.md.
 
 | Method | Route                                  | Auth     | Description                                       |
 | ------ | -------------------------------------- | -------- | ------------------------------------------------- |
@@ -62,4 +62,4 @@ Removing the last MFA method (passkey or TOTP authenticator) requires re-authent
 5. Client includes `re_auth_token` in the original request body.
 6. Server verifies and atomically deletes the token before proceeding.
 
-Re-auth tokens are stored in Valkey under `mfa-reauth:{userId}:{token}` with a 5-minute TTL. See [docs/overview/architecture/services/mfa/README.md](services/mfa/README.md).
+Re-auth tokens are stored in Valkey under `mfa-reauth:{userId}:{token}` with a short TTL. See docs/overview/architecture/services/README.md.

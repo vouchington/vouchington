@@ -12,7 +12,7 @@ runtime tests for dependency behavior. Delete ambient declarations when
 bundled or maintained types become available.
 
 The retained backend inventory and its verification guidance live in
-[`docs/overview/architecture/backend/types/README.md`](backend/types/README.md#ambient-third-party-boundaries). It
+`docs/overview/architecture/backend/README.md`. It
 contains the narrow `http-assert` callable contract, the consumed `sql-template-strings` statement
 surface, and the test-only `VitestLooseMock` global. The worker-owned `cloudflare:workers` boundary
 is defined in
@@ -24,17 +24,11 @@ whose upstream type sentinel is checked by the Worker typecheck.
 The July 2026 audit classified every third-party ambient declaration in scope. A retained boundary
 must encode a narrower, mechanically verified contract than the available upstream declaration.
 
-| Candidate                                           | Disposition | Evidence and rationale                                                                                                                                                                                                                                      |
-| --------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/services/notifications-push/web-push.d.ts` | Removed     | Replaced by the maintained `@types/web-push` package in the owning workspace.                                                                                                                                                                               |
-| `backend/types/debug.d.ts`                          | Removed     | No source import or declaration consumer remained.                                                                                                                                                                                                          |
-| `backend/types/http-assert.d.ts`                    | Retained    | Exposes only the required callable assertion signature; a type-only contract test verifies it.                                                                                                                                                              |
-| `backend/types/lingua-rs.d.ts`                      | Removed     | Replaced by `lingua-rs`'s bundled types. Native installation was resolved separately (formerly filed as jonathanong/filaments#7809).                                                                                                                        |
-| `backend/types/pg-iterator.d.ts`                    | Removed     | No source import or declaration consumer remained.                                                                                                                                                                                                          |
-| `backend/types/random-mobile.d.ts`                  | Removed     | The dependency was removed in favor of a bounded native `crypto.randomInt` generator and phone-number acceptance tests.                                                                                                                                     |
-| `backend/types/sql-template-strings.d.ts`           | Retained    | Exposes only the callable tag and statement members the backend consumes; a type-only contract test verifies it.                                                                                                                                            |
-| `ci/no-mistakes-playwright.d.ts`                    | Removed     | After `no-mistakes` 0.32.0, the report is accepted as `unknown` and validated before its `edges` are read. The tracking issue (formerly filed as jonathanong/filaments#7799) was separately closed by jonathanong/filaments PR #7971.                       |
-| `cloudflare-worker/src/cloudflare-workers.d.ts`     | Retained    | The narrowed runtime class is intersected with an upstream sentinel that instantiates `WorkerEntrypoint<Env, Props>` and verifies its constructor environment and inferred props slots; upstream name or generic-boundary drift fails the worker typecheck. |
+| Candidate                                       | Disposition | Evidence and rationale                                                                                                                                                                                                                                      |
+| ----------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/types/http-assert.d.ts`                | Retained    | Exposes only the required callable assertion signature; a type-only contract test verifies it.                                                                                                                                                              |
+| `backend/types/sql-template-strings.d.ts`       | Retained    | Exposes only the callable tag and statement members the backend consumes; a type-only contract test verifies it.                                                                                                                                            |
+| `cloudflare-worker/src/cloudflare-workers.d.ts` | Retained    | The narrowed runtime class is intersected with an upstream sentinel that instantiates `WorkerEntrypoint<Env, Props>` and verifies its constructor environment and inferred props slots; upstream name or generic-boundary drift fails the worker typecheck. |
 
 Use this hidden-aware scan for future audits:
 

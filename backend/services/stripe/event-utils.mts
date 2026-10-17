@@ -37,7 +37,7 @@ export function getStripeObjectNumber(value: unknown): number | null {
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/stripe/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function getStripeObjectBoolean(value: unknown): boolean | null {
   return typeof value === 'boolean' ? value : null

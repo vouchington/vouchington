@@ -71,7 +71,7 @@ const fixtureDocumentationPaths = [
   'docs/overview/architecture/backend/README.md',
   'backend/agents/AGENTS.md',
   'backend/agents/README.md',
-  'docs/overview/architecture/ai-agents/reference-tests.md',
+  'docs/overview/architecture/ai-agents/README.md',
   'docs/development/postgresql/reference-migrations-views-and-config-driven.md',
   'docs/development/postgresql/schema-snapshot/README.md',
   'docs/overview/architecture/mcp/catalog.md',

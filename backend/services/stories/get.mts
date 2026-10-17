@@ -5,7 +5,7 @@ import type { Story, StoryWithItemCount } from './types.mts'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/stories/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getStoryWithItemCount(
   id: string,

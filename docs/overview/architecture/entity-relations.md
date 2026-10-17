@@ -46,13 +46,13 @@ relations such as follow, mute, and block remain bookmark API concerns.
 ## Table Structure
 
 - Table naming: `relation__<subject>__<predicate>__<object>` (e.g. `relation__user__follow__user`)
-- User-subject relation tables (`relation__user__*`) are **not partitioned** (under 1M rows threshold), using plain B-tree indexes. They were previously HASH-partitioned by `subject_id` and caused reverse-lookup fan-out (see below); HASH partitioning is now forbidden repo-wide — see [partitioning-strategy.md](partitioning-strategy.md)
+- User-subject relation tables (`relation__user__*`) are **not partitioned** and use plain B-tree indexes, because HASH partitioning caused reverse-lookup fan-out and is forbidden repo-wide — see [partitioning-strategy.md](partitioning-strategy.md)
 - Tables are created automatically from the config via idempotent migrations
 - No destructive actions on config removal -- unused tables persist but are no longer referenced
 
 ## Privacy Filter Integration
 
-`buildPrivacyFilter()` in `backend/modules/feed-query-builders/privacy-filter.mts` uses entity relation tables to enforce post visibility in feeds and search. It checks follow relationships via `relation__user__follow__user` to determine broadcast audience access. Since these tables use plain B-tree indexes, the reverse lookup hits a single index scan — previously, when this table was hash-partitioned by `subject_id`, this same `object_id` lookup scanned all 8 partitions 5+ times per feed query. See [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md#performance).
+`buildPrivacyFilter()` in `backend/modules/feed-query-builders/privacy-filter.mts` uses entity relation tables to enforce post visibility in feeds and search. It checks follow relationships via `relation__user__follow__user` to determine broadcast audience access. Since these tables use plain B-tree indexes, the reverse lookup hits a single index scan — previously, when this table was hash-partitioned by `subject_id`, this same `object_id` lookup scanned all 8 partitions 5+ times per feed query. See docs/overview/architecture/services/README.md.
 
 ## Side Effects
 
@@ -74,6 +74,7 @@ relations such as follow, mute, and block remain bookmark API concerns.
 - [Backend rules](../../../backend/AGENTS.md) — service and data conventions
 - [Web rules](../../../web/AGENTS.md) — UI and routing conventions
 
-- [docs/overview/architecture/services/entity-relations/README.md](services/entity-relations/README.md) -- config, upsert, delete, query logic
-- [docs/overview/architecture/services/bookmarks/README.md](services/bookmarks/README.md) -- bookmark operations built on entity relations
-- [docs/overview/architecture/services/feeds/README.md](services/feeds/README.md) -- feed filtering using follow/mute/block relations
+- docs/overview/architecture/services/README.md -- config, upsert, delete, query logic
+- docs/overview/architecture/services/README.md -- bookmark operations built on entity relations
+- docs/overview/architecture/services/README.md -- feed filtering using follow/mute/block relations
+- docs/requirements/api/v1/entity-relations/README.md -- API endpoints

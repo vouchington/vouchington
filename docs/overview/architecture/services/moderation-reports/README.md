@@ -1,86 +1,21 @@
 # moderation-reports
 
-Source entrypoint: [backend/services/moderation-reports/README.md](../../../../../backend/services/moderation-reports/README.md)
-
 Service for creating and querying user-submitted moderation reports against entities (RSS feed
 items, posts, comments, users, and URL hostnames). Canonical entity types are `rss_feed_item`,
 `post`, `comment`, `user`, and `url_hostname`.
 
 ## Data Model
 
-| Column                                 | Type                                   | Notes                                                                                                                 |
-| -------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `id`                                   | uuid                                   | PK, UUIDv7                                                                                                            |
-| `created_at`                           | timestamptz                            | Generated from `id`                                                                                                   |
-| `reviewed_at`                          | timestamptz                            | Null until reviewed by an admin                                                                                       |
-| `reporter_user_id`                     | uuid                                   | FK -> `users(id)`                                                                                                     |
-| Target FK                              | uuid                                   | Exactly one of `post_id`, `reported_user_id`, `hostname_id`, or `rss_feed_item_id`                                    |
-| `case_id`                              | uuid                                   | FK -> `moderation_cases(id)`                                                                                          |
-| `reason`                               | moderation_report_reasons              | One of `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other`                        |
-| `note`                                 | text                                   | Optional, max 1000 chars                                                                                              |
-| `resolution_action`                    | `moderation_report_resolution_actions` | Null while pending; then `reviewed`, `actioned`, or `dismissed`                                                       |
-| `resolved_by_id`                       | uuid                                   | FK -> `users(id)`, set when admin resolves                                                                            |
-| `community_id`                         | uuid                                   | Operational community owner. NULL when the report is not community-scoped. FK -> `communities(id)` ON DELETE SET NULL |
-| `moderation_transparency_community_id` | uuid                                   | Immutable audit snapshot copied from `community_id` or the reported post. Not a foreign key                           |
-| `escalated_at`                         | timestamptz                            | Null until a report is escalated for senior-mod review                                                                |
-| `escalated_by_id`                      | uuid                                   | FK -> `users(id)`, set when a moderator escalates                                                                     |
+| Column    | Type                      | Notes                                                                                          |
+| --------- | ------------------------- | ---------------------------------------------------------------------------------------------- |
+| Target FK | uuid                      | Exactly one of `post_id`, `reported_user_id`, `hostname_id`, or `rss_feed_item_id`             |
+| `reason`  | moderation_report_reasons | One of `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other` |
 
-A `num_nonnulls(...) = 1` check enforces one target FK per row. Per-target partial unique indexes
-with `reviewed_at IS NULL` prevent duplicate pending reports from the same reporter for the same
-target. A user report with `community_id` set is pending once per community. A user report with
-`community_id` and `moderation_transparency_community_id` both null stays one pending row per
-reporter and user.
-Another check keeps `reviewed_at` and `resolution_action` paired so pending rows have no final action
-and reviewed rows always have one.
-`vote_manipulation` is valid only for `post` reports.
-This data-model summary is covered by `pnpm run repo-file-policy`, which runs
-`static-code-analysis/repo-file-policy/schema-doc-drift-guard.mts` to block legacy reporting schema
-examples from returning.
-
-```mermaid
-flowchart TD
-  input[parseCreateModerationReportInput] --> validate[Configured report input parser validates entity type, reason, note, and self-report rules]
-  validate --> transaction[Open or join transaction]
-  transaction --> case[Open or reuse moderation case]
-  case --> insert[Insert or update pending report]
-  insert --> commit[Owning transaction commits]
-  commit --> integrity[Enqueue report_integrity check]
-  commit --> judgement[Enqueue report judgement when context changed]
-```
-
-The report and its case commit atomically. REST creation owns the transaction; delegated MCP
-creation joins admission's transaction, including the stored response and attempt result. A failure
-after opening the case rolls back both writes. Critical alerts, judgement refresh, and integrity
-checks run only after the owning commit.
-
-`createModerationReport` accepts only `{ query }` for a caller-owned transaction. It constructs a
-fresh database options object containing that query when joining; extra own fields such as
-`client` and `readOnly` are rejected. With no query, the service owns a write transaction.
+A report and its moderation case commit atomically; alerts, judgement refresh and integrity checks
+run only after the owning commit. Duplicate pending reports from one reporter for one target are
+prevented in the database. `vote_manipulation` is valid only for `post` reports. This summary is mirrored in code by the repo-file-policy guard (tracked
+for retirement).
 
 ## Usage
 
-`parseCreateModerationReportInput` adapts Vouchington's `entityType`/`entityId` request shape to the
-generic `@vouchington/utils/moderation` parser. The local adapter keeps the canonical catalogs, UUID
-validation, `vote_manipulation` post-only rule, 1000-character raw-note limit, and existing HTTP
-validation messages stable for callers.
-
-```ts
-import {
-  parseCreateModerationReportInput,
-  createModerationReport,
-} from '@services/moderation-reports'
-
-const input = parseCreateModerationReportInput({ entityType, entityId, reason, note })
-const { report, isDuplicate } = await createModerationReport(currentUserId, input)
-```
-
-`listModerationReports` rejects `severity` and `most_reported` continuation cursors with `422
-Invalid cursor` when the cursor row's report count or judgement rank no longer matches. Clients
-must restart from page one. See the route contract in
-[`docs/requirements/api/v1/reports/README.md`](../../../../requirements/api/v1/reports/README.md).
-
-## Related
-
-- API: [`backend/api/v1/reports/`](../../../../requirements/api/v1/reports/README.md)
-- Report review is table-backed; asynchronous integrity checks use
-  [`backend/queues/vote-aggregation/`](../../queues/report-integrity/README.md).
+Request contracts are in the [reports API requirements](../../../../requirements/api/v1/reports/README.md).

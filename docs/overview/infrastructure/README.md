@@ -4,15 +4,14 @@ AWS resources, networking, and deployment for Voucha.
 
 ## Documents
 
-| File                                                | Description                                                                           |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [Infrastructure](./infrastructure.md)               | AWS resources and the boundary between Vouchington and `vouchington-infra`            |
-| [Networking](./networking.md)                       | VPC topology, public IPv4 cost model, and egress design decisions                     |
-| [Deployment](./deployment.md)                       | Platform, immutable artifact handoff, traffic routing, and provisioning checklist     |
-| [SOCI Lazy Loading](./soci-lazy-loading.md)         | SOCI v2 index generation for Fargate lazy loading, decision rationale, and operations |
-| [S3 Buckets × Lifecycle Matrix](./s3-buckets.md)    | Bucket purposes, encryption, and lifecycle/retention rules                            |
-| [Env Var Contract](./env-var-contract.md)           | Vouchington-owned typed env-var metadata and private deployment handoff               |
-| [Environment Variables](./environment-variables.md) | Complete inventory of all env vars by category                                        |
+| File                                                | Description                                                                        |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [Infrastructure](./infrastructure.md)               | AWS resources and the boundary between Vouchington and `vouchington-infra`         |
+| [Networking](./networking.md)                       | Public-IPv4 versus NAT egress decision                                             |
+| [Deployment](./deployment.md)                       | Platform, immutable artifact handoff, traffic routing, and provisioning checklist  |
+| [SOCI Lazy Loading](./soci-lazy-loading.md)         | SOCI index generation for Fargate lazy loading, decision rationale, and operations |
+| [Env Var Contract](./env-var-contract.md)           | Vouchington-owned typed env-var metadata and private deployment handoff            |
+| [Environment Variables](./environment-variables.md) | Complete inventory of all env vars by category                                     |
 
 ## Runtime owner indexes
 
@@ -24,7 +23,7 @@ AWS resources, networking, and deployment for Voucha.
 Vouchington owns application code and immutable build artifacts. The private
 [`vouchington-infra`](https://github.com/vouchington/vouchington-infra) repository owns OpenTofu,
 provider configuration, and provider mutations. Update the relevant documentation in its owning
-repository when resource shapes, deployment configuration, or cost data change.
+repository when resource shapes or deployment configuration change.
 
 ## Reference index
 
@@ -54,8 +53,3 @@ repository when resource shapes, deployment configuration, or cost data change.
 - [Environment Variables reference](reference-environment-variables-typed-contract-coverage.md)
 - [Infrastructure reference](reference-infrastructure-architecture-overview.md)
 - [Infrastructure reference](reference-infrastructure-s3-buckets.md)
-- [Networking reference](reference-networking-aws-application-endpoint-inventory.md)
-- [Networking reference](reference-networking-decision-per-task-ip-vs-managed-nat-gateway.md)
-- [Networking reference](reference-networking-status-summary.md)
-- [S3 Buckets × Lifecycle Matrix reference](reference-s3-buckets-table-a-buckets-purpose-configuration.md)
-- [S3 Buckets × Lifecycle Matrix reference](reference-s3-buckets-table-b-buckets-lifecycle-post-cost-review-rules.md)

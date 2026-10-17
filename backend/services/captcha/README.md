@@ -1,3 +1,3 @@
 # @services/captcha
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/captcha/README.md).
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/README.md).

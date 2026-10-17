@@ -148,11 +148,11 @@ scopes so re-consent never drops access already held. Role and plan denials, bat
 keep in-band JSON-RPC errors because re-consent cannot fix them. Every call a verified token makes
 is written to an append-only audit table before it runs, and the request fails closed if the audit
 row cannot be stored. See the
-[MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+[MCP tools architecture](../../overview/architecture/services/README.md).
 
 ## Related
 
 - [Authentication architecture](../../overview/architecture/auth-overview.md)
 - [Security requirements](./SECURITY.md)
 - [API design decisions](../api/README.md)
-- [Authorization-server service](../../overview/architecture/services/oauth-authorization-server/README.md)
+- [Authorization-server service](../../overview/architecture/services/README.md)

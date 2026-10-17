@@ -2,7 +2,7 @@
 
 Every outbound email has exactly one authoritative classification, `transactional` or `marketing`,
 enforced structurally so a new email type cannot ship unclassified. Service implementation:
-[email-classification service](../../overview/architecture/services/email-classification/README.md).
+[email-classification service](../../overview/architecture/services/README.md).
 
 ## Why
 

@@ -45,7 +45,7 @@ export async function invalidateMembershipProductCaches(): Promise<void> {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getActivePlans(
   context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
@@ -177,7 +177,7 @@ const getActivePlansCachedFn = activePlansCache.cacheGetByAny(async key =>
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ * Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getActivePlansCached(
   context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
@@ -190,7 +190,7 @@ const getSkuByStripePriceIdCachedFn = skuByStripePriceIdCache.cacheGetByAny(key 
 )
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/memberships/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function getSkuByStripePriceIdCached(
   stripePriceId: string,
