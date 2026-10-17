@@ -61,7 +61,7 @@ async function createDistribution(
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const target = await validateTarget(currentUser, input, query)
-  await query(sql`/* createDistribution */
+  await query(sql`/* createDistribution:lock */
     SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
   `)
   await assertNoRecentDistribution(currentUser.id, input.action, target.id, query)

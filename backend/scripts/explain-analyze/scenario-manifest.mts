@@ -195,6 +195,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'notification-block-set',
   'hostname-policies-batch',
   'messaging-eligibility-batch',
-  'copyright-staff-case-batch',
-  'user-agent-read-first',
+  ...(['copyright-staff-case-batch', 'user-agent-read-first', 'rss-feed-state-changes'] as const),
 ] as const

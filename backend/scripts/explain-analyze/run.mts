@@ -35,6 +35,7 @@ import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mt
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
+import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 
 async function main() {
   prepareOutputDir()
@@ -66,6 +67,7 @@ async function main() {
     await runRoundTripShapeScenarios()
     await runUserProfileRoundTripScenarios()
     await runRelationReadBatchScenarios()
+    await runRssFeedStateChangeScenarios()
     assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
     assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
   } finally {

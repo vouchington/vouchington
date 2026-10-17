@@ -1,16 +1,13 @@
 import { getRssFeedAutoUpdaterUserId } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
-import { read, write, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
-import assert from 'http-assert'
-import {
-  currentUserCanModifyRssFeedDiscoverability,
-  currentUserCanModifyRssFeedEnablement,
-} from './authorization.mts'
+import { read, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
+import { insertRssFeedStateChanges, type RssFeedStateKind } from './state-changes.mts'
+import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
 import { recordRssFeedStatePublicationChange } from './publication-change.mts'
 import { lockPostPublicationScope } from '@services/post-publication/lock'
 import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
 import { runRssFeedStateTransaction } from './state-transaction.mts'
-type ChangeKind = 'discoverability' | 'enablement'
+type ChangeKind = RssFeedStateKind
 type SetStateResult = 'updated' | 'noop' | 'skipped:human-locked'
 type RssFeedStateChange = {
   id: string
@@ -29,9 +26,6 @@ type SetRssFeedStateAsSystemInput = SetRssFeedStateInput & {
   overrideHumanLock?: boolean
 }
 
-function assertReason(reason: string | null | undefined): void {
-  assert(reason === undefined || reason === null || reason.length <= 1000, 400, 'reason too long')
-}
 async function getLatestChange(
   kind: ChangeKind,
   rssFeedId: string,
@@ -54,13 +48,10 @@ async function insertChange(
   input: SetRssFeedStateInput & { createdById: string | null },
   options: QueryOptions = {},
 ): Promise<void> {
-  assertReason(input.reason)
-  const query = `/* insertRssFeedSettingChange */
-    INSERT INTO rss_feed_setting_changes (rss_feed_id, is_enabled, changed_by_id, reason, change_type)
-    VALUES ($1, $2, $3, $4, $5)`
-  await write(
-    query,
-    [input.rssFeedId, input.is_enabled, input.createdById, input.reason ?? null, kind],
+  await insertRssFeedStateChanges(
+    input.rssFeedId,
+    [{ kind, is_enabled: input.is_enabled, reason: input.reason }],
+    input.createdById,
     options,
   )
 }
@@ -70,32 +61,12 @@ async function setStateAsCurrentUser(
   input: SetRssFeedStateInput,
   options: QueryOptions = {},
 ): Promise<SetStateResult> {
-  const canModify =
-    kind === 'discoverability'
-      ? currentUserCanModifyRssFeedDiscoverability(currentUser)
-      : currentUserCanModifyRssFeedEnablement(currentUser)
-  assert(canModify, 403, 'Forbidden')
-  const run = async (query: TransactionQuery): Promise<SetStateResult> => {
-    await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: input.rssFeedId })
-    const { rows } = await query(
-      `/* setRssFeedStateAsCurrentUser:latest */
-        SELECT is_enabled
-        FROM rss_feed_setting_changes
-        WHERE rss_feed_id = $1 AND change_type = $2
-        ORDER BY id DESC
-        LIMIT 1
-        FOR UPDATE`,
-      [input.rssFeedId, kind],
-    )
-    const latest = rows[0] as { is_enabled: boolean } | undefined
-    if (latest?.is_enabled === input.is_enabled) return 'noop'
-    await insertChange(kind, { ...input, createdById: currentUser.id }, { query })
-    await recordRssFeedStatePublicationChange(query, input.rssFeedId, kind)
-    return 'updated'
-  }
-  const result = await runRssFeedStateTransaction(options, run)
-  await applyCommittedRssFeedStateChangeEffects(input.rssFeedId, result === 'updated', options)
-  return result
+  return setRssFeedStatesAsCurrentUser(
+    currentUser,
+    input.rssFeedId,
+    [{ kind, is_enabled: input.is_enabled, reason: input.reason }],
+    options,
+  )
 }
 async function setStateAsSystem(
   kind: ChangeKind,
@@ -180,16 +151,14 @@ export async function createInitialRssFeedStateChanges(
   rssFeedId: string,
   options: QueryOptions = {},
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const systemUserId = await getRssFeedAutoUpdaterUserId()
-  await insertChange(
-    'enablement',
-    { rssFeedId, is_enabled: true, createdById: systemUserId, reason: 'initial state' },
-    options,
-  )
-  await insertChange(
-    'discoverability',
-    { rssFeedId, is_enabled: true, createdById: systemUserId, reason: 'initial state' },
+  await insertRssFeedStateChanges(
+    rssFeedId,
+    [
+      { kind: 'enablement', is_enabled: true, reason: 'initial state' },
+      { kind: 'discoverability', is_enabled: true, reason: 'initial state' },
+    ],
+    systemUserId,
     options,
   )
 }

@@ -155,29 +155,14 @@
     "issue": 2607
   },
   {
-    "annotation": "createDistribution",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "createEmailVerificationToken",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
   },
   {
-    "annotation": "createImportBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "createModerationReport",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609
-  },
-  {
-    "annotation": "createPost",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
   },
   {
     "annotation": "createPublicationAliasIdentityStaging",
@@ -285,11 +270,6 @@
     "issue": 2612
   },
   {
-    "annotation": "fetchListById",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
@@ -390,11 +370,6 @@
     "issue": 2613
   },
   {
-    "annotation": "getPostProvenanceFacts",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "getPostsByAnyBatch",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 2613
@@ -431,13 +406,13 @@
   },
   {
     "annotation": "getRetainedPostCategories hashtags",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "removePostHashtag reads the explicit categories before the update to report removed:false without writing, again inside the update transaction after the post row lock so a concurrent edit is seen, and again after the commit to verify the removal (backend/services/posts/remove-hashtag.mts:30, backend/services/posts/update/hashtag-intent.mts:70, backend/services/posts/remove-hashtag.mts:38)",
+    "issue": 3122
   },
   {
     "annotation": "getRetainedPostCategories topics",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "removePostHashtag reads the explicit categories before the update to report removed:false without writing, again inside the update transaction after the post row lock so a concurrent edit is seen, and again after the commit to verify the removal (backend/services/posts/remove-hashtag.mts:30, backend/services/posts/update/hashtag-intent.mts:70, backend/services/posts/remove-hashtag.mts:38)",
+    "issue": 3122
   },
   {
     "annotation": "getReviewDisputeById",
@@ -446,8 +421,8 @@
   },
   {
     "annotation": "getRssFeedById",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "PATCH /api/v1/rss-feeds/:id reads the feed before the body is validated, to answer 404 first, and again after the update commits and the cache is invalidated, so the second read has to see the write (backend/api/v1/rss-feeds/rss-feed.mts:89, backend/api/v1/rss-feeds/rss-feed.mts:126)",
+    "issue": 3122
   },
   {
     "annotation": "getRssFeedHardDeleteTopicImpacts",
@@ -456,13 +431,13 @@
   },
   {
     "annotation": "getRssFeedImport",
-    "reason": "The user RSS import SSE request polls owned progress until completion or disconnect",
-    "issue": 2613
+    "reason": "The user RSS import SSE request re-reads owned progress every two seconds until the import completes or the client disconnects, because the import worker commits row results in separate transactions that the request has to see (backend/api/v1/my/imports/stream-helpers.mts:46)",
+    "issue": 3122
   },
   {
     "annotation": "getRssFeedItemById",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "POST /api/v1/rss-feed-items/:id/sends reads the item before the body is parsed so a missing item answers 404 before a bad body answers 400, and createDistribution reads it again inside the insert transaction before its advisory lock; the second read is not protected by that lock and drops only with a wider window in which a removed item can be distributed, which is asked on #3122 (backend/api/v1/rss-feed-items/share-send.mts:62, backend/services/follower-distributions/create-guards.mts:44)",
+    "issue": 3122
   },
   {
     "annotation": "getRssFeedScopesForCategoryPublicationLocks",
@@ -523,11 +498,6 @@
     "annotation": "insertCopyrightDeliveryRecipient",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
-  },
-  {
-    "annotation": "insertRssFeedSettingChange",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
   },
   {
     "annotation": "listDescendantPostPublicationSitemapPage",
@@ -938,11 +908,6 @@
     "annotation": "setPrimaryEmailAddress",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
-  },
-  {
-    "annotation": "setRssFeedStateAsCurrentUser:latest",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",

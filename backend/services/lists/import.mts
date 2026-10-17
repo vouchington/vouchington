@@ -1,7 +1,5 @@
 import { write } from '@data-stores/psql'
-import assert from 'http-assert'
-import { getListForWrite } from './lists.mts'
-import { currentUserCanManageList } from './authorization.mts'
+import type { ManageableList } from './manage.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
 const IMPORT_FEED_ITEM_LIMIT = 20
@@ -32,13 +30,15 @@ export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeed
     AND item.removed_at IS NULL
   ORDER BY $1::uuid, rfi.id`
 
+/**
+ * Copies a community's posts and feed items into a list the caller already loaded through
+ * `getManageableList`, which has answered the 404 and 403 for it.
+ */
 export async function importCommunityList(
-  currentUserId: string,
-  { communityId, targetListId }: { communityId: string; targetListId: string },
+  targetList: ManageableList,
+  { communityId }: { communityId: string },
 ): Promise<{ posts: number; items: number }> {
-  const list = await getListForWrite(targetListId)
-  assert(list, 404, 'List not found')
-  assert(currentUserCanManageList(currentUserId, list), 403, 'Forbidden')
+  const targetListId = targetList.id
 
   const { rowCount: postsCount } = await write(
     `/* importCommunityList:posts */

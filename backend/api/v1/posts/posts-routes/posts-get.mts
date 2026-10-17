@@ -81,18 +81,20 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   const postIds = result.results.map((r: { id: string }) => r.id)
   const postIdSet = new Set(postIds)
   const rawPostsPromise = getPostByAnyCachedBatch(postIds)
-  const postsPromise = rawPostsPromise.then(posts => labelAndMaskPosts(posts, currentUser))
-  const postsWithRootsPromise = Promise.all([rawPostsPromise, postsPromise]).then(
-    async ([rawPosts, posts]) => {
-      const rootPostIds = [
-        ...new Set(rawPosts.flatMap(post => (post?.root_post_id ? [post.root_post_id] : []))),
-      ].filter(rootPostId => !postIdSet.has(rootPostId))
-      if (rootPostIds.length === 0) return posts
-      const rawRootPosts = await getPostByAnyCachedBatch(rootPostIds)
-      const rootPosts = await labelAndMaskPosts(rawRootPosts, currentUser)
-      return [...posts, ...rootPosts]
-    },
-  )
+  // Roots outside the page are labelled with the page in one read of the provenance facts.
+  const labelledPostsPromise = rawPostsPromise.then(async rawPosts => {
+    const rootPostIds = [
+      ...new Set(rawPosts.flatMap(post => (post?.root_post_id ? [post.root_post_id] : []))),
+    ].filter(rootPostId => !postIdSet.has(rootPostId))
+    const rawRootPosts = rootPostIds.length > 0 ? await getPostByAnyCachedBatch(rootPostIds) : []
+    const labelled = await labelAndMaskPosts([...rawPosts, ...rawRootPosts], currentUser)
+    return { posts: labelled.slice(0, rawPosts.length), rootPosts: labelled.slice(rawPosts.length) }
+  })
+  const postsPromise = labelledPostsPromise.then(({ posts }) => posts)
+  const postsWithRootsPromise = labelledPostsPromise.then(({ posts, rootPosts }) => [
+    ...posts,
+    ...rootPosts,
+  ])
   if (!currentUser) {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }
