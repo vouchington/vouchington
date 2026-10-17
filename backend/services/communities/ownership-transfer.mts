@@ -11,7 +11,7 @@ import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCommunityOwnershipTransferEmail } from '@queues/emails/enqueues'
 import { getSiteUrl } from '@modules/utils'
 import {
-  createCommunityLifecycleNotification,
+  createCommunityLifecycleNotifications,
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 
@@ -49,8 +49,8 @@ export async function initiateOwnershipTransfer(
     opts,
   )
   const transitionId = `${transition.demotedUpdatedAt.toISOString()}:${transition.promotedUpdatedAt.toISOString()}`
-  const notifications = await Promise.all([
-    createCommunityLifecycleNotification(
+  const pushNotifications = await createCommunityLifecycleNotifications(
+    [
       {
         userId: targetUserId,
         communityId,
@@ -59,9 +59,6 @@ export async function initiateOwnershipTransfer(
         title: `You now own ${community.name}`,
         body: `Ownership of ${community.name} was transferred to you.`,
       },
-      opts,
-    ),
-    createCommunityLifecycleNotification(
       {
         userId: currentUserId,
         communityId,
@@ -70,13 +67,12 @@ export async function initiateOwnershipTransfer(
         title: `Ownership of ${community.name} was transferred`,
         body: `You transferred ownership of ${community.name}.`,
       },
-      opts,
-    ),
-  ])
+    ],
+    opts,
+  )
 
   await query.commit()
 
-  const pushNotifications = notifications.filter(notification => notification !== null)
   if (pushNotifications.length > 0) {
     await enqueueCommunityLifecycleNotificationPush(pushNotifications)
   }

@@ -6,13 +6,8 @@
   },
   {
     "annotation": "allocateCommunityAgentPromptSlot",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "approveApplication",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "reason": "The slot UPDATE runs after FOR UPDATE locks all of the creator's prompts and the slot-count check made under that lock, so concurrent allocations serialize (backend/services/community-agent-prompts/allocate.mts:38-56)",
+    "issue": 3123
   },
   {
     "annotation": "assertContributionAdmissionCapacity.count",
@@ -110,26 +105,6 @@
     "issue": 2608
   },
   {
-    "annotation": "countUserMemberCommunities",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "createCommunity",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "createCommunityLifecycleNotification",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "createCommunityPostReview",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
     "annotation": "createCopyrightDeliveryIntent",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
@@ -203,16 +178,6 @@
     "annotation": "currentCopyrightJurisdictionPolicy",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
-  },
-  {
-    "annotation": "currentUserCanChangeParticipantPolicy",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
-  },
-  {
-    "annotation": "currentUserCanManageParticipants",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
   },
   {
     "annotation": "deletePasskey",
@@ -315,11 +280,6 @@
     "issue": 2612
   },
   {
-    "annotation": "getCommunityAgentPrompt",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
     "annotation": "getCommunityById",
     "reason": "Community re-fetch; #2544 covers only part of the routes",
     "issue": 2614
@@ -368,11 +328,6 @@
     "annotation": "getModerationAppealById",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609
-  },
-  {
-    "annotation": "getModmailThread",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
   },
   {
     "annotation": "getOAuthClient",
@@ -780,11 +735,6 @@
     "issue": 2607
   },
   {
-    "annotation": "redeemInviteCode",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
     "annotation": "removeEmailAddress",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
@@ -811,8 +761,8 @@
   },
   {
     "annotation": "replayClientGeneratedTurn",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
+    "reason": "The route reads an acknowledged turn before any safety provider is called, and the transaction reads it again after locking the conversation so concurrent retries replay one turn (backend/services/conversations-messages/client-generated-chat.mts:54-57, backend/api/v1/conversations/index-routes/conversations-by-conversationid-client-generated-chat-post.mts:126)",
+    "issue": 3123
   },
   {
     "annotation": "replayFailedCopyrightActionIntent",
@@ -880,11 +830,6 @@
     "issue": 2610
   },
   {
-    "annotation": "revokeInvite",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
     "annotation": "rotateApiKey",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
@@ -918,11 +863,6 @@
     "annotation": "selectCopyrightTargetPosters",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
-  },
-  {
-    "annotation": "setApplicationQuestions",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
   },
   {
     "annotation": "setMyLandingPageDefault",

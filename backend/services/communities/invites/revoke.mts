@@ -27,7 +27,7 @@ export async function revokeInvite(currentUserId: string, inviteId: string): Pro
   assert(membership?.role === 'owner' || membership?.role === 'moderator', 403, 'Forbidden')
 
   await write(
-    sql`/* revokeInvite */
+    sql`/* revokeInvite:revoke */
     UPDATE community_invites
     SET revoked_at = CURRENT_TIMESTAMP
     WHERE id = ${inviteId}

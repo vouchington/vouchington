@@ -62,7 +62,7 @@ app
       body,
     })
 
-    const updated = await updateCommunityAgentPrompt(currentUser, promptId, {
+    const updated = await updateCommunityAgentPrompt(currentUser, prompt, {
       prompt: body.prompt,
     })
 
@@ -85,7 +85,7 @@ app
       path: ctx.params,
     })
 
-    await deleteCommunityAgentPrompt(currentUser, promptId)
+    await deleteCommunityAgentPrompt(currentUser, prompt)
 
     ctx.setStatus(204)
   })

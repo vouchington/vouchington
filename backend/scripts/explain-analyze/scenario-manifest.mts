@@ -3,6 +3,7 @@ import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
 import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario-ids.mts'
+import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
@@ -190,11 +191,5 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'media-delivery-replay-first',
   'media-delivery-replay-continuation',
   'media-delivery-replay-scoped',
-  'community-with-viewer',
-  'comment-ancestors-batch',
-  'notification-block-set',
-  'hostname-policies-batch',
-  'messaging-eligibility-batch',
-  'copyright-staff-case-batch',
-  'user-agent-read-first',
+  ...ROUND_TRIP_SHAPE_SCENARIO_IDS,
 ] as const

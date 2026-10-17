@@ -12,7 +12,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { getSiteUrl } from '@modules/utils'
 import {
-  createCommunityLifecycleNotification,
+  createCommunityLifecycleNotifications,
   enqueueCommunityLifecycleNotificationPush,
 } from '@services/notifications'
 import { invalidateCommunityMemberUserMetrics } from './invalidate-user-metrics.mts'
@@ -59,19 +59,21 @@ export async function updateMemberRole(
 
   const transition = rows[0]
   const changed = transition !== undefined
-  const notificationInTransaction = changed
-    ? await createCommunityLifecycleNotification(
-        {
-          userId: targetUserId,
-          communityId,
-          entityType: 'community_role_change',
-          eventKey: `community-role-change:${communityId}:${targetUserId}:${transition.updated_at.toISOString()}`,
-          title: `Your role in ${community.name} changed`,
-          body: `Your community role changed from ${targetMembership.role} to ${role}.`,
-        },
+  const [notificationInTransaction = null] = changed
+    ? await createCommunityLifecycleNotifications(
+        [
+          {
+            userId: targetUserId,
+            communityId,
+            entityType: 'community_role_change',
+            eventKey: `community-role-change:${communityId}:${targetUserId}:${transition.updated_at.toISOString()}`,
+            title: `Your role in ${community.name} changed`,
+            body: `Your community role changed from ${targetMembership.role} to ${role}.`,
+          },
+        ],
         options,
       )
-    : null
+    : []
   await query.commit()
   const shouldDeactivatePrompts = targetMembership.role === 'moderator' && role === 'member'
   const previousRole = targetMembership.role

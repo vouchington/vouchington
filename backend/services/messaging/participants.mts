@@ -2,10 +2,6 @@ import { write, beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { anyPairAmongUsersBlockedOrMuted } from '@services/entity-relations/check-block-mute'
-import {
-  currentUserCanManageParticipants,
-  currentUserCanChangeParticipantPolicy,
-} from './authorization.mts'
 import { currentUserCanMessageUsers } from './message-eligibility.mts'
 import type { ConversationParticipant } from './types.mts'
 
@@ -14,17 +10,32 @@ export async function addConversationParticipant(
   conversationId: string,
   newUserId: string,
 ): Promise<ConversationParticipant> {
-  const canManage = await currentUserCanManageParticipants(currentUserId, conversationId)
-  if (!canManage) throw createHttpError(403, 'Access denied')
-
   await using query = await beginTransaction()
+  // The conversation row and its active participants arrive together so the manage-participants
+  // gate (creator, or any active participant under `all_members`) is decided from one read.
   const { rows: participantRows } = await query(sql`/* addConversationParticipant:participants */
-      SELECT user_id FROM conversation_participants
-      WHERE conversation_id = ${conversationId}
-        AND removed_at IS NULL
-        AND user_id IS NOT NULL
+      SELECT c.created_by_id, c.participant_add_policy, cp.user_id
+      FROM conversations c
+      LEFT JOIN conversation_participants cp
+        ON cp.conversation_id = c.id
+        AND cp.removed_at IS NULL
+        AND cp.user_id IS NOT NULL
+      WHERE c.id = ${conversationId}
+        AND c.channel_type = 'direct_message'
+        AND c.deleted_at IS NULL
     `)
-  const currentParticipantIds = (participantRows as Array<{ user_id: string }>).map(r => r.user_id)
+  const conversation = participantRows[0] as
+    | { created_by_id: string | null; participant_add_policy: string }
+    | undefined
+  const currentParticipantIds = (participantRows as Array<{ user_id: string | null }>).flatMap(r =>
+    r.user_id ? [r.user_id] : [],
+  )
+  const canManage =
+    conversation !== undefined &&
+    (conversation.created_by_id === currentUserId ||
+      (conversation.participant_add_policy === 'all_members' &&
+        currentParticipantIds.includes(currentUserId)))
+  if (!canManage) throw createHttpError(403, 'Access denied')
 
   if (currentParticipantIds.length >= 26) {
     throw createHttpError(400, 'Conversation has reached the maximum of 26 participants')
@@ -119,12 +130,15 @@ export async function updateConversationParticipantAddPolicy(
   conversationId: string,
   policy: 'owner_only' | 'all_members',
 ): Promise<void> {
-  const canChange = await currentUserCanChangeParticipantPolicy(currentUserId, conversationId)
-  if (!canChange) throw createHttpError(403, 'Only the owner can change participant policy')
-
-  await write(sql`/* updateConversationParticipantAddPolicy */
+  // The owner gate rides on the update itself, so a missing, deleted or foreign conversation
+  // matches no row.
+  const { rowCount } = await write(sql`/* updateConversationParticipantAddPolicy */
     UPDATE conversations
     SET participant_add_policy = ${policy}, last_activity_at = CURRENT_TIMESTAMP
     WHERE id = ${conversationId}
+      AND channel_type = 'direct_message'
+      AND deleted_at IS NULL
+      AND created_by_id = ${currentUserId}
   `)
+  if (rowCount === 0) throw createHttpError(403, 'Only the owner can change participant policy')
 }
