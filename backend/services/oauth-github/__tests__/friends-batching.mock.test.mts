@@ -13,6 +13,9 @@ import {
   softDeleteUser,
 } from '@voucha/test-helpers'
 import { syncGithubFriends } from '../friends.mts'
+import { oauthGithubWorkConfig } from '../work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { getTestGithubFriendObservationAnchor } from '@voucha/test-helpers/friend-observation-anchor'
 import { finalizeGithubFriendSync } from '../friends-persistence.mts'
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -61,29 +64,54 @@ describe('syncGithubFriends batching', () => {
 
   it('commits each bounded stale-row cleanup page separately', async () => {
     const { accountId, providerUserId, userId } = await createGithubSyncAccount()
-    const friendIds = makeFriendIds('github-stale')
+    const friendIds = makeFriendIds('github-stale', 3)
     await insertTestFriends('github', providerUserId, friendIds)
+    const syncStartTime = await getTestGithubFriendObservationAnchor(accountId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
     const secondStalePage = Promise.withResolvers<void>()
     let staleReads = 0
-    const sync = finalizeGithubFriendSync(
-      accountId,
-      userId,
-      new Date(Date.now() + 60_000).toISOString(),
-      {
-        onStaleFriendPage(page) {
-          if (page.length === 0) return
-          staleReads += 1
-          if (staleReads === 2) secondStalePage.resolve()
-        },
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(oauthGithubWorkConfig, {
+      friend_mutation_batch_size: 2,
+    })
+    const sync = finalizeGithubFriendSync(accountId, userId, syncStartTime, {
+      onStaleFriendPage(page) {
+        if (page.length === 0) return
+        staleReads += 1
+        if (staleReads === 2) secondStalePage.resolve()
       },
-    )
+    })
+    restoreBatchSize()
+    let primaryFailure: { error: unknown } | undefined
+    const cleanupErrors: unknown[] = []
     try {
-      await secondStalePage.promise
+      await Promise.race([
+        secondStalePage.promise,
+        sync.then(() => {
+          throw new Error('Friend cleanup completed before its second stale page')
+        }),
+      ])
       await expect(countTestFriends('github', providerUserId)).resolves.toBe(1)
+    } catch (err) {
+      primaryFailure = { error: err }
     } finally {
-      await rowLock.release()
+      try {
+        await rowLock.release()
+      } catch (err) {
+        cleanupErrors.push(err)
+      }
+      try {
+        await sync
+      } catch (err) {
+        if (!primaryFailure || err !== primaryFailure.error) cleanupErrors.push(err)
+      }
     }
+    if (cleanupErrors.length > 0)
+      throw new AggregateError(
+        [...(primaryFailure ? [primaryFailure.error] : []), ...cleanupErrors],
+        'Friend cleanup failed to finish',
+        { cause: primaryFailure ? primaryFailure.error : cleanupErrors[0] },
+      )
+    if (primaryFailure) throw primaryFailure.error
     await expect(sync).resolves.toBeUndefined()
     await expect(countTestFriends('github', providerUserId)).resolves.toBe(0)
   })
@@ -114,10 +142,10 @@ function randomGithubId(offset: number): number {
   return offset + Math.floor(Math.random() * 500_000)
 }
 
-function makeFriendIds(prefix: string): string[] {
+function makeFriendIds(prefix: string, count: number): string[] {
   const suffix = createRandomString(10)
   return Array.from(
-    { length: 1001 },
+    { length: count },
     (_, index) => `${prefix}-${suffix}-${String(index).padStart(4, '0')}`,
   )
 }
