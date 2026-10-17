@@ -9,7 +9,11 @@ import {
   RESOURCE_PRESSURE_BASELINE,
   type ResourcePressureBaseline,
 } from './resource-pressure-baseline.mts'
-import { assertNoNewSeqScans, getExplainResultIdentity } from './seq-scan-baseline.mts'
+import {
+  assertNoNewSeqScans,
+  getExplainResultIdentity,
+  getSeqScanNearTies,
+} from './seq-scan-baseline.mts'
 import { loadLatestPairedResults } from './paired-results.mts'
 
 export { getExplainResultIdentity } from './seq-scan-baseline.mts'
@@ -58,6 +62,9 @@ function main() {
   const unstable = assertNoNewSeqScans(results, repeatedResults)
   if (unstable.onlyFirst.length > 0 || unstable.onlyRepeated.length > 0)
     console.error(`Unstable sequential scans (advisory): ${JSON.stringify(unstable)}`)
+  const nearTies = getSeqScanNearTies(results, repeatedResults)
+  if (nearTies.length > 0)
+    console.error(`Sequential scans within a near-tie of an index plan (advisory): ${nearTies}`)
   assertNoDisallowedRegressions(results)
   console.error(`Loaded ${results.length} query results`)
 

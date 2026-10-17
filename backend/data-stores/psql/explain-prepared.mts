@@ -3,10 +3,12 @@ import type { PoolClient } from 'pg'
 export function buildExplainPreparedStatementText(
   name: string,
   argumentSql: readonly string[],
+  planOnly = false,
 ): string {
   const argumentsSql = argumentSql.join(', ')
   const executionSql = argumentsSql ? `EXECUTE ${name}(${argumentsSql})` : `EXECUTE ${name}`
-  return `EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON) ${executionSql}`
+  const options = planOnly ? 'FORMAT JSON' : 'ANALYZE, BUFFERS, WAL, FORMAT JSON'
+  return `EXPLAIN (${options}) ${executionSql}`
 }
 
 export async function buildPreparedArgumentSql(

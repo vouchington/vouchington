@@ -55,6 +55,23 @@ describe('buildExplainAnalyzeText', () => {
     )
   })
 
+  it('plans a prepared target without executing it when only the plan cost is wanted', async () => {
+    expect(buildExplainPreparedStatementText('target_query', ['7::integer'], true)).toBe(
+      'EXPLAIN (FORMAT JSON) EXECUTE target_query(7::integer)',
+    )
+    const planned = await explainAnalyze(
+      'plan-only',
+      '/* explainPlanOnlyTest */ SELECT $1::integer AS value',
+      [7],
+      { planOnly: true },
+    )
+    const plan = (planned.plan as { Plan: Record<string, unknown> }).Plan
+    expect(plan['Node Type']).toBe('Result')
+    expect(plan['Total Cost']).toEqual(expect.any(Number))
+    expect(plan['Actual Rows']).toBeUndefined()
+    expect(planned.execution_time_ms).toBe(0)
+  })
+
   it('captures distinct target plans under forced custom and generic plan modes', async () => {
     const table = `explain_plan_cache_${randomUUID().replaceAll('-', '')}`
     try {
