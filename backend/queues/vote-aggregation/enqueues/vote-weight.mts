@@ -3,10 +3,6 @@ import type { JobOptions } from 'glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  VOTE_AGGREGATION_AGE_MILESTONES_JOB,
-  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
-  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
-  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
   VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
   VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
@@ -14,11 +10,20 @@ import {
 } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '../queues.mts'
 import type { ProcessRecalculateUserVoteWeightData } from './types-vote-weight.mts'
+import {
+  buildBackfillDispatcherJobOptions,
+  type VoteWeightDispatcherEnqueueOptions,
+} from './vote-weight-dispatch.mts'
 
-const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
-type DispatcherOptions = {
+export {
+  enqueueVoteWeightAgeMilestones,
+  enqueueVoteWeightMembershipExpirations,
+  enqueueVoteWeightFamilySourceChanges,
+  enqueueVoteWeightDirtyMarkers,
+} from './vote-weight-dispatch.mts'
+
+type DispatcherOptions = VoteWeightDispatcherEnqueueOptions & {
   replayElectionsOnly?: boolean
-  deduplicationId?: string
 }
 
 function buildRecalculateUserVoteWeightOptions(
@@ -115,44 +120,9 @@ export function enqueueRecalculateVoteWeightDispatcher(
 ): EnqueueReturnType {
   return enqueueRecalculateVoteWeightDispatcherJob(
     { afterId, replayElectionsOnly: options?.replayElectionsOnly },
-    options?.deduplicationId
-      ? {
-          deduplication: {
-            id: options.deduplicationId,
-            mode: 'throttle' as const,
-            ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-          },
-        }
-      : undefined,
+    buildBackfillDispatcherJobOptions(options),
   )
 }
-
-const enqueueAgeMilestonesJob = createBackgroundEnqueue(VOTE_AGGREGATION_AGE_MILESTONES_JOB)
-const enqueueMembershipExpirationsJob = createBackgroundEnqueue(
-  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
-)
-const enqueueFamilySourceChangesJob = createBackgroundEnqueue(
-  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
-)
-
-export function enqueueVoteWeightAgeMilestones(
-  data: Parameters<typeof enqueueAgeMilestonesJob>[0] = {},
-) {
-  return enqueueAgeMilestonesJob(data)
-}
-export function enqueueVoteWeightMembershipExpirations(
-  data: Parameters<typeof enqueueMembershipExpirationsJob>[0] = {},
-) {
-  return enqueueMembershipExpirationsJob(data)
-}
-export function enqueueVoteWeightFamilySourceChanges(
-  data: Parameters<typeof enqueueFamilySourceChangesJob>[0] = {},
-) {
-  return enqueueFamilySourceChangesJob(data)
-}
-export const enqueueVoteWeightDirtyMarkers = createBackgroundEnqueue(
-  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
-)
 
 /**
  * Starts (cursor null) or continues one user's election fan-out. A start carries no job id, so a

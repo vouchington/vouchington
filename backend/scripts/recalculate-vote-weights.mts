@@ -9,10 +9,19 @@ import onError from '@modules/on-error'
 async function main() {
   console.log('Enqueuing vote weight signal dispatchers...')
   await Promise.all([
-    enqueueVoteWeightAgeMilestones({ fullReplay: true }),
-    enqueueVoteWeightMembershipExpirations({ fullReplay: true }),
-    enqueueVoteWeightFamilySourceChanges({ fullReplay: true }),
-    enqueueVoteWeightDirtyMarkers({}),
+    enqueueVoteWeightAgeMilestones(
+      { fullReplay: true },
+      { deduplicationId: 'backfill:vote-weight-age-milestones' },
+    ),
+    enqueueVoteWeightMembershipExpirations(
+      { fullReplay: true },
+      { deduplicationId: 'backfill:vote-weight-membership-expirations' },
+    ),
+    enqueueVoteWeightFamilySourceChanges(
+      { fullReplay: true },
+      { deduplicationId: 'backfill:vote-weight-family-source-changes' },
+    ),
+    enqueueVoteWeightDirtyMarkers({}, { deduplicationId: 'backfill:vote-weight-dirty-markers' }),
   ])
   console.log('Done. Dispatcher jobs enqueued.')
 }
