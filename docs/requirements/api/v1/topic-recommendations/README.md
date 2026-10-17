@@ -51,6 +51,16 @@ Response is streamed and includes: `post`, `post_metrics`, `post_election`, `mar
 
 ## POST /api/v1/topic-recommendations
 
+POST and PATCH return `{ post }` using the public post fields shared with MCP `read_posts`:
+`id`, nullable `slug`, `post_type`, `title`, `markdown`, nullable `parent_post_id`,
+`root_post_id` and `created_by_id`, `is_anonymous`, `created_at`, `updated_at`, and optional
+public `provenance`. The required `topic_recommendation` extension retains the proposed-topic
+fields, status, and review details. Internal post columns, author stubs, rendered HTML, language
+detection, clearance details, and edit permissions are absent. REST text remains plain text;
+MCP sanitizes text and fences Markdown and review messages. The closed contract is
+`TopicRecommendationMutationResponse` in `api-fixtures/v1/request-contracts.json`.
+The dedicated GET list/detail responses continue to provide their existing UI sidecars.
+
 **Request:**
 
 ```json

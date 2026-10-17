@@ -7,9 +7,24 @@ import {
   createTestUserWithAge,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
+import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
+import contracts from '../../../../../api-fixtures/v1/request-contracts.json' with { type: 'json' }
 
 const BASE = '/api/v1/topic-recommendations'
 const DIAGNOSTIC = /schema|must be|required|invalid/i
+const publicFields = [...PUBLIC_POST_FIELDS, 'topic_recommendation']
+
+function expectPublicRecommendation(post: Record<string, unknown>) {
+  expect(Object.keys(post).every(field => new Set<string>(publicFields).has(field))).toBe(true)
+  expect(
+    Object.keys(post)
+      .filter(field => field !== 'provenance')
+      .toSorted(),
+  ).toEqual(publicFields.filter(field => field !== 'provenance').toSorted())
+  expect(post.topic_recommendation).toMatchObject({ status: 'pending' })
+  expect(post).not.toHaveProperty('clearance_status')
+  expect(post).not.toHaveProperty('lingua_rs_detected_language')
+}
 
 describe('topic-recommendations request contracts', () => {
   let author: PrivateUser
@@ -36,6 +51,7 @@ describe('topic-recommendations request contracts', () => {
       .send(newBody(randomUUID().slice(0, 8)))
       .expect(201)
     recommendationId = created.body.post.id
+    expectPublicRecommendation(created.body.post)
   })
 
   it('rejects a malformed create body with 422 before any post exists', async () => {
@@ -89,6 +105,19 @@ describe('topic-recommendations request contracts', () => {
       .send({ title: 'Renamed' })
       .expect(200)
     expect(updated.body.post.title).toBe('Renamed')
+    expectPublicRecommendation(updated.body.post)
+  })
+
+  it('documents the same closed mutation post for POST and PATCH', () => {
+    const schema = contracts.components.PublicTopicRecommendationPost
+    expect(schema.additionalProperties).toBe(false)
+    expect(Object.keys(schema.properties).toSorted()).toEqual(publicFields.toSorted())
+    expect(schema.required).toContain('topic_recommendation')
+    const response = {
+      $ref: '#/components/schemas/TopicRecommendationMutationResponse',
+    }
+    expect(contracts.responses['POST:/api/v1/topic-recommendations']).toEqual(response)
+    expect(contracts.responses['PATCH:/api/v1/topic-recommendations/:id']).toEqual(response)
   })
 
   it('checks the admin role before the rejection body and leaves the status pending', async () => {

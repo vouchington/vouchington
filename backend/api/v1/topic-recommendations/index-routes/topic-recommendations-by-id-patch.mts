@@ -1,6 +1,8 @@
 import type { Context } from '@jongleberry/api-server'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { assertNotSuspended } from '@services/users/suspension'
+import { attachWrittenPostProvenance } from '@services/content-provenance'
+import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'
 import {
   asTopicRecommendationPost,
   currentUserCanEditTopicRecommendation,
@@ -24,5 +26,7 @@ app.route('/api/v1/topic-recommendations/:id').patch(async (ctx: Context) => {
     path: ctx.params,
   })
   const recommendation = await updateTopicRecommendation(currentUser, post, body)
-  ctx.json({ post: recommendation })
+  ctx.json({
+    post: projectPublicTopicRecommendation(await attachWrittenPostProvenance(recommendation, null)),
+  })
 })

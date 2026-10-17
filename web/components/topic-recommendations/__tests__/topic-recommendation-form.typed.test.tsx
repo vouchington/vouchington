@@ -1,5 +1,4 @@
 import {
-  makeRecommendationPost,
   mockCreateTopicRecommendation,
   mockFetchTopicRecommendationDuplicates,
   mockOnError,
@@ -7,8 +6,7 @@ import {
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationForm } from '../topic-recommendation-form'
-
-const mockRecommendationPost = makeRecommendationPost()
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
 describe('TopicRecommendationForm – typed fields', () => {
   beforeEach(() => {
@@ -107,9 +105,7 @@ describe('TopicRecommendationForm – typed fields', () => {
   })
 
   it('submits referral_program recommendation with all required fields', async () => {
-    mockCreateTopicRecommendation.mockResolvedValue({
-      post: mockRecommendationPost,
-    })
+    mockCreateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     render(<TopicRecommendationForm />)
 
@@ -134,9 +130,7 @@ describe('TopicRecommendationForm – typed fields', () => {
   })
 
   it('submits card recommendation with landing page URLs', async () => {
-    mockCreateTopicRecommendation.mockResolvedValue({
-      post: mockRecommendationPost,
-    })
+    mockCreateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     render(<TopicRecommendationForm />)
 

@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationsTable } from '../topic-recommendations-table'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { User } from '@/types/user'
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
 const { basePost, data } = makeRecommendationTableFixture()
 const mockRouterPush = mockNav.push
@@ -41,7 +42,7 @@ describe('TopicRecommendationsTable — modal actions', () => {
   }
 
   it('updates then approves from modal when editable state differs from post', async () => {
-    mockUpdate.mockResolvedValue({ post: basePost })
+    mockUpdate.mockResolvedValue(makeTopicRecommendationMutationResponse())
     mockApprove.mockResolvedValue({
       post: basePost,
       topic_id: 'topic-changed',

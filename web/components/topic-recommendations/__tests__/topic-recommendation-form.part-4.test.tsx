@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationForm } from '../topic-recommendation-form'
 import { ApiError } from '@/lib/api/error'
 import { expectTextareaCmdEnterSubmits } from '@/test-helpers/form-keyboard'
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
 const mockRecommendationPost = makeRecommendationPost()
 
@@ -36,9 +37,7 @@ describe('TopicRecommendationForm', () => {
   }
 
   it('Cmd+Enter and Ctrl+Enter on the rationale textarea submit the form; plain Enter does not', () => {
-    mockCreateTopicRecommendation.mockResolvedValue({
-      post: mockRecommendationPost,
-    })
+    mockCreateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     render(<TopicRecommendationForm />)
     fillRequiredFields()

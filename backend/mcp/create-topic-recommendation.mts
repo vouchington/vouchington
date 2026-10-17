@@ -10,7 +10,6 @@ import { currentUserCanCreatePost } from '@services/posts/authorization'
 import {
   assertValidCreateTopicRecommendationInput,
   type CreateTopicRecommendationInput,
-  type TopicRecommendationPost,
 } from '@services/topic-recommendations'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
@@ -19,6 +18,8 @@ import updateTool from './update-topic-recommendation.mts'
 import { TOPIC_RECOMMENDATION_RESULT_SCHEMA } from './topic-recommendation-tool-support.mts'
 import { toMcpRecommendation } from './topic-recommendation-read-output.mts'
 import { getLoadedMembershipPlan } from '@services/users'
+import { attachWrittenPostProvenance } from '@services/content-provenance'
+import type { PublicTopicRecommendationPost } from '@services/topic-recommendations/public-projection'
 
 type Args = CreateTopicRecommendationInput & { idempotency_key: string }
 const { id: _id, ...fields } = updateTool.schema.parameters!['properties'] as Record<
@@ -26,7 +27,7 @@ const { id: _id, ...fields } = updateTool.schema.parameters!['properties'] as Re
   unknown
 >
 
-const tool: Tool<Args, { success: true; post: TopicRecommendationPost }> = {
+const tool: Tool<Args, { success: true; post: PublicTopicRecommendationPost }> = {
   schema: {
     name: 'create_topic_recommendation',
     type: 'function',
@@ -78,7 +79,10 @@ const tool: Tool<Args, { success: true; post: TopicRecommendationPost }> = {
           prepareDelegatedTopicRecommendation(user, getRequestContentProvenance(), body, query),
         ),
     })
-    return { success: true, post: await toMcpRecommendation(post) }
+    return {
+      success: true,
+      post: await toMcpRecommendation(await attachWrittenPostProvenance(post, null)),
+    }
   },
 }
 

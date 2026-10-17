@@ -2,9 +2,9 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { getPostsByAnyBatch } from '@services/posts'
 import {
   searchTopicRecommendations,
-  type TopicRecommendationPost,
   type TopicRecommendationStatus,
 } from '@services/topic-recommendations'
+import type { PublicTopicRecommendationPost } from '@services/topic-recommendations/public-projection'
 import type { BasicUser } from '@services/users/types'
 import { pageInfoSchema, pageInputProperties, type McpPageLimit } from './mcp-read-output.mts'
 import {
@@ -16,7 +16,7 @@ import {
 import { requirePrivateToolUser } from './private-user.mts'
 import { closedObject, foundOrNotFoundSchema } from './read-tool-output-schema.mts'
 import { clampToolLimit } from './search-system.mts'
-import { listedRecommendations, toMcpRecommendation } from './topic-recommendation-read-output.mts'
+import { listedRecommendations, toMcpRecommendations } from './topic-recommendation-read-output.mts'
 import { TOPIC_RECOMMENDATION_POST_SCHEMA } from './topic-recommendation-tool-support.mts'
 
 type ToolArgs = { status?: TopicRecommendationStatus; q?: string; limit?: number; after?: string }
@@ -31,7 +31,7 @@ type ToolResult =
   | {
       success: true
       results: RecommendationReference[]
-      posts: Record<string, TopicRecommendationPost>
+      posts: Record<string, PublicTopicRecommendationPost>
       page_info: SearchPageInfo
     }
   | InvalidCursorResult
@@ -104,7 +104,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         { readOnly: false },
       )
       const recommendations = listedRecommendations(loaded, args.status)
-      const posts = await Promise.all(recommendations.map(toMcpRecommendation))
+      const posts = await toMcpRecommendations(recommendations)
 
       return {
         success: true,

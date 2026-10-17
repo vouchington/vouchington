@@ -19,6 +19,7 @@ import {
 } from '@services/topic-recommendations'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
+import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'
 
 type Body = Record<string, unknown>
 type TestUser = Awaited<ReturnType<typeof createTestUser>>
@@ -35,11 +36,6 @@ const asCaller = (user: TestUser, plan: 'plus' | null = null): McpContractCaller
   ...user,
   membership_plan: plan,
 })
-
-const withoutUndocumentedUserFields = (user: Body) => {
-  const { display_account: _account, ...documented } = user
-  return documented
-}
 
 async function submit(author: McpContractCaller): Promise<TopicRecommendationPost> {
   const suffix = createRandomString(8).toLowerCase()
@@ -105,25 +101,22 @@ describe('list_my_topic_recommendations contract — real DB', () => {
     expect(ids(await list({}, asCaller(ownerUser, null)))).toEqual(ids(page))
   })
 
-  it('returns the post the REST route returns, minus what the documented post does not list', async () => {
+  it('returns the public post fields and recommendation extension from the REST row', async () => {
     const request = createRequest()
     await request.authenticateAs(ownerUser)
     const rest = await request.get(`/api/v1/topic-recommendations/${pending.id}`).expect(200)
-    const { [INTERNAL_POST_COLUMN]: internal, markdown: written, ...restPost } = rest.body.post
-    // Like update_topic_recommendation, the tool keeps the properties the documented Post lists, so
-    // the undocumented display-account fields stay out; account_type is part of the contract.
-    const documented = {
-      ...restPost,
-      created_by: withoutUndocumentedUserFields(restPost.created_by),
-      updated_by: withoutUndocumentedUserFields(restPost.updated_by),
-    }
+    const { [INTERNAL_POST_COLUMN]: internal, markdown: written } = rest.body.post
+    const {
+      markdown: _raw,
+      provenance: _restLabel,
+      ...expected
+    } = projectPublicTopicRecommendation(rest.body.post)
 
     const page = await list({ status: 'pending' })
-    const { markdown: fenced, ...post } = page.posts[pending.id]!
+    const { markdown: fenced, provenance: _label, ...post } = page.posts[pending.id]!
 
     expect(internal).toBeDefined()
-    // Every field but the Markdown, which the tool fences, is the REST field.
-    expect(post).toEqual(documented)
+    expect(post).toEqual(expected)
     expect(fenced).toMatch(/^<external-content source="topic_recommendation"/)
     expect(fenced).toContain(written)
     expect(JSON.stringify(page)).not.toContain(INTERNAL_POST_COLUMN)

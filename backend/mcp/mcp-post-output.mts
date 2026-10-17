@@ -1,41 +1,19 @@
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { attachPostProvenance, attachWrittenPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch } from '@services/entity-fetch'
-import { maskAnonymousPost, type Post } from '@services/posts'
+import type { Post } from '@services/posts'
+import {
+  projectPublicPost,
+  PUBLIC_POST_FIELDS,
+  type PublicPost,
+} from '@services/posts/public-post-projection'
 import { closedObject, pickProperties } from './read-tool-output-schema.mts'
 
 /** The post fields the MCP read tools return, in output order. */
-export const MCP_POST_FIELDS = [
-  'id',
-  'slug',
-  'post_type',
-  'title',
-  'markdown',
-  'parent_post_id',
-  'root_post_id',
-  'created_by_id',
-  'is_anonymous',
-  'created_at',
-  'updated_at',
-  'provenance',
-] as const
+export const MCP_POST_FIELDS = PUBLIC_POST_FIELDS
 
 /** One post as an MCP client receives it. */
-export type McpPost = {
-  id: string
-  slug: string | null
-  post_type: Post['post_type']
-  title: string
-  markdown: string
-  parent_post_id: string | null
-  root_post_id: string | null
-  created_by_id: string | null
-  is_anonymous: boolean
-  created_at: string
-  updated_at: string
-  /** The public provenance facts of an API or MCP post, on every tool; never the staff detail. */
-  provenance?: Post['provenance']
-}
+export type McpPost = PublicPost
 
 /** The published schema of an `McpPost`, from the generated `Post` contract. */
 export function mcpPostSchema() {
@@ -50,22 +28,14 @@ export function mcpPostSchema() {
  * asks.
  */
 async function toMcpPost(post: Post): Promise<McpPost> {
+  const publicPost = projectPublicPost(post)
   return {
-    id: post.id,
-    slug: post.slug ?? null,
-    post_type: post.post_type,
-    title: await sanitizePromptInjection(post.title, { isTitle: true }),
-    markdown: wrapExternalContent(await sanitizePromptInjection(post.markdown), {
+    ...publicPost,
+    title: await sanitizePromptInjection(publicPost.title, { isTitle: true }),
+    markdown: wrapExternalContent(await sanitizePromptInjection(publicPost.markdown), {
       source: 'post',
       contentType: 'user_post',
     }),
-    parent_post_id: post.parent_post_id ?? null,
-    root_post_id: post.root_post_id ?? null,
-    created_by_id: maskAnonymousPost(post, null)?.created_by_id ?? null,
-    is_anonymous: post.is_anonymous,
-    created_at: new Date(post.created_at).toISOString(),
-    updated_at: new Date(post.updated_at).toISOString(),
-    ...(post.provenance && { provenance: post.provenance }),
   }
 }
 

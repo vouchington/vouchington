@@ -64,9 +64,16 @@ describe('toMcpRecommendation', () => {
   }
   const hostilePost = {
     id: 'rec',
+    slug: null,
     post_type: 'topic_recommendation',
     title: HOSTILE,
     markdown: HOSTILE,
+    parent_post_id: null,
+    root_post_id: null,
+    created_by_id: 'author',
+    is_anonymous: false,
+    created_at: new Date('2026-01-01T00:00:00Z'),
+    updated_at: new Date('2026-01-01T00:00:00Z'),
     ai_summary_markdown: '',
     clearance_reason: null,
     updated_by: staff,
@@ -82,8 +89,9 @@ describe('toMcpRecommendation', () => {
     expect(post.topic_recommendation.topic_markdown).toMatch(/^<external-content /)
     expect(post.topic_recommendation.rejection_reason).toMatch(/^<external-content /)
     expect(post.topic_recommendation.approval_error_message).toMatch(/^<external-content /)
-    expect(post.updated_by?.markdown).toMatch(/^<external-content source="user"/)
-    expect(post.updated_by).toMatchObject({ id: 'staff', roles: ['administrator'] })
+    expect(post).not.toHaveProperty('updated_by')
+    expect(post).not.toHaveProperty('ai_summary_markdown')
+    expect(post).not.toHaveProperty('clearance_reason')
     expect(post.topic_recommendation.aliases).toHaveLength(1)
     expect(post.topic_recommendation.topic_slug).toBe('a-slug')
   })

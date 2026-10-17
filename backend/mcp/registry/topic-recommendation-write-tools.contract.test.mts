@@ -18,6 +18,7 @@ import {
 } from '@services/topic-recommendations'
 import { addUserRole } from '@services/users/roles-permissions'
 import { getPrivateUserByAny } from '@services/users/get'
+import { PUBLIC_POST_FIELDS } from '@services/posts/public-post-projection'
 import updateTopicRecommendationTool from '../update-topic-recommendation.mts'
 import withdrawTopicRecommendationTool from '../withdraw-topic-recommendation.mts'
 
@@ -93,11 +94,17 @@ describe('topic recommendation write tools contract — real DB', () => {
     )
 
     const post = result.post as TopicRecommendationPost
-    // The route sends the service post as it is, internal moderation column included. The tool
-    // sends the documented properties only.
-    const restKeys = Object.keys(rest.body.post).filter(key => key !== INTERNAL_POST_COLUMN)
-    expect(Object.keys(rest.body.post)).toContain(INTERNAL_POST_COLUMN)
-    expect(Object.keys(post).toSorted()).toEqual(restKeys.toSorted())
+    const expectedFields = [...PUBLIC_POST_FIELDS, 'topic_recommendation']
+    expect(
+      Object.keys(rest.body.post).every(field => new Set<string>(expectedFields).has(field)),
+    ).toBe(true)
+    expect(
+      Object.keys(rest.body.post)
+        .filter(field => field !== 'provenance')
+        .toSorted(),
+    ).toEqual(expectedFields.filter(field => field !== 'provenance').toSorted())
+    expect(Object.keys(post).toSorted()).toEqual(Object.keys(rest.body.post).toSorted())
+    expect(post).not.toHaveProperty(INTERNAL_POST_COLUMN)
     expect(post.topic_recommendation).toMatchObject({
       topic_title: 'Renamed topic',
       topic_slug: recommendation.topic_recommendation.topic_slug,

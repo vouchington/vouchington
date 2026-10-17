@@ -117,6 +117,13 @@ Do not widen a schema or remove validation merely to make a mismatch pass. Runti
 structured-result validation remain enforced; broader automated drift detection awaits redesign.
 See the [fixture update flow](../../../../development/testing/backend/api-fixtures.md#update-flow).
 
+Topic-recommendation create/update/list results use `PublicTopicRecommendationPost`: the same
+public post base as `read_posts`, plus the required proposed-topic/status/review extension.
+REST POST/PATCH and the web mutation client use that contract too. Internal post columns,
+rendered HTML, language detection, clearance details, author stubs, and edit permissions are
+excluded; MCP still sanitizes all retained free text and fences Markdown and review messages.
+See the [topic-recommendations API](../../../../requirements/api/v1/topic-recommendations/README.md).
+
 **Tool-local schema factoring.** The generated MCP catalog factors exactly repeated subschemas
 within each tool's input or output schema into that schema's root `$defs`, referenced only by
 `#/$defs/<Name>`. Definitions never cross tool or input/output boundaries. Keep the factual shape

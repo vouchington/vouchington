@@ -2,8 +2,7 @@ import createHttpError from 'http-errors'
 import { getPostByAnyCached } from '@services/entity-fetch'
 import { asTopicRecommendationPost } from '@services/topic-recommendations'
 import { componentSchema } from './route-response-schema.mts'
-import { successSchema, type JsonSchema } from './output-schema-shapes.mts'
-import { pruneToSchema } from './prune-to-schema.mts'
+import { successSchema } from './output-schema-shapes.mts'
 
 export type TopicRecommendationIdArgs = { id: string }
 
@@ -22,37 +21,11 @@ export async function loadTopicRecommendation(id: string) {
   return recommendation
 }
 
-const POST = componentSchema('Post') as {
-  properties: Record<string, JsonSchema>
-  required: string[]
-} & JsonSchema
-
-const recommendationExtension = (POST.properties['topic_recommendation'] as JsonSchema)[
-  'anyOf'
-] as JsonSchema[]
-
 /**
- * The post the PATCH route documents under `post`: the `Post` component narrowed to a topic
- * recommendation, so the extension is present. The tool's test pins it to the documented body.
+ * The explicit REST mutation response post: read_posts' public base plus the required workflow
+ * extension. A contract test pins its base properties to read_posts.
  */
-export const TOPIC_RECOMMENDATION_POST_SCHEMA: JsonSchema = {
-  ...POST,
-  properties: {
-    ...POST.properties,
-    post_type: { const: 'topic_recommendation' },
-    topic_recommendation: recommendationExtension.find(branch => branch['type'] !== 'null'),
-  },
-  required: [...POST.required, 'topic_recommendation'].toSorted(),
-}
-
-/**
- * The post the tool returns: the service post reduced to what the documented `Post` declares. The
- * service post also carries internal columns, such as a moderation flag, and user fields the REST
- * document does not list. The result schema is closed, so they stay out of the result instead of
- * failing a call after the change was already made.
- */
-export const toDocumentedRecommendationPost = <TPost extends object>(post: TPost): TPost =>
-  pruneToSchema(TOPIC_RECOMMENDATION_POST_SCHEMA, post) as TPost
+export const TOPIC_RECOMMENDATION_POST_SCHEMA = componentSchema('PublicTopicRecommendationPost')
 
 export const TOPIC_RECOMMENDATION_RESULT_SCHEMA = successSchema({
   post: TOPIC_RECOMMENDATION_POST_SCHEMA,

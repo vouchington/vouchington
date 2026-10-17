@@ -74,8 +74,8 @@ describe('list_my_topic_recommendations text provenance — real DB', () => {
     )
     const post = (await list(author)).posts[recommendation.id]!
 
-    // The last editor is the submitter, so the editor id alone cannot say whose words these are.
-    expect(post.updated_by_id).toBe(author.id)
+    // The last editor cannot establish who wrote every retained field.
+    expect(post).not.toHaveProperty('updated_by_id')
     expect(post.markdown).toMatch(/^<external-content source="topic_recommendation"/)
     expect(post.topic_recommendation.topic_markdown).toMatch(/^<external-content /)
     expect(post.topic_recommendation.topic_title).toBe('Owner rename')

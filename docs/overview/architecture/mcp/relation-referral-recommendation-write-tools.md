@@ -83,11 +83,13 @@ from a feed, not a change to a submitted recommendation. It stays REST-only, as
 The tag tools and the recommendation tools do not overlap: one edits a post's hashtags, the other
 edits the proposed-topic extension of a `topic_recommendation` post.
 
-`update_topic_recommendation` returns the post the PATCH route documents. The service post also
-holds fields the documented `Post` does not list (an internal moderation flag, and display fields on
-the author stubs), and the REST route sends them as they are. The result schema is closed, so the
-tool prunes the post to the documented properties with `pruneToSchema`, rather than failing a call
-whose change was already made.
+Create, update, and `list_my_topic_recommendations` return the public post base shared with
+`read_posts`, plus the required `topic_recommendation` extension for proposed-topic fields,
+status, and review details. REST POST/PATCH use the same projection with plain text; MCP retains
+its text sanitation and external-content fencing. The explicit closed
+`PublicTopicRecommendationPost` contract excludes internal post columns and author stubs.
+Public provenance is attached after admission, including on replay, without changing the stored
+response or admission charges. List provenance is resolved for the primary-loaded page in one batch.
 
 ## REST write inventory
 

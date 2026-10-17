@@ -61,7 +61,6 @@ const NON_TOOL_FILES = new Set([
   'select-api-by-argument.mts',
   'topic-hierarchy-result.mts',
   'topic-output-schema-parts.mts',
-  'topic-recommendation-post-text.mts',
   'topic-recommendation-read-output.mts',
   'topic-recommendation-tool-support.mts',
   'tool-schema-contract.mts',

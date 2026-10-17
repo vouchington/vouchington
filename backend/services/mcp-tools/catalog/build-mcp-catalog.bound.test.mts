@@ -38,9 +38,10 @@ const grants = [
 ]
 
 // User-server ceilings amended by #2545 owner decision (2026-10-15). Sizes are compact UTF-16 code units.
+// #2961 PR A lowers only mcp.all list/output to the projected measurement plus 1.5%, rounded to 1,000.
 const caps = {
   mcp: {
-    all: { count: 74, list: 260000, core: 115000, output: 250000 },
+    all: { count: 74, list: 243000, core: 115000, output: 230000 },
     Reader: { count: 9, list: 65000, core: 30000, output: 60000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
@@ -229,7 +230,7 @@ describe('participation write discovery contract', () => {
         .toSorted(),
     ).toEqual(names.toSorted())
     expect(hash(withoutOptionOutputPointers(paid.filter(tool => !names.includes(tool.name))))).toBe(
-      'e8e1f6f4109247033c746fd57226084397ed299bfed84070ed2a968011736ee8',
+      '1b6d8116dc7bad14e22ba71ea653c3f29873630b7a34b9c982c239793b49d4b6',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
