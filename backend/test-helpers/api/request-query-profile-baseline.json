@@ -26,13 +26,8 @@
   },
   {
     "annotation": "assertPostMutationAccess",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Relation creation reloads effective root and privacy after transaction publication locks to reject a concurrent root or visibility change",
     "issue": 2612
-  },
-  {
-    "annotation": "assertReportablePost",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
   },
   {
     "annotation": "assertReferralProgramExists",
@@ -40,13 +35,13 @@
     "issue": 3120
   },
   {
-    "annotation": "assertUrlsHaveNoBlockedHostnames",
-    "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
-    "issue": 2612
+    "annotation": "assertReportablePost",
+    "reason": "Moderation report and case steps repeat per entity",
+    "issue": 2609
   },
   {
-    "annotation": "assertUrlsHaveNoBlockedHostnames_getUrls",
-    "reason": "Blocked-hostname validation loads each proposed hostname root URL",
+    "annotation": "assertUrlsHaveNoBlockedHostnames",
+    "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
     "issue": 2612
   },
   {
@@ -66,17 +61,12 @@
   },
   {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "buildEntityRelationSelectQuery",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Each bounded discovery follows the preceding publication-locked relation deletion and must find only the remaining active rows",
     "issue": 2612
   },
   {
     "annotation": "buildInsertQuery",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Bidirectional relations write forward then reverse under the pair lock so overlapping inputs observe prior resurrection and newly-active state",
     "issue": 2612
   },
   {
@@ -160,11 +150,6 @@
     "issue": 2607
   },
   {
-    "annotation": "createCrawlerForHostname",
-    "reason": "Root URL creation configures a crawler for each approved hostname",
-    "issue": 2612
-  },
-  {
     "annotation": "createDeterministicCopyrightCorrespondenceInTransaction",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
@@ -201,8 +186,8 @@
   },
   {
     "annotation": "createTopicRecommendationLinkRelation",
-    "reason": "Approval checks existing landing-page relations for each proposed hostname",
-    "issue": 2612
+    "reason": "Pending #3121 design decision: conflict checks stay fresh after earlier hostname URL/provider/relation writes; batching requires a shared hostname-ownership serialization protocol.",
+    "issue": 3121
   },
   {
     "annotation": "createTopicRevision",
@@ -236,7 +221,7 @@
   },
   {
     "annotation": "deletePendingRecommendation",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Pending-review admission is reread under FOR UPDATE before ordered extension and owning-post deletion writes",
     "issue": 2612
   },
   {
@@ -326,7 +311,7 @@
   },
   {
     "annotation": "getBlocklistedDomainKeys",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "RSS source validation repeats blocklist fallback across protocol/provider attempts; remaining freshness and sequencing work is tracked in #3121",
     "issue": 2612
   },
   {
@@ -350,29 +335,9 @@
     "issue": 2544
   },
   {
-    "annotation": "getCrawlerForHostnameId",
-    "reason": "Root URL creation looks up a crawler for each approved hostname",
-    "issue": 2612
-  },
-  {
     "annotation": "getDataRequestById",
     "reason": "Unresolved in #3120: the second read closes the lost-wakeup window after pub/sub subscribe, and removing it requires a separate SSE race/error-order design (backend/api/v1/users/data-request.mts:117-135). This remains outside the issue's allowed row-lock/write/transaction keep categories.",
     "issue": 3120
-  },
-  {
-    "annotation": "getElectionsByIdBatch",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "getFollowedUsersByElectionVote",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
-    "annotation": "getFollowedUsersFollowingTopic",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
   },
   {
     "annotation": "getLandingPageRowForUser",
@@ -415,11 +380,6 @@
     "issue": 2610
   },
   {
-    "annotation": "getOrCreateCrawlerForHostnameInTransaction",
-    "reason": "Root URL creation locks crawler creation for each approved hostname",
-    "issue": 2612
-  },
-  {
     "annotation": "getPostByAny",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 2613
@@ -456,7 +416,7 @@
   },
   {
     "annotation": "getRelatablePostIds",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Relation creation rechecks both participant roles after publication locks to reject visibility changes while waiting",
     "issue": 2612
   },
   {
@@ -530,11 +490,6 @@
     "issue": 2611
   },
   {
-    "annotation": "getTopicDataPointInsights",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
-  },
-  {
     "annotation": "getTopicsByAnyBatch",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612
@@ -556,7 +511,7 @@
   },
   {
     "annotation": "getUserTagRelationById",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "The committed vote append is followed by a fresh active-tag check before primary stats refresh, preserving concurrent deletion state",
     "issue": 2612
   },
   {
@@ -601,7 +556,7 @@
   },
   {
     "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Each separately committed relation-vote append transaction must acquire its own active-user admission fence",
     "issue": 2612
   },
   {
@@ -636,12 +591,12 @@
   },
   {
     "annotation": "lockEntityRelationElectionVoteMutations",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Each append transaction acquires sorted advisory vote locks; bidirectional direction ordering prevents inverse-call deadlocks",
     "issue": 2612
   },
   {
     "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Each bounded stats-update transaction acquires publication locks before relation row locks; committed prior chunks cannot lend their locks",
     "issue": 2612
   },
   {
@@ -845,18 +800,13 @@
     "issue": 2608
   },
   {
-    "annotation": "repairEntityBloomKeys",
-    "reason": "Topic listener work repairs Bloom keys once per affected topic",
-    "issue": 2612
-  },
-  {
     "annotation": "replaceMyLandingPageItems",
     "reason": "Group-member rows must be deleted before their parent landing-page items to satisfy the foreign key (backend/services/my/landing-pages/replace-item-writes.mts:11-19)",
     "issue": 3120
   },
   {
     "annotation": "replaceTopicRecommendationHostnames",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Replacement deletes existing hostname membership before inserting the new sorted set in the same transaction",
     "issue": 2612
   },
   {
@@ -1021,12 +971,12 @@
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Each bounded stats chunk updates locked rows and captures publication transitions in its own transaction",
     "issue": 2612
   },
   {
     "annotation": "updateTopicRecommendation",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "The pending-state FOR UPDATE snapshot supplies omitted patch fields before ordered post and extension updates",
     "issue": 2612
   },
   {
@@ -1036,7 +986,7 @@
   },
   {
     "annotation": "upsertEntityRelationElectionVotes",
-    "reason": "Relation, vote and topic lookups repeat per target",
+    "reason": "Sorted bidirectional append transactions acquire admission and advisory locks; overlapping writes must observe the previously appended score",
     "issue": 2612
   },
   {
