@@ -148,7 +148,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'search-communities-virtual-subscriptions',
   'search-community-posts',
   'search-data-points',
-  'search-pending-community-posts',
   ...(['search-top-hostnames', 'search-top-hostnames-by-topic'] as const),
   ...([
     'search-topic-aliases',

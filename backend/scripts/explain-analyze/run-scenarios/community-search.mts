@@ -35,9 +35,15 @@ export async function runCommunitySearchScenarios() {
   registerScenarioContract('search-communities-has-list-items', {
     expectations: [
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
-      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 348 },
+      // The listed-community index returns one real match; ceil(1 * 1.2) = 2.
+      // Candidate community hydration remains keyed by the selected page IDs.
+      { kind: 'maxProcessedRows', relation: 'community_search_counts', max: 2 },
       { kind: 'maxProcessedRows', relation: 'community_post_reviews', max: 484 },
-      { kind: 'maxProcessedRows', relation: 'communities', max: 249 },
+      // One selected community has 252 posts linked through its approved/pending review
+      // fixtures (200 base reviews + 50 #3018 view-driven rows + 2 search rows). The
+      // correlated view checks perform one indexed community-key lookup per post, plus
+      // three page-candidate/hydration lookups: 255 measured rows, with 20% headroom.
+      { kind: 'maxProcessedRows', relation: 'communities', max: 306 },
     ],
   })
   await runAndCapture(
