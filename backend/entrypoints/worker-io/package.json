@@ -31,6 +31,7 @@
     "@queues/background": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@queues/email-digests": "workspace:^",
+    "@queues/emails": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/find-your-friends": "workspace:^",
     "@queues/kagi-smallweb": "workspace:^",

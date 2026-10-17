@@ -1763,6 +1763,9 @@ importers:
       '@queues/email-digests':
         specifier: workspace:^
         version: link:../../queues/email-digests
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
@@ -2969,6 +2972,12 @@ importers:
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types

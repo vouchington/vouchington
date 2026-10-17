@@ -8,6 +8,7 @@ import { scheduledJobManifest as bloomFilters } from '@queues/bloom-filters/enqu
 import { scheduledJobManifest as crawlDispatch } from '@queues/crawl-dispatch/enqueues/schedules'
 import { scheduledJobManifest as crawlReferralLinks } from '@queues/crawl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as emailDigests } from '@queues/email-digests/enqueues/schedules'
+import { scheduledJobManifest as emails } from '@queues/emails/enqueues/schedules'
 import { scheduledJobManifest as entityListeners } from '@queues/entity-listeners/enqueues/schedules'
 import { scheduledJobManifest as findYourFriends } from '@queues/find-your-friends/enqueues/schedules'
 import { scheduledJobManifest as heartbeat } from '@queues/heartbeat/enqueues/schedules'
@@ -54,6 +55,7 @@ export const SCHEDULED_JOB_MANIFESTS = [
   bloomFilters,
   crawlDispatch,
   crawlReferralLinks,
+  emails,
   findYourFriends,
   heartbeat,
   contentAnalysis,

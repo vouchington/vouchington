@@ -28,6 +28,10 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     },
   },
   {
+    queueName: 'emails',
+    load: () => import('@queues/emails/enqueues/schedules').then(module => module.upsertSchedules),
+  },
+  {
     queueName: 'find-your-friends',
     load: () =>
       import('@queues/find-your-friends/enqueues/schedules').then(module => module.upsertSchedules),
