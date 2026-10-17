@@ -90,9 +90,7 @@ describe('post entity listener creation dispatch', () => {
     const post = (await getPostByAny(postId)) as Post
     const { content_sha256 } = createPostModerationContent(post)
     const spamJobs = await readSpamDetectionJobs()
-    const spamJob = spamJobs.find(
-      job => job.name === 'post' && (job.data as { id?: string }).id === postId,
-    )
+    const spamJob = spamJobs.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob).toBeDefined()
     expect(spamJob!.data).toMatchObject({
       id: postId,
@@ -243,9 +241,7 @@ describe('post entity listener creation dispatch', () => {
     await processPostUpdated({ id: postId, contentChanged: true })
 
     const spamJobs = await readSpamDetectionJobs()
-    const spamJob = spamJobs.find(
-      job => job.name === 'post' && (job.data as { id?: string }).id === postId,
-    )
+    const spamJob = spamJobs.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob).toBeDefined()
     expect(spamJob!.data).toMatchObject({
       id: postId,
