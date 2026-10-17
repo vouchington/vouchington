@@ -9,6 +9,7 @@ const NON_RUNTIME_EXPORT_KEYS = new Set(['module', 'esnext', 'types', 'browser']
 export type OpenTelemetryPackageManifest = {
   main?: unknown
   exports?: unknown
+  imports?: unknown
 }
 
 export type PruneOpenTelemetryAlternateBuildsResult = {
@@ -38,6 +39,8 @@ function collectRuntimeTargets(node: unknown, targets: string[]): boolean {
 }
 
 export function alternateBuildsAreUnused(manifest: OpenTelemetryPackageManifest): boolean {
+  // Private specifiers can select an alternate build without naming it in src.
+  if (manifest.imports !== undefined) return false
   const main = manifest.main
   const mainIsSrc = typeof main === 'string' && isUnderSrcBuild(main)
   if (main !== undefined && !mainIsSrc) return false
@@ -50,15 +53,10 @@ export function alternateBuildsAreUnused(manifest: OpenTelemetryPackageManifest)
 }
 
 async function directorySize(directory: string): Promise<number> {
-  const entries = await readdir(directory, { withFileTypes: true })
+  const entries = await readdir(directory, { withFileTypes: true, recursive: true })
   let total = 0
-  for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name)
-    if (entry.isDirectory()) {
-      total += await directorySize(entryPath)
-      continue
-    }
-    if (entry.isFile()) total += (await stat(entryPath)).size
+  for (const entry of entries.filter(entry => entry.isFile())) {
+    total += (await stat(path.join(entry.parentPath, entry.name))).size
   }
   return total
 }

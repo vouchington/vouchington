@@ -55,6 +55,19 @@ describe('alternateBuildsAreUnused', () => {
     expect(alternateBuildsAreUnused({ main: './build/src/nested/../index.js' })).toBe(true)
   })
 
+  it.each([undefined, { '.': './build/src/index.js' }])(
+    'retains package imports indirection with exports %j',
+    exports => {
+      expect(
+        alternateBuildsAreUnused({
+          main: './build/src/index.js',
+          exports,
+          imports: { '#impl': './build/esm/impl.js' },
+        }),
+      ).toBe(false)
+    },
+  )
+
   it('rejects an exports array instead of guessing', () => {
     expect(alternateBuildsAreUnused({ exports: ['./build/src/index.js'] })).toBe(false)
   })
