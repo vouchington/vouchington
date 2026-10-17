@@ -44,12 +44,13 @@ export async function updateCommunity(
       query,
     })
 
+  let priorCommunity: Awaited<ReturnType<typeof updateCommunityInTransaction>>
   try {
     if (options?.query || options?.client) {
-      await withTransactionOptions(options, run)
+      priorCommunity = await withTransactionOptions(options, run)
     } else {
       await using transaction = await beginTransaction()
-      await run(transaction)
+      priorCommunity = await run(transaction)
       await transaction.commit()
       if ('profile_image_id' in input || 'banner_image_id' in input) {
         void enqueueReconcileMediaDeliveryRegistry()
@@ -68,12 +69,13 @@ export async function updateCommunity(
   void addEntityBloomKeys('communities', [normalizeKey(updated.id), normalizeKey(updated.slug)])
   if (!options?.query) {
     await Promise.all([
-      invalidate.communities(community, updated),
+      invalidate.communities(community, priorCommunity, updated),
       invalidatesMemberMetrics
         ? invalidateAllCommunityMemberUserMetrics(communityId)
         : Promise.resolve(),
     ])
-    if (community.visibility !== updated.visibility) void enqueueRefreshTopHashtags()
+    if ((priorCommunity?.visibility ?? community.visibility) !== updated.visibility)
+      void enqueueRefreshTopHashtags()
   }
   // Language detection is asynchronous enrichment; the committed community update remains durable.
   void enqueueLanguageDetection('community', updated.id).catch(onError)

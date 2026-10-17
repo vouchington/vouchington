@@ -1,7 +1,9 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
-import { createTestUser, insertTestPost } from '@voucha/test-helpers'
+import { createTestUser, insertTestPost, softDeleteUser } from '@voucha/test-helpers'
+import { removeTestUserRole } from '@voucha/test-helpers/entities/user-role-removal'
+import { upsertTestHostnameId } from '@voucha/test-helpers/entities/email-domain-hostname'
 import { Response as UndiciResponse } from 'undici'
 import type { PrivateUser } from '@services/users/types'
 import type * as Undici from 'undici'
@@ -61,6 +63,46 @@ describe('POST /api/v1/reports CAPTCHA', () => {
       .send('null')
       .expect(422)
   })
+
+  it.each([
+    ['post', 'deleted'],
+    ['post', 'demoted'],
+    ['url_hostname', 'deleted'],
+    ['url_hostname', 'demoted'],
+  ] as const)(
+    'rechecks the %s report actor after being %s during CAPTCHA',
+    async (entityType, state) => {
+      const administrator = await createTestUser({ administrator: true })
+      const entityId =
+        entityType === 'post'
+          ? await insertTestPost({
+              createdById: postOwner.id,
+              title: 'Private report target',
+              slug: `private-report-${crypto.randomUUID()}`,
+              markdown: 'Private report target.',
+              privacy: 'private',
+              broadcast: 'followers',
+              clearanceStatus: 'pending',
+            })
+          : await upsertTestHostnameId(
+              `private-report-${crypto.randomUUID()}.example.test`,
+              {},
+              'private_email',
+            )
+      const request = createRequest()
+      await request.authenticateAs(administrator)
+      mockFetch.mockImplementationOnce(async () => {
+        if (state === 'deleted') await softDeleteUser(administrator.id)
+        else await removeTestUserRole(administrator.id, 'administrator')
+        return new UndiciResponse(JSON.stringify({ success: true }))
+      })
+      const response = await request
+        .post('/api/v1/reports')
+        .send({ entityType, entityId, reason: 'spam', cf_turnstile_response: TEST_CAPTCHA_TOKEN })
+        .expect(404)
+      expect(response.body.message).toBe('Reportable entity not found')
+    },
+  )
 
   it('submits the report and forwards the token when verification passes', async () => {
     const request = createRequest()

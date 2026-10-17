@@ -436,7 +436,7 @@
   },
   {
     "annotation": "getPrivateUserByAny",
-    "reason": "Authenticated self and report actors reuse loaded rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside postwrite and independent-tool reloads",
+    "reason": "Authenticated self reads and same-phase mutation inputs reuse rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside fresh report authorization after CAPTCHA/admission, post-body target resolution, postwrite and independent-tool reloads",
     "issue": 3113
   },
   {

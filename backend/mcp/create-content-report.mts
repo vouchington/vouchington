@@ -100,7 +100,6 @@ const tool: Tool<Args, Result> = {
           getRequestContentProvenance(),
           input,
           { query },
-          user,
         )
         return {
           success: true as const,

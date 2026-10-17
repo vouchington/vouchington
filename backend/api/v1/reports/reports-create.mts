@@ -32,13 +32,7 @@ app.route('/api/v1/reports').post(async (ctx: Context) => {
     reason: body.reason,
     note: body.note,
   })
-  const { report, isDuplicate } = await createModerationReport(
-    currentUser.id,
-    provenance,
-    input,
-    undefined,
-    currentUser,
-  )
+  const { report, isDuplicate } = await createModerationReport(currentUser.id, provenance, input)
   const { case_id: _caseId, ...reportResponse } = report
   ctx.setStatus(isDuplicate ? 200 : 201)
   ctx.json({ report: reportResponse, isDuplicate })
