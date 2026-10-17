@@ -6,16 +6,16 @@ Google OAuth accounts linked to users. Stores Google profile data.
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| --------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`                        | `uuid`                     | no       | `uuidv7()`          |          |           |           | Internal UUIDv7 identity of the Google account.                     |
-| `user_id`                   | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet. |
-| `google_user_id`            | `text`                     | no       |                     |          |           |           | Google's unique external user identifier.                           |
-| `google_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Google profile.                              |
-| `email_domain_hostname_id`  | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
-| `google_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Google OAuth.                           |
-| `created_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
-| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
+| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
+| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Google account.                     |
+| `user_id`                   | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet. |
+| `google_user_id`            | `text`                     | no       |                              |          |           |           | Google's unique external user identifier.                           |
+| `google_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Google profile.                              |
+| `email_domain_hostname_id`  | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
+| `google_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Google OAuth.                           |
+| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                     |
+| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
