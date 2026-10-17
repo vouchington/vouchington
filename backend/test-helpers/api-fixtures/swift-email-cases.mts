@@ -1,5 +1,16 @@
 import type { ApiFixtureCase } from './types.mts'
 
+export const emailPreferencesFixture = {
+  is_engagement_emails_enabled: true,
+  news_digest_frequency: 'weekly',
+  is_moderation_emails_enabled: true,
+  community_digest_frequency: 'weekly',
+  moderation_email_cadence: 'daily',
+  moderation_email_days_of_week: [1, 2, 3, 4, 5],
+  moderation_email_time_of_day: '09:00',
+  moderation_email_timezone: 'America/Los_Angeles',
+}
+
 export const swiftEmailApiFixtureCases: ApiFixtureCase[] = [
   {
     id: 'native.my.email-addresses.empty',
@@ -59,18 +70,7 @@ export const swiftEmailApiFixtureCases: ApiFixtureCase[] = [
     route: { routeTemplate: '/api/v1/my/email-preferences' },
     auth: 'fixture-user',
     status: 200,
-    body: {
-      email_preferences: {
-        is_engagement_emails_enabled: true,
-        news_digest_frequency: 'weekly',
-        is_moderation_emails_enabled: true,
-        community_digest_frequency: 'weekly',
-        moderation_email_cadence: 'daily',
-        moderation_email_days_of_week: [1, 2, 3, 4, 5],
-        moderation_email_time_of_day: '09:00',
-        moderation_email_timezone: 'America/Los_Angeles',
-      },
-    },
+    body: { email_preferences: emailPreferencesFixture },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: [],
   },
