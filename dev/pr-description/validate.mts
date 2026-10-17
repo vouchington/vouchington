@@ -15,10 +15,6 @@ import {
   type ReferencedIssue,
   validateResolvedIssueReferences,
 } from './closing-refs.mts'
-import {
-  extractFixMainInterimClassifierRootCauseRef,
-  validateFixMainRootCauseRef,
-} from './scheduled-no-source.mts'
 import { extractPartialBatchSourceRef, validatePartialBatchSourceRef } from './partial-batch.mts'
 
 export type IssueReferenceResolver = (ref: ClosingIssueReference) => Promise<IssueReferenceLookup>
@@ -98,11 +94,6 @@ export async function validatePrBodyWithIssueReferences(
   ) {
     result.errors.push('A partial batch must not also close its source issue.')
   }
-
-  const rootCauseRef = extractFixMainInterimClassifierRootCauseRef(body)
-  const rootCauseLookup =
-    rootCauseRef === undefined ? undefined : await resolveIssueReference(rootCauseRef)
-  result.errors.push(...validateFixMainRootCauseRef(rootCauseRef, rootCauseLookup, targetIsMerged))
 
   const allowedClosedReferences = new Set<string>()
   if (targetIsMerged && options.closureResolver !== undefined) {

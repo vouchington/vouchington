@@ -5,10 +5,7 @@ import { validatePrDescriptionContent } from './content-policy.mts'
 import { findEscapeCommentClosingKeywordLeaks } from './escape-comment-leaks.mts'
 import { isDirectUserRequestNoSourceBody } from './direct-user-request.mts'
 import { extractPartialBatchSourceRef } from './partial-batch.mts'
-import {
-  isFixMainInterimClassifierNoClosingRefBody,
-  isScheduledPromptNoSourceBody,
-} from './scheduled-no-source.mts'
+import { isScheduledPromptNoSourceBody } from './scheduled-no-source.mts'
 import { githubBodyLengthError } from '../github-body-length.mts'
 
 export type PrBodyValidationResult = {
@@ -52,11 +49,10 @@ export function validatePrBody(
     !hasClosingIssueReference(relatedIssuesSection) &&
     !(directUserRequest && interactive) &&
     !isScheduledPromptNoSourceBody(body) &&
-    !isFixMainInterimClassifierNoClosingRefBody(body) &&
     extractPartialBatchSourceRef(body) === undefined
   ) {
     errors.push(
-      'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, Fix Main interim-classifier representation, or partial-batch representation alongside a standalone Refs entry. See .agents/skills/agent-workflow/git-and-prs.md.',
+      'PR body must include at least one GitHub closing keyword (e.g. "Closes #123") in the "## Related issues" section, or the exact interactive direct-user-request no-source representation, scheduled no-source representation, or partial-batch representation after its single Refs entry. See .agents/skills/agent-workflow/git-and-prs.md.',
     )
   }
 
