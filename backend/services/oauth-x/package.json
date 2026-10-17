@@ -33,7 +33,7 @@
     "@voucha/config": "workspace:^",
     "http-errors": "^2.0.1",
     "undici": "^8.11.2",
-    "valkyries": "^0.9.0"
+    "valkyries": "^0.10.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

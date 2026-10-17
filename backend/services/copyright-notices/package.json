@@ -52,12 +52,12 @@
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",
-    "valkyries": "^0.9.0"
+    "valkyries": "^0.10.0"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/postgres": "^0.0.15",
+    "@vouchington/postgres": "^0.0.16",
     "vitest": "^5.0.4"
   }
 }
