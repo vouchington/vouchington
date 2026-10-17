@@ -86,8 +86,12 @@ or swapped; it proves label completeness, not function coverage.
 The normal seed keeps the production default-only partition layout. A separate runner
 (`pruning/run.mts`) builds an owned sibling database with explicit UUIDv7 ranges beside each
 default partition and verifies, per plan mode, that point reads execute only their target leaf.
-Real server controls (cleanup, rollback of a blocked retirement) run in that database; pure unit
-tests cover only emitted SQL and ordering, not server behavior.
+Real server controls (cleanup, rollback of a blocked retirement, and the migration runner) run in
+that database; pure unit tests cover only emitted SQL and ordering, not server behavior. A
+migration control fails when a client backend or parallel worker remains after the child process
+group is empty. It waits, inside the control's existing budget, for PostgreSQL to reap that
+child's backend. Autovacuum and other non-client backends are not server clients, and a forced
+drop is not a passing cleanup.
 
 ## Coverage
 
