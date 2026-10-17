@@ -60,6 +60,7 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_11 = [
   { key: 'native.swift.communities.testText', consumers: ['swift'] },
   { key: 'native.swift.communities.transferOwnership', consumers: ['swift'] },
   { key: 'native.swift.communities.transferToUserId', consumers: ['swift'] },
+  { key: 'native.swift.communities.unknownRecipient', consumers: ['swift'] },
   { key: 'native.swift.communities.updatePinnedPosts', consumers: ['swift'] },
   { key: 'native.swift.communities.updateRole', consumers: ['swift'] },
   { key: 'native.swift.communities.userId', consumers: ['swift'] },

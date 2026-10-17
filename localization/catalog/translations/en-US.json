@@ -3900,7 +3900,6 @@
 {"id":"copy.native.dotnet.csharpCommunities.aiAgents","value":"AI Agents"},
 {"id":"copy.native.dotnet.csharpCommunities.allocate","value":"Allocate"},
 {"id":"copy.native.dotnet.csharpCommunities.allocated","value":"Allocated"},
-{"id":"copy.native.dotnet.csharpCommunities.anyoneWithCode","value":"Anyone with code"},
 {"id":"copy.native.dotnet.csharpCommunities.applicationId","value":"Application ID"},
 {"id":"copy.native.dotnet.csharpCommunities.applications","value":"Applications"},
 {"id":"copy.native.dotnet.csharpCommunities.apply","value":"Apply to community"},
