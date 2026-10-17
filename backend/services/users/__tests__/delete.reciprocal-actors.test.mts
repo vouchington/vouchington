@@ -4,8 +4,8 @@ import {
   getTestUserDeletedById,
   holdTestRetainedUserIdentityLocks,
   listTestUserDeletionRequestActorIds,
-  lockTestRetainedUserIdentityKeyShareNowait,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
+import { waitForTestPostgresBlockedLockChain } from '@voucha/test-helpers/postgres-lock-wait'
 import { TestUserDeletionWriterAborted } from '@voucha/test-helpers/entities/user-deletion'
 import { deleteUser } from '../delete.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'
@@ -16,8 +16,9 @@ describe('deleteUser reciprocal administrator deletions', () => {
       createTestUser({ administrator: true }),
       createTestUser({ administrator: true }),
     ])
-    // Hold both retained identities, observe the KEY SHARE conflict, then abort and join that
-    // rollback before awaiting the deletions so cleanup cannot race the open lock.
+    // Hold both retained identities until one deletion is blocked on that key share and the
+    // other is blocked behind it on a users-row lock. Abort and join that rollback before
+    // awaiting the deletions so cleanup cannot race the open lock.
     const gate = await holdTestRetainedUserIdentityLocks([first.id, second.id])
     const settled = Promise.allSettled([deleteUser(first, second), deleteUser(second, first)])
     const aborted = gate.completed.then(
@@ -29,12 +30,11 @@ describe('deleteUser reciprocal administrator deletions', () => {
       },
     )
     try {
-      await expect(lockTestRetainedUserIdentityKeyShareNowait(first.id)).rejects.toMatchObject({
-        code: '55P03',
-      })
-      await expect(lockTestRetainedUserIdentityKeyShareNowait(second.id)).rejects.toMatchObject({
-        code: '55P03',
-      })
+      await waitForTestPostgresBlockedLockChain(
+        gate.holderProcessId,
+        '/* createUserDeletionRequest:validateUsers */',
+        ['/* deleteUser:lockUserRow */', '/* deleteUser:lockActorUserRow */'],
+      )
     } finally {
       gate.abort()
       await aborted
