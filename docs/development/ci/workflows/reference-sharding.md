@@ -1,7 +1,5 @@
 # Sharding
 
-[Back to Workflow Reference](WORKFLOWS.md)
-
 Shard jobs so every leaf job stays within its runtime budget.
 These are performance budgets monitored by the scheduled issue audit, never `timeout-minutes`
 values or CI failure thresholds. The repo favors fewer, longer-running shards over many short ones:

@@ -131,18 +131,13 @@ describe('agent-authored PR creation feedback contract', () => {
     )
   })
 
-  it('documents the feedback loop and leaves shepherd handoff mechanical', () => {
+  it('wires the feedback loop and leaves shepherd handoff mechanical', () => {
     const prompts = normalized('docs/prompts/README.md')
-    const labels = normalized(
-      'docs/development/reference-merge-authority-automation-pr-labeling.md',
-    )
     const shepherd = normalized('.agents/skills/ready-and-shepherd/SKILL.md')
 
     expect(prompts).toContain('```mermaid')
     expect(prompts).toContain('docs/prompts/**')
     expect(prompts).toContain('preauthorized-pr')
-    expect(labels).toContain('pr-creation-feedback-origin: triage-prs')
-    expect(labels).toContain('automation')
     expect(shepherd).not.toContain('PR Creation Feedback')
     expect(shepherd).not.toContain('agent-authored PR creation feedback')
   })

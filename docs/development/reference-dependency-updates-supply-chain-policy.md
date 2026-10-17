@@ -57,10 +57,6 @@ A lockfile entry newer than `minimumReleaseAge` fails `pnpm install --frozen-loc
 cutoff, so re-running does not help; wait (or `@dependabot rebase` afterwards), and use the temporary
 exemption procedure above only if the delay is itself the problem.
 
-### Contents
-
-- <a id="first-party-release-gate-exemptions"></a>[First-party release-gate exemptions](reference-dependency-updates-first-party-release-gate-exemptions.md)
-
 ### Registry-only dependency rule
 
 Every workspace dependency must resolve from the npm registry; git, URL, file, link, and portal

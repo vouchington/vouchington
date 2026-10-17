@@ -1,7 +1,5 @@
 # Maintenance, Security, And Utilities
 
-[Back to Workflow Reference](WORKFLOWS.md#maintenance-security-and-utilities)
-
 | Workflow                                                                                               | Type       | Runner                          | Docker | Purpose                                                                                                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------ | ---------- | ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [GitHub Actions Static Analysis](../../../../.github/workflows/actionlint.yml)                         | Standalone | `ubuntu-slim`                   | No     | Runs Actionlint and Zizmor when workflow, composite-action, Dependabot, or tool configuration changes.                                                                                                                                              |

@@ -1,7 +1,5 @@
 # Deploy And Release
 
-[Back to Workflow Reference](WORKFLOWS.md#deploy-and-release)
-
 | Workflow                                                                                 | Type       | Runner          | Docker | Purpose                                                                                                                         |
 | ---------------------------------------------------------------------------------------- | ---------- | --------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
 | [Publish Backend Images](../../../../.github/workflows/publish-backend-images.yml)       | Reusable   | Mixed           | Yes    | Validates backend images on PRs, publishes them from merge groups, and verifies or fills authenticated missing targets on main. |

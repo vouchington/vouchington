@@ -26,7 +26,7 @@ If `gh stack` exits 9 (not enabled on the repository), do not bundle the source 
 Open one PR targeting `main` for the bottom issue, wait for it to merge, then open the next. Say that
 stacks are unavailable.
 
-The [area workflows](../../../docs/development/ci/workflows/reference-workflow-automation-pull-requests.md) must not set `pull_request.branches` or `branches-ignore`: `gh stack submit` opens mid-stack PRs before the stack object exists, so a branch filter skips them permanently.
+The area workflows must not set `pull_request.branches` or `branches-ignore`: `gh stack submit` opens mid-stack PRs before the stack object exists, so a branch filter skips them permanently.
 
 ### Agent commands
 

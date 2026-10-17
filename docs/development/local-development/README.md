@@ -11,7 +11,6 @@ auth, CSP, caching, and `/api/*` routing, so it is never valid for browsing or b
 
 ## Development environment references
 
-- <a id="command-catalog"></a>[Command Catalog](reference-command-catalog.md)
 - <a id="initialization-modes"></a>[Initialization Modes](reference-initialization-modes.md)
 - <a id="starting-services"></a>[Starting Services](reference-starting-services.md)
 - <a id="agent-session-hooks"></a>[Agent Session Hooks](reference-agent-session-hooks.md)

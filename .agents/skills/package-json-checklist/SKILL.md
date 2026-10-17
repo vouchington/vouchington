@@ -12,7 +12,6 @@ Claude Code and Codex load `vouchington-workflow:package-json-checklist`; Grok, 
 ## Vouchington additions
 
 Follow [the package checklist](../../../docs/checklists/package-json.md) for pnpm, lockfile,
-service-registration, first-party-package, and validation rules. Consult
-[first-party dependencies](../../../docs/development/first-party-dependencies.md), and read
+service-registration, first-party-package, and validation rules. Read
 [backend instructions](../../../backend/AGENTS.md) before creating a backend service. Before
 committing, load [git-commit-checklist](../git-commit-checklist/SKILL.md).

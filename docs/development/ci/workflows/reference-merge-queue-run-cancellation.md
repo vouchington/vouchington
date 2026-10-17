@@ -5,8 +5,7 @@ workflows do that here: [Cancel Replaced Merge Group Runs](../../../../.github/w
 for entries that are rebuilt, and
 [Cancel Dequeued Merge Group Runs](../../../../.github/workflows/cancel-dequeued-merge-group-runs.yml)
 for pull requests that leave the queue. Neither is a required check, so a failure in either cannot
-eject an entry. The [pull-request automation map](reference-workflow-automation-pull-requests.md)
-shows where they sit among the other pull-request workflows.
+eject an entry.
 
 ## What happens in the queue
 

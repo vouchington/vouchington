@@ -50,7 +50,7 @@ When architecture decisions change, update the relevant doc here and cross-link 
 
 ## Subsystem indexes
 
-- [Request client info](request-client-info.md) · [Structured decisions](structured-decisions.md) · [Design system](web/DESIGN-SYSTEM.md) · [First-party dependencies](../../development/first-party-dependencies.md) · [Stripe variant checklist](../../checklists/reference-financial-stripe-variant.md)
+- [Request client info](request-client-info.md) · [Structured decisions](structured-decisions.md) · [Design system](web/DESIGN-SYSTEM.md) · [Stripe variant checklist](../../checklists/reference-financial-stripe-variant.md)
 
 - [AI agent architecture](ai-agents/README.md) · [Services](services/README.md) · [Queues](queues/README.md)
 - [Backend](backend/README.md) · [Web](web/README.md) · [Shared TypeScript](typescript-shared/README.md)

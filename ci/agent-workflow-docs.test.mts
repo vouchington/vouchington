@@ -202,16 +202,12 @@ describe('agent workflow documentation', () => {
 
   it('documents harness background-task, wakeup-turn-boundary, ready-run, and lease-race gotchas', () => {
     const gitAndPrs = normalizedMarkdown('.agents/skills/agent-workflow/git-and-prs.md')
-    const rerunReference = normalizedMarkdown(
-      'docs/development/ci/transient-retry/reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md',
-    )
 
     expect(gitAndPrs).toContain('run_in_background')
     expect(gitAndPrs).toContain('ScheduleWakeup')
     expect(gitAndPrs).toContain('--force-with-lease=<branch>:<sha>')
     expect(gitAndPrs).toContain('vouchington-tooling/skills/agent-workflow/references/four-refs.md')
     expect(gitAndPrs).toContain('./dev/rebase-onto-main --stack')
-    expect(rerunReference).toContain('Ineffective rerun patterns')
   })
 
   it('keeps unbounded tool output out of the main session', () => {

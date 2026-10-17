@@ -2,8 +2,8 @@ Create or update issues for at most one confirmed first-party dependency workaro
 
 <!-- harness-scheduled-completion: issue -->
 
-Use [First-Party Dependencies](../../development/first-party-dependencies.md) as the ownership
-source of truth. This run is an evidence-gathering and issue-maintenance task, not dependency
+Use `pnpm-release-age-policy.permanentPackages` in [.no-mistakes.yml](../../../.no-mistakes.yml) as the
+ownership source of truth. This run is an evidence-gathering and issue-maintenance task, not dependency
 maintenance or workaround removal. The [upstream adoption prompt](upstream-adoption.md) removes a
 workaround once its fix is released.
 

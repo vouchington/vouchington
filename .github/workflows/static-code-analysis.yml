@@ -94,9 +94,6 @@ jobs:
       - name: Check localization catalog format
         run: pnpm exec vouchington-localization format --check --source localization/catalog
         timeout-minutes: 2
-      - name: Check Vitest ownership table
-        run: node ci/vitest/generate-ownership-table.mts --check
-        timeout-minutes: 2
       - name: Check effective Vitest timeout admission
         run: node ci/check-effective-vitest-timeouts.mts
         timeout-minutes: 2
