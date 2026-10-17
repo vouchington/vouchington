@@ -37,7 +37,7 @@ import {
   enqueueCreateImageModerationBatch,
   enqueueCreatePostModeration,
 } from '@queues/openai-moderation/enqueues'
-import { enqueueSpamDetection } from '@queues/spam-detection/enqueues'
+import { enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
 
 type OpenAIModerationJobData = { id?: string; afterId?: string }
 

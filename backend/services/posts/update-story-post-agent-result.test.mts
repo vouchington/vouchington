@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { spam_detection } from '@queues/spam-detection/queues'
+import { describe, expect, it } from 'vitest'
+import { MODERATION_SIGNALS_SPAM_DETECTION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
+import { moderationSignalsQueue } from '@queues/moderation-signals/queues'
 import { createPostModerationContent } from '@services/posts/content'
 import {
   createTestUser,
@@ -16,10 +17,6 @@ import {
 import { updateStoryPostAgentResult } from './update-story-post-agent-result.mts'
 
 describe('updateStoryPostAgentResult', () => {
-  beforeEach(async () => {
-    await spam_detection.obliterate({ force: true })
-  })
-
   it('enqueues spam detection for the updated story moderation content hash', async () => {
     const suffix = randomUUID()
     const title = `Story agent ${suffix}`
@@ -49,7 +46,7 @@ describe('updateStoryPostAgentResult', () => {
       is_flagged_by_openai_omni_moderation: null,
       openai_omni_moderation_results: null,
     })
-    const waiting = await readAllQueueJobs(spam_detection)
+    const waiting = await readSpamDetectionJobs()
     const spamJob = waiting.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob).toBeDefined()
     expect(spamJob!.data).toMatchObject({
@@ -130,7 +127,7 @@ describe('updateStoryPostAgentResult', () => {
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_content_sha256: content_sha256,
     })
-    const waiting = await readAllQueueJobs(spam_detection)
+    const waiting = await readSpamDetectionJobs()
     const spamJob = waiting.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob!.data).toMatchObject({
       contentSha256: content_sha256.toString('hex'),
@@ -165,7 +162,7 @@ describe('updateStoryPostAgentResult', () => {
     await expect(getPostModerationData(postId)).resolves.toMatchObject({
       openai_omni_moderation_content_sha256: content_sha256,
     })
-    const waiting = await readAllQueueJobs(spam_detection)
+    const waiting = await readSpamDetectionJobs()
     const spamJob = waiting.find(job => (job.data as { id?: string }).id === postId)
     expect(spamJob!.data).toMatchObject({
       contentSha256: content_sha256.toString('hex'),
@@ -197,7 +194,12 @@ describe('updateStoryPostAgentResult', () => {
       is_flagged_by_openai_omni_moderation: true,
       openai_omni_moderation_results: { flagged_categories: [] },
     })
-    const waiting = await readAllQueueJobs(spam_detection)
-    expect(waiting).toHaveLength(0)
+    const waiting = await readSpamDetectionJobs()
+    expect(waiting.filter(job => (job.data as { id?: string }).id === postId)).toHaveLength(0)
   })
 })
+
+async function readSpamDetectionJobs() {
+  const jobs = await readAllQueueJobs(moderationSignalsQueue)
+  return jobs.filter(job => job.name === MODERATION_SIGNALS_SPAM_DETECTION_JOB.name)
+}

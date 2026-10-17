@@ -37,13 +37,4 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     queueName: 'memberships',
     load: () => import('@workers/memberships/workers').then(module => module.memberships),
   },
-  {
-    queueName: 'spam_detection',
-    load: () =>
-      import('@workers/spam-detection/workers').then(module => module.spamDetectionWorker),
-  },
-  {
-    queueName: 'ban_evasion',
-    load: () => import('@workers/ban-evasion/workers').then(module => module.banEvasionWorker),
-  },
 ]

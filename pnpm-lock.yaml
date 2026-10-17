@@ -1817,9 +1817,6 @@ importers:
       '@workers/background':
         specifier: workspace:^
         version: link:../../workers/background
-      '@workers/ban-evasion':
-        specifier: workspace:^
-        version: link:../../workers/ban-evasion
       '@workers/bedrock-batch-sqs':
         specifier: workspace:^
         version: link:../../workers/bedrock-batch-sqs
@@ -1850,9 +1847,6 @@ importers:
       '@workers/ses-inbound-sqs':
         specifier: workspace:^
         version: link:../../workers/ses-inbound-sqs
-      '@workers/spam-detection':
-        specifier: workspace:^
-        version: link:../../workers/spam-detection
       '@workers/stripe-events-sqs':
         specifier: workspace:^
         version: link:../../workers/stripe-events-sqs
@@ -2768,15 +2762,6 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
 
-  backend/queues/ban-evasion:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
   backend/queues/bedrock-embeddings:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3103,6 +3088,19 @@ importers:
         specifier: ^26.6.5
         version: 26.6.5
 
+  backend/queues/moderation-signals:
+    dependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../background
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/queues/notifications:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -3260,15 +3258,6 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-
-  backend/queues/spam-detection:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -4371,9 +4360,12 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/ban-evasion':
+      '@queues/background':
         specifier: workspace:^
-        version: link:../../queues/ban-evasion
+        version: link:../../queues/background
+      '@queues/moderation-signals':
+        specifier: workspace:^
+        version: link:../../queues/moderation-signals
       '@services/copyright-notices':
         specifier: workspace:^
         version: link:../copyright-notices
@@ -4773,9 +4765,6 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/ban-evasion':
-        specifier: workspace:^
-        version: link:../../queues/ban-evasion
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -4788,6 +4777,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/moderation-signals':
+        specifier: workspace:^
+        version: link:../../queues/moderation-signals
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -8879,6 +8871,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/moderation-signals':
+        specifier: workspace:^
+        version: link:../../queues/moderation-signals
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -8888,9 +8883,6 @@ importers:
       '@queues/rss-feed-maintenance':
         specifier: workspace:^
         version: link:../../queues/rss-feed-maintenance
-      '@queues/spam-detection':
-        specifier: workspace:^
-        version: link:../../queues/spam-detection
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -9101,9 +9093,6 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
-      '@queues/ban-evasion':
-        specifier: workspace:^
-        version: link:../../queues/ban-evasion
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -9188,9 +9177,6 @@ importers:
       '@queues/sitemaps':
         specifier: workspace:^
         version: link:../../queues/sitemaps
-      '@queues/spam-detection':
-        specifier: workspace:^
-        version: link:../../queues/spam-detection
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../../queues/story-post-related-url-projections
@@ -12222,6 +12208,9 @@ importers:
       '@workers/kagi-smallweb':
         specifier: workspace:^
         version: link:../kagi-smallweb
+      '@workers/moderation-signals':
+        specifier: workspace:^
+        version: link:../moderation-signals
       '@workers/notifications':
         specifier: workspace:^
         version: link:../notifications
@@ -12328,28 +12317,6 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/ban-evasion:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@services/communities':
-        specifier: workspace:^
-        version: link:../../services/communities
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12886,9 +12853,6 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
-      '@queues/ban-evasion':
-        specifier: workspace:^
-        version: link:../../queues/ban-evasion
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -12904,6 +12868,9 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@queues/moderation-signals':
+        specifier: workspace:^
+        version: link:../../queues/moderation-signals
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12919,9 +12886,6 @@ importers:
       '@queues/rss-feed-maintenance':
         specifier: workspace:^
         version: link:../../queues/rss-feed-maintenance
-      '@queues/spam-detection':
-        specifier: workspace:^
-        version: link:../../queues/spam-detection
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
@@ -13200,6 +13164,34 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/workers/moderation-signals:
+    dependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../../services/communities
+      '@services/post-clearance':
+        specifier: workspace:^
+        version: link:../../services/post-clearance
+      '@services/posts':
+        specifier: workspace:^
+        version: link:../../services/posts
+      '@services/spam-detection':
+        specifier: workspace:^
+        version: link:../../services/spam-detection
+      '@services/vote-integrity':
+        specifier: workspace:^
+        version: link:../../services/vote-integrity
+    devDependencies:
+      '@services/users':
+        specifier: workspace:^
+        version: link:../../services/users
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/workers/notifications:
     dependencies:
       '@modules/on-error':
@@ -13272,15 +13264,15 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/moderation-signals':
+        specifier: workspace:^
+        version: link:../../queues/moderation-signals
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
       '@queues/openai-moderation':
         specifier: workspace:^
         version: link:../../queues/openai-moderation
-      '@queues/spam-detection':
-        specifier: workspace:^
-        version: link:../../queues/spam-detection
       '@services/openai-moderation':
         specifier: workspace:^
         version: link:../../services/openai-moderation
@@ -13562,37 +13554,6 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
-
-  backend/workers/spam-detection:
-    dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@services/post-clearance':
-        specifier: workspace:^
-        version: link:../../services/post-clearance
-      '@services/posts':
-        specifier: workspace:^
-        version: link:../../services/posts
-      '@services/spam-detection':
-        specifier: workspace:^
-        version: link:../../services/spam-detection
-      '@services/vote-integrity':
-        specifier: workspace:^
-        version: link:../../services/vote-integrity
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@services/users':
-        specifier: workspace:^
-        version: link:../../services/users
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

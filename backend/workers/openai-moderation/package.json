@@ -19,9 +19,9 @@
   "dependencies": {
     "@modules/openai-utils": "workspace:^",
     "@queues/background": "workspace:^",
+    "@queues/moderation-signals": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/openai-moderation": "workspace:^",
-    "@queues/spam-detection": "workspace:^",
     "@services/openai-moderation": "workspace:^",
     "@services/post-clearance": "workspace:^",
     "@services/posts": "workspace:^",
