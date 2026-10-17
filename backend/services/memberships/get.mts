@@ -33,15 +33,19 @@ export async function getUserActiveMembership(
 ): Promise<Pick<Membership, 'plan' | 'expires_at'> | null> {
   const { rows } = await read(
     sql`/* getUserActivePlan */
+    WITH selected AS MATERIALIZED (
+      SELECT id FROM memberships
+      WHERE user_id = ${userId} AND projection_ended_at IS NULL
+    )
     SELECT
       plan,
       CASE
         WHEN status = 'past_due' OR stripe_subscription_id IS NOT NULL THEN NULL
         ELSE expires_at
       END AS expires_at
-    FROM view_memberships
-    WHERE user_id = ${userId}
-      AND status IN ('active', 'past_due')
+    FROM selected
+    JOIN view_memberships membership ON membership.id = selected.id
+    WHERE status IN ('active', 'past_due')
     LIMIT 1
     `,
     options,
@@ -55,10 +59,14 @@ export async function getMembershipByUserId(
 ): Promise<Membership | null> {
   const { rows } = await read(
     sql`/* getMembershipByUserId */
-    SELECT *
-    FROM view_memberships
-    WHERE user_id = ${userId}
-      AND status IN ('active', 'past_due', 'paused')
+    WITH selected AS MATERIALIZED (
+      SELECT id FROM memberships
+      WHERE user_id = ${userId} AND projection_ended_at IS NULL
+    )
+    SELECT membership.*
+    FROM selected
+    JOIN view_memberships membership ON membership.id = selected.id
+    WHERE status IN ('active', 'past_due', 'paused')
     LIMIT 1
   `,
     options,

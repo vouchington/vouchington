@@ -1,5 +1,9 @@
 import { it, expect, describe } from 'vitest'
-import { getUrlHostnameById, getUrlHostnameCrawlerDetailsById } from './get.mts'
+import {
+  getUrlHostnameByAny,
+  getUrlHostnameById,
+  getUrlHostnameCrawlerDetailsById,
+} from './get.mts'
 import { upsertUrlHostnames } from './upsert.mts'
 
 describe('get.generated', () => {
@@ -19,6 +23,18 @@ describe('get.generated', () => {
     expect(retrieved).toBeDefined()
     expect(retrieved!.id).toBe(hostnameId)
     expect(retrieved!.hostname).toBe(testHostname)
+  })
+
+  it('getUrlHostnameByAny resolves a normalized hostname and returns null for an unknown one', async () => {
+    const testHostname = `get-by-name-${suffix}.example.com`
+    const hostnamesMap = await upsertUrlHostnames(null, [testHostname])
+    const hostnameId = hostnamesMap.get(testHostname)
+
+    await expect(getUrlHostnameByAny(`  ${testHostname.toUpperCase()}  `)).resolves.toMatchObject({
+      id: hostnameId,
+      hostname: testHostname,
+    })
+    await expect(getUrlHostnameByAny(`missing-${suffix}.example.com`)).resolves.toBeNull()
   })
 
   it('getUrlHostnameCrawlerDetailsById supports primary reads', async () => {
