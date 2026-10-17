@@ -32,3 +32,10 @@ proposed PR body must include:
   records CI evidence preservation. Product changes follow [One current contract](../../../AGENTS.md).
 
 Publish the bounded patch as the draft PR with the required title, body, and commit message. If no independently mergeable patch is confidently ready, stop and report that outcome. An issue-only or findings-only fallback is forbidden.
+
+Also treat a step killed by its timeout with no log output after its start banner as a diagnostics
+gap. Backend unit shards 1 and 9 of run 38617297518 printed only `RUN v5.0.3` and then
+`The action 'Run backend tests' has timed out after 10 minutes`, so nothing named the stuck file or
+process. Check that such a step records enough at the kill (per-file progress, a process or handle
+snapshot, or the existing `VITEST_DIAGNOSTICS` samplers) to identify the hang, and fix that gap or
+its root cause rather than raising the timeout or rerunning.

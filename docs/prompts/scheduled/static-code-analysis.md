@@ -22,3 +22,11 @@ When the improvement touches ast-grep rules, include a hygiene pass:
 - Add `examples:` fixtures for ignored paths when a rule relies on `ignores:` so drift is caught by the ast-grep example test.
 
 Make linting stricter by enabling or configuring one useful existing lint/static-analysis rule, removing one stale exemption, or tightening coverage in an established tool. Add custom repo-local checks only after the [rule placement decision guide](../../development/quality/static-code-analysis/README.md#where-to-put-a-new-rule-priority-order) shows off-the-shelf tools, ast-grep, and no-mistakes cannot express the invariant. Do not remove existing rules or weaken coverage. Fix violations introduced by the selected improvement.
+
+- For rules that match imports, calls, or fixtures, add match and near-miss fixtures for wrapped
+  forms: parenthesized expressions, `as`/`satisfies`/non-null assertions, `.then` or `await`
+  access on the wrapped value, and every real import path of the guarded module. Review of #2917
+  and #2956 found these gaps after merge.
+- When a change enables a new invariant or rule option, confirm the owning inventory and reference
+  docs state its exact scope, including exemptions such as jobs with fewer than two bounded steps,
+  as review of #2919 required.

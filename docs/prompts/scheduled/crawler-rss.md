@@ -14,3 +14,7 @@ Review crawler and RSS ingestion behavior. Pick at most one concrete, bounded im
   job and options. Mocked or injected internal queue, worker, or service dependencies and
   fabricated error-shaped objects are not sufficient evidence. Update the relevant worker README
   when queue behavior changes.
+- Deadline coverage: verify each fetch deadline also covers reading the response body, and that a
+  response body is cancelled before an ignored 4xx/5xx status is discarded, so a server that sends
+  headers and then stalls or trickles cannot hold a worker (review of #2980). Prove it with a test
+  that stalls the body, not only the headers.
