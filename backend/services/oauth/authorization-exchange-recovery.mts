@@ -49,50 +49,52 @@ export async function getRecoverableOAuthAuthorizationIds(
     `/* getRecoverableOAuthAuthorizationIds */
      WITH terminal_candidates AS (
        SELECT
-         id,
-         status,
-         updated_at,
-         exchange_claim_id,
+         current_flow.id,
+         current_flow.status,
+         current_flow.updated_at,
+         current_flow.exchange_claim_id,
          CASE
-           WHEN provider = 'x'
-             AND callback_received_at <=
+           WHEN current_flow.provider = 'x'
+             AND current_flow.callback_received_at <=
                CURRENT_TIMESTAMP - make_interval(secs => $4)
              THEN 'provider_code_expired'
-           WHEN status = 'exchanging' THEN 'provider_exchange_outcome_unknown'
-           WHEN exchange_attempts >= $3 THEN 'provider_exchange_failed'
+           WHEN current_flow.status = 'exchanging' THEN 'provider_exchange_outcome_unknown'
+           WHEN current_flow.exchange_attempts >= $3 THEN 'provider_exchange_failed'
            ELSE 'provider_exchange_outcome_unknown'
          END AS callback_error
-       FROM view_oauth_authorization_current_records
-       WHERE expires_at > CURRENT_TIMESTAMP
-         AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
-         AND NOT (id = ANY($6::uuid[]))
+       FROM oauth_authorizations flow
+       JOIN view_oauth_authorization_current_records current_flow ON current_flow.id = flow.id
+       WHERE flow.status IN ('callback_received', 'exchanging')
+         AND flow.expires_at > CURRENT_TIMESTAMP
+         AND ($5::uuid[] IS NULL OR flow.id = ANY($5::uuid[]))
+         AND NOT (flow.id = ANY($6::uuid[]))
          AND (
-           (status = 'exchanging'
-             AND exchange_started_at < clock_timestamp() - make_interval(secs => $2))
+           (current_flow.status = 'exchanging'
+             AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2))
            OR (
-             exchange_attempts >= $3
+             current_flow.exchange_attempts >= $3
              AND (
-               status = 'callback_received'
+               current_flow.status = 'callback_received'
                OR (
-                 status = 'exchanging'
-                 AND exchange_started_at < clock_timestamp() - make_interval(secs => $2)
+                 current_flow.status = 'exchanging'
+                 AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2)
                )
              )
            )
            OR (
-             provider = 'x'
+             current_flow.provider = 'x'
              AND (
-               status = 'callback_received'
+               current_flow.status = 'callback_received'
                OR (
-                 status = 'exchanging'
-                 AND exchange_started_at < clock_timestamp() - make_interval(secs => $2)
+                 current_flow.status = 'exchanging'
+                 AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2)
                )
              )
-             AND callback_received_at <=
+             AND current_flow.callback_received_at <=
                CURRENT_TIMESTAMP - make_interval(secs => $4)
            )
          )
-       ORDER BY id ASC
+       ORDER BY current_flow.id ASC
        LIMIT $1
      ),
      terminalized AS (
@@ -109,18 +111,20 @@ export async function getRecoverableOAuthAuthorizationIds(
            IS NOT DISTINCT FROM terminal_candidates.exchange_claim_id
        RETURNING oauth_authorizations.id
      )
-     SELECT id
-     FROM view_oauth_authorization_current_records
-     WHERE expires_at > CURRENT_TIMESTAMP
-       AND ($5::uuid[] IS NULL OR id = ANY($5::uuid[]))
+     SELECT current_flow.id
+     FROM oauth_authorizations flow
+     JOIN view_oauth_authorization_current_records current_flow ON current_flow.id = flow.id
+     WHERE flow.status IN ('callback_received', 'exchanging')
+       AND flow.expires_at > CURRENT_TIMESTAMP
+       AND ($5::uuid[] IS NULL OR flow.id = ANY($5::uuid[]))
        AND (
-         id = ANY($6::uuid[])
+         current_flow.id = ANY($6::uuid[])
          OR (
-           status = 'callback_received' AND exchange_attempts < $3
-           AND (provider <> 'x' OR callback_received_at > CURRENT_TIMESTAMP - make_interval(secs => $4))
+           current_flow.status = 'callback_received' AND current_flow.exchange_attempts < $3
+           AND (current_flow.provider <> 'x' OR current_flow.callback_received_at > CURRENT_TIMESTAMP - make_interval(secs => $4))
          )
        )
-     ORDER BY id ASC
+     ORDER BY current_flow.id ASC
      LIMIT $1`,
     [
       limit,

@@ -26,7 +26,7 @@ export { getUserMetricsByAnyBatch } from '@services/users/metrics-batch'
 export { getTopicMetricsByAnyBatch } from '@services/topics/metrics-batch'
 export { getTopicViewerCounts } from '@services/topics/metrics'
 export { getPostMetricsByAnyBatch } from '@services/posts/metrics-batch'
-export { searchUrlHostnames } from '@services/urls-hostnames/search'
+export { searchUrlHostnames, searchBlockedHostnames } from '@services/urls-hostnames/search'
 export { getTopicIds } from '@services/topics/search/get-ids'
 export { buildCommentTreeQuery }
 export { getRecommendedTopics } from '@services/recommended-topics'

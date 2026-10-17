@@ -1,7 +1,7 @@
-import { read } from '@data-stores/psql'
-import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
+import { decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { ViewHostname } from './types.mts'
+import { readHostnameCandidatePage } from './candidate-page.mts'
 
 export type SearchTopHostnamesOptions = {
   limit?: number
@@ -38,27 +38,5 @@ export async function searchTopHostnames(
     )
   }
 
-  const where = `WHERE ${filters.join(' AND ')}`
-  values.push(limit + 1)
-
-  const { rows } = await read(
-    `/* searchTopHostnames */
-    SELECT * FROM view_url_hostnames
-    ${where}
-    ORDER BY votes_score_net DESC, id DESC
-    LIMIT $${values.length}`,
-    values,
-  )
-
-  const all = rows as ViewHostname[]
-  const hasNextPage = all.length > limit
-  const results = all.slice(0, limit)
-
-  return {
-    results,
-    page_info: buildPageInfo(results, {
-      hasNextPage,
-      getCursor: h => ({ score: h.votes_score_net, id: h.id }),
-    }),
-  }
+  return readHostnameCandidatePage({ filters, values, limit, order: 'score' })
 }

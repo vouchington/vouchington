@@ -84,7 +84,9 @@ export async function searchAdminUsers(
     )
     SELECT vup.*
     FROM matched_users
-    JOIN view_users_private vup ON vup.id = matched_users.id
+    JOIN LATERAL (
+      SELECT * FROM view_users_private WHERE id = matched_users.id LIMIT 1
+    ) vup ON true
     ORDER BY matched_users.username_sort`,
     values,
   )

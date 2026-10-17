@@ -52,17 +52,10 @@ export async function searchCommunityAgentPromptSimulationPosts(
   options: { timeWindowHours: CommunityAgentPromptSimulationWindow; limit: number },
 ): Promise<CommunityAgentPromptSimulationPost[]> {
   const { rows } = await read(sql`/* searchCommunityAgentPromptSimulationPosts */
-    SELECT
-      p.id,
-      p.title,
-      p.markdown,
-      p.declared_language,
-      p.lingua_rs_detected_language,
-      p.post_type,
-      p.created_by_id,
-      cpr.approved_at
+    WITH candidate_posts AS MATERIALIZED (
+    SELECT p.id, cpr.approved_at
     FROM community_post_reviews cpr
-    JOIN view_posts p ON p.id = cpr.post_id
+    JOIN posts p ON p.id = cpr.post_id
     WHERE cpr.community_id = ${communityId}
       AND p.community_id = ${communityId}
       AND p.deleted_at IS NULL
@@ -73,6 +66,19 @@ export async function searchCommunityAgentPromptSimulationPosts(
       AND cpr.rejected_at IS NULL
     ORDER BY cpr.approved_at DESC, p.id DESC
     LIMIT ${options.limit}
+    )
+    SELECT
+      p.id,
+      p.title,
+      p.markdown,
+      p.declared_language,
+      p.lingua_rs_detected_language,
+      p.post_type,
+      p.created_by_id,
+      candidates.approved_at
+    FROM candidate_posts candidates
+    JOIN view_posts p ON p.id = candidates.id
+    ORDER BY candidates.approved_at DESC, candidates.id DESC
   `)
 
   return rows.map(row => {

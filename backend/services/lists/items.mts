@@ -119,9 +119,25 @@ export async function searchListItems(
 
   const params: unknown[] = [listId]
   let sql = `/* searchListItems */
+    WITH list_items AS (
+      SELECT li.id, li.user_list_id AS list_id,
+        'rss_feed_item'::user_list_item_types AS item_type,
+        li.rss_feed_item_id AS entity_id, li.order_index, li.created_at,
+        rfi.media_type::text AS media_type
+      FROM user_list_rss_feed_items li
+      JOIN rss_feed_items rfi ON rfi.id = li.rss_feed_item_id AND rfi.deleted_at IS NULL
+      WHERE li.user_list_id = $1 AND li.removed_at IS NULL
+      UNION ALL
+      SELECT li.id, li.user_list_id AS list_id,
+        'post'::user_list_item_types AS item_type,
+        li.post_id AS entity_id, li.order_index, li.created_at,
+        NULL::text AS media_type
+      FROM user_list_posts li
+      WHERE li.user_list_id = $1 AND li.removed_at IS NULL
+    )
     SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type
-    FROM view_user_list_items
-    WHERE list_id = $1
+    FROM list_items
+    WHERE true
   `
 
   if (options.mediaType) {

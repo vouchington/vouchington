@@ -5,6 +5,7 @@ import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.
 import * as services from '../run-services.mts'
 import { runPartitionPruningScenarios } from './partition-pruning.mts'
 import { runEntityTailScenarios } from './entity-tail.mts'
+import { runViewDrivenPostScenarios } from './view-driven-posts.mts'
 
 const {
   aggregateElectionVoteStatsFromReplica,
@@ -21,8 +22,6 @@ const {
   getTrendingRssFeeds,
   POST_ELECTION_CONFIG,
   searchCommunities,
-  searchCommunityPosts,
-  searchPendingPosts,
   TOPIC_ELECTION_CONFIG,
 } = services
 
@@ -106,22 +105,7 @@ export async function runEntityAndCommunityScenarios() {
     getFriendTrustedHostnames(seedUser.id, { limit: 25 }),
   )
 
-  // Community post search — JOIN with NOT EXISTS subquery for muted topics
-  const seedCommunityId = `${SEED_PREFIX}-1400-7000-8000-000000000000`
-  registerScenarioContract('search-community-posts', {
-    expectations: [],
-    crossPartition: { posts: 'Community search lists posts across the community history.' },
-  })
-  await runAndCapture('search-community-posts', () =>
-    searchCommunityPosts(seedCommunityId, { limit: 25 }),
-  )
-  registerScenarioContract('search-pending-community-posts', {
-    expectations: [],
-    crossPartition: { posts: 'Pending community search lists posts across the community history.' },
-  })
-  await runAndCapture('search-pending-community-posts', () =>
-    searchPendingPosts(seedCommunityId, { limit: 25 }),
-  )
+  await runViewDrivenPostScenarios()
 
   // Community search — JOIN with metrics view, sorted by members
   registerScenarioContract('search-communities', {

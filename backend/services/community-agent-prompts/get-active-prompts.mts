@@ -12,7 +12,23 @@ export async function getActiveCommunityAgentPrompts(
 ): Promise<CommunityAgentPrompt[]> {
   const { rows } = await query(
     sql`/* getActiveCommunityAgentPrompts */
-    WITH eligible_prompts AS (
+    WITH relevant_creators AS MATERIALIZED (
+      SELECT DISTINCT created_by_id
+      FROM community_agent_prompts
+      WHERE community_id = ${communityId}
+        AND is_slot_allocated = true
+        AND activated_at IS NOT NULL
+        AND deactivated_at IS NULL
+        AND deleted_at IS NULL
+    ), relevant_memberships AS MATERIALIZED (
+      SELECT creator.created_by_id, membership.id
+      FROM relevant_creators creator
+      JOIN LATERAL (
+        SELECT id FROM memberships
+        WHERE user_id = creator.created_by_id AND projection_ended_at IS NULL
+        LIMIT 1
+      ) membership ON true
+    ), eligible_prompts AS (
     SELECT
       cap.id,
       cap.community_id,
@@ -30,8 +46,13 @@ export async function getActiveCommunityAgentPrompts(
       ap.created_at,
       ap.updated_at
     FROM community_agent_prompts cap
+    JOIN relevant_memberships membership ON membership.created_by_id = cap.created_by_id
     JOIN agent_prompts ap ON ap.id = cap.id
-    JOIN view_memberships vm ON vm.user_id = cap.created_by_id
+    JOIN LATERAL (
+      SELECT plan, status FROM view_memberships
+      WHERE id = membership.id
+      LIMIT 1
+    ) vm ON true
     WHERE cap.is_slot_allocated = true
       AND cap.activated_at IS NOT NULL
       AND cap.deactivated_at IS NULL

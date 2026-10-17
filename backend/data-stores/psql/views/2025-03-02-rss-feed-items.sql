@@ -118,32 +118,33 @@ CREATE OR REPLACE VIEW view_rss_feed_items AS
     FROM rss_feed_item_sources rfis
     JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
     JOIN topics t ON t.id = rf.topic_id
-    JOIN view_rss_feed_current_states current_state
-      ON current_state.rss_feed_id = rf.id
     WHERE rfis.rss_feed_item_id = rss_feed_items.id
       AND rf.deleted_at IS NULL
     ORDER BY
-      current_state.is_enabled DESC,
-      current_state.is_discoverable DESC,
+      rf.is_enabled DESC,
+      rf.is_discoverable DESC,
       t.votes_score_net DESC NULLS LAST,
       rfis.created_at ASC
     LIMIT 1
   ) best_source ON true
-  JOIN view_rss_feeds primary_feed
-    ON primary_feed.id = best_source.rss_feed_id
+  JOIN LATERAL (
+    SELECT * FROM view_rss_feeds WHERE id = best_source.rss_feed_id LIMIT 1
+  ) primary_feed ON true
   -- Aggregate all source feeds as a JSON array, same ordering as primary selection.
   LEFT JOIN LATERAL (
     SELECT json_agg(
       ROW_TO_JSON(vrf.*)
       ORDER BY
-        vrf.is_enabled DESC,
-        vrf.is_discoverable DESC,
+        rf2.is_enabled DESC,
+        rf2.is_discoverable DESC,
         t2.votes_score_net DESC NULLS LAST,
         rfis2.created_at ASC
     ) AS rss_feed_sources
     FROM rss_feed_item_sources rfis2
     JOIN rss_feeds rf2 ON rf2.id = rfis2.rss_feed_id
-    JOIN view_rss_feeds vrf ON vrf.id = rfis2.rss_feed_id
+    JOIN LATERAL (
+      SELECT * FROM view_rss_feeds WHERE id = rfis2.rss_feed_id LIMIT 1
+    ) vrf ON true
     JOIN topics t2 ON t2.id = rf2.topic_id
     WHERE rfis2.rss_feed_item_id = rss_feed_items.id
   ) all_sources ON true

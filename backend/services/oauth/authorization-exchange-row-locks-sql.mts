@@ -2,10 +2,11 @@
 export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthAuthorizationIds:lock */
      WITH terminal_candidates AS (
        SELECT current_flow.id
-       FROM view_oauth_authorization_current_records current_flow
-       JOIN oauth_authorizations flow ON flow.id = current_flow.id
-       WHERE current_flow.expires_at > CURRENT_TIMESTAMP
-         AND ($5::uuid[] IS NULL OR current_flow.id = ANY($5::uuid[]))
+       FROM oauth_authorizations flow
+       JOIN view_oauth_authorization_current_records current_flow ON current_flow.id = flow.id
+       WHERE flow.status IN ('callback_received', 'exchanging')
+         AND flow.expires_at > CURRENT_TIMESTAMP
+         AND ($5::uuid[] IS NULL OR flow.id = ANY($5::uuid[]))
          AND (
            (current_flow.status = 'exchanging'
              AND current_flow.exchange_started_at < clock_timestamp() - make_interval(secs => $2))
@@ -37,10 +38,11 @@ export const recoverableOAuthAuthorizationRowLocksSql = `/* getRecoverableOAuthA
        FOR UPDATE OF flow SKIP LOCKED
      ), retry_candidates AS (
      SELECT current_flow.id
-     FROM view_oauth_authorization_current_records current_flow
-     JOIN oauth_authorizations flow ON flow.id = current_flow.id
-     WHERE current_flow.expires_at > CURRENT_TIMESTAMP
-       AND ($5::uuid[] IS NULL OR current_flow.id = ANY($5::uuid[]))
+     FROM oauth_authorizations flow
+     JOIN view_oauth_authorization_current_records current_flow ON current_flow.id = flow.id
+     WHERE flow.status IN ('callback_received', 'exchanging')
+       AND flow.expires_at > CURRENT_TIMESTAMP
+       AND ($5::uuid[] IS NULL OR flow.id = ANY($5::uuid[]))
        AND current_flow.exchange_attempts < $3
        AND (
          current_flow.provider <> 'x'

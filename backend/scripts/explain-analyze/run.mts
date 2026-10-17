@@ -32,6 +32,7 @@ import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-s
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
+import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 
 async function main() {
   prepareOutputDir()
@@ -49,6 +50,7 @@ async function main() {
     await runOAuthClientVerificationScenarios()
     await runFollowerDistributionScenarios()
     await runEntityAndCommunityScenarios()
+    await runViewDrivenReadScenarios()
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()
     await runMembershipRefundScenarios()

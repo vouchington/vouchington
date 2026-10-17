@@ -1,8 +1,9 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_current_paid_memberships AS
-  SELECT DISTINCT ON (m.user_id)
+  SELECT
     m.user_id,
-    product.plan
+    product.plan,
+    m.id AS membership_id
   FROM memberships m
   INNER JOIN membership_products product ON product.id = m.membership_product_id
   INNER JOIN membership_sources source ON source.id = m.membership_source_id
@@ -33,13 +34,6 @@ CREATE OR REPLACE VIEW view_current_paid_memberships AS
         AND evidence.verified_at IS NOT NULL
         AND evidence.rejected_at IS NULL
       )
-    )
-  ORDER BY
-    m.user_id,
-    CASE product.plan
-      WHEN 'pro' THEN 3
-      WHEN 'plus' THEN 2
-    END DESC,
-    m.id DESC;
+    );
 
 COMMENT ON VIEW view_current_paid_memberships IS 'Current paid membership entitlement projection; retained identities alone grant no access.';

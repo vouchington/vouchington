@@ -13,20 +13,50 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
 
   if (effectiveTopicIds.length > 0 && include_descendants) {
     searchQuery.append(sql`WITH RECURSIVE `)
-    appendTopicDescendantsCte(searchQuery, effectiveTopicIds, { trailingComma: false })
+    appendTopicDescendantsCte(searchQuery, effectiveTopicIds)
+  } else {
+    searchQuery.append(sql`WITH `)
+  }
+
+  const textQuery = options.query || options.hostname
+  if (typeof textQuery === 'string' && textQuery) {
+    searchQuery.append(sql`text_match_ids AS MATERIALIZED (
+      SELECT id FROM url_hostnames WHERE hostname ILIKE ${`%${textQuery.toLowerCase()}%`}
+    ), `)
   }
 
   searchQuery.append(sql`
-    SELECT view_url_hostnames.*
-    FROM view_url_hostnames
+    candidate_hostnames AS MATERIALIZED (
+    SELECT h.id, h.hostname, h.votes_score_net
   `)
+  if (typeof textQuery === 'string' && textQuery) {
+    searchQuery.append(sql`FROM text_match_ids text_match
+      JOIN LATERAL (
+        SELECT * FROM url_hostnames WHERE id = text_match.id LIMIT 1
+      ) h ON true`)
+  } else {
+    searchQuery.append(sql`FROM url_hostnames h`)
+  }
 
   appendWhereClause(searchQuery, filters)
   searchQuery.append(sql` ORDER BY `)
   searchQuery.append(
-    sort === 'trust' ? sql`votes_score_net DESC, id DESC` : sql`hostname ASC, id ASC`,
+    sort === 'trust' ? sql`h.votes_score_net DESC, h.id DESC` : sql`h.hostname ASC, h.id ASC`,
   )
   searchQuery.append(sql` LIMIT ${effectiveLimit + 1}`)
+  searchQuery.append(sql`
+    )
+    SELECT hydrated.*
+    FROM candidate_hostnames candidate
+    JOIN LATERAL (
+      SELECT * FROM view_url_hostnames WHERE id = candidate.id LIMIT 1
+    ) hydrated ON true
+    ORDER BY `)
+  searchQuery.append(
+    sort === 'trust'
+      ? sql`candidate.votes_score_net DESC, candidate.id DESC`
+      : sql`candidate.hostname ASC, candidate.id ASC`,
+  )
 
   return { effectiveLimit, searchQuery }
 }
@@ -37,22 +67,11 @@ function buildSearchFilters(
 ): ReturnType<typeof sql>[] {
   const filters: ReturnType<typeof sql>[] = []
   if (!options.includePrivate) filters.push(sql`publicly_introduced_at IS NOT NULL`)
-  appendTextFilter(filters, options)
   appendBooleanFilter(filters, 'is_blocked', options.is_blocked)
   appendBooleanFilter(filters, 'is_crawlable', options.is_crawlable)
   appendTopicFilters(filters, options, effectiveTopicIds)
   appendCursorFilter(filters, options)
   return filters
-}
-
-function appendTextFilter(
-  filters: ReturnType<typeof sql>[],
-  options: SearchUrlHostnamesOptions,
-): void {
-  const query = options.query || options.hostname
-  if (typeof query === 'string' && query) {
-    filters.push(sql`hostname ILIKE ${`%${query.toLowerCase()}%`}`)
-  }
 }
 
 function appendBooleanFilter(
@@ -81,13 +100,13 @@ function appendTopicFilters(
     filters.push(sql`(
       SELECT COUNT(DISTINCT topic_descendants.root_post_id)
       FROM topic_descendants
-      WHERE topic_descendants.topic_id = view_url_hostnames.topic_id
+      WHERE topic_descendants.topic_id = h.topic_id
     ) = ${effectiveTopicIds.length}`)
   } else {
     filters.push(sql`EXISTS (
       SELECT 1
       FROM topic_descendants
-      WHERE topic_descendants.topic_id = view_url_hostnames.topic_id
+      WHERE topic_descendants.topic_id = h.topic_id
     )`)
   }
 }
@@ -118,7 +137,7 @@ function appendCursorFilter(
       'Invalid cursor format: expected score cursor',
     )
     filters.push(
-      sql`(votes_score_net < ${cursor.score} OR (votes_score_net = ${cursor.score} AND id < ${cursor.id}))`,
+      sql`(h.votes_score_net < ${cursor.score} OR (h.votes_score_net = ${cursor.score} AND h.id < ${cursor.id}))`,
     )
     return
   }
@@ -128,7 +147,7 @@ function appendCursorFilter(
     'Invalid cursor format: expected name cursor',
   )
   filters.push(
-    sql`(hostname > ${cursor.name} OR (hostname = ${cursor.name} AND id > ${cursor.id}))`,
+    sql`(h.hostname > ${cursor.name} OR (h.hostname = ${cursor.name} AND h.id > ${cursor.id}))`,
   )
 }
 

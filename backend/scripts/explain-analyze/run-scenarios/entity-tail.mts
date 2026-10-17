@@ -2,6 +2,7 @@ import { SEED_PREFIX, runAndCapture, seedTopicId, seedUser } from '../run-suppor
 import { registerScenarioContract } from '../plan-expectations.mts'
 import * as services from '../run-services.mts'
 import { runAdminUserSearchScenarios } from './admin-user-search.mts'
+import { runViewDrivenHostnameScenarios } from './view-driven-hostnames.mts'
 
 const {
   getCommunityModmailInbox,
@@ -13,7 +14,6 @@ const {
   getUserBookmarkCounts,
   listUserRemovedPosts,
   searchDataPoints,
-  searchTopHostnames,
   searchTopicAliases,
   updateTopicRatingStats,
 } = services
@@ -23,18 +23,7 @@ export async function runEntityTailScenarios(): Promise<void> {
 
   await runAndCapture('topic-rating-stats', () => updateTopicRatingStats(seedTopicId))
 
-  registerScenarioContract('search-top-hostnames', {
-    expectations: [{ kind: 'usesIndexes', indexes: ['idx_url_hostnames__top_sort'] }],
-  })
-  registerScenarioContract('search-top-hostnames-by-topic', {
-    expectations: [{ kind: 'usesIndexes', indexes: ['idx_url_hostnames__top_sort_by_topic'] }],
-  })
-  await runAndCapture('search-top-hostnames', () => searchTopHostnames({ limit: 25 }))
-
-  // Top hostnames filtered by topic
-  await runAndCapture('search-top-hostnames-by-topic', () =>
-    searchTopHostnames({ topic_id: seedTopicId, limit: 25 }),
-  )
+  await runViewDrivenHostnameScenarios()
 
   await runAdminUserSearchScenarios()
 
