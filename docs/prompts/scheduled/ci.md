@@ -34,3 +34,17 @@ Review the latest CI runs. Find one concrete, bounded improvement that is safe t
   required validation is disclosed as timed out or incomplete. Root `AGENTS.md`'s "generate
   synthetic SHA-shaped fixtures" guidance means generating the ref/SHA value at runtime, not
   embedding a 40-hex-character literal in test source.
+- Mass-failure check: when a `merge_group` run ejects a PR, list every failed job's failing step and
+  duration (`gh api repos/vouchington/vouchington/actions/runs/<id>/jobs`). Several unrelated jobs
+  failing the same shared step (for example `setup-node-pnpm` or `setup-backend`) at a duration equal
+  to that step's `timeout-minutes` is a stalled shared dependency, not a flake in any one job. Read the
+  last log lines before the kill (for example a `Downloading @pnpm/exe...` progress line that stops
+  advancing, as in runs 38391711633 and 38803835711) and fix the repository-owned cause, such as a
+  per-job download that could come from a restored cache. Do not add retries, widen the step timeout,
+  or pin a tool version the repository deliberately floats without an owner decision.
+- Backstop check: for any step that has failed by hitting its cap in recent runs, confirm the cap
+  kills the whole process group. `timeout-minutes` does not reap children of composite steps or
+  detached helpers; long test or build steps that can hang with child processes belong under
+  [`ci/run-bounded.py`](../../../ci/run-bounded.py) as in `tests-playwright.yml` and
+  [`build-web-targets`](../../development/reference-ci-ci-job-timeout-budgets.md). Keep each job's
+  `timeout-minutes` strictly below the sum of its step budgets.

@@ -54,3 +54,6 @@ Review Vitest tests. Pick at most one concrete, bounded improvement that is safe
   `dev/vitest-config.test.mts` bans a hardcoded `maxWorkers` literal.
 - Record any deferred follow-up in the owning reference doc or a `AGENTS.md`, not only in a PR body
   or issue comment — a PR body is exactly what a later scheduled run cannot read.
+- Test-helper waits on a terminal event (`completed`, `failed`, drained) need their own bounded
+  deadline that fails with a named message; an unbounded wait turns a stalled worker into a hung
+  shard that only the step timeout reaps with no diagnosis (review of #2918, run 38617297518).

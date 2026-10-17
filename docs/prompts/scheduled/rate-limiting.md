@@ -7,3 +7,6 @@ Review rate limiting. Find one concrete, bounded improvement that is safe to shi
 - Do not weaken a limit or add a bypass without an explicit product or security requirement.
 - Skip findings already covered by open issues or open PRs.
 - Add or tighten tests for the selected limiter, tier computation, or threshold behavior.
+- MCP parity: every service-level rate-limit or duplicate-window failure reachable from an MCP tool
+  (`backend/mcp/`) must map to the same MCP rate-limit result the REST route returns, not an
+  unhandled error (review of #2966 on the election-vote and RSS-share tools).
