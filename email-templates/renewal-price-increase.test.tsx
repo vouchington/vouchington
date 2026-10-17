@@ -2,13 +2,14 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderRenewalPriceIncreaseEmail } from './renewal-price-increase-renderer.mts'
 import RenewalPriceIncreaseEmail from './renewal-price-increase.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderRenewalPriceIncreaseEmail', () => {
   it('renders the expected subject and snapshots', async () => {
     const result = await renderRenewalPriceIncreaseEmail(RenewalPriceIncreaseEmail.PreviewProps!)
 
     expect(result.subject).toBe('Your Voucha Plus renewal price is changing')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/renewal-price-increase.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

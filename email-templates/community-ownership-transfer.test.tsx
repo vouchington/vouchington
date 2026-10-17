@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderCommunityOwnershipTransferEmail } from './community-ownership-transfer-renderer.mts'
 import CommunityOwnershipTransferEmail from './community-ownership-transfer.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderCommunityOwnershipTransferEmail', () => {
   it('renders the expected subject and snapshots', async () => {
@@ -10,7 +11,7 @@ describe('renderCommunityOwnershipTransferEmail', () => {
     )
 
     expect(result.subject).toBe('Ownership of Travel Hackers has changed')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/community-ownership-transfer.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

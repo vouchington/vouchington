@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderCommunityModerationSummaryEmail } from './community-moderation-summary-renderer.mts'
 import CommunityModerationSummaryEmail from './community-moderation-summary.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderCommunityModerationSummaryEmail', () => {
   it('renders the expected subject and snapshots', async () => {
@@ -10,7 +11,7 @@ describe('renderCommunityModerationSummaryEmail', () => {
     )
 
     expect(result.subject).toBe('Community moderation summary for July 9, 2026')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/community-moderation-summary.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

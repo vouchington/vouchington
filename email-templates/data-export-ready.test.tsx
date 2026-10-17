@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { emailCopy } from './catalog-copy.mts'
 import { renderDataExportReadyEmail } from './data-export-ready-renderer.mts'
 import DataExportReadyEmail from './data-export-ready.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderDataExportReadyEmail', () => {
   it('owns the timeframe sentence in the catalog', () => {
@@ -15,7 +16,7 @@ describe('renderDataExportReadyEmail', () => {
     const result = await renderDataExportReadyEmail(DataExportReadyEmail.PreviewProps!)
 
     expect(result.subject).toBe('Your Data Export is Ready')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/data-export-ready.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(

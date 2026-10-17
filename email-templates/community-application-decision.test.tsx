@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { renderCommunityApplicationDecisionEmail } from './community-application-decision-renderer.mts'
 import CommunityApplicationDecisionEmail from './community-application-decision.tsx'
+import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 
 describe('renderCommunityApplicationDecisionEmail', () => {
   it('renders the expected subject and snapshots', async () => {
@@ -10,7 +11,7 @@ describe('renderCommunityApplicationDecisionEmail', () => {
     )
 
     expect(result.subject).toBe('Your application to Travel Hackers was approved')
-    await expect(result.html).toMatchFileSnapshot(
+    await expect(omitReactEmailPreviewPadding(result.html)).toMatchFileSnapshot(
       fileURLToPath(new URL('__snapshots__/community-application-decision.html', import.meta.url)),
     )
     await expect(result.text).toMatchFileSnapshot(
