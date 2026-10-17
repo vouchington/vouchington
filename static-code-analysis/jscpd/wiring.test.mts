@@ -44,7 +44,9 @@ describe('jscpd wiring', () => {
     expect(readFileSync('.github/workflows/static-code-analysis.yml', 'utf8')).toContain(
       `run: ${DEAD_CODE_COMMAND}\n`,
     )
-    expect(readFileSync('ci/ci-local/static-commands.mts', 'utf8')).toContain(`'${DEAD_CODE_COMMAND}'`)
+    expect(readFileSync('ci/ci-local/static-commands.mts', 'utf8')).toContain(
+      `'${DEAD_CODE_COMMAND}'`,
+    )
     expect(config.deadCode?.categories).toEqual([
       'unused-file',
       'unused-export',
