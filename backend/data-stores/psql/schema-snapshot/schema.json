@@ -43563,7 +43563,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -43574,18 +43574,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -43596,7 +43596,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "friends_synced_at": {
@@ -43607,7 +43607,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "github_user_data": {
@@ -43618,7 +43618,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "github_user_email_address": {
@@ -43629,19 +43629,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "github_user_id": {
           "collation": null,
-          "comment": "GitHub's unique user ID (primary key).",
+          "comment": "GitHub's unique external user ID.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the GitHub account.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "refresh_token_ciphertext": {
           "collation": null,
@@ -43651,7 +43662,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "updated_at": {
@@ -43662,7 +43673,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -43673,7 +43684,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
@@ -43700,10 +43711,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "github_accounts_pkey": {
+        "github_accounts_github_user_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX github_accounts_pkey ON public.github_accounts USING btree (github_user_id)",
+          "definition": "CREATE UNIQUE INDEX github_accounts_github_user_id_key ON public.github_accounts USING btree (github_user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -43712,6 +43723,26 @@
               "expression": "github_user_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "github_accounts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX github_accounts_pkey ON public.github_accounts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -43783,7 +43814,7 @@
         "idx_github_accounts__orphan_retention_cleanup": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_github_accounts__orphan_retention_cleanup ON public.github_accounts USING btree (created_at, github_user_id) WHERE (user_id IS NULL)",
+          "definition": "CREATE INDEX idx_github_accounts__orphan_retention_cleanup ON public.github_accounts USING btree (created_at, id) WHERE (user_id IS NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -43794,11 +43825,11 @@
               "opclass": "timestamptz_ops"
             },
             {
-              "column": "github_user_id",
+              "column": "id",
               "descending": false,
-              "expression": "github_user_id",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(user_id IS NULL)",
@@ -43851,14 +43882,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["github_user_id"],
-        "definition": "PRIMARY KEY (github_user_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_github_accounts_updated_at": "CREATE TRIGGER trigger_github_accounts_updated_at BEFORE UPDATE ON public.github_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "github_accounts_github_user_id_key": {
+          "columns": ["github_user_id"],
+          "definition": "UNIQUE (github_user_id)"
+        }
+      }
     },
     "github_friends": {
       "checkConstraints": {},
@@ -43866,35 +43902,57 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "friend_github_account_id": {
+          "collation": null,
+          "comment": "Matching local GitHub account when the friend has signed in.",
+          "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "timestamp with time zone"
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
         },
-        "github_friend_id": {
+        "github_account_id": {
           "collation": null,
-          "comment": "The GitHub user ID of the friend.",
+          "comment": "Source GitHub account whose following list contains this entry.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
-          "type": "text"
+          "type": "uuid"
         },
-        "github_user_id": {
+        "github_friend_id": {
           "collation": null,
-          "comment": "The GitHub user whose friends list this entry belongs to.",
+          "comment": "External GitHub user ID of the friend, who may not have an account here.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 3,
           "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the observed friend relation.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "last_observed_at": {
           "collation": null,
@@ -43904,7 +43962,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -43915,36 +43973,45 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         }
       },
       "comment": "GitHub follower/following relationships for friend recommendations.",
       "foreignKeys": {
-        "github_friends_github_user_id_fkey": {
-          "columns": ["github_user_id"],
-          "definition": "FOREIGN KEY (github_user_id) REFERENCES github_accounts(github_user_id) ON DELETE CASCADE",
+        "github_friends_friend_github_account_id_fkey": {
+          "columns": ["friend_github_account_id"],
+          "definition": "FOREIGN KEY (friend_github_account_id) REFERENCES github_accounts(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "github_accounts",
+          "validated": true
+        },
+        "github_friends_github_account_id_fkey": {
+          "columns": ["github_account_id"],
+          "definition": "FOREIGN KEY (github_account_id) REFERENCES github_accounts(id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["github_user_id"],
+          "referencedColumns": ["id"],
           "referencedTable": "github_accounts",
           "validated": true
         }
       },
       "growth": "unbounded",
       "indexes": {
-        "github_friends_pkey": {
+        "github_friends_github_account_id_github_friend_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX github_friends_pkey ON public.github_friends USING btree (github_user_id, github_friend_id)",
+          "definition": "CREATE UNIQUE INDEX github_friends_github_account_id_github_friend_id_key ON public.github_friends USING btree (github_account_id, github_friend_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "github_user_id",
+              "column": "github_account_id",
               "descending": false,
-              "expression": "github_user_id",
+              "expression": "github_account_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             },
             {
               "column": "github_friend_id",
@@ -43955,9 +44022,49 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "github_friends_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX github_friends_pkey ON public.github_friends USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_github_friends__friend_github_account_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_friends__friend_github_account_id ON public.github_friends USING btree (friend_github_account_id) WHERE (friend_github_account_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_github_account_id",
+              "descending": false,
+              "expression": "friend_github_account_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_github_account_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_github_friends__friend_id": {
@@ -43984,14 +44091,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["github_user_id", "github_friend_id"],
-        "definition": "PRIMARY KEY (github_user_id, github_friend_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_github_friends_updated_at": "CREATE TRIGGER trigger_github_friends_updated_at BEFORE UPDATE ON public.github_friends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "github_friends_github_account_id_github_friend_id_key": {
+          "columns": ["github_account_id", "github_friend_id"],
+          "definition": "UNIQUE (github_account_id, github_friend_id)"
+        }
+      }
     },
     "google_accounts": {
       "checkConstraints": {},
@@ -69582,10 +69694,10 @@
         "oauth_authorizations_check": "CHECK ((num_nonnulls(completed_at, rejected_at, expired_at) <= 1))",
         "oauth_authorizations_check1": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = 'connect'::oauth_authorization_purposes) AND (initiating_user_id IS NOT NULL))))",
         "oauth_authorizations_check2": "CHECK ((((callback_mode = 'native'::oauth_callback_modes) AND (completion_proof_challenge ~ '^[A-Za-z0-9_-]{43}$'::text)) OR ((callback_mode = 'web'::oauth_callback_modes) AND (completion_proof_challenge IS NULL))))",
-        "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_account_id, x_account_id, github_user_id, linkedin_account_id, microsoft_account_id) <= 1))",
-        "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_account_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_user_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'microsoft'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_user_id IS NULL) AND (linkedin_account_id IS NULL))))",
+        "oauth_authorizations_check3": "CHECK ((num_nonnulls(facebook_account_id, x_account_id, github_account_id, linkedin_account_id, microsoft_account_id) <= 1))",
+        "oauth_authorizations_check4": "CHECK ((((provider = 'facebook'::oauth_authorization_providers) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'x'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'github'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (linkedin_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'linkedin'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (microsoft_account_id IS NULL)) OR ((provider = 'microsoft'::oauth_authorization_providers) AND (facebook_account_id IS NULL) AND (x_account_id IS NULL) AND (github_account_id IS NULL) AND (linkedin_account_id IS NULL))))",
         "oauth_authorizations_check5": "CHECK (((status <> ALL (ARRAY['callback_received'::oauth_authorization_statuses, 'exchanging'::oauth_authorization_statuses, 'completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR (callback_received_at IS NOT NULL)))",
-        "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_account_id, x_account_id, github_user_id, linkedin_account_id, microsoft_account_id) = 1))))",
+        "oauth_authorizations_check6": "CHECK (((status <> ALL (ARRAY['completion_ready'::oauth_authorization_statuses, 'completed'::oauth_authorization_statuses])) OR ((completion_ready_at IS NOT NULL) AND (callback_code_ciphertext IS NULL) AND (num_nonnulls(facebook_account_id, x_account_id, github_account_id, linkedin_account_id, microsoft_account_id) = 1))))",
         "oauth_authorizations_check7": "CHECK ((((status <> 'completed'::oauth_authorization_statuses) AND (completed_at IS NULL) AND (result_kind IS NULL) AND (result_user_id IS NULL) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL)) OR ((status = 'completed'::oauth_authorization_statuses) AND (completed_at IS NOT NULL) AND (result_user_id IS NOT NULL) AND (((result_kind = 'authenticated'::oauth_authorization_result_kinds) AND (result_device_id IS NOT NULL) AND (uuid_extract_version(result_device_id) = 7) AND (result_session_id IS NOT NULL) AND (uuid_extract_version(result_session_id) = 7) AND (login_attempt_id IS NULL)) OR ((result_kind = 'mfa_required'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NOT NULL) AND (uuid_extract_version(login_attempt_id) = 7)) OR ((result_kind = 'connected'::oauth_authorization_result_kinds) AND (result_device_id IS NULL) AND (result_session_id IS NULL) AND (login_attempt_id IS NULL))))))",
         "oauth_authorizations_provider_check": "CHECK ((provider = ANY (ARRAY['facebook'::oauth_authorization_providers, 'x'::oauth_authorization_providers, 'github'::oauth_authorization_providers, 'linkedin'::oauth_authorization_providers, 'microsoft'::oauth_authorization_providers])))",
         "oauth_authorizations_purpose_check": "CHECK ((purpose = ANY (ARRAY['authenticate'::oauth_authorization_purposes, 'connect'::oauth_authorization_purposes])))",
@@ -69759,7 +69871,7 @@
           "ordinalPosition": 17,
           "type": "uuid"
         },
-        "github_user_id": {
+        "github_account_id": {
           "collation": null,
           "comment": "GitHub account produced by a successful exchange; parent deletion cascades the authorization.",
           "defaultExpression": null,
@@ -69768,7 +69880,7 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 19,
-          "type": "text"
+          "type": "uuid"
         },
         "id": {
           "collation": null,
@@ -70002,12 +70114,12 @@
           "referencedTable": "facebook_accounts",
           "validated": true
         },
-        "oauth_authorizations_github_user_id_fkey": {
-          "columns": ["github_user_id"],
-          "definition": "FOREIGN KEY (github_user_id) REFERENCES github_accounts(github_user_id) ON DELETE CASCADE",
+        "oauth_authorizations_github_account_id_fkey": {
+          "columns": ["github_account_id"],
+          "definition": "FOREIGN KEY (github_account_id) REFERENCES github_accounts(id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["github_user_id"],
+          "referencedColumns": ["id"],
           "referencedTable": "github_accounts",
           "validated": true
         },
@@ -70133,21 +70245,21 @@
           "unique": false,
           "valid": true
         },
-        "idx_oauth_authorizations__github_user": {
+        "idx_oauth_authorizations__github_account": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_oauth_authorizations__github_user ON public.oauth_authorizations USING btree (github_user_id) WHERE (github_user_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_oauth_authorizations__github_account ON public.oauth_authorizations USING btree (github_account_id) WHERE (github_account_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "github_user_id",
+              "column": "github_account_id",
               "descending": false,
-              "expression": "github_user_id",
+              "expression": "github_account_id",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(github_user_id IS NOT NULL)",
+          "predicate": "(github_account_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -136773,7 +136885,7 @@
     },
     "view_oauth_authorization_current_records": {
       "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_account_id,\n    github_user_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id\n   FROM oauth_authorizations flow;",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_account_id,\n    github_account_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {

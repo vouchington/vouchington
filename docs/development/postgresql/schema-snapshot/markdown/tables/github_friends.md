@@ -6,29 +6,35 @@ GitHub follower/following relationships for friend recommendations.
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                               |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `github_user_id`   | `text`                     | no       |                     |          |           |           | The GitHub user whose friends list this entry belongs to.                                                                             |
-| `github_friend_id` | `text`                     | no       |                     |          |           |           | The GitHub user ID of the friend.                                                                                                     |
-| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
-| `last_observed_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock. |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
+| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                               |
+| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the observed friend relation.                                                                             |
+| `github_account_id`        | `uuid`                     | no       |                              |          |           |           | Source GitHub account whose following list contains this entry.                                                                       |
+| `github_friend_id`         | `text`                     | no       |                              |          |           |           | External GitHub user ID of the friend, who may not have an account here.                                                              |
+| `friend_github_account_id` | `uuid`                     | yes      |                              |          |           |           | Matching local GitHub account when the friend has signed in.                                                                          |
+| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                       |
+| `last_observed_at`         | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock. |
+| `updated_at`               | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                       |
 
-**Primary key:** `PRIMARY KEY (github_user_id, github_friend_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `github_friends_github_account_id_github_friend_id_key`: `UNIQUE (github_account_id, github_friend_id)`
 
 **Check constraints:**
 _none_
 
 **Foreign keys:**
 
-- `github_friends_github_user_id_fkey`: `FOREIGN KEY (github_user_id) REFERENCES github_accounts(github_user_id) ON DELETE CASCADE`
+- `github_friends_friend_github_account_id_fkey`: `FOREIGN KEY (friend_github_account_id) REFERENCES github_accounts(id) ON DELETE SET NULL`
+- `github_friends_github_account_id_fkey`: `FOREIGN KEY (github_account_id) REFERENCES github_accounts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `github_friends_pkey`: `CREATE UNIQUE INDEX github_friends_pkey ON public.github_friends USING btree (github_user_id, github_friend_id)`
+- `github_friends_github_account_id_github_friend_id_key`: `CREATE UNIQUE INDEX github_friends_github_account_id_github_friend_id_key ON public.github_friends USING btree (github_account_id, github_friend_id)`
+- `github_friends_pkey`: `CREATE UNIQUE INDEX github_friends_pkey ON public.github_friends USING btree (id)`
+- `idx_github_friends__friend_github_account_id`: `CREATE INDEX idx_github_friends__friend_github_account_id ON public.github_friends USING btree (friend_github_account_id) WHERE (friend_github_account_id IS NOT NULL)`
 - `idx_github_friends__friend_id`: `CREATE INDEX idx_github_friends__friend_id ON public.github_friends USING btree (github_friend_id)`
 
 **Triggers:**
