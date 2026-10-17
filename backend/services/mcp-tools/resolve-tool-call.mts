@@ -40,6 +40,7 @@ export function authorizeMcpTool(
   if (user.suspended === true) {
     const paying = user.membership_plan === 'plus' || user.membership_plan === 'pro'
     const access = tool.meta?.suspendedAccess
+    if (access === true && !isToolAllowedForPlan(tool, user)) return { status: 'plan_denied' }
     if (access !== 'free' && !(access === true && paying)) return { status: 'suspended' }
   }
   if (!isToolAllowedForUser(tool, user)) return { status: 'role_denied' }

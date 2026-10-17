@@ -92,6 +92,32 @@ describe('authorizeMcpTool', () => {
     })
   })
 
+  it('preserves appeal plan denial while allowing suspended Free message reads', () => {
+    const suspended = { ...user, suspended: true }
+    const appealWrite = fixtureTool('appeal_write_fixture', {
+      suspendedAccess: true,
+      plan: 'plus',
+      requiredScopes: { mcp: ['appeals:write'] },
+    })
+    const appealRead = fixtureTool('appeal_read_fixture', {
+      suspendedAccess: true,
+      requiredScopes: { mcp: ['appeals:read'] },
+    })
+    const messages = fixtureTool('message_read_fixture', {
+      suspendedAccess: 'free',
+      requiredScopes: { mcp: ['messages:read'] },
+    })
+    expect(
+      authorizeMcpTool(appealWrite, suspended, ['appeals:write'], USER_MCP_SERVER_CONFIG),
+    ).toEqual({ status: 'plan_denied' })
+    expect(
+      authorizeMcpTool(appealRead, suspended, ['appeals:read'], USER_MCP_SERVER_CONFIG),
+    ).toEqual({ status: 'suspended' })
+    expect(
+      authorizeMcpTool(messages, suspended, ['messages:read'], USER_MCP_SERVER_CONFIG),
+    ).toEqual({ status: 'allowed', tool: messages })
+  })
+
   it('checks role, plan and the copyright switch before exact scopes', () => {
     const tool = fixtureTool(
       'copyright_gate_fixture',
