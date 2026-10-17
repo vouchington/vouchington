@@ -5,8 +5,7 @@ import { validateUUID } from '@modules/utils'
 import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import {
-  assertReferralLinkValidationExists,
-  assertReferralProgramExists,
+  assertReferralProgramAndLinkValidationExist,
   assertTopicExists,
   validateOptionalTimestamp,
 } from './validation.mts'
@@ -75,8 +74,7 @@ export async function linkValidationToReferralProgram(
   assert(currentUser, 401, 'Unauthorized')
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  await assertReferralProgramExists(referralProgramId, 'referral_program_id', options)
-  await assertReferralLinkValidationExists(validationId, 'validation_id', options)
+  await assertReferralProgramAndLinkValidationExist(referralProgramId, validationId, options)
   await withReferralLinkEligibilityMutationLock(options ?? {}, query =>
     query(sql`/* linkValidationToReferralProgram */
         INSERT INTO referral_program_topic_link_validation_rule_sets (referral_program_topic_id, referral_program_link_validation_rule_set_id)

@@ -5,11 +5,6 @@
     "issue": 2612
   },
   {
-    "annotation": "addUserDeletionExternalWork",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "allocateCommunityAgentPromptSlot",
     "reason": "Community lookups repeat after the route preamble",
     "issue": 2614
@@ -35,14 +30,14 @@
     "issue": 2612
   },
   {
-    "annotation": "assertReferralProgramExists",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "assertReportablePost",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609
+  },
+  {
+    "annotation": "assertReferralProgramExists",
+    "reason": "The create-and-link transaction rechecks the program after inserting the new link-validation row, so it sees the write and rejects a program merged or deleted before the relation is added (backend/services/referral-program-link-validations/create-and-link.mts:76-79, backend/services/topics/validation.mts:126-150)",
+    "issue": 3120
   },
   {
     "annotation": "assertUrlsHaveNoBlockedHostnames",
@@ -70,24 +65,9 @@
     "issue": 2605
   },
   {
-    "annotation": "backfillPostsBloomFilter",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
-    "annotation": "backfillTopicsBloomFilter",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612
-  },
-  {
-    "annotation": "buildCountQuery",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
   },
   {
     "annotation": "buildEntityRelationSelectQuery",
@@ -140,11 +120,6 @@
     "issue": 2608
   },
   {
-    "annotation": "completeUserDeletionExternalWork",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "countUserMemberCommunities",
     "reason": "Community lookups repeat after the route preamble",
     "issue": 2614
@@ -190,11 +165,6 @@
     "issue": 2612
   },
   {
-    "annotation": "createDataRequest",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "createDeterministicCopyrightCorrespondenceInTransaction",
     "reason": "Copyright delivery steps run once per recipient or target",
     "issue": 2607
@@ -215,19 +185,9 @@
     "issue": 2613
   },
   {
-    "annotation": "createIndividualCard",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "createModerationReport",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609
-  },
-  {
-    "annotation": "createMyLandingPage",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
   },
   {
     "annotation": "createPost",
@@ -281,8 +241,8 @@
   },
   {
     "annotation": "deleteProfileLink",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
+    "issue": 3120
   },
   {
     "annotation": "deleteTotpAuthenticator",
@@ -355,14 +315,9 @@
     "issue": 2609
   },
   {
-    "annotation": "getActiveUserIdsForEntityCache",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "getAdministratorRefundRequestForMembershipKey",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "The transaction first checks idempotency, then rereads after an operation/request insert conflict to hydrate the already-persisted request before comparing its fingerprint (backend/services/memberships/refund-reconciliation/administrator-request.mts:17-25, backend/services/memberships/refund-reconciliation/administrator-request.mts:63-71)",
+    "issue": 3120
   },
   {
     "annotation": "getAutomodFeedbackContext:agent",
@@ -401,8 +356,8 @@
   },
   {
     "annotation": "getDataRequestById",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Unresolved in #3120: the second read closes the lost-wakeup window after pub/sub subscribe, and removing it requires a separate SSE race/error-order design (backend/api/v1/users/data-request.mts:117-135). This remains outside the issue's allowed row-lock/write/transaction keep categories.",
+    "issue": 3120
   },
   {
     "annotation": "getElectionsByIdBatch",
@@ -420,14 +375,9 @@
     "issue": 2612
   },
   {
-    "annotation": "getIndividual",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "getLandingPageRowForUser",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
+    "issue": 3120
   },
   {
     "annotation": "getLatestJudgementForEntity",
@@ -441,8 +391,8 @@
   },
   {
     "annotation": "getMembershipPurchaseIntent",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Idempotency is checked before locking and rechecked under the user row lock; the inserted intent is hydrated for admission checks and reread after the external provider launch (backend/services/memberships/purchase-intents.mts:55-140)",
+    "issue": 3120
   },
   {
     "annotation": "getModeratedCommunityIds",
@@ -600,27 +550,7 @@
     "issue": 2612
   },
   {
-    "annotation": "getUserBookmarkCounts",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "getUserCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
-    "annotation": "getUserMetricsRowByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
-    "annotation": "getUserPrivacySettings",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
-    "annotation": "getUserReferralLink",
     "reason": "User and profile lookups repeat per request step",
     "issue": 2611
   },
@@ -673,11 +603,6 @@
     "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 2612
-  },
-  {
-    "annotation": "lockActiveUserSubjectsForMutation",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
   },
   {
     "annotation": "lockApiKeyOwner",
@@ -845,11 +770,6 @@
     "issue": 2608
   },
   {
-    "annotation": "queryEntityBookmarksForRelations",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "readBlueskyLinkAuthorization",
     "reason": "Auth and account steps repeat per session, factor or address",
     "issue": 2610
@@ -925,19 +845,14 @@
     "issue": 2608
   },
   {
-    "annotation": "reorderProfileLinks",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
     "annotation": "repairEntityBloomKeys",
     "reason": "Topic listener work repairs Bloom keys once per affected topic",
     "issue": 2612
   },
   {
     "annotation": "replaceMyLandingPageItems",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Group-member rows must be deleted before their parent landing-page items to satisfy the foreign key (backend/services/my/landing-pages/replace-item-writes.mts:11-19)",
+    "issue": 3120
   },
   {
     "annotation": "replaceTopicRecommendationHostnames",
@@ -1061,8 +976,8 @@
   },
   {
     "annotation": "setMyLandingPageDefault",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "The current default must be cleared before setting the selected page because the partial unique index permits only one default per user (backend/services/my/landing-pages/set-default.mts:35-44)",
+    "issue": 3120
   },
   {
     "annotation": "setPostImages",
@@ -1141,8 +1056,8 @@
   },
   {
     "annotation": "upsertUserFinancialProfile",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "The owner individual and existing financial-profile row are locked in the transaction before validating currency-dependent patches; the second lock read prevents concurrent updates from validating against stale profile data (backend/services/user-financial-profiles/upsert.mts:17-39)",
+    "issue": 3120
   },
   {
     "annotation": "verifyEmailVerificationToken",

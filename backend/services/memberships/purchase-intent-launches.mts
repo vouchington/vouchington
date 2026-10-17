@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto'
+import { createCodedError } from '@modules/on-error/create-coded-error'
+import { CONFLICT, IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import type { MembershipPlanSlug } from './types.mts'
 
 export type MembershipPurchaseProvider =
@@ -74,6 +76,17 @@ export function toPurchaseIntent(
     launch,
     replayed,
   }
+}
+
+export function assertMatchingPurchaseIntent(row: PurchaseIntentRow, fingerprint: string): void {
+  if (row.request_fingerprint !== fingerprint)
+    throw createCodedError(
+      409,
+      'This idempotency key was already used for a different purchase.',
+      IDEMPOTENCY_KEY_REUSED,
+    )
+  if (row.failed_at !== null)
+    throw createCodedError(409, 'Membership purchase is not eligible.', CONFLICT)
 }
 
 export function getNativeMembershipLaunch(

@@ -15,6 +15,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 
 type GetHouseholdSpendingCategoriesOptions = QueryOptions & {
   entry_id?: string
+  individual_id?: string
   spending_category_topic_id?: string
   after?: string
   limit?: number
@@ -71,8 +72,8 @@ export async function getHouseholdSpendingCategoriesByUserId(
   assert(currentUser, 401)
   const limit = parseBoundedIntegerLimit(options.limit, { min: 1, ...getPaginationLimits(25, 100) })
   assert(await currentUserCanViewUsersSpendingCategories(currentUser, user.id), 403)
-  const individual = await getOrCreateIndividual(user)
-  const scope = spendingCategoryCursorScope(individual.id)
+  const individualId = options.individual_id ?? (await getOrCreateIndividual(user)).id
+  const scope = spendingCategoryCursorScope(individualId)
   const cursorId = options.after
     ? decodeScopedUuidCursor(options.after, scope, 'Invalid spending category cursor').id
     : null
@@ -87,7 +88,7 @@ export async function getHouseholdSpendingCategoriesByUserId(
     SELECT h.id
     FROM households h
     LEFT JOIN household_members hm
-      ON hm.household_id = h.id AND hm.individual_id = ${individual.id}
+      ON hm.household_id = h.id AND hm.individual_id = ${individualId}
     WHERE h.owner_user_id = ${user.id} OR hm.individual_id IS NOT NULL
   `,
     queryOptions,
@@ -99,7 +100,7 @@ export async function getHouseholdSpendingCategoriesByUserId(
     FROM spending_entries se
     JOIN view_topics visible_category
       ON visible_category.id = se.spending_category_topic_id
-    WHERE se.individual_id = ${individual.id}
+    WHERE se.individual_id = ${individualId}
   `
   if (options.spending_category_topic_id) {
     personalEntries.append(
@@ -184,12 +185,11 @@ export async function getSpendingEntryOwnership(
   )
   return rows[0] as { individual_id: string | null; household_id: string | null } | undefined
 }
-
 export async function getHouseholdSpendingCategoryById(
   currentUser: PrivateUser | null,
   user: PrivateUser,
   householdSpendingCategoryId: string,
-  options: QueryOptions = {},
+  options: GetHouseholdSpendingCategoriesOptions = {},
 ): Promise<HouseholdSpendingCategory | undefined> {
   const page = await getHouseholdSpendingCategoriesByUserId(currentUser, user, {
     entry_id: householdSpendingCategoryId,

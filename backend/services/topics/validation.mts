@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import { read, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { validateUUID } from '@modules/utils'
+import { isUUID, validateUUID } from '@modules/utils'
 
 type RewardsProgramStatusRecord = {
   id: string
@@ -116,4 +116,43 @@ export const assertReferralLinkValidationExists = async (
     options,
   )
   assert(rows[0], 422, `${fieldName} must reference an existing referral link validation`)
+}
+
+export const assertReferralProgramAndLinkValidationExist = async (
+  referralProgramId: string,
+  validationId: string,
+  options?: QueryOptions,
+): Promise<void> => {
+  validateUUID(referralProgramId)
+  const validationIdIsValid = isUUID(validationId)
+  const { rows } = await read(
+    sql`/* assertReferralProgramExists */
+      SELECT
+        EXISTS (
+          SELECT 1
+          FROM referral_program_topics rp
+          JOIN topics t ON t.id = rp.topic_id
+          WHERE rp.topic_id = ${referralProgramId}
+            AND t.deleted_at IS NULL
+            AND t.merged_into_topic_id IS NULL
+        ) AS referral_program_exists,
+        CASE WHEN ${validationIdIsValid} THEN EXISTS (
+          SELECT 1
+          FROM referral_program_link_validation_rule_sets
+          WHERE id::text = ${validationId}
+        ) ELSE FALSE END AS validation_exists
+    `,
+    options,
+  )
+  assert(
+    rows[0]?.referral_program_exists,
+    422,
+    'referral_program_id must reference an existing referral program',
+  )
+  validateUUID(validationId)
+  assert(
+    rows[0]?.validation_exists,
+    422,
+    'validation_id must reference an existing referral link validation',
+  )
 }

@@ -14,6 +14,7 @@ import { getPublicLandingPage } from './public.mts'
 import { listLandingPagesForUser } from './list.mts'
 import { replaceMyLandingPageItems } from './replace-items.mts'
 import { setMyLandingPageDefault } from './set-default.mts'
+import { MAX_LANDING_PAGES } from './shared.mts'
 import { updateMyLandingPage } from './update.mts'
 import type { PrivateUser } from '@services/users/types'
 async function createTopicFixtures(user: PrivateUser) {
@@ -55,6 +56,20 @@ async function createTopicFixtures(user: PrivateUser) {
 }
 
 describe('landing page services', () => {
+  it('rejects a page beyond the per-user limit', async () => {
+    const user = await createTestUser()
+    for (let index = 0; index < MAX_LANDING_PAGES; index++) {
+      await createMyLandingPage(user.id, {
+        title: `Page ${index}`,
+        slug: `page-${index}`,
+      })
+    }
+
+    await expect(
+      createMyLandingPage(user.id, { title: 'Overflow', slug: 'overflow' }),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
   it('manages page lifecycle, default switching, and slug conflicts', async () => {
     const user = await createTestUser()
 

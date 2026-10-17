@@ -10,8 +10,17 @@ export async function updateMyLandingPage(
   userId: string,
   pageId: string,
   input: { title?: string; subtitle?: string | null; slug?: string },
+  preloadedPage?: LandingPage,
 ): Promise<LandingPage> {
-  await getLandingPageRowForUser(userId, pageId)
+  if (preloadedPage) {
+    assert(
+      preloadedPage.id === pageId && preloadedPage.user_id === userId,
+      404,
+      'Landing page not found',
+    )
+  } else {
+    await getLandingPageRowForUser(userId, pageId)
+  }
 
   const title = input.title !== undefined ? validateTitle(input.title) : undefined
   const subtitle = input.subtitle !== undefined ? validateSubtitle(input.subtitle) : undefined

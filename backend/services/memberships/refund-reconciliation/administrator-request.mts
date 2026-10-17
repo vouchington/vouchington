@@ -1,8 +1,12 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
-import { parsePostgresMoneyAmount } from '@ts-shared/money'
-import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import type { AdministratorRefundRequest } from './types.mts'
+import {
+  assertAdministratorRefundRequestMatches,
+  type AdministratorRefundOperation,
+  type AdministratorRefundRequestRow,
+} from './administrator-request-matching.mts'
+export type { AdministratorRefundRequestRow } from './administrator-request-matching.mts'
 
 export async function claimAdministratorRefundRequest(
   request: AdministratorRefundRequest,
@@ -51,7 +55,8 @@ export async function claimAdministratorRefundRequest(
   if (!operation)
     throw new Error('Administrator refund membership source has no active provider binding')
 
-  await query(sql`/* claimAdministratorRefundRequest:request */
+  const { rows: insertedRequests } =
+    await query<AdministratorRefundRequestRow>(sql`/* claimAdministratorRefundRequest:request */
     INSERT INTO membership_administrator_refund_operation_requests (
       membership_operation_id, membership_id, issued_by_id, provider_payment_reference, provider_subscription_reference,
       amount_minor_units, currency_code, reason, is_cancel_requested, request_fingerprint,
@@ -62,30 +67,30 @@ export async function claimAdministratorRefundRequest(
       ${request.reason}, ${request.cancelRequested}, ${request.requestFingerprint},
       ${request.idempotencyKey}, ${request.note}
     ) ON CONFLICT (membership_operation_id) DO NOTHING
+    RETURNING membership_operation_id AS id,
+      ${operation.completed} AS completed,
+      membership_id AS "membershipId",
+      issued_by_id AS "issuedById",
+      provider_payment_reference AS "providerPaymentReference",
+      provider_subscription_reference AS "providerSubscriptionReference",
+      amount_minor_units::TEXT AS "amountMinorUnits",
+      currency_code AS currency,
+      reason,
+      is_cancel_requested AS "cancelRequested",
+      request_fingerprint AS "requestFingerprint",
+      note
   `)
-  const savedRequest = await getAdministratorRefundRequestForMembershipKey(
-    request.idempotencyKey,
-    request.membershipId,
-    query,
-  )
+  const savedRequest =
+    insertedRequests[0] ??
+    (await getAdministratorRefundRequestForMembershipKey(
+      request.idempotencyKey,
+      request.membershipId,
+      query,
+    ))
   if (!savedRequest) throw new Error('Administrator refund request was not persisted')
   assertAdministratorRefundRequestMatches(savedRequest, request)
   await query.commit()
   return operation
-}
-
-type AdministratorRefundOperation = { completed: boolean; id: string }
-export type AdministratorRefundRequestRow = AdministratorRefundOperation & {
-  amountMinorUnits: string
-  cancelRequested: boolean
-  currency: string
-  issuedById: string
-  membershipId: string
-  note: string | null
-  providerPaymentReference: string
-  providerSubscriptionReference: string | null
-  reason: string
-  requestFingerprint: string
 }
 
 async function getLockedAdministratorRefundOperation(
@@ -166,33 +171,4 @@ async function getAdministratorRefundRequestForMembershipKey(
       AND request.administrator_request_key = ${idempotencyKey}
   `)
   return (rows[0] as AdministratorRefundRequestRow | undefined) ?? null
-}
-
-function assertAdministratorRefundRequestMatches(
-  saved: AdministratorRefundRequestRow,
-  request: AdministratorRefundRequest,
-): void {
-  if (!administratorRefundRequestMatches(saved, request))
-    throw createHttpError(
-      409,
-      'Administrator refund idempotency key was reused for a different request',
-    )
-}
-
-function administratorRefundRequestMatches(
-  saved: AdministratorRefundRequestRow,
-  request: AdministratorRefundRequest,
-): boolean {
-  return (
-    saved.membershipId === request.membershipId &&
-    saved.issuedById === request.issuedById &&
-    saved.providerPaymentReference === request.providerPaymentReference &&
-    saved.providerSubscriptionReference === request.providerSubscriptionReference &&
-    parsePostgresMoneyAmount(saved.amountMinorUnits) === request.amount.amount &&
-    saved.currency === request.amount.currency &&
-    saved.reason === request.reason &&
-    saved.cancelRequested === request.cancelRequested &&
-    saved.requestFingerprint === request.requestFingerprint &&
-    saved.note === request.note
-  )
 }

@@ -8,6 +8,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { isMoney, type Money } from '@ts-shared/money'
 import { mapIndividualCardConstraintError } from './card-errors.mts'
+import { createIndividualCardRow } from './create-card-row.mts'
 
 type UpdateIndividualCardData = {
   opened_on?: string | Date | null
@@ -50,35 +51,16 @@ export async function createIndividualCard(
 ) {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
-  const {
-    rows: [topic],
-  } = await read(
-    sql`/* createIndividualCard */ SELECT topic_type FROM topics WHERE id = ${cardId} AND deleted_at IS NULL AND merged_into_topic_id IS NULL LIMIT 1`,
+  const row = await createIndividualCardRow(user.id, cardId)
+  assert(row?.topic_exists, 422, 'Invalid card_topic_id')
+  assert(row.card_id && row.individual_id, 500, 'Created card could not be loaded')
+  const card = await getIndividualCardById(
+    currentUser,
+    user,
+    row.card_id,
+    { readOnly: false },
+    { id: row.individual_id },
   )
-  assert(topic, 422, 'Invalid card_topic_id')
-  assert(topic.topic_type === 'card', 422, 'Invalid card_topic_id')
-  const individual = await getOrCreateIndividual(user)
-  let rows: { id: string }[]
-  try {
-    ;({ rows } = await write(sql`/* createIndividualCard */
-      INSERT INTO individual_cards (
-        individual_id,
-        card_topic_id
-      )
-      VALUES (
-        ${individual.id},
-        ${cardId}
-      )
-      RETURNING id
-    `))
-  } catch (err) {
-    const pgError = err as { code?: string }
-    if (pgError.code === '23503') {
-      assert(false, 422, 'Invalid card_topic_id')
-    }
-    throw err
-  }
-  const card = await getIndividualCardById(currentUser, user, rows[0].id, { readOnly: false })
   assert(card, 500, 'Created card could not be loaded')
   return card
 }
@@ -158,7 +140,13 @@ export async function updateIndividualCardById(
     write<{ id: string }>(query, values),
   )
   assert(rows[0], 404, 'Not found')
-  const card = await getIndividualCardById(currentUser, user, rows[0].id, { readOnly: false })
+  const card = await getIndividualCardById(
+    currentUser,
+    user,
+    rows[0].id,
+    { readOnly: false },
+    individual,
+  )
   assert(card, 500, 'Updated card could not be loaded')
   return card
 }

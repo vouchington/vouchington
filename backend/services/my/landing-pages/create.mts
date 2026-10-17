@@ -22,18 +22,36 @@ export async function createMyLandingPage(
 
   await using query = await beginTransaction()
   await lockLandingPageCreation(query, userId)
-  const count = await countUserLandingPages(query, userId)
-
-  assert(count < MAX_LANDING_PAGES, 400, `Maximum of ${MAX_LANDING_PAGES} landing pages allowed`)
 
   let landingPage: LandingPage
   try {
     const { rows } = await query(sql`/* createMyLandingPage */
+      WITH page_count AS MATERIALIZED (
+        SELECT COUNT(*)::int AS count
+        FROM user_landing_pages
+        WHERE user_id = ${userId}
+      ), inserted AS (
         INSERT INTO user_landing_pages (user_id, title, subtitle, slug, is_default)
-        VALUES (${userId}, ${title}, ${subtitle}, ${slug}, ${count === 0})
+        SELECT ${userId}, ${title}, ${subtitle}, ${slug}, page_count.count = 0
+        FROM page_count
+        WHERE page_count.count < ${MAX_LANDING_PAGES}
         RETURNING id, user_id, title, subtitle, slug, is_default, created_at, updated_at
+      )
+      SELECT inserted.id, inserted.user_id, inserted.title, inserted.subtitle,
+        inserted.slug, inserted.is_default, inserted.created_at, inserted.updated_at,
+        page_count.count AS page_count
+      FROM page_count
+      LEFT JOIN inserted ON TRUE
     `)
-    landingPage = rows[0] as LandingPage
+    const row = rows[0] as (LandingPage & { page_count: number }) | undefined
+    assert(
+      (row?.page_count ?? 0) < MAX_LANDING_PAGES,
+      400,
+      `Maximum of ${MAX_LANDING_PAGES} landing pages allowed`,
+    )
+    assert(row?.id, 500, 'Landing page could not be created')
+    const { page_count: _pageCount, ...createdLandingPage } = row
+    landingPage = createdLandingPage
   } catch (err: unknown) {
     if (isUniqueViolation(err)) {
       const constraint = 'constraint' in err ? err.constraint : null
@@ -57,18 +75,4 @@ async function lockLandingPageCreation(
 ): Promise<void> {
   await lockUserLandingPages(query, userId)
   await getUsernameForLandingPages(userId, { query })
-}
-
-async function countUserLandingPages(
-  query: Awaited<ReturnType<typeof beginTransaction>>,
-  userId: string,
-): Promise<number> {
-  const {
-    rows: [countRow],
-  } = await query(sql`/* createMyLandingPage */
-      SELECT COUNT(*)::int AS count
-      FROM user_landing_pages
-      WHERE user_id = ${userId}
-    `)
-  return Number(countRow?.count ?? 0)
 }

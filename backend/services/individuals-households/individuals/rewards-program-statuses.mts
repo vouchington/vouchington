@@ -22,10 +22,11 @@ export async function getIndividualRewardsProgramStatusById(
   user: PrivateUser,
   id: string,
   options = {},
+  existingIndividual?: { id: string },
 ) {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
-  const individual = await getOrCreateIndividual(user)
+  const individual = existingIndividual ?? (await getOrCreateIndividual(user))
   const { rows } = await read<RewardsProgramStatusRow>(
     sql`/* getIndividualRewardsProgramStatusById */
     SELECT individual_rewards_program_statuses.id, individual_rewards_program_statuses.started_on::TEXT AS started_on,
@@ -57,9 +58,13 @@ export async function createIndividualRewardsProgramStatus(
       assert(false, 422, 'Invalid rewards_program_status_topic_id')
     throw err
   }
-  const status = await getIndividualRewardsProgramStatusById(currentUser, user, rows[0].id, {
-    readOnly: false,
-  })
+  const status = await getIndividualRewardsProgramStatusById(
+    currentUser,
+    user,
+    rows[0].id,
+    { readOnly: false },
+    individual,
+  )
   assert(status, 404, 'Not found')
   return status
 }
@@ -104,9 +109,13 @@ export async function updateIndividualRewardsProgramStatusById(
     throw err
   }
   assert(rows[0], 404, 'Not found')
-  const status = await getIndividualRewardsProgramStatusById(currentUser, user, rows[0].id, {
-    readOnly: false,
-  })
+  const status = await getIndividualRewardsProgramStatusById(
+    currentUser,
+    user,
+    rows[0].id,
+    { readOnly: false },
+    individual,
+  )
   assert(status, 404, 'Not found')
   return status
 }

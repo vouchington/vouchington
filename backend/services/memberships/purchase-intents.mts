@@ -1,23 +1,20 @@
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import { createCodedError } from '@modules/on-error/create-coded-error'
-import {
-  CONFLICT,
-  IDEMPOTENCY_KEY_REUSED,
-  INVALID_INPUT,
-  SERVICE_UNAVAILABLE,
-} from '@modules/on-error/error-codes'
+import { CONFLICT, INVALID_INPUT, SERVICE_UNAVAILABLE } from '@modules/on-error/error-codes'
 import { createMembershipCheckoutSessionOperation } from '@modules/stripe/operations'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import { getMembershipProviderContext } from '@voucha/config/membership-providers'
 import sql from 'sql-template-strings'
 import { getDirectMembershipSourceAdmission } from './direct-source-authority.mts'
 import {
+  assertMatchingPurchaseIntent,
   createMembershipPurchaseIntentFingerprint,
   toPurchaseIntent,
   type MembershipPurchaseIntent,
   type MembershipPurchaseProvider,
   type PurchaseIntentRow,
 } from './purchase-intent-launches.mts'
+import { insertPurchaseIntent } from './insert-purchase-intent.mts'
 import { isMembershipPurchaseEnabled } from './purchase-controls.mts'
 export * from './purchase-intent-launches.mts'
 
@@ -87,31 +84,10 @@ export async function createMembershipPurchaseIntent(options: {
     if (conflictingIntent)
       throw new MembershipPurchaseIneligibleError(null, conflictingIntent.expires_at)
   }
-  const { rows: insertedRows } =
-    await query<PurchaseIntentRow>(sql`/* createMembershipPurchaseIntent.insert */
-    INSERT INTO membership_purchase_intents (
-      user_id, idempotency_key, request_fingerprint, membership_provider_product_id,
-      membership_product_id, membership_provider_context_id
-    )
-    SELECT ${options.userId}::UUID AS user_id, ${options.idempotencyKey}::UUID AS idempotency_key,
-      ${fingerprint}, mapping.id,
-      product.id, mapping.membership_provider_context_id
-    FROM membership_products product
-    INNER JOIN membership_provider_products mapping ON mapping.membership_product_id = product.id
-    INNER JOIN membership_provider_contexts context
-      ON context.id = mapping.membership_provider_context_id
-    WHERE product.id = ${options.productId}
-      AND product.retired_at IS NULL
-      AND context.provider = ${options.provider}
-      AND context.environment = ${providerContext.environment}
-      AND context.application_id = ${providerContext.applicationId}
-      AND mapping.retired_at IS NULL
-    ORDER BY user_id ASC NULLS LAST, idempotency_key ASC NULLS LAST, mapping.id DESC
-    LIMIT 1
-    ON CONFLICT (user_id, idempotency_key) DO NOTHING
-    RETURNING id`)
-  const inserted = insertedRows.length === 1
-  const row = await getPurchaseIntent(options.userId, options.idempotencyKey, query)
+  const insertedRow = await insertPurchaseIntent(query, options, providerContext, fingerprint)
+  const inserted = insertedRow !== undefined
+  const row =
+    insertedRow ?? (await getPurchaseIntent(options.userId, options.idempotencyKey, query))
   if (!row)
     throw createCodedError(
       400,
@@ -187,14 +163,4 @@ async function getConflictingPurchaseIntent(userId: string, query: QueryExecutor
     ORDER BY expires_at DESC, id DESC
     LIMIT 1`)
   return rows[0] ?? null
-}
-function assertMatchingPurchaseIntent(row: PurchaseIntentRow, fingerprint: string): void {
-  if (row.request_fingerprint !== fingerprint)
-    throw createCodedError(
-      409,
-      'This idempotency key was already used for a different purchase.',
-      IDEMPOTENCY_KEY_REUSED,
-    )
-  if (row.failed_at !== null)
-    throw createCodedError(409, 'Membership purchase is not eligible.', CONFLICT)
 }

@@ -64,8 +64,8 @@ async function handleCreateMyLandingPage(ctx: Context) {
 
 async function handleReplaceMyLandingPageItems(ctx: Context) {
   const currentUser = await requireAuth(ctx, 'PUT:/api/v1/my/landing-pages/:pageId/items')
-  // The service repeats this lookup; running it first keeps the schema diagnostic behind ownership.
-  await getLandingPageRowForUser(currentUser.id, ctx.params.pageId!)
+  // Check ownership before parsing the body, then pass the row down to avoid reading it again.
+  const page = await getLandingPageRowForUser(currentUser.id, ctx.params.pageId!)
 
   const body = (await ctx.request.json('1mb')) as ReplaceLandingPageItemsRequest
   validateRequestContract(ctx, 'PUT:/api/v1/my/landing-pages/:pageId/items', {
@@ -77,6 +77,7 @@ async function handleReplaceMyLandingPageItems(ctx: Context) {
     currentUser.id,
     ctx.params.pageId!,
     body.items,
+    page,
   )
 
   ctx.json({ landing_page: landingPage })
@@ -92,8 +93,8 @@ async function handleGetMyLandingPage(ctx: Context) {
 
 async function handleUpdateMyLandingPage(ctx: Context) {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/landing-pages/:pageId')
-  // The service repeats this lookup; running it first keeps the schema diagnostic behind ownership.
-  await getLandingPageRowForUser(currentUser.id, ctx.params.pageId!)
+  // Check ownership before parsing the body, then pass the row down to avoid reading it again.
+  const page = await getLandingPageRowForUser(currentUser.id, ctx.params.pageId!)
 
   const body = (await ctx.request.json('100kb')) as UpdateLandingPageRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/landing-pages/:pageId', {
@@ -104,7 +105,7 @@ async function handleUpdateMyLandingPage(ctx: Context) {
   const landingPage =
     'is_default' in body
       ? await setMyLandingPageDefault(currentUser.id, ctx.params.pageId!)
-      : await updateMyLandingPage(currentUser.id, ctx.params.pageId!, body)
+      : await updateMyLandingPage(currentUser.id, ctx.params.pageId!, body, page)
 
   ctx.json({ landing_page: landingPage })
 }

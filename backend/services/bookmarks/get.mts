@@ -1,9 +1,11 @@
 import type { EntityRelationEntityType } from '@services/entity-relations/config'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import {
+  queryBookmarksForRelationPlans,
   mapBookmarkRowsToOutput,
   queryBookmarksForAllRelations,
   queryBookmarksForRelation,
+  type BookmarkRelationPlan,
   type BookmarkRow,
 } from './query.mts'
 import {
@@ -96,6 +98,56 @@ export const getBookmarksForEntities = async (
   }
 
   return mergedResult
+}
+
+export async function getBookmarksForEntityGroups(
+  user: PrivateUser,
+  groups: Array<{
+    entityTypeName: EntityRelationEntityType
+    entities: Array<{ id: string } | string>
+  }>,
+) {
+  const plans: BookmarkRelationPlan[] = groups.flatMap(group => {
+    const objectIds = [
+      ...new Set(group.entities.map(entity => (typeof entity === 'string' ? entity : entity.id))),
+    ]
+    const relations = getUserBookmarkRelationsForEntityType(group.entityTypeName)
+    return objectIds.length > 0 && relations.length > 0
+      ? [{ entityTypeName: group.entityTypeName, relations, objectIds }]
+      : []
+  })
+  if (plans.length === 0) return {}
+
+  if (!isBookmarkBloomFilterEnabled()) return queryBookmarksForRelationPlans(user.id, plans)
+
+  const relationTableNames = [
+    ...new Set(plans.flatMap(plan => plan.relations.map(r => r.table_name))),
+  ]
+  const allObjectIds = [...new Set(plans.flatMap(plan => plan.objectIds))]
+  const bloomCandidatesByRelation = await checkBookmarkBloomCandidatesByRelations(
+    user.id,
+    relationTableNames,
+    allObjectIds,
+  )
+  let needsBackfill = false
+  const candidateIndexById = new Map(allObjectIds.map((id, index) => [id, index]))
+  const narrowedPlans: BookmarkRelationPlan[] = []
+  for (const plan of plans) {
+    for (const relation of plan.relations) {
+      const candidates = bloomCandidatesByRelation[relation.table_name]
+      if (!candidates?.ready) {
+        needsBackfill = true
+        narrowedPlans.push({ ...plan, relations: [relation] })
+        continue
+      }
+      const objectIds = plan.objectIds.filter(
+        id => candidates.results[candidateIndexById.get(id)!] !== false,
+      )
+      if (objectIds.length > 0) narrowedPlans.push({ ...plan, relations: [relation], objectIds })
+    }
+  }
+  if (needsBackfill) void enqueueBackfillUserBookmarkBloomFilter({ userId: user.id })
+  return queryBookmarksForRelationPlans(user.id, narrowedPlans)
 }
 
 export const getBookmarksForEntity = async (

@@ -71,9 +71,7 @@ app.route('/api/v1/my/identity-verification/display-preferences').patch(async (c
     body,
   })
 
-  const before = await getUserPrivateByAnyCached(currentUser.id)
-  ctx.assert(before, 404, 'User not found')
-  ctx.assert(before.verification_status === 'verified', 422, 'User is not identity verified')
+  ctx.assert(currentUser.verification_status === 'verified', 422, 'User is not identity verified')
 
   await updateDisplayPreferences(currentUser.id, body)
 

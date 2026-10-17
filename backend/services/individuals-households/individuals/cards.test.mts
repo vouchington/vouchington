@@ -8,10 +8,8 @@ describe('individual card storage errors', () => {
   it('preserves the actual generic INSERT error without claiming that a valid card id is invalid', async () => {
     const user = await createTestUser()
     const cardId = await insertTestCard({ createdById: user.id, name: `Card ${user.id}` })
-    const failure = await withPostgresPoolQueryFailureForTest(
-      '/* createIndividualCard */',
-      () => createIndividualCard(user, user, cardId).catch((err: unknown) => err),
-      { command: 'INSERT' },
+    const failure = await withPostgresPoolQueryFailureForTest('/* createIndividualCard */', () =>
+      createIndividualCard(user, user, cardId).catch((err: unknown) => err),
     )
 
     expect(failure.result).toMatchObject({ code: '25P02' })

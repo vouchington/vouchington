@@ -137,10 +137,11 @@ export async function getIndividualCardById(
   user: PrivateUser,
   individualCardId: string,
   options = {},
+  existingIndividual?: { id: string },
 ): Promise<IndividualCard | undefined> {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
-  const individual = await getOrCreateIndividual(user)
+  const individual = existingIndividual ?? (await getOrCreateIndividual(user))
   const { rows } = await read<IndividualCardRow>(
     sql`/* getIndividualCardById */
     SELECT

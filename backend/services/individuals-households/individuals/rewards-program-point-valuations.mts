@@ -35,10 +35,11 @@ const getIndividualRewardsProgramPointValuationById = async (
   user: PrivateUser,
   id: string,
   options = {},
+  existingIndividual?: { id: string },
 ): Promise<IndividualRewardsProgramPointValuation> => {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
-  const individual = await getOrCreateIndividual(user)
+  const individual = existingIndividual ?? (await getOrCreateIndividual(user))
   const { rows } = await read<PointValuationRow>(
     sql`/* getIndividualRewardsProgramPointValuationById */
     SELECT
@@ -104,9 +105,13 @@ export const createIndividualRewardsProgramPointValuation = async (
     }
     throw err
   }
-  return getIndividualRewardsProgramPointValuationById(currentUser, user, rows[0].id, {
-    readOnly: false,
-  })
+  return getIndividualRewardsProgramPointValuationById(
+    currentUser,
+    user,
+    rows[0].id,
+    { readOnly: false },
+    individual,
+  )
 }
 
 export const updateIndividualRewardsProgramPointValuationById = async (
@@ -142,9 +147,13 @@ export const updateIndividualRewardsProgramPointValuationById = async (
 
   const { rows } = await write<{ id: string }>(query, values)
   assert(rows[0], 404, 'Not found')
-  return getIndividualRewardsProgramPointValuationById(currentUser, user, rows[0].id, {
-    readOnly: false,
-  })
+  return getIndividualRewardsProgramPointValuationById(
+    currentUser,
+    user,
+    rows[0].id,
+    { readOnly: false },
+    individual,
+  )
 }
 
 export const deleteIndividualRewardsProgramPointValuationById = async (
