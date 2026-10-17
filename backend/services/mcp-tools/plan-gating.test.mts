@@ -30,7 +30,7 @@ const PLUS_GATED_WRITE_TOOL_NAMES = [
   'remove_list_content',
   'delete_my_profile_link',
   'delete_notification',
-  'join_community',
+  'participate_in_community',
   'leave_community',
   'manage_my_cards',
   'manage_my_point_valuations',

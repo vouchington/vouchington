@@ -36,7 +36,7 @@ const WRITE_SCOPES = [
 const TOOLS = [
   'create_content_report',
   'create_community',
-  'join_community',
+  'participate_in_community',
   'leave_community',
   'apply_to_community',
   'create_review_dispute',

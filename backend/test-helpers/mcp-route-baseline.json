@@ -1431,17 +1431,16 @@
     "I164": [["community", "id"]],
     "I165": [["community", "itemId"]],
     "I166": [["after", "community", "limit", "window"]],
-<<<<<<< HEAD
     "I167": [["conversation_id"]],
     "I168": [["after", "conversation_id", "limit"]],
     "I169": [["user_id"], ["user_ids"]],
     "I170": [["conversation_id", "participant_add_policy"]],
     "I171": [["conversation_id", "text"]],
-    "I172": [["conversation_id", "user_id"]]
-=======
-    "I167": [["idOrSlug"]],
-    "I168": [["noteId", "userId"]]
->>>>>>> 038f54d2e (test(mcp): record moderator route provenance)
+    "I172": [["conversation_id", "user_id"]],
+    "I173": [["idOrSlug"]],
+    "I174": [["noteId", "userId"]],
+    "I175": [["community_id", "subject_user_id"]],
+    "I176": [["community_id", "conversationId", "text"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4196,8 +4195,8 @@
         "inputFields": "I059",
         "requestBodyFields": null,
         "operation": {
-          "tool": "join_community",
-          "option": null
+          "tool": "participate_in_community",
+          "option": "join"
         },
         "decision": false
       }
@@ -5706,7 +5705,6 @@
         }
       ]
     },
-<<<<<<< HEAD
     "GET:/api/v1/my/messages": {
       "pullRequest": 3181,
       "contracts": [
@@ -5848,14 +5846,16 @@
           "decision": false,
           "inputFields": "I172",
           "requestBodyFields": null
-=======
+        }
+      ]
+    },
     "POST:/api/v1/posts/:idOrSlug/lock": {
       "pullRequest": 3171,
       "contracts": [
         {
           "surface": "mcp",
           "facts": "F95",
-          "inputFields": "I167",
+          "inputFields": "I173",
           "requestBodyFields": null,
           "operation": {
             "tool": "add_community_moderation",
@@ -5871,7 +5871,7 @@
         {
           "surface": "mcp",
           "facts": "F95",
-          "inputFields": "I167",
+          "inputFields": "I173",
           "requestBodyFields": null,
           "operation": {
             "tool": "remove_community_moderation",
@@ -5919,14 +5919,45 @@
         {
           "surface": "mcp",
           "facts": "F95",
-          "inputFields": "I168",
+          "inputFields": "I174",
           "requestBodyFields": null,
           "operation": {
             "tool": "remove_community_moderation",
             "option": "delete_mod_note"
           },
           "decision": false
->>>>>>> 038f54d2e (test(mcp): record moderator route provenance)
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/modmail": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F79",
+          "inputFields": "I175",
+          "requestBodyFields": ["subject_user_id"],
+          "operation": {
+            "tool": "participate_in_community",
+            "option": "open_modmail"
+          },
+          "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages": {
+      "pullRequest": 3171,
+      "contracts": [
+        {
+          "surface": "mcp",
+          "facts": "F79",
+          "inputFields": "I176",
+          "requestBodyFields": ["text"],
+          "operation": {
+            "tool": "participate_in_community",
+            "option": "reply_modmail"
+          },
+          "decision": false
         }
       ]
     }
