@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { onTestFinished, describe, expect, it } from 'vitest'
+import { encodeScopedUuidCursor } from '@modules/pagination'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { userImportExportConfig } from './config.mts'
@@ -71,6 +73,14 @@ describe('large RSS feed imports', () => {
     expect(last?.page_info.has_next_page).toBe(false)
     await expect(
       getRssFeedImport(user.id, created.import.id, { after: 'not-a-cursor' }),
+    ).rejects.toMatchObject({ status: 400 })
+    // A well-formed cursor of this import that names no row is refused, not read as the end.
+    const unknownRow = encodeScopedUuidCursor(
+      randomUUID(),
+      `rss-feed-import-rows:${created.import.id}:row-index-asc`,
+    )
+    await expect(
+      getRssFeedImport(user.id, created.import.id, { after: unknownRow }),
     ).rejects.toMatchObject({ status: 400 })
   })
 })

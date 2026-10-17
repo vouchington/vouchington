@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import assert from 'http-assert'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
@@ -15,6 +16,7 @@ import {
 type StatusRow = UserRssFeedImportBatchRow &
   Pick<UserRssFeedImportRow, 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'> & {
     row_id: string | null
+    cursor_found: boolean | null
   }
 
 function importRowCursorScope(importId: string): string {
@@ -61,7 +63,12 @@ export async function getRssFeedImport(
   const query = sql`/* getRssFeedImport */
     SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
       batch.completed_at, batch.created_at, page.id AS row_id, page.input_url, page.outcome,
-      page.error_message, page.rss_feed_id
+      page.error_message, page.rss_feed_id,
+      EXISTS (
+        SELECT 1 FROM user_rss_feed_import_rows cursor_row
+        WHERE cursor_row.id = ${afterRowId}::uuid
+          AND cursor_row.batch_id = batch.id
+      ) AS cursor_found
     FROM user_rss_feed_import_batches batch
     LEFT JOIN LATERAL (
       SELECT import_row.id, import_row.row_index, import_row.input_url, import_row.outcome,
@@ -87,6 +94,8 @@ export async function getRssFeedImport(
   const { rows } = await read<StatusRow>(query)
   const batch = rows[0]
   if (!batch) return null
+  // A cursor must name a row of this import; otherwise the page would look like the end.
+  assert(afterRowId === null || batch.cursor_found, 400, 'Invalid import cursor')
 
   const listed = rows.flatMap(row =>
     row.row_id === null ? [] : [toImportRowResult({ ...row, id: row.row_id })],
