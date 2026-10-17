@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { observeFixtureExit } from './test-helpers/run-bounded-exit-observer.mts'
 import { createAnalyzerFixtureBudget } from '../static-code-analysis/test-helpers/analyzer-fixture-budget.mts'
@@ -10,6 +9,16 @@ async function main(): Promise<void> {
   for (const invalid of [0, 4_001, Number.NaN, Number.POSITIVE_INFINITY, 1.5]) {
     assert.throws(() => createAnalyzerFixtureBudget(invalid), RangeError)
   }
+  const admissionBudget = createAnalyzerFixtureBudget()
+  const cli = resolve('node_modules/no-mistakes/bin/no-mistakes.js')
+  const unownedRoot = resolve('.')
+  assert.throws(() => admissionBudget.check(cli, unownedRoot), /not owned/)
+  assert.throws(() => admissionBudget.check(cli, '\0'), /not owned/)
+  assert.throws(() => admissionBudget.check('/missing/analyzer-cli.js', unownedRoot), /not owned/)
+  assert.throws(() => admissionBudget.git(['-C', unownedRoot, 'status']), /not owned/)
+  assert.throws(() => admissionBudget.git(['-C', '\0', 'status']), /not owned/)
+  assert.throws(() => admissionBudget.git(['init', '-q', unownedRoot]), /not owned/)
+  assert.equal(admissionBudget.actors.length, 0)
   // Let the deliberately hung holder expire before the normal contender's deadline.
   const budget = createAnalyzerFixtureBudget(2_000)
   let root: string | undefined
@@ -24,7 +33,7 @@ async function main(): Promise<void> {
   const cleanup: unknown[] = []
   let receipt: object | undefined
   try {
-    root = await mkdtemp(join(tmpdir(), 'analyzer-budget-'))
+    root = await budget.createRoot('analyzer-budget-')
     observer = observeFixtureExit(join(root, 'hook.sock'))
     await observer.listen()
     assert.equal(budget.git(['init', '-q', root]).status, 0)
@@ -49,12 +58,14 @@ async function main(): Promise<void> {
       { mode: 0o700 },
     )
     assert.equal(budget.git(['-C', root, 'config', 'core.fsmonitor', hook]).status, 0)
-    contenderRoot = await mkdtemp(join(tmpdir(), 'analyzer-budget-contender-'))
     const contenderBudget = createAnalyzerFixtureBudget()
+    contenderRoot = await contenderBudget.createRoot('analyzer-budget-contender-')
+    assert.throws(() => contenderBudget.check(cli, root!), /not owned/)
+    assert.equal(contenderBudget.actors.length, 0)
     assert.equal(contenderBudget.git(['init', '-q', contenderRoot]).status, 0)
     await writeFile(join(contenderRoot, '.no-mistakes.yml'), 'rules: []\n')
     assert.equal(contenderBudget.git(['-C', contenderRoot, 'add', '.']).status, 0)
-    work = budget.check(resolve('node_modules/no-mistakes/bin/no-mistakes.js'), root)
+    work = budget.check(cli, root)
     void work.then(
       () => {
         settled = true
@@ -77,10 +88,7 @@ async function main(): Promise<void> {
     assert.equal(actor.root, root)
     assert.ok(Number.isInteger(actor.pid) && actor.pid > 0)
     assert.ok(Number.isInteger(actor.parent) && actor.parent > 0)
-    contender = contenderBudget.check(
-      resolve('node_modules/no-mistakes/bin/no-mistakes.js'),
-      contenderRoot,
-    )
+    contender = contenderBudget.check(cli, contenderRoot)
     const [result, contenderResult] = await Promise.all([work, contender])
     assert.equal(result.status, 124, result.stderr)
     assert.equal(contenderResult.status, 0, contenderResult.stderr)

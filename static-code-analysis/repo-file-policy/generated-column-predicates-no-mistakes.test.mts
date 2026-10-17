@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -36,7 +35,7 @@ describe('generated-column predicate no-mistakes configuration', () => {
   })
 
   it('rejects every configured source and clause, then accepts its source-column predicate', async () => {
-    const directory = await mkdtemp(join(tmpdir(), 'generated-column-predicate-'))
+    const directory = await budget.createRoot('generated-column-predicate-')
     dirs.push(directory)
     await track(directory, 'backend/data-stores/psql/migrations/0999.sql', schema())
     await writeFixture(directory, 'created_at')

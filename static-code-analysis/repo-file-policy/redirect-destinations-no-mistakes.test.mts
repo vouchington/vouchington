@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -54,7 +53,7 @@ describe('configured redirect destination rule', () => {
 })
 
 async function fixture(config: string): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'tracked-redirect-routes-'))
+  const root = await budget.createRoot('tracked-redirect-routes-')
   directories.push(root)
   const repositoryConfig = parse(await readFile(join(repository, '.no-mistakes.yml'), 'utf8')) as {
     rules: { rule?: string }[]

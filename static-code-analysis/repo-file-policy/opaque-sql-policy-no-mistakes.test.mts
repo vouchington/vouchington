@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -33,7 +32,7 @@ describe('opaque SQL policy', () => {
     budget = createAnalyzerFixtureBudget()
   })
   it('preserves known violations and accepts safe or unrecoverable statements', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'opaque-sql-policy-'))
+    const root = await budget.createRoot('opaque-sql-policy-')
     try {
       const config = parse(await readFile(join(repository, '.no-mistakes.yml'), 'utf8')) as {
         rules: Rule[]

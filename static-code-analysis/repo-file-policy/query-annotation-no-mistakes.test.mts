@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -19,7 +18,7 @@ describe('query annotation no-mistakes configuration', () => {
     budget = createAnalyzerFixtureBudget()
   })
   it('covers runtime scripts and helpers while preserving annotation exclusions', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'query-annotation-scope-'))
+    const root = await budget.createRoot('query-annotation-scope-')
     const covered = [
       'backend/services/query.mts',
       'backend/services/conditional-var.mts',

@@ -1,4 +1,8 @@
 import { execFile, spawnSync } from 'node:child_process'
+import { lstatSync } from 'node:fs'
+import { mkdtemp, realpath } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 // Only finite analyzer unit fixtures use this budget; normal CLI defaults stay unchanged.
 export function createAnalyzerFixtureBudget(milliseconds = 4_000) {
@@ -12,10 +16,31 @@ export function createAnalyzerFixtureBudget(milliseconds = 4_000) {
     return milliseconds
   }
   const actors: { pid: number | undefined; closed: boolean }[] = []
+  const roots = new Set<string>()
+  const owned = (root: string) => {
+    if (!roots.has(root)) throw new Error('Analyzer fixture root is not owned by this budget')
+    if (!lstatSync(root).isDirectory())
+      throw new Error('Analyzer fixture root is no longer a directory')
+  }
   return {
     actors,
-    git: (args: string[]) => spawnSync('git', args, { encoding: 'utf8', timeout: remaining() }),
+    createRoot: async (prefix: string) => {
+      if (!/^[a-z][a-z0-9-]{0,59}-$/.test(prefix)) {
+        throw new Error('Analyzer fixture prefix must be a finite temporary-directory name')
+      }
+      const root = await realpath(await mkdtemp(join(tmpdir(), prefix)))
+      roots.add(root)
+      return root
+    },
+    git: (args: string[]) => {
+      const root =
+        args[0] === 'init' && args[1] === '-q' ? args[2] : args[0] === '-C' ? args[1] : undefined
+      if (!root) throw new Error('Analyzer fixture Git command needs an owned root')
+      owned(root)
+      return spawnSync('git', args, { encoding: 'utf8', timeout: remaining() })
+    },
     check: (cli: string, root: string) => {
+      owned(root)
       // One native deadline owns acquisition and execution; keep launch/exit headroom.
       const milliseconds = remaining() - 500
       if (milliseconds <= 0) throw new Error('Insufficient analyzer fixture case budget')
