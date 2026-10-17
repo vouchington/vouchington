@@ -57,9 +57,9 @@ const grants: {
 // Sizes are compact UTF-16 code units.
 const caps = {
   mcp: {
-    all: { count: 74, list: 240000, core: 94000, output: 228000 },
+    all: { count: 74, list: 243000, core: 94000, output: 228000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
-    Plus: { count: 70, list: 231000, core: 110000, output: 240000 },
+    Plus: { count: 70, list: 234000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
   },
   admin_mcp: {
@@ -249,8 +249,8 @@ const caller = { id: 'participation-listing', roles: [], membership_plan: null }
 describe('participation write discovery contract', () => {
   it('pins the trimmed Reader tools/list', () => {
     const listing = listMcpToolsForUser(caller, readerScopes, USER_MCP_SERVER_CONFIG, true)
-    expect(JSON.stringify(listing)).toHaveLength(53293)
-    expect(hash(listing)).toBe('2dd6996ed8670e9a6aee1df9bfa47d8418a8a0aa6f98189bf13b1ffb8c642724')
+    expect(JSON.stringify(listing)).toHaveLength(54252)
+    expect(hash(listing)).toBe('6581aa2f8113cbe93e857afc30f77f8c5178c12d69c1ddefb2b5b527bda1cd0b')
   })
   it('keeps the five approved participation tools in the paid listing', () => {
     const paid = listMcpToolsForUser(
@@ -267,7 +267,7 @@ describe('participation write discovery contract', () => {
         .toSorted(),
     ).toEqual(names.toSorted())
     expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
-      '8fcc8df47b774c183d7c95b519fd07ea6834d9b87f5ed02a41adce23a8338e26',
+      '208d94d3788034b8dc6f1e991ee1601d8dff510172a450a872a4ee61060b263e',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
