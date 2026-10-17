@@ -68,7 +68,7 @@ flowchart LR
 - Crawling: `crawler`, `crawl-*`, `rss-feed*`, `rss-feeds`, `kagi-smallweb`, `unfurl-referral-links`,
   `urls-domains-blacklist`.
 - AI: `ai-agents`, `openai-moderation`, `bedrock-embeddings*`. See the [AI platform](../ai-platform.md).
-- Moderation and trust: `report-integrity`, `vote-*`, `elections`, `ban-evasion`, `spam-detection`.
+- Moderation and trust: `report-integrity`, `vote-*`, `elections`, and the `moderation-signals` domain on `background` (spam and ban-evasion detection).
 - Accounts and money: `account-lifecycle`, `user-deletions`, `account-data-requests`, `memberships`,
   `emails`, `email-digests`, `notifications`, `oauth-authorization-exchange`.
 - Federation: `activitypub*`, `bluesky-follow-propagation`, `follower-distributions`. See
