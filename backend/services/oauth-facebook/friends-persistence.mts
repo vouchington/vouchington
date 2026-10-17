@@ -59,7 +59,7 @@ async function persistFacebookFriendBatch(
 
   await transaction(
     `/* persistFacebookFriendBatch */ INSERT INTO facebook_friends (facebook_account_id, facebook_friend_id, friend_facebook_account_id)
-     SELECT $1, friend_id,
+     SELECT $1::uuid, friend_id,
        (SELECT id FROM facebook_accounts WHERE facebook_user_id = friend_id)
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
