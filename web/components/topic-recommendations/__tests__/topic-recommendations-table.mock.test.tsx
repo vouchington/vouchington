@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationsTable } from '../topic-recommendations-table'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { User } from '@/types/user'
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
 const { data } = makeRecommendationTableFixture()
 const mockRouterRefresh = mockNav.refresh
@@ -63,7 +64,7 @@ describe('TopicRecommendationsTable', () => {
   })
 
   it('lets admins approve from the modal', async () => {
-    mockUpdate.mockResolvedValue({ post: data.posts['rec-1']! })
+    mockUpdate.mockResolvedValue(makeTopicRecommendationMutationResponse())
     mockApprove.mockResolvedValue({
       post: data.posts['rec-1']!,
       topic_id: 'topic-1',
@@ -84,7 +85,7 @@ describe('TopicRecommendationsTable', () => {
   })
 
   it('lets admins save changes from the modal', async () => {
-    mockUpdate.mockResolvedValue({ post: data.posts['rec-1']! })
+    mockUpdate.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     const { baseElement } = renderTable({ isAdmin: true })
 

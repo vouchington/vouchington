@@ -2,6 +2,7 @@
 
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
+import type { Post } from '@/types/posts'
 import type {
   PostMutationResponseBody,
   PostResponseBody,
@@ -46,6 +47,31 @@ export interface TopicRecommendationMutationInput {
 
 type TopicRecommendationUpdateInput = Partial<TopicRecommendationMutationInput>
 
+type TopicRecommendationMutationPost = Pick<
+  Post,
+  | 'id'
+  | 'slug'
+  | 'post_type'
+  | 'title'
+  | 'markdown'
+  | 'parent_post_id'
+  | 'root_post_id'
+  | 'created_by_id'
+  | 'is_anonymous'
+  | 'created_at'
+  | 'updated_at'
+  | 'provenance'
+> & {
+  slug: string | null
+  post_type: 'topic_recommendation'
+  parent_post_id: string | null
+  topic_recommendation: NonNullable<Post['topic_recommendation']>
+}
+
+export interface TopicRecommendationMutationResponseBody {
+  post: TopicRecommendationMutationPost
+}
+
 export async function fetchTopicRecommendations(
   options: {
     q?: string
@@ -86,10 +112,10 @@ export async function fetchTopHashtags(
 
 export async function createTopicRecommendation(
   data: TopicRecommendationMutationInput,
-): Promise<PostMutationResponseBody> {
+): Promise<TopicRecommendationMutationResponseBody> {
   const intent = { endpoint: '/api/v1/topic-recommendations', body: data }
   return admissionIdempotency.run(intent, idempotencyKey =>
-    clientApi.post<PostMutationResponseBody>('/api/v1/topic-recommendations', data, {
+    clientApi.post<TopicRecommendationMutationResponseBody>('/api/v1/topic-recommendations', data, {
       headers: { 'Idempotency-Key': idempotencyKey },
     }),
   )
@@ -98,8 +124,11 @@ export async function createTopicRecommendation(
 export async function updateTopicRecommendation(
   id: string,
   data: TopicRecommendationUpdateInput,
-): Promise<PostMutationResponseBody> {
-  return clientApi.patch(`/api/v1/topic-recommendations/${id}`, data)
+): Promise<TopicRecommendationMutationResponseBody> {
+  return clientApi.patch<TopicRecommendationMutationResponseBody>(
+    `/api/v1/topic-recommendations/${id}`,
+    data,
+  )
 }
 
 export async function withdrawTopicRecommendation(id: string): Promise<void> {

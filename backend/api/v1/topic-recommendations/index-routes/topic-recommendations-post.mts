@@ -19,6 +19,8 @@ import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiHeaders } from '../../../response-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
+import { attachWrittenPostProvenance } from '@services/content-provenance'
+import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'
 
 type CreateTopicRecommendationRequest = CreateTopicRecommendationInput & {
   cf_turnstile_response?: string
@@ -88,5 +90,9 @@ app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
     )
   }
   ctx.setStatus(201)
-  ctx.json({ post: admission.response })
+  ctx.json({
+    post: projectPublicTopicRecommendation(
+      await attachWrittenPostProvenance(admission.response, null),
+    ),
+  })
 })

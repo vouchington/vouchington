@@ -8,8 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationsTable } from '../topic-recommendations-table'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { User } from '@/types/user'
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
-const { basePost, data } = makeRecommendationTableFixture()
+const { data } = makeRecommendationTableFixture()
 
 describe('TopicRecommendationsTable — modal actions', () => {
   beforeEach(() => {
@@ -36,7 +37,7 @@ describe('TopicRecommendationsTable — modal actions', () => {
   }
 
   it('handlePersistChanges is not called when dialog is not open', async () => {
-    mockUpdate.mockResolvedValue({ post: basePost })
+    mockUpdate.mockResolvedValue(makeTopicRecommendationMutationResponse())
     renderTable({ isAdmin: true })
     expect(mockUpdate).not.toHaveBeenCalled()
   })

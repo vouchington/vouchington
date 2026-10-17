@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { makeTopHashtagsResponse } from '@/test-helpers/api-responses'
+import {
+  makeTopHashtagsResponse,
+  makeTopicRecommendationMutationResponse,
+} from '@/test-helpers/api-responses'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
 
 vi.mock(
   import('../instance'),
@@ -113,12 +117,15 @@ describe('topic-recommendations client', () => {
         topic_hostnames: ['example.com'],
         topic_aliases: ['alias'],
       }
-      mockPost.mockResolvedValueOnce({ post: {} })
-
-      await createTopicRecommendation(data)
-
-      expect(mockPost).toHaveBeenCalledWith('/api/v1/topic-recommendations', data, {
-        headers: { 'Idempotency-Key': expect.any(String) },
+      await expectApiWrapperCall({
+        mock: mockPost,
+        response: makeTopicRecommendationMutationResponse(),
+        call: () => createTopicRecommendation(data),
+        expectedArgs: [
+          '/api/v1/topic-recommendations',
+          data,
+          { headers: { 'Idempotency-Key': expect.any(String) } },
+        ],
       })
     })
   })
@@ -126,11 +133,12 @@ describe('topic-recommendations client', () => {
   describe('updateTopicRecommendation', () => {
     it('PATCHes the topic recommendation endpoint with data', async () => {
       const data = { topic_title: 'Updated Topic' }
-      mockPatch.mockResolvedValueOnce({ post: {} })
-
-      await updateTopicRecommendation('recommendation-1', data)
-
-      expect(mockPatch).toHaveBeenCalledWith('/api/v1/topic-recommendations/recommendation-1', data)
+      await expectApiWrapperCall({
+        mock: mockPatch,
+        response: makeTopicRecommendationMutationResponse(),
+        call: () => updateTopicRecommendation('recommendation-1', data),
+        expectedArgs: ['/api/v1/topic-recommendations/recommendation-1', data],
+      })
     })
   })
 

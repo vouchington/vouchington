@@ -8,6 +8,7 @@ import {
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationForm } from '../topic-recommendation-form'
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
 const mockRecommendationPost = makeRecommendationPost()
 
@@ -22,9 +23,7 @@ describe('TopicRecommendationForm', () => {
   })
 
   it('submits a new recommendation payload', async () => {
-    mockCreateTopicRecommendation.mockResolvedValue({
-      post: mockRecommendationPost,
-    })
+    mockCreateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     render(<TopicRecommendationForm />)
 
@@ -70,9 +69,7 @@ describe('TopicRecommendationForm', () => {
   })
 
   it('updates an existing recommendation', async () => {
-    mockUpdateTopicRecommendation.mockResolvedValue({
-      post: mockRecommendationPost,
-    })
+    mockUpdateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     render(<TopicRecommendationForm recommendation={mockRecommendationPost} />)
 

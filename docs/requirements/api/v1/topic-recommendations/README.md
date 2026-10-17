@@ -51,6 +51,16 @@ Response is streamed and includes: `post`, `post_metrics`, `post_election`, `mar
 
 ## POST /api/v1/topic-recommendations
 
+POST and PATCH return `{ post }` using the public post fields shared with MCP `read_posts`:
+`id`, nullable `slug`, `post_type`, `title`, `markdown`, nullable `parent_post_id`,
+`root_post_id` and `created_by_id`, `is_anonymous`, `created_at`, `updated_at`, and optional
+public `provenance`. The required `topic_recommendation` extension retains the proposed-topic
+fields, status, and review details. Internal post columns, author stubs, rendered HTML, language
+detection, clearance details, and edit permissions are absent. REST text remains plain text;
+MCP sanitizes text and fences Markdown and review messages. The closed contract is
+`TopicRecommendationMutationResponse` in `api-fixtures/v1/request-contracts.json`.
+The dedicated GET list/detail responses continue to provide their existing UI sidecars.
+
 **Request:**
 
 ```json
@@ -121,9 +131,9 @@ cursor to the caller and status, so the cursor is not interchangeable with this 
 | ------------------------------------------------- | ----------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | GET /api/v1/topic-recommendations                 | 2           | Entities: Valkey batch          | Search → parallel streaming (posts, metrics, elections, markdown, bookmarks, votes, reviewer users)               |
 | GET /api/v1/topic-recommendations/duplicates      | 3–5         | Bedrock embedding: Valkey 1 day | Parallel slug lookups + name lookup + pending-rec query + optional Bedrock embedding + vector search              |
-| POST /api/v1/topic-recommendations                | 1           | None                            | Write; advisory lock + exact-topic duplicate check before insert                                                  |
+| POST /api/v1/topic-recommendations                | 2           | None                            | Write; advisory lock + exact-topic duplicate check before insert, then public provenance from the primary         |
 | GET /api/v1/topic-recommendations/:id             | 3           | Entities: Valkey                | Fetch post → admin IDs + render markdown → parallel streaming (metrics, election, bookmarks, vote, reviewer user) |
-| PATCH /api/v1/topic-recommendations/:id           | 2           | Entities: Valkey                | Fetch post + update                                                                                               |
+| PATCH /api/v1/topic-recommendations/:id           | 3           | Entities: Valkey                | Fetch post + update, then public provenance from the primary                                                      |
 | DELETE /api/v1/topic-recommendations/:id          | 2           | Entities: Valkey                | Fetch post + soft delete                                                                                          |
 | POST /api/v1/topic-recommendations/:id/approvals  | 2           | Entities: Valkey                | Fetch post + approve                                                                                              |
 | POST /api/v1/topic-recommendations/:id/rejections | 2           | Entities: Valkey                | Fetch post + reject                                                                                               |

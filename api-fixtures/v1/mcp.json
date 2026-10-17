@@ -10108,209 +10108,26 @@
                 "post": {
                   "additionalProperties": false,
                   "properties": {
-                    "__entity_type": {
-                      "const": "post"
-                    },
-                    "ai_summary_markdown": {
-                      "type": "string"
-                    },
-                    "approved_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "archived_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "archived_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "broadcast": {
-                      "enum": ["everyone", "followers", "mutual_followers", "users"],
-                      "type": "string"
-                    },
-                    "can_edit_content": {
-                      "type": "boolean"
-                    },
-                    "clearance_reason": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "clearance_status": {
-                      "enum": ["approved", "in_review", "pending", "rejected"],
-                      "type": "string"
-                    },
-                    "clearance_updated_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "community_id": {
-                      "$ref": "#/$defs/S2"
-                    },
                     "created_at": {
                       "type": "string"
                     },
-                    "created_by": {
-                      "$ref": "#/$defs/S1"
-                    },
                     "created_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "data_point_vertical": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "declared_language": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "deleted_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "deleted_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "html": {
-                      "type": "string"
+                      "$ref": "#/$defs/S1"
                     },
                     "id": {
                       "type": "string"
                     },
-                    "images": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "caption": {
-                            "type": "string"
-                          },
-                          "image_id": {
-                            "type": "string"
-                          },
-                          "order_index": {
-                            "type": "number"
-                          },
-                          "placement_id": {
-                            "type": "string"
-                          },
-                          "placement_revision": {
-                            "type": "number"
-                          }
-                        },
-                        "required": [
-                          "caption",
-                          "image_id",
-                          "order_index",
-                          "placement_id",
-                          "placement_revision"
-                        ],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "in_review_at": {
-                      "$ref": "#/$defs/S2"
-                    },
                     "is_anonymous": {
                       "type": "boolean"
-                    },
-                    "lingua_rs_detected_language": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "locked_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "locked_by_id": {
-                      "$ref": "#/$defs/S2"
                     },
                     "markdown": {
                       "type": "string"
                     },
                     "parent_post_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "post_explicit_categories": {
-                      "items": {
-                        "anyOf": [
-                          {
-                            "additionalProperties": false,
-                            "properties": {
-                              "hashtag": {
-                                "type": "string"
-                              },
-                              "type": {
-                                "const": "hashtag"
-                              }
-                            },
-                            "required": ["hashtag", "type"],
-                            "type": "object"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "properties": {
-                              "topic_id": {
-                                "type": "string"
-                              },
-                              "topic_name": {
-                                "type": "string"
-                              },
-                              "type": {
-                                "const": "topic"
-                              }
-                            },
-                            "required": ["topic_id", "topic_name", "type"],
-                            "type": "object"
-                          }
-                        ]
-                      },
-                      "type": "array"
-                    },
-                    "post_hashtags": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "display_token": {
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "key": {
-                            "type": "string"
-                          },
-                          "topic_id": {
-                            "$ref": "#/$defs/S2"
-                          }
-                        },
-                        "required": ["display_token", "id", "key", "topic_id"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "post_related_topics": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "__entity_type": {
-                            "const": "topic"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "slug": {
-                            "type": "string"
-                          },
-                          "topic_type": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["__entity_type", "id", "name", "slug", "topic_type"],
-                        "type": "object"
-                      },
-                      "type": "array"
+                      "$ref": "#/$defs/S1"
                     },
                     "post_type": {
                       "const": "topic_recommendation"
-                    },
-                    "privacy": {
-                      "enum": ["private", "public"],
-                      "type": "string"
                     },
                     "provenance": {
                       "additionalProperties": false,
@@ -10372,121 +10189,12 @@
                       "required": ["app", "via"],
                       "type": "object"
                     },
-                    "rejected_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "review_topic_ratings": {
-                      "anyOf": [
-                        {
-                          "items": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "category_slug": {
-                                "$ref": "#/$defs/S2"
-                              },
-                              "order_index": {
-                                "type": "number"
-                              },
-                              "rating": {
-                                "type": "number"
-                              },
-                              "topic": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "__entity_type": {
-                                    "const": "topic"
-                                  },
-                                  "created_at": {
-                                    "type": "string"
-                                  },
-                                  "id": {
-                                    "type": "string"
-                                  },
-                                  "markdown": {
-                                    "type": "string"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "slug": {
-                                    "type": "string"
-                                  },
-                                  "topic_type": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "__entity_type",
-                                  "created_at",
-                                  "id",
-                                  "markdown",
-                                  "name",
-                                  "slug",
-                                  "topic_type"
-                                ],
-                                "type": "object"
-                              },
-                              "topic_id": {
-                                "type": "string"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              }
-                            },
-                            "required": ["order_index", "rating", "topic_id", "updated_at"],
-                            "type": "object"
-                          },
-                          "type": "array"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "root_post_id": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     },
                     "slug": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     },
-                    "staff_provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "created_via": {
-                          "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
-                          "type": "string"
-                        },
-                        "oauth_client": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "metadata_url": {
-                                  "$ref": "#/$defs/S2"
-                                },
-                                "verified": {
-                                  "type": "boolean"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "metadata_url", "verified"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["created_via"],
-                      "type": "object"
-                    },
-                    "structured_data": {},
                     "title": {
                       "type": "string"
                     },
@@ -10500,21 +10208,21 @@
                           "type": "array"
                         },
                         "approval_error_message": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "created_topic_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "created_topic_slug": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "example_referral_link": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "hostname": {
                           "anyOf": [
                             {
-                              "$ref": "#/$defs/S3"
+                              "$ref": "#/$defs/S2"
                             },
                             {
                               "type": "null"
@@ -10522,11 +10230,11 @@
                           ]
                         },
                         "hostname_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "hostnames": {
                           "items": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           },
                           "type": "array"
                         },
@@ -10540,20 +10248,20 @@
                           "type": "string"
                         },
                         "rejection_reason": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "reviewed_at": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "reviewed_by_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "status": {
                           "enum": ["approved", "pending", "rejected"],
                           "type": "string"
                         },
                         "topic_markdown": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_slug": {
                           "type": "string"
@@ -10589,46 +10297,21 @@
                     },
                     "updated_at": {
                       "type": "string"
-                    },
-                    "updated_by": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "updated_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "url_id": {
-                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": [
-                    "__entity_type",
-                    "ai_summary_markdown",
-                    "approved_at",
-                    "archived_at",
-                    "archived_by_id",
-                    "broadcast",
-                    "clearance_reason",
-                    "clearance_status",
-                    "clearance_updated_at",
-                    "community_id",
                     "created_at",
                     "created_by_id",
-                    "deleted_at",
-                    "deleted_by_id",
                     "id",
-                    "in_review_at",
                     "is_anonymous",
-                    "locked_at",
-                    "locked_by_id",
                     "markdown",
+                    "parent_post_id",
                     "post_type",
-                    "privacy",
-                    "rejected_at",
                     "root_post_id",
+                    "slug",
                     "title",
                     "topic_recommendation",
-                    "updated_at",
-                    "updated_by_id"
+                    "updated_at"
                   ],
                   "type": "object"
                 }
@@ -10639,190 +10322,6 @@
                 "S1": {
                   "anyOf": [
                     {
-                      "additionalProperties": false,
-                      "properties": {
-                        "__entity_type": {
-                          "const": "user"
-                        },
-                        "account_type": {
-                          "anyOf": [
-                            {
-                              "const": "ai_agent"
-                            },
-                            {
-                              "const": "official"
-                            },
-                            {
-                              "const": "system"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "individual_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "is_verified_badge_visible": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "markdown": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_placement": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "image_id": {
-                                  "type": "string"
-                                },
-                                "placement_id": {
-                                  "type": "string"
-                                },
-                                "placement_revision": {
-                                  "type": "number"
-                                }
-                              },
-                              "required": ["image_id", "placement_id", "placement_revision"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "roles": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "use_display_name_from": {
-                          "anyOf": [
-                            {
-                              "const": "apple"
-                            },
-                            {
-                              "const": "facebook"
-                            },
-                            {
-                              "const": "github"
-                            },
-                            {
-                              "const": "google"
-                            },
-                            {
-                              "const": "linkedin"
-                            },
-                            {
-                              "const": "microsoft"
-                            },
-                            {
-                              "const": "username"
-                            },
-                            {
-                              "const": "x"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "username": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_status": {
-                          "anyOf": [
-                            {
-                              "const": "duplicate_id"
-                            },
-                            {
-                              "const": "failed"
-                            },
-                            {
-                              "const": "identity_pending"
-                            },
-                            {
-                              "const": "payment_pending"
-                            },
-                            {
-                              "const": "unverified"
-                            },
-                            {
-                              "const": "verified"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_display_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["__entity_type", "account_type", "id", "roles"],
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "S2": {
-                  "anyOf": [
-                    {
                       "type": "null"
                     },
                     {
@@ -10830,7 +10329,7 @@
                     }
                   ]
                 },
-                "S3": {
+                "S2": {
                   "additionalProperties": false,
                   "properties": {
                     "__entity_type": {
@@ -12660,209 +12159,26 @@
                       "additionalProperties": {
                         "additionalProperties": false,
                         "properties": {
-                          "__entity_type": {
-                            "const": "post"
-                          },
-                          "ai_summary_markdown": {
-                            "type": "string"
-                          },
-                          "approved_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "archived_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "archived_by_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "broadcast": {
-                            "enum": ["everyone", "followers", "mutual_followers", "users"],
-                            "type": "string"
-                          },
-                          "can_edit_content": {
-                            "type": "boolean"
-                          },
-                          "clearance_reason": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "clearance_status": {
-                            "enum": ["approved", "in_review", "pending", "rejected"],
-                            "type": "string"
-                          },
-                          "clearance_updated_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "community_id": {
-                            "$ref": "#/$defs/S2"
-                          },
                           "created_at": {
                             "type": "string"
                           },
-                          "created_by": {
-                            "$ref": "#/$defs/S1"
-                          },
                           "created_by_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "data_point_vertical": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "declared_language": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "deleted_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "deleted_by_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "html": {
-                            "type": "string"
+                            "$ref": "#/$defs/S1"
                           },
                           "id": {
                             "type": "string"
                           },
-                          "images": {
-                            "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "caption": {
-                                  "type": "string"
-                                },
-                                "image_id": {
-                                  "type": "string"
-                                },
-                                "order_index": {
-                                  "type": "number"
-                                },
-                                "placement_id": {
-                                  "type": "string"
-                                },
-                                "placement_revision": {
-                                  "type": "number"
-                                }
-                              },
-                              "required": [
-                                "caption",
-                                "image_id",
-                                "order_index",
-                                "placement_id",
-                                "placement_revision"
-                              ],
-                              "type": "object"
-                            },
-                            "type": "array"
-                          },
-                          "in_review_at": {
-                            "$ref": "#/$defs/S2"
-                          },
                           "is_anonymous": {
                             "type": "boolean"
-                          },
-                          "lingua_rs_detected_language": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "locked_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "locked_by_id": {
-                            "$ref": "#/$defs/S2"
                           },
                           "markdown": {
                             "type": "string"
                           },
                           "parent_post_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "post_explicit_categories": {
-                            "items": {
-                              "anyOf": [
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "hashtag": {
-                                      "type": "string"
-                                    },
-                                    "type": {
-                                      "const": "hashtag"
-                                    }
-                                  },
-                                  "required": ["hashtag", "type"],
-                                  "type": "object"
-                                },
-                                {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "topic_id": {
-                                      "type": "string"
-                                    },
-                                    "topic_name": {
-                                      "type": "string"
-                                    },
-                                    "type": {
-                                      "const": "topic"
-                                    }
-                                  },
-                                  "required": ["topic_id", "topic_name", "type"],
-                                  "type": "object"
-                                }
-                              ]
-                            },
-                            "type": "array"
-                          },
-                          "post_hashtags": {
-                            "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "display_token": {
-                                  "type": "string"
-                                },
-                                "id": {
-                                  "type": "string"
-                                },
-                                "key": {
-                                  "type": "string"
-                                },
-                                "topic_id": {
-                                  "$ref": "#/$defs/S2"
-                                }
-                              },
-                              "required": ["display_token", "id", "key", "topic_id"],
-                              "type": "object"
-                            },
-                            "type": "array"
-                          },
-                          "post_related_topics": {
-                            "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "__entity_type": {
-                                  "const": "topic"
-                                },
-                                "id": {
-                                  "type": "string"
-                                },
-                                "name": {
-                                  "type": "string"
-                                },
-                                "slug": {
-                                  "type": "string"
-                                },
-                                "topic_type": {
-                                  "type": "string"
-                                }
-                              },
-                              "required": ["__entity_type", "id", "name", "slug", "topic_type"],
-                              "type": "object"
-                            },
-                            "type": "array"
+                            "$ref": "#/$defs/S1"
                           },
                           "post_type": {
                             "const": "topic_recommendation"
-                          },
-                          "privacy": {
-                            "enum": ["private", "public"],
-                            "type": "string"
                           },
                           "provenance": {
                             "additionalProperties": false,
@@ -12924,126 +12240,12 @@
                             "required": ["app", "via"],
                             "type": "object"
                           },
-                          "rejected_at": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "review_topic_ratings": {
-                            "anyOf": [
-                              {
-                                "items": {
-                                  "additionalProperties": false,
-                                  "properties": {
-                                    "category_slug": {
-                                      "$ref": "#/$defs/S2"
-                                    },
-                                    "order_index": {
-                                      "type": "number"
-                                    },
-                                    "rating": {
-                                      "type": "number"
-                                    },
-                                    "topic": {
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "__entity_type": {
-                                          "const": "topic"
-                                        },
-                                        "created_at": {
-                                          "type": "string"
-                                        },
-                                        "id": {
-                                          "type": "string"
-                                        },
-                                        "markdown": {
-                                          "type": "string"
-                                        },
-                                        "name": {
-                                          "type": "string"
-                                        },
-                                        "slug": {
-                                          "type": "string"
-                                        },
-                                        "topic_type": {
-                                          "type": "string"
-                                        }
-                                      },
-                                      "required": [
-                                        "__entity_type",
-                                        "created_at",
-                                        "id",
-                                        "markdown",
-                                        "name",
-                                        "slug",
-                                        "topic_type"
-                                      ],
-                                      "type": "object"
-                                    },
-                                    "topic_id": {
-                                      "type": "string"
-                                    },
-                                    "updated_at": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": ["order_index", "rating", "topic_id", "updated_at"],
-                                  "type": "object"
-                                },
-                                "type": "array"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
                           "root_post_id": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           },
                           "slug": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S1"
                           },
-                          "staff_provenance": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "created_via": {
-                                "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
-                                "type": "string"
-                              },
-                              "oauth_client": {
-                                "anyOf": [
-                                  {
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "client_id": {
-                                        "type": "string"
-                                      },
-                                      "client_name": {
-                                        "type": "string"
-                                      },
-                                      "metadata_url": {
-                                        "$ref": "#/$defs/S2"
-                                      },
-                                      "verified": {
-                                        "type": "boolean"
-                                      }
-                                    },
-                                    "required": [
-                                      "client_id",
-                                      "client_name",
-                                      "metadata_url",
-                                      "verified"
-                                    ],
-                                    "type": "object"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              }
-                            },
-                            "required": ["created_via"],
-                            "type": "object"
-                          },
-                          "structured_data": {},
                           "title": {
                             "type": "string"
                           },
@@ -13057,21 +12259,21 @@
                                 "type": "array"
                               },
                               "approval_error_message": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "created_topic_id": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "created_topic_slug": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "example_referral_link": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "hostname": {
                                 "anyOf": [
                                   {
-                                    "$ref": "#/$defs/S3"
+                                    "$ref": "#/$defs/S2"
                                   },
                                   {
                                     "type": "null"
@@ -13079,11 +12281,11 @@
                                 ]
                               },
                               "hostname_id": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "hostnames": {
                                 "items": {
-                                  "$ref": "#/$defs/S3"
+                                  "$ref": "#/$defs/S2"
                                 },
                                 "type": "array"
                               },
@@ -13097,20 +12299,20 @@
                                 "type": "string"
                               },
                               "rejection_reason": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "reviewed_at": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "reviewed_by_id": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "status": {
                                 "enum": ["approved", "pending", "rejected"],
                                 "type": "string"
                               },
                               "topic_markdown": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S1"
                               },
                               "topic_slug": {
                                 "type": "string"
@@ -13146,46 +12348,21 @@
                           },
                           "updated_at": {
                             "type": "string"
-                          },
-                          "updated_by": {
-                            "$ref": "#/$defs/S1"
-                          },
-                          "updated_by_id": {
-                            "$ref": "#/$defs/S2"
-                          },
-                          "url_id": {
-                            "$ref": "#/$defs/S2"
                           }
                         },
                         "required": [
-                          "__entity_type",
-                          "ai_summary_markdown",
-                          "approved_at",
-                          "archived_at",
-                          "archived_by_id",
-                          "broadcast",
-                          "clearance_reason",
-                          "clearance_status",
-                          "clearance_updated_at",
-                          "community_id",
                           "created_at",
                           "created_by_id",
-                          "deleted_at",
-                          "deleted_by_id",
                           "id",
-                          "in_review_at",
                           "is_anonymous",
-                          "locked_at",
-                          "locked_by_id",
                           "markdown",
+                          "parent_post_id",
                           "post_type",
-                          "privacy",
-                          "rejected_at",
                           "root_post_id",
+                          "slug",
                           "title",
                           "topic_recommendation",
-                          "updated_at",
-                          "updated_by_id"
+                          "updated_at"
                         ],
                         "type": "object"
                       }
@@ -13197,10 +12374,10 @@
                           "type": "boolean"
                         },
                         "start_cursor": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "end_cursor": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["has_next_page", "start_cursor", "end_cursor"],
@@ -13228,190 +12405,6 @@
                 "S1": {
                   "anyOf": [
                     {
-                      "additionalProperties": false,
-                      "properties": {
-                        "__entity_type": {
-                          "const": "user"
-                        },
-                        "account_type": {
-                          "anyOf": [
-                            {
-                              "const": "ai_agent"
-                            },
-                            {
-                              "const": "official"
-                            },
-                            {
-                              "const": "system"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "individual_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "is_verified_badge_visible": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "markdown": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_placement": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "image_id": {
-                                  "type": "string"
-                                },
-                                "placement_id": {
-                                  "type": "string"
-                                },
-                                "placement_revision": {
-                                  "type": "number"
-                                }
-                              },
-                              "required": ["image_id", "placement_id", "placement_revision"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "roles": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "use_display_name_from": {
-                          "anyOf": [
-                            {
-                              "const": "apple"
-                            },
-                            {
-                              "const": "facebook"
-                            },
-                            {
-                              "const": "github"
-                            },
-                            {
-                              "const": "google"
-                            },
-                            {
-                              "const": "linkedin"
-                            },
-                            {
-                              "const": "microsoft"
-                            },
-                            {
-                              "const": "username"
-                            },
-                            {
-                              "const": "x"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "username": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_status": {
-                          "anyOf": [
-                            {
-                              "const": "duplicate_id"
-                            },
-                            {
-                              "const": "failed"
-                            },
-                            {
-                              "const": "identity_pending"
-                            },
-                            {
-                              "const": "payment_pending"
-                            },
-                            {
-                              "const": "unverified"
-                            },
-                            {
-                              "const": "verified"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_display_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["__entity_type", "account_type", "id", "roles"],
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "S2": {
-                  "anyOf": [
-                    {
                       "type": "null"
                     },
                     {
@@ -13419,7 +12412,7 @@
                     }
                   ]
                 },
-                "S3": {
+                "S2": {
                   "additionalProperties": false,
                   "properties": {
                     "__entity_type": {
@@ -17703,209 +16696,26 @@
                 "post": {
                   "additionalProperties": false,
                   "properties": {
-                    "__entity_type": {
-                      "const": "post"
-                    },
-                    "ai_summary_markdown": {
-                      "type": "string"
-                    },
-                    "approved_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "archived_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "archived_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "broadcast": {
-                      "enum": ["everyone", "followers", "mutual_followers", "users"],
-                      "type": "string"
-                    },
-                    "can_edit_content": {
-                      "type": "boolean"
-                    },
-                    "clearance_reason": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "clearance_status": {
-                      "enum": ["approved", "in_review", "pending", "rejected"],
-                      "type": "string"
-                    },
-                    "clearance_updated_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "community_id": {
-                      "$ref": "#/$defs/S2"
-                    },
                     "created_at": {
                       "type": "string"
                     },
-                    "created_by": {
-                      "$ref": "#/$defs/S1"
-                    },
                     "created_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "data_point_vertical": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "declared_language": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "deleted_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "deleted_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "html": {
-                      "type": "string"
+                      "$ref": "#/$defs/S1"
                     },
                     "id": {
                       "type": "string"
                     },
-                    "images": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "caption": {
-                            "type": "string"
-                          },
-                          "image_id": {
-                            "type": "string"
-                          },
-                          "order_index": {
-                            "type": "number"
-                          },
-                          "placement_id": {
-                            "type": "string"
-                          },
-                          "placement_revision": {
-                            "type": "number"
-                          }
-                        },
-                        "required": [
-                          "caption",
-                          "image_id",
-                          "order_index",
-                          "placement_id",
-                          "placement_revision"
-                        ],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "in_review_at": {
-                      "$ref": "#/$defs/S2"
-                    },
                     "is_anonymous": {
                       "type": "boolean"
-                    },
-                    "lingua_rs_detected_language": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "locked_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "locked_by_id": {
-                      "$ref": "#/$defs/S2"
                     },
                     "markdown": {
                       "type": "string"
                     },
                     "parent_post_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "post_explicit_categories": {
-                      "items": {
-                        "anyOf": [
-                          {
-                            "additionalProperties": false,
-                            "properties": {
-                              "hashtag": {
-                                "type": "string"
-                              },
-                              "type": {
-                                "const": "hashtag"
-                              }
-                            },
-                            "required": ["hashtag", "type"],
-                            "type": "object"
-                          },
-                          {
-                            "additionalProperties": false,
-                            "properties": {
-                              "topic_id": {
-                                "type": "string"
-                              },
-                              "topic_name": {
-                                "type": "string"
-                              },
-                              "type": {
-                                "const": "topic"
-                              }
-                            },
-                            "required": ["topic_id", "topic_name", "type"],
-                            "type": "object"
-                          }
-                        ]
-                      },
-                      "type": "array"
-                    },
-                    "post_hashtags": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "display_token": {
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "key": {
-                            "type": "string"
-                          },
-                          "topic_id": {
-                            "$ref": "#/$defs/S2"
-                          }
-                        },
-                        "required": ["display_token", "id", "key", "topic_id"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "post_related_topics": {
-                      "items": {
-                        "additionalProperties": false,
-                        "properties": {
-                          "__entity_type": {
-                            "const": "topic"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "slug": {
-                            "type": "string"
-                          },
-                          "topic_type": {
-                            "type": "string"
-                          }
-                        },
-                        "required": ["__entity_type", "id", "name", "slug", "topic_type"],
-                        "type": "object"
-                      },
-                      "type": "array"
+                      "$ref": "#/$defs/S1"
                     },
                     "post_type": {
                       "const": "topic_recommendation"
-                    },
-                    "privacy": {
-                      "enum": ["private", "public"],
-                      "type": "string"
                     },
                     "provenance": {
                       "additionalProperties": false,
@@ -17967,121 +16777,12 @@
                       "required": ["app", "via"],
                       "type": "object"
                     },
-                    "rejected_at": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "review_topic_ratings": {
-                      "anyOf": [
-                        {
-                          "items": {
-                            "additionalProperties": false,
-                            "properties": {
-                              "category_slug": {
-                                "$ref": "#/$defs/S2"
-                              },
-                              "order_index": {
-                                "type": "number"
-                              },
-                              "rating": {
-                                "type": "number"
-                              },
-                              "topic": {
-                                "additionalProperties": false,
-                                "properties": {
-                                  "__entity_type": {
-                                    "const": "topic"
-                                  },
-                                  "created_at": {
-                                    "type": "string"
-                                  },
-                                  "id": {
-                                    "type": "string"
-                                  },
-                                  "markdown": {
-                                    "type": "string"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "slug": {
-                                    "type": "string"
-                                  },
-                                  "topic_type": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "__entity_type",
-                                  "created_at",
-                                  "id",
-                                  "markdown",
-                                  "name",
-                                  "slug",
-                                  "topic_type"
-                                ],
-                                "type": "object"
-                              },
-                              "topic_id": {
-                                "type": "string"
-                              },
-                              "updated_at": {
-                                "type": "string"
-                              }
-                            },
-                            "required": ["order_index", "rating", "topic_id", "updated_at"],
-                            "type": "object"
-                          },
-                          "type": "array"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "root_post_id": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     },
                     "slug": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     },
-                    "staff_provenance": {
-                      "additionalProperties": false,
-                      "properties": {
-                        "created_via": {
-                          "enum": ["api", "dotnet", "mcp", "swift", "system", "web"],
-                          "type": "string"
-                        },
-                        "oauth_client": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "metadata_url": {
-                                  "$ref": "#/$defs/S2"
-                                },
-                                "verified": {
-                                  "type": "boolean"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "metadata_url", "verified"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["created_via"],
-                      "type": "object"
-                    },
-                    "structured_data": {},
                     "title": {
                       "type": "string"
                     },
@@ -18095,21 +16796,21 @@
                           "type": "array"
                         },
                         "approval_error_message": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "created_topic_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "created_topic_slug": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "example_referral_link": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "hostname": {
                           "anyOf": [
                             {
-                              "$ref": "#/$defs/S3"
+                              "$ref": "#/$defs/S2"
                             },
                             {
                               "type": "null"
@@ -18117,11 +16818,11 @@
                           ]
                         },
                         "hostname_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "hostnames": {
                           "items": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S2"
                           },
                           "type": "array"
                         },
@@ -18135,20 +16836,20 @@
                           "type": "string"
                         },
                         "rejection_reason": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "reviewed_at": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "reviewed_by_id": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "status": {
                           "enum": ["approved", "pending", "rejected"],
                           "type": "string"
                         },
                         "topic_markdown": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_slug": {
                           "type": "string"
@@ -18184,46 +16885,21 @@
                     },
                     "updated_at": {
                       "type": "string"
-                    },
-                    "updated_by": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "updated_by_id": {
-                      "$ref": "#/$defs/S2"
-                    },
-                    "url_id": {
-                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": [
-                    "__entity_type",
-                    "ai_summary_markdown",
-                    "approved_at",
-                    "archived_at",
-                    "archived_by_id",
-                    "broadcast",
-                    "clearance_reason",
-                    "clearance_status",
-                    "clearance_updated_at",
-                    "community_id",
                     "created_at",
                     "created_by_id",
-                    "deleted_at",
-                    "deleted_by_id",
                     "id",
-                    "in_review_at",
                     "is_anonymous",
-                    "locked_at",
-                    "locked_by_id",
                     "markdown",
+                    "parent_post_id",
                     "post_type",
-                    "privacy",
-                    "rejected_at",
                     "root_post_id",
+                    "slug",
                     "title",
                     "topic_recommendation",
-                    "updated_at",
-                    "updated_by_id"
+                    "updated_at"
                   ],
                   "type": "object"
                 }
@@ -18234,190 +16910,6 @@
                 "S1": {
                   "anyOf": [
                     {
-                      "additionalProperties": false,
-                      "properties": {
-                        "__entity_type": {
-                          "const": "user"
-                        },
-                        "account_type": {
-                          "anyOf": [
-                            {
-                              "const": "ai_agent"
-                            },
-                            {
-                              "const": "official"
-                            },
-                            {
-                              "const": "system"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "individual_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "is_verified_badge_visible": {
-                          "anyOf": [
-                            {
-                              "const": false
-                            },
-                            {
-                              "const": true
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "markdown": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_id": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "profile_image_placement": {
-                          "anyOf": [
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "image_id": {
-                                  "type": "string"
-                                },
-                                "placement_id": {
-                                  "type": "string"
-                                },
-                                "placement_revision": {
-                                  "type": "number"
-                                }
-                              },
-                              "required": ["image_id", "placement_id", "placement_revision"],
-                              "type": "object"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "roles": {
-                          "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
-                        },
-                        "use_display_name_from": {
-                          "anyOf": [
-                            {
-                              "const": "apple"
-                            },
-                            {
-                              "const": "facebook"
-                            },
-                            {
-                              "const": "github"
-                            },
-                            {
-                              "const": "google"
-                            },
-                            {
-                              "const": "linkedin"
-                            },
-                            {
-                              "const": "microsoft"
-                            },
-                            {
-                              "const": "username"
-                            },
-                            {
-                              "const": "x"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "username": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        },
-                        "verification_status": {
-                          "anyOf": [
-                            {
-                              "const": "duplicate_id"
-                            },
-                            {
-                              "const": "failed"
-                            },
-                            {
-                              "const": "identity_pending"
-                            },
-                            {
-                              "const": "payment_pending"
-                            },
-                            {
-                              "const": "unverified"
-                            },
-                            {
-                              "const": "verified"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "verified_display_name": {
-                          "anyOf": [
-                            {
-                              "type": "null"
-                            },
-                            {
-                              "type": "string"
-                            }
-                          ]
-                        }
-                      },
-                      "required": ["__entity_type", "account_type", "id", "roles"],
-                      "type": "object"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "S2": {
-                  "anyOf": [
-                    {
                       "type": "null"
                     },
                     {
@@ -18425,7 +16917,7 @@
                     }
                   ]
                 },
-                "S3": {
+                "S2": {
                   "additionalProperties": false,
                   "properties": {
                     "__entity_type": {

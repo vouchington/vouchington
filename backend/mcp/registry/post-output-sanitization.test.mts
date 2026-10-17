@@ -37,7 +37,7 @@ describe('registered MCP post outputs', () => {
     expect(postTools.length).toBeGreaterThan(0)
     for (const tool of postTools) {
       const implementation = String(tool.function)
-      const shared = /\b(toMcpPosts?|toWrittenMcpPost|loadMcpPosts|toMcpRecommendation)\b/.test(
+      const shared = /\b(toMcpPosts?|toWrittenMcpPost|loadMcpPosts|toMcpRecommendations?)\b/.test(
         implementation,
       )
       const inlineSearch =

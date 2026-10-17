@@ -1,5 +1,4 @@
 import {
-  makeRecommendationPost,
   mockCreateTopicRecommendation,
   mockFetchTopicRecommendationDuplicates,
   mockRouterPush,
@@ -10,8 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TopicRecommendationForm } from '../topic-recommendation-form'
 import { ApiError } from '@/lib/api/error'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-
-const mockRecommendationPost = makeRecommendationPost()
+import { makeTopicRecommendationMutationResponse } from '@/test-helpers/api-responses'
 
 describe('TopicRecommendationForm', () => {
   beforeEach(() => {
@@ -43,9 +41,7 @@ describe('TopicRecommendationForm', () => {
           message: 'An identity is required to create posts',
         }),
       )
-      .mockResolvedValueOnce({
-        post: mockRecommendationPost,
-      })
+      .mockResolvedValueOnce(makeTopicRecommendationMutationResponse())
 
     mockUpdateMyIdentity.mockResolvedValueOnce({} as never)
 
@@ -106,9 +102,7 @@ describe('TopicRecommendationForm', () => {
   })
 
   it('Enter on the topic title input submits the recommendation through the API client', async () => {
-    mockCreateTopicRecommendation.mockResolvedValue({
-      post: mockRecommendationPost,
-    })
+    mockCreateTopicRecommendation.mockResolvedValue(makeTopicRecommendationMutationResponse())
 
     render(<TopicRecommendationForm />)
     fillRequiredFields()
