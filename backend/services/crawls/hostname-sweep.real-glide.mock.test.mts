@@ -11,6 +11,7 @@ import {
   getTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { acquireTestCrawlSweepBucket } from '@voucha/test-helpers/crawl-sweep-bucket'
 import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import { crawlUrls } from '@queues/crawler/queues'
 import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
@@ -27,6 +28,22 @@ const sweepStartedAt = '2099-01-15T00:00:00.000Z'
 
 describe('hostname sweep selection and completion', () => {
   afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
+
+  it('reserves a distinct bucket while one is held and skips its retained hostname later', async () => {
+    await using first = await acquireTestCrawlSweepBucket()
+    {
+      await using overlapping = await acquireTestCrawlSweepBucket({ firstBucketDays: first.days })
+      expect(overlapping.days).not.toBe(first.days)
+    }
+
+    const retained = await insertTestUrlHostname({
+      hostname: `retained-sweep-${randomUUID()}.example.com`,
+    })
+    await setTestHostnameCrawlSweep(retained, first.days, null)
+    await first.release()
+    await using afterRelease = await acquireTestCrawlSweepBucket({ firstBucketDays: first.days })
+    expect(afterRelease.days).not.toBe(first.days)
+  })
 
   it('saves the threshold position when a one-row run budget is spent on its initial seek', async () => {
     await insertTestUrlHostname({ hostname: `initial-sweep-${randomUUID()}.example.com` })
@@ -45,9 +62,10 @@ describe('hostname sweep selection and completion', () => {
   })
 
   it('caps both due ranges, excludes recent completion, and resumes beyond queued hosts', async () => {
+    await using bucket = await acquireTestCrawlSweepBucket()
     const owner = await createTestUser()
     const hosts: string[] = []
-    const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
+    const bucketDays = bucket.days
     for (const sweptAt of [
       null,
       null,
@@ -184,7 +202,8 @@ describe('hostname sweep selection and completion', () => {
   })
 
   it('advances past a due hostname that has no URL without enqueueing it', async () => {
-    const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
+    await using bucket = await acquireTestCrawlSweepBucket()
+    const bucketDays = bucket.days
     const bare = await insertTestUrlHostname({
       hostname: `bare-${randomUUID()}.example.com`,
       is_crawlable: true,

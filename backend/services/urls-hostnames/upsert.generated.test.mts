@@ -10,6 +10,7 @@ import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { createTestUser } from '@voucha/test-helpers'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
+import { acquireTestCrawlSweepBucket } from '@voucha/test-helpers/crawl-sweep-bucket'
 import {
   failNextHostnameCacheDeleteForTest,
   getHostnameCacheInvalidationWorkForTest,
@@ -107,10 +108,11 @@ describe('upsert.generated', () => {
   })
 
   it('keeps an email-only hostname private and out of crawl work', async () => {
+    await using bucket = await acquireTestCrawlSweepBucket()
     const domain = `email-private-${crypto.randomUUID()}.example.com`
     const hostnameId = await resolveEmailDomainHostnameId(`reader@${domain}`)
     if (!hostnameId) throw new Error('Expected email domain hostname')
-    const bucketDays = 31000 + Math.floor(Math.random() * 1000)
+    const bucketDays = bucket.days
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
 
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
@@ -128,11 +130,12 @@ describe('upsert.generated', () => {
   })
 
   it('does not dispatch a public staff hostname until it has URL work', async () => {
+    await using bucket = await acquireTestCrawlSweepBucket()
     const domain = `staff-url-less-${crypto.randomUUID()}.example.com`
     const staff = await createTestUser({ administrator: true })
     const hostnameId = (await upsertUrlHostnames(staff.id, [domain])).get(domain)
     if (!hostnameId) throw new Error('Expected staff hostname')
-    const bucketDays = 29000 + Math.floor(Math.random() * 1000)
+    const bucketDays = bucket.days
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
 
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeInstanceOf(Date)
@@ -150,10 +153,11 @@ describe('upsert.generated', () => {
   })
 
   it('promotes a private email hostname once when a URL arrives, retaining its ID', async () => {
+    await using bucket = await acquireTestCrawlSweepBucket()
     const domain = `email-promoted-${crypto.randomUUID()}.example.com`
     const hostnameId = await resolveEmailDomainHostnameId(`writer@${domain}`)
     if (!hostnameId) throw new Error('Expected email domain hostname')
-    const bucketDays = 32000 + Math.floor(Math.random() * 700)
+    const bucketDays = bucket.days
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     await addUrl(null, `https://${domain}/first`)
 

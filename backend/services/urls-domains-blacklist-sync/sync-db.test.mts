@@ -21,6 +21,7 @@ import {
 } from '@voucha/test-helpers/hostname-cache-invalidation'
 import { getUrlHostnameByAnyCached } from '../entity-fetch/get.mts'
 import { setTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
+import { acquireTestCrawlSweepBucket } from '@voucha/test-helpers/crawl-sweep-bucket'
 
 import { syncDomainsWithDatabase } from './sync-db.mts'
 
@@ -114,6 +115,7 @@ describe('sync-db', () => {
   })
 
   it('syncDomainsWithDatabase stages email domains in SQL and applies database changes', async () => {
+    await using bucket = await acquireTestCrawlSweepBucket()
     const suffix = randomSourceSuffix()
     const sourceId = await createTestBlacklistSource({
       type: 'email',
@@ -130,7 +132,7 @@ describe('sync-db', () => {
     await expect(caches.email_domain_validation.get(domain)).resolves.toBeNull()
     const hostnameId = await resolveEmailDomainHostnameId(`reader@${domain}`)
     if (!hostnameId) throw new Error('Expected email blocklist hostname')
-    const bucketDays = 30000 + Math.floor(Math.random() * 1000)
+    const bucketDays = bucket.days
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     expect((await getUrlHostnameById(hostnameId))?.publicly_introduced_at).toBeNull()
     const candidates = await getCrawlHostnameCandidates(

@@ -30,6 +30,7 @@ import {
   setTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { acquireTestCrawlSweepBucket } from '@voucha/test-helpers/crawl-sweep-bucket'
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
@@ -144,8 +145,8 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       await Promise.all(ownedChildren.map(childJob => childJob.remove()))
     }
   })
-
   it('dispatches a due hostname into the per-hostname queue job', async () => {
+    await using bucket = await acquireTestCrawlSweepBucket()
     const hostname = `sweep-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
     await insertTestUrl({ url: `https://${hostname}/crawlable`, hostnameId })
@@ -160,7 +161,7 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
         await Promise.all(ownedChildren.map(job => job.remove()))
       }
     })
-    const bucketDays = 30000 + (parseInt(randomUUID().slice(0, 4), 16) % 2000)
+    const bucketDays = bucket.days
     await setTestHostnameCrawlSweep(hostnameId, bucketDays, null)
     const cursor = {
       sweepStartedAt: '2099-01-15T00:00:00.000Z',
