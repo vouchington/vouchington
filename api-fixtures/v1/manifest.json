@@ -29992,6 +29992,160 @@
       "source": "backend/api/v1/mq/index-routes/mq-queues-get.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/mq/queues/:name/domains": {
+      "bodyKind": "content",
+      "hash": "7acb69b3437a596c6bde6e15d4b586ef260711546d3365fa74efc33ed9175f00",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/mq/queues/:name/domains",
+      "schema": {
+        "definitions": {
+          "DomainStateCount": {
+            "additionalProperties": false,
+            "properties": {
+              "complete": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "count": {
+                "required": true,
+                "schema": {
+                  "type": "number"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "DomainStateCounts": {
+            "additionalProperties": false,
+            "properties": {
+              "active": {
+                "required": true,
+                "schema": {
+                  "name": "DomainStateCount",
+                  "type": "ref"
+                }
+              },
+              "completed": {
+                "required": true,
+                "schema": {
+                  "name": "DomainStateCount",
+                  "type": "ref"
+                }
+              },
+              "delayed": {
+                "required": true,
+                "schema": {
+                  "name": "DomainStateCount",
+                  "type": "ref"
+                }
+              },
+              "failed": {
+                "required": true,
+                "schema": {
+                  "name": "DomainStateCount",
+                  "type": "ref"
+                }
+              },
+              "waiting": {
+                "required": true,
+                "schema": {
+                  "name": "DomainStateCount",
+                  "type": "ref"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "domains": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "type": "intersection",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "domain": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "paused": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        },
+                        "paused_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "paused_by": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "name": "DomainStateCounts",
+                      "type": "ref"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-get.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/mq/scheduled-jobs": {
       "bodyKind": "content",
       "hash": "cb11c715d25f665842d4b84350722645de3538dd3626547878071d12fa5176f7",
@@ -82675,6 +82829,90 @@
       "source": "backend/api/v1/mq/backfills.mts",
       "statusKnowledge": "default"
     },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/pause": {
+      "bodyKind": "content",
+      "hash": "49e1a2e09265339d850ff110b5f0360d3b497490f5126f58940ba12ae9eaec3d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/mq/queues/:name/domains/:domain/pause",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "success": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": true
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-by-domain-pause-post.mts",
+      "statusKnowledge": "default"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/resume": {
+      "bodyKind": "content",
+      "hash": "49e1a2e09265339d850ff110b5f0360d3b497490f5126f58940ba12ae9eaec3d",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/mq/queues/:name/domains/:domain/resume",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "success": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": true
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-by-domain-resume-post.mts",
+      "statusKnowledge": "default"
+    },
+    "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed": {
+      "bodyKind": "content",
+      "hash": "86297abb87ffc7c2e66e3d302e9613791c3448f7fde0f239cad693c8782ef16c",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/mq/queues/:name/domains/:domain/retry-failed",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "retried": {
+              "required": true,
+              "schema": {
+                "type": "number"
+              }
+            },
+            "success": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": true
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-by-domain-retry-failed-post.mts",
+      "statusKnowledge": "default"
+    },
     "POST:/api/v1/mq/queues/:name/pause": {
       "bodyKind": "content",
       "hash": "49e1a2e09265339d850ff110b5f0360d3b497490f5126f58940ba12ae9eaec3d",
@@ -99090,6 +99328,114 @@
       },
       "route": {
         "routeTemplate": "/api/v1/psql/jobs"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/mq/queues/:name/domains",
+      "bodyFile": "responses/web.admin.mq.queues.domains.default.json",
+      "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
+      "id": "web.admin.mq.queues.domains.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/mq/index-routes/mq-queues-by-name-domains-get.mts"],
+      "path": "/api/v1/mq/queues/background/domains",
+      "responseSchema": {
+        "hash": "3ba8707ec5b8a99251989fe142185e2a933c325dac42fda1a9eeecdc17096edc",
+        "key": "web.admin.mq.queues.domains.default"
+      },
+      "route": {
+        "pathParams": {
+          "name": "background"
+        },
+        "routeTemplate": "/api/v1/mq/queues/:name/domains"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/mq/queues/:name/domains/:domain/pause",
+      "bodyFile": "responses/web.admin.mq.queues.domains.pause.default.json",
+      "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
+      "id": "web.admin.mq.queues.domains.pause.default",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-by-domain-pause-post.mts"
+      ],
+      "path": "/api/v1/mq/queues/background/domains/openai-moderation/pause",
+      "requestBody": {
+        "reason": "Maintenance"
+      },
+      "responseSchema": {
+        "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46",
+        "key": "web.admin.mq.queues.domains.pause.default"
+      },
+      "route": {
+        "pathParams": {
+          "domain": "openai-moderation",
+          "name": "background"
+        },
+        "routeTemplate": "/api/v1/mq/queues/:name/domains/:domain/pause"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/mq/queues/:name/domains/:domain/resume",
+      "bodyFile": "responses/web.admin.mq.queues.domains.resume.default.json",
+      "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
+      "id": "web.admin.mq.queues.domains.resume.default",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-by-domain-resume-post.mts"
+      ],
+      "path": "/api/v1/mq/queues/background/domains/openai-moderation/resume",
+      "responseSchema": {
+        "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46",
+        "key": "web.admin.mq.queues.domains.resume.default"
+      },
+      "route": {
+        "pathParams": {
+          "domain": "openai-moderation",
+          "name": "background"
+        },
+        "routeTemplate": "/api/v1/mq/queues/:name/domains/:domain/resume"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/mq/queues/:name/domains/:domain/retry-failed",
+      "bodyFile": "responses/web.admin.mq.queues.domains.retry-failed.default.json",
+      "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
+      "id": "web.admin.mq.queues.domains.retry-failed.default",
+      "method": "POST",
+      "migratedFrom": [
+        "backend/api/v1/mq/index-routes/mq-queues-by-name-domains-by-domain-retry-failed-post.mts"
+      ],
+      "path": "/api/v1/mq/queues/background/domains/openai-moderation/retry-failed",
+      "responseSchema": {
+        "hash": "a965c43c08f4fde4599eada16c2577d598fe71a7dd1432de26243237c9d07caf",
+        "key": "web.admin.mq.queues.domains.retry-failed.default"
+      },
+      "route": {
+        "pathParams": {
+          "domain": "openai-moderation",
+          "name": "background"
+        },
+        "routeTemplate": "/api/v1/mq/queues/:name/domains/:domain/retry-failed"
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"

@@ -1,3 +1,4 @@
+import type { EngineeringQueueEndpointContext } from './engineering-endpoint-context'
 type TopicClient = typeof import('@/lib/api/client/topics')
 
 export interface WebFixtureClientEndpointContext {
@@ -125,17 +126,7 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/moderator-vacation'),
     'fetchMyModeratorVacation'
   >
-  readonly mq: Pick<
-    typeof import('@/lib/api/client/mq'),
-    | 'fetchBackfills'
-    | 'fetchQueueStats'
-    | 'fetchQueues'
-    | 'fetchScheduledJobs'
-    | 'pauseQueue'
-    | 'resumeQueue'
-    | 'triggerBackfill'
-    | 'triggerScheduledJob'
-  >
+  readonly mq: EngineeringQueueEndpointContext
   readonly my: Pick<
     typeof import('@/lib/api/client/my'),
     | 'createMyCard'

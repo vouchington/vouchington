@@ -2,6 +2,7 @@ import {
   engineeringConsumers,
   engineeringOpsValkeyApiFixtureCases,
 } from './engineering-ops-valkey-cases.mts'
+import { engineeringQueueDomainApiFixtureCases } from './engineering-queue-domain-cases.mts'
 import { responseBody } from './static-response-bodies.mts'
 import type { ApiFixtureCase } from './types.mts'
 
@@ -136,5 +137,6 @@ export const engineeringOpsApiFixtureCases: ApiFixtureCase[] = [
     status: 200,
     migratedFrom: ['backend/api/v1/psql/index.mts'],
   }),
+  ...engineeringQueueDomainApiFixtureCases,
   ...engineeringOpsValkeyApiFixtureCases,
 ]
