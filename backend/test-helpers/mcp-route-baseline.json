@@ -5683,7 +5683,7 @@
       ]
     },
     "POST:/api/v1/posts/:idOrSlug/ratings": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
@@ -5699,7 +5699,7 @@
       ]
     },
     "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
@@ -5715,7 +5715,7 @@
       ]
     },
     "DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
@@ -5731,7 +5731,7 @@
       ]
     },
     "POST:/api/v1/posts/:idOrSlug/shares": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
@@ -5747,7 +5747,7 @@
       ]
     },
     "POST:/api/v1/posts/:idOrSlug/sends": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
@@ -5763,7 +5763,7 @@
       ]
     },
     "PUT:/api/v1/posts/:id/read": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
@@ -5779,7 +5779,7 @@
       ]
     },
     "DELETE:/api/v1/posts/:id/read": {
-      "pullRequest": 3113,
+      "pullRequest": 3130,
       "contracts": [
         {
           "surface": "mcp",
