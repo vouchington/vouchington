@@ -122,7 +122,7 @@ public post base as `read_posts`, plus the required proposed-topic/status/review
 REST POST/PATCH and the web mutation client use that contract too. Internal post columns,
 rendered HTML, language detection, clearance details, author stubs, and edit permissions are
 excluded; MCP still sanitizes all retained free text and fences Markdown and review messages.
-See the [topic-recommendations API](../../../../requirements/api/v1/topic-recommendations/README.md).
+See the topic-recommendations API.
 
 **Tool-local schema factoring.** The generated MCP catalog factors exactly repeated subschemas
 within each tool's input or output schema into that schema's root `$defs`, referenced only by
