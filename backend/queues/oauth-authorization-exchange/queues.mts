@@ -1,7 +1,4 @@
-import { createQueue } from '@data-stores/valkey-glide-mq'
-import { OAUTH_AUTHORIZATION_EXCHANGE_QUEUE_NAME } from './config.mts'
+import { background } from '@queues/background/queues'
 
-export const oauthAuthorizationExchangeQueue = createQueue(
-  OAUTH_AUTHORIZATION_EXCHANGE_QUEUE_NAME,
-  { priorityKind: 'ranked' },
-)
+// The domain's queue is the shared `background` queue; this names it for the domain's own code.
+export const oauthAuthorizationExchangeQueue = background

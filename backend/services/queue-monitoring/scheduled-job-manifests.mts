@@ -36,10 +36,11 @@ const background = combineBackgroundManifests([
   storyPostRelatedUrlProjections,
   postPublication,
   voteWeight,
+  accountLifecycle,
+  oauthAuthorizationExchange,
 ])
 
 export const SCHEDULED_JOB_MANIFESTS = [
-  accountLifecycle,
   activitypub,
   aiAgents,
   background,
@@ -54,7 +55,6 @@ export const SCHEDULED_JOB_MANIFESTS = [
   kagiSmallweb,
   memberships,
   notifications,
-  oauthAuthorizationExchange,
   psql,
   rssFeeds,
   rssFeedMaintenance,

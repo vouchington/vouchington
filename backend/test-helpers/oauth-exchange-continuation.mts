@@ -10,7 +10,12 @@ import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '../data-stores/valkey-core/glide-mq-client.mts'
-import type { OAuthAuthorizationExchangeJobData } from '../queues/oauth-authorization-exchange/types.mts'
+import { backgroundHandler } from '../queues/background/enqueues/define-handler.mts'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+  type OAuthAuthorizationExchangeJobData,
+} from '../queues/background/enqueues/oauth-authorization-exchange-jobs.mts'
+import { createBackgroundProcessor } from '../workers/background/processors.mts'
 import { processOAuthAuthorizationExchangeJob } from '../workers/oauth-authorization-exchange/processors/process-job.mts'
 import { processOAuthAuthorizationExchange } from '../services/oauth/authorization-exchange.mts'
 import {
@@ -54,54 +59,67 @@ export async function runTestOAuthExchangeContinuation(
       () =>
         new Worker<OAuthAuthorizationExchangeJobData>(
           name,
-          (job: Job<OAuthAuthorizationExchangeJobData>) =>
-            owner.run(async () => {
-              owner.assertOpen()
-              await using holder = await beginTransaction()
-              owner.assertOpen()
-              const lock = async () => {
-                await owner.run(() =>
-                  holder(
-                    '/* runTestOAuthExchangeContinuation */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
-                    [authorizationId],
-                  ),
-                )
-              }
-              attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })
-              try {
-                if (fault === 'provider-outcome' && attempts.length === 1) await lock()
-                await processOAuthAuthorizationExchangeJob(
-                  job,
-                  undefined,
-                  async (id, _dependencies, ownership) => {
-                    if (!ownership) throw new Error('Actual OAuth worker omitted queue ownership')
-                    await processOAuthAuthorizationExchange(
-                      id,
-                      createTestOAuthContinuationDependencies(owner, fault, lock, metrics),
-                      {
-                        claimId: ownership.claimId,
-                        providerRequestArmed: ownership.providerRequestArmed,
-                        persist: (claim, providerRequestArmed) =>
-                          owner.run(() =>
-                            createTestOAuthOwnershipPersistence(
-                              authorizationId,
-                              ownership,
-                              fault,
-                              injectedError,
-                              expireOnWriteFailure,
-                              ownershipFault,
-                            )(claim, providerRequestArmed),
+          // The production background processor (pause check, handler lookup, rate-limit
+          // translation) runs the job; only the provider-facing exchange below is the owned fake.
+          createBackgroundProcessor(
+            new Map([
+              [
+                OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
+                backgroundHandler(
+                  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+                  (job: Job<OAuthAuthorizationExchangeJobData>) =>
+                    owner.run(async () => {
+                      owner.assertOpen()
+                      await using holder = await beginTransaction()
+                      owner.assertOpen()
+                      const lock = async () => {
+                        await owner.run(() =>
+                          holder(
+                            '/* runTestOAuthExchangeContinuation */ SELECT id FROM oauth_authorizations WHERE id = $1 FOR UPDATE NOWAIT',
+                            [authorizationId],
                           ),
-                      },
-                    )
-                  },
-                )
-              } catch (err) {
-                if (attempts.length === 1) firstFailure = err
-                throw err
-              }
-              // await-using holder rollback occurs before the worker schedules its next actual attempt.
-            }),
+                        )
+                      }
+                      attempts.push({ claimId: job.data.exchangeClaimId, data: { ...job.data } })
+                      try {
+                        if (fault === 'provider-outcome' && attempts.length === 1) await lock()
+                        await processOAuthAuthorizationExchangeJob(
+                          job,
+                          undefined,
+                          async (id, _dependencies, ownership) => {
+                            if (!ownership)
+                              throw new Error('Actual OAuth worker omitted queue ownership')
+                            await processOAuthAuthorizationExchange(
+                              id,
+                              createTestOAuthContinuationDependencies(owner, fault, lock, metrics),
+                              {
+                                claimId: ownership.claimId,
+                                providerRequestArmed: ownership.providerRequestArmed,
+                                persist: (claim, providerRequestArmed) =>
+                                  owner.run(() =>
+                                    createTestOAuthOwnershipPersistence(
+                                      authorizationId,
+                                      ownership,
+                                      fault,
+                                      injectedError,
+                                      expireOnWriteFailure,
+                                      ownershipFault,
+                                    )(claim, providerRequestArmed),
+                                  ),
+                              },
+                            )
+                          },
+                        )
+                      } catch (err) {
+                        if (attempts.length === 1) firstFailure = err
+                        throw err
+                      }
+                      // await-using holder rollback occurs before the worker schedules its next actual attempt.
+                    }),
+                ),
+              ],
+            ]),
+          ),
           { ...connection, blockTimeout: 1000 },
         ),
     )
@@ -112,7 +130,7 @@ export async function runTestOAuthExchangeContinuation(
     await owner.run(() => worker.waitUntilReady())
     const job = await owner.run(() =>
       queue.add(
-        'exchangeOAuthAuthorization',
+        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
         {
           authorizationId,
           ...(recordedClaimId

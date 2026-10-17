@@ -1,8 +1,3 @@
-export type UserDeletionJobs = 'processUserDeletion' | 'recoverUserDeletions'
+import type { AccountLifecycleUserDeletionData } from '@queues/background/enqueues/account-lifecycle-jobs'
 
-export type UserDeletionJobData = {
-  requestId: string
-  processingAttemptId: string
-}
-
-export type UserDeletionEnqueueData = UserDeletionJobData & { delayMs?: number }
+export type UserDeletionEnqueueData = AccountLifecycleUserDeletionData & { delayMs?: number }

@@ -1,6 +1,12 @@
 import { BACKGROUND_DOMAINS, type BackgroundDomain } from '../config.mts'
 import type { BackgroundDomainDefinition, BackgroundJobDefinition } from '../types.mts'
+import { ACCOUNT_LIFECYCLE_DOMAIN, ACCOUNT_LIFECYCLE_JOBS } from './account-lifecycle-jobs.mts'
+import { ARTICLE_SYNC_DOMAIN, ARTICLE_SYNC_JOBS } from './article-sync-jobs.mts'
 import { ENTITY_LISTENERS_DOMAIN, ENTITY_LISTENERS_JOBS } from './entity-listeners-jobs.mts'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
+  OAUTH_AUTHORIZATION_EXCHANGE_JOBS,
+} from './oauth-authorization-exchange-jobs.mts'
 import { OPENAI_MODERATION_DOMAIN, OPENAI_MODERATION_JOBS } from './openai-moderation-jobs.mts'
 import { POST_MENTIONS_DOMAIN, POST_MENTIONS_JOBS } from './post-mentions-jobs.mts'
 import { POST_PUBLICATION_DOMAIN, POST_PUBLICATION_JOBS } from './post-publication-jobs.mts'
@@ -21,6 +27,9 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   POST_PUBLICATION_DOMAIN,
   VOTE_AGGREGATION_DOMAIN,
   ENTITY_LISTENERS_DOMAIN,
+  ACCOUNT_LIFECYCLE_DOMAIN,
+  ARTICLE_SYNC_DOMAIN,
+  OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
 ]
 
 export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
@@ -31,6 +40,9 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...POST_PUBLICATION_JOBS,
   ...VOTE_AGGREGATION_JOBS,
   ...ENTITY_LISTENERS_JOBS,
+  ...ACCOUNT_LIFECYCLE_JOBS,
+  ...ARTICLE_SYNC_JOBS,
+  ...OAUTH_AUTHORIZATION_EXCHANGE_JOBS,
 ]
 
 const jobsByName = new Map(BACKGROUND_JOBS.map(job => [job.name, job]))

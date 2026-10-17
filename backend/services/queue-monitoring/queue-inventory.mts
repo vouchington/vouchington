@@ -12,10 +12,8 @@ import * as crawlerQueues from '@queues/crawler/queues'
 import * as crawlDispatchQueues from '@queues/crawl-dispatch/queues'
 import { rss_feeds } from '@queues/rss-feeds/queues'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
-import { accountLifecycle } from '@queues/account-lifecycle/queues'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import { adminImports } from '@queues/admin-imports/queues'
-import { articleSync } from '@queues/article-sync/queues'
 import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
 import { followerDistributions } from '@queues/follower-distributions/queues'
@@ -33,7 +31,6 @@ import { cachePurge } from '@queues/cache-purge/queues'
 import { crawlBrowserQueue } from '@queues/crawl-browser/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
 import { contentAnalysisQueue } from '@queues/content-analysis/queues'
-import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import type { Queue } from 'glide-mq'
 
@@ -50,10 +47,8 @@ const allQueues = [
   ...Object.values(bedrockEmbeddingsQueues),
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
-  accountLifecycle,
   bloomFilters,
   adminImports,
-  articleSync,
   crawlReferralLinksQueue,
   findYourFriendsQueue,
   followerDistributions,
@@ -72,7 +67,6 @@ const allQueues = [
   crawlBrowserQueue,
   crawlEmbedsQueue,
   contentAnalysisQueue,
-  oauthAuthorizationExchangeQueue,
   unfurlReferralLinksQueue,
 ]
   .flat(Infinity)

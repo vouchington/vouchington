@@ -18,8 +18,8 @@ import {
 } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
-  'account-lifecycle/account-data-requests-cleanup',
-  'account-lifecycle/accountDataRequestRecovery',
+  'background/account-data-requests-cleanup',
+  'background/accountDataRequestRecovery',
   'activitypub/activitypub-inbox-recovery',
   'activitypub/activitypub-inbox-cleanup',
   'ai_agents/reconcileAutoDispatchJudgements',
@@ -73,7 +73,7 @@ const EXPECTED_SCHEDULED_JOBS = [
   'notifications/notification-push-intent-recovery',
   'background/reconcile-image-quarantines',
   'background/reconcile-post-moderation',
-  'oauth-authorization-exchange/oauthAuthorizationExchangeDispatcher',
+  'background/oauthAuthorizationExchangeDispatcher',
   'background/reconcile-post-publication',
   'psql/cleanup-partitions-daily',
   'psql/create-partitions-monthly',
@@ -92,15 +92,15 @@ const EXPECTED_SCHEDULED_JOBS = [
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'urls-domains-blacklist/blacklistDispatcher',
   'urls-domains-blacklist/hostnameCacheInvalidationSweep',
-  'account-lifecycle/userDeletionRecovery',
+  'background/userDeletionRecovery',
   'background/dailyVoteWeightRecalculation',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 22 manifests and 75 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(22)
+  it('imports the exact 20 manifests and 76 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(20)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

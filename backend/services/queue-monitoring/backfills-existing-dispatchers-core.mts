@@ -9,6 +9,8 @@ import {
   enqueueAllEmbeddingReconciliationRoots,
   enqueueEmbeddingsBatchPollDispatcher,
 } from '@queues/bedrock-embeddings-batch/enqueues'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB } from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import { enqueueOAuthAuthorizationExchangeDispatcher } from '@queues/oauth-authorization-exchange/enqueues'
 import {
   enqueueNightlyBackfillWeekDispatcher,
@@ -27,8 +29,8 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'oauth-authorization-exchange-dispatch',
-    queue_name: 'oauth-authorization-exchange',
-    job_name: 'dispatchOAuthAuthorizationExchanges',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name,
     description: 'Dispatch persisted OAuth callbacks that still require provider exchange',
     source_table: 'oauth_authorizations',
     trigger: createBackfillDispatcherTrigger(

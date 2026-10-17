@@ -4,8 +4,15 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { createDataRequest } from '@services/account-data-requests'
 import { createUserDeletionRequest } from '@services/user-deletions'
-import { QUEUE_NAME } from '@queues/account-lifecycle/config'
 import { accountLifecycle } from '@queues/account-lifecycle/queues'
+import {
+  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
+  ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+  ACCOUNT_LIFECYCLE_USER_DELETION_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   createTestUser,
   expireUserDataRequestForTest,
@@ -16,7 +23,9 @@ import {
   getUserDeletionRequestForTest,
   makeUserDeletionRecoverableForTest,
 } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
-import { processAccountLifecycleJob } from './processors.mts'
+// A relative import: @workers/background depends on this package, so a package dependency would cycle.
+import { createBackgroundProcessor } from '../background/processors.mts'
+import { accountLifecycleHandlers } from './workers.mts'
 
 // Keep the actual transport; only the external S3 provider call is replaced below.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -30,15 +39,19 @@ function sentCommandName(command: unknown): string {
   return (command as { constructor: { name: string } }).constructor.name
 }
 
+const processAccountLifecycleJob = createBackgroundProcessor(
+  new Map(accountLifecycleHandlers.map(handler => [handler.job.name, handler])),
+)
+
 async function runJob(name: string, data: Record<string, unknown>, priority = 10): Promise<void> {
   const prefix = `${workerQueuePrefix}-account-lifecycle-${randomUUID()}`
-  const queue = new Queue(QUEUE_NAME, { connection: workerQueueConnection, prefix })
+  const queue = new Queue(BACKGROUND_QUEUE_NAME, { connection: workerQueueConnection, prefix })
   let worker: Worker | undefined
   const completed = Promise.withResolvers<void>()
   try {
     const job = await queue.add(name, data, { priority, attempts: 1 })
     if (!job) throw new Error(`Expected ${name} to enqueue`)
-    worker = new Worker(QUEUE_NAME, processAccountLifecycleJob, {
+    worker = new Worker(BACKGROUND_QUEUE_NAME, processAccountLifecycleJob, {
       connection: workerQueueConnection,
       prefix,
       concurrency: 1,
@@ -60,7 +73,7 @@ async function runJob(name: string, data: Record<string, unknown>, priority = 10
 describe('account-lifecycle real worker', () => {
   it('rejects an unknown retained job before invoking either account handler', async () => {
     await expect(runJob('unknownAccountLifecycleJob', {})).rejects.toThrow(
-      'Unknown job name: unknownAccountLifecycleJob',
+      'Unknown background job: unknownAccountLifecycleJob',
     )
   })
 
@@ -71,7 +84,7 @@ describe('account-lifecycle real worker', () => {
     mockS3Send.mockResolvedValue({})
     const expectedKey = `${request.id}/${request.processing_attempt_id}.zip`
     try {
-      await runJob('processExportRequest', {
+      await runJob(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name, {
         requestId: request.id,
         userId: subject.id,
         processingAttemptId: request.processing_attempt_id,
@@ -85,7 +98,7 @@ describe('account-lifecycle real worker', () => {
       ).toBe(true)
 
       await expireUserDataRequestForTest(request.id)
-      await runJob('processCleanupExpiredExports', {})
+      await runJob(ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name, {})
       expect(await getUserDataRequestStatusAndS3KeyForTest(request.id)).toEqual({
         status: 'expired',
         s3_key: null,
@@ -116,20 +129,20 @@ describe('account-lifecycle real worker', () => {
     const deletionJobId = `user-deletion__${deletionRequest.id}__${deletionRequest.processingAttemptId}`
     let successorId: string | undefined
     try {
-      await runJob('recoverExportRequests', {}, 100)
+      await runJob(ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name, {}, 100)
       expect((await accountLifecycle.getJob(exportJobId))?.data).toEqual({
         requestId: exportRequest.id,
         userId: exportUser.id,
         processingAttemptId: exportRequest.processing_attempt_id,
       })
 
-      await runJob('recoverUserDeletions', {}, 100)
+      await runJob(ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name, {}, 100)
       expect((await accountLifecycle.getJob(deletionJobId))?.data).toEqual({
         requestId: deletionRequest.id,
         processingAttemptId: deletionRequest.processingAttemptId,
       })
 
-      await runJob('processUserDeletion', {
+      await runJob(ACCOUNT_LIFECYCLE_USER_DELETION_JOB.name, {
         requestId: deletionRequest.id,
         processingAttemptId: deletionRequest.processingAttemptId,
       })

@@ -1,70 +1,32 @@
-import {
-  createBulkEnqueueFunction,
-  createEnqueueFunction as createGlideMqEnqueueFunction,
-} from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
+  ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+  type AccountLifecycleExportRequestData as ExportRequestData,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_BACKGROUND, QUEUE_NAME, PRIORITY_DEFAULT } from '../config.mts'
 import { accountLifecycle } from '../queues.mts'
-import type { AccountDataRequestsJobs, ExportRequestData } from './types-account-data-requests.mts'
 
-const JOB_NAME: AccountDataRequestsJobs = 'processExportRequest'
-const CLEANUP_JOB_NAME: AccountDataRequestsJobs = 'processCleanupExpiredExports'
-const RECOVERY_JOB_NAME: AccountDataRequestsJobs = 'recoverExportRequests'
 const RECOVERY_INTERVAL_MS = 300_000
 
-type ExportRequestContext = ExportRequestData & {
-  operation: string
-}
-
-const enqueueExportRequestJob = createGlideMqEnqueueFunction<
-  ExportRequestData,
-  AccountDataRequestsJobs,
-  ExportRequestContext
->({
-  queue: accountLifecycle,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
+const enqueueExportRequestJob = createBackgroundEnqueue(ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB, {
   decorateError: (error, context) => {
-    error.extra = context.callContext
+    error.extra = context.callContext as Record<string, unknown>
     error.tags = { critical: true }
     return error
   },
 })
 
-export const enqueueBulkExportRequests = createBulkEnqueueFunction<
-  ExportRequestData,
-  ExportRequestData,
-  AccountDataRequestsJobs
->({
-  queue: accountLifecycle,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
-  buildJob: data => {
+export const enqueueBulkExportRequests = createBackgroundBulkEnqueue(
+  ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
+  (data: ExportRequestData) => {
     const jobId = exportRequestJobId(data)
-    return {
-      data,
-      opts: {
-        jobId,
-        priority: PRIORITY_DEFAULT,
-        deduplication: { id: jobId, mode: 'simple' as const },
-      },
-    }
+    return { data, opts: { jobId, deduplication: { id: jobId, mode: 'simple' as const } } }
   },
-})
+)
 
 /**
  * Recovery re-adds an attempt under the same token while its job may still be queued, so a live
@@ -80,35 +42,12 @@ export function enqueueOrReactivateBulkExportRequests(requests: ExportRequestDat
   })
 }
 
-const enqueueCleanupExpiredExportsJob = createGlideMqEnqueueFunction<
-  Record<string, never>,
-  AccountDataRequestsJobs
->({
-  queue: accountLifecycle,
-  queueName: QUEUE_NAME,
-  jobName: CLEANUP_JOB_NAME,
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
-})
-
-const enqueueRecoverExportRequestsJob = createGlideMqEnqueueFunction<
-  Record<string, never>,
-  AccountDataRequestsJobs
->({
-  queue: accountLifecycle,
-  queueName: QUEUE_NAME,
-  jobName: RECOVERY_JOB_NAME,
-  defaults: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
-})
+const enqueueCleanupExpiredExportsJob = createBackgroundEnqueue(
+  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
+)
+const enqueueRecoverExportRequestsJob = createBackgroundEnqueue(
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+)
 
 export async function enqueueExportRequest(
   requestId: string,
@@ -121,7 +60,7 @@ export async function enqueueExportRequest(
     { requestId, userId, processingAttemptId },
     {
       jobId,
-      priority: priority ?? PRIORITY_DEFAULT,
+      ...(priority === undefined ? {} : { priority }),
       deduplication: {
         id: jobId,
         mode: 'simple',
@@ -135,7 +74,6 @@ export function enqueueRecoverExportRequests(): EnqueueReturnType {
   const jobId = `account-data-export-recovery__${Math.floor(Date.now() / RECOVERY_INTERVAL_MS)}`
   return enqueueRecoverExportRequestsJob({}, {
     jobId,
-    priority: PRIORITY_BACKGROUND,
     deduplication: {
       id: 'account-data-export-recovery',
       mode: 'throttle',
@@ -145,7 +83,7 @@ export function enqueueRecoverExportRequests(): EnqueueReturnType {
 }
 
 export function enqueueCleanupExpiredExports(): EnqueueReturnType {
-  return enqueueCleanupExpiredExportsJob({}, { priority: PRIORITY_BACKGROUND })
+  return enqueueCleanupExpiredExportsJob({})
 }
 
 function exportRequestJobId(data: Pick<ExportRequestData, 'requestId' | 'processingAttemptId'>) {

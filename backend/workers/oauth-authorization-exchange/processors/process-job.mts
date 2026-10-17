@@ -1,8 +1,9 @@
 import type { Job } from 'glide-mq'
-import type {
-  OAuthAuthorizationExchangeJobData,
-  OAuthAuthorizationExchangeJobs,
-} from '@queues/oauth-authorization-exchange/types'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+  type OAuthAuthorizationExchangeJobData,
+} from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import { processOAuthAuthorizationExchange } from '@services/oauth'
 import { processDispatchOAuthAuthorizationExchanges } from '../processors.mts'
 
@@ -11,8 +12,7 @@ export async function processOAuthAuthorizationExchangeJob(
   dispatch: typeof processDispatchOAuthAuthorizationExchanges = processDispatchOAuthAuthorizationExchanges,
   exchange: typeof processOAuthAuthorizationExchange = processOAuthAuthorizationExchange,
 ): Promise<void> {
-  const name = job.name as OAuthAuthorizationExchangeJobs
-  if (name === 'exchangeOAuthAuthorization') {
+  if (job.name === OAUTH_AUTHORIZATION_EXCHANGE_JOB.name) {
     const data: OAuthAuthorizationExchangeJobData = job.data
     await exchange(data.authorizationId, undefined, {
       claimId: data.exchangeClaimId,
@@ -27,7 +27,7 @@ export async function processOAuthAuthorizationExchangeJob(
     })
     return
   }
-  if (name === 'dispatchOAuthAuthorizationExchanges') {
+  if (job.name === OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name) {
     await dispatch()
     return
   }

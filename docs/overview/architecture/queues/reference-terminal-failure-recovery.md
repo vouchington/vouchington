@@ -41,7 +41,7 @@ without scanning unrelated delayed jobs.
 
 ### OAuth authorization exchange recovery
 
-The `oauth-authorization-exchange` queue recovers terminal failures from
+The `oauth-authorization-exchange` domain of the `background` queue recovers terminal failures from
 `oauth_authorizations`. Its 60-second dispatcher and the
 `oauth-authorization-exchange-dispatch` admin backfill serialize under one ordering key, remove
 matching retained completed jobs, re-enqueue missing stable IDs, and retry matching retained failed

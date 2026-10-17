@@ -18,9 +18,14 @@ describe('user-deletions enqueues', () => {
     expect(userDeletionJobId(data)).toBe(expectedId)
     await expect(readEnqueuedJob(accountLifecycle, { id: expectedId })).resolves.toMatchObject({
       id: expectedId,
-      name: 'processUserDeletion',
+      name: 'account-lifecycle.processUserDeletion',
       data,
-      opts: { deduplication: { id: expectedId, mode: 'simple' } },
+      opts: {
+        deduplication: { id: expectedId, mode: 'simple' },
+        priority: 10,
+        lockDuration: 600_000,
+        ordering: { key: 'account-lifecycle', concurrency: 2 },
+      },
     })
   })
 

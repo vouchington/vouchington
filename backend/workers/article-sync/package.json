@@ -14,12 +14,10 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
-    "@queues/article-sync": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/users": "workspace:^",
     "glide-mq": "^0.18.0"

@@ -1,5 +1,9 @@
 import type { Job } from 'glide-mq'
-import type { AccountDataRequestsJobs } from '@queues/account-lifecycle/enqueues/types-account-data-requests'
+import {
+  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
+  ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import {
   processCleanupExpiredExports,
   processExportRequest,
@@ -22,8 +26,7 @@ export async function processAccountDataRequestJob(
   job: Job,
   processors = PROCESSORS,
 ): Promise<void> {
-  const name = job.name as AccountDataRequestsJobs
-  if (name === 'processExportRequest') {
+  if (job.name === ACCOUNT_LIFECYCLE_EXPORT_REQUEST_JOB.name) {
     if (!job.data.processingAttemptId) return
     const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1)
     await processors.processExportRequest(
@@ -35,11 +38,11 @@ export async function processAccountDataRequestJob(
     )
     return
   }
-  if (name === 'processCleanupExpiredExports') {
+  if (job.name === ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name) {
     await processors.processCleanupExpiredExports()
     return
   }
-  if (name === 'recoverExportRequests') {
+  if (job.name === ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name) {
     await processors.recoverExportRequests()
     return
   }

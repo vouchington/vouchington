@@ -6,99 +6,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Clean up expired data export files",
-        "id": "account-data-requests-cleanup",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "account-lifecycle",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "account-data-requests-cleanup",
-    "template": {
-      "data": {},
-      "name": "processCleanupExpiredExports",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "account-data-request-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "account-lifecycle",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "accountDataRequestRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverExportRequests",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "backfillId": "user-deletion-recovery",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "account-lifecycle",
-    "registration": "parallel",
-    "repeat": {
-      "every": 300000,
-    },
-    "schedulerId": "userDeletionRecovery",
-    "template": {
-      "data": {},
-      "name": "recoverUserDeletions",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Recover abandoned durable ActivityPub inbox envelopes",
         "id": "activitypub-inbox-recovery",
         "kind": "scheduled-jobs",
@@ -553,6 +460,147 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "ordering": {
           "concurrency": 10,
           "key": "vote-aggregation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Clean up expired data export files",
+        "id": "account-data-requests-cleanup",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "account-data-requests-cleanup",
+    "template": {
+      "data": {},
+      "name": "account-lifecycle.processCleanupExpiredExports",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 600000,
+        "ordering": {
+          "concurrency": 2,
+          "key": "account-lifecycle",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "account-data-request-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "accountDataRequestRecovery",
+    "template": {
+      "data": {},
+      "name": "account-lifecycle.recoverExportRequests",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 600000,
+        "ordering": {
+          "concurrency": 2,
+          "key": "account-lifecycle",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "user-deletion-recovery",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 300000,
+    },
+    "schedulerId": "userDeletionRecovery",
+    "template": {
+      "data": {},
+      "name": "account-lifecycle.recoverUserDeletions",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 600000,
+        "ordering": {
+          "concurrency": 2,
+          "key": "account-lifecycle",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "backfillId": "oauth-authorization-exchange-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background",
+    "registration": "parallel",
+    "repeat": {
+      "every": 60000,
+    },
+    "schedulerId": "oauthAuthorizationExchangeDispatcher",
+    "template": {
+      "data": {},
+      "name": "oauth-authorization-exchange.dispatchOAuthAuthorizationExchanges",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "type": "exponential",
+        },
+        "ordering": {
+          "concurrency": 1,
+          "key": "oauth-authorization-exchange:dispatcher",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2088,39 +2136,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "backfillId": "oauth-authorization-exchange-dispatch",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "oauth-authorization-exchange",
-    "registration": "parallel",
-    "repeat": {
-      "every": 60000,
-    },
-    "schedulerId": "oauthAuthorizationExchangeDispatcher",
-    "template": {
-      "data": {},
-      "name": "dispatchOAuthAuthorizationExchanges",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "jobType": "createPartitions",
         "kind": "psql",
       },
@@ -2803,8 +2818,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Clean up expired data export files",
     "id": "account-data-requests-cleanup",
-    "job_name": "processCleanupExpiredExports",
-    "queue_name": "account-lifecycle",
+    "job_name": "account-lifecycle.processCleanupExpiredExports",
+    "queue_name": "background",
     "schedule": "0 * * * *",
     "triggerName": "enqueueCleanupExpiredExports",
   },

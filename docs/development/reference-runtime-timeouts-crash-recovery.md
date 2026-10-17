@@ -7,12 +7,12 @@ is allowed to pick it up after a crash; the worker auto-renews the lock at `lock
 These are recovery windows for abnormal termination, not a cap on normal runtime — shortening one
 only makes a genuinely slow-but-alive job get re-picked-up (and duplicated) sooner.
 
-| Worker                | File                                            | `lockDuration`                                                                       |
-| --------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Account data requests | `backend/workers/account-lifecycle/workers.mts` | 600,000                                                                              |
-| AI agents (core)      | `backend/workers/ai-agents/workers/core.mts`    | 300,000                                                                              |
-| Bloom filters         | `backend/workers/bloom-filters/workers.mts`     | 600,000 (`BLOOM_FILTER_LOCK_DURATION_MS`, `backend/queues/bloom-filters/config.mts`) |
-| Article sync          | `backend/workers/article-sync/workers.mts`      | 30,000 (intentional `glide-mq` default; heartbeat every 15,000)                      |
+| Worker                | File                                                            | `lockDuration`                                                                       |
+| --------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Account data requests | `backend/queues/background/enqueues/account-lifecycle-jobs.mts` | 600,000 (per job)                                                                    |
+| AI agents (core)      | `backend/workers/ai-agents/workers/core.mts`                    | 300,000                                                                              |
+| Bloom filters         | `backend/workers/bloom-filters/workers.mts`                     | 600,000 (`BLOOM_FILTER_LOCK_DURATION_MS`, `backend/queues/bloom-filters/config.mts`) |
+| Article sync          | `backend/queues/background/enqueues/article-sync-jobs.mts`      | 30,000 (intentional `glide-mq` default; heartbeat every 15,000)                      |
 
 This table covers only `lockDuration`. Bloom filters is the one worker whose queue config also
 defines `BLOOM_FILTER_STALLED_INTERVAL_MS` (30,000 — how quickly a stalled job is detected,

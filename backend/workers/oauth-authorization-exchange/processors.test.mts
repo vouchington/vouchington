@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import type { Job } from 'glide-mq'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+} from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import { oauthAuthorizationExchangeQueue } from '@queues/oauth-authorization-exchange/queues'
 import {
   deleteTestOAuthAuthorizationFixtures,
@@ -31,11 +35,14 @@ describe('OAuth authorization exchange worker processors', () => {
   it('routes exchange jobs and rejects unknown job names', async () => {
     const authorizationId = randomUUID()
     await expect(
-      processOAuthAuthorizationExchangeJob(job('exchangeOAuthAuthorization', { authorizationId })),
+      processOAuthAuthorizationExchangeJob(
+        job(OAUTH_AUTHORIZATION_EXCHANGE_JOB.name, { authorizationId }),
+      ),
     ).resolves.toBeUndefined()
     await expect(
-      processOAuthAuthorizationExchangeJob(job('dispatchOAuthAuthorizationExchanges', {}), () =>
-        processDispatchOAuthAuthorizationExchanges([]),
+      processOAuthAuthorizationExchangeJob(
+        job(OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name, {}),
+        () => processDispatchOAuthAuthorizationExchanges([]),
       ),
     ).resolves.toBeUndefined()
     await expect(processOAuthAuthorizationExchangeJob(job('unknownOAuthJob', {}))).rejects.toThrow(

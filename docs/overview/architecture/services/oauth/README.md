@@ -19,7 +19,7 @@ authentication or account connection:
    denial plus a stable encrypted completion handoff, and returns only after that write commits.
    Expired callback secret cleanup also commits before the caller receives HTTP 410; a replay of
    an already-completed expired callback returns 410 without rewriting its terminal result.
-3. The ID-only `oauth-authorization-exchange` queue claims the row with a fenced UUID. Provider
+3. The ID-only `oauth-authorization-exchange` background domain claims the row with a fenced UUID. Provider
    calls have a 30-second end-to-end abort budget below the 60-second claim lease, and provider
    account persistence plus `completion_ready` commit in the same transaction. Five failed durable
    claims terminate as `rejected` so bad codes cannot starve recovery. Authorization status is

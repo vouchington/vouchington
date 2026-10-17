@@ -1,33 +1,26 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest'
-import { articleSync } from '@queues/article-sync/queues'
-import { articleSyncWorker } from './workers.mts'
+import { randomUUID } from 'node:crypto'
+import { describe, expect, it } from 'vitest'
+import { ARTICLE_SYNC_PROCESS_JOB } from '@queues/background/enqueues/article-sync-jobs'
+import type { Job } from 'glide-mq'
+import { articleSyncHandlers } from './workers.mts'
 
 describe('article-sync workers', () => {
-  beforeEach(async () => {
-    await articleSync.obliterate({ force: true })
-  })
-
-  afterAll(async () => {
-    await articleSyncWorker.close()
+  it('serves the process job', () => {
+    expect(articleSyncHandlers.map(handler => handler.job)).toEqual([ARTICLE_SYNC_PROCESS_JOB])
   })
 
   it('rejects processArticleSync jobs missing a userId', async () => {
-    await expect(
-      articleSync.add(
-        'processArticleSync',
-        {},
-        { attempts: 1, removeOnComplete: true, removeOnFail: true, priority: 10 },
-      ),
-    ).rejects.toThrow('Article sync job missing userId')
+    const [handler] = articleSyncHandlers
+    await expect(handler!.handle({ id: '1', data: {} } as Job)).rejects.toThrow(
+      'Article sync job missing userId',
+    )
   })
 
-  it('rejects unknown job names', async () => {
-    await expect(
-      articleSync.add(
-        'unknownJob',
-        { userId: 'user-1' },
-        { attempts: 1, removeOnComplete: true, removeOnFail: true, priority: 10 },
-      ),
-    ).rejects.toThrow('Unknown article sync job: unknownJob')
+  it('hands the job user to the article sync processor', async () => {
+    const [handler] = articleSyncHandlers
+    const userId = randomUUID()
+    await expect(handler!.handle({ data: { userId } } as Job)).rejects.toThrow(
+      `User ${userId} not found`,
+    )
   })
 })

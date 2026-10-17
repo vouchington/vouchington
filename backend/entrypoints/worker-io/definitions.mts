@@ -12,8 +12,12 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/post-publication/enqueues/schedules'),
         import('@queues/vote-aggregation/enqueues/schedules'),
         import('@queues/entity-listeners/enqueues/schedules'),
+        import('@queues/account-lifecycle/enqueues/schedules'),
+        import('@queues/oauth-authorization-exchange/enqueues/schedules'),
       ])
-      return () => upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
+      return async () => {
+        await upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
+      }
     },
   },
   {
@@ -52,18 +56,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
     queueName: 'psql',
     load: () => import('@queues/psql/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'account-lifecycle',
-    load: () =>
-      import('@queues/account-lifecycle/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'oauth-authorization-exchange',
-    load: () =>
-      import('@queues/oauth-authorization-exchange/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
   },
   {
     queueName: 'bloom-filters',

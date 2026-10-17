@@ -1,18 +1,21 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
-import { afterAll, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   ENQUEUE_BASE_DEFAULTS,
   workerQueueConnection,
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
 import { startRealGlideJobLifecycle } from '@voucha/test-helpers/real-glide-job-lifecycle'
-import type { OAuthAuthorizationExchangeJobData } from './types.mts'
+import {
+  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+  type OAuthAuthorizationExchangeJobData,
+} from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
 import {
   enqueueOrReactivateBulkOAuthAuthorizationExchanges,
   getOAuthAuthorizationExchangeDispatcherJobOptions,
 } from './enqueues.mts'
-import { oauthAuthorizationExchangeQueue } from './queues.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -69,17 +72,17 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
 
     try {
       const completedJob = await queue.add(
-        'exchangeOAuthAuthorization',
+        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
         { authorizationId: completedAuthorizationId },
         options(completedAuthorizationId),
       )
       const failedJob = await queue.add(
-        'exchangeOAuthAuthorization',
+        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
         { authorizationId: failedAuthorizationId },
         options(failedAuthorizationId),
       )
       const unrelatedJob = await queue.add(
-        'exchangeOAuthAuthorization',
+        OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
         { authorizationId: unrelatedAuthorizationId },
         options(unrelatedAuthorizationId),
       )
@@ -114,7 +117,7 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
           enqueueBulk: async jobs =>
             queue.addBulk(
               jobs.map(data => ({
-                name: 'exchangeOAuthAuthorization',
+                name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
                 data,
                 opts: options(data.authorizationId),
               })),
@@ -157,8 +160,6 @@ describe('OAuth authorization exchange recovery through real GlideMQ', () => {
 // The admin backfill and manual triggers reuse one logical dispatcher id, so a later trigger must
 // start a new pass once the previous one is done however it ended.
 describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
-  afterAll(() => oauthAuthorizationExchangeQueue.close())
-
   // The throttle window is wall-clock time: dropping its ttl lets the replay isolate the job-id
   // claim, which is the part that used to outlive the job. Zero priority skips the scheduler's ~5s
   // promotion of prioritized jobs, and one attempt avoids waiting out a retry backoff.
@@ -184,7 +185,11 @@ describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
       const options = productionOptions('backfill:oauth-authorization-exchange-dispatch')
       try {
         lifecycle.setOutcome(outcome)
-        const first = await lifecycle.queue.add('dispatchOAuthAuthorizationExchanges', {}, options)
+        const first = await lifecycle.queue.add(
+          OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name,
+          {},
+          options,
+        )
         if (!first) throw new Error('Expected the first dispatcher pass to be created')
         await expect(lifecycle.settled(first)).resolves.toBe(
           outcome === 'complete' ? 'completed' : 'failed',
@@ -192,7 +197,11 @@ describe('OAuth exchange dispatcher enqueue through real GlideMQ', () => {
         await expect(lifecycle.queue.getJob(first.id)).resolves.not.toBeNull()
 
         lifecycle.setOutcome('complete')
-        const second = await lifecycle.queue.add('dispatchOAuthAuthorizationExchanges', {}, options)
+        const second = await lifecycle.queue.add(
+          OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name,
+          {},
+          options,
+        )
         expect(second).not.toBeNull()
         expect(second?.id).not.toBe(first.id)
         await expect(lifecycle.settled(second!)).resolves.toBe('completed')

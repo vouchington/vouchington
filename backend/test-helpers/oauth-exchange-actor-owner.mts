@@ -1,6 +1,6 @@
 import { onTestFinished } from 'vitest'
 import { Queue, QueueEvents, Worker } from 'glide-mq'
-import type { OAuthAuthorizationExchangeJobData } from '../queues/oauth-authorization-exchange/types.mts'
+import type { OAuthAuthorizationExchangeJobData } from '../queues/background/enqueues/oauth-authorization-exchange-jobs.mts'
 import { observeOAuthExchangeTerminal } from './oauth-exchange-terminal.mts'
 
 export function createOAuthActorCleanupReceipt() {

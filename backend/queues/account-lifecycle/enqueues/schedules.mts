@@ -1,32 +1,28 @@
-import type { JobOptions } from 'glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import {
+  ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import {
   CLEANUP_SCHEDULER_ID,
   CLEANUP_CRON,
-  PRIORITY_BACKGROUND,
-  QUEUE_NAME,
   USER_DELETIONS_RECOVERY_INTERVAL_MS,
 } from '../config.mts'
-import { accountLifecycle } from '../queues.mts'
 import { enqueueCleanupExpiredExports } from './account-data-requests.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: CLEANUP_SCHEDULER_ID,
     repeat: { pattern: CLEANUP_CRON },
     template: {
-      name: 'processCleanupExpiredExports',
+      name: ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_BACKGROUND,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...ACCOUNT_LIFECYCLE_CLEANUP_EXPORTS_JOB.options }),
     },
     operatorSurfaces: [
       {
@@ -42,15 +38,9 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'accountDataRequestRecovery',
     repeat: { every: 300_000 },
     template: {
-      name: 'recoverExportRequests',
+      name: ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_BACKGROUND,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.options }),
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'account-data-request-recovery' }],
   },
@@ -58,20 +48,10 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'userDeletionRecovery',
     repeat: { every: USER_DELETIONS_RECOVERY_INTERVAL_MS },
     template: {
-      name: 'recoverUserDeletions',
+      name: ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_BACKGROUND,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({ ...ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.options }),
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'user-deletion-recovery' }],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(accountLifecycle, scheduledJobManifest)
-}

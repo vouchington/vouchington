@@ -15,6 +15,10 @@ import { enqueueBackfillFollowerDistributions } from '@queues/follower-distribut
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
 import { enqueueReconcileClassifierRuns } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import {
+  ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB,
+  ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB,
+} from '@queues/background/enqueues/account-lifecycle-jobs'
 import { ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueBackfillReportIntegrity } from '@queues/vote-aggregation/enqueues/report-integrity'
@@ -60,16 +64,16 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'account-data-request-recovery',
-    queue_name: 'account-lifecycle',
-    job_name: 'recoverExportRequests',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: ACCOUNT_LIFECYCLE_RECOVER_EXPORTS_JOB.name,
     description: 'Recover persisted account export requests that were not completed',
     source_table: 'user_data_requests',
     trigger: createBackfillTrigger(enqueueRecoverExportRequests),
   },
   {
     id: 'user-deletion-recovery',
-    queue_name: 'account-lifecycle',
-    job_name: 'recoverUserDeletions',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: ACCOUNT_LIFECYCLE_RECOVER_DELETIONS_JOB.name,
     description: 'Recover durable user deletions that were never started or became stale',
     source_table: 'user_deletion_requests',
     trigger: createBackfillTrigger(enqueueRecoverUserDeletions),

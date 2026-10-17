@@ -33,12 +33,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['rss-feed-maintenance', 'rss-feed-maintenance', 'rssFeedMaintenance'],
       ['crawl_embeds', 'crawl-embeds', 'crawlEmbeds'],
       ['psql', 'psql', 'psql'],
-      ['account-lifecycle', 'account-lifecycle', 'accountLifecycle'],
-      [
-        'oauth-authorization-exchange',
-        'oauth-authorization-exchange',
-        'oauthAuthorizationExchangeWorker',
-      ],
       ['activitypub', 'activitypub', 'activitypubWorker'],
       ['bloom-filters', 'bloom-filters', 'bloomFilters'],
       ['find-your-friends', 'find-your-friends', 'findYourFriends'],
@@ -50,7 +44,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
       ['ban_evasion', 'ban-evasion', 'banEvasionWorker'],
       ['admin-imports', 'admin-imports', 'adminImports'],
       ['user-rss-feed-imports', 'user-rss-feed-imports', 'userRssFeedImports'],
-      ['article-sync', 'article-sync', 'articleSyncWorker'],
       ['kagi-smallweb', 'kagi-smallweb', 'kagiSmallWeb'],
       [
         'bluesky-follow-propagation',
@@ -100,16 +93,6 @@ describe('worker-io WORKER_DEFINITIONS load functions', () => {
     const worker = await definition.load()
     try {
       expect(worker).toBe(crawlEmbeds)
-    } finally {
-      await worker.close()
-    }
-  })
-
-  it('OAuth authorization exchange definition loads its configured worker', async () => {
-    const definition = WORKER_DEFINITIONS.find(d => d.queueName === 'oauth-authorization-exchange')!
-    const worker = await definition.load()
-    try {
-      expect(worker).toBeDefined()
     } finally {
       await worker.close()
     }

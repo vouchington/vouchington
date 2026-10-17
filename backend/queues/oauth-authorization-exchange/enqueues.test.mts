@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import {
+  OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB,
+  OAUTH_AUTHORIZATION_EXCHANGE_JOB,
+} from '@queues/background/enqueues/oauth-authorization-exchange-jobs'
+import {
   enqueueBulkOAuthAuthorizationExchanges,
   enqueueOrReactivateBulkOAuthAuthorizationExchanges,
   enqueueOAuthAuthorizationExchange,
@@ -17,9 +21,10 @@ describe('OAuth authorization exchange enqueues', () => {
 
     const job = await oauthAuthorizationExchangeQueue.getJob(authorizationId)
     expect(job?.data).toEqual({ authorizationId })
+    expect(job?.name).toBe('oauth-authorization-exchange.exchangeOAuthAuthorization')
     expect(job?.opts).toMatchObject({
       jobId: authorizationId,
-      priority: 1,
+      priority: 10,
       attempts: 5,
       backoff: { type: 'exponential', delay: 250 },
       removeOnComplete: 100,
@@ -35,14 +40,18 @@ describe('OAuth authorization exchange enqueues', () => {
     await enqueueOAuthAuthorizationExchangeDispatcher({ deduplicationId })
 
     const allJobs = await readAllQueueJobs(oauthAuthorizationExchangeQueue)
-    const jobs = allJobs.filter(job => job.opts.deduplication?.id === deduplicationId)
+    const jobs = allJobs.filter(
+      job =>
+        job.name === OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name &&
+        job.opts.deduplication?.id === deduplicationId,
+    )
     expect(jobs).toHaveLength(1)
     expect(jobs[0]?.data).toEqual({})
     // A stable jobId would outlive the job and silently refuse every later trigger.
     expect(jobs[0]?.opts.jobId).toBeUndefined()
     expect(jobs[0]?.opts).toMatchObject({
       priority: 100,
-      ordering: { key: 'dispatcher', concurrency: 1 },
+      ordering: { key: 'oauth-authorization-exchange:dispatcher', concurrency: 1 },
       attempts: 3,
       backoff: { type: 'exponential', delay: 1_000 },
       deduplication: {
@@ -83,7 +92,7 @@ describe('OAuth authorization exchange enqueues', () => {
         getCompletedJobs: async () => [
           {
             id: authorizationId,
-            name: 'exchangeOAuthAuthorization',
+            name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
             remove,
           },
         ],
@@ -111,12 +120,12 @@ describe('OAuth authorization exchange enqueues', () => {
         getFailedJobs: async () => [
           {
             id: authorizationId,
-            name: 'exchangeOAuthAuthorization',
+            name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
             retry: retryCurrent,
           },
           {
             id: randomUUID(),
-            name: 'exchangeOAuthAuthorization',
+            name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
             retry: retryOther,
           },
         ],
@@ -154,12 +163,12 @@ describe('OAuth authorization exchange enqueues', () => {
         getCompletedJobs: async () => [
           {
             id: authorizationIds[0]!,
-            name: 'dispatchOAuthAuthorizationExchanges',
+            name: OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB.name,
             remove,
           },
           {
             id: randomUUID(),
-            name: 'exchangeOAuthAuthorization',
+            name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
             remove,
           },
         ],
@@ -180,7 +189,7 @@ describe('OAuth authorization exchange enqueues', () => {
         getCompletedJobs: async () => [
           {
             id: authorizationId,
-            name: 'exchangeOAuthAuthorization',
+            name: OAUTH_AUTHORIZATION_EXCHANGE_JOB.name,
             remove: async () => {
               throw new Error('remove failed')
             },

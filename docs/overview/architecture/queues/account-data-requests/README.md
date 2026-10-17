@@ -6,12 +6,12 @@ Processes GDPR-style user account data export requests and cleans up expired exp
 
 ## Queue Configuration
 
-### Export jobs on `account-lifecycle` (shared concurrency: 2)
+### Export jobs in the `account-lifecycle` background domain (shared concurrency: 2)
 
-- `processExportRequest` — generates a user's data export archive and uploads it to S3, then emails the user a download link when the user requested the export themselves (an admin-requested export sends no email)
-- `processCleanupExpiredExports` — removes expired export archives from S3
-- `recoverExportRequests` — every five minutes re-enqueues unstarted requests under the same attempt token, first removing any completed or failed job record that still holds the token's job ID, and rotates attempts stuck for 30 minutes
-- **Lock duration**: 600,000 ms (10 min); stalled interval: 30,000 ms (default) — covers full export archive generation p99 ~5 min for large accounts
+- `account-lifecycle.processExportRequest` — generates a user's data export archive and uploads it to S3, then emails the user a download link when the user requested the export themselves (an admin-requested export sends no email)
+- `account-lifecycle.processCleanupExpiredExports` — removes expired export archives from S3
+- `account-lifecycle.recoverExportRequests` — every five minutes re-enqueues unstarted requests under the same attempt token, first removing any completed or failed job record that still holds the token's job ID, and rotates attempts stuck for 30 minutes
+- **Lock duration**: 600,000 ms (10 min, set on each job); stalled interval: 30,000 ms (the shared worker default) — covers full export archive generation p99 ~5 min for large accounts
 
 Requests and attempt tokens are retained in `user_data_requests` for legal auditability. Export
 jobs use `account-data-export__<request-id>__<attempt-id>` as both job and deduplication ID. GlideMQ
