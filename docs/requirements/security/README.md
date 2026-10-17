@@ -16,6 +16,3 @@ Security requirements and authentication QA.
 
 When security policies or authentication flows change, update the relevant doc
 here and cross-link from `docs/overview/architecture/auth-overview.md` and `backend/AGENTS.md`.
-
-## Reference index
-
