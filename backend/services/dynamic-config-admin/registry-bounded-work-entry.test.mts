@@ -68,7 +68,9 @@ const additionalOwners = [
     read: (field: string) =>
       field === 'dispatch_batch_size'
         ? votes.getVoteWeightDispatchBatchSize()
-        : votes.getVoteWeightElectionFanOutPageSize(),
+        : field === 'window_overlap_seconds'
+          ? votes.getVoteWeightWindowOverlapSeconds()
+          : votes.getVoteWeightElectionFanOutPageSize(),
   },
   {
     config: membership.membershipWorkConfig,
