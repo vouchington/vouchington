@@ -108,15 +108,16 @@ export async function runEntityTailScenarios(): Promise<void> {
   await runAndCapture('platform-stats', () => getPlatformStats())
   registerScenarioContract('revenue-global', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'mv_revenue_memberships', max: 20 },
-      { kind: 'maxProcessedRows', relation: 'mv_revenue_changes', max: 1 },
+      // The 302-row fixture is small enough for two sequential scans (2 × 302, plus 20%).
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_memberships', max: 725 },
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_changes', max: 12 },
     ],
   })
   await runAndCapture('revenue-global', () => getRevenue('7d', new Date(Date.now() - 7 * 86400000)))
   registerScenarioContract('revenue-scoped', {
     expectations: [
-      { kind: 'maxProcessedRows', relation: 'mv_revenue_memberships', max: 20 },
-      { kind: 'maxProcessedRows', relation: 'mv_revenue_changes', max: 1 },
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_memberships', max: 725 },
+      { kind: 'maxProcessedRows', relation: 'mv_revenue_changes', max: 12 },
     ],
   })
   await runAndCapture('revenue-scoped', () =>

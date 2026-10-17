@@ -96,4 +96,5 @@ registerScenarioContract('mv-revenue-memberships-refresh', {
 })
 registerScenarioContract('mv-revenue-changes-refresh', {
   expectations: [{ kind: 'maxProcessedRows', relation: 'membership_changes', max: 3000 }],
+  seededRows: { membership_changes: 1 },
 })
