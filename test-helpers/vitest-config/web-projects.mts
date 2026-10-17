@@ -6,7 +6,7 @@ import { storybookMockResolveAliases } from './storybook-browser-aliases.mts'
 
 // Default budget from #10762 (docs/development/reference-tests-vitest-projects.md); plain numbers, unlike toolingTestBudget.
 const defaultTestBudget = { hookTimeout: 30_000, testTimeout: 15_000 }
-const lambdaTestBudget = { testTimeout: 5_000, hookTimeout: 5_000 }
+const fiveSecondTestBudget = { testTimeout: 5_000, hookTimeout: 5_000 }
 const webApiProject: TestProjectConfiguration = {
   extends: true,
   resolve: { alias: webAlias },
@@ -61,7 +61,7 @@ export const webProjects: TestProjectConfiguration[] = [
       },
     },
     test: {
-      ...defaultTestBudget,
+      ...fiveSecondTestBudget,
       isolate: true,
       name: 'web',
       include: ['web/**/*.test.ts', 'web/**/*.test.tsx'],
@@ -120,7 +120,7 @@ export const webProjects: TestProjectConfiguration[] = [
     test: {
       isolate: false,
       name: 'lambdas',
-      ...lambdaTestBudget,
+      ...fiveSecondTestBudget,
       include: ['lambdas/**/*.test.mts'],
       exclude: [
         '**/node_modules/**',
@@ -140,7 +140,7 @@ export const webProjects: TestProjectConfiguration[] = [
       },
       isolate: false,
       name: 'lambdas-portability',
-      ...lambdaTestBudget,
+      ...fiveSecondTestBudget,
       include: ['lambdas/dev-server.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**', 'lambdas/**/node_modules/**'],
     },
@@ -154,7 +154,7 @@ export const webProjects: TestProjectConfiguration[] = [
       },
       isolate: true,
       name: 'lambdas-mocks',
-      ...lambdaTestBudget,
+      ...fiveSecondTestBudget,
       include: ['lambdas/**/*.mock.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**', 'lambdas/**/node_modules/**'],
     },
