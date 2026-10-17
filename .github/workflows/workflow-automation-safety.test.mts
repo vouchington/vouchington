@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
 import {
   assertNoWorkflowViolations,
   gitSubcommandPattern,
