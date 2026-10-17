@@ -1,3 +1,4 @@
+import assert from 'http-assert'
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
@@ -31,4 +32,8 @@ export async function getModeratedCommunityIds(
     options,
   )
   return rows.map(r => (r as { community_id: string }).community_id)
+}
+
+export async function assertCanAccessUserModNotes(currentUser: PrivateUser): Promise<void> {
+  assert(await currentUserCanAccessUserModNotes(currentUser), 403, 'Forbidden')
 }

@@ -22,6 +22,9 @@ const routes = {
     ['list_saved_replies', 'GET', '/saved-replies'],
   ],
   add_community_moderation: [
+    ['lock_post', 'POST', '/api/v1/posts/:idOrSlug/lock'],
+    ['confirm_ban_evasion', 'POST', '/ban-evasion/:userId'],
+    ['create_mod_note', 'POST', '/api/v1/users/:userId/mod-notes'],
     ['ban_user', 'POST', '/bans'],
     ['add_domain_to_list', 'POST', '/list-items/domains'],
     ['add_post_to_list', 'POST', '/list-items/posts'],
@@ -52,6 +55,8 @@ const routes = {
     ['claim_report', 'PUT', '/reports/:reportId/claim'],
   ],
   remove_community_moderation: [
+    ['unlock_post', 'DELETE', '/api/v1/posts/:idOrSlug/lock'],
+    ['delete_mod_note', 'DELETE', '/api/v1/users/:userId/mod-notes/:noteId'],
     ['dismiss_ban_evasion', 'DELETE', '/ban-evasion/:userId'],
     ['lift_ban', 'DELETE', '/bans/:userId'],
     ['revoke_invite', 'DELETE', '/invites/:id'],
@@ -91,7 +96,7 @@ const expectedFlags = {
 } as const
 
 describe('community moderator MCP routes', () => {
-  it('publishes the 54 guarded REST operations in exactly four option groups', () => {
+  it('publishes the 59 guarded REST operations in exactly four option groups', () => {
     expect(communityModerationGroups.map(group => group.name)).toEqual(Object.keys(routes))
     for (const group of communityModerationGroups) {
       const name = group.name as keyof typeof routes
@@ -112,15 +117,16 @@ describe('community moderator MCP routes', () => {
         annotations: expectedFlags[name],
       })
       for (const [option, method, suffix] of routes[name]) {
+        const path = suffix.startsWith('/api/v1/') ? suffix : prefix + suffix
         const selected = { option, arguments: { community: 'owned-community' } }
-        expect(tool!.meta?.selectApi?.(selected)).toEqual([{ method, path: prefix + suffix }])
+        expect(tool!.meta?.selectApi?.(selected)).toEqual([{ method, path }])
         expect(tool!.meta?.auditOption?.(selected)).toBe(option)
         const source = group.options.find(entry => entry.option === option)?.source
-        expect(source?.meta?.api).toEqual([{ method, path: prefix + suffix }])
+        expect(source?.meta?.api).toEqual([{ method, path }])
         expect(source?.schema.parameters).toMatchObject({
           type: 'object',
           additionalProperties: false,
-          required: expect.arrayContaining(['community']),
+          required: expect.arrayContaining(path.startsWith(prefix) ? ['community'] : []),
         })
       }
     }
@@ -153,6 +159,43 @@ describe('community moderator MCP routes', () => {
         scopes,
         USER_MCP_SERVER_CONFIG,
       )
+    const userId = crypto.randomUUID()
+    for (const [name, option, args, route] of [
+      [
+        'add_community_moderation',
+        'lock_post',
+        { idOrSlug: 'post-slug' },
+        'POST:/api/v1/posts/:idOrSlug/lock',
+      ],
+      [
+        'remove_community_moderation',
+        'unlock_post',
+        { idOrSlug: 'post-slug' },
+        'DELETE:/api/v1/posts/:idOrSlug/lock',
+      ],
+      [
+        'add_community_moderation',
+        'confirm_ban_evasion',
+        { community: 'owned-community', userId },
+        'POST:/api/v1/communities/:idOrSlug/ban-evasion/:userId',
+      ],
+      [
+        'add_community_moderation',
+        'create_mod_note',
+        { userId, body: 'Moderator note' },
+        'POST:/api/v1/users/:userId/mod-notes',
+      ],
+      [
+        'remove_community_moderation',
+        'delete_mod_note',
+        { userId, noteId: crypto.randomUUID() },
+        'DELETE:/api/v1/users/:userId/mod-notes/:noteId',
+      ],
+    ] as const) {
+      const plan = call(name, { option, arguments: args })
+      expect(plan.events[0]).toMatchObject({ option })
+      expect(plan.charges).toEqual([{ eventIndex: 0, requestId: 1, routeKeys: [route] }])
+    }
     const readPlan = call('read_community_moderation', {
       option: 'list_saved_replies',
       arguments: { community: 'owned-community' },
