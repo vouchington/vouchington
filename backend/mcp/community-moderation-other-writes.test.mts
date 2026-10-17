@@ -3,7 +3,9 @@ import {
   createTestUser,
   insertTestCommunity,
   insertTestCommunityMember,
+  insertTestCommunityInvite,
 } from '@voucha/test-helpers'
+import { getCommunityMember, searchInvites } from '@services/communities'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import {
   callRejectedMcpTool,
@@ -179,5 +181,60 @@ describe('community moderation MCP other writes — real PostgreSQL and Valkey',
       vacation: null,
       should_suppress_community_digests_while_on_vacation: true,
     })
+  })
+  it('removes an active member only with moderator authority and rejects self-removal', async () => {
+    const { owner, member, community } = await fixture()
+    const remove = optionArgs('remove_member', { community: community.id, userId: member.id })
+    expect(
+      await callRejectedMcpTool(
+        { ...member, membership_plan: 'plus' },
+        'remove_community_moderation',
+        optionArgs('remove_member', { community: community.id, userId: owner.id }),
+        scopes,
+      ),
+    ).toContain('Forbidden')
+    expect(await getCommunityMember(community.id, member.id)).not.toBeNull()
+    expect(
+      await callRejectedMcpTool(
+        owner,
+        'remove_community_moderation',
+        optionArgs('remove_member', { community: community.id, userId: owner.id }),
+        scopes,
+      ),
+    ).toContain('remove yourself')
+    expect(
+      await callStructuredMcpTool(owner, 'remove_community_moderation', remove, scopes),
+    ).toEqual({
+      success: true,
+    })
+    expect(await getCommunityMember(community.id, member.id)).toBeNull()
+  })
+
+  it('revokes an invite with the invite community authority and rejects reuse', async () => {
+    const { owner, member, community } = await fixture()
+    const invite = await insertTestCommunityInvite({
+      communityId: community.id,
+      invitedById: owner.id,
+      invitedUserId: member.id,
+    })
+    const args = optionArgs('revoke_invite', { community: community.slug, id: invite.id })
+    expect(
+      await callRejectedMcpTool(
+        { ...member, membership_plan: 'plus' },
+        'remove_community_moderation',
+        args,
+        scopes,
+      ),
+    ).toContain('Forbidden')
+    expect((await searchInvites(community.id)).results[0]?.revoked_at).toBeNull()
+    expect(await callStructuredMcpTool(owner, 'remove_community_moderation', args, scopes)).toEqual(
+      {
+        success: true,
+      },
+    )
+    expect((await searchInvites(community.id)).results[0]?.revoked_at).not.toBeNull()
+    expect(await callRejectedMcpTool(owner, 'remove_community_moderation', args, scopes)).toContain(
+      'already been used or revoked',
+    )
   })
 })
