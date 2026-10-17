@@ -126,7 +126,7 @@ export async function syncXFriends(xUserId: string): Promise<void> {
       throw createHttpError(502, `X following error: ${result.errors[0].message}`)
     // oxlint-disable-next-line no-await-in-loop -- each provider page commits before requesting its successor.
     const persisted = await persistXFriendPage(
-      xUserId,
+      account.id,
       account.userId,
       (result.data ?? []).map(user => user.id),
     )
@@ -134,5 +134,5 @@ export async function syncXFriends(xUserId: string): Promise<void> {
     nextToken = result.meta?.next_token
   } while (nextToken)
 
-  await finalizeXFriendSync(xUserId, account.userId, syncStartTime)
+  await finalizeXFriendSync(account.id, account.userId, syncStartTime)
 }

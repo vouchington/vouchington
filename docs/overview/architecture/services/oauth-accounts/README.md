@@ -20,11 +20,11 @@ Each provider has its own table (`providerTableConfigs`), all shaped the same wa
 
 Every table has `user_id`, `<provider>_user_id`, `<provider>_user_email_address`, and `<provider>_user_data` columns. Providers with token columns also have `access_token_ciphertext` and `access_token_expires_at`; providers with a refresh token also have `refresh_token_ciphertext`. Tokens are always stored encrypted via `@modules/token-secrets`, never in plaintext.
 
-Apple, Google, and Facebook accounts have internal UUIDv7 `id` primary keys. Their external provider IDs
+Apple, Google, Facebook, and X accounts have internal UUIDv7 `id` primary keys. Their external provider IDs
 remain unique for provider lookups and are still returned in public account responses.
 
-Facebook friend rows reference the source account by `facebook_account_id`. A nullable
-`friend_facebook_account_id` points at a friend who has signed in; the external friend ID is
+Facebook and X friend rows reference the source account by its UUID. A nullable friend account
+UUID points at a friend who has signed in; the external friend ID is
 retained for friends who have not. Account upsert resolves prior friend rows so recommendations
 can join on the account identities.
 

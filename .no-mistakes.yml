@@ -4941,14 +4941,6 @@ rules:
           reason: 'owned by the migration runner'
         - object: 'constraint:oauth_authorizations.oauth_authorizations_github_user_id_fkey'
           reason: 'replaced by #2512'
-        - object: 'constraint:oauth_authorizations.oauth_authorizations_x_user_id_fkey'
-          reason: 'replaced by #2512'
-        - object: 'constraint:x_accounts.x_accounts_pkey'
-          reason: 'replaced by #2512'
-        - object: 'constraint:x_friends.x_friends_pkey'
-          reason: 'replaced by #2512'
-        - object: 'constraint:x_friends.x_friends_x_user_id_fkey'
-          reason: 'replaced by #2512'
 
   - name: reject text finite sets
     rule: postgres-finite-text-columns

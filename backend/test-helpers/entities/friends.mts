@@ -6,7 +6,11 @@ import {
   providerTableConfigs,
   type OAuthProvider,
 } from './_oauth-config-support.mts'
-import { getFriendsTableConfig, sourceAccountId } from './friends-config.mts'
+import {
+  friendAccountReference,
+  getFriendsTableConfig,
+  sourceAccountId,
+} from './friends-config.mts'
 
 export async function setTestOAuthAccountAccessToken(
   provider: OAuthProvider,
@@ -79,14 +83,10 @@ export async function insertTestFriend(
   friendProviderUserId: string,
 ): Promise<void> {
   const config = getFriendsTableConfig(provider)
-  const friendAccountColumn = provider === 'facebook' ? ', friend_facebook_account_id' : ''
-  const friendAccountValue =
-    provider === 'facebook'
-      ? ', (SELECT id FROM facebook_accounts WHERE facebook_user_id = $2)'
-      : ''
+  const friendAccount = friendAccountReference(provider, '$2')
   await write(
-    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn}${friendAccountColumn})
-     SELECT ${sourceAccountId(provider)}, $2${friendAccountValue}
+    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn}${friendAccount.column})
+     SELECT ${sourceAccountId(provider)}, $2${friendAccount.value}
      ON CONFLICT DO NOTHING`),
     [providerUserId, friendProviderUserId],
   )
@@ -98,14 +98,10 @@ export async function insertTestFriends(
   friendProviderUserIds: string[],
 ): Promise<void> {
   const config = getFriendsTableConfig(provider)
-  const friendAccountColumn = provider === 'facebook' ? ', friend_facebook_account_id' : ''
-  const friendAccountValue =
-    provider === 'facebook'
-      ? ', (SELECT id FROM facebook_accounts WHERE facebook_user_id = friend_id)'
-      : ''
+  const friendAccount = friendAccountReference(provider, 'friend_id')
   await write(
-    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn}${friendAccountColumn})
-     SELECT ${sourceAccountId(provider)}, friend_id${friendAccountValue}
+    allowUnannotatedQuery(`INSERT INTO ${config.table} (${config.userIdColumn}, ${config.friendIdColumn}${friendAccount.column})
+     SELECT ${sourceAccountId(provider)}, friend_id${friendAccount.value}
      FROM UNNEST($2::text[]) AS friend_id
      ON CONFLICT DO NOTHING`),
     [providerUserId, friendProviderUserIds],

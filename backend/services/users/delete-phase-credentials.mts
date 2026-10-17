@@ -15,11 +15,11 @@ export async function processUserDeletionCredentialsBatch(userId: string, batchS
           ORDER BY friend.facebook_account_id, friend.facebook_friend_id LIMIT ${batchSize}
         )`,
       sql`/* processUserDeletionCredentials:xFriends */
-        DELETE FROM x_friends WHERE (x_user_id, x_friend_id) IN (
-          SELECT friend.x_user_id, friend.x_friend_id FROM x_friends friend
-          JOIN x_accounts account USING (x_user_id)
+        DELETE FROM x_friends WHERE (x_account_id, x_friend_id) IN (
+          SELECT friend.x_account_id, friend.x_friend_id FROM x_friends friend
+          JOIN x_accounts account ON account.id = friend.x_account_id
           WHERE account.user_id = ${userId}
-          ORDER BY friend.x_user_id, friend.x_friend_id LIMIT ${batchSize}
+          ORDER BY friend.x_account_id, friend.x_friend_id LIMIT ${batchSize}
         )`,
       sql`/* processUserDeletionCredentials:githubFriends */
         DELETE FROM github_friends WHERE (github_user_id, github_friend_id) IN (

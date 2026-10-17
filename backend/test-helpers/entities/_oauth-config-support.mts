@@ -72,6 +72,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataColumn: 'x_user_data',
     hasTokenColumns: true,
     hasRefreshToken: true,
+    accountIdColumn: 'id',
   },
   linkedin: {
     table: 'linkedin_accounts',

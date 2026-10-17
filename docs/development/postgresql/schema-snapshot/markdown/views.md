@@ -676,7 +676,7 @@ Current OAuth lifecycle and active exchange projected from timestamp facts and i
     completion_token_hash,
     completion_token_ciphertext,
     facebook_account_id,
-    x_user_id,
+    x_account_id,
     github_user_id,
     result_kind,
     result_user_id,
