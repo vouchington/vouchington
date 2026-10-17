@@ -1,0 +1,34 @@
+{
+  "name": "@queues/email-digests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null,
+    "./*/*": {
+      "types": "./*/*.mts",
+      "import": "./*/*.mts",
+      "default": "./*/*.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@modules/scheduled-job-manifest": "workspace:^",
+    "@queues/background": "workspace:^",
+    "@queues/emails": "workspace:^",
+    "@voucha/types": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@voucha/test-helpers": "workspace:^"
+  }
+}

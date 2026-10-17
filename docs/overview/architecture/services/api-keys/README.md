@@ -72,7 +72,7 @@ The bloom filter stores hex-encoded SHA-256 hashes of active keys. It is:
 
 ## Expiry reminders
 
-The emails queue owns the hourly `dispatchApiKeyExpiryReminders` schedule and
+The `email-digests` domain of the background queue owns the hourly `dispatchApiKeyExpiryReminders` schedule and
 `processSendApiKeyExpiryReminder` job. The API-key service scans due keys in 100-row UUID cursor
 pages and owns the typed delivery claim. The worker renders the template and sends through
 `sendClassifiedEmail`; see the expiry contract.

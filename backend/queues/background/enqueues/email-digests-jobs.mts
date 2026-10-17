@@ -1,0 +1,69 @@
+import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
+import { defineBackgroundJob } from './define-job.mts'
+import {
+  EMAIL_DIGESTS_DOMAIN as DOMAIN,
+  type DispatchApiKeyExpiryRemindersData,
+  type EmptyEmailDigestsJobData as EmptyData,
+  type SendApiKeyExpiryReminderData,
+  type SendCommunityModerationSummaryEmailData,
+  type SendFollowNewsSourcesEmailData,
+  type SendFollowTopicsEmailData,
+  type SendPostReferralLinkEmailData,
+} from './email-digests-domain.mts'
+
+const BACKOFF = { type: 'exponential', delay: 1000, jitter: 0.5 } as const
+const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFail: 100 } as const
+// Dispatchers stay the lowest tier (100) so each run or cursor page starts only after the sends
+// already promoted have drained; no other job in this domain may use 100 or more.
+const TASK = { priority: PRIORITY_TASK } as const
+const DISPATCH = { priority: PRIORITY_DISPATCH, ...RETRY } as const
+
+export const EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
+  name: 'dispatchEngagementEmails',
+  ...DISPATCH,
+})
+export const EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB = defineBackgroundJob<EmptyData>(
+  DOMAIN,
+  { name: 'dispatchCommunityModerationSummaryEmails', ...DISPATCH },
+)
+export const EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB =
+  defineBackgroundJob<DispatchApiKeyExpiryRemindersData>(DOMAIN, {
+    name: 'dispatchApiKeyExpiryReminders',
+    ...DISPATCH,
+  })
+export const EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB = defineBackgroundJob<SendFollowTopicsEmailData>(
+  DOMAIN,
+  { name: 'processSendFollowTopicsEmail', ...TASK },
+)
+export const EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB =
+  defineBackgroundJob<SendPostReferralLinkEmailData>(DOMAIN, {
+    name: 'processSendPostReferralLinkEmail',
+    ...TASK,
+  })
+export const EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB =
+  defineBackgroundJob<SendFollowNewsSourcesEmailData>(DOMAIN, {
+    name: 'processSendFollowNewsSourcesEmail',
+    ...TASK,
+  })
+export const EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB =
+  defineBackgroundJob<SendCommunityModerationSummaryEmailData>(DOMAIN, {
+    name: 'processSendCommunityModerationSummaryEmail',
+    ...TASK,
+  })
+export const EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB =
+  defineBackgroundJob<SendApiKeyExpiryReminderData>(DOMAIN, {
+    name: 'processSendApiKeyExpiryReminder',
+    ...TASK,
+    ...RETRY,
+  })
+
+export const EMAIL_DIGESTS_JOBS = [
+  EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB,
+  EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB,
+  EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB,
+  EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB,
+  EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB,
+  EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB,
+  EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB,
+  EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB,
+] as const

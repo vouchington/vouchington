@@ -9,7 +9,8 @@ import {
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
 import { insertBackdatedModerationSummaryCommunity } from '@voucha/test-helpers/moderation-summary-activity-community'
-import { emails } from '@queues/emails/queues'
+import { EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB } from '@queues/background/enqueues/email-digests-jobs'
+import { emailDigests } from '@queues/email-digests/queues'
 import { updateUserFields } from '@services/users/update-fields'
 import { deleteUser } from '@services/users/delete'
 import {
@@ -196,12 +197,12 @@ describe('getCommunityModerationSummaryCommunities activity digest', () => {
 
     await dispatchCommunityModerationSummaryEmails(now)
 
-    const jobs = await readAllQueueJobs(emails)
+    const jobs = await readAllQueueJobs(emailDigests)
     expect(
       jobs.some(job => {
         const data = job.data as { input?: { userId?: string } }
         return (
-          job.name === 'processSendCommunityModerationSummaryEmail' &&
+          job.name === EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB.name &&
           data.input?.userId === user!.id
         )
       }),

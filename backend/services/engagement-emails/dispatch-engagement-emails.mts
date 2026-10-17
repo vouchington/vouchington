@@ -19,7 +19,7 @@ import {
   enqueueSendFollowNewsSourcesEmail,
   enqueueSendFollowTopicsEmail,
   enqueueSendPostReferralLinkEmail,
-} from '@queues/emails/enqueues'
+} from '@queues/email-digests/enqueues'
 import type {
   FollowNewsSourcesEmailProps,
   FollowTopicsEmailProps,

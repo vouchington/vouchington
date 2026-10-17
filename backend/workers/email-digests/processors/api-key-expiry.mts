@@ -7,7 +7,7 @@ import {
 import {
   enqueueBulkSendApiKeyExpiryReminders,
   enqueueDispatchApiKeyExpiryReminders,
-} from '@queues/emails/enqueues/api-key-expiry'
+} from '@queues/email-digests/enqueues/api-key-expiry'
 import { getVerifiedEmailAddress } from '@services/contribution-gating'
 import { getPrivateUserByAny } from '@services/users'
 import { renderApiKeyExpiryEmail } from '@email-templates/core'

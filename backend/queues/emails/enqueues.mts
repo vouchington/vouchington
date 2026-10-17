@@ -9,19 +9,15 @@ import type {
   EmailJobInput,
   ProcessSendCommunityApplicationDecisionEmailVariables,
   ProcessSendCommunityInviteEmailVariables,
-  ProcessSendCommunityModerationSummaryEmailVariables,
   ProcessSendCommunityOwnershipTransferEmailVariables,
   ProcessSendCommunityRoleChangeEmailVariables,
   ProcessSendDataExportReadyEmailVariables,
   ProcessSendEmailAddressLoginTokenVariables,
   ProcessSendEmailVerificationTokenVariables,
-  ProcessSendFollowNewsSourcesEmailVariables,
-  ProcessSendFollowTopicsEmailVariables,
-  ProcessSendPostReferralLinkEmailVariables,
   ProcessSendWelcomeEmailVariables,
   ProcessSendCopyrightNoticeEmailVariables,
 } from './types.mts'
-import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
+import { QUEUE_NAME } from './config.mts'
 import { emails } from './queues.mts'
 import { getEmailSendJobOptions } from './enqueues/job-options.mts'
 
@@ -39,24 +35,6 @@ export const enqueueSendDataExportReadyEmail =
 export const enqueueSendEmailVerificationToken =
   createEnqueueFunction<ProcessSendEmailVerificationTokenVariables>(
     'processSendEmailVerificationToken',
-  )
-
-export const enqueueSendFollowTopicsEmail =
-  createEnqueueFunction<ProcessSendFollowTopicsEmailVariables>('processSendFollowTopicsEmail')
-
-export const enqueueSendPostReferralLinkEmail =
-  createEnqueueFunction<ProcessSendPostReferralLinkEmailVariables>(
-    'processSendPostReferralLinkEmail',
-  )
-
-export const enqueueSendFollowNewsSourcesEmail =
-  createEnqueueFunction<ProcessSendFollowNewsSourcesEmailVariables>(
-    'processSendFollowNewsSourcesEmail',
-  )
-
-export const enqueueSendCommunityModerationSummaryEmail =
-  createEnqueueFunction<ProcessSendCommunityModerationSummaryEmailVariables>(
-    'processSendCommunityModerationSummaryEmail',
   )
 
 export const enqueueSendWelcomeEmail =
@@ -104,7 +82,6 @@ function copyrightNoticeEmailJobOptions(intentId: string): Partial<JobOptions> {
     backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
     removeOnComplete: 100,
     removeOnFail: 100,
-    priority: PRIORITY_DEFAULT,
     deduplication: {
       id: `copyright-delivery:${intentId}:email`,
       mode: 'throttle',
@@ -120,54 +97,6 @@ export function enqueueSendCopyrightNoticeEmail(intentId: string): EnqueueReturn
   )
 }
 
-const enqueueDispatchEngagementEmailsJob = createGlideMqEnqueueFunction({
-  queue: emails,
-  queueName: QUEUE_NAME,
-  jobName: 'dispatchEngagementEmails',
-})
-
-const enqueueDispatchCommunityModerationSummaryEmailsJob = createGlideMqEnqueueFunction({
-  queue: emails,
-  queueName: QUEUE_NAME,
-  jobName: 'dispatchCommunityModerationSummaryEmails',
-})
-
-export function enqueueDispatchEngagementEmails(): EnqueueReturnType {
-  return enqueueDispatchEngagementEmailsJob(
-    {},
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DISPATCHER,
-      deduplication: {
-        id: 'dispatch_engagement_emails',
-        mode: 'throttle',
-        ttl: 3_600_000,
-      },
-    },
-  )
-}
-
-export function enqueueDispatchCommunityModerationSummaryEmails(): EnqueueReturnType {
-  return enqueueDispatchCommunityModerationSummaryEmailsJob(
-    {},
-    {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      priority: PRIORITY_DISPATCHER,
-      deduplication: {
-        id: 'dispatch_community_moderation_summary_emails',
-        mode: 'throttle',
-        ttl: 55_000,
-      },
-    },
-  )
-}
-
 function createEnqueueFunction<V extends Record<string, unknown>>(jobName: EmailJobs) {
   const enqueue = createGlideMqEnqueueFunction({
     queue: emails,
@@ -175,7 +104,7 @@ function createEnqueueFunction<V extends Record<string, unknown>>(jobName: Email
     jobName,
   })
 
-  return (input: EmailJobInput, variables: V, priority?: number): EnqueueReturnType => {
-    return enqueue({ input, variables }, getEmailSendJobOptions(jobName, priority))
+  return (input: EmailJobInput, variables: V): EnqueueReturnType => {
+    return enqueue({ input, variables }, getEmailSendJobOptions(jobName))
   }
 }

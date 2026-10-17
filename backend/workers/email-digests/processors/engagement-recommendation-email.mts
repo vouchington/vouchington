@@ -10,7 +10,7 @@ import {
   markEngagementEmailSent,
   releaseUnsentEngagementEmailClaim,
 } from '@services/users/engagement-emails'
-import { resolveEmailRecipient } from './recipient.mts'
+import { resolveEmailRecipient } from '@workers/emails/processors/recipient'
 
 type EngagementRecommendationEmailKind =
   | {

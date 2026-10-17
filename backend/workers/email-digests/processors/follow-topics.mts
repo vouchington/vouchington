@@ -1,7 +1,5 @@
-import type {
-  EmailTemplateInput,
-  ProcessSendFollowTopicsEmailVariables,
-} from '@queues/emails/types'
+import type { ProcessSendFollowTopicsEmailVariables } from '@queues/background/enqueues/email-digests-domain'
+import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderFollowTopicsEmail } from '@email-templates/core'
 import { isFollowTopicsEmailStillEligible } from '@services/users/engagement-emails'
 import { processEngagementRecommendationEmail } from './engagement-recommendation-email.mts'

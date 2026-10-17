@@ -2,15 +2,15 @@
 
 Source entrypoint: [backend/workers/emails/README.md](../../../../../../backend/workers/emails/README.md)
 
-Worker package for transactional email delivery jobs and email dispatcher jobs.
+Worker package for event-triggered transactional email delivery jobs. Digest dispatchers and their sends run in the [email-digests worker](../email-digests/README.md).
 
 ## Exports
 
-- `emails` - worker instance for the `emails` queue. It routes both `processSend*Email`
-  jobs and the dispatcher jobs that enqueue engagement and moderation summary emails.
+- `emails` - worker instance for the `emails` queue. It routes the event-triggered `processSend*Email`
+  jobs.
   `processSendCopyrightNoticeEmail` sends only immutable correspondence through the transactional
   SES configuration set, then records SES MessageId and correspondence acceptance.
-  A mismatched job name or payload fails before the template, copyright, or dispatcher function runs.
+  A mismatched job name or payload fails before the template or copyright function runs.
 
 SES reports `Throttling` ("Maximum sending rate exceeded", or the daily quota) as HTTP 400. The five
 community and welcome processors send through `.catch(wrapHttpForRetry)`, which used to drop every 4xx as

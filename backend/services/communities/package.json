@@ -38,6 +38,7 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/ban-evasion": "workspace:^",
     "@queues/content-analysis": "workspace:^",
+    "@queues/email-digests": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
