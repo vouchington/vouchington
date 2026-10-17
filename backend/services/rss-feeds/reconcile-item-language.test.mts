@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { persistFeedMetadataAndReconcileLanguage } from './reconcile-item-language.mts'
+import { rssFeedItemsWorkConfig } from '../rss-feed-items/work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('persistFeedMetadataAndReconcileLanguage', () => {
   const readImpl = vi.fn<(...args: any[]) => Promise<any>>()
@@ -94,35 +96,42 @@ describe('persistFeedMetadataAndReconcileLanguage', () => {
   })
 
   it('re-enqueues large feeds in bounded batches', async () => {
-    readImpl.mockResolvedValueOnce({
-      command: 'SELECT',
-      fields: [],
-      oid: 0,
-      rowCount: 1001,
-      rows: Array.from({ length: 1001 }, (_, index) => ({ id: `item-${index}` })),
+    const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
+      enqueue_batch_size: 2,
     })
+    try {
+      readImpl.mockResolvedValueOnce({
+        command: 'SELECT',
+        fields: [],
+        oid: 0,
+        rowCount: 3,
+        rows: Array.from({ length: 3 }, (_, index) => ({ id: `item-${index}` })),
+      })
 
-    const secondBatch = Promise.withResolvers<void>()
-    let enqueueCalls = 0
-    enqueueBulkLanguageDetectionImpl.mockImplementation(() => {
-      enqueueCalls += 1
-      if (enqueueCalls === 2) secondBatch.resolve()
-      return Promise.resolve(null)
-    })
+      const secondBatch = Promise.withResolvers<void>()
+      let enqueueCalls = 0
+      enqueueBulkLanguageDetectionImpl.mockImplementation(() => {
+        enqueueCalls += 1
+        if (enqueueCalls === 2) secondBatch.resolve()
+        return Promise.resolve(null)
+      })
 
-    await persistFeedMetadataAndReconcileLanguage(
-      'feed-1',
-      { language: 'en' },
-      'Existing',
-      null,
-      null,
-      deps,
-    )
-    await secondBatch.promise
+      await persistFeedMetadataAndReconcileLanguage(
+        'feed-1',
+        { language: 'en' },
+        'Existing',
+        null,
+        null,
+        deps,
+      )
+      await secondBatch.promise
 
-    expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledTimes(2)
-    expect(enqueueBulkLanguageDetectionImpl.mock.calls[0]![1]).toHaveLength(1000)
-    expect(enqueueBulkLanguageDetectionImpl.mock.calls[1]![1]).toEqual(['item-1000'])
+      expect(enqueueBulkLanguageDetectionImpl).toHaveBeenCalledTimes(2)
+      expect(enqueueBulkLanguageDetectionImpl.mock.calls[0]![1]).toEqual(['item-0', 'item-1'])
+      expect(enqueueBulkLanguageDetectionImpl.mock.calls[1]![1]).toEqual(['item-2'])
+    } finally {
+      restoreBatchSize()
+    }
   })
 
   it('skips metadata updates and re-enqueues when metadata is unchanged', async () => {

@@ -1,5 +1,7 @@
+import { bookmarksWorkConfig } from '@services/bookmarks/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { registerBookmarkBloomFixture } from '@voucha/test-helpers/bookmark-bloom-fixture'
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, onTestFinished } from 'vitest'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import {
@@ -107,6 +109,9 @@ describe('bloom-filter.generated (multi-relation)', () => {
   })
 
   it('multi-relation bloom check chunks large candidate lists before invoking Lua', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(bookmarksWorkConfig, { bloom_lookup_batch_size: 2 }),
+    )
     const random = Math.random().toString(36).slice(2, 12)
     const topicId = await insertTestTopic({
       name: `Bloom Chunk Topic ${random}`,
@@ -118,7 +123,7 @@ describe('bloom-filter.generated (multi-relation)', () => {
 
     const objectIds = [
       topicId,
-      ...Array.from({ length: 5001 }, (_, index) => `missing-chunk-${random}-${index}`),
+      ...Array.from({ length: 4 }, (_, index) => `missing-chunk-${random}-${index}`),
     ]
     const result = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,

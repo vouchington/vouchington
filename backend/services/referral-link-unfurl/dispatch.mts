@@ -16,6 +16,7 @@ import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
 export async function dispatchUnfurlReferralLinks(
   cursor?: UnfurlDispatchCursor,
   saveProgress?: (cursor: UnfurlDispatchCursor) => Promise<void>,
+  options: { referralLinkIds?: readonly string[] } = {},
 ) {
   const limits = getDispatchLimits()
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
@@ -28,6 +29,9 @@ export async function dispatchUnfurlReferralLinks(
       AND unfurl_failed_at IS NULL
       AND deleted_at IS NULL
   `
+
+  if (options.referralLinkIds !== undefined)
+    queryStatement.append(sql` AND id = ANY(${[...options.referralLinkIds]}::uuid[])`)
 
   if (cursor?.after)
     queryStatement.append(

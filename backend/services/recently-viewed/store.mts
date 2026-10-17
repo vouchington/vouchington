@@ -32,7 +32,15 @@ export async function upsertRecentlyViewed(
   entityId: string,
   sessionId: string | null,
   userId: string | null,
+  retainedLimit = RECENTLY_VIEWED_ZSET_LIMIT,
 ): Promise<void> {
+  if (
+    !Number.isInteger(retainedLimit) ||
+    retainedLimit < 1 ||
+    retainedLimit > RECENTLY_VIEWED_ZSET_LIMIT
+  ) {
+    throw new RangeError('Recently-viewed retention must be an integer between 1 and 1000')
+  }
   const keys: string[] = []
 
   if (sessionId) {
@@ -47,7 +55,7 @@ export async function upsertRecentlyViewed(
 
   await cacheValkeyClient.invokeScript(upsertRecentlyViewedScript, {
     keys,
-    args: [String(TTL_SECONDS), String(RECENTLY_VIEWED_ZSET_LIMIT), entityId],
+    args: [String(TTL_SECONDS), String(retainedLimit), entityId],
   })
 }
 

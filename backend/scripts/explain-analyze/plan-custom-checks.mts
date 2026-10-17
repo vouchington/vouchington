@@ -1,3 +1,4 @@
+import { assertDispatchWorkPlan } from './plan-custom/dispatch-work.mts'
 import { assertMediaDeliveryReplayPlan } from './plan-custom/media-delivery-replay.mts'
 import type { ExplainResult } from '@data-stores/psql'
 import { assertAdminEmailIndexPlan } from './plan-custom/admin-email.mts'
@@ -23,6 +24,9 @@ import { assertCorePlanCheck } from './plan-custom/core-special.mts'
 import { assertUsernamePrefixCandidates } from './plan-custom/username-prefix.mts'
 
 const customChecks: Readonly<Record<string, (result: ExplainResult) => void>> = {
+  dispatchUrlSelectivity: result => assertDispatchWorkPlan('urls', result),
+  dispatchReferralCrawlSelectivity: result => assertDispatchWorkPlan('crawl', result),
+  dispatchReferralUnfurlSelectivity: result => assertDispatchWorkPlan('unfurl', result),
   mediaDeliveryReplay: assertMediaDeliveryReplayPlan,
   adminEmail: assertAdminEmailIndexPlan,
   classifierBatch: assertClassifierHumanVoteComparisonPlanIfApplicable,

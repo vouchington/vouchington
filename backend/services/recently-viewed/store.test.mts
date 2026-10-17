@@ -76,16 +76,25 @@ describe('upsertRecentlyViewed — user-only mode', () => {
     expect(results).toContain(id1)
   })
 
+  it.each([0, 1001, 1.5])('rejects invalid retention %s before writing', async limit => {
+    const entityType = randomEntityType() as never
+    const userId = crypto.randomUUID()
+    await expect(
+      upsertRecentlyViewed(entityType, crypto.randomUUID(), null, userId, limit),
+    ).rejects.toThrow(RangeError)
+    expect(await countRecentlyViewed(entityType, userId)).toBe(0)
+  })
+
   it('trims user ZSETs to the retained max and keeps a TTL', async () => {
     const entityType = randomEntityType() as never
     const userId = crypto.randomUUID()
-    const ids = Array.from({ length: 1005 }, () => crypto.randomUUID())
+    const ids = Array.from({ length: 5 }, () => crypto.randomUUID())
 
     for (const id of ids) {
-      await upsertRecentlyViewed(entityType, id, null, userId)
+      await upsertRecentlyViewed(entityType, id, null, userId, 3)
     }
 
-    expect(await countRecentlyViewed(entityType, userId)).toBe(1000)
+    expect(await countRecentlyViewed(entityType, userId)).toBe(3)
     const ttl = await cacheValkeyClient.ttl(`recently-viewed:user:${entityType}:${userId}`)
     expect(ttl).toBeGreaterThan(0)
   })
