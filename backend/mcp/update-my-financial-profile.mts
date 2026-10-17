@@ -67,7 +67,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
         },
         credit_score_range: {
           anyOf: [{ type: 'null' }, { type: 'string', enum: VALID_CREDIT_SCORE_RANGES }],
-          description: "User's credit score range",
         },
         stated_income_range: {
           anyOf: [{ type: 'null' }, moneyRangeSchema],
@@ -81,7 +80,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
         },
         years_of_credit_history: {
           anyOf: [{ type: 'null' }, { type: 'integer', minimum: 0, maximum: 100 }],
-          description: 'Years of credit history (0–100)',
         },
       },
       required: [],

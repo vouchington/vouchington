@@ -11,7 +11,7 @@ const tool: Tool<Args, Result> = {
     name: 'join_community',
     type: 'function',
     description:
-      'Join a public community as a member, by its UUID or slug. Joining a private community needs an invitation or an application (apply_to_community). The call is refused with CONFLICT if the current user is already a member, and with FORBIDDEN if the community is archived or private, the user is banned from it, or it is temporarily limited to approved members. Returns the community_id.',
+      'Join a public community by UUID or slug. Private communities require an invitation or apply_to_community. Existing membership returns CONFLICT; archived or private communities, bans and approved-member limits return FORBIDDEN.',
     parameters: {
       type: 'object',
       properties: {

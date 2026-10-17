@@ -19,7 +19,7 @@ type ToolResult = ({ success: true } & McpCommunityEntry) | typeof COMMUNITY_NOT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get one community by its UUID or slug: its name, description, rules, owner and public counts. Only public communities are readable, for every caller: a private, deleted or unknown community returns { success: false, error: "Community not found" }, even to its own members, moderators and owner. Use read_community (option posts), read_community (option pinned_posts) and read_community (option members) to read inside it.',
+      'Get a public community by UUID or slug, including its rules, owner and public counts. Private, deleted and unknown communities all return Community not found, even for members or owners. Use read_community (options posts, pinned_posts, members) for its contents.',
     parameters: {
       type: 'object',
       properties: {

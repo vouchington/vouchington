@@ -49,9 +49,7 @@ function voteSource(
             format: 'uuid',
             description: `The ${entity.replaceAll('_', ' ')} ID.`,
           },
-          ...(isClear
-            ? {}
-            : { choice: { type: 'string', enum: choices, description: 'Semantic vote choice.' } }),
+          ...(isClear ? {} : { choice: { type: 'string', enum: choices } }),
         },
         required: isClear ? ['id'] : ['id', 'choice'],
         additionalProperties: false,

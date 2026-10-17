@@ -153,6 +153,5 @@ describe('community read tool output schemas', () => {
       minimum: min,
       maximum: max,
     })
-    expect(tool.schema.description).toContain(`at most ${max}`)
   })
 })

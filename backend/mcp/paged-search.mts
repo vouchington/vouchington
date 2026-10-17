@@ -63,7 +63,6 @@ export function pagedSearchSchemaProperties(qDescription: string): Record<string
     ...buildSearchToolSchemaProperties({ includeLimit: false }),
     after: {
       type: 'string',
-      description: 'Cursor from a previous result page_info.end_cursor, for the next page.',
     },
     limit: {
       type: 'integer',

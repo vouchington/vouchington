@@ -20,7 +20,8 @@ const { default: defaultLimit, max } = LIST_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the current user's own lists, newest first: each one's name, description and visibility. Public and unlisted lists are always included. Private lists are included only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. Returns at most ${max} lists per page and page_info.end_cursor; pass it as after to get the next page. Use read_my_lists (option items) to read inside a list.`,
+    description:
+      "List the current user's lists, newest first. Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Use read_my_lists (option items) for contents.",
     parameters: {
       type: 'object',
       properties: pageInputProperties('Lists', LIST_PAGE_LIMIT),

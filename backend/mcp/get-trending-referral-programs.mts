@@ -28,7 +28,8 @@ const { default: defaultLimit, max } = TRENDING_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the referral programs that gained the most active referral links in the last 30 days. Each result is the referral program's topic id with its trending score and link count; use read_topic (option details) for the program itself and get_referral_links for its links. Returns at most ${max} programs per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description:
+      'List referral programs with the most new active links in the last 30 days. Results give topic ids, scores and link counts. Use read_topic (option details) for a program and get_referral_links for its links.',
     parameters: {
       type: 'object',
       properties: pageInputProperties('Referral programs', TRENDING_PAGE_LIMIT),

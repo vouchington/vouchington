@@ -16,11 +16,11 @@ const tool: Tool<ToolArgs, { success: true }> = {
     name: 'withdraw_entity_relation_vote',
     type: 'function',
     description:
-      "Withdraw the current user's own confirm or dispute vote on an entity relation, such as a tag or a user tag. Withdrawing a vote the user never cast, or already withdrew, changes nothing and still succeeds. An unknown relation fails as not found. This only removes the caller's own vote: it never casts or changes one, and it never touches anyone else's vote.",
+      "Withdraw the current user's confirm or dispute vote on a relation, such as a tag or user tag. Repeating a withdrawal succeeds without a change. Unknown relations return not found. Other users' votes are never affected.",
     parameters: {
       type: 'object',
       properties: {
-        id: { type: 'string', format: 'uuid', description: 'The ID of the entity relation.' },
+        id: { type: 'string', format: 'uuid' },
       },
       required: ['id'],
       additionalProperties: false,

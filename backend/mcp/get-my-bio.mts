@@ -11,7 +11,7 @@ type ToolResult = { success: true; profile: { id: string; markdown: string } }
 const tool: MergedToolSource<Record<string, never>, ToolResult> = {
   schema: {
     description:
-      "Get the current user's own profile bio: their user id and the bio Markdown, exactly as stored (an empty string when there is none), so it can be edited and sent back with edit_my_profile (option bio). It is the user's own text and is not sanitized. Profile links are read with read_my_profile (option links), and read_my_profile (option overview) reads the wallet profile instead.",
+      "Get the current user's bio Markdown exactly as stored, including an empty string when unset. This is unsanitized own text for edit_my_profile (option bio). Use read_my_profile (option links) for links and option overview for the wallet profile.",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {

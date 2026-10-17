@@ -8,7 +8,7 @@ type ToolResult = { success: true; settings: ReturnType<typeof pickSettings> }
 const tool: MergedToolSource<Record<string, never>, ToolResult> = {
   schema: {
     description:
-      "Get the current user's own privacy and posting settings: who can see their follows, followers, likes and community memberships, who can message them, the default audience and privacy of new posts, country, interface locale and Hacker News discussions. These are the settings edit_my_preferences (option general) changes. Financial-data visibility, consents, federation, email addresses, sign-in settings and the username are not included.",
+      "Get the current user's privacy and posting settings, including audience, messaging, locale and Hacker News discussions. Edit them with edit_my_preferences (option general). Financial visibility, consents, federation, email addresses, sign-in settings and username are excluded.",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {

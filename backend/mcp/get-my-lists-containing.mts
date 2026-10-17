@@ -17,16 +17,15 @@ type ToolResult =
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Find which of the current user's own lists hold a post or an RSS feed item, newest list first: the list_ids to read with read_my_lists (option get). Only the credential owner's lists are searched, never another user's. Public and unlisted lists are always searched. Private lists are searched only when the credential holds the post-relations.owned-private:write private-data consent scope (the mcp.user:write scope does not include it); without it they are left out as if they did not exist. A removed list never appears. An entity on no list returns an empty list_ids. An entity_id that is not a UUID returns { success: false, error: \"Invalid entity_id\" }.",
+      "Find which of the current user's lists contain a post or RSS item; read their ids with read_my_lists (option get). Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Removed lists are omitted; entity_id must be a UUID.",
     parameters: {
       type: 'object',
       properties: {
         item_type: {
           type: 'string',
           enum: [...ITEM_TYPES],
-          description: 'What entity_id is: a post or an RSS feed item',
         },
-        entity_id: { type: 'string', format: 'uuid', description: 'The ID of the post or item' },
+        entity_id: { type: 'string', format: 'uuid' },
       },
       required: ['item_type', 'entity_id'],
     },

@@ -49,7 +49,8 @@ const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the members of a public community by its UUID or slug, as a signed-out reader sees the roster: the owner and moderators always, and regular members only when the community lets the public see them (member_roster_visibility: public). Returns at most ${max} members per page and page_info.end_cursor; pass it as after to get the next page.`,
+    description:
+      "List a public community's members as a signed-out reader sees them: owner and moderators always, regular members only when member_roster_visibility is public.",
     parameters: {
       type: 'object',
       properties: {
@@ -57,7 +58,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         role: {
           type: 'string',
           enum: [...MEMBER_ROLES],
-          description: 'Only members with this role',
         },
         ...communityPageInputProperties('Members'),
       },

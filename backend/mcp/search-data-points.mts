@@ -52,17 +52,14 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         vertical: {
           type: 'string',
           enum: VERTICALS,
-          description: 'Filter by data point vertical',
         },
         result: {
           type: 'string',
           enum: RESULTS,
-          description: 'Filter by application result',
         },
         credit_score_range: {
           type: 'string',
           enum: SCORE_RANGES,
-          description: 'Filter by applicant credit score range',
         },
         limit: {
           type: 'number',

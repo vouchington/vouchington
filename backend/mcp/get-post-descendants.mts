@@ -27,7 +27,8 @@ const { min, max, default: defaultLimit } = COMMENT_DESCENDANTS_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `Get the replies below a post by its UUID or slug, in id order, one cursor page at a time. Pass page_info.end_cursor as after to read the next page while page_info.has_next_page is true. A reply the public cannot see hides its whole subtree. A deleted reply is left out but the replies below it still appear, so a parent_post_id can name a reply that is not listed. A post that is not fully public, or that is deleted or missing, returns { success: false, error: "Post not found" }. A page too large to return is refused, so lower the limit and try again.`,
+    description:
+      "Get a post's replies in id order. An unreadable reply hides its subtree; a deleted reply is omitted but its descendants remain, so parent_post_id may name an unlisted reply. A deleted, missing or not fully public post returns Post not found.",
     parameters: {
       type: 'object',
       properties: {
@@ -38,7 +39,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           maximum: max,
           description: `Replies per page, from ${min} to ${max} (default: ${defaultLimit})`,
         },
-        after: { type: 'string', description: 'Opaque cursor from the previous page' },
+        after: { type: 'string' },
       },
       required: ['post_id'],
     },

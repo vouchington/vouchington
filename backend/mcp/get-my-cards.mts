@@ -5,7 +5,7 @@ export default createGetMyEntityListTool<{ after?: string; limit?: number }>({
   toolName: 'get_my_cards',
   description: "List the current user's wallet cards.",
   properties: {
-    after: { type: 'string', description: 'Opaque cursor from the previous list page' },
+    after: { type: 'string' },
     limit: { type: 'number', description: 'Number of cards to return, from 1 to 100' },
   },
   listFn: (user, args) => getIndividualCards(user, user, args),

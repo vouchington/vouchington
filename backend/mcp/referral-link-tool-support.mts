@@ -9,7 +9,6 @@ export const REFERRAL_LINK_ID_PARAMETERS = {
     link_id: {
       type: 'string',
       format: 'uuid',
-      description: 'The ID of a referral link the current user owns.',
     },
   },
   required: ['link_id'],

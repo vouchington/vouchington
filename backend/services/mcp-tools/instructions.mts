@@ -10,7 +10,7 @@ export const MCP_SERVER_INSTRUCTIONS: Record<McpServerConfig['surface'], string>
   mcp: [
     'Voucha is a community for credit card, banking, and rewards-program knowledge: topics (cards, banks, rewards programs), member posts, reviews, and data points, plus the caller’s own wallet.',
     'Find a topic with a search tool first, then pass its id or slug to the topic tools.',
-    'For a paged result, pass page_info.end_cursor as after to continue. Keep applicable filters, sort, status, and foreign-key bindings unchanged. Where the advertised result admits { success: false, error: "Invalid cursor" }, malformed, foreign, or mismatched cursors produce that result; other tools report invalid pagination as a request error.',
+    'For a paged result, pass page_info.end_cursor as after while page_info.has_next_page is true; a short page can still have a next page. Keep applicable filters, sort, status, and foreign-key bindings unchanged. Where the advertised result admits { success: false, error: "Invalid cursor" }, malformed, foreign, or mismatched cursors produce that result; other tools report invalid pagination as a request error.',
     'A private, deleted, or unknown public community returns { success: false, error: "Community not found" } wherever a public community is required.',
     'For an idempotent write that takes idempotency_key, reuse the same UUID key and arguments to retry safely; the first result is replayed.',
     EXTERNAL_CONTENT,

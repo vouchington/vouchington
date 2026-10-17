@@ -12,7 +12,7 @@ type ToolResult = {
 const tool: MergedToolSource<Record<string, never>, ToolResult> = {
   schema: {
     description:
-      'Get which emails the current user receives and when: setup recommendations, the news and community digests, and community moderation summaries with their cadence, weekdays, time of day and time zone. Email addresses and sign-in settings are not included. Change them with edit_my_preferences (option email).',
+      "Get the current user's email choices and delivery schedule for recommendations, news, digests and moderation summaries. Email addresses and sign-in settings are excluded. Change these with edit_my_preferences (option email).",
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {

@@ -43,7 +43,8 @@ const { default: defaultLimit, max } = COMMUNITY_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the approved posts of a public community by its UUID or slug, newest first or by hot, as a signed-out reader sees them: an anonymous post never names its author, whoever asks. q matches post text and may carry #hashtags. Pinned posts are left out of every unfiltered page; their ids come back in pinned_post_ids on the first unfiltered page only (read them with read_community (option pinned_posts)). Returns at most ${max} posts per page and page_info.end_cursor; pass it as after, with the same sort, to get the next page.`,
+    description:
+      "List a public community's approved posts as a signed-out reader sees them, newest or hot first. Anonymous posts never name their author. q matches text and #hashtags. Unfiltered pages exclude pins; pinned_post_ids appears only on the first. Read them with read_community (option pinned_posts).",
     parameters: {
       type: 'object',
       properties: {

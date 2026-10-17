@@ -29,12 +29,11 @@ export async function getListWriteContext(currentUser: BasicUser, listId: string
 export const LIST_ID_PARAMETER = {
   type: 'string',
   format: 'uuid',
-  description: 'The ID of a list the current user owns.',
 }
 
 /** The fields a list's owner can set, shared by the create and update tools. */
 export const LIST_FIELD_PARAMETERS = {
-  name: { type: 'string', minLength: 1, maxLength: 255, description: 'The list name.' },
+  name: { type: 'string', minLength: 1, maxLength: 255 },
   description: {
     anyOf: [{ type: 'null' }, { type: 'string' }],
     description: 'A description of the list, or null for none.',
@@ -54,9 +53,8 @@ export const LIST_ITEM_PARAMETERS = {
     item_type: {
       type: 'string',
       enum: ['post', 'rss_feed_item'],
-      description: 'The kind of item: a post or an RSS feed item.',
     },
-    entity_id: { type: 'string', format: 'uuid', description: 'The ID of the post or feed item.' },
+    entity_id: { type: 'string', format: 'uuid' },
   },
   required: ['list_id', 'item_type', 'entity_id'],
   additionalProperties: false,

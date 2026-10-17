@@ -39,19 +39,17 @@ const tool: Tool<Args, Result> = {
     name: 'apply_to_community',
     type: 'function',
     description:
-      'Apply to join a private community, by its UUID or slug. answers maps each application question id to its answer: a string for short_text, long_text and single_select questions, an array of strings for multi_select, a boolean for checkbox. Pass an empty object when the community asks no questions. An unknown question id, a missing answer to a required question or an answer of the wrong type is INVALID_INPUT. message is an optional note to the moderators of at most 5000 characters. The call is refused with CONFLICT if the user already has a pending application or is a member, and with FORBIDDEN if the user is banned from the community. An archived community is CONFLICT, and applying to a public community is INVALID_INPUT; join it with join_community instead. Returns the application id and its pending status; moderators decide it.',
+      'Apply to a private community by UUID or slug. answers maps question ids to strings for short_text, long_text and single_select; string arrays for multi_select; booleans for checkbox. Send {} if there are no questions. message is an optional moderator note of at most 5000 characters. Unknown, missing or mistyped answers are INVALID_INPUT. Use join_community for public communities.',
     parameters: {
       type: 'object',
       properties: {
         idempotency_key: {
           type: 'string',
           format: 'uuid',
-          description: 'A UUID for this application and its retries.',
         },
         community_id: { type: 'string', description: 'Community UUID or slug' },
         answers: {
           type: 'object',
-          description: 'Answers keyed by application question id.',
           additionalProperties: {
             anyOf: [
               { type: 'string' },

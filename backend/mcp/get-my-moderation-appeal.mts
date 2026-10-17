@@ -11,11 +11,11 @@ type Result = { success: true; appeal: McpAppeal }
 const tool: MergedToolSource<Args, Result> = {
   schema: {
     description:
-      "Get one moderation appeal the current user filed, by id: its target_type and target_id (the warning, community ban, removed post or suspension it contests), the community_id and post_removal_kind where they apply, its status, is_overdue while pending, the resolution_action once decided, and the moderators' public_response, fenced as external content, once it was sent. The call is refused with NOT_FOUND for an unknown id and with FORBIDDEN for another user's appeal.",
+      "Get a moderation appeal filed by the current user. target_type and target_id identify the decision; community_id and post_removal_kind appear when applicable. Includes status, overdue state, resolution_action and public_response. Unknown ids return NOT_FOUND; another user's appeal returns FORBIDDEN.",
     parameters: {
       type: 'object',
       properties: {
-        appeal_id: { type: 'string', format: 'uuid', description: 'The ID of the appeal.' },
+        appeal_id: { type: 'string', format: 'uuid' },
       },
       required: ['appeal_id'],
       additionalProperties: false,

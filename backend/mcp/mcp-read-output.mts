@@ -41,11 +41,10 @@ export function pageInputProperties(
       type: 'integer',
       minimum: min,
       maximum: max,
-      description: `${noun} per page, from ${min} to ${max} (default: ${defaultLimit})`,
+      description: `${noun} per page; defaults to ${defaultLimit}.`,
     },
     after: {
       type: 'string',
-      description: 'Opaque cursor from the previous page_info.end_cursor, for the next page.',
     },
   }
 }

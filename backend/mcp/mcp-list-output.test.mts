@@ -134,7 +134,6 @@ describe('list read tool output schemas', () => {
       minimum: 1,
       maximum: 25,
     })
-    expect(tool.schema.description).toContain('at most 25')
   })
 
   it('requires the list id of the tools that read one list', () => {

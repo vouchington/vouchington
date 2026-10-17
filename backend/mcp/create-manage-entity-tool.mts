@@ -57,7 +57,6 @@ export function createManageEntityTool<
           action: {
             type: 'string',
             enum: ['add', 'update', 'remove'],
-            description: 'The operation to perform.',
           },
           id: {
             type: 'string',

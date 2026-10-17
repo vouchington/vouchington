@@ -22,22 +22,20 @@ const tool: Tool<Args, Result> = {
     name: 'create_review_dispute',
     type: 'function',
     description:
-      'Dispute a review of a topic the current user holds a verified claim on, because the review is inaccurate or breaks the rules. post_id is the review post. topic_id picks which of its rated topics is disputed and defaults to the first. reason is one of the listed codes and claim_text is the case for the moderators, at most 4000 characters. The call is refused with NOT_FOUND for an unknown post, INVALID_INPUT when the post is not a review, has no rating for the topic or has been removed, and FORBIDDEN without a verified claim on the topic. Disputing a review that already has an open dispute from the user updates that dispute and returns is_duplicate true. Moderators decide the dispute; read the outcome with read_my_review_disputes (option get). Returns the dispute.',
+      'Dispute a review of a topic the current user has a verified claim on. post_id is the review; topic_id selects a rated topic and defaults to the first. claim_text is the case for moderators, at most 4000 characters. An open dispute is updated (is_duplicate true). Invalid or removed reviews are refused; no verified claim returns FORBIDDEN. Read the outcome with read_my_review_disputes (option get).',
     parameters: {
       type: 'object',
       properties: {
         idempotency_key: {
           type: 'string',
           format: 'uuid',
-          description: 'A UUID for this dispute and its retries.',
         },
-        post_id: { type: 'string', format: 'uuid', description: 'The ID of the review post.' },
+        post_id: { type: 'string', format: 'uuid' },
         reason: { type: 'string', enum: [...REVIEW_DISPUTE_REASONS] },
         claim_text: { type: 'string', description: 'The case for the moderators.' },
         topic_id: {
           type: 'string',
           format: 'uuid',
-          description: 'The disputed topic, when the review rates several.',
         },
       },
       required: ['idempotency_key', 'post_id', 'reason', 'claim_text'],

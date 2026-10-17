@@ -14,7 +14,7 @@ type ToolResult =
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Count the entries on a public community's curated list, by its UUID or slug, for each item_type: topic, rss_feed, post, url_hostname and url. The counts are what a signed-out reader sees, so post leaves out a post the public cannot see, and they match what read_community (option list_items) pages through.",
+      "Count a public community's curated list entries by item_type (topic, rss_feed, post, url_hostname or url). Counts reflect the signed-out view: unreadable posts are excluded. Use read_community (option list_items) to page through them.",
     parameters: {
       type: 'object',
       properties: { community_id: { type: 'string', description: 'Community UUID or slug' } },

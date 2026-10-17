@@ -25,14 +25,13 @@ const tool: Tool<Args, Result> = {
     name: 'create_moderation_appeal',
     type: 'function',
     description:
-      "Appeal a moderation decision against the current user: a warning, a community ban or the removal of one of their posts. target_type says which and target_id is the id of the warning, the ban or the removed post. post_removal_kind is only for a removal, and tells a platform removal from a community removal when the post has both. appeal_reason is the case for the moderators, at most 4000 characters. The call is refused with NOT_FOUND when the decision does not exist or is already revoked or lifted, with FORBIDDEN when it is not the current user's, and with INVALID_INPUT when the post has not been removed. Appealing a decision that already has an open appeal from the user updates that appeal and returns is_duplicate true. Moderators decide the appeal; read the outcome with read_my_moderation_appeals (option get). A suspended Plus or Pro member can file this appeal. An account suspension itself is appealed on the web. Returns the appeal.",
+      "Appeal the current user's warning, community ban or removed post. post_removal_kind selects platform or community removal when both apply. appeal_reason is at most 4000 characters. Revoked or lifted decisions are ineligible. Open appeals update (is_duplicate true). Suspended Plus/Pro members may appeal here; account suspensions use the web. See read_my_moderation_appeals (option get).",
     parameters: {
       type: 'object',
       properties: {
         idempotency_key: {
           type: 'string',
           format: 'uuid',
-          description: 'A UUID for this appeal and its retries.',
         },
         target_type: { type: 'string', enum: ['warning', 'ban', 'removal'] },
         target_id: {

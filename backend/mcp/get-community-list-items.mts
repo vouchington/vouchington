@@ -44,7 +44,8 @@ const ENDPOINTS: Record<CommunityListItemType, ToolApiEndpoint> = {
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `List the entries of a public community's curated list of one item_type, by the community's UUID or slug, in list order, as a signed-out reader sees them: topic, rss_feed, post, url_hostname or url. Each entry has an id, the item_type, the entity_id it points at, its order_index and created_at. label names the entity where no other tool reads it by id: the hostname for url_hostname, the page URL for url and the feed title for rss_feed (null if the entity can no longer be read). Read a topic with read_topic (option details) and a post with read_posts (option details) (their label is null). A post the public cannot see (a private or deleted one, say) is left out of the page and of the counts. Returns at most ${max} entries per page and page_info.end_cursor; pass it as after to get the next page. read_community (option list_item_counts) gives the totals.`,
+    description:
+      "List a public community's curated item_type in list order, as a signed-out reader sees it. entity_id identifies each entry; label gives hostname, URL or feed title where no tool reads by id, or null if unreadable. Unreadable posts are omitted. Read topics with read_topic (option details), posts with read_posts (option details), and totals with read_community (option list_item_counts).",
     parameters: {
       type: 'object',
       properties: {
@@ -52,7 +53,6 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         item_type: {
           type: 'string',
           enum: [...COMMUNITY_LIST_ITEM_TYPES],
-          description: 'The kind of entry to list',
         },
         ...communityPageInputProperties('Entries'),
       },

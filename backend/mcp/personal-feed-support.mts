@@ -61,7 +61,7 @@ export type ReferralResult =
 export const MAX_LIMIT = 100
 export const pageProperties = {
   limit: { type: 'integer', minimum: 1, description: 'Defaults to 25; clamped to 100.' },
-  after: { type: 'string', description: 'Previous page_info.end_cursor.' },
+  after: { type: 'string' },
 }
 export const commonProperties = {
   ...pageProperties,

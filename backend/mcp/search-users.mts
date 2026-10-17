@@ -25,11 +25,12 @@ const { default: defaultLimit, max } = USER_PAGE_LIMIT
 
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
-    description: `Search users by the start of their username, case-insensitive, sorted A to Z. Results are public profiles only, as read_users (option details) returns them, and never an administrator's view. A blank query returns no results. Returns at most ${max} users per page and page_info.end_cursor; pass it as after, with the same q, to get the next page. A malformed cursor, or one from a different q, returns { success: false, error: "Invalid cursor" }.`,
+    description:
+      'Search public user profiles by username prefix, case-insensitive and A to Z. Results match read_users (option details), never an administrator view. A blank query gives no results; malformed cursors or cursors for another q return Invalid cursor.',
     parameters: {
       type: 'object',
       properties: {
-        q: { type: 'string', description: 'The start of the username to find' },
+        q: { type: 'string' },
         ...pageInputProperties('Users', USER_PAGE_LIMIT),
       },
       required: ['q'],

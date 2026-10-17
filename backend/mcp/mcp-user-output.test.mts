@@ -108,7 +108,6 @@ describe('user read tool output schemas', () => {
       minimum: 1,
       maximum: 25,
     })
-    expect(searchUsersTool.schema.description).toContain('at most 25')
     expect(searchUsersTool.schema.parameters?.['required']).toEqual(['q'])
   })
 })

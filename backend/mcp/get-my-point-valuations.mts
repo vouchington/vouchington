@@ -5,7 +5,7 @@ export default createGetMyEntityListTool<{ after?: string; limit?: number }>({
   toolName: 'get_my_point_valuations',
   description: "List the current user's rewards program point valuations.",
   properties: {
-    after: { type: 'string', description: 'Opaque cursor from the previous page' },
+    after: { type: 'string' },
     limit: { type: 'number', description: 'Number of valuations to return, from 1 to 100' },
   },
   listFn: (user, args) => getIndividualRewardsProgramPointValuations(user, user, args),

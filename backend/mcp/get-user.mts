@@ -13,7 +13,7 @@ type ToolResult = { success: true; user: McpUser } | typeof USER_NOT_FOUND
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Get one user\'s public profile by UUID or username: username, bio, `account_type` (`official`, `system` or `ai_agent` for a platform account, `null` for a member) and, only when the user shows their verified badge, the verified name. It is the signed-out profile for every caller, your own included: no email, phone, roles, linked accounts or private settings, ever. A deleted or unknown user returns { success: false, error: "User not found" }. An email address or phone number is not a valid identifier.',
+      "Get a user's signed-out public profile by UUID or username. account_type is always included: official, system or ai_agent for platform accounts, null for members. Verified name appears only when its badge is shown. The same public view applies to the caller's own profile; private fields never appear. Deleted or unknown users return User not found. Email and phone are invalid identifiers.",
     parameters: {
       type: 'object',
       properties: {
