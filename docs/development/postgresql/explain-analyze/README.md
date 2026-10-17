@@ -358,8 +358,14 @@ therefore also planned, without executing, under `enable_seqscan = off`, and the
 it adds at most a quarter (`SEQ_SCAN_TIE_RATIO`) of the scan's own cost; the gate does not fail a
 near-tie that is missing from the baseline and `analyze.mts` lists it as advisory. A missing index
 keeps the scan in the probe plan, and a real regression costs far more than a quarter, so both
-still fail. Baseline entries are unchanged: a near-tie entry can still go stale when its scan flips
-to an index in both captures.
+still fail.
+
+The stale direction is symmetric. When a baseline entry's scan is absent from a capture, the same
+statement is planned, without executing, with index, bitmap and index-only scans disabled and saved
+as `forced_seq_scans`. If that plan really sequentially scans the baselined table and costs at most
+`SEQ_SCAN_TIE_RATIO` times that scan node's cost more than the chosen plan, the entry is an advisory
+near-tie rather than stale. A forced plan that does not reproduce the scan, or that costs clearly
+more, still fails as stale: remove the baseline entry.
 
 After bulk seeding, fixture maintenance vacuums and analyzes the six seeded relations whose
 plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,

@@ -10,7 +10,8 @@ import { assertRequiredPlanShape } from './plan-gates.mts'
 import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 import { getScenarioContract } from './plan-expectations.mts'
 import { getLargeTableRelations, getLargeTableSeqScanRelations } from './plan-warnings.mts'
-import { costWithoutSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
+import { getExplainResultIdentity, SEQ_SCAN_BASELINE } from './seq-scan-baseline.mts'
+import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
 type Capture = {
   name: string
@@ -39,6 +40,7 @@ export function resetRepeatedResults(): void {
 // gate can tell a near-tie from a missing index (see seq-scan-ties.mts).
 async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResult) {
   const scannedRelations = getLargeTableSeqScanRelations(result)
+  await probeBaselinedScans(input, result, scannedRelations)
   if (scannedRelations.length === 0) return
   const probe = await explainAnalyze(input.name, input.text, input.values, {
     localSettings: { ...input.localSettings, enable_seqscan: 'off' },
@@ -46,6 +48,37 @@ async function probeSeqScanAlternative(input: Capture, result: ProbedExplainResu
     planOnly: true,
   })
   result.no_seq_scan_total_cost = costWithoutSeqScan(probe.plan, scannedRelations)
+}
+
+// The mirror image: a baselined scan the planner skipped this run may only have lost a coin flip.
+// Plan the statement plan-only with every index path disabled; a forced scan priced within
+// SEQ_SCAN_TIE_RATIO of the chosen plan keeps the stale entry advisory.
+async function probeBaselinedScans(
+  input: Capture,
+  result: ProbedExplainResult,
+  scannedRelations: readonly string[],
+) {
+  const baselined = (SEQ_SCAN_BASELINE[getExplainResultIdentity(result)] ?? []).filter(
+    relation => !scannedRelations.includes(relation),
+  )
+  if (baselined.length === 0) return
+  const forced = await explainAnalyze(input.name, input.text, input.values, {
+    localSettings: {
+      ...input.localSettings,
+      enable_indexscan: 'off',
+      enable_bitmapscan: 'off',
+      enable_indexonlyscan: 'off',
+    },
+    planCacheMode: input.planCacheMode,
+    planOnly: true,
+  })
+  const scans = Object.fromEntries(
+    baselined.flatMap(relation => {
+      const scan = forcedSeqScan(forced.plan, relation)
+      return scan ? [[relation, scan]] : []
+    }),
+  )
+  if (Object.keys(scans).length > 0) result.forced_seq_scans = scans
 }
 
 async function capturePlan(input: Capture, pass: 1 | 2): Promise<ExplainResult> {
