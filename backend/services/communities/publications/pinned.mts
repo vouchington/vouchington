@@ -10,7 +10,7 @@ import {
   buildPublicPostEligibilityFilter,
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
-import { recordModeratorAction } from '@services/moderator-actions'
+import { recordModeratorActions } from '@services/moderator-actions'
 
 export async function getPinnedPosts(
   communityId: string,
@@ -131,13 +131,9 @@ export async function setPinnedPosts(
   const pinned = postIds.filter(id => !oldSet.has(id))
   const unpinned = oldPins.filter((id: string) => !newSet.has(id))
 
-  await Promise.all([
-    ...pinned.map(postId =>
-      recordModeratorAction(currentUser.id, { actionType: 'pin', communityId, postId }),
-    ),
-    ...unpinned.map(postId =>
-      recordModeratorAction(currentUser.id, { actionType: 'unpin', communityId, postId }),
-    ),
+  await recordModeratorActions(currentUser.id, [
+    ...pinned.map(postId => ({ actionType: 'pin' as const, communityId, postId })),
+    ...unpinned.map(postId => ({ actionType: 'unpin' as const, communityId, postId })),
   ])
 
   return pins

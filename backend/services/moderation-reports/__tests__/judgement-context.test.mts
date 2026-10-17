@@ -85,4 +85,47 @@ describe('moderation-reports/judgement-context', () => {
     expect(contexts.get(`comment:${commentId}`)?.reportCount).toBe(1)
     expect(contexts.get(`comment:${commentId}`)?.maxReasonRank).toBe(4)
   })
+
+  it('returns every entity kind in one batch, with an empty context for an unreported entity', async () => {
+    const author = await createTestUser()
+    const reportedUser = await createTestUser()
+    const reporter = await createTestUser()
+    const reportedPostId = await insertTestPost({
+      createdById: author.id,
+      slug: `judgement-context-kinds-${randomUUID().slice(0, 8)}`,
+      title: `Judgement Context Kinds ${randomUUID().slice(0, 8)}`,
+      markdown: 'body',
+    })
+    const unreportedPostId = await insertTestPost({
+      createdById: author.id,
+      slug: `judgement-context-quiet-${randomUUID().slice(0, 8)}`,
+      title: `Judgement Context Quiet ${randomUUID().slice(0, 8)}`,
+      markdown: 'body',
+    })
+    await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: reportedPostId,
+      reason: 'spam',
+    })
+    await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'user',
+      entityId: reportedUser.id,
+      reason: 'harassment',
+    })
+
+    const contexts = await getReportJudgementContextsForEntitiesBatch([
+      { entityType: 'post', entityId: reportedPostId },
+      { entityType: 'user', entityId: reportedUser.id },
+      { entityType: 'post', entityId: unreportedPostId },
+    ])
+
+    expect(contexts.get(`post:${reportedPostId}`)?.reportCount).toBe(1)
+    expect(contexts.get(`user:${reportedUser.id}`)?.reportCount).toBe(1)
+    expect(contexts.get(`post:${unreportedPostId}`)).toMatchObject({
+      reportCount: 0,
+      maxReasonRank: 0,
+    })
+  })
 })

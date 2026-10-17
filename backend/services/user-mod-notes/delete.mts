@@ -3,17 +3,21 @@ import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { isModerationStaff, getModeratedCommunityIds } from './authorization.mts'
+import {
+  isModerationStaff,
+  getModeratedCommunityIds,
+  type ModeratedCommunityIdsOption,
+} from './authorization.mts'
 import type { UserModNote } from './config.mts'
 
 export async function deleteUserModNote(
   currentUser: PrivateUser,
   noteId: string,
   targetUserId: string,
-  options: { query?: TransactionQuery } = {},
+  options: { query?: TransactionQuery } & ModeratedCommunityIdsOption = {},
 ): Promise<void> {
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
-    const { rows } = await query(sql`/* deleteUserModNote */
+    const { rows } = await query(sql`/* deleteUserModNote:lock */
     SELECT id, target_user_id, author_user_id, community_id
     FROM user_moderator_notes
     WHERE id = ${noteId}
@@ -30,14 +34,15 @@ export async function deleteUserModNote(
 
     if (!isStaff) {
       if (note.community_id !== null) {
-        const moderatedIds = await getModeratedCommunityIds(currentUser, { query })
+        const moderatedIds =
+          options.moderatedCommunityIds ?? (await getModeratedCommunityIds(currentUser, { query }))
         assert(moderatedIds.includes(note.community_id), 403, 'Forbidden')
       } else {
         assert(false, 403, 'Forbidden')
       }
     }
 
-    await query(sql`/* deleteUserModNote */
+    await query(sql`/* deleteUserModNote:softDelete */
     UPDATE user_moderator_notes
     SET deleted_at = now()
     WHERE id = ${noteId}

@@ -65,6 +65,7 @@
     "@services/media-delivery-safety": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/messaging": "workspace:^",
+    "@services/moderation-reports": "workspace:^",
     "@services/modmail": "workspace:^",
     "@services/my": "workspace:^",
     "@services/notifications": "workspace:^",

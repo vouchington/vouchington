@@ -22,7 +22,7 @@ import {
 import { maybeResolveCase } from '@services/moderation-cases'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { getModerationAppealAfterMutation } from './get.mts'
-import { assertModerationAppealDelivered } from './assert-delivered.mts'
+import { rejectUnresolvableAppeal } from './assert-delivered.mts'
 import type { ModerationAppealResponse } from './types.mts'
 import {
   liftCommunityBanById,
@@ -43,10 +43,7 @@ export async function resolveModerationAppealAccept(
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(options.query, async (query: TransactionQuery) => {
-    await Promise.all([
-      assertModerationAppealDelivered(appealId, { query }),
-      lockSuspensionAppealAuthorLifecycle(query, appealId),
-    ])
+    await lockSuspensionAppealAuthorLifecycle(query, appealId)
     const { rows } = await query(
       sql`/* resolveModerationAppealAccept */
       UPDATE moderation_appeals
@@ -57,7 +54,7 @@ export async function resolveModerationAppealAccept(
       RETURNING `.append(APPEAL_RETURNING),
     )
     const row = rows[0] as ModerationAppeal | undefined
-    assert(row, 404, 'Appeal not found or already resolved')
+    if (!row) return rejectUnresolvableAppeal(appealId, { query })
 
     // Undo the original action based on which FK is set
     if (row.user_warning_id) {

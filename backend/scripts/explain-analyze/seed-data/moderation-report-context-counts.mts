@@ -1,0 +1,18 @@
+/** Above MAX_REPORTS_FOR_JUDGEMENT, so the per-entity report cap is exercised. */
+export const REPORT_CONTEXT_REPORTS_PER_ENTITY = 60
+export const REPORT_CONTEXT_POST_COUNT = 4
+export const REPORT_CONTEXT_REPORTED_USER_COUNT = 3
+export const REPORT_CONTEXT_HOSTNAME_COUNT = 2
+export const REPORT_CONTEXT_RSS_FEED_ITEM_COUNT = 2
+// Other posts carry a few reports each, so the table is large enough that the per-entity indexes
+// are the only sensible way into it.
+export const REPORT_CONTEXT_NOISE_POST_COUNT = 500
+export const REPORT_CONTEXT_NOISE_REPORTS_PER_POST = 20
+
+export const REPORT_CONTEXT_SEED_ROW_COUNT =
+  REPORT_CONTEXT_REPORTS_PER_ENTITY *
+    (REPORT_CONTEXT_POST_COUNT +
+      REPORT_CONTEXT_REPORTED_USER_COUNT +
+      REPORT_CONTEXT_HOSTNAME_COUNT +
+      REPORT_CONTEXT_RSS_FEED_ITEM_COUNT) +
+  REPORT_CONTEXT_NOISE_POST_COUNT * REPORT_CONTEXT_NOISE_REPORTS_PER_POST

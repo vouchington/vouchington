@@ -3,7 +3,11 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { DELETED_USER_ID } from '@services/users/constants'
-import { isModerationStaff, getModeratedCommunityIds } from './authorization.mts'
+import {
+  isModerationStaff,
+  getModeratedCommunityIds,
+  type ModeratedCommunityIdsOption,
+} from './authorization.mts'
 import type { CreateUserModNoteInput } from './parse.mts'
 import type { UserModNote } from './config.mts'
 import { recordModeratorAction } from '@services/moderator-actions'
@@ -11,13 +15,15 @@ import { recordModeratorAction } from '@services/moderator-actions'
 export async function createUserModNote(
   currentUser: PrivateUser,
   input: CreateUserModNoteInput,
+  options: ModeratedCommunityIdsOption = {},
 ): Promise<UserModNote> {
   assert(input.targetUserId !== DELETED_USER_ID, 422, 'Cannot add notes to the tombstone user')
 
   if (input.communityId === null) {
     assert(isModerationStaff(currentUser), 403, 'Only site staff can create global moderator notes')
   } else if (!isModerationStaff(currentUser)) {
-    const moderatedIds = await getModeratedCommunityIds(currentUser)
+    const moderatedIds =
+      options.moderatedCommunityIds ?? (await getModeratedCommunityIds(currentUser))
     assert(moderatedIds.includes(input.communityId), 403, 'You do not moderate this community')
   }
 

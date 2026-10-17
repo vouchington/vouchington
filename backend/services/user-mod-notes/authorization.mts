@@ -7,13 +7,22 @@ import { isModerationStaff } from '@services/users/authorization'
 
 export { isModerationStaff }
 
-export async function currentUserCanAccessUserModNotes(
+/**
+ * Who may reach user mod notes. A community moderator's moderated community ids come back with the
+ * answer so the service call that follows does not load them again; staff need none.
+ */
+export type UserModNoteAccess = { allowed: boolean; moderatedCommunityIds?: string[] }
+
+/** Callers that already hold the viewer's moderated community ids pass them down to skip a read. */
+export type ModeratedCommunityIdsOption = { moderatedCommunityIds?: string[] }
+
+export async function loadUserModNoteAccess(
   currentUser: PrivateUser,
   options?: QueryOptions,
-): Promise<boolean> {
-  if (isModerationStaff(currentUser)) return true
-  const ids = await getModeratedCommunityIds(currentUser, options)
-  return ids.length > 0
+): Promise<UserModNoteAccess> {
+  if (isModerationStaff(currentUser)) return { allowed: true }
+  const moderatedCommunityIds = await getModeratedCommunityIds(currentUser, options)
+  return { allowed: moderatedCommunityIds.length > 0, moderatedCommunityIds }
 }
 
 export async function getModeratedCommunityIds(
@@ -35,5 +44,5 @@ export async function getModeratedCommunityIds(
 }
 
 export async function assertCanAccessUserModNotes(currentUser: PrivateUser): Promise<void> {
-  assert(await currentUserCanAccessUserModNotes(currentUser), 403, 'Forbidden')
+  assert((await loadUserModNoteAccess(currentUser)).allowed, 403, 'Forbidden')
 }

@@ -13,7 +13,7 @@ import {
   getUserModerationContext,
   parseCreateUserModNoteInput,
   isModerationStaff,
-  assertCanAccessUserModNotes,
+  loadUserModNoteAccess,
 } from '@services/user-mod-notes'
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
@@ -32,7 +32,8 @@ type CreateUserModNoteRequest = { body: string; community_id?: string | null }
 
 app.route('/api/v1/users/:userId/moderation-context').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:userId/moderation-context')
-  await assertCanAccessUserModNotes(currentUser)
+  const { allowed, moderatedCommunityIds } = await loadUserModNoteAccess(currentUser)
+  ctx.assert(allowed, 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
   validateRequestContract(ctx, 'GET:/api/v1/users/:userId/moderation-context', {
     path: ctx.params,
@@ -42,7 +43,7 @@ app.route('/api/v1/users/:userId/moderation-context').get(async (ctx: Context) =
   const isStaff = isModerationStaff(currentUser)
   const [context, { notes, hasNextPage }] = await Promise.all([
     getUserModerationContext(currentUser, targetUser, isStaff),
-    listUserModNotes(currentUser, userId),
+    listUserModNotes(currentUser, userId, { moderatedCommunityIds }),
   ])
   ctx.json({
     context: isStaff
@@ -62,7 +63,8 @@ app.route('/api/v1/users/:userId/moderation-context').get(async (ctx: Context) =
 app.route('/api/v1/users/:userId/mod-notes').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/users/:userId/mod-notes', modNotesQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/users/:userId/mod-notes')
-  await assertCanAccessUserModNotes(currentUser)
+  const { allowed, moderatedCommunityIds } = await loadUserModNoteAccess(currentUser)
+  ctx.assert(allowed, 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
   ctx.assert(!Object.hasOwn(ctx.query, 'cursor'), 400, 'Use after instead of cursor')
   // A malformed or out-of-range `limit` is clamped and a blank `after` is ignored, as documented;
@@ -80,14 +82,19 @@ app.route('/api/v1/users/:userId/mod-notes').get(async (ctx: Context) => {
     },
   })
   const beforeId = (after as string | undefined) ?? null
-  const { notes, hasNextPage } = await listUserModNotes(currentUser, userId, { limit, beforeId })
+  const { notes, hasNextPage } = await listUserModNotes(currentUser, userId, {
+    limit,
+    beforeId,
+    moderatedCommunityIds,
+  })
   ctx.json({ notes, page_info: { has_next_page: hasNextPage } })
 })
 
 app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/users/:userId/mod-notes')
   assertNotSuspended(currentUser)
-  await assertCanAccessUserModNotes(currentUser)
+  const { allowed, moderatedCommunityIds } = await loadUserModNoteAccess(currentUser)
+  ctx.assert(allowed, 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
   const body = await parseJsonBody<CreateUserModNoteRequest>(ctx)
   validateRequestContract(ctx, 'POST:/api/v1/users/:userId/mod-notes', {
@@ -99,7 +106,7 @@ app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
     communityId: body.community_id,
     body: body.body,
   })
-  const note = await createUserModNote(currentUser, input)
+  const note = await createUserModNote(currentUser, input, { moderatedCommunityIds })
   ctx.setStatus(201)
   ctx.json({ note })
 })
@@ -107,12 +114,13 @@ app.route('/api/v1/users/:userId/mod-notes').post(async (ctx: Context) => {
 app.route('/api/v1/users/:userId/mod-notes/:noteId').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/users/:userId/mod-notes/:noteId')
   assertNotSuspended(currentUser)
-  await assertCanAccessUserModNotes(currentUser)
+  const { allowed, moderatedCommunityIds } = await loadUserModNoteAccess(currentUser)
+  ctx.assert(allowed, 403, 'Forbidden')
   const userId = validateUUIDParam(ctx, 'userId')
   const noteId = validateUUIDParam(ctx, 'noteId')
   validateRequestContract(ctx, 'DELETE:/api/v1/users/:userId/mod-notes/:noteId', {
     path: ctx.params,
   })
-  await deleteUserModNote(currentUser, noteId, userId)
+  await deleteUserModNote(currentUser, noteId, userId, { moderatedCommunityIds })
   ctx.json({ ok: true })
 })
