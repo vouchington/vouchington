@@ -59,8 +59,9 @@ export const featureFlagsConfig = new DynamicConfig({
   catalog. When the global read fails, the catalog is empty, parsed cookie overrides stay in
   effect, and every flag the cookie does not set stays off.
   The accepted encoded cookie length is runtime-configured, not baked into Docker images; oversized
-  cookies parse as no overrides. The limit's resolution is owned by
-  [`featureFlagCookieMaxLengthFromEnv`](../../../web/lib/feature-flags/cookie-max-length.ts).
+  cookies parse as no overrides. The backend resolves its limit in
+  [`backend/services/feature-flags/index.mts`](../../../backend/services/feature-flags/index.mts) and
+  the web in [`cookie-max-length.ts`](../../../web/lib/feature-flags/cookie-max-length.ts).
 - **API**: `GET /api/v1/feature-flags` (public, unauthenticated) returns flags with any cookie overrides applied.
 - **Global server read**: Server rendering calls the same endpoint with an empty Cookie and a
   scoped `global-feature-flags` request kind. The backend accepts this device bootstrap only after
