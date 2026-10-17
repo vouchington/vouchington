@@ -11,7 +11,7 @@ resource details.
 
 ## Environments
 
-Staging deploys through the private infrastructure receiver; production rollout is not live.
+Live through the private infrastructure deployment receiver: staging. Production rollout is not live.
 
 ## Source dispatch
 
