@@ -20,6 +20,9 @@ Each provider has its own table (`providerTableConfigs`), all shaped the same wa
 
 Every table has `user_id`, `<provider>_user_id`, `<provider>_user_email_address`, and `<provider>_user_data` columns. Providers with token columns also have `access_token_ciphertext` and `access_token_expires_at`; providers with a refresh token also have `refresh_token_ciphertext`. Tokens are always stored encrypted via `@modules/token-secrets`, never in plaintext.
 
+Apple accounts have an internal UUIDv7 `id` primary key. Their external `apple_user_id` remains
+unique for provider lookups and is still returned in the public account response.
+
 Apple's user-data conflict strategy atomically merges stored JSON with newly supplied fields
 because Apple returns the profile name only with the initial authorization response. A restarted
 sign-in can therefore update repeated claims without erasing that one-time name. Other providers

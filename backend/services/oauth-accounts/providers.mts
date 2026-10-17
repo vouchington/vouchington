@@ -49,6 +49,7 @@ export const providerTableConfigs: Record<OAuthProvider, OAuthTableConfig> = {
     dataConflictStrategy: 'merge',
     hasTokenColumns: false,
     hasRefreshToken: false,
+    accountIdColumn: 'id',
   },
   google: {
     table: 'google_accounts',

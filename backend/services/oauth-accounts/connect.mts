@@ -140,6 +140,7 @@ export async function getOAuthAccountByProviderUserId(
   const config = providerTableConfigs[provider]
   const { rows } = await read<OAuthAccount>(
     `/* getOAuthAccountByProviderUserId */ SELECT
+      ${config.accountIdColumn ? `${config.accountIdColumn} AS account_id,` : ''}
       user_id,
       ${config.providerUserIdColumn} AS provider_user_id,
       ${config.emailColumn} AS provider_user_email_address,
