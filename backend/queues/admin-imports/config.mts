@@ -10,12 +10,14 @@ export const ADMIN_TOPIC_IMPORT_DISPATCH_ID_PREFIX = 'imports_dispatchAdminTopic
 const defaultFields = {
   insert_chunk_size: 1000,
   dispatch_page_size: 1000,
+  recovery_batch_size: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const adminImportsWorkMaxValues = {
   insert_chunk_size: 10000,
   dispatch_page_size: 10000,
+  recovery_batch_size: 1000,
 }
 
 export const adminImportsWorkConfig = new DynamicConfig({
@@ -23,6 +25,7 @@ export const adminImportsWorkConfig = new DynamicConfig({
   fieldTypes: {
     insert_chunk_size: 'number',
     dispatch_page_size: 'number',
+    recovery_batch_size: 'number',
   },
   defaultFields,
 })
@@ -35,7 +38,6 @@ export function getAdminImportsWorkLimit(field: keyof typeof defaultFields): num
 }
 
 export {
-  IMPORT_RECOVERY_BATCH_SIZE,
   IMPORT_RECOVERY_CRON,
   IMPORT_RECOVERY_STALE_MS,
 } from '@queues/background/enqueues/imports-jobs'

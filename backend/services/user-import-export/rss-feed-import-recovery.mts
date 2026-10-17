@@ -1,10 +1,8 @@
 import { write } from '@data-stores/psql'
-import {
-  IMPORT_RECOVERY_BATCH_SIZE,
-  IMPORT_RECOVERY_STALE_MS,
-} from '@queues/user-rss-feed-imports/config'
+import { IMPORT_RECOVERY_STALE_MS } from '@queues/user-rss-feed-imports/config'
 import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
 import sql from 'sql-template-strings'
+import { getUserImportExportConfig } from './config.mts'
 
 type RecoveryOptions = {
   /** How long an unfinished import may make no progress before it is re-dispatched. */
@@ -32,18 +30,19 @@ export async function recoverStalledUserRssFeedImports(
       WHERE completed_at IS NULL
         AND updated_at < CURRENT_TIMESTAMP - make_interval(secs => ${staleAfterMs / 1000})
       ORDER BY updated_at
-      LIMIT ${IMPORT_RECOVERY_BATCH_SIZE}
+      LIMIT ${getUserImportExportConfig().import_recovery_batch_size}
     `,
   )
   if (rows.length === 0) return 0
 
   const ids = rows.map(row => row.id)
   // The marker follows the enqueue: a crash between them only repeats an idempotent dispatch.
+  // The no-op write fires the `updated_at` trigger, which is what marks the import as just touched.
   await Promise.all(ids.map(id => enqueue(id)))
   await write(
     sql`/* markStalledUserRssFeedImportsRecovered */
       UPDATE user_rss_feed_import_batches
-      SET updated_at = CURRENT_TIMESTAMP
+      SET total_rows = total_rows
       WHERE id = ANY(${ids}::uuid[])
         AND completed_at IS NULL
     `,

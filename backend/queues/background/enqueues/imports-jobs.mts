@@ -59,9 +59,6 @@ export const IMPORTS_PROCESS_ADMIN_TOPIC_IMPORT_ROW_JOB =
 /** An unfinished import that made no progress for this long has lost its dispatcher. */
 export const IMPORT_RECOVERY_STALE_MS = 15 * 60 * 1000
 
-/** Imports one recovery sweep re-dispatches; the next sweep takes the rest. */
-export const IMPORT_RECOVERY_BATCH_SIZE = 100
-
 export const IMPORT_RECOVERY_CRON = '*/5 * * * *'
 
 /** Re-dispatches imports whose dispatcher failed every attempt; see `recoverStalledImports`. */

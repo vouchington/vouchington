@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { IMPORT_RECOVERY_BATCH_SIZE, IMPORT_RECOVERY_STALE_MS } from '@queues/admin-imports/config'
+import { getAdminImportsWorkLimit, IMPORT_RECOVERY_STALE_MS } from '@queues/admin-imports/config'
 import { enqueueAdminTopicImportDispatch } from '@queues/admin-imports/enqueues'
 import sql from 'sql-template-strings'
 
@@ -28,17 +28,18 @@ export async function recoverStalledAdminTopicImports(
         AND completed_at IS NULL
         AND updated_at < CURRENT_TIMESTAMP - make_interval(secs => ${staleAfterMs / 1000})
       ORDER BY updated_at
-      LIMIT ${IMPORT_RECOVERY_BATCH_SIZE}
+      LIMIT ${getAdminImportsWorkLimit('recovery_batch_size')}
     `,
   )
   if (rows.length === 0) return 0
 
   const ids = rows.map(row => row.id)
   await Promise.all(ids.map(id => enqueue(id)))
+  // The no-op write fires the `updated_at` trigger, which marks the batch as just touched.
   await write(
     sql`/* markStalledAdminTopicImportsRecovered */
       UPDATE admin_import_batches
-      SET updated_at = CURRENT_TIMESTAMP
+      SET total_rows = total_rows
       WHERE id = ANY(${ids}::uuid[])
         AND completed_at IS NULL
     `,

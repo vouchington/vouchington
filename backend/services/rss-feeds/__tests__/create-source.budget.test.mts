@@ -35,21 +35,31 @@ describe('createSourceFromUrl budget', () => {
     expect(limitChecks).toBe(1)
   })
 
-  it('finishes the write instead of abandoning it when the budget runs out during it', async () => {
-    const controller = new AbortController()
+  it('races only the remote work, so a database write is never abandoned by the budget', async () => {
+    // A signal double that counts the abort listeners racing the work at any moment.
+    const listeners = new Set<unknown>()
+    const signal = {
+      aborted: false,
+      addEventListener: (_type: string, listener: unknown) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: unknown) => listeners.delete(listener),
+    } as unknown as AbortSignal
+    let racingWhenTheWriteStarts = -1
+    let racingDuringTheFetch = -1
 
-    const result = await createSourceFromUrl(user, WEB_PROVENANCE, feedUrl('during'), {
-      signal: controller.signal,
-      fetchAndClassifyFeedImpl: () => Promise.resolve(feed),
-      // The abort lands on a later turn of the event loop, while the database write awaits I/O.
+    const result = await createSourceFromUrl(user, WEB_PROVENANCE, feedUrl('writing'), {
+      signal,
+      fetchAndClassifyFeedImpl: () => {
+        racingDuringTheFetch = listeners.size
+        return Promise.resolve(feed)
+      },
       assertContributionLimit: async () => {
-        setImmediate(() => controller.abort())
+        racingWhenTheWriteStarts = listeners.size
       },
     })
 
-    expect(controller.signal.aborted).toBe(true)
+    expect(racingDuringTheFetch).toBeGreaterThan(0)
+    expect(racingWhenTheWriteStarts).toBe(0)
     expect(result.status).toBe('created')
-    expect(result.rss_feed_id).toBeDefined()
   })
 
   it('reports a feed that never answers as out of budget', async () => {
