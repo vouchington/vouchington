@@ -3,9 +3,7 @@ import { getPostsWithRootsByAnyBatch } from '@services/posts/get-with-roots-batc
 import { canViewDelegatedPostsBatch } from '@services/posts/check-delegated-access-batch'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { sharedLoaderContract } from './shared-loader-contracts.mts'
-import { runAndCapture, seedUser, seedTopicId, seedHostnameIds } from '../run-support.mts'
-import { caches } from '@services/entity-cache/caches'
-import { getCachedElectionGroups } from '@services/elections-votes/shared/cached-groups'
+import { runAndCapture, seedUser } from '../run-support.mts'
 import { commentSeedTimestampMs, seedUuid, seedUuidAtTimestamp } from '../seed-data/common.mts'
 import {
   SHARED_LOADER_SOURCE_ID,
@@ -13,17 +11,6 @@ import {
 } from '../seed-data/shared-loaders.mts'
 
 export async function runSharedLoaderScenarios(): Promise<void> {
-  await Promise.all([
-    caches.topic_elections.delete(seedTopicId),
-    caches.hostname_elections.delete(seedHostnameIds[0]!),
-  ])
-  registerScenarioContract(
-    'cached-topic-hostname-elections',
-    sharedLoaderContract('cached-topic-hostname-elections'),
-  )
-  await runAndCapture('cached-topic-hostname-elections', () =>
-    getCachedElectionGroups({ topic: [seedTopicId], hostname: [seedHostnameIds[0]!] }),
-  )
   registerScenarioContract('topic-redirect-batch', sharedLoaderContract('topic-redirect-batch'))
   await runAndCapture('topic-redirect-batch', async () => {
     const results = await getTopicsByAnyWithRedirectBatch([

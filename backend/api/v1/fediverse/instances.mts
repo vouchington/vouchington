@@ -1,4 +1,3 @@
-import { getCachedElectionGroups } from '@services/elections-votes/shared/cached-groups'
 import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { attachTopicProvenance } from '@services/content-provenance'
@@ -13,7 +12,12 @@ import {
 import { assertNotSuspended } from '@services/users'
 import { getTopicIds } from '@services/topics'
 import { getTopicIdsCached } from '@services/entity-fetch/search-caches'
-import { getTopicByAnyCachedBatch, getTopicMetricsByAnyCachedBatch } from '@services/entity-fetch'
+import {
+  getTopicByAnyCachedBatch,
+  getTopicMetricsByAnyCachedBatch,
+  getTopicElectionByIdCachedBatch,
+  getHostnameElectionByIdCachedBatch,
+} from '@services/entity-fetch'
 import {
   createInstanceFromHostname,
   getFediverseInstanceAttributesByIdBatch,
@@ -125,9 +129,6 @@ app
     const hostnameIdsPromise = topicsPromise.then(topics =>
       topics.flatMap(topic => (topic?.hostname?.id ? [topic.hostname.id] : [])),
     )
-    const electionsPromise = hostnameIdsPromise.then(hostname =>
-      getCachedElectionGroups({ topic: topicIds, hostname }),
-    )
     const fediverseInstancesPromise = getFediverseInstanceAttributesByIdBatch(topicIds).then(rows =>
       Object.fromEntries(
         topicIds
@@ -145,8 +146,10 @@ app
       topics: topicsIndexedPromise,
       topics_metrics: getTopicMetricsByAnyCachedBatch(topicIds).then(indexById),
       fediverse_instances: fediverseInstancesPromise,
-      topic_elections: electionsPromise.then(groups => indexById(groups.topic)),
-      hostname_elections: electionsPromise.then(groups => indexById(groups.hostname)),
+      topic_elections: getTopicElectionByIdCachedBatch(topicIds).then(indexById),
+      hostname_elections: hostnameIdsPromise.then(hostnameIds =>
+        getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById),
+      ),
       markdown_to_html: topicsPromise.then(async topics => {
         const topicsMap = indexById(topics)
         const adminIds = await getAdminUserIdsFromEntities(topics)

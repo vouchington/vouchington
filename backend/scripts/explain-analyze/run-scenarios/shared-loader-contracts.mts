@@ -1,14 +1,6 @@
 import type { ScenarioPlanContract } from '../plan-expectations.mts'
-export const SHARED_LOADER_SCENARIO_IDS = [
-  'cached-topic-hostname-elections',
-  'topic-redirect-batch',
-  'posts-with-roots-batch',
-  'delegated-post-access-batch',
-] as const
-
 // Maximum processed rows across both forced plan modes and both captures, plus 20% rounded up.
 const rowBudgets = {
-  'cached-topic-hostname-elections': { topics: 2, url_hostnames: 2 },
   'topic-redirect-batch': {
     topics: 15,
     topic_aliases: 2,

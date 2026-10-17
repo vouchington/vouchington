@@ -5,7 +5,6 @@
 import { getPrivateUserByAny, getPublicUserByAny } from '@services/users/get'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
 import { getTopicByAnyWithRedirect } from '@services/topics/get'
-import { getTopicsByAnyBatch } from '@services/topics/get-batch'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
 import { getTopicMetricsByAnyBatch } from '@services/topics/metrics-batch'
 import { getAgentModerationElectionsByIdBatch } from '@services/elections-votes/agent-moderation/get-election-batch'
@@ -44,10 +43,9 @@ export async function getUserPublicByAnyCachedBatch(identifiers: string[]) {
   const activeIds = await getActiveUserIds(users.flatMap(user => (user ? [user.id] : [])))
   return users.map(user => (user && activeIds.has(user.id) ? user : null))
 }
-export { getTopicByAnyCached } from '@services/topics/get-cached'
+export { getTopicByAnyCached, getTopicByAnyCachedBatch } from '@services/topics/get-cached'
 export const getTopicByAnyWithRedirectCached =
   caches.topics_with_redirect.cacheGetByAny(getTopicByAnyWithRedirect)
-export const getTopicByAnyCachedBatch = caches.topics.cacheGetByAnyBatch(getTopicsByAnyBatch)
 export const getTopicMetricsByAnyCached = caches.topic_metrics.cacheGetByAny(getTopicMetricsByAny)
 export const getTopicMetricsByAnyCachedBatch =
   caches.topic_metrics.cacheGetByAnyBatch(getTopicMetricsByAnyBatch)

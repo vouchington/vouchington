@@ -2,7 +2,6 @@ import { RELATION_SCENARIOS } from './relation-scenarios.mts'
 import { VIEW_DRIVEN_SCENARIO_IDS } from './view-driven-scenario-ids.mts'
 import { RSS_SEARCH_SCENARIOS } from './rss-search-scenarios.mts'
 import { USER_PROFILE_SCENARIO_IDS } from './user-profile-scenario-ids.mts'
-import { SHARED_LOADER_SCENARIO_IDS } from './run-scenarios/shared-loader-contracts.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
   ...VIEW_DRIVEN_SCENARIO_IDS,
@@ -162,7 +161,9 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'topic-import-attempts-retention',
   'topic-import-attempts-user-key',
   'topic-metrics-batch',
-  ...SHARED_LOADER_SCENARIO_IDS,
+  'topic-redirect-batch',
+  'posts-with-roots-batch',
+  'delegated-post-access-batch',
   'topic-rating-stats',
   'topic-search-best',
   'topic-search-text',

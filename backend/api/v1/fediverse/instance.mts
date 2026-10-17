@@ -1,4 +1,3 @@
-import { getCachedElectionGroups } from '@services/elections-votes/shared/cached-groups'
 import app from '../../app.mts'
 import { attachTopicProvenance } from '@services/content-provenance'
 import type { Context } from '@jongleberry/api-server'
@@ -10,7 +9,11 @@ import {
   validateUUIDParam,
   setAnonymousPublicCacheHeaders,
 } from '../../response-helpers.mts'
-import { getTopicByAnyCached } from '@services/entity-fetch'
+import {
+  getTopicByAnyCached,
+  getTopicElectionByIdCachedBatch,
+  getHostnameElectionByIdCachedBatch,
+} from '@services/entity-fetch'
 import {
   getFediverseInstanceAttributes,
   setIntegrationStatusAsAdmin,
@@ -56,20 +59,20 @@ app.route('/api/v1/fediverse/instances/:id').get(async (ctx: Context) => {
 
   setAnonymousPublicCacheHeaders(ctx, currentUser, HTTP_CACHE_LONG_MAX_AGE_SECONDS)
 
-  const [[labeledTopic], fediverseInstance, elections] = await Promise.all([
+  const [[labeledTopic], fediverseInstance, topicElections, hostnameElections] = await Promise.all([
     attachTopicProvenance([topic], currentUser),
     getFediverseInstanceAttributes(topic.id),
-    getCachedElectionGroups({
-      topic: [topic.id],
-      hostname: topic.hostname?.id ? [topic.hostname.id] : [],
-    }),
+    getTopicElectionByIdCachedBatch([topic.id]),
+    topic.hostname?.id
+      ? getHostnameElectionByIdCachedBatch([topic.hostname.id])
+      : Promise.resolve([]),
   ])
 
   ctx.json({
     topic: labeledTopic,
     fediverse_instance: toPublicFediverseInstanceAttributes(fediverseInstance),
-    topic_election: elections.topic[0] ?? null,
-    hostname_election: elections.hostname[0] ?? null,
+    topic_election: topicElections[0] ?? null,
+    hostname_election: hostnameElections[0] ?? null,
   })
 })
 
