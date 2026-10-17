@@ -7,6 +7,9 @@ import {
 } from '@voucha/test-helpers'
 import { updateRssFeedById } from '@services/rss-feeds/update'
 import { getTrendingRssFeeds } from './get-trending-rss-feeds.mts'
+import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
+
+const refreshTrendingFeeds = () => refreshMaterializedViewForTest('mv_trending_rss_feeds')
 
 async function followRssFeed(userId: string, feedId: string): Promise<void> {
   await insertEntityRelation('relation__user__follow__rss_feed', userId, feedId)
@@ -37,6 +40,7 @@ describe('getTrendingRssFeeds', () => {
   it('returns feeds ordered by trending_score DESC', async () => {
     const { feedId: highFeedId } = await createTrendingFeedData(20)
     const { feedId: lowFeedId } = await createTrendingFeedData(10)
+    await refreshTrendingFeeds()
 
     const result = await getTrendingRssFeeds({ timeRange: 'week', limit: 100, minScore: 5 })
     const ids = result.results.map(r => r.id)
@@ -51,6 +55,7 @@ describe('getTrendingRssFeeds', () => {
 
   it('includes follow_count and item_count in results', async () => {
     const { feedId } = await createTrendingFeedData(20)
+    await refreshTrendingFeeds()
 
     const result = await getTrendingRssFeeds({ timeRange: 'week', limit: 100, minScore: 10 })
     const found = result.results.find(r => r.id === feedId)
@@ -66,6 +71,7 @@ describe('getTrendingRssFeeds', () => {
       createTrendingFeedData(2),
       createTrendingFeedData(1),
     ])
+    await refreshTrendingFeeds()
 
     const first = await getTrendingRssFeeds({ timeRange: 'week', limit: 1 })
     expect(first.results).toHaveLength(1)
@@ -83,6 +89,7 @@ describe('getTrendingRssFeeds', () => {
   it('filters by minScore', async () => {
     const { feedId: highFeedId } = await createTrendingFeedData(10)
     const { feedId: lowFeedId } = await createTrendingFeedData(1)
+    await refreshTrendingFeeds()
 
     // high feed has score 30 (10 follows * 3.0), low feed has score 3.0
     const result = await getTrendingRssFeeds({ timeRange: 'week', limit: 100, minScore: 10 })
@@ -97,6 +104,7 @@ describe('getTrendingRssFeeds', () => {
     const { feedId: hiddenFeedId } = await createTrendingFeedData(10)
     await updateRssFeedById(disabledFeedId, { is_enabled: false, discoverable: true })
     await updateRssFeedById(hiddenFeedId, { is_enabled: true, discoverable: false })
+    await refreshTrendingFeeds()
 
     const result = await getTrendingRssFeeds({ timeRange: 'week', limit: 100, minScore: 10 })
     const ids = result.results.map(r => r.id)

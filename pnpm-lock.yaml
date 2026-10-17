@@ -3434,6 +3434,9 @@ importers:
       '@services/friend-recommendations':
         specifier: workspace:^
         version: link:../services/friend-recommendations
+      '@services/growth-metrics':
+        specifier: workspace:^
+        version: link:../services/growth-metrics
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households

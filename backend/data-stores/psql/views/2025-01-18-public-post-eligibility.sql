@@ -17,12 +17,8 @@
 -- COALESCE-in-join-key shape below was kept instead: it matches the candidate/root shape
 -- `buildPublicPostEligibilityFilter` already documents (every root-scoped predicate read directly
 -- off root_post, none wrapped in COALESCE), and it does not need a LEFT JOIN rewrite to avoid
--- resource pressure — see #11081. The join key's COALESCE hides the
--- "root_post.id = candidate_post.id" identity that holds for ~99.9% of rows, so an unfiltered
--- whole-view reader like getPlatformStats() gets a genuine self-join and the planner sorts the
--- candidate side to feed a Merge Join. At the EXPLAIN harness's declared 32MB work_mem
--- (EXPLAIN_WORK_MEM in explain-analyze.mts), that sort is ~10MB for the ~100k eligible posts in
--- the CI capture and stays in memory — no spill, no resource-pressure-baseline.mts entry needed.
+-- resource pressure — see #11081. Whole-view aggregation is confined to materialized-view
+-- refresh; request-time readers restrict candidate ids before joining this view.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE VIEW view_public_post_eligibility AS
   SELECT candidate_post.id AS post_id, candidate_post.post_type

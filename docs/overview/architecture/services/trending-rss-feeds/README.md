@@ -4,6 +4,11 @@ Source entrypoint: [backend/services/trending-rss-feeds/README.md](../../../../.
 
 Ranks RSS feeds by recent activity and popularity, powering discovery on the home page.
 
+The three fixed windows are scored in `mv_trending_rss_feeds` every five minutes, using a
+rolling cutoff at refresh time. A feed's score and visibility may trail a write by one refresh
+cycle, plus the short anonymous Valkey cache TTL. Requests seek the materialized ranking index
+and return only the requested page.
+
 ## Scoring
 
 Trending score combines two recent signals over a configurable time window:
@@ -23,9 +28,9 @@ Time ranges:
 
 The service queries:
 
-- `rss_feeds` — feed metadata (title, feed_url, topic_id)
-- `relation__user__follow__rss_feed` — follow counts by feed
-- `rss_feed_items` — items and creation timestamps
+- `rss_feeds` — enabled and discoverable feed status at refresh
+- `relation__user__follow__rss_feed` — recent follows at refresh
+- `rss_feed_items` and `rss_feed_item_sources` — recent published items at refresh
 
 ## Integration
 

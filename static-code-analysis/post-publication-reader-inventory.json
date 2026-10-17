@@ -75,10 +75,6 @@
       "classification": "mixed-discovery-sql"
     },
     {
-      "path": "backend/services/platform-stats/get-platform-stats.mts",
-      "classification": "public-view"
-    },
-    {
       "path": "backend/services/users/metrics-batch-sql.mts",
       "classification": "public-view"
     },

@@ -8,19 +8,14 @@ import type { TrendingRssFeedsOptions, TrendingRssFeedsResult } from './types.mt
 
 const DEFAULT_LIMIT = 20
 
-const TIME_RANGE_DAYS = {
-  day: 1,
-  week: 7,
-  month: 30,
-} as const
+const TIME_RANGES = new Set(['day', 'week', 'month'])
 
 export async function getTrendingRssFeeds(
   options: TrendingRssFeedsOptions,
 ): Promise<TrendingRssFeedsResult> {
   const { timeRange, minScore, limit, after } = options
 
-  const days = TIME_RANGE_DAYS[timeRange]
-  if (days === undefined) {
+  if (!TIME_RANGES.has(timeRange)) {
     throw createHttpError(400, 'Invalid time_range')
   }
 
@@ -39,57 +34,21 @@ export async function getTrendingRssFeeds(
   }
 
   const query = sql`/* getTrendingRssFeeds */
-    WITH recent_follows AS (
-      SELECT
-        object_id AS feed_id,
-        COUNT(*)::DOUBLE PRECISION AS follow_score,
-        COUNT(*)::INT AS follow_count
-      FROM relation__user__follow__rss_feed
-      WHERE deleted_at IS NULL
-        AND created_at > NOW() - ${days} * INTERVAL '1 day'
-      GROUP BY object_id
-    ),
-    recent_items AS (
-      SELECT
-        rfis.rss_feed_id AS feed_id,
-        COUNT(*)::DOUBLE PRECISION AS item_score,
-        COUNT(*)::INT AS item_count
-      FROM rss_feed_items rfi
-      INNER JOIN rss_feed_item_sources rfis ON rfis.rss_feed_item_id = rfi.id
-      WHERE rfi.deleted_at IS NULL
-        AND rfi.published_at > NOW() - ${days} * INTERVAL '1 day'
-      GROUP BY rfis.rss_feed_id
-    ),
-    combined AS (
-      SELECT
-        rf.id,
-        (COALESCE(fl.follow_score, 0) * 3.0 + COALESCE(ri.item_score, 0))::DOUBLE PRECISION AS trending_score,
-        COALESCE(fl.follow_count, 0)::INT AS follow_count,
-        COALESCE(ri.item_count, 0)::INT AS item_count
-      FROM rss_feeds rf
-      JOIN view_rss_feed_current_states current_state
-        ON current_state.rss_feed_id = rf.id
-      LEFT JOIN recent_follows fl ON rf.id = fl.feed_id
-      LEFT JOIN recent_items ri ON rf.id = ri.feed_id
-      WHERE rf.deleted_at IS NULL
-        AND current_state.is_enabled = TRUE
-        AND current_state.is_discoverable = TRUE
-        AND (fl.follow_score > 0 OR ri.item_score > 0)`
+    SELECT id, trending_score, follow_count, item_count
+    FROM mv_trending_rss_feeds
+    WHERE window_name = ${timeRange}`
 
   if (minScore !== undefined) {
     query.append(sql`
-        AND (COALESCE(fl.follow_score, 0) * 3.0 + COALESCE(ri.item_score, 0)) >= ${minScore}`)
+        AND trending_score >= ${minScore}`)
   }
 
   if (cursorScore !== undefined && cursorId !== undefined) {
     query.append(sql`
-        AND (COALESCE(fl.follow_score, 0) * 3.0 + COALESCE(ri.item_score, 0), rf.id) < (${cursorScore}, ${cursorId})`)
+        AND (trending_score, id) < (${cursorScore}, ${cursorId})`)
   }
 
   query.append(sql`
-    )
-    SELECT id, trending_score, follow_count, item_count
-    FROM combined
     ORDER BY trending_score DESC, id DESC
     LIMIT ${safeLimit + 1}
   `)

@@ -20,6 +20,8 @@ The worker uses a global concurrency of 1 to ensure database operations run sequ
 - Daily partition retention cleanup
 - Data-retention cleanup for users, referrals, orphaned OAuth accounts, OAuth broker/RPC expiry, and Bluesky link expiry
 - Materialized view refresh, including RSS crawl-tier refresh at 01:00 UTC and top hashtags hourly
+- Platform stats, trending RSS scores, and revenue memberships and changes refresh every five
+  minutes, staggered across the cycle. Operator triggers use the same replay-safe refresh job.
 
 Materialized-view refreshes share a primary-database advisory lock. Top-hashtag refreshes also use
 a five-minute debounce and GlideMQ ordering key, so content bursts become one globally serialized

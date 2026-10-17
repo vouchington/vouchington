@@ -43,13 +43,16 @@ const metrics = await getGrowthMetrics('30d')
 - DAU proxy: distinct `posts.created_by_id` in last 24 hours
 - MAU proxy: distinct `posts.created_by_id` in last 30 days
 - Topic coverage: uses `topic_metrics` pre-computed rating counts
-- Revenue membership and change aggregates share one PostgreSQL statement snapshot so active,
-  cancelled, and churn counts describe one coherent point in time
+- Revenue reads `mv_revenue_memberships` and `mv_revenue_changes`, refreshed on separate
+  five-minute schedules. Active memberships, observed MRR and churn can trail writes by one
+  refresh cycle and may span adjacent refresh snapshots. The fixed dashboard ranges use the
+  cutoffs at the change-view refresh time; scoped test reads sum only their selected users.
 - MRR uses each direct Stripe production source's immutable `voucha-web` provider-observed price,
   PostgreSQL's exact `SUM(BIGINT)` result, and `BigInt` arithmetic. It returns a canonical scale-six
   integer string so valid prices and same-currency totals cannot overflow the wire format. Catalog
   repricing never rewrites MRR for existing subscribers.
-- Reused PostgreSQL base sets are materialized within each request query so users, posts, referrals, memberships, and membership changes are not rescanned for sibling KPIs
+- Other reused PostgreSQL base sets are materialized within each request query so users, posts,
+  and referrals are not rescanned for sibling KPIs
 - Complete results are promise-coalesced in process for 10 seconds per range to absorb dashboard refresh bursts without changing the response contract
 
 ## Authorization

@@ -60,6 +60,7 @@ export { getConversationsByCreatedById } from '@services/conversations-messages/
 export { getMyDirectConversations } from '@services/messaging/get'
 export { getCommunityModmailInbox } from '@services/modmail/threads-get'
 export { getPlatformStats } from '@services/platform-stats/get-platform-stats'
+export { getRevenue } from '@services/growth-metrics/get-revenue'
 export { getPostsByAnyBatch } from '@services/posts/get-batch'
 export { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
 export { getPostElectionsByIdBatch } from '@services/elections-votes/post/get-election-batch'
