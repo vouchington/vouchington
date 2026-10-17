@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
+import { TOOLING_HANG_WALL_CLOCK_MS } from '../../ci/tooling-test-hang-watchdog.mts'
 
 type WorkflowStep = {
   env?: Record<string, string>
@@ -168,5 +169,14 @@ describe('tests-tooling.yml setup timing', () => {
     expect(
       routeBoundsJob?.steps?.some(step => step.uses === './.github/actions/upload-full-lcov'),
     ).toBe(false)
+  })
+
+  it('kills a hung run with diagnostics before the step timeout cancels it silently', () => {
+    const runStep = runToolingTestsStep()
+    const stepTimeoutMs = numberField(runStep['timeout-minutes'], 'tooling test timeout') * 60_000
+    expect(TOOLING_HANG_WALL_CLOCK_MS).toBe(stepTimeoutMs - 60_000)
+    expect(runStep.env?.VITEST_FILE_PROGRESS_FILE).toBe(
+      '${{ github.workspace }}/tooling-file-progress.log',
+    )
   })
 })

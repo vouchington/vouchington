@@ -115,7 +115,6 @@ describe('tooling hang watchdog', () => {
   })
 
   it('kills at the wall-clock cap only when the CI wall clock is armed', () => {
-    expect(TOOLING_HANG_WALL_CLOCK_MS).toBeLessThan(16 * 60_000)
     expect(shouldKillToolingHang(state(), TOOLING_HANG_WALL_CLOCK_MS)).toBe(false)
     expect(shouldKillToolingHang(state({ wallClock: true }), TOOLING_HANG_WALL_CLOCK_MS)).toBe(true)
   })
@@ -150,5 +149,34 @@ describe('tooling hang watchdog', () => {
     expect(killed).toEqual([{ pid: 2309074, signal: 'SIGKILL' }])
     expect(stderr.join('')).toContain('[vitest-teardown-overrun]')
     watchdog.stop()
+  })
+
+  it('writes unfinished-file diagnostics when the wall clock kills', () => {
+    let now = 0
+    const stderr: string[] = []
+    let interval: (() => void) | undefined
+    startToolingHangWatchdog(
+      7,
+      {
+        now: () => now,
+        setInterval: (callback: () => void) => {
+          interval = callback
+          return 1
+        },
+        clearInterval: () => undefined,
+        killProcessGroup: () => undefined,
+        reportUnfinished: () => '[tooling-deadline] unfinished a.test.mts\n',
+        stderr: {
+          write: chunk => {
+            stderr.push(String(chunk))
+            return true
+          },
+        },
+      },
+      { wallClock: true },
+    )
+    now = TOOLING_HANG_WALL_CLOCK_MS
+    interval?.()
+    expect(stderr.join('')).toContain('[tooling-deadline] unfinished a.test.mts')
   })
 })
