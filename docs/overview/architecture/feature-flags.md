@@ -58,12 +58,9 @@ export const featureFlagsConfig = new DynamicConfig({
   the same rule to the loaded global catalog: a cookie can change only flags present in that
   catalog. When the global read fails, the catalog is empty, parsed cookie overrides stay in
   effect, and every flag the cookie does not set stays off.
-  `FEATURE_FLAG_COOKIE_MAX_LENGTH` (backend) and the web runtime-public cookie limit currently named
-  `NEXT_PUBLIC_FEATURE_FLAG_COOKIE_MAX_LENGTH` limit the accepted encoded cookie value length before
-  decode/parse and default to `4096`. Web server reads and safe cookie forwarding use that same
-  runtime-public resolution: a placeholder or blank public value is unset and falls through to
-  `FEATURE_FLAG_COOKIE_MAX_LENGTH`. Oversized cookies parse as no overrides and are not forwarded
-  by safe cookie helpers. Keep this value runtime-configured rather than baked into Docker images.
+  The accepted encoded cookie length is runtime-configured, not baked into Docker images; oversized
+  cookies parse as no overrides. The limit's resolution is owned by
+  [`featureFlagCookieMaxLengthFromEnv`](../../../web/lib/feature-flags/cookie-max-length.ts).
 - **API**: `GET /api/v1/feature-flags` (public, unauthenticated) returns flags with any cookie overrides applied.
 - **Global server read**: Server rendering calls the same endpoint with an empty Cookie and a
   scoped `global-feature-flags` request kind. The backend accepts this device bootstrap only after
