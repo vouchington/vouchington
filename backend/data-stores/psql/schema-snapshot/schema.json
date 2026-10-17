@@ -43882,7 +43882,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -43893,7 +43893,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "google_user_data": {
@@ -43904,7 +43904,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "jsonb"
         },
         "google_user_email_address": {
@@ -43915,19 +43915,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "google_user_id": {
           "collation": null,
-          "comment": "Google's unique user identifier (primary key).",
+          "comment": "Google's unique external user identifier.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the Google account.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         },
         "updated_at": {
           "collation": null,
@@ -43937,7 +43948,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -43948,7 +43959,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         }
       },
@@ -43975,10 +43986,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "google_accounts_pkey": {
+        "google_accounts_google_user_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX google_accounts_pkey ON public.google_accounts USING btree (google_user_id)",
+          "definition": "CREATE UNIQUE INDEX google_accounts_google_user_id_key ON public.google_accounts USING btree (google_user_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -43987,6 +43998,26 @@
               "expression": "google_user_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "google_accounts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX google_accounts_pkey ON public.google_accounts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -44086,14 +44117,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["google_user_id"],
-        "definition": "PRIMARY KEY (google_user_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_google_accounts_updated_at": "CREATE TRIGGER trigger_google_accounts_updated_at BEFORE UPDATE ON public.google_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "google_accounts_google_user_id_key": {
+          "columns": ["google_user_id"],
+          "definition": "UNIQUE (google_user_id)"
+        }
+      }
     },
     "hostname_crawler_configurations": {
       "checkConstraints": {},
