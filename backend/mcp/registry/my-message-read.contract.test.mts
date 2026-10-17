@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
+import { findSchemaViolation } from '@voucha/mcp/schema-validator'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestDirectConversation,
@@ -57,6 +59,12 @@ describe('read_my_messages REST twins — real DB', () => {
     expect(await readMessages(caller(owner), 'get', { conversation_id: conversation.id })).toEqual(
       rest.body,
     )
+    const schema = getRegisteredToolByName('read_my_messages')!.meta!.selectOutputSchema!(
+      optionArgs('get', { conversation_id: conversation.id }),
+    )!
+    const withoutPolicy = { ...rest.body.conversation }
+    delete withoutPolicy.participant_add_policy
+    expect(findSchemaViolation(schema, { conversation: withoutPolicy })).not.toBeNull()
   })
 
   it('pages messages like REST and fences member-authored text', async () => {

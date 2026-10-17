@@ -131,7 +131,15 @@
                   "type": "object",
                   "properties": {
                     "conversation": {
-                      "$ref": "#/$defs/S1"
+                      "allOf": [
+                        {
+                          "$ref": "#/$defs/S1"
+                        },
+                        {
+                          "type": "object",
+                          "required": ["participant_add_policy"]
+                        }
+                      ]
                     }
                   },
                   "required": ["conversation"],

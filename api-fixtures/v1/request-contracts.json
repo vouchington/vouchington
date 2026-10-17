@@ -49329,7 +49329,10 @@
       "type": "object",
       "properties": {
         "conversation": {
-          "$ref": "#/components/schemas/DirectConversation"
+          "allOf": [
+            { "$ref": "#/components/schemas/DirectConversation" },
+            { "type": "object", "required": ["participant_add_policy"] }
+          ]
         }
       },
       "required": ["conversation"],
