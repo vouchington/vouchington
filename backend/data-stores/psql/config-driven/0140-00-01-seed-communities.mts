@@ -45,12 +45,14 @@ inserted AS (
 )
 SELECT id FROM updated UNION ALL SELECT id FROM inserted;`)
 
+    // A replay of the existing owner must not fire the projected count update trigger.
     parts.push(`
 INSERT INTO community_members (community_id, user_id, role)
 SELECT c.id, u.id, 'owner' FROM communities c, users u
 WHERE c.slug = '${safeSlug}' AND u.username = 'system'
 ON CONFLICT (community_id, user_id) WHERE removed_at IS NULL
-DO UPDATE SET role = 'owner', removed_at = NULL;`)
+DO UPDATE SET role = EXCLUDED.role
+WHERE community_members.role IS DISTINCT FROM EXCLUDED.role;`)
   }
 
   return parts.join('\n')

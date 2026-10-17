@@ -103,6 +103,8 @@ CREATE OR REPLACE TRIGGER trigger_communities_updated_at
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_communities__slug ON communities (slug) WHERE deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_communities__search_name ON communities (name, id) WHERE deleted_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__archived_at ON communities (archived_at) WHERE archived_at IS NOT NULL AND deleted_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_communities__created_by_id ON communities (created_by_id) WHERE deleted_at IS NULL;
@@ -782,3 +784,33 @@ CREATE INDEX IF NOT EXISTS idx_communities__created_via_oauth_client_id
 CREATE INDEX IF NOT EXISTS idx_community_applications__created_via_oauth_client_id
   ON community_applications (created_via_oauth_client_id)
   WHERE created_via_oauth_client_id IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS community_search_counts (
+  community_id UUID PRIMARY KEY
+    CONSTRAINT community_search_counts_community_foreign_key
+    REFERENCES communities(id) ON DELETE CASCADE,
+  member_count INTEGER NOT NULL DEFAULT 0
+    CONSTRAINT community_search_counts_member_nonnegative_check
+    CHECK (member_count >= 0),
+  virtual_subscription_count INTEGER NOT NULL DEFAULT 0
+    CONSTRAINT community_search_counts_virtual_subscription_nonnegative_check
+    CHECK (virtual_subscription_count >= 0),
+  list_item_count INTEGER NOT NULL DEFAULT 0
+    CONSTRAINT community_search_counts_list_item_nonnegative_check
+    CHECK (list_item_count >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_search_counts__members
+  ON community_search_counts (member_count DESC, community_id DESC);
+CREATE INDEX IF NOT EXISTS idx_community_search_counts__virtual_subscriptions
+  ON community_search_counts (virtual_subscription_count DESC, community_id DESC);
+CREATE INDEX IF NOT EXISTS idx_community_search_counts__listed_virtual_subscriptions
+  ON community_search_counts (virtual_subscription_count DESC, community_id DESC)
+  WHERE list_item_count > 0;
+
+COMMENT ON TABLE community_search_counts IS 'Transactionally maintained counts used to select indexed community search pages before hydrating metrics.';
+COMMENT ON COLUMN community_search_counts.community_id IS 'Community whose search counts are projected.';
+COMMENT ON COLUMN community_search_counts.member_count IS 'Active members, matching view_community_metrics.member_count.';
+COMMENT ON COLUMN community_search_counts.virtual_subscription_count IS 'Active proxy follows plus proxy mutes, matching view_community_metrics.virtual_subscription_count.';
+COMMENT ON COLUMN community_search_counts.list_item_count IS 'Active list items across the five community list relations.';

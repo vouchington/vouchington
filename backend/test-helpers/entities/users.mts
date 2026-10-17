@@ -66,6 +66,14 @@ export async function createTestUser(options: CreateTestUserOptions = {}): Promi
   return createTestUserDirect({ withEmail: true, ...options })
 }
 
+export async function getTestUserIdsInLocaleOrder(ids: readonly string[]): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(
+    '/* getTestUserIdsInLocaleOrder */ SELECT id FROM users WHERE id = ANY($1::uuid[]) ORDER BY LOWER(username)',
+    [ids],
+  )
+  return rows.map(row => row.id)
+}
+
 export async function updateUserUsername(userId: string, username: string): Promise<void> {
   await write(
     allowUnannotatedQuery(sql`

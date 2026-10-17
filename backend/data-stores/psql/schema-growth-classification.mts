@@ -114,6 +114,10 @@ export function buildUnboundedUnpartitionedTables(
     ),
     ...RETAINED_RELATION_GROWTH_POLICIES,
     [
+      'community_search_counts',
+      'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
+    ],
+    [
       'activitypub_inbox_delivery_work_items',
       'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
     ],

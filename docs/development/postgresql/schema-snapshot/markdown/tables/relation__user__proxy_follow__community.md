@@ -37,4 +37,5 @@ _none_
 - `relation__user__proxy_follow__community_pkey`: `CREATE UNIQUE INDEX relation__user__proxy_follow__community_pkey ON public.relation__user__proxy_follow__community USING btree (subject_id, object_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_project_community_proxy_follow_count`: `CREATE TRIGGER trigger_project_community_proxy_follow_count AFTER INSERT OR DELETE OR UPDATE OF object_id, deleted_at ON public.relation__user__proxy_follow__community FOR EACH ROW EXECUTE FUNCTION fn_project_community_virtual_subscription_count()`

@@ -1,4 +1,5 @@
 import { runRelationVoteReadScenarios } from './relation-vote-reads.mts'
+import { runCommunitySearchScenarios } from './community-search.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId, seedTopicId, seedUser } from '../run-support.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { getViewPostsHydrationContract } from '../view-posts-hydration-contract.mts'
@@ -21,7 +22,6 @@ const {
   getTrendingPosts,
   getTrendingRssFeeds,
   POST_ELECTION_CONFIG,
-  searchCommunities,
   TOPIC_ELECTION_CONFIG,
 } = services
 
@@ -107,50 +107,6 @@ export async function runEntityAndCommunityScenarios() {
 
   await runViewDrivenPostScenarios()
 
-  // Community search — JOIN with metrics view, sorted by members
-  registerScenarioContract('search-communities', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
-  })
-  await runAndCapture(
-    'search-communities',
-    () => searchCommunities({ sort: 'members', limit: 25 }),
-    'members',
-  )
-  registerScenarioContract('search-communities-virtual-subscriptions', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
-  })
-  await runAndCapture(
-    'search-communities-virtual-subscriptions',
-    () => searchCommunities({ sort: 'virtual_subscriptions', limit: 25 }),
-    'virtual-subscriptions',
-  )
-  registerScenarioContract('search-communities-has-list-items', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
-  })
-  await runAndCapture(
-    'search-communities-has-list-items',
-    () => searchCommunities({ hasListItems: true, sort: 'virtual_subscriptions', limit: 25 }),
-    'has-list-items',
-  )
-
-  // Community search — text search variant
-  registerScenarioContract('search-communities-text', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
-  })
-  await runAndCapture(
-    'search-communities-text',
-    () => searchCommunities({ search: 'seed', sort: 'name', limit: 25 }),
-    'text',
-  )
-
-  registerScenarioContract('search-communities-member', {
-    expectations: [{ kind: 'custom', name: 'searchCommunitiesEligibility' }],
-  })
-  await runAndCapture(
-    'search-communities-member',
-    () => searchCommunities({ memberUserId: seedUser.id, sort: 'name', limit: 25 }),
-    'member',
-  )
-
+  await runCommunitySearchScenarios()
   await runEntityTailScenarios()
 }

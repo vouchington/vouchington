@@ -40,4 +40,5 @@ _none_
 - `idx_community_list_posts__unique`: `CREATE UNIQUE INDEX idx_community_list_posts__unique ON public.community_list_posts USING btree (community_id, post_id) WHERE (removed_at IS NULL)`
 
 **Triggers:**
-_none_
+
+- `trigger_project_community_list_posts_count`: `CREATE TRIGGER trigger_project_community_list_posts_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_posts FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()`

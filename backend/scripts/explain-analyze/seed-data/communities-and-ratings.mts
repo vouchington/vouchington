@@ -76,6 +76,7 @@ export async function seedCommunities(communityCount = 5, pubsPerCommunity = 200
     await transaction.commit()
   }
 }
+
 export async function seedPostDataPointTopics(count = 1000, postTypeCount = count): Promise<void> {
   console.log(`Seeding ${count} post data point topic relations...`)
   {

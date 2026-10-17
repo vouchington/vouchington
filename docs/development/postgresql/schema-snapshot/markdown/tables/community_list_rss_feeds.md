@@ -40,4 +40,5 @@ _none_
 - `idx_community_list_rss_feeds__unique`: `CREATE UNIQUE INDEX idx_community_list_rss_feeds__unique ON public.community_list_rss_feeds USING btree (community_id, rss_feed_id) WHERE (removed_at IS NULL)`
 
 **Triggers:**
-_none_
+
+- `trigger_project_community_list_rss_feeds_count`: `CREATE TRIGGER trigger_project_community_list_rss_feeds_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()`

@@ -64,6 +64,7 @@ Archived communities are read-only: no new members, no member role changes, no m
 
 - `communities` — core entity; `archived_at`/`archived_by_id` track archival state; `deleted_at` is a soft-delete
 - `community_members` — role assignments (`owner`, `moderator`, `member`) with `removed_at` for soft-removal
+- `community_search_counts` — transactionally projected active member, proxy subscription, and list-item counts. Community search selects IDs from base tables using these counts, then reads `view_community_metrics` for the selected IDs. The view supplies response metrics; the projection prevents view-wide metric computation during count-based sorting and list-item filtering.
 - `community_invites` — invite links with `accepted_at`, `declined_at`, `revoked_at` lifecycle columns
 - `community_applications` — join applications with `approved_at`/`rejected_at` review flow
 - `community_application_questions` — active form questions; `options` is a JSON array of select labels; replacement soft-deletes the previous set
