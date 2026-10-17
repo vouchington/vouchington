@@ -113,9 +113,10 @@ function main() {
     console.log(`\nSQL:\n${r.query_text}\n`)
     console.log(`Plan:`)
     console.log(formatPlan(r.plan))
-    const completeness = hasLaunchedParallelWorkers(r.plan)
-      ? ' (incomplete: leader-local counts omit parallel workers)'
-      : ''
+    const completeness =
+      !r.function_calls_serial && hasLaunchedParallelWorkers(r.plan)
+        ? ' (incomplete: leader-local counts omit parallel workers)'
+        : ''
     console.log(`Function calls${completeness}: ${JSON.stringify(r.function_calls ?? [])}`)
     console.log('')
   }

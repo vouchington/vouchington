@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzeResult, functionCallReports, getLargeTableRelations } from './plan-warnings.mts'
+import { analyzeResult, getLargeTableRelations } from './plan-warnings.mts'
 import type { ExplainResult } from '@data-stores/psql'
 
 function makeResult(plan: unknown, opts?: Partial<ExplainResult>): ExplainResult {
@@ -272,29 +272,5 @@ describe('analyzeResult', () => {
     expect(warnings.appendOverhead).toHaveLength(0)
     expect(warnings.highSharedBuffers).toHaveLength(0)
     expect(warnings.resourcePressure).toHaveLength(0)
-  })
-})
-
-describe('functionCallReports', () => {
-  it('marks parallel-worker function counts incomplete', () => {
-    const parallel = makeResult({ Plan: { 'Node Type': 'Gather', 'Workers Launched': 1 } })
-    expect(functionCallReports([parallel])).toEqual([{ result: parallel, busiest: null }])
-  })
-
-  it('reports only queries whose busiest function reaches 50 calls', () => {
-    const below = makeResult(null, {
-      name: 'below',
-      function_calls: [{ funcname: 'fn_below', calls: 49, total_time: 1, self_time: 1 }],
-    })
-    const atLimit = makeResult(null, {
-      name: 'at-limit',
-      function_calls: [
-        { funcname: 'fn_small', calls: 2, total_time: 1, self_time: 1 },
-        { funcname: 'fn_busy', calls: 50, total_time: 2, self_time: 2 },
-      ],
-    })
-    expect(functionCallReports([below, atLimit])).toEqual([
-      { result: atLimit, busiest: atLimit.function_calls?.[1] },
-    ])
   })
 })

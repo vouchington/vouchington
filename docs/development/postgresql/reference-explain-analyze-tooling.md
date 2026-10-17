@@ -22,6 +22,12 @@ Notable behavior:
 - `track_functions = all` is transaction-local; `pg_stat_xact_user_functions` is read immediately
   before and after replay to count only the captured statement's non-inlined user-function calls.
   Setting it requires a superuser or a role with `SET` privilege on that parameter.
+- Scenarios with a `maxFunctionCalls` cap get a second, serial replay with
+  `SET LOCAL max_parallel_workers_per_gather = 0`; its counts replace the original capture's
+  leader-only counts, while the original plan remains available for shape gates. The result marks
+  these counts with `function_calls_serial: true`. The cap is
+  `ceil(2 × max(custom-plan calls, generic-plan calls))` across captured queries. Parallel workers
+  have separate function counters, so the serial replay makes the cap deterministic.
 - replay runs inside a transaction that is rolled back after plan capture, so mutating statements
   discovered by query capture do not persist profiling side effects
 
