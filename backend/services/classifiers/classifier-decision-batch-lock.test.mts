@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { getClassifierBorrowedDecisionFacts } from '../../test-helpers/data-stores/psql/classifier-borrowed-transactions.mts'
