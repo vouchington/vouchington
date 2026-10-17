@@ -72,6 +72,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_url_hostnames__blocked`: `CREATE INDEX idx_url_hostnames__blocked ON public.url_hostnames USING btree (hostname text_pattern_ops) WHERE is_blocked`
+- `idx_url_hostnames__blocked_page`: `CREATE INDEX idx_url_hostnames__blocked_page ON public.url_hostnames USING btree (hostname, id) WHERE is_blocked`
 - `idx_url_hostnames__crawl_due`: `CREATE INDEX idx_url_hostnames__crawl_due ON public.url_hostnames USING btree (age_threshold_days, crawl_swept_at NULLS FIRST, id) INCLUDE (hostname) WHERE (is_crawlable AND (NOT is_blocked))`
 - `idx_url_hostnames__dns_disabled_at`: `CREATE INDEX idx_url_hostnames__dns_disabled_at ON public.url_hostnames USING btree (dns_disabled_at) WHERE (dns_disabled_at IS NOT NULL)`
 - `idx_url_hostnames__hostname__text_pattern_ops`: `CREATE INDEX idx_url_hostnames__hostname__text_pattern_ops ON public.url_hostnames USING btree (hostname text_pattern_ops)`

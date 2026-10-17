@@ -422,7 +422,7 @@ Community activity metrics for authorized community reads.
 Current paid membership entitlement projection; retained identities alone grant no access.
 
 ```sql
- SELECT DISTINCT ON (m.user_id) m.user_id,
+ SELECT m.user_id,
     product.plan,
     m.id AS membership_id
    FROM (((((memberships m
@@ -431,13 +431,7 @@ Current paid membership entitlement projection; retained identities alone grant 
      LEFT JOIN membership_source_states source_state ON ((source_state.membership_source_id = source.id)))
      LEFT JOIN membership_provider_observations observation ON ((observation.id = source_state.membership_provider_observation_id)))
      LEFT JOIN membership_provider_evidence_records evidence ON ((evidence.id = observation.membership_provider_evidence_record_id)))
-  WHERE ((m.projection_ended_at IS NULL) AND (m.cancelled_at IS NULL) AND (m.expired_at IS NULL) AND (m.paused_at IS NULL) AND ((source.source_kind = 'direct'::membership_source_kinds) OR (m.expires_at IS NULL) OR (m.expires_at > CURRENT_TIMESTAMP)) AND ((source.source_kind <> 'family'::membership_source_kinds) OR ((source_state.cancelled_at IS NULL) AND (source_state.expired_at IS NULL) AND (source_state.past_due_at IS NULL) AND (source_state.paused_at IS NULL) AND (source_state.effective_at <= CURRENT_TIMESTAMP) AND ((source_state.expires_at IS NULL) OR (source_state.expires_at > CURRENT_TIMESTAMP)) AND (evidence.verified_at IS NOT NULL) AND (evidence.rejected_at IS NULL))))
-  ORDER BY m.user_id,
-        CASE product.plan
-            WHEN 'pro'::membership_plan_slugs THEN 3
-            WHEN 'plus'::membership_plan_slugs THEN 2
-            ELSE NULL::integer
-        END DESC, m.id DESC;
+  WHERE ((m.projection_ended_at IS NULL) AND (m.cancelled_at IS NULL) AND (m.expired_at IS NULL) AND (m.paused_at IS NULL) AND ((source.source_kind = 'direct'::membership_source_kinds) OR (m.expires_at IS NULL) OR (m.expires_at > CURRENT_TIMESTAMP)) AND ((source.source_kind <> 'family'::membership_source_kinds) OR ((source_state.cancelled_at IS NULL) AND (source_state.expired_at IS NULL) AND (source_state.past_due_at IS NULL) AND (source_state.paused_at IS NULL) AND (source_state.effective_at <= CURRENT_TIMESTAMP) AND ((source_state.expires_at IS NULL) OR (source_state.expires_at > CURRENT_TIMESTAMP)) AND (evidence.verified_at IS NOT NULL) AND (evidence.rejected_at IS NULL))));
 ```
 
 ## `view_embedded_topics`
@@ -1015,11 +1009,49 @@ RSS item response projection; callers enforce feed and item visibility.
           WHERE ((rfis.rss_feed_item_id = rss_feed_items.id) AND (rf.deleted_at IS NULL))
           ORDER BY rf.is_enabled DESC, rf.is_discoverable DESC, t.votes_score_net DESC NULLS LAST, rfis.created_at
          LIMIT 1) best_source ON (true))
-     JOIN view_rss_feeds primary_feed ON ((primary_feed.id = best_source.rss_feed_id)))
+     JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,
+            view_rss_feeds.id,
+            view_rss_feeds.title,
+            view_rss_feeds.is_enabled,
+            view_rss_feeds.is_discoverable,
+            view_rss_feeds.etag,
+            view_rss_feeds.last_modified_at,
+            view_rss_feeds.last_fetched_at,
+            view_rss_feeds.feed_type,
+            view_rss_feeds.canonical_rss_feed_id,
+            view_rss_feeds.rss_feed_url,
+            view_rss_feeds.home_page_url,
+            view_rss_feeds.topic,
+            view_rss_feeds.publisher_type,
+            view_rss_feeds.hostname,
+            view_rss_feeds.podcast_show,
+            view_rss_feeds.categories
+           FROM view_rss_feeds
+          WHERE (view_rss_feeds.id = best_source.rss_feed_id)
+         LIMIT 1) primary_feed ON (true))
      LEFT JOIN LATERAL ( SELECT json_agg(row_to_json(vrf.*) ORDER BY rf2.is_enabled DESC, rf2.is_discoverable DESC, t2.votes_score_net DESC NULLS LAST, rfis2.created_at) AS rss_feed_sources
            FROM (((rss_feed_item_sources rfis2
              JOIN rss_feeds rf2 ON ((rf2.id = rfis2.rss_feed_id)))
-             JOIN view_rss_feeds vrf ON ((vrf.id = rfis2.rss_feed_id)))
+             JOIN LATERAL ( SELECT view_rss_feeds.__entity_type,
+                    view_rss_feeds.id,
+                    view_rss_feeds.title,
+                    view_rss_feeds.is_enabled,
+                    view_rss_feeds.is_discoverable,
+                    view_rss_feeds.etag,
+                    view_rss_feeds.last_modified_at,
+                    view_rss_feeds.last_fetched_at,
+                    view_rss_feeds.feed_type,
+                    view_rss_feeds.canonical_rss_feed_id,
+                    view_rss_feeds.rss_feed_url,
+                    view_rss_feeds.home_page_url,
+                    view_rss_feeds.topic,
+                    view_rss_feeds.publisher_type,
+                    view_rss_feeds.hostname,
+                    view_rss_feeds.podcast_show,
+                    view_rss_feeds.categories
+                   FROM view_rss_feeds
+                  WHERE (view_rss_feeds.id = rfis2.rss_feed_id)
+                 LIMIT 1) vrf ON (true))
              JOIN topics t2 ON ((t2.id = rf2.topic_id)))
           WHERE (rfis2.rss_feed_item_id = rss_feed_items.id)) all_sources ON (true))
   WHERE (rss_feed_items.deleted_at IS NULL);
