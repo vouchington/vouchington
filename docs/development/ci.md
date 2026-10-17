@@ -1,282 +1,155 @@
 # CI Reference
 
-Full map of every CI check: workflow file, config, scope, and coverage rules. The hand-maintained
-Mermaid diagrams (Always run, Pull requests, and Main) are linked from the
-[Workflow automation map](ci/workflows/reference-workflow-automation-map.md); generate
-an exact workflow-only graph with `pnpm run ci:topology --format mermaid`. For local commands see
-[tests.md](tests.md).
+Why CI is shaped the way it is. Workflow YAML is the source of truth for triggers, jobs, and
+dependencies; `pnpm run ci:topology --format mermaid` renders the exact graph, and the
+hand-maintained diagrams are linked from the
+[Workflow automation map](ci/workflows/reference-workflow-automation-map.md). For local commands see
+[tests.md](tests.md), and for the rest of the CI docs see the [CI documentation index](ci/README.md).
 
-The [EXPLAIN ANALYZE seed guide](postgresql/explain-analyze/README.md#1-seed-test-data)
-describes the incremental post-seed timing, PostgreSQL observer, and host/container resource files
-retained by the failed-run artifact. Use those records to locate a seed-step timeout before
-changing the seed workload or its bound.
-A backend-unit shard killed by its step timeout leaves its evidence in the log and a one-day
-`backend-file-progress-shard-N` artifact: a `[backend-unit-deadline]` dump 60 seconds before the
-deadline names the unfinished test files and the largest processes (see
-[Vitest CI mapping](ci/workflows/VITEST.md)). Default logs stay quiet.
-The `pnpm run explain:coverage` report is local-only analysis of completed EXPLAIN results;
-Nightly produces the artifact, while Tooling CI runs its classifier and artifact-validation
-tests. See the [EXPLAIN coverage guide](postgresql/explain-analyze/README.md#4-find-reads-without-a-scenario).
+## Budgets and cost
 
-Which static gates local planning lists, and which gates are intentionally CI-only, is in
-[Local CI Parity](local-development/reference-local-ci-parity.md#static-gates-that-local-selection-must-list).
-
-AST-grep scans honor the severity declared in each rule: errors block CI and warnings report staged
-cleanup work. Entrypoints must not use a bare `--error`, which would promote warning rollouts.
-
-Every CI job targets around 8 minutes of execution time via fewer, longer-running shards; 10
-minutes is a hard performance ceiling, not a timeout or CI failure threshold. The read-only
-[`ci-job-runtime-audit.mts`](../../ci/ci-job-runtime-audit.mts) command is a thin wrapper over
-`vouchington-tooling/gha-runtime-audit`. It checks successful jobs in each workflow's 10 most recent
-completed in-scope runs from the six area workflows on pull requests; main workflows publish
-or deploy and are intentionally outside the validation-runtime audit.
-It retains up to the latest five successful executions for each exact job name within that horizon; it
-does not claim exhaustive history. The scheduled
+Every CI job targets a runtime budget via fewer, longer-running shards; the ceiling is a
+performance budget, not a timeout or CI failure threshold. The scheduled
 [`ci-job-runtime.md`](../prompts/scheduled/ci-job-runtime.md) prompt turns the highest-ranked breach
-into one issue or an update to an existing issue.
+of the ceiling into one issue, and the scheduled
+[`ci-log-quality.md`](../prompts/scheduled/ci-log-quality.md) prompt selects one bounded,
+diagnostics-preserving log fix. Use [`transient-retry.md`](../prompts/scheduled/transient-retry.md)
+for retry fingerprint policy and the
+[`review-ci-logs` skill](../../.agents/skills/review-ci-logs/SKILL.md) to separate real failures
+from source echo, cascades, and volume-only output.
 
-CI log quality is audited separately with the
-[`review-ci-logs` skill](../../.agents/skills/review-ci-logs/SKILL.md). It samples the same core
-10-run horizon plus recent repository-wide failures, ranks downloaded log-archive entries by
-uncompressed size, and separates real failures from source echo, downstream cascades, necessary
-diagnostics, advisories, and volume-only output. The scheduled
-[`ci-log-quality.md`](../prompts/scheduled/ci-log-quality.md) iteration selects one bounded,
-diagnostics-preserving fix PR. Use the runtime prompt for duration breaches and
-[`transient-retry.md`](../prompts/scheduled/transient-retry.md) for retry fingerprint policy.
+CI is expensive, including GitHub Actions artifact and cache storage, so every artifact and the
+repository retention setting are as short as possible. The scheduled
+[cleanup-artifacts.yml](../../.github/workflows/cleanup-artifacts.yml) sweep deletes only
+delete-classified artifacts from runs that concluded `success` or `cancelled`: failed runs keep
+their same-run handoffs because a rerun may need them. Which names are kept or deleted is defined
+once in [ci/cleanup-artifacts-patterns.json](../../ci/cleanup-artifacts-patterns.json). See
+[Artifact Rerun Safety](ci/workflows/reference-artifact-rerun-safety.md). The weekly
+[GHCR cleanup](../../.github/workflows/ghcr-cleanup.yml) keeps images main still reaches and deletes
+images from ejected or failed merge groups after a seven day grace period.
 
-The July 25, 2026 scheduled audit found the largest safe log-quality target in `Main CI (backend)`
-`build / build / build`: run `30157716207` emitted an 8,557-line, 1,691,436-byte build step while
-reporting one actionable Trivy finding, `find-my-way` `CVE-2026-47219`, with fixed version `9.7.0`.
-The image gates now retain full Trivy tables and SBOMs in one-day `trivy-*` artifacts, write tables
-with `--output`, and print only complete nonzero vulnerability blocks to the live log and step
-summary. Scanner errors remain distinct annotations, while clean scans stay quiet.
+Log volume is a cost too, so noise with no reader is suppressed at the source: Valkey runs as a step
+container (a service container dumps its full `docker logs` at teardown on every run), pnpm installs
+use `--loglevel=warn`, Docker build steps disable buildx provenance metadata, Trivy tables go to
+artifacts with only nonzero findings printed, and Storybook's repeated bundler warning prints once.
+Each is enforced by a workflow test, so do not undo one to chase a different symptom.
 
-Every `docker/build-push-action` and `docker/bake-action` step sets
-`BUILDX_METADATA_PROVENANCE: disabled`. Without it, the actions' `Metadata` log group printed the
-full `buildx.build.provenance` object, about 670 lines per image, around a digest and image name
-that no workflow reads. The setting changes only the metadata file and log, not the build output.
-`cache-policy.test.mts` requires it on every such step in a workflow or composite action.
-
-Valkey runs as a step container, not a job `services:` entry. GitHub prints a service container's
-complete `docker logs` at job teardown on every run, and the bundled search module logs about 150
-`Defined Info Field` warnings at warning level, so a green backend shard carried about 23 KB of
-Valkey output that no check reads and no log level could hide. The
-[`start-valkey`](../../.github/actions/start-valkey/action.yml) action starts the same digest-pinned
-image published to loopback on an ephemeral host port (resolved with `docker port`), waits for `PING` under a 60 second
-deadline, disables RDB saves on the disposable instance, and exports `VALKEY_URL`. A job that starts
-it ends with a `failure()`-only [`valkey-logs`](../../.github/actions/valkey-logs/action.yml) step,
-so the logs appear exactly when a job fails. `start-valkey.test.mts` requires that pairing and
-rejects any workflow that declares a `valkey` service again.
-
-Both `setup-node-pnpm` installs pass `--loglevel=warn`. At the default level each job printed about
-85 to 135 install lines (93 in the install region of run `36216699892`): `Progress: resolved …`
-lines, a `devDependencies:` summary of the root manifest, and every dependency's lifecycle-script
-output, none of which any check reads. At `warn`, pnpm prints warnings and errors only. A successful
-lifecycle script is discarded, a failed required script keeps its command, package and complete
-stdout and stderr, ignored-build warnings stay visible, and a failed supply-chain verification prints
-at error level. A successful or cached verdict is info-level, so a green install no longer prints it.
-That contract is [pnpm/pnpm#16076](https://github.com/pnpm/pnpm/pull/16076), released in pnpm 12.8;
-`version: latest-12` in `pnpm/action-setup` selects a release that has it, and an older 12.x would
-hide a failed script's output at this level. `pnpm-install-policy.test.mts` pins the flag on both
-installs. The direct installer in `postgresql-snapshot-update.yml` is separate and unchanged.
-
-`Main CI (storybook)` `publish-storybook` run `37500146641` wrote a 14,587-line, 1,401,606-byte
-job log. The `storybook build` region was 14,256 lines and 1,373,412 bytes and contained 824
-copies of the same Vite `MODULE_LEVEL_DIRECTIVE` warning: Next.js `"use client"` is not preserved
-by the Storybook bundle. The build still succeeds, and each copy repeats that fact for another
-module. Storybook's Vite `onLog` hook now prints the first module, omits the repeated boxes, and
-prints the omitted count when the build finishes. Other warning codes, error-level logs, the build
-result, and the protected Storybook artifact are unchanged.
-
-CI is expensive — this includes GitHub Actions artifact and cache storage. The repository artifact
-and log retention setting and every workflow artifact are **1 day**. `artifact-retention-policy.test.mts`
-rejects uploads that omit the literal `retention-days: 1` or substitute another value. Full-LCOV
-artifacts are consumed only by their owning area workflow and remain available for that retention
-window.
-
-[cleanup-artifacts.yml](../../.github/workflows/cleanup-artifacts.yml) runs a trusted sweep every six
-hours. It deletes delete-classified artifacts only when their artifact `created_at` is older than 6
-hours and their producing run concluded exactly `success` or `cancelled`. This is an eligibility
-threshold plus sweep cadence, not a six-hour grace window after cancellation. An unavailable/null
-run lookup is skipped for that sweep and retried on the next one; if it later resolves `success` or
-`cancelled`, it is eligible then. `failure`, `timed_out`, `action_required`, known
-unknown/unrecognized, and every other known conclusion are never swept and remain until GitHub
-expiration, because reruns may need their same-run handoffs; see [AUTHORING.md § Artifact Rerun
-Safety](ci/workflows/AUTHORING.md#artifact-rerun-safety). Which artifact name prefixes are
-kept (`next-static-*`) versus deleted (including the same-run `code-review-payload` handoff) is
-defined once in [ci/cleanup-artifacts-patterns.json](../../ci/cleanup-artifacts-patterns.json); a
-guard test fails if any real `upload-artifact` name in the workflows matches neither list. Docker
-build record uploads are disabled with `DOCKER_BUILD_RECORD_UPLOAD: 'false'` on the build workflows,
-so `.dockerbuild` records are no longer kept. Trivy upload artifacts stay enabled because they also
-carry the scan tables and SBOM outputs.
+## Principles
 
 Keep workflow triggers narrow, reproduce failures locally before rerunning, and keep tests
-fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). Area
-workflows and Gitleaks subscribe to `merge_group` checks requested; a merge group selects only the
-areas its combined queued range touches, while a pull request is judged on its own layer
-([diff scope](reference-ci-ci-job-conditions.md#change-detection-diff-scope)).
-Other workflows keep their path and branch filters. Playwright, web integration, and Docker image
-build filters should skip Markdown-only, Vitest-only, test-helper-only, and Storybook-only changes
-unless the changed files are directly owned by that workflow. Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are
-not allowed. Ephemeral GitHub-hosted jobs may cache the pnpm store, Playwright browsers, and shared
-web test runtime output through the explicit, SHA-pinned `actions/cache` policy in the [GitHub
-Actions checklist](../checklists/github-actions.md).
+fail-fast-ish (`--bail=3` for Vitest; `maxFailures: CI ? 3 : undefined` for Playwright). Path
+filters for Playwright, web integration, and Docker image builds should skip Markdown-only,
+Vitest-only, test-helper-only, and Storybook-only changes unless the workflow directly owns the
+changed files.
 
-Local development and the Harness dispatcher's reused worktree preserve local binaries and `node_modules` across runs, so setup must assume a dirty workspace and run checkout cleanup/version checks; GitHub-hosted CI runners start from a clean checkout every job and have no persisted tree to reconcile. Persistent dependency setup stores a successful dependency/platform provenance stamp under root `node_modules`; on a populated tree, a missing or changed stamp, or an invalid required workspace link, forces pnpm's script-free and strict reconciliation passes before a new stamp is written. That reconciliation performs exactly two installs: a script-free pass followed by a strict pass. If the strict pass still reports pending builds, one generic recursive pending rebuild completes them; setup does not add a third install or special-case individual packages. Matching warm state receives one ordinary install. An absent dependency tree (for example right after the Harness dispatcher's clean checkout) has nothing to reconcile, so it takes a single ordinary install and stamps on success, falling back to the two-pass reconciliation only if that install still leaves an invalid workspace link. Static analysis remains stricter and performs unconditional reconciliation so same-input native binary corruption cannot leak into typecheck.
+- Direct `node_modules` caches and `actions/setup-node` package-manager cache helpers are not
+  allowed. Ephemeral GitHub-hosted jobs may cache the pnpm store, Playwright browsers, and shared
+  web test runtime output through the SHA-pinned `actions/cache` policy in the
+  [GitHub Actions checklist](../checklists/github-actions.md).
+- Cache keys that use `hashFiles` must target source files and manifests, not broad directories, so
+  dependency trees are never traversed while keys are evaluated.
+- Web-stack test jobs clear Next.js runtime output and Wrangler/Miniflare state before tests,
+  because stale caches have caused false failures. Only explicit performance caches may be
+  restored, and their keys must invalidate often.
+- Local development and the Harness dispatcher's reused worktree keep binaries and `node_modules`
+  across runs, so setup assumes a dirty workspace and reconciles it; GitHub-hosted runners start
+  clean every job and have nothing to reconcile.
+- Tracked repository hook payloads exit immediately when `GITHUB_ACTIONS=true`: explicit workflow
+  setup actions are the sole owners of CI dependency setup.
+- Checkout-only aggregate and result gates must not spend their bounded budget reconciling
+  dependencies after a branch switch.
+- Image workflows build validation-local images with no remote cache (web alone uses the GHA cache),
+  so they stay cheap and reproducible. Private infrastructure owns production image publication.
+- Optional trusted web image publication takes `SENTRY_AUTH_TOKEN` when present; without it the
+  validated image still publishes without source maps, and pull-request and Nightly runs never
+  receive the token. See the
+  [deploy and release workflow reference](ci/workflows/reference-deploy-and-release.md).
+- GitHub-hosted runners are ephemeral and single-job-per-VM, so workflows use no shared-host locks
+  or host-pressure diagnostics. Test listeners allocate ephemeral ports in-job, which is
+  coordination within one job, not cross-job scheduling.
+- The `static-web` check produces one production-profile web build, cached under an exact run,
+  attempt, and commit key, for the web integration and Playwright jobs in the same run. Consumers
+  validate the manifest and rebuild locally when the cache is missing.
+- AST-grep scans honor each rule's declared severity: errors block CI and warnings report staged
+  cleanup work, so entrypoints must not use a bare `--error`.
 
-Tracked repository hook payloads exit before doing work when `GITHUB_ACTIONS=true`; explicit workflow
-setup actions remain the sole owners of CI dependency setup. Local developer and agent hook behavior
-is unchanged. Husky's generated trampoline can still start and source its initialization before the
-tracked payload returns, and this guard does not affect non-Husky hooks.
-Checkout-only aggregate and result gates must not spend their bounded budget reconciling dependencies
-after a branch switch: they aggregate results that earlier steps already made available.
+## Area workflows and test selection
 
-Cache keys that use `hashFiles` must target source files and manifests rather than broad directories, and package source globs must stay scoped to first-party package/source paths so dependency trees are not traversed while keys are evaluated. Web-stack test jobs must clear Next.js runtime output and Wrangler/Miniflare state before tests because stale caches have caused false failures; only explicit performance caches such as `web/.next/cache` may be restored, and those keys must invalidate often. Vouchington image workflows build validation-local images. Backend uses one bounded Bake invocation per job for either API plus worker-cpu or all three images, so the selected targets share one cache-busted builder solve without a remote cache. Web alone reads and writes its GHA cache. Any repository-independent remote-cache or performance design is owned by a separate initiative (formerly filed as jonathanong/filaments#10864). Private infrastructure owns production ECR image publication.
+<a id="area-test-suites"></a>CI never selects individual test files. File-level selection was removed,
+and bringing it back for pull requests was replayed against recent pull requests and deferred: it
+needs a patch-coverage design for partial test runs and out-of-sample evidence for its safety rules,
+because each missed test costs a merge-group ejection. Each selected area runs its full owning
+Vitest projects or Playwright specs. A workflow or action change selects every area, docs-only pull
+requests skip selected areas, and a merge group selects the areas its combined queued range touches.
+A pull request selects from its own layer's files; the two scopes differ on purpose
+([diff scope](reference-ci-ci-job-conditions.md#change-detection-diff-scope)). Only the nightly
+schedule and manual dispatch select every area without a diff. Static-analysis failures suppress
+only the tests and Docker validation builds they gate. Main push workflows stay independent with
+`cancel-in-progress: false`.
 
-The `static-web` check produces one production-profile standalone web and Cloudflare Worker build
-for the web integration and Playwright jobs in the same workflow run. The build action stores only
-runtime output under an exact run, attempt, commit, OS, and architecture cache key. Each consumer
-validates the run-bound manifest and runtime tree, then runs the same local build if the cache is missing or
-incomplete. Standalone multi-shard test workflows produce the cache before their matrix fans out;
-a standalone single-shard run builds directly in its test job. CI browser
-assets use the same-origin Cloudflare Worker route, so per-job ports do not enter the shared build.
-The deployable Docker image has its own build and is outside this test cache.
+<a id="area-workflows"></a>The per-area workflows listed in the
+[Workflow automation map](ci/workflows/reference-workflow-automation-map.md) run on pull-request
+events and merge groups, and their names are the Main ruleset's required gates (see
+[.github/workflows/AGENTS.md](../../.github/workflows/AGENTS.md)). `static` runs full static
+analysis on every change, docs-only included. Every other area starts with a `changes` job that
+selects it from shared path filters, and the job named after the area is the required check and
+passes when the area is skipped. Credentialed suites skip on untrusted pull requests, and
+Storybook skips on them unless a dependency bot opened the PR.
 
-Trusted merge-group and main-fallback web image publication keeps `SENTRY_AUTH_TOKEN` optional. A
-configured token enables Sentry release creation and source-map upload during the image build;
-without one, the validated image still publishes to GHCR without source maps. Pull-request and
-Nightly validation never receive the token or upload source maps. The Docker smoke and Trivy gates do
-not depend on this optional integration. See the [deploy and release workflow reference](ci/workflows/reference-deploy-and-release.md).
+Patch coverage is enforced by each area's `coverage` job on pull requests only, over the layer's own
+lines (rules in `.coverage-rules.yml`). Each queued entry was already gated at its pull request, and
+the combined queued range would charge an entry with other entries' lines and add a job per area and
+an ejection path for nothing. Every event still uploads full LCOV, and the informational `codecov`
+job sends it under a carryforward flag without gating. Each concurrency group starts with a
+literal area prefix and cancels only superseded pull-request runs, and
+[`nightly.yml`](../../.github/workflows/nightly.yml) calls every area daily.
 
-The weekly [GHCR cleanup](../../.github/workflows/ghcr-cleanup.yml) runs
-[`ghcr-package-retention.sh`](../../ci/ghcr-package-retention.sh) from a full-history `main` checkout.
-In each runtime package it keeps the newest 30 images whose `sha-<commit>` tag main reaches, and
-deletes an image whose commit main does not reach (an ejected or failed merge group) once it was
-created and last updated more than seven days ago. An untagged or `sha256-*` version (an
-attestation, a referrer index, or a superseded manifest) is deleted only after the same seven days,
-and only when it was created more than a day before the oldest surviving image, so it cannot belong
-to one. Every other tag is kept, and any listing error other than a missing package fails the run.
-Scheduled runs delete; manual runs list unless asked to apply.
+<a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job and the Web
+area's `test-playwright-credentialed` job call live providers as informational smoke checks: their
+gates do not wait on them, they publish no LCOV, and `.pr-shepherdrc.yml` lists them under
+`ignoreChecks`. A provider failure is not by itself a regression in this repository, so it must not
+eject a queue entry, and no [transient-failure rule](reference-ci-classifying-transient-infrastructure-failures.md)
+reruns them because a rerun of a non-gating job gains nothing. The failed job stays red so the
+check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed
+through `createProviderReplay` gate the
+same request handling deterministically; see [live-provider smoke checks](tests.md#live-provider-smoke-checks)
+for the conversion rules. To add such a job, see
+[Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md).
 
-GitHub-hosted runners are ephemeral and single-job-per-VM, so repository workflows do not use
-shared-host admission locks, host-pressure diagnostics, or deterministic runner port slices.
-`next build` still caps its page-data worker pool from the smaller positive physical or cgroup
-memory limit (`experimental.cpus`) so a constrained runner does not size from the enclosing host.
+## Automation
 
-Repository-owned Node test listeners dynamically allocate plain or Fetch-safe ephemeral ports
-through [`@ts-shared/utils/ephemeral-ports`](../../ts-shared/utils/ephemeral-ports.mts)'s
-`listenOnEphemeralPort()`. Docker callers normally let Docker assign the host-side port; the
-few in-job browser consumers that need an explicit reservation use
-[`ci/allocate-browser-safe-ports.py`](../../ci/allocate-browser-safe-ports.py) immediately before
-binding. This is in-job coordination, not cross-job runner scheduling.
+Repository automation dispatches fire-and-forget sessions through Auto Harness when the default-off
+master and per-surface gates are exactly `true`. Callers keep authorization, freshness, transient
+retry, deduplication, and failure reporting; the trusted-host agent owns its narrowly authorized
+draft PR, PR update, or comment, and every mutation-capable prompt revalidates live state
+immediately before writing. The contract is in
+[Auto Harness automation](ci/workflows/reference-harness-automation.md). Accepted residuals are not restated here.
 
-Web integration child-process ports are the exception: they are reserved outside that ephemeral
-range so a released probe cannot be reused as a connect source port before the child binds. See
-[web integration tests](testing/integration-tests/web/README.md).
-
-Repository automation dispatches fire-and-forget sessions through Auto Harness when the
-default-off master and per-surface gates are exactly `true`. Callers retain authorization,
-freshness, transient retry, deduplication, prompt rendering, and immediate failure reporting; the
-trusted-host agent owns its narrowly authorized draft PR, existing-PR update, or comment. Every
-mutation-capable prompt revalidates live trigger and exact-head state immediately before writing.
-The canonical workflow contract is [Auto Harness automation](ci/workflows/reference-harness-automation.md).
-
-PR shepherding configures bundled [bot-comment classifiers](https://github.com/jonathanong/pr-shepherd/blob/main/docs/configuration.md#classifystandard--default-)
-through [`.pr-shepherdrc.yml`](../../.pr-shepherdrc.yml), with automatic minimization for rules
-that request it. Gemini, Sourcery, and Kilo notices remain visible until the narrowed upstream
-rules are released and adopted; their current broad patterns can hide appended findings.
-Vendor notice formats determine suppression; an author's identity alone does not
-make substantive feedback disposable. Codecov report comments can arrive before all coverage
-uploads finish, so coverage checks determine actionable failures. General notice rules and their
-counterexamples belong in pr-shepherd rather than repository-local classifiers.
-The repository-local [Auto Harness classifier](../../.pr-shepherd/classification/auto-harness-session.mts)
-suppresses and automatically minimizes our session-only GitHub Actions comments. It requires the
-exact HTTPS session-link format and matching marker across configured origins; additional feedback
-remains visible to the agent.
-
-Automation Fix Main accepts push failures from the publisher workflows and schedule/manual failures
-only from the exact same-repository `Nightly` workflow on `main`. It revalidates the same completed
-source attempt before prompt transfer and
-needs-human escalation. A queued, running, or completed rerun suppresses obsolete dispatch,
-duplicate-issue comments, and escalation. Uncatalogued genuine transients still require a classifier
-with a real-log fixture and counterfixtures; a successful manual rerun alone cannot satisfy
-completion. Detailed transient markers and look-alikes are in [Classifying Transient Infrastructure
-Failures](reference-ci-classifying-transient-infrastructure-failures.md).
-
-When the merge queue removes a pull request because its merge-group CI failed or timed out,
-[Merge Queue Ejection](../../.github/workflows/merge-queue-ejection.yml) dispatches one queue-wide
-Auto Harness triage session from `main`; ejections while it is queued or running join it. The
-session triages every untriaged ejection of the last day, groups them by root cause, and explains
-each stack layer removed with them. Per root cause it fixes a flaky test in a new PR, files a CI or
-architecture issue, or comments its analysis on the ejected PRs; it never changes an ejected PR. See
-[Auto Harness automation](ci/workflows/reference-harness-automation.md#completion-specific-safeguards).
-
-A queue entry that is replaced or dequeued leaves merge-group runs that nothing else cancels.
-[Cancel Replaced Merge Group Runs](../../.github/workflows/cancel-replaced-merge-group-runs.yml) and
-[Cancel Dequeued Merge Group Runs](../../.github/workflows/cancel-dequeued-merge-group-runs.yml)
-cancel them; neither is a required check. See
-[merge queue run cancellation](ci/workflows/reference-merge-queue-run-cancellation.md) for why
-`concurrency:` cannot do this and for each workflow's guards.
-
-[`plan-completion.yml`](../../.github/workflows/plan-completion.yml) runs one retained snapshot after
-every `main` push. It paginates current open Plans and their timeline PR candidates, re-reads each
-candidate's current body/state and each Plan before writing, then updates only its
-`github-actions[bot]` marker comment. Snapshot read batches are concurrency-bounded by the Node-only
-[batch mapper](../../ci/plan-completion-batch.mts), preserve discovery order, and stop before any
-comment write if a read fails. Plan titles use the validator's case-insensitive `Plan:` convention
-during both discovery and revalidation. Discovery validates each row's shape but filters by its
-observed state, so a closed row returned during GitHub's paginated open-issue snapshot does not
-abort the audit. The advisory never edits a PR body or closes a Plan; a clear marker means only that
-the snapshot found no current warning, so planned-but-unopened work still needs a human audit.
-GitHub suppresses downstream pushes made with `GITHUB_TOKEN`; supported human and interactive merges
-already produce the required main-push event.
-
-A failure whose only failed job is `audit`, and whose terminal step is `actions/setup-node`
-after the node-versions download while adding Node to the tool cache, is catalogued as
-`plan-completion-setup-node-tool-cache-timeout` (`maxAttempts: 1`). Markers and look-alikes are in
-[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
-
-## CI behavior references
-
-- <a id="dependency-bot-review-and-main-push-ci"></a>[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)
-
-<a id="area-test-suites"></a>CI never selects individual test files. [#687](https://github.com/vouchington/vouchington/pull/687) removed file-level selection. Bringing back `no-mistakes tests plan` selection for pull requests only was replayed against recent pull requests and deferred on 2026-10-03. Reopening it needs a patch-coverage design for partial test runs and out-of-sample evidence for its safety rules, because each missed test costs a merge-group ejection ([replay data](https://github.com/vouchington/vouchington/issues/645#issuecomment-5975722357)). Each selected area runs its full owning Vitest projects or Playwright specs. A workflow or action change selects every area, docs-only pull requests skip selected areas, and a merge group selects the areas its combined queued range touches. A pull request selects from its own layer's files; the two scopes differ on purpose ([diff scope](reference-ci-ci-job-conditions.md#change-detection-diff-scope)). Only the nightly schedule and manual dispatch select every area without a diff. Static-analysis failures suppress only the tests and Docker validation builds they gate; suites otherwise begin as soon as their static gate passes or intentionally skips. Main push workflows remain independent with `cancel-in-progress: false`.
-
-<a id="area-workflows"></a>The per-area workflows listed in the [Workflow automation map](ci/workflows/reference-workflow-automation-map.md) run on pull-request events and merge groups. Their names are the [Main ruleset's required gates](../../.github/workflows/AGENTS.md). `static` runs full repository static analysis on every change, including docs-only changes. Every other area starts with `changes` ([`ci-detect-changes.yml`](../../.github/workflows/ci-detect-changes.yml)), which selects its area from shared path filters. A selected area runs every suite it owns in full, gated by its area static checks; credentialed suites skip on untrusted pull requests, and Storybook skips on them unless a dependency bot opened the PR. The job named after the area is its required check and passes when the area is skipped. Its `coverage` job ([`ci-area-coverage.yml`](../../.github/workflows/ci-area-coverage.yml)) enforces the patch coverage rules in `.coverage-rules.yml` on pull requests only, over the layer's own lines: each queued entry was already gated at its pull request, and the combined queued range would charge an entry with other entries' lines and add a job per area and an ejection path for nothing ([coverage gates](reference-ci-coverage-gates.md#area-patch-coverage)). The job is skipped there, as on nightly and manual dispatch, and the required gate passes a skipped job. Every event, merge groups included, still uploads each gating suite's full LCOV, and the `codecov` job sends it under a carryforward flag without gating. Each concurrency group starts with a literal area prefix and cancels only superseded pull-request runs. [`nightly.yml`](../../.github/workflows/nightly.yml) calls every area workflow daily and on manual dispatch, selecting every area for those events.
-
-<a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job runs the live OpenAI, Anthropic, OpenRouter, Stripe, Bedrock, and AWS tests as informational smoke checks, like `codecov`: the `backend` gate does not wait on it and neither does `coverage`. A provider failure is not by itself a regression in this repository, so the job runs where it always has (pull requests, merge groups, and the nightly run) but a failure cannot fail the required check or eject a queue entry. This adds no retry or skip, and no provider-specific [transient-failure rule](reference-ci-classifying-transient-infrastructure-failures.md) reruns it, because a rerun of a non-gating job gains nothing. The Anthropic step (branch runs only) runs whenever its federation token was minted, and the token is minted after the other providers' tests whatever their outcome, so one provider's failure never hides another's result. The failed job stays red, so the check, the Nightly run, and the existing Nightly alert still report it, and a final step adds a warning annotation and a job summary. `pr-shepherd` treats every failing pull-request check as blocking, so `.pr-shepherdrc.yml` lists this check under `ignoreChecks`. The job publishes no LCOV: recorded provider responses replayed through [`createProviderReplay`](testing/backend/helpers.md#recorded-provider-responses) in the unit projects gate the same request construction and response handling and own its coverage, so the area patch-coverage gate reads only deterministic suites. Until a provider's files are converted, lines that only a live test exercised are not covered by the gate; see [live-provider smoke checks](tests.md#live-provider-smoke-checks) for the conversion rules. `main-backend.yml` never ran these tests (it only publishes images), so the nightly run is the post-merge signal: its red conclusion still starts the existing Fix Main triage. The Web area's `test-playwright-credentialed` job, whose specs upload to a real S3 bucket and load sideloaded images through the image lambda, is informational in the same way: the `web` gate does not wait on it, `.pr-shepherdrc.yml` ignores its check, and a failure adds a warning annotation and a job summary.
-
-The existing Oxlint CI step evaluates its configured TypeScript rules from the effective root and
-nested plugin lists; parity and runtime-backed activation coverage are documented in the
-[static-analysis guide](../../static-code-analysis/README.md).
-
-The live route-catalog bounds check runs once in Static Analysis after selector-map validation;
-[translation checks](reference-tests-translation-catalog-and-locale-checks.md) owns its command
-and fixture boundary.
-
-Static Analysis also runs the [jscpd dead-code baseline gate](quality/static-code-analysis/jscpd/README.md#dead-code-baseline)
-over tracked working-tree files. It rejects new or increased findings in all configured categories
-and stale baseline entries; the separate clone-size threshold retains its existing behavior.
-
-The main-only protected Storybook and internal-documentation artifacts are keep-classified for
-their one-day retention because the trusted infrastructure publishers consume the exact completed
-source-run artifacts after the source workflows complete. Each artifact is named with its source
-run ID and attempt; infrastructure selects it by immutable artifact ID instead of checking out and
-executing product source.
+- **Fix Main** accepts push failures from the publisher workflows and schedule/manual failures only
+  from the same-repository `Nightly` workflow on `main`. It revalidates the completed source attempt
+  before prompt transfer and escalation, and a queued, running, or completed rerun suppresses
+  obsolete dispatch. Uncatalogued genuine transients still need a classifier with a real-log fixture
+  and counterfixtures; see
+  [Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md).
+- **Merge queue ejection** dispatches one queue-wide triage session that groups recent ejections by
+  root cause, fixes flaky tests in new PRs, files issues, or comments on ejected PRs, and never
+  changes an ejected PR. Replaced or dequeued queue entries leave runs that nothing else cancels, so
+  two cancel workflows handle them; see
+  [merge queue run cancellation](ci/workflows/reference-merge-queue-run-cancellation.md) for why
+  `concurrency:` cannot.
+- **Plan completion** ([`plan-completion.yml`](../../.github/workflows/plan-completion.yml)) is an
+  advisory snapshot after every `main` push. It updates only its own marker comment and never edits
+  a PR body or closes a Plan, so a clear marker means only that no warning was found, and
+  planned-but-unopened work still needs a human audit.
+- **PR shepherding** configures bot-comment classifiers through
+  [`.pr-shepherdrc.yml`](../../.pr-shepherdrc.yml). Vendor notice formats decide suppression, never an
+  author's identity alone, and Codecov comments can arrive before coverage uploads finish, so
+  coverage checks determine actionable failures. General notice rules belong in pr-shepherd rather
+  than repository-local classifiers.
 
 ## CI operations references
 
-- <a id="workflow-topology-contracts"></a>[Workflow Topology Contracts](reference-ci-workflow-topology-contracts.md)
-- <a id="diagnosing-binary-download-failures"></a>[Diagnosing Binary Download Failures](reference-ci-diagnosing-binary-download-failures.md)
-- <a id="classifying-transient-infrastructure-failures"></a>[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md)
-- <a id="static-analysis-static-code-analysisyml"></a>[Static Analysis (`static-code-analysis.yml`)](reference-ci-static-analysis-static-code-analysis-yml.md)
-- <a id="standalone-workflow-checks"></a>[Standalone Workflow Checks](reference-ci-standalone-workflow-checks.md)
 - <a id="destructive-manual-workflows"></a>[Destructive Manual Workflows](reference-ci-destructive-manual-workflows.md)
 - <a id="ci-job-conditions"></a>[CI Job Conditions](reference-ci-ci-job-conditions.md)
-- <a id="test-workflows"></a>[Test Workflows](reference-ci-test-workflows.md)
-- <a id="coverage-gates"></a>[Coverage Gates](reference-ci-coverage-gates.md)
-- <a id="workspace-cross-reference"></a>[Workspace Cross-Reference](reference-ci-workspace-cross-reference.md)
+- <a id="classifying-transient-infrastructure-failures"></a>[Classifying Transient Infrastructure Failures](reference-ci-classifying-transient-infrastructure-failures.md)
 - <a id="adding-a-trustedcredentialed-ci-job"></a>[Adding a Trusted/Credentialed CI Job](reference-ci-adding-a-trusted-credentialed-ci-job.md)
-- <a id="ci-job-timeout-budgets"></a>[CI Job Timeout Budgets](reference-ci-ci-job-timeout-budgets.md)
-
-See [catalog compilation and the tracked form keyboard reference check](quality/static-code-analysis/README.md#form-keyboard-reference-and-local-catalog) for their static CI ownership.

@@ -23,5 +23,5 @@ owned by the cache concern.
 ## Related
 
 - Rate Limiter client group and checklist for limiter changes:
-  [../valkey/README.md § Rate Limiter Checklist](../../../../../development/valkey/README.md#rate-limiter-checklist)
+  [reference-rate-limiter-checklist.md](../../../../../development/valkey/reference-rate-limiter-checklist.md)
 - Backend context: [../../AGENTS.md](../../../../../../backend/AGENTS.md)

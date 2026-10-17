@@ -82,7 +82,7 @@ A unique index on `rss_feed_id` enables `REFRESH MATERIALIZED VIEW CONCURRENTLY`
 Both buckets share one candidate read. A due feed takes priority group 1 and no deadline;
 otherwise an eligible backfill feed takes group 2 and its tier deadline. The scoring refresh
 likewise shares one materialized feed input between canonical redirect resolution and scoring.
-The [EXPLAIN scenarios](../../../../development/postgresql/explain-analyze/README.md#covered-service-queries)
+The [EXPLAIN scenarios](../../../../development/postgresql/explain-analyze/README.md#gates)
 budget these reads together with the 30-day hashtag window.
 
 ### Configuration

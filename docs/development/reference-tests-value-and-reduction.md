@@ -8,40 +8,16 @@ Every test must protect an app-owned branch, invariant, side effect, mapping, or
 
 - Keep the canonical implementation once. Do not test reexports, aliases, or pure indirection separately.
 - Reject self-comparison, an awaited operation with no assertion, and construction-only `typeof`, definedness, or truthiness assertions when an observable behavior can be asserted instead.
-- Dedupe tests with equivalent observable outcomes, while preserving tests for distinct observable contracts.
-- Use the lowest-cost realistic boundary. A unit, Storybook, integration, or browser test is valuable only for the risk that boundary owns; do not repeat the same invariant across them.
-- Prefer Storybook for static JSX when it can own the visual/component contract. Add `data-pw` only when a behavioral browser consumer needs it.
-- Do not remove credentialed or provider-backed tests merely because they are skipped without secrets or constrained to a particular environment.
-- Test helpers only when they contain nontrivial reliability behavior, such as state, retry, cleanup, parsing, synchronization, or error handling.
-- Tests and fixtures carry no dependency, image, browser, or tool version literals, so a routine bump in the production owner file never needs a matching test edit. Read the version from that file, derive it from the installed package, or assert a shape or policy such as a digest pin or a range match. Where pins belong is the [pinning policy](dependency-updates.md#docs-pinning-policy). no-mistakes `test-no-dependency-pins` enforces part of this; the rest is review.
-- Vitest tests must not spawn `no-mistakes` or call its analysis APIs, including `loadRepoTopology()`. Package-owned rule and planner behavior belongs in that package; Vouchington tests pin configuration and mock adapter mapping. Live workflow topology audits run from [`ci/check-live-workflow-topology.mts`](../../ci/check-live-workflow-topology.mts) in static-code-analysis, after `no-mistakes check`.
+- Dedupe tests with equivalent observable outcomes, but keep tests for distinct observable contracts.
+- Use the lowest-cost realistic boundary. A unit, Storybook, integration, or browser test is valuable only for the risk that boundary owns; do not repeat the same invariant across them. Prefer Storybook for static JSX it can own, and add `data-pw` only when a behavioral browser consumer needs it.
+- Do not remove credentialed or provider-backed tests merely because they are skipped without secrets.
+- Test helpers only when they contain nontrivial reliability behavior such as state, retry, cleanup, parsing, synchronization, or error handling.
+- Tests and fixtures carry no dependency, image, browser, or tool version literals, so a routine bump never needs a matching test edit. Read the version from the owner file or assert a shape such as a digest pin or range match. Pin placement is in the [pinning policy](dependency-updates.md#docs-pinning-policy).
+- Vitest tests do not spawn `no-mistakes` or call its analysis APIs; package-owned rule behavior belongs in that package, and Vouchington tests pin configuration only.
+- Tests that read skills, instructions, or docs must identify a machine consumer or observable runtime contract. Wording and heading order are not contracts.
 
-Coverage sameness is necessary but not sufficient. Before deleting a weak test that is the sole project coverage owner for production code, consolidate, strengthen, or move that coverage to a valuable test. Never use a coverage percentage alone as proof that a deletion preserves a contract. [Suite rule R12](tests.md#test-suite-rules) allows deleting a test when line and branch coverage of the production file does not drop. Record both measurements in the pull request. [R10](tests.md#test-suite-rules) tests behavior this repository owns, not a dependency's internals.
+## Deleting a test
 
-## Review questions
+Coverage sameness is necessary but not sufficient. Before deleting a weak test that is the sole project coverage owner for production code, consolidate, strengthen, or move that coverage to a valuable test. [Suite rule R12](tests.md#test-suite-rules) governs the before/after measurement, and R10 limits tests to behavior this repository owns.
 
-For each new or changed test, identify the observable contract, an implementation defect that
-would make the test fail, and why its chosen boundary needs coverage. Prefer concrete response
-fields, persisted state, or an owned queued job over merely checking that an operation returned
-a defined value. A definedness assertion can still be useful when the operation itself enforces
-the contract, such as a throwing DOM query.
-
-Establish the fixture state deliberately and assert its expected outcome. Do not accept either
-branch just because a shared fixture might contain data. Keep browser coverage for interactions
-that component tests cannot represent, and use retrying locator assertions for asynchronous UI.
-The regex-only `repo-file-policy` check rejects the exact `.isVisible().catch(() => false)`
-fallback in tracked Playwright specs, including multiline calls. It does not parse code or infer
-assertion quality, and the same literal inside a comment or string also matches.
-
-Tests reading skills, instructions, or reference docs must identify a machine consumer or
-observable runtime contract. Wording, heading order, and example-command spelling alone are
-not contracts. Preserve checks for parsed configuration and machine-consumed markers; use the
-existing documentation link checks for link integrity. Test value and duplication remain review
-judgments rather than broad bans on mocks, Markdown reads, or `toBeDefined()`.
-
-## Evidence for a reduction
-
-Record exact base and head evidence. For changed production behavior, run the owning focused tests.
-Area patch coverage runs only from full LCOV produced by CI; locally, use
-`./ci/coverage-artifacts.sh area-check` after collecting the owning area's artifacts. Coverage
-comparison alone does not prove that a test protects a valuable contract.
+For each new or changed test, identify the observable contract, a defect that would make it fail, and why its boundary needs coverage. Establish fixture state deliberately and assert its expected outcome; do not accept either branch just because a shared fixture might contain data. Keep browser coverage for interactions component tests cannot represent, and use retrying locator assertions for asynchronous UI.

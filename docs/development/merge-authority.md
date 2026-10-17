@@ -15,7 +15,7 @@ policy engine — the checked-in PreToolUse hook shared by Claude Code and Codex
 wording or the `Main` branch ruleset.
 
 **Attended** means Claude Code set `CLAUDE_CODE_SESSION_ATTENDED=1` in the hook's environment.
-Claude Code 2.1.282 sets it to `1` for an interactive session and `0` for `claude -p`, including a
+Claude Code sets it to `1` for an interactive session and `0` for `claude -p`, including a
 `claude -p` nested inside an interactive session and the Auto Harness `claude -p --permission-mode
 auto` command. That is observed behavior, not a documented contract, so the check fails safe: if
 Claude Code stops setting the variable, the allow disappears and the harness prompts.
@@ -25,4 +25,3 @@ Claude Code stops setting the variable, the allow disappears and the harness pro
 - <a id="why-automation-means-github-actions"></a>[Why "automation" means GitHub Actions](reference-merge-authority-why-automation-means-github-actions.md)
 - <a id="decision-flow"></a>[Decision flow](reference-merge-authority-decision-flow.md)
 - <a id="automation-pr-labeling"></a>[Automation PR labeling](reference-merge-authority-automation-pr-labeling.md)
-- <a id="see-also"></a>[See also](reference-merge-authority-see-also.md)

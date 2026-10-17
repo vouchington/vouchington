@@ -8,12 +8,12 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 - **Runner label changes** — update the relevant grouped inventory reference's Runner column (see [Job & runner inventory](../development/ci/workflows/JOBS.md)) and the closed `ALLOWED_LABELS` allowlist in `runner-policy-classify.mts` (`runner-policy.test.mts` imports it). Note: the canonical `Workflow automation map` Mermaid does **not** encode runner labels.
 - **Job runner or timeout changes** — regenerate the [Job & runner inventory](../development/ci/workflows/JOBS.md) with `node ci/render-workflow-runner-inventory.mts`, then run `node ci/check-live-workflow-topology.mts` before pushing. The latter is a separate static CI step; `pnpm run no-mistakes` alone does not check the generated inventory.
 - **Runner-demand budget** — state which hosted label a new or changed job draws from and prefer the smallest runner that fits the workload. Keep new fan-out bounded and justify any increase in parallel jobs.
-- **Pin remote Actions** to a 40-hex commit SHA with a `# vX` version comment, including first-party `actions/*` and `github/*`. Local `./` composite paths stay unpinned. Owner: no-mistakes `github-actions-pinned-hash`. See [dependency-updates.md § Pinning style](../development/dependency-updates.md#pinning-style-for-github-actions).
+- **Pin remote Actions** to a 40-hex commit SHA with a `# vX` version comment, including first-party `actions/*` and `github/*`. Local `./` composite paths stay unpinned. Owner: no-mistakes `github-actions-pinned-hash`; the SHA keeps a re-pointed tag from silently changing what runs.
 - **Local composite actions require a checkout** — `uses: ./.github/actions/<name>` only resolves once `$GITHUB_WORKSPACE` has been populated by an `actions/checkout` step; a job with no checkout cannot call one. Do not add a checkout to a job deliberately kept checkout-free (for example, a required fan-in gate) merely to deduplicate inline script; weigh the real runner-demand and registry-reachability cost first. Do not add an unconditional whole-workspace `find`/`chown`/`chmod` traversal before checkout. Repair the producer or runner isolation, or use a targeted post-failure repair when logs demonstrate the need.
 - **Concurrency** — every standalone workflow must declare a concurrency group; a reusable workflow inherits its caller's. An area workflow's group starts with a literal area prefix, because under `workflow_call` `github.workflow` names the caller (`nightly.yml`). PR workflows cancel in-progress; merge-group, nightly, and per-unit main workflows use `cancel-in-progress: false`. PR workflows do not subscribe to `ready_for_review` or `converted_to_draft`: no job reads draft state, so a draft transition must not start a run.
 - **Deploys stay decoupled** — no cross-workflow deploy-order wait/poll. Only api↔workers may couple (shared DB/code/image). Application-owned schema and its current producers and consumers do not use an expand/contract app rollout; follow [One current contract](../../AGENTS.md). Keep expand/contract for an external protocol or security key rotation that already has an independent consumer. See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
-- **Script expressions** — pass anything that is not a constant context through `env:` instead of interpolating `${{ }}` into a `run:` or `github-script` body; see [Secret and Permission Scoping](../development/ci/workflows/ACTIONS.md#secret-and-permission-scoping).
-- **Checkout credentials** — when the job's `GITHUB_TOKEN` can write, set `actions/checkout` `persist-credentials: false`. `id-token: write` is the OIDC token, not the git credential. See [Secret and Permission Scoping](../development/ci/workflows/ACTIONS.md#secret-and-permission-scoping).
+- **Script expressions** — pass anything that is not a constant context through `env:` instead of interpolating `${{ }}` into a `run:` or `github-script` body.
+- **Checkout credentials** — when the job's `GITHUB_TOKEN` can write, set `actions/checkout` `persist-credentials: false`. `id-token: write` is the OIDC token, not the git credential.
 - **`actionlint`** — run on all changed `.github/workflows/*.yml` files before pushing. CI enforces it.
 - **Auto Harness admission** — Harness workflows keep only their per-target workflow concurrency
   (one group per issue, branch, run, or SHA), which prevents duplicate sessions for one target.
@@ -41,7 +41,7 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
   Dockerfile `FROM` and `# syntax=` lines, and the buildx BuildKit image. Anonymous Docker Hub
   pulls from hosted runners hit its rate limit and eject unrelated merge-queue entries
   ([#2653](https://github.com/vouchington/vouchington/issues/2653)); the mirror needs no
-  credentials and serves the pinned digest unchanged. The [Valkey acquisition helper](../development/ci/tooling/README.md)
+  credentials and serves the pinned digest unchanged. The [Valkey acquisition helper](../../.github/actions/start-valkey/pull-image.sh)
   may fall back once to Docker Hub with the exact same repository, version, and digest only when
   the explicit mirror pull exits 1 with a recognized final `unknown blob` error (bare or
   image-configuration download failure). Docker’s implicit `run` pull reported these errors as
@@ -49,7 +49,7 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
   Preserve both attempt logs and fail closed for authentication, network, timeout, and other errors;
   this exception does not permit mutable-tag fallback or job reruns.
 - **Docker host ports** — normally let Docker allocate the host-side port (use `-p "127.0.0.1::<container_port>"`); never hardcode a literal host port. A workflow that needs coordination inside one job may use `ci/allocate-browser-safe-ports.py`. Allocate immediately before binding and let the allocator print and exit; GitHub-hosted jobs are single-tenant VMs, so do not add port holds, reapers, or collision diagnostics. A caller that can choose a new port may reallocate once on `EADDRINUSE`.
-- **Script portability** — CI runs on Linux. Scripts shared with local development must also support macOS hosts. In shared scripts, avoid Bash features unavailable in macOS `/bin/bash` 3.2 unless the caller explicitly installs and invokes a newer shell.
+- **Script portability** — CI runs on Linux. Scripts shared with local development must also support macOS hosts. In shared scripts, avoid Bash features unavailable in the macOS system `/bin/bash` unless the caller explicitly installs and invokes a newer shell.
 - **Binary downloads** — when downloading binary archives, include the tool version or resolved revision in the downloaded filename/directory so updates cannot reuse stale generic `/tmp` paths.
 - **Security-guard migrations** — before replacing or deleting a workflow/security guard, enumerate the old threat cases, port the old fixture corpus to the replacement, and make the replacement pass those fixtures before removing the old guard. Bind policy decisions to immutable SHAs, and verify which inputs are runner-owned versus repo-owned so an untrusted PR cannot rewrite the policy being enforced.
 
@@ -57,5 +57,4 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 
 - [github-actions-checklist skill](../../.agents/skills/github-actions-checklist/SKILL.md) — skill entry point
 - [.github/workflows/AGENTS.md](../../.github/workflows/AGENTS.md) — scoped workflow invariants and canonical-doc routing
-- [docs/development/ci/workflows/AUTHORING.md](../development/ci/workflows/AUTHORING.md) — step timeouts, sharding, PR splitting
-- [docs/development/dependency-updates.md#pinning-style-for-github-actions](../development/dependency-updates.md#pinning-style-for-github-actions) — pinning style
+- [docs/development/ci/README.md](../development/ci/README.md) — CI documentation index

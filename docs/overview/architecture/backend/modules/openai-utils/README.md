@@ -111,7 +111,7 @@ import openai from '@modules/openai-utils/client'
 The client injects `getLongRunningExternalFetch()` because non-streaming model generation can
 validly delay complete response headers beyond the routine external dispatcher's 60-second
 backstop. Both dispatcher profiles retain the API egress guardrail; see
-[runtime timeouts](../../../../../development/runtime-timeouts.md#shared-undici-dispatchers).
+[runtime timeouts](../../../../../development/runtime-timeouts.md).
 
 ## Related
 

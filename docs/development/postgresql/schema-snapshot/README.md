@@ -151,7 +151,7 @@ Per-column `generated`/`generatedExpression` are consumed beyond documentation: 
 `ON CONFLICT DO UPDATE` guard reads every `GENERATED ... STORED` column's expression from the
 committed snapshot to map each generated column back to its source columns, then rejects a
 config-driven seed assignment that would recompute the generated value out from under the arbiter
-on replay — `VIRTUAL` columns are excluded since they never persist a stale value. See
-[Migrated to off-the-shelf tools § on-conflict-generated-arbiter.mts](../../quality/static-code-analysis/README.md#migrated-to-off-the-shelf-tools).
+on replay — `VIRTUAL` columns are excluded since they never persist a stale value. See the on-conflict-generated-arbiter guard in
+[static-code-analysis/README.md](../../quality/static-code-analysis/README.md).
 A column's generation expression is therefore schema-affecting for that guard even when the column's
 own type and nullability are unchanged.

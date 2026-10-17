@@ -2,143 +2,63 @@
 
 Source entrypoint: [backend/data-stores/psql/README.md](../../../backend/data-stores/psql/README.md)
 
-Shared PostgreSQL runtime and schema reference for Voucha backend services, APIs, workers,
-migrations, and query profiling.
-
-This package is the Vouchington adapter over [`@vouchington/postgres`](https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres).
-It constructs the process singleton (`voucha` database name, `@modules/on-error`, analytics
-sampling) after local worktree connection guards, and keeps product migrations, views, snapshots,
-and EXPLAIN ANALYZE capture here. Agent-only migration and query-change rules live in
-[AGENTS.md](../../../backend/data-stores/psql/AGENTS.md).
+This package is the Vouchington adapter over
+[`@vouchington/postgres`](https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres).
+It constructs the process singleton after local worktree connection guards, and keeps product
+migrations, views, snapshots, and EXPLAIN ANALYZE capture here. Agent-only migration and query-change
+rules live in [AGENTS.md](../../../backend/data-stores/psql/AGENTS.md); the schema rationale is in
+[PostgreSQL Schema Quality Rules](../postgres-schema-rules.md).
 
 ## Contents
 
-- <a id="exports"></a>[Exports](reference-exports.md)
-- <a id="connection-model"></a>[Connection Model](reference-connection-model.md)
+- [Connection Model](reference-connection-model.md)
+- [Transactions](reference-transactions.md)
+- [Cursors](reference-cursors.md)
+- [Read-Then-Write Lookup Upserts](reference-read-then-write-lookup-upserts.md)
+- [Migrations, Views, and Config-Driven](reference-migrations-views-and-config-driven.md)
+- [Views](reference-views.md)
+- [EXPLAIN ANALYZE Framework](explain-analyze/README.md)
 
-## Vitest Fork-Leak Context
+## Dynamic SQL
 
-When the pools are already initialized in a Vitest fork, the fork-side resource-leak diagnostic
-reports each pool's `total`, `idle`, derived `non-idle-or-connecting`, and `waiting` counts. This
-is formatter-only context for investigating `TCPSocketWrap` growth: it never initializes a pool,
-subtracts pool totals, or changes the raw `process.getActiveResourcesInfo()` detector decision. See
-[Graceful Shutdown § Fork-Side Leak Detection](../../overview/architecture/graceful-shutdown.md#fork-side-leak-detection)
-for the detection state machine and [CI Reference](../ci.md) for its CI
-diagnostic.
+- Compose optional predicates as a parenthesized group (`sqlOrGroup()` / `sqlAndGroup()`) before
+  appending them to required filters: `AND` binds tighter than `OR`, so appending `OR ...` beside
+  guarded filters can let rows bypass the guards.
+- Identifiers cannot be parameterized. Validate them with `assertWhitelistedSqlIdentifier()` against
+  a static allowlist, and validate combinations (a table paired with that table's own column), not
+  just each string.
+- Ordered cleanup and keyset scans need an index matching their stable filter and `ORDER BY`.
 
-## Scoped Transaction Query Completion
+## Per-request query profile (API tests)
 
-`runWithCapturedQueries` in [`query-capture.mts`](../../../backend/data-stores/psql/query-capture.mts)
-retains its scoped SQL capture and handler result, and always records completed transaction
-snapshots. Its handler context provides `subscribe(listener)` with synchronous, idempotent
-unsubscribe. Live events retain original executor, promise, and rejection identities; snapshots
-contain copied serializable SQL values, status, and guarded error summaries. Existing consumers
-may ignore the added diagnostics; existing artifacts do not serialize them automatically.
+The API test server wraps every request in an `AsyncLocalStorage` profile fed by the
+`onQueryTiming` hook, so unlike `runWithCapturedQueries` it sees in-transaction statements. Each
+queue or job invocation in the in-process worker adapter gets its own profile so awaiting queue
+admission never charges worker queries to the HTTP request's N+1 guard. `VITEST_DIAGNOSTICS=1` prints
+one stderr line per request.
 
-Handler settlement deactivates listeners immediately. Returning the handler result does not wait
-for unfinished descendants: consumers needing cleanup explicitly await the nonthrowing
-`completionDrain` after releasing held resources and settling their owned work. Rejected handlers
-retain their original error. Metadata and callback failures cannot replace query results or
-rejections. The wrapper calls the real executor once and returns its original promise. Raw pools
-and unwrapped autocommit queries are outside this boundary. Completed advisory-lock SQL proves
-acquisition, not entry into a later server-side lock wait.
-
-## Per-Request Query Profile (API tests)
-
-The API test server ([`server.mts`](../../../backend/test-helpers/api/server.mts)) wraps every
-request in an `AsyncLocalStorage` scope ([`request-query-profile.mts`](../../../backend/data-stores/psql/request-query-profile.mts)).
-The `onQueryTiming` hook feeds the active profile for every query, including `transaction.query()`,
-so unlike `runWithCapturedQueries` it sees in-transaction statements. The canonical in-process
-Vitest worker adapter creates a separate profile for each actual queue/job invocation: awaiting
-queue admission must not charge worker queries to the HTTP request's N+1 guard. Timings outside
-an explicitly created request or worker scope remain outside this capture. Set
-`VITEST_DIAGNOSTICS=1` to print one stderr line for each request when the response finishes or
-closes early:
-
-```text
-[pg-request-profile] route=GET /v1/posts/:id queries=14 serialDepth=6 repeats=getUserById(x5),getPostMedia(x3)
-```
-
-- **Repeat (N+1 suspect):** the same `/* annotation */` ran two or more times in one request.
-  Cursor-batch iteration (`cursorBatches`) and pipelined batches are one logical statement and are
-  excluded. Transaction control (`beginTransaction`, `beginBoundedTransaction`, and
-  `withClientTransaction`, including COMMIT and ROLLBACK) is also excluded: starting a transaction
-  is not a lookup. A per-item transaction loop is still caught by the statements repeated inside it.
-- **Serial depth:** the largest set of non-overlapping query intervals (start = completion time
-  minus `durationMs`), i.e. round trips on the critical path. `Promise.all` queries count once, but
-  `Promise.all` on a transaction client still runs serially. "Round Trips" cells in
-  `docs/requirements/api/**` mean serial depth.
-- With diagnostics disabled, query profiles remain active and unbaselined repeats still fail tests.
-- HTTP enforcement uses the response-finish/close snapshot; later queries are outside that
-  snapshot. Owned worker views can be read after their actual completion. Valkey commands have
-  no command hook and are not covered.
-
-### Owned worker profiles
-
-[`Worker.observeQueryProfiles`](../../../test-helpers/glide-mq-vitest-shim.mts) registers a
-synchronous subscriber before effects. Its view retains actual queue/job identities, copied query
-timings, summaries and ordered reporting failures even when logging is quiet. Register before
-admission, wait for the real producer/job completion boundary, and unsubscribe only after owned
-work settles. Read a retained job back by its admitted ID to observe its stored terminal result; an earlier
-admission receipt can still contain its original result snapshot.
-
-`request.workerProfiles()` and each worker's live child views contain invocations that actually
-inherit that asynchronous scope. They are not a complete queue inventory: SDK construction wakes
-can dispatch outside an admission's HTTP context. A per-worker subscriber owns such an invocation
-independently. Observation callbacks do not introduce asynchronous work joined to processor
-completion. Reporting faults remain on the owned view and cannot replace the processor result or
-rejection. Genuine HTTP repeats retain the existing enforcement and baseline below; this boundary
-does not filter query annotations or add exemptions. Worker repeats are not enforced, so the
-flush helper writes a `pg-worker-profile` stderr line per worker only with `VITEST_DIAGNOSTICS=1`
-or when a reporting failure occurred; routine CI logs stay quiet.
+- **Repeat (N+1 suspect):** the same `/* annotation */` ran two or more times in one request. Cursor
+  batches, pipelined batches, and transaction control are excluded; a per-item transaction loop is
+  still caught by the statements repeated inside it.
+- **Serial depth:** the largest set of non-overlapping query intervals, i.e. round trips on the
+  critical path (`Promise.all` counts once, but not on a transaction client). "Round Trips" cells in
+  `docs/requirements/api/**` mean serial depth. Depth is reported, not enforced.
+- Valkey commands have no command hook and are not covered. Worker repeats are not enforced.
 
 ### Enforcement and the baseline
 
-The profile is enforced. A repeated annotation within one API request that is not in
+A repeated annotation within one API request that is not in
 [`request-query-profile-baseline.json`](../../../backend/test-helpers/api/request-query-profile-baseline.json)
-fails the test that made the request, with a message naming the route and the annotation. The
-response `finish` or `close` handler records the violation once and
-[`vitest.setup.request-query-profile.mts`](../../../backend/test-helpers/vitest.setup.request-query-profile.mts)
-throws it from `afterEach` (and `afterAll`). Serial depth is reported, not enforced.
+fails the test that made the request. Each entry is `{ annotation, reason, issue }` and is per
+annotation, not per route.
 
-Each baseline entry is `{ annotation, reason, issue }`: the annotation, why the repeat is tolerated,
-and the number of the open issue that removes it. The baseline is per annotation, not per route.
-
-- **Add an entry** only for a repeat that cannot be fixed in the same PR. Prefer fixing the repeat.
-  Link an existing issue that owns the area, or file one in the "Query round-trip reductions"
-  milestone, and write a one-line `reason`.
+- **Add an entry** only for a repeat that cannot be fixed in the same PR; prefer fixing it. Link an
+  issue that owns the area, or file one in the "Query round-trip reductions" milestone.
 - **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
-  PR never depends on landing order; the entry is still deleted so the repeat cannot return.
-- **Find stale entries.** A data-dependent repeat can be missing from any single run, and one
-  process sees only a slice of the routes, so staleness is computed over several complete runs, not
-  in the test run. Set the repository variable `VITEST_DIAGNOSTICS` to `1` for 5 complete Backend
-  workflow runs on main, then unset it. Save every `test-backend-unit` shard and credentialed job
-  log from each run, concatenate each run's logs into one file, and run
-  `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. An entry is listed
-  only when it is absent from every log; delete it only then. The report prints how many logs it
-  used and warns that the result is not safe to act on when given fewer than 5. It always exits
-  successfully.
-
-## Query access references
-
-- <a id="query-helpers"></a>[Query Helpers](reference-query-helpers.md)
-- <a id="read-then-write-lookup-upserts"></a>[Read-Then-Write Lookup Upserts](reference-read-then-write-lookup-upserts.md)
-- <a id="transactions"></a>[Transactions](reference-transactions.md)
-- <a id="cursors"></a>[Cursors](reference-cursors.md)
-- <a id="migrations-views-and-config-driven"></a>[Migrations, Views, and Config-Driven](reference-migrations-views-and-config-driven.md)
-
-## Schema Object Buckets
-
-- <a id="explain-analyze-tooling"></a>[EXPLAIN ANALYZE Tooling](reference-explain-analyze-tooling.md)
-- <a id="schema-conventions"></a>[Schema Conventions](reference-schema-conventions.md)
-- <a id="ids-and-primary-keys"></a>[IDs And Primary Keys](reference-ids-and-primary-keys.md)
-- <a id="timestamps"></a>[Timestamps](reference-timestamps.md)
-- <a id="constraints-and-validation"></a>[Constraints And Validation](reference-constraints-and-validation.md)
-- <a id="postgresql-18-features"></a>[PostgreSQL 18 Features](reference-postgresql-18-features.md)
-- <a id="indexing"></a>[Indexing](reference-indexing.md)
-- <a id="partitioning"></a>[Partitioning](reference-partitioning.md)
-- <a id="views"></a>[Views](reference-views.md)
-- <a id="embeddings-and-external-metadata"></a>[Embeddings And External Metadata](reference-embeddings-and-external-metadata.md)
-- <a id="topic-additional-hostnames"></a>[Topic Additional Hostnames](reference-topic-additional-hostnames.md)
-- <a id="when-to-read-which-file"></a>[When To Read Which File](reference-when-to-read-which-file.md)
-- <a id="related"></a>[Related](reference-related.md)
+  PR never depends on landing order; deleting it keeps the repeat from returning.
+- **Find stale entries** over several complete runs, since a data-dependent repeat can be missing
+  from any single run: set the repository variable `VITEST_DIAGNOSTICS` to `1` for several complete
+  Backend workflow runs on main, then unset it. Concatenate each run's `test-backend-unit` and
+  credentialed job logs into one file per run and run
+  `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. Delete an entry only
+  when it is absent from every log; the report warns when given too few logs.

@@ -71,54 +71,8 @@ A run is successful only when Vitest prints a passing summary **and the process 
 preflight each smaller batch, and investigate the smallest reproducer with Vitest's
 `--reporter=hanging-process` diagnostics.
 
-Use `pnpm exec vitest run --project <name>` to run a single project directly. The complete
-project-to-workflow ownership map is [`docs/development/ci/workflows/VITEST.md`](ci/workflows/VITEST.md);
-the table below highlights the projects most often used for local diagnosis.
-
-| Project name                       | Test glob (`include`)                                                                                                                                 | DB `globalSetup`? | Typical use                                                                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `backend-data-stores`              | `backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,mcp,worker-runtime,workers}/**/*.test.mts` | **Yes**           | Backend API, services, data-store integration                                                        |
-| `backend-platform-stats-cache`     | `backend/api/v1/platform-stats/platform-stats.test.mts`                                                                                               | **Yes**           | Real route cache reuse with a private owned Valkey container                                         |
-| `backend-modules`                  | `backend/modules/**/*.test.mts`                                                                                                                       | No                | Reusable backend utilities; no DB needed                                                             |
-| `backend/services/analytics`       | `backend/services/analytics/**/*.test.mts`, plus `backend/services/crawler-rss/index.redirect.test.mts`                                               | No                | Isolated local analytics contracts                                                                   |
-| `backend-no-data-mocks`            | `backend/**/*.no-data.mock.test.mts` plus the exact paths below                                                                                       | No                | No-data mocks and injected unit tests                                                                |
-| `backend-mocks`                    | `backend/{agents,api,modules,data-stores,...}/**/*.mock.test.mts`, excluding `*.no-data.mock.test.mts` and `*.real-glide.mock.test.mts`               | **Yes**           | Mocked tests that still need backend services                                                        |
-| `backend-postgres-schema`          | `backend/data-stores/psql/__tests__/{schema-*,lifecycle-integrity}.test.mts`                                                                          | No                | Post-migration schema invariants                                                                     |
-| `backend-activitypub-capacity`     | ActivityPub inbox API and concurrent capacity contract tests                                                                                          | **Yes**           | Serialized durable-inbox capacity enforcement                                                        |
-| `backend-aws`                      | `backend/**/*.s3.test.mts`, `backend/modules/aws/s3.test.mts`, `backend/modules/aws/ses.generated.test.mts`                                           | **Yes**           | Real S3/SES integration                                                                              |
-| `backend-openai`                   | `backend/**/*.openai*.test.mts`                                                                                                                       | **Yes**           | Real OpenAI integration                                                                              |
-| `backend-anthropic`                | `backend/**/*.anthropic*.test.mts`                                                                                                                    | **Yes**           | Real Anthropic integration (branch runs only; CI authenticates through Workload Identity Federation) |
-| `backend-bedrock`                  | `backend/**/*.bedrock.test.mts`                                                                                                                       | No                | Real Bedrock integration (no DB needed)                                                              |
-| `backend-openrouter`               | `backend/**/*.openrouter.test.mts`                                                                                                                    | No                | Real OpenRouter integration (no DB needed)                                                           |
-| `backend-stripe`                   | `backend/**/*.stripe.test.mts`                                                                                                                        | No                | Real Stripe test-mode integration (no DB needed)                                                     |
-| `lambdas-portability`              | Lambda development-server host behavior                                                                                                               | No                | Linux host portability                                                                               |
-| `cloudflare-worker-portability`    | Wrangler runtime path and filesystem behavior                                                                                                         | No                | Linux host portability                                                                               |
-| `static-analysis-ast-grep`         | Ast-grep TSX and backend-contract parity tests, plus oxlint rule tests                                                                                | No                | Fast reusable ast-grep authoring preflight                                                           |
-| `web-storybook-component-coverage` | `web/storybook/__tests__/component-story-coverage.test.ts`                                                                                            | No                | Fast component-to-story ownership preflight                                                          |
-| `web`                              | `web/**/*.test.{ts,tsx}`                                                                                                                              | No                | Next.js components, hooks, server-actions (jsdom)                                                    |
-| `web-api`                          | `integration-tests/web-api/**/*.test.mts`                                                                                                             | **Yes**           | Next.js route handler integration                                                                    |
-| `web-integration`                  | `integration-tests/web/tests/**/*.test.mts`                                                                                                           | **Yes**           | Full-stack web integration                                                                           |
-| `cloudflare-worker`                | `cloudflare-worker/**/*.test.mts`                                                                                                                     | No                | Worker unit tests                                                                                    |
-| `cloudflare-worker-mocks`          | `cloudflare-worker/**/*.mock.test.mts`                                                                                                                | No                | Worker mock tests                                                                                    |
-| `dev-tools`                        | `dev/**/*.test.mts` plus `.pr-shepherd/**/*.test.mts` and `.agents/catalog/**/*.test.mts`                                                             | No                | Local setup and developer tooling self-tests                                                         |
-| `git-hooks`                        | `.husky/**/*.test.mts`                                                                                                                                | No                | Git hook transport and lifecycle checks                                                              |
-| `github-actions`                   | `.github/{actions,workflows}/**/*.test.mts`                                                                                                           | No                | CI workflow static checks                                                                            |
-| `ci-tools`                         | `ci/**/*.test.mts` plus root `test-helpers/*.test.mts` files                                                                                          | No                | CI tooling self-tests                                                                                |
-
-The table abbreviates each project; the `include` and `exclude` arrays in
-[`vitest.config.mts`](../../vitest.config.mts) and
-[`test-helpers/vitest-config/`](../../test-helpers/vitest-config/) are authoritative. Notably,
-`backend-data-stores` also collects `backend/test-helpers/election-vote-stats.test.mts` and
-`backend/test-helpers/entities/bluesky-link-authorizations.test.mts`, and the table omits `exclude`
-entries such as the files `backend-data-stores` leaves to the credentialed, analytics, and schema
-projects.
-
-Three ordinary `.test.mts` files are explicit `backend-no-data-mocks` includes and
-`backend-data-stores` excludes, so run them with `--project backend-no-data-mocks` without DB
-global setup:
-
-- [`backend/entrypoints/api/startup.test.mts`](../../backend/entrypoints/api/startup.test.mts)
-- [`backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts`](../../backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts)
-- [`backend/data-stores/graceful-shutdown/index.test.mts`](../../backend/data-stores/graceful-shutdown/index.test.mts)
-
-`backend-modules` does **not** use a DB `globalSetup` — new utilities under `backend/modules/` should not need database access. If your module needs DB, it belongs in `backend/data-stores/` or `backend/services/` and its tests in `backend-data-stores`.
+The `include` and `exclude` arrays in [`vitest.config.mts`](../../vitest.config.mts) and
+[`test-helpers/vitest-config/`](../../test-helpers/vitest-config/) are authoritative for which
+project owns a file, and [`VITEST.md`](ci/workflows/VITEST.md) maps projects to workflows.
+`backend-modules` does **not** use a DB `globalSetup`: a module that needs a database belongs in
+`backend/data-stores/` or `backend/services/`, with its tests in `backend-data-stores`.

@@ -1,23 +1,50 @@
 # Runtime Timeouts
 
-A registry of every runtime application timeout — server, worker, HTTP dispatcher, Lambda, and
-SSE/long-lived connection — classified by why the value is what it is, so a future change knows
-whether it's touching a protocol constraint, a tunable knob, or a crash-recovery window. Written
-for issue #8106 (child of #8107, sibling of #8078 which covered CI/harness timeouts —
-this doc is scoped to **runtime** timeouts only).
+Why runtime timeouts are what they are. The values live in code; this page records the
+constraints a change must respect.
 
-## Contents
+## Principle: SSE / long-lived connection duration under Fargate Spot
 
-- <a id="principle-sse--long-lived-connection-duration-under-fargate-spot"></a>[Principle: SSE / long-lived connection duration under Fargate Spot](reference-runtime-timeouts-principle-sse-long-lived-connection-duration-under-fargate-spot.md)
-- <a id="classification"></a>[Classification](reference-runtime-timeouts-classification.md)
-- <a id="tunable-performance-knobs"></a>[Tunable performance knobs](reference-runtime-timeouts-tunable-knobs.md)
-- <a id="crash-recovery--stall-windows-not-runtime-caps--do-not-lower"></a>[Crash-recovery / stall windows](reference-runtime-timeouts-crash-recovery.md)
-- <a id="vendored-do-not-modify"></a>[Vendored](reference-runtime-timeouts-vendored.md)
-- <a id="infra"></a>[Infra](reference-runtime-timeouts-infra.md)
-- <a id="shared-undici-dispatchers"></a>[Shared undici dispatchers](reference-runtime-timeouts-shared-undici-dispatchers.md)
-- <a id="node-http-server"></a>[Node HTTP server](reference-runtime-timeouts-node-http-server.md)
-- <a id="sse-compliance-status"></a>[SSE compliance status](reference-runtime-timeouts-sse-compliance-status.md)
-- <a id="cross-tier-observation"></a>[Cross-tier observation](reference-runtime-timeouts-cross-tier-observation.md)
-- <a id="regression-coverage"></a>[Regression coverage](reference-runtime-timeouts-regression-coverage.md)
-- <a id="follow-ups"></a>[Follow-ups](reference-runtime-timeouts-follow-ups.md)
-- <a id="related"></a>[Related](reference-runtime-timeouts-related.md)
+Production runs a mixed on-demand/Spot ECS capacity provider strategy and staging runs all Spot.
+Fargate Spot can reclaim compute at any time with only a short platform-level notice. That notice
+is distinct from the app's own graceful-shutdown force-exit timer (see
+[Graceful Shutdown](../overview/architecture/graceful-shutdown.md)); do not conflate them.
+
+No long-lived connection (SSE, WebSocket) may assume it outlives the pod. Endpoints cycle on a
+short bounded duration and clients reconnect continuously through native `EventSource` reconnect,
+so a Spot drop is indistinguishable from a routine cycle. The cap does not speed up shutdown; it
+keeps the reconnect path warm. New SSE endpoints default to a short cap unless a documented
+exemption applies. Routine cycle expiry emits no named error event, so native retry treats it
+like any dropped connection. `startSSE` owns the lifecycle.
+
+`server.timeout` (legacy socket inactivity) stays disabled on the API server: a positive value
+would cut sparse-write SSE streams mid-flight.
+
+## Crash-recovery windows are not runtime caps
+
+`glide-mq` `lockDuration` bounds how long a job may go without a heartbeat before another worker
+picks it up after a crash. Shortening it only makes a slow-but-alive job get duplicated sooner.
+Size it from heartbeat and crash-recovery behavior, never from the SSE connection lifetime.
+
+Each lapsed lock increments the job's `stalledCount`, which never resets and is independent of
+`attempts`. A deploy that force-exits the process mid-job counts as a stall, so the budget absorbs
+one deploy plus one slow heartbeat (see
+[Worker construction](../overview/architecture/backend/data-stores/valkey-glide-mq/README.md#worker-construction)).
+Raising a worker's `maxStalledCount` hides a job that keeps crashing; fix the job or its
+`lockDuration` instead.
+
+## External calls
+
+Timeouts on external fetches are sized to the peer's real latency: lowering risks spurious
+failures against a slow-but-healthy peer, raising risks a hung call holding a worker slot.
+
+- Crawler phase budgets (DNS/SSRF resolution, request to headers, body download) are independent
+  and re-armed per redirect hop; only the total crawl deadline is absolute.
+- A DNS timeout bounds only the caller's wait. The underlying lookup can keep holding a libuv
+  threadpool slot, so black-holed DNS can still exhaust the pool.
+- Each phase budget must be threaded into the body read; otherwise the call silently falls back to
+  the dispatcher's default `bodyTimeout`, which is deliberately long so sparse LLM streams are not
+  aborted mid-response.
+- Use the routine dispatcher policy unless the protocol can legitimately delay response headers
+  beyond the routine policy (AI generation).
+- The SQS client's socket timeout must stay above the protocol long poll.

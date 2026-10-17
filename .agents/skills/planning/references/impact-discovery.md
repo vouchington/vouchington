@@ -131,9 +131,7 @@ pnpm exec no-mistakes impacted-checks --generic-only --changed-files "$impact_di
   --format md >"$impact_dir/checks.md" 2>"$impact_dir/checks.stderr"
 ```
 
-Apply the same summary caps to `checks.md`. See
-[Local CI Parity](../../../../docs/development/local-development/reference-local-ci-parity.md#static-gates-that-local-selection-must-list)
-for the declared gates and the gates that are intentionally CI-only.
+Apply the same summary caps to `checks.md`. The declared gates are the `checks.commands` entries in `.no-mistakes.yml`.
 
 ## Cleanup
 

@@ -2,81 +2,20 @@
 
 [Back to Dev Environment Reference](README.md#starting-services)
 
-### Humans — `./dev/tmux` (recommended)
+Humans run `./dev/initialize web` then `./dev/tmux` and open `https://localhost:$WORKER_PORT`
+(mkcert certs required). If `./dev/tmux` prints an `http://` URL, certs are missing; use it only as a
+process liveness fallback. Agents run `source .env` then `./dev/tmux --no-attach`, poll the backend
+(`/infra/ping`), lambdas (`/health`), and Next.js ports until ready, and stop with
+`./dev/stop-services`, which preserves DB data.
 
-```bash
-git worktree add ~/worktrees/my-feature -b feature/my-feature
-cd ~/worktrees/my-feature
-./dev/initialize web
-./dev/tmux
-```
+`./dev/tmux` starts one session per physical worktree with `nextjs`, `backend`, `worker`,
+`cloudflare`, and `lambdas` windows. The `worker` runs every policy-managed queue
+(`WORKER_QUEUE_CLASS=all`, which is mutually exclusive with `QUEUES`, so a `QUEUES` value from `.env`
+makes the worker exit at startup). A later `./dev/tmux` against a ready session respawns only dead
+or missing windows. `./dev/stop-services` closes the whole managed session; when `docker ps` fails
+it warns, still closes tmux, and exits 1, so `./dev/teardown` stops before dropping the database
+until Docker is reachable.
 
-Open at `https://localhost:$WORKER_PORT` for browser-grade validation (mkcert certs required). If
-`./dev/tmux` prints `http://localhost:$WORKER_PORT`, use it only as a process liveness fallback, then
-install/regenerate mkcert certs before validating browser behavior.
-
-### Agents
-
-Agent shells are separate from the managed service session. Initialize the web stack,
-then start it without attaching:
-
-```bash
-source .env
-./dev/tmux --no-attach
-```
-
-Health check endpoints to poll until ready:
-
-- Backend: `http://localhost:$PORT/infra/ping`
-- Lambdas: `http://localhost:$IMAGE_LAMBDA_PORT/health`
-- Next.js: `http://localhost:$NEXT_PORT`
-- CF Worker: `https://localhost:$WORKER_PORT` for browser validation; `http://localhost:$WORKER_PORT`
-  only when `./dev/tmux` reports the missing-cert fallback
-
-Stop this worktree's services without dropping DB data:
-
-```bash
-./dev/stop-services
-```
-
-### Tmux Flags And Window Naming
-
-`./dev/tmux` starts one session per physical worktree with `nextjs`, `backend`,
-`worker`, `cloudflare`, and `lambdas` windows. The `worker` runs every policy-managed
-queue. Outside tmux it attaches automatically; inside tmux, pass `--no-attach` to
-start without attaching. Pass `-v` for verbose output. Requires web init.
-Concurrent starts wait until the first invocation has created all five windows.
-A later `./dev/tmux` against an already-ready session checks that each managed window still has a
-live child of the pane shell and respawns or recreates only the dead or missing windows. A waiter
-that arrives while windows are still being created does not treat empty children as a crash.
-`./dev/stop-services` closes the whole managed session, including windows added manually. If run
-from one of those windows, it waits until the calling command finishes before closing the session;
-this lets `./dev/reset`, `./dev/teardown`, and `./dev/reset-worktree` finish their remaining work.
-When `docker ps` itself fails (for example Docker is not running), `./dev/stop-services` warns that
-it cannot tell whether the Valkey container is running, still closes the tmux session, and exits 1
-instead of reporting Valkey as not running. `./dev/teardown` therefore stops before removing the
-container or dropping the database until Docker is reachable; `./dev/reset` passes `--keep-valkey`
-and never asks Docker.
-
-Before creating the API and worker windows, `./dev/tmux` builds or reuses the ignored
-worktree-local localization database at `.local/localization/catalog.sqlite` and passes that same
-path to both processes. The catalog helper anchors its default source and artifact to the worktree,
-even when invoked from a subdirectory. Healthy reuse skips that rebuild. After editing `localization/catalog/`,
-stop the tmux session and run `./dev/tmux` again; the catalog-and-package revision check rebuilds
-the database before those processes start. Restoring a dead `backend` or `worker` window rebuilds
-the catalog for that restart only. `./dev/tmux` exits 1 with a named error, instead of launching
-windows with an empty `LOCALIZATION_SQLITE_PATH`, when the catalog helper prints nothing. The
-worker window runs with `WORKER_QUEUE_CLASS=all` and names no queues, so the worker resolves its own
-queue list. A `QUEUES` value that reaches the window (for example from `.env`) makes that worker
-exit at startup, because `WORKER_QUEUE_CLASS` and `QUEUES` are mutually exclusive.
-
-Use `./dev/tmux-name <name>` from an interactive tmux pane to rename its window and pane title.
-The command identifies the pane through the controlling terminal, then checks that the pane
-belongs to this worktree. For a direct, GUI, or background launch without a controlling terminal,
-provide all three binding values:
-`./dev/tmux-name --socket <tmux-socket-path> --pane %<id> --worktree <checkout-path> <name>`.
-`AGENT_TMUX_SOCKET`, `AGENT_TMUX_PANE`, and `AGENT_TMUX_WORKTREE` provide the same binding for
-name-only calls; a complete CLI binding takes precedence. An incomplete binding is rejected.
-Pass an empty name to clear the pane title and restore automatic window naming.
-
-The local catalog CLI defaults to its owning worktree. Use `node dev/localization/local-catalog.mts --worktree-root <root>` to compile a selected worktree; unit tests select finite fixture catalogs rather than scanning the full checkout. Static CI compiles the default catalog once.
+Before creating the API and worker windows, `./dev/tmux` builds or reuses the worktree-local
+localization database at `.local/localization/catalog.sqlite`. After editing `localization/catalog/`,
+stop the session and run `./dev/tmux` again so the revision check rebuilds it.

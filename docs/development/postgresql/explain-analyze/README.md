@@ -2,680 +2,111 @@
 
 Source entrypoint: [backend/scripts/explain-analyze/README.md](../../../../backend/scripts/explain-analyze/README.md)
 
-A development tool for profiling SQL query plans across key service queries. [Suite rule R4](../../tests.md#test-suite-rules) puts realistic data sizes, query plans, wall time, heap, and pool checks here. Unit tests cross the same boundary with the smallest fixture.
-
-## Monthly-retirement server controls
-
-The existing `pruning/run.mts` non-unit CI command runs the three retirement server contracts
-inside its freshly generated owned sibling database. They verify real embedding-entity cleanup,
-crawl-pointer clearing and FK cascades, plus rollback of a blocked crawl retirement while the
-independent RSS partition still retires. Each control owns a separate schema and awaits its
-transactions and schema cleanup; partial completed-control names remain in the pruning artifact.
-The Vitest file checks only the production writer's emitted SQL/order and identifier rejection.
-Those pure checks do not claim FK, rollback or catalog execution proof. The real controls must
-pass before the existing pruning plans, and strict all-settled pool cleanup precedes sibling-database
-deletion. The existing workflow also archives native V8 execution data under `output/pruning-v8`.
-Published `c8` converts that data with its normal source-map handling into LCOV, JSON and summary
-files in `output/retirement-coverage`, archived by the existing EXPLAIN artifact step. When the
-backend workflow requests coverage, the same report is published through the normal full-LCOV
-artifact action for its required coverage gate and informational Codecov upload. R12 still requires
-the actual measured before/after
-line and branch comparison, including both the pure module and these real server controls;
-raw capture or a configured converter alone is not a preservation result.
-
-## Migration runner server controls
-
-Before the existing lifecycle and plan controls, `pruning/run.mts` runs the original package
-migration wrapper and concurrent fixed/generated/view runner duties in two separate owned sibling
-databases. The first calls the application wrapper with its canonical platform; the second retains
-two real concurrent migration sessions, one ledger entry and actual generated relation checks.
-The Vitest replacements check public platform forwarding, awaited phase order and the same client;
-they do not claim server locking or ledger coverage. The other seven migration tests are retained.
-
-Each native control has one thirty-second budget from reservation/setup through client closure,
-plain database drop and absence verification. Every command consumes the remaining budget and
-reserves termination/cleanup time. Timeout, live process-group members, missing client end or
-nonzero server clients fail the control and retain its registered sibling for diagnosis; forced drop
-is not a passing cleanup mechanism. The existing required EXPLAIN workflow invokes this canonical
-runner and archives its partial evidence. R12 preservation still requires measured before/after
-coverage of the actual wrapper/default branches and moved native duties. The converter includes
-the application migration producer and its native controls; invocation alone is not a measured
-coverage or full issue-closure claim. SQL initialization has separate public dependency-failure tests for joining
-started initializers, ordered failures and original rejection identity. They call the real forced-view
-entry under normal backend mock-project setup and reject before view SQL can execute.
-
-## Usage
-
-### 1. Seed test data
-
-Inserts representative rows across core tables (users, topics, posts, rss_feeds, etc.). Seeded UUIDs
-use the fixed `019e0000-` prefix for easy identification.
-
-```bash
-pnpm run explain:seed
-```
-
-Initialize the backend first and supply its isolated `DATABASE_URL` and `VALKEY_URL` inline for
-each command. The three `explain:*` scripts use only the caller's environment and do not load
-`.env`. Run `node backend/scripts/seeds/dev-seed.mts` before the EXPLAIN seed: the copyright
-scenarios need its notice and target, and both steps need the same stored-secret encryption key.
-CI provisions these values in its workflow.
-
-`seed.mts` and `run.mts` are separate processes, and `run.mts` re-derives every seeded post and
-crawl id from a shared UTC anchor day instead of hardcoding it. `EXPLAIN_SEED_ANCHOR_DATE`
-(`YYYY-MM-DD`, UTC) pins that day for both; a malformed value fails at import. When it is unset,
-each process uses its own current UTC day, so a local seed-and-run pair that straddles UTC midnight
-(or a month boundary, for crawl ids) fails the up-front `Seed anchor post … not found` check in
-`run.mts`. Export the variable for such a session and unset it afterwards. CI sets it once per job,
-before the seed step.
-
-While each scenario callback builds its query, `seed-clock.mts` pins `Date` to noon UTC on the
-anchor day, the instant the newest seeded post carries. A `time_range` cutoff therefore sits at the
-same offset from the seeded posts on every run; under the wall clock the `1w` window held about 60
-more or fewer posts per hour of UTC run time, which flipped the `post-search-hot` custom plan
-between a parallel seq scan and a bitmap scan of `posts` (#3022). EXPLAIN replays the captured SQL
-and values, so the pinned cutoff covers both captures and both plan-cache modes. The clock is
-restored before the EXPLAIN passes.
-
-The 100,000-post seed writes `output/seed-posts.jsonl` incrementally. Each batch and its INSERT,
-clearance update, and final COMMIT have begin/end records with elapsed time. Transaction acquisition
-is measured first; a begin record without an end record identifies the operation interrupted by the
-[CI seed-step limit](../../../../.github/workflows/explain-analyze.yml). The seed transaction's
-PostgreSQL backend PID and effective settings are recorded after acquisition. A separate, bounded
-observer connection periodically samples its `pg_stat_activity` wait, blockers, query age, and transaction age,
-then records start/end `pg_stat_wal` and `pg_stat_checkpointer` counters with numeric deltas.
-Observer errors appear in the same file and do not change the seed result. CI also saves
-`output/seed-resources.txt`, with labeled host CPU, memory, and workspace disk samples and
-PostgreSQL container stats and tmpfs usage. Both files are retained by the existing EXPLAIN results
-artifact even when seeding fails.
-
-On a freshly migrated database, the first post batch can leave the planner with empty-table
-statistics while the [`fn_ensure_retained_identity('post', id)` helper](../../../../backend/data-stores/psql/migrations/0000-00-01-retained-entity-identities.sql)
-looks up each inserted identity. An exact-schema local reproduction found repeated sequential scans
-of the growing retained-identity partition in that trigger. After the first completed batch, the
-seed runs one timed `ANALYZE retained_post_identities, posts` inside its existing transaction. Plain
-`ANALYZE` also refreshes their partitions; later batches can then plan against populated statistics.
-This addresses the reproduced stale-plan path. The hosted clearance slowdown still needs its own
-diagnostic evidence before assigning it the same cause.
-
-### COPY for high-cardinality fixtures
-
-Use COPY only when it improves a complete fixture load at its real cardinality. Compare fresh,
-equivalent databases with the same PostgreSQL version and server settings (including `work_mem`),
-and alternate candidate order to expose warm-cache effects. Measure input generation and CSV
-encoding, staging and COPY, target writes, index/statistics work, and commit. Include surrounding
-transactions: the remote-follower fixture also creates its instance directory. Compare logical
-row fingerprints and rerun counts, not just elapsed time; a faster COPY transport alone is not a
-loader win. The measured follow-up is [#1067](https://github.com/vouchington/vouchington/issues/1067).
-
-For a measured winner, stream a bounded source into typed temporary staging with `ON COMMIT DROP`,
-then use the normal ordered, idempotent SQL to merge into target tables in the same transaction.
-Keep foreign keys, triggers, post-clearance history, and the first-batch post statistics refresh
-active. A COPY or merge failure must roll back staging and target writes together. The
-[embedding batch writer](../../../../backend/services/bedrock-embeddings-batch/orchestrator/save.mts) shows the
-transaction and `pg-copy-streams` pipeline; its generator iterates an already-materialized array,
-so copying that utility does not make a large fixture source memory-bounded. Respect workspace
-dependencies: do not import the unrelated embedding service or rely on its transitive COPY package.
-Retain the full EXPLAIN corpus and custom/generic plan gates after any loader change.
-
-Repeated fresh PostgreSQL 18.6 comparisons at CI's `work_mem=32MB` and `jit=off` did not find a
-stable COPY win, so no loader was converted. These are local comparisons, not a hosted PostgreSQL
-18.4 result.
-
-The existing remote-follower loader took 7.647s for 100,000 actors, 101,000 follows, and 1,000
-directory entries; bounded staged COPY took 10.690s. Earlier 4MB pairs also favored the existing
-loader (9.68s vs 13.68s and 7.88s vs 9.40s).
-
-The 20,000-user loader's one 32MB pair was 7.743s versus 6.766s with staged COPY. Confirmation pairs
-did not repeat that gain: the existing loader took 6.128s and 14.253s, 500-row staged COPY took
-6.426s and 6.610s, and 5,000-row staged COPY took 11.405s. Earlier 4MB user pairs were mixed
-(6.11s vs 8.34s and 6.26s vs 6.03s). User fingerprints matched after initial loads and reruns.
-
-The 100,000-post loader, including clearance history and the first-batch statistics refresh, took
-17.470s, 19.197s, 20.722s, and 28.141s. Staged COPY with the same 500-row batches took 24.582s and
-29.044s. A 5,000-row COPY batch took 27.773s. A 10,000-row COPY batch took 15.057s, 25.275s, and
-30.972s. Every COPY run matched the existing loader's logical post and clearance fingerprints, and
-reruns kept those counts and fingerprints. The single faster 10,000-row sample does not repeat.
-
-Remote-follower, user, and post COPY candidates have no stable measured benefit.
-
-### UUID media replay workload
-
-Immediately before the replay scenarios, `run.mts` adds 12,000 retained delivery authorities,
-with every fourth authority in failed replay membership and the others pending. Placement UUIDs
-run in reverse record UUID order. Each record has one owned notice target, so actor lifecycle
-writes have real join partners.
-The loader uses bounded 250-row inserts with normal FKs, authority-generation and history triggers;
-reruns preserve identities and rearm only the known fixture's failed cohort. Loading this fixture
-after the existing scenarios keeps their plan measurements on the corpus seeded by `seed.mts`.
-
-The three `media-delivery-replay-*` scenarios capture the actual service's first page, UUID
-continuation and scoped UUID-array page. They require the canonical 1,000-row page configuration,
-verify every candidate belongs to the seed before a global-page call, and rearm only that page
-before explaining its lock, pending-transition and actor-event statements. Both custom and generic
-plans must use the UUID-leading failed-membership index and stay within their driving-row budgets.
-Scoped UUID arrays are materialized before the failed-index candidate lookup, preserving the
-ordered seek and page limit when custom planning would expand a constant array into bitmap work.
-The actor-event statement probes `media_delivery_registry_records_pkey` once per replayed UUID
-through a `LATERAL ... LIMIT 1`, so custom planning cannot flip a large `= ANY(array)` into a
-sequential or bitmap scan of the whole table. Its targets are materialized per selected placement
-through the placement index so a replay page does not scan unrelated notice targets.
-All current-view, lifecycle, retained-identity and FK/trigger partner statistics are refreshed.
-The capture requires exactly those three statements from the committing service call; verification
-and fixture rearming run after capture so they cannot be mistaken for replay queries.
-
-For a focused local proof after normal backend initialization and sourcing `.env`, run the same
-loader and scenarios without the rest of the corpus:
-
-```bash
-node backend/scripts/explain-analyze/media-delivery-replay.mts --seed-only /tmp/media-replay-seed.json
-EXPLAIN_PLAN_CACHE_MODE=compare node backend/scripts/explain-analyze/media-delivery-replay.mts --run-only /tmp/media-replay-plans.json
-```
-
-The output retains partial raw plans on failure. These are PostgreSQL replay plans; native queue
-producer and worker/retry proof stays in the owning backend test projects.
-
-### 2. Run EXPLAIN ANALYZE
-
-Calls each service function, captures the SQL queries, and replays them with
-`EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON)`. Results are written to
-`backend/scripts/explain-analyze/output/results-<timestamp>.json`.
-The run fails if a scenario throws, captures no SQL, or cannot replay a captured query. Partial
-results are still written so CI artifacts retain the plans captured before the failure. The JSON
-artifact contains both captured `results` and `completedScenarioIds`; a result from a failed plan
-mode does not mark its scenario complete.
-The runtime manifest requires the exact scenario identities in `scenario-manifest.mts`, so replacing
-a scenario cannot satisfy the ratchet merely by preserving its count. Required plan-shape gates also
-verify candidate-driven universal-topic search, projection-only RSS state reads, and index-ordered
-relation listings. Analysis compares temp I/O, disk spills, multi-batch hashes, and excessive WAL
-against the exact query/node/relation/kind fingerprints in `resource-pressure-baseline.mts`; a new
-fingerprint fails even when the total warning count is unchanged. Set `EXPLAIN_JIT_MODE=on` to compare
-JIT diagnostics; the default is `off`, matching application OLTP sessions.
-Set `EXPLAIN_PLAN_CACHE_MODE=compare` to capture forced custom and generic prepared plans for every
-query; CI uses this mode. Individual `auto`, `force_custom_plan`, and `force_generic_plan` modes are
-also supported. Every capture also runs under a fixed `work_mem` (`EXPLAIN_WORK_MEM` in
-`backend/data-stores/psql/explain-analyze.mts`) so a local run and CI reach the same
-spill verdict — see `reference-explain-analyze-tooling.md`.
-Each replay sets `track_functions = all` inside its rollback-only transaction and records
-`function_calls` (name, calls, total and self milliseconds). Counts are the difference between
-the readings immediately before and after the explained statement, so preparation work is excluded.
-Inlined SQL functions do not appear in PostgreSQL's function statistics. The harness role must be
-allowed to set `track_functions`; the CI PostgreSQL service connects as its superuser.
-For scenarios with `maxFunctionCalls` caps, each plan capture is followed by a separate replay with
-`SET LOCAL max_parallel_workers_per_gather = 0`. The serial replay supplies `function_calls` for the
-cap, while the original plan and its shape gates retain the scenario's planner settings. Such
-results carry `function_calls_serial: true`, including when the original plan launched workers.
-Uncapped captures retain their original counts; frequent-call reports mark them incomplete if the
-plan launched workers because transaction-local counters omit worker-backend calls.
-
-```bash
-pnpm run explain:run
-```
-
-The topic- and post-metrics scenarios use full batch sizes of 100 and 200 IDs. Their plan gates
-reject correlated metric SubPlans and source work above the normal seed's requested-ID ceilings in
-both CI plan-cache modes.
-RSS feed scenarios gate the materialized eligible cohort and one story-winner selection, and
-bound effective item/source rows plus join-filter rejections, including loops and filtered or
-rechecked scan rows. The budgets derive from the normal RSS seed sizes in
-`seed-data/common.mts`; buffer totals and timing remain diagnostic evidence. Ordinary and heavy
-follow scenarios share those budgets with a sparse source-topic filter and a text-filtered
-high-cardinality story whose feed must return one canonical representative. The skew scenario
-reuses the story-projection cohort with a dedicated search token rather than adding another
-population. Ordinary, heavy-follow, and sparse scenarios capture the first and continuation pages
-and reject repeated direct stories or delivery IDs across them. The skewed story is exhausted by
-its single canonical delivery, so it asserts `has_next_page=false` instead of replaying an empty
-continuation. Global RSS recency and semantic search keep their independent pagination gates.
-Post-share scenarios seed sparse and dense repeated deliveries to old targets through
-`seed-data/post-feed-shares.mts`, alongside disabled branches and a recipient with no shares.
-Both chronological and hot scenarios capture first and continuation pages. Their gates require
-the exact seeded distinct-target population, indexed post/root probes bounded by that population,
-and zero target/root work for an empty share cohort. They also reject joins that multiply
-eligible-target spool reads or join-filter rejections by delivery count. Disabled scenarios
-must omit share relations and CTEs from the plan; SQL builder tests prove the corresponding
-CTEs and union arm are absent from the generated query. Timing and buffers remain diagnostic.
-Story-member scenarios reuse the 1,000-item story already seeded for the RSS story-skew and URL
-projection cases. Preview limits 1 and 3 call `getStoryPreviews` with the real direct primary;
-their continuations, and the default 25-item detail first/continuation pages, call the same
-production member selector as GET `/api/v1/stories/:id`. Each page captures custom and generic
-prepared plans. The gates require an indexed `story_id` membership scan, an `id <` index bound on
-continuation, a full limit-plus-one lookahead, and physical member work bounded by that lookahead
-plus one excluded primary on first previews.
-
-The member selector evaluates discoverability and viewer exclusions in a correlated eligibility
-probe before its `LIMIT`; the probe's `LIMIT 1` keeps PostgreSQL from reordering those exclusions
-into a hash join and sorting the full remaining story on late continuations. Each selected page
-calls the production hydrator after invalidating only its selected item and election cache keys, so
-the actual item,
-election, and embed SQL is captured even after a prior warm request. Scenario assertions require
-those queries' bound item IDs and hydrated maps to match the selected page, excluding the actual
-next-page lookahead item. Zero-row optional related-post lookups are retained as production behavior
-but are not represented as positive EXPLAIN coverage. The plan gates reject broad RSS-item scans
-and hydration row counts above the selected page size. The old 2,000-row selector plans in
-`story-member-old-plans.json` are exact extracts from the paired prior route capture; gate tests
-prove both old plan modes fail the new work ceiling. The central 1,000-member seed is a separate
-dataset, so timings and buffers are diagnostic rather than a paired speedup measurement.
-The verified OAuth-client scenario interleaves a small active verified subset through a larger
-unverified population and uses a late keyset cursor with exactly 102 verified rows remaining.
-Its pagination gate requires
-`idx_oauth_clients__verified_active_id`, the late cursor as an index condition, and no
-`oauth_clients` sequential scan or explicit sort in both plan-cache modes.
-
-The `rss-feed-items-search-global-late-cursor` scenario uses the publication time and UUID of
-`seed-item-guid-20000` as an exact scoped boundary in the normal RSS seed. It requires a full page
-with lookahead. Its gate requires the composite cursor in the publication index condition and
-caps physical RSS candidate work at the scenario page size plus lookahead, counting filtered and
-rechecked rows with their loops without summing ancestor result rows. Both prepared plan modes
-must pass; response-page timestamp formatting must preserve this index traversal.
-
-Round-trip-reduction scenarios cover the batched shapes the "Query round-trip reductions" milestone
-introduced: `community-with-viewer` (`getCommunityWithViewerBySlug` and `ById`),
-`comment-ancestors-batch` (`getCommentAncestorsBatch` over ten three-level comments),
-`hostname-policies-batch` (`getLocalHostnamePolicies`, `getFullHostnamePolicies`,
-`getBlocklistedDomainKeys`), `messaging-eligibility-batch` (`currentUserCanMessageUsers`),
-`copyright-staff-case-batch` (`getPendingCopyrightStaffCase:notice`, `:targets`, `:evidence`, and
-`:formReview`) and
-`user-agent-read-first` (the leading `upsertUserAgentString` select). The seed adds 20,000
-URL-type `blocklisted_domains` rows and 5,000 `user_agent_strings` so a scan shows up. The harness
-rejects a plan that returns no rows, so the user-agent miss path and the copyright section
-statements that the development seed leaves empty are not captured. The uncaptured staff sections
-are `restrictions`, `appeals`, `counters`, `legalHolds`,
-`actionIntents`, `deliveryIntents`, `emailCorrespondence`, and `staydownMatches`; each needs its
-own valid case row to produce a nonempty root plan. The DB-backed unit tests own those results.
-
-Embedding reconciliation scenarios mark a sparse 100-item current-embedding cohort late in the
-25,000-item RSS seed. The RSS recovery service scans it with an opaque keyset cursor and a no-op
-queue boundary; its plan gate requires the pending partial index, an `id` index condition, `Limit`,
-and at most 100 physical candidates without a sequential scan or sort. The first-community-post
-scenario requires the existing `(created_by_id, community_id, id)` partial index for UUIDv7 order,
-with no extra timestamp index. Both gates run for custom and generic prepared plans.
-
-Follower-distribution rate-limit scenarios exercise all four actions against failed distributions
-with recorded deliveries, amid a larger unrelated sender cohort. Their contracts bound sender
-intent and delivery work. The moderation-bypass scenario captures the production parent-history
-lower bound; history can span ranges after its parent, so its contract declares that intentional
-read and caps processed history rows. Vote-weight factors and recommended RSS feeds remain covered
-by their existing scenarios.
-
-### Isolated topic-metrics benchmark
-
-Use the heavyweight benchmark only for before/after investigation, not as a CI timing gate:
-
-```bash
-./dev/benchmark-topic-metrics --label baseline
-./dev/benchmark-topic-metrics --label candidate
-```
-
-The command refuses the main worktree and non-local PostgreSQL targets. It creates a fresh,
-uniquely named sibling database, migrates and deterministically seeds more than one million
-associations across all five topic count families, verifies a 100-topic result against
-`view_topic_metrics`, and always drops only the database it created. Results in the ignored
-`output/` directory include raw sequential and capped-burst timings, median and nearest-rank p95,
-read-pool gauges, custom/generic EXPLAIN plans and effective rows, environment metadata, and exact
-seed counts.
-
-### 3. Analyze results
-
-Reads the latest result file and prints:
-
-- Summary table sorted by execution time
-- Seq scan warnings on large tables
-- New or stale large-table sequential-scan fingerprints relative to the checked-in baseline
-- Row estimate mismatch warnings (>10x)
-- Costliest node per query
-- New resource-pressure fingerprints relative to the checked-in baseline
-- Queries whose busiest tracked user function ran at least 50 times
-
-Scenario contracts can use `maxFunctionCalls` with a function name and maximum count. The gate
-checks every captured query in both plan-cache modes; a cap that no query in its scenario exercises
-also fails, so a removed function cannot leave a stale budget. `explain:dump` prints the complete
-function-call list, including an empty list when no user function ran. Measure hydration scenarios
-with `EXPLAIN_PLAN_CACHE_MODE=compare`, then set each function's cap to
-`ceil(2 × max(custom-plan calls, generic-plan calls))` across its captured queries. This allows
-small plan changes while exposing per-row or per-image call growth. The serial replay makes those
-counts complete without changing the plan-shape capture.
-
-The sequential-scan baseline keys each captured query and plan-cache mode to its scanned large
-relations. Monthly and default partition children use their parent relation name, so partition
-rollover does not create a new fingerprint. For each scenario, the harness captures the same SQL,
-parameters, plan-cache mode, and local settings twice, with `ANALYZE` of the touched large
-relations between captures. The service callback and fixture cleanup run only before the pair;
-EXPLAIN rolls back each statement's database writes, although PostgreSQL may still change physical
-visibility information. The diagnostic log hashes selected captured parameters and seeded relation
-keys and records relation and column statistics for plan comparisons. A fingerprint present in both
-captures but absent from the baseline fails in captured forced plan-cache modes; a baseline entry
-fails as stale only when both captures miss it. A single forced mode checks only its own baseline
-entries, while default `auto` captures keep sequential scans advisory because the baseline comes
-from CI compare-mode captures. One-pass scans stay advisory, as do estimate-mismatch, append,
-planning-ratio, and buffer warnings.
-
-The two captures share one database, so they cannot show that a scan is a coin flip across
-databases. In run 38992808434 the same one-week `posts` window cost 10676 as a sequential scan in
-one CI database and chose a bitmap scan over a 12208 sequential scan in another: the same table's
-scan cost moved 14%, and `post-search-hot` flipped. Each capture that scans a large table is
-therefore also planned, without executing, under `enable_seqscan = off`, and the cost is saved as
-`no_seq_scan_total_cost` when that plan really avoids the scan. A scan is a near-tie when avoiding
-it adds at most a quarter (`SEQ_SCAN_TIE_RATIO`) of the scan's own cost; the gate does not fail a
-near-tie that is missing from the baseline and `analyze.mts` lists it as advisory. A missing index
-keeps the scan in the probe plan, and a real regression costs far more than a quarter, so both
-still fail.
-
-The stale direction is symmetric. When a baseline entry's scan is absent from a capture, the same
-statement is planned, without executing, with index, bitmap and index-only scans disabled and saved
-as `forced_seq_scans`. If that plan really sequentially scans the baselined table and costs at most
-`SEQ_SCAN_TIE_RATIO` times that scan node's cost more than the chosen plan, the entry is an advisory
-near-tie rather than stale. A forced plan that does not reproduce the scan, or that costs clearly
-more, still fails as stale: remove the baseline entry.
-
-After bulk seeding, fixture maintenance vacuums and analyzes the six seeded relations whose
-plans varied across fresh CI databases: post categories, RSS feeds, RSS feed-item categories,
-topics, post review topic ratings, and post data-point topics. This settles their visibility maps
-and statistics before
-the first capture instead of depending on autovacuum timing. The `ANALYZE` between paired captures
-still tests plan stability on the same seeded rows; production planner settings are unchanged.
-
-```bash
-pnpm run explain:analyze
-```
-
-### 4. Find reads without a scenario
-
-`explain:coverage` compares annotated runtime SQL with captured query names and available exact
-query text. It reports annotated statements, reads, covered reads, confirmed uncovered reads, and
-ambiguous same-name reads, and unclassified SQL executions with the evaluator's reason, then
-groups entries by owning backend directory. Unclassified calls are not counted as proven reads;
-this category also shows callsites where an imported builder's annotation cannot be recovered and
-can contain writes whose full SQL was not recovered. A scenario
-suffix and either plan-cache suffix still match the underlying annotation. It counts `SELECT`,
-`TABLE`, and read-only `WITH` statements, including row-locking `FOR UPDATE` reads; writes stay in
-the annotated-statement total. Leading SQL comments after the annotation do not hide a read;
-the complete SQL text still has to match a capture exactly. The report rejects an artifact whose
-completed-scenario list or captured scenarios differ from the registered manifest, even when a
-failed final scenario already emitted one plan. Cursor helper calls from the root PostgreSQL
-package and its cursor subpath are included once when both extractors find the same call. Dynamic
-notification recipient queries use a literal annotation for each caller so both reads appear in
-the inventory. The report also retains raw `PoolClient.query` reads in its counts and uncovered
-list. The current capture hook observes PostgreSQL wrapper calls, while EXPLAIN replays on a
-different connection; a raw client read of a session-local temporary table cannot be captured or
-replayed by this harness. The scheduled prompt skips such entries when choosing a scenario and
-keeps their coverage gap visible. An annotated statement with an interpolated first
-SQL token remains in the annotated-statement total and appears as unclassified with its
-evaluator reason; its verb cannot be proven statically. Move a fixed leading read verb to the
-execution callsite when its SQL builder is dynamic, preserving the executed SQL and parameters.
-Pass a downloaded result from a successful run at the same source SHA when no local capture exists.
-
-```bash
-pnpm run explain:coverage
-pnpm run explain:coverage -- /path/to/results.json
-```
-
-The report uses the released `no-mistakes` executed-SQL extraction API over tracked runtime
-sources, excluding SQL issued only by the EXPLAIN replay infrastructure. When an annotation names
-multiple source statements, including writes, it counts an exact complete SQL
-match as covered and displays any incomplete matches separately as ambiguous. Dynamic SQL
-remains ambiguous after a same-named capture because one source call can execute several shapes.
-Complete bounded
-cursor SQL also matches the cursor API's exact outer `SELECT`/`LIMIT` wrapper around that source.
-It never normalizes
-SQL literal whitespace or guessed placeholders. The scheduled [coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md)
-uses the largest user-facing gaps to choose one new scenario per run.
-
-### 5. Dump results for analysis
-
-Prints the full SQL queries and execution plans in a text format suitable for piping to an LLM:
-
-```bash
-pnpm run explain:dump                          # print to stdout
-pnpm run explain:dump | your-llm-cli -p "analyze the query plans for performance issues"  # replace 'your-llm-cli' with your actual tool
-```
-
-## How It Works
-
-### Query capture
-
-`maybeCaptureQuery()` in
-[`backend/data-stores/psql/query-capture.mts`](../../../../backend/data-stores/psql/query-capture.mts) records SQL
-calls through the `onBeforeQuery` hook configured in
-[`setup.mts`](../../../../backend/data-stores/psql/setup.mts). The `enableQueryCapture()` /
-`disableQueryCapture()` functions toggle capture globally. `runWithCapturedQueries()` records only
-the profiled async context, so in-process workers on the same fork do not join that buffer.
-Tests use [`withCapturedTestQueries()`](../../../../backend/test-helpers/query-capture.mts) for that
-scoped snapshot. A later capture does not include queries still running from an earlier one.
-Captured queries include the SQL text and bound parameter values.
-
-### EXPLAIN replay
-
-`explainAnalyze()` strips any leading annotation comment (e.g. `/* query-name */`), prepends
-`EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON)`, and runs the query against the read pool inside a
-transaction that is always rolled back after the plan is captured. This keeps profiling safe for
-captured write queries such as stats upserts.
-
-### Query naming
-
-Queries annotated with a leading block comment — e.g. `/* feeds/posts/get-ids */ SELECT ...` —
-are named from that comment via `extractQueryName()`. Unannotated queries fall back to the label
-passed to `runAndCapture()`.
-
-## Output format
-
-Each result file is an object with captured `ExplainResult` entries and the IDs of scenarios that
-completed every required plan mode:
-
-```json
-{
-  "results": [
-    {
-      "name": "feeds/posts/get-ids",
-      "query_text": "/* feeds/posts/get-ids */ SELECT ...",
-      "plan": { "Plan": { "Node Type": "Index Scan" } },
-      "execution_time_ms": 12.3,
-      "planning_time_ms": 0.8,
-      "function_calls": [],
-      "timestamp": "2026-03-13T00:00:00.000Z",
-      "scenario_id": "posts-feed",
-      "capture_index": 0
-    }
-  ],
-  "completedScenarioIds": ["posts-feed"]
-}
-```
-
-## JIT compilation
-
-PostgreSQL auto-enables JIT when estimated cost exceeds `jit_above_cost` (default 100,000). Feed
-queries with many CTEs, subqueries, and RANGE partition scans can generate 600+ plan nodes, causing
-JIT compilation (especially optimization and emission phases) to vastly exceed actual query runtime.
-
-To measure real execution time instead of compilation overhead, `explainAnalyze()` defaults to
-`SET LOCAL jit = off` before executing `EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT JSON)`. Set
-`EXPLAIN_JIT_MODE=on` for a diagnostic comparison. `SET LOCAL` limits either mode to the profiling
-transaction and does not alter other sessions.
-
-If you see unexpectedly high execution times in EXPLAIN ANALYZE output, check whether a `JIT`
-section appears in the plan — the compilation time is separate from `Execution Time`.
-
-## Heavy-follow scenarios
-
-The seed script creates a "power user" (`seeduser1`, index 1) who follows:
-
-- 1000 users (users 2–1001)
-- 200 topics (topics 0–199)
-- 200 RSS feeds (feeds 0–199)
-
-These scenarios exercise feed queries under realistic heavy-follow conditions, revealing how
-partition fan-out and CTE complexity scale with follow counts.
-
-## Remote ActivityPub follower page gate
-
-The seed creates 100,000 remote ActivityPub followers across 1,000 hostname-backed instance
-directory records for the seeded user, plus 1,000 deterministic relations to distinct other seeded
-users. That target spread gives generic prepared plans representative `object_id` statistics while
-preserving the seeded user's 100,000-follower late-page evidence. The
-`remote-follower-inbox-late-cursor` scenario places its strict cursor so exactly `500 + 1`
-candidates remain, then asserts that full lookahead page through `listRemoteFollowerInboxPage`; its
-required plan gate rejects an underfilled or oversized page and a relation sequential scan, requires
-`idx_relation__remote_actor__follow__user__active_reverse` with the strict
-`(object_id, subject_id)` cursor condition, caps the candidate page and any sort at 501 rows, and
-rejects plans that scan more than 501 follower-relation, `remote_actors`, `topics`, or
-`fediverse_instance_topics` rows. This preserves the bounded durable fan-out contract documented by the
-[ActivityPub delivery queue](../../../overview/architecture/queues/activitypub-delivery/README.md).
-
-The `copyright-statement-facts` scenario calls `selectCopyrightStatementFacts` for the target of the
-post-image notice that `backend/scripts/seeds/dev-seed.mts` files, which the workflow runs before the
-EXPLAIN seed. Its required plan gate rejects any hashed SubPlan that reads `posts`,
-`image_placements` or `image_surface_placements`, requires the target's own `image_placements` row to
-be looked up, and caps the post rows read at 10. An `EXISTS` inside an `OR` once let PostgreSQL hash
-`view_public_post_eligibility` for every post in the database on each execution, which took seconds
-per statement on a busy test shard (#2207).
-
-## Covered service queries
-
-Materialized-view scenarios explain the live defining queries obtained through `pg_get_viewdef`,
-because PostgreSQL cannot EXPLAIN a `REFRESH MATERIALIZED VIEW`. `mv-top-hashtags-refresh`
-requires indexed content-id reads inside one transaction-time 30-day window; the seed has five old
-hashtag sources per recent source, plus recent RSS back catalogue rejected by `published_at`.
-`mv-rss-feed-crawl-tiers-refresh` budgets one read of each scoring input (shared feed inputs are
-materialized once), and `rss-feeds-to-fetch-tiered` captures the real dispatcher service call.
-Their `registerScenarioContract` relation budgets sit beside the scenarios, with measured rows
-plus 20% headroom. Processing counts include filtered rows and repeated probes;
-custom and generic plans must both pass. The tier refresh intentionally reads every
-feed to calculate percentiles; the dispatcher combines due and backfill candidates in one pass.
-
-[`scenario-manifest.mts`](../../../../backend/scripts/explain-analyze/scenario-manifest.mts) ratchet-enforces the set of scenario identities via
-`assertScenarioManifest()`, so an identity cannot be dropped, duplicated, or silently swapped for
-another. Those identities are the caller-supplied labels passed to `runAndCapture()`, not a binding
-to the service function each scenario calls — the manifest establishes label-set completeness, not
-function coverage. The profiled service functions themselves live in
-[`run-scenarios/`](../../../../backend/scripts/explain-analyze/run-scenarios/); [`run.mts`](../../../../backend/scripts/explain-analyze/run.mts) is the definitive list of top-level
-`run*Scenarios()` modules it awaits directly. Some `run-scenarios/` files are composed into
-another module instead of awaited directly — e.g. `partition-pruning.mts` is imported by
-`entities-and-communities.mts`, not by `run.mts`.
-
-**Hot-path loaders** (`run-scenarios/hot-path-loaders.mts`):
-
-These are the per-request batch/list loaders the three hottest read paths fan out to after their
-primary id query — the feed (`GET /api/v1/feeds/posts/:feed_type`), post detail
-(`GET /api/v1/posts/:idOrSlug`), and user profile (`GET /api/v1/users/:idOrSlug`) routes.
-
-- `getPostsByAnyBatch` — feed post rows batch (`view_posts` by id batch)
-- `getPublicUsersByAnyBatch` — feed shared-by users batch (`view_users_public` by id batch)
-- `getElectionsByIdBatch(posts)` — post election tallies batch (feed + post detail)
-- `getCommunitiesByIdBatch` — post communities batch (feed + post detail)
-- `listProfileLinks` — author/profile links (post detail + user profile)
-- `getUserProfileMetricsByAny` — per-profile metrics; fans out to `getUserMetricsRowByAny` and
-  `countUserMemberCommunities` (the post-facet and bookmark-count sub-queries are already covered
-  by the search and metrics scenarios)
-
-**User search** (`run-scenarios/admin-user-search.mts`): `searchUsers` / `searchAdminUsers` —
-public and admin search cover prefix, UUID, and exact primary-email lookups. The email scenario
-seeds one primary address and one non-primary address per user, so the partial primary index is
-smaller than the full email btree, checks the returned user, and requires the executing
-`idx_user_email_addresses__email_primary` probe in custom and generic plans.
-
-### Explicit-range pruning
-
-The normal idempotent seed keeps the production default-only layout. This separate runner,
-[`pruning/run.mts`](../../../../backend/scripts/explain-analyze/pruning/run.mts), creates a random, local, migrated sibling database,
-attaches two explicit UUIDv7 ranges alongside each migrated DEFAULT child, and verifies nonempty
-placement through `tableoid`. It calls `getPostByAny`,
-`getConversationMessagesByConversationId`, and
-`updateEntityRelationElectionVoteStatsFromPrimaryBatch` with real review ratings, messages, and
-votes. Each forced custom/generic plan must execute only its target RANGE leaf under the matching
-vote LIST branch; the two-target vote call must execute exactly two. Vote updates and EXPLAIN replay
-both roll back, and cache/queue side effects are disabled. The runner closes pools and removes only
-its owned sibling in `finally`, including failure paths. Partial and passing plans are retained in
-`output/pruning-proof-*.json`. Run locally with:
-
-```bash
-source .env && node backend/scripts/explain-analyze/pruning/run.mts
-```
-
-The EXPLAIN workflow runs this proof after the ordinary plan gates and uploads its artifact on
-failure. Before migration, three native lifecycle controls verify existing-name refusal,
-owned-sibling cleanup after a fixture failure, and cleanup after a CREATE succeeds but its
-transport reports failure. Each control records its original case name in the pruning artifact
-separately from the twenty plan results. Vitest checks the generated commands and ownership
-callback ordering through the public CommandRunner boundary without creating a database.
-The native controls retain the actual PostgreSQL existence checks; the pure tests do not claim
-server-state coverage. This does not change production partition creation or the normal seed.
+A development and CI tool that profiles SQL query plans for key service queries.
+[Suite rule R4](../../tests.md#test-suite-rules) puts realistic data sizes, query plans, wall time,
+heap, and pool checks here; unit tests cross the same boundary with the smallest fixture. Commands
+are `pnpm run explain:seed`, `explain:run`, `explain:analyze`, `explain:coverage`, and
+`explain:dump` (run `--help` or read the scripts for options). They use only the caller's
+environment: initialize the backend first and pass its isolated `DATABASE_URL` and `VALKEY_URL`
+inline, after running the dev seed (the copyright scenarios need its notice and target).
+
+## How it works
+
+- **Capture.** Service functions run under query capture, which records annotated SQL with bound
+  parameters. Queries are named from the leading `/* name */` annotation.
+- **Replay.** Each captured statement is replayed with `EXPLAIN (ANALYZE, BUFFERS, WAL, FORMAT
+  JSON)` on the read pool inside a transaction that is always rolled back, so captured writes are
+  safe to profile.
+- **Application-like settings.** JIT is off (it is off in application OLTP sessions, and compilation
+  time otherwise dwarfs execution on heavy feed queries; `EXPLAIN_JIT_MODE=on` is the diagnostic
+  comparison). `work_mem` is pinned so a local run reaches the same disk-spill verdict as CI.
+- **Custom and generic plans.** CI runs with `EXPLAIN_PLAN_CACHE_MODE=compare`, forcing both
+  prepared-plan modes for every query, because production hits whichever the plan cache picks.
+- **Function calls.** `track_functions` is read before and after the replay to count non-inlined
+  user-function calls. Parallel workers keep separate counters, so scenarios with a
+  `maxFunctionCalls` cap get a second serial replay for deterministic counts. Set a cap loose enough for small plan changes and tight enough to expose
+  per-row call growth.
+
+## Determinism
+
+- The seed and the run are separate processes that re-derive seeded ids from a shared UTC anchor
+  day (`EXPLAIN_SEED_ANCHOR_DATE`). CI exports it once per job so a UTC midnight between steps
+  cannot split ids; a red anchor check near midnight is a real defect, not a reason to rerun.
+- While each scenario builds its query, `Date` is pinned to the anchor day's noon so time-range
+  cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
+  different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
+- After bulk seeding, the seed runs `VACUUM`/`ANALYZE` on the relations whose plans varied across
+  fresh CI databases, instead of depending on autovacuum timing, and refreshes statistics after the
+  first post batch because a fresh database plans the retained-identity trigger against empty-table
+  statistics.
+- Seeding is idempotent (`ON CONFLICT DO NOTHING`); CI uses a fresh database per job.
+
+## Loader decisions
+
+COPY is adopted for a fixture only when it wins a complete load at real cardinality, compared on
+fresh equivalent databases with alternating order and matching logical fingerprints. Repeated
+comparisons for the remote-follower, user, and post loaders found no stable win, so none was
+converted. Any loader change must retain the full corpus and both plan-cache gates.
+
+## Gates
+
+A scenario declares its plan contract next to its service call in `run-scenarios/`. The registry
+validates scenario identities and expectation kinds, and fails if a registered scenario produced no
+capture. The manifest ratchets the set of scenario identities so one cannot be dropped, duplicated,
+or swapped; it proves label completeness, not function coverage.
+
+- **Declarative contracts** cap processed rows (returned rows, filter removals, and index rechecks,
+  times loops), require indexes, bind queries to the selected page, forbid correlated aggregates,
+  and require single-leaf partition access. Budgets derive from measured work across both plan
+  modes plus headroom. Timing and buffers stay diagnostic.
+- **Universal checks.** An executing read of an unbounded partitioned parent must touch one leaf
+  unless the scenario declares a cross-partition reason. An executing sequential scan on an unbounded
+  relation above the seeded-row threshold fails, and a nonempty scan with no declared fixture count
+  also fails, so new relations cannot bypass the check. Keep fixture counts current when changing
+  seeds.
+- **Sequential-scan baseline.** Fingerprints key each query and plan mode to its scanned large
+  relations; partition children use the parent name so rollover is not a new fingerprint. Each
+  scenario is captured twice with `ANALYZE` between, and a fingerprint missing from the baseline
+  fails only if both captures show it. The captures share one database, so they cannot reveal a scan
+  that is a coin flip across databases: each large scan is also planned with `enable_seqscan = off`,
+  and when avoiding it costs at most a quarter more (`SEQ_SCAN_TIE_RATIO`) it is a near-tie and
+  advisory. A missing index keeps the scan in the probe plan and a real regression costs far more,
+  so both still fail.
+- **Resource-pressure baseline** (temp I/O, spills, multi-batch hashes, excess WAL) is keyed by exact
+  query/node/relation fingerprint, so a new fingerprint fails even if the warning total is
+  unchanged. Add an entry only after inspecting the plan and deciding the pressure is intentional.
+- **CI identity gotcha.** CI always runs compare mode, so identities carry the plan mode suffix and
+  a baseline key ending in `auto` is silently inert in CI. A real entry needs both the custom and
+  generic keys; copy the identity from a CI artifact rather than local output.
+- Materialized views cannot be explained through `REFRESH`, so their scenarios explain the defining
+  query from `pg_get_viewdef`.
+
+## Explicit-range pruning
+
+The normal seed keeps the production default-only partition layout. A separate runner
+(`pruning/run.mts`) builds an owned sibling database with explicit UUIDv7 ranges beside each
+default partition and verifies, per plan mode, that point reads execute only their target leaf.
+Real server controls (cleanup, rollback of a blocked retirement) run in that database; pure unit
+tests cover only emitted SQL and ordering, not server behavior.
+
+## Coverage
+
+`explain:coverage` compares annotated runtime SQL against captured query names and exact query text
+using the `no-mistakes` executed-SQL extraction, and reports confirmed uncovered reads, ambiguous
+same-name reads, and unclassified executions. Matching is exact: it never normalizes literals or
+guesses placeholders. A raw client read of a session-local temporary table cannot be captured or
+replayed because replay uses a different connection. The scheduled
+[coverage prompt](../../../prompts/scheduled/postgresql-explain-coverage.md) uses the largest
+user-facing gaps to choose one new scenario per run.
+
+## Adding queries
+
+Add service calls through `runAndCapture()` and register the new stable scenario identity in
+`scenario-manifest.mts`; the framework captures and explains all SQL those calls issue.
 
 ## CI
 
-The `EXPLAIN ANALYZE` GitHub Actions workflow
-([`.github/workflows/explain-analyze.yml`](../../../../.github/workflows/explain-analyze.yml)) is
-called by the `test-explain-analyze` job in
-[`backend.yml`](../../../../.github/workflows/backend.yml), gated by the `explain-analyze:` path filter in
-[`ci-path-filters.yml`](../../../../.github/ci-path-filters.yml). Each CI run uses its own PostgreSQL
-instance, so there is no interference with other tests. A dedicated first step exports
-`EXPLAIN_SEED_ANCHOR_DATE` for the whole job, so a UTC midnight falling between the seed and run
-steps cannot split their ids; a red anchor check near midnight is therefore a real defect, not a
-reason to rerun. Results are uploaded as workflow
-artifacts — see the upload step in `explain-analyze.yml` for the current retention.
-
-## Idempotency
-
-The seed script is safe to re-run. All INSERTs use `ON CONFLICT DO NOTHING`, so running
-`pnpm run explain:seed` multiple times will not create duplicate data or fail.
-
-## Test isolation
-
-In CI, each job gets a fresh PostgreSQL database — no cleanup is needed. Locally, run
-`source .env && pnpm run db:clean && pnpm run db:migrate` to reset the database if needed.
-
-The seed maintenance pass runs `ANALYZE` on each seeded table that contributes to captured plans,
-including RSS feed-item join tables such as `rss_feed_item_sources`, so replayed feed queries use
-fresh local planner statistics.
-
-## Declarative plan contracts
-
-Declare a scenario's plan contract next to its service call in `run-scenarios/`.
-The registry validates scenario identities and expectation kinds, then verifies that every
-registered scenario produced a captured result. The evaluator in `plan-gates.mts` implements
-`maxProcessedRows`, `usesIndexes`, `queryBinds`, `forbidCorrelatedAggregates`, and `singleLeaf`.
-Structural checks that do not fit these kinds have names in the same registry.
-`feed-posts-batch` hydrates fifty populated posts; `post-by-slug` reads the recommendation
-fixture. Their shared hydration contracts cap each subquery relation at the maximum measured
-work across forced custom and generic plans plus 20%, and require the post-ID indexes.
-The seed includes authored hashtags, explicit topics, two delivered images per measured post,
-and separate recommendation and category-rated review branches. Fixed background cohorts
-make those index probes representative; child index names resolve from the fixture's partition
-instead of pinning a calendar month.
-All gates traverse plans through `collectPlanNodes`; processed work counts returned rows,
-filter removals, and index rechecks, multiplied by actual loops. Media replay driving-row budgets
-exclude `ModifyTable` output: inserted rows are writes, while its child scans still count as reads.
-
-Universal checks apply to every captured scenario. An executing read of an unbounded partitioned
-parent must use one leaf unless that scenario declares a `crossPartition` reason for the parent.
-Retention-window queries that span leaves also declare a reason. The sequential-scan gate
-compares a scenario's declared fixture counts against `SEQUENTIAL_SCAN_SEEDED_ROW_THRESHOLD` in
-`plan-gates.mts`; an executing `Seq Scan` on an unbounded relation above that threshold fails.
-A nonempty scan without a declared fixture count also fails, so new relations cannot silently bypass
-the check.
-Keep fixture counts current when changing seeds, and declare intentional cross-partition work
-beside the scenario instead of bypassing the evaluator.
-
-## Adding more queries
-
-Add service calls through `runAndCapture()` and update `scenario-manifest.mts` with the new stable
-scenario identity. The framework automatically captures and explains all SQL issued by those calls.
-Only add a `resource-pressure-baseline.mts` entry after inspecting the exact plan and deciding the
-specific pressure is intentional; do not baseline a query-wide warning count.
-
-**Author entries against the identity CI actually emits, not a local one.** CI always runs
-`EXPLAIN_PLAN_CACHE_MODE=compare`, which appends the plan-cache mode to the query name
-(`<name>:force_custom_plan` / `<name>:force_generic_plan`) — and `getExplainResultIdentity`
-(`analyze.mts`) also appends the mode as its own field, so CI never produces a `…|auto` identity. A
-baseline entry keyed `…|<name>|auto` only ever matches a local default-mode run and is silently
-inert in CI; a real entry needs **both** the `…|<name>:force_custom_plan|force_custom_plan` and
-`…|<name>:force_generic_plan|force_generic_plan` keys. Copy the identity string out of a CI
-artifact (`explain-analyze-results`) rather than guessing it from local output.
-
-RSS feed search includes both direct topic filtering and
-`rss-feed-search-by-topic-descendants`, which exercises `include_descendants=true` against seeded
-`relation__topic__parent__topic` rows.
-
-Hostname scheduling has indexed threshold-seek and due-range scenarios. The seven-day fixture contains three never-swept hosts, three overdue hosts and 2000 recent completions. Both plan modes must use `idx_url_hostnames__crawl_due` without sorting or reading the recent cohort. The dispatcher preserves domain-blocklist exclusions through capped per-host index probes after the due page, so excluded hosts still consume the examined-row budget and advance its cursor. URL attempt retry rules remain unchanged.
-
-### Bloom reconciliation windows
-
-The Bloom repair scenarios use the existing entity-listener checkpoint window, with 36 recent candidates and older source cohorts outside it. Each source seeks its timestamp and composite identity in index order with its own cap; the outer ordered merge retains the shared cursor. Custom and generic plans use the new source indexes. The full-window processed-row budgets are 5 per source (10 for the two blocklist sources); one-row and resumed runs budget 3 per source, including lookahead. These budgets add 20% to measured reads. A source read never scans its older cohort. The same window handles current names and inserted slugs; full rebuilds remain admin or failure recovery.
+The `EXPLAIN ANALYZE` workflow is called by `test-explain-analyze` in `backend.yml`, gated by the
+`explain-analyze:` path filter. Each run has its own PostgreSQL instance. The seed records
+per-batch timing and resource samples to the results artifact so a seed that hits the CI step limit
+shows which operation was interrupted.

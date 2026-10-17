@@ -4,136 +4,37 @@ Source entrypoint: [static-code-analysis/jscpd/README.md](../../../../../static-
 
 [Back to Static Code Analysis](../README.md)
 
-The clone-size command and dead-code command are separate checks. The clone-size command below
-keeps its existing working-tree behavior. The dead-code guard runs the same released jscpd package
-against a temporary copy of the current **tracked working-tree files**. It includes unstaged edits
-to tracked files and excludes untracked importers, package manifests, and `.gitignore` files, any of
-which could otherwise change reachability. It rejects symlinks outside the repository.
+Two separate checks share the released jscpd package and [`.jscpd.json`](../../../../../.jscpd.json), which owns thresholds, formats, ignore globs, dead-code categories, and entry roots.
 
-## Dead-Code Baseline
+## Dead-code baseline
 
-`pnpm run jscpd:dead-code` scans all five categories in `.jscpd.json` at its configured minimum
-confidence. It runs in `pnpm run lint`, the Static Analysis workflow, and `ci-local static`.
-The native scan reads the full tracked graph. The guard then excludes `unused-file` findings that
-jscpd labels `used-only-by-tests` and findings located in `.test`/`.spec` files, `test-helpers`,
-`__tests__`, `integration-tests`, or `web/storybook`. This keeps an unimported source file visible while leaving
-test-only code outside this gate; the clone-size scan has its own unchanged scope.
+`pnpm run jscpd:dead-code` scans a temporary copy of the tracked working-tree files, so unstaged edits to tracked files count but untracked importers, manifests, and `.gitignore` files cannot change reachability. It leaves test-only code outside this gate (`used-only-by-tests` findings and test, helper, and Storybook paths) while keeping an unimported source file visible.
 
-The guard consumes jscpd's native JSON report, fails when the analyzer fails, analyzes no files,
-or leaves unparsed files, and compares every retained finding by category, path, parent, name,
-and symbol kind. Repeated findings share an identity with a count, so a new or increased finding
-fails even when another finding disappears. Line numbers and message wording do not affect that
-identity.
+Findings are compared against a reviewed baseline by category, path, parent, name, and symbol kind, with repeats counted, so a new or increased finding fails even when another disappears. Line numbers and message wording do not matter. A removed finding makes the baseline stale; after verifying a cleanup run `pnpm run jscpd:dead-code:update`, which refuses new or increased findings. Review baseline changes as code changes; do not change the confidence floor or widen the test-only exclusion to make a run pass.
 
-The checked-in [`dead-code-baseline.json`](../../../../../static-code-analysis/jscpd/dead-code-baseline.json)
-temporarily records reviewed findings, including framework symbols jscpd cannot recognize.
-Removing a finding makes the baseline stale and fails
-the regular check. After verifying a cleanup, run `pnpm run jscpd:dead-code:update` to remove
-only stale findings; it refuses new or increased findings. `--seed` creates an initial baseline only
-when no baseline exists. Review baseline changes as code changes, rather than changing the minimum
-confidence or widening the test-only exclusion without review.
+`deadCode.entry` roots are runtime, CLI, generator, or loader targets that no import reaches. Keep them narrow so ordinary helpers still need consumers; every entry must match a tracked file or the guard fails.
 
-The explicit `deadCode.entry` roots are runtime, CLI, generator, or configuration loader targets.
-They are kept narrow so ordinary helpers still require consumers. The entries are:
+## Clone size
 
-| Loader                               | Roots in `.jscpd.json`                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend executable and scripts       | `backend/entrypoints/api/verify-ipv6-egress.mts`, `backend/entrypoints/worker-cpu/serve.mts`, `backend/modules/structured-decisions/benchmark.mts`, `backend/scripts/backfill-rss-feed-item-source-publications.mts`, `backend/scripts/classifier-call-efficiency.mts`, `backend/scripts/lookup-copyright-email-intakes.mts`, `backend/scripts/seed-source/run.mts` |
-| Backend configuration/type sources   | `backend/data-stores/psql/config-driven/*.mts`, `backend/types/lib-dom-absent.mts`                                                                                                                                                                                                                                                                                  |
-| CI and development commands          | `ci/transient-retry/rerun-known-transient.mts`, `dev/agent-issue-labels/batch-issues.mts`, `dev/agent-issue-labels/labels-from-paths.mts`, `dev/localization/local-catalog.mts`, `dev/localization/local-smoke.mts`, `dev/native-addon-readiness.mts`, `dev/otel-register.mts`                                                                                      |
-| Hooks and PR tooling                 | `.pr-shepherd/classification/auto-harness-session.mts`, `dev/codex-hooks/persist-session-id.mts`, `dev/codex-hooks/post-tool-use.mts`, `dev/codex-hooks/pre-tool-use.mts`                                                                                                                                                                                           |
-| Static analysis loaders              | `static-code-analysis/repo-file-policy-worker.mts`                                                                                                                                                                                                                                                                                                                  |
-| Web generation and Storybook aliases | `web/generate-membership-benefit-catalog.ts`, `web/storybook/mocks/contribute-cta-aside.tsx`, `web/storybook/mocks/get-resolved-ui-locale.ts`, `web/storybook/mocks/get-translations.ts`, `web/storybook/mocks/languages.ts`, `web/storybook/mocks/load-server-messages.ts`, `web/storybook/mocks/upgrade-membership-aside.tsx`                                     |
-| Vitest setup                         | `web/test-helpers/vitest.setup.fake-timer-guard.mts`, `web/test-helpers/vitest.setup.storybook-browser-guard.mts`                                                                                                                                                                                                                                                   |
+The clone gate is the plain `jscpd .` CLI. The configured `"minLines": 50` and `exitCode` fail the run on any clone at or above the threshold, with no baseline and no base-branch comparison, so a pull request, a merge group, and a `main` push agree. jscpd also skips files shorter than `minLines`.
 
-The [jscpd configuration](../../../../../.jscpd.json) owns the entries, formats, exclusions,
-categories, and confidence floor. Review scope changes there. Every configured entry must match
-a file in the tracked snapshot, or the guard fails. The RSS source-publication backfill remains
-an explicit CLI root; its cleanup is a separate change.
+The configured `similarity` makes jscpd compare JavaScript and TypeScript function pairs by AST similarity, ignoring identifier names and literal values, so a copied function that renames variables or changes literals still counts. Keep a long unique query outside the function so two thin wrappers are not one clone. Code outside a function, and SQL, Bash, and CSS, stay exact-only.
 
-The clone-size gate is the plain [jscpd](https://github.com/kucherenko/jscpd) CLI, `jscpd .`, configured by
-[`.jscpd.json`](../../../../../.jscpd.json); no wrapper sits in between. CI runs `pnpm exec jscpd .` in
-[`static-code-analysis.yml`](../../../../../.github/workflows/static-code-analysis.yml), and `pnpm run lint`
-runs the same command through the `jscpd` package script.
+The threshold only moves down. Preview a lower value with `pnpm exec jscpd . --min-lines <N>`, deduplicate or add a reviewed exception, then lower `minLines` here and in `.jscpd.json` in the same change. A preview at lower similarity flags generated suites and parallel product flows, not shared functions to extract.
 
-## How the Threshold Works
+jscpd scans the working tree, not `git ls-files`: CI is clean, but locally an untracked file `.gitignore` does not cover is scanned too. It can only add clones, never hide one; delete or ignore the stray file.
 
-The configured `"minLines": 50` and `"exitCode": 1` make jscpd fail when it finds any clone that
-spans roughly 50 lines or more. A clone is one duplicated block shared by two files, so the unit
-that fails is the pair of copies, not one file. jscpd's console reporter lists each clone
-(`Clone found (<format>): <file> [start:end] ... <file> [start:end]`) above a per-format summary
-table. There is no baseline and no base-branch comparison: every run judges the whole tree the same
-way, so a pull request, a merge group, and a `main` push agree.
+These globs exclude whole categories where repetition is not hand-maintained duplication:
 
-Blocks shorter than the threshold are not reported and never fail the gate. jscpd also skips files
-shorter than `minLines`, so the threshold bounds the scan as well as the report.
-
-### Near-Miss Clones
-
-`.jscpd.json` sets `similarity: 0.85`. Besides exact token matches, jscpd compares JavaScript and
-TypeScript function pairs by AST similarity and reports a pair that reaches 85% as a `similar`
-clone. The comparison ignores identifier names and literal values, so a copied function that renames
-its variables, changes its literals, or adds or drops a line still counts. `minLines` applies to
-both kinds and includes a string literal's lines in the function span. Keep a long unique query
-outside the function so two thin wrappers are not one clone. Code outside a function, and SQL,
-Bash, and CSS, stay exact-only.
-
-## Lowering the Threshold
-
-The threshold only moves down. To tighten it:
-
-1. Preview what a lower value flags with `pnpm exec jscpd . --min-lines <N>`; the CLI flag overrides
-   the configured value.
-2. Deduplicate those clones by extracting the shared code, or add a reviewed
-   [exception](#exceptions) when the dedupe is out of scope.
-3. Lower `minLines` in `.jscpd.json` and the value quoted in this README in the same change, once
-   the preview reports no clones.
-
-`similarity` stays 0.85. A preview at 0.75 flags generated suites and parallel product flows, not a
-shared function to extract.
-
-## Scope
-
-`.jscpd.json` scans TypeScript, TSX, JavaScript, SQL, Bash, and CSS; `crossFormats` also matches
-clones between TypeScript and TSX. `failOnEmpty` fails a run that analyzes no files, which catches
-an ignore list that swallows the whole tree. jscpd respects `.gitignore`.
-
-jscpd scans the working tree, not `git ls-files`. CI checks out a clean tree, so it scans exactly
-the tracked files. Locally, an untracked file that `.gitignore` does not cover is scanned too. This
-is the sole exception recorded beside the tracked-state invariant in
-[`static-code-analysis/AGENTS.md`](../../../../../static-code-analysis/AGENTS.md). An untracked file can only add clones, never hide
-one, so it can fail a local run but never make a bad tree pass. Delete or ignore the stray file if
-it reports a clone.
-
-These scope globs exclude whole categories where repetition is not hand-maintained duplication:
-
-- `**/migrations/**`: append-only SQL migrations. A shipped migration is never edited, so repeated
-  DDL is history, not code to extract.
+- `**/migrations/**`: shipped migrations are never edited, so repeated DDL is history, not code to extract.
 - `**/fixtures/**`: test data that repeats shapes on purpose.
-- `**/route-selectors.generated.mts`: generated by
-  [`route-selector-map.mts`](../../../../../static-code-analysis/i18n-extract/route-selector-map.mts).
-
-[`wiring.test.mts`](../../../../../static-code-analysis/jscpd/wiring.test.mts) fails when a configured glob is missing from this README or
-when the exceptions table lists a glob that `.jscpd.json` does not configure.
+- `**/route-selectors.generated.mts`: generated output.
 
 ## Exceptions
 
-To add an exception when dedupe is out of scope:
+Add the narrowest `**/` glob (ideally one file) to `ignore` in `.jscpd.json`, add a row with the reason dedupe is out of scope and an owner, and delete both when the duplication is removed. `wiring.test.mts` fails when a configured glob is missing from this page or the table lists a glob the config does not.
 
-1. Add the narrowest `**/` glob that covers the duplicated file(s) to the `ignore` list in
-   `.jscpd.json`, ideally a single file.
-2. Add a row below with the glob in backticks, why dedupe is out of scope (link the follow-up
-   issue), and the owner accountable for removing it.
-3. Delete the row and the glob in the change that removes the duplication.
-
-| Glob                         | Reason                                                                                                                                                 | Owner                  |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
-| `**/bank-account-fields.tsx` | Parallel bank-account form. Similarity drops field names and literals, so it scores about 0.89 against the credit-card form and stays a separate flow. | `web/components/posts` |
-| `**/credit-card-fields.tsx`  | Parallel credit-card data-point form, the other half of the bank-account pair above.                                                                   | `web/components/posts` |
-
-## Files
-
-- [`.jscpd.json`](../../../../../.jscpd.json): the threshold, formats, and ignore globs.
-- [`wiring.test.mts`](../../../../../static-code-analysis/jscpd/wiring.test.mts): keeps the package script, `lint`, CI, and `ci-local`
-  on the same command, and this README in sync with the config. Run it with
-  `pnpm exec vitest run --project static-analysis-tools static-code-analysis/jscpd`.
+| Glob                         | Reason                                                                                                                                                          | Owner                  |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `**/bank-account-fields.tsx` | Parallel bank-account form. Similarity drops field names and literals, so it scores above the threshold against the credit-card form and stays a separate flow. | `web/components/posts` |
+| `**/credit-card-fields.tsx`  | Parallel credit-card data-point form, the other half of the bank-account pair above.                                                                            | `web/components/posts` |

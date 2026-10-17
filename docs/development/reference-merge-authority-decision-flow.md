@@ -46,32 +46,6 @@ out of that, and the hook has no Codex-side
 equivalent to force a prompt either way. Interactive Codex merge may still surface a confirmation,
 but that confirmation is inherited from session config, not guaranteed by the hook.
 
-Implementation:
-
-- `dev/codex-hooks/pre-tool-use.mts` reads a `runtime` arg (`claude` or `codex`, set by
-  `.claude/settings.json` and `.codex/config.toml` respectively). `resolvePreToolUseRuntime` turns
-  `claude` into `grok` or `cursor` when that harness's markers are present. It computes
-  `automationContext` (`isAutomationContext`) and `attended` (`isAttendedClaudeSession`) once and
-  threads them through `preToolUseOutput()`, whose exit code and stdio it writes: a block exits 2.
-- The automation merge block is `findAutomationMergeBlock` in
-  `dev/codex-hooks/policy/github-merge-authority.mts`. It is the final return of
-  `findGitHubWorkflowBlock` in `github-workflow.mts`, so a more specific gh block in the same
-  command keeps its own reason, and it returns null interactively. Separately,
-  `github-stack-workflow.mts` blocks a `gh stack merge` with no numeric selector in every context,
-  because the bare form is a TUI that lands the whole stack.
-- `findPreToolUseBlock` in `dev/codex-hooks/policy.mts` runs every block first. Its final return is
-  `findInteractiveMergeConfirm` from `dev/codex-hooks/policy/github-merge-authority.mts`, the only
-  source of `disposition: 'confirm'`. That uses `isLoneMergeCommand`, which rejects any shell
-  metacharacter before tokenizing.
-- `renderConfirmDisposition` in `dev/codex-hooks/policy/pre-tool-use-confirm-output.mts` returns
-  the silent `permissionDecision: "allow"` only for `runtime: 'claude'` with `attended: true`, and
-  empty output otherwise.
-- Tests: `dev/codex-hooks-tests/codex-hook-merge-authority-output.test.mts` covers the precedence,
-  lone-merge, and attended rows end to end through the wired entry script.
-  `dev/codex-hooks-tests/__tests__/codex-hook-automation-merge-coarse.test.mts` pins the merge
-  forms `automationContext:true` blocks, the accepted overmatches, and the known misses.
-  `…gh-pr-merge-policy.test.mts` pins the shell surfaces the rule still reads as data.
-
 **Scope note:** this hook governs merges issued as **agent tool calls**. It does not touch
 workflow-initiated merges. Dependency-bot auto-merge is disabled in this repository; see the
 [dependency update merge policy](dependency-updates.md#review-and-merge).

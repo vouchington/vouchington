@@ -41,10 +41,7 @@ const fixtureDocumentationPaths = [
   'docs/development/ci/workflows/VITEST.md',
   '.github/workflows/AGENTS.md',
   'docs/development/ci/workflows/WORKFLOWS.md',
-  'docs/development/ci/workflows/AUTHORING.md',
-  'docs/development/ci/workflows/reference-step-timeouts.md',
   'docs/development/ci/workflows/reference-artifact-rerun-safety.md',
-  'docs/development/ci/workflows/reference-github-actions-concurrency-locks.md',
   'docs/development/ci/workflows/reference-fixed-branch-automation-prs.md',
   'docs/development/ci/workflows/reference-fix-main-dependency-policy.md',
   'docs/development/ci/workflows/reference-workflow-automation-map.md',
@@ -62,9 +59,6 @@ const fixtureDocumentationPaths = [
   'docs/development/ci.md',
   'docs/development/reference-ci-classifying-transient-infrastructure-failures.md',
   'docs/development/reference-ci-ci-job-conditions.md',
-  'docs/development/reference-ci-ci-job-timeout-budgets.md',
-  'docs/development/reference-ci-test-workflows.md',
-  'docs/development/reference-ci-standalone-workflow-checks.md',
   'docs/checklists/github-actions.md',
   'docs/development/reference-dependency-updates-frozen-install-policy.md',
   'docs/development/dependency-updates.md',
@@ -143,14 +137,10 @@ describe('CI fixture documentation classifier', () => {
     }
   })
 
-  it('lists only fixture documents that exist and keeps the ci.md cross-link intact', () => {
+  it('lists only fixture documents that exist', () => {
     for (const path of fixtureDocumentationPaths) {
       expect(existsSync(path)).toBe(true)
     }
-
-    expect(readFileSync('docs/development/ci.md', 'utf8')).toContain(
-      '[Dependency bot review and main push CI](reference-ci-standalone-workflow-checks.md#dependency-bot-review-and-main-push-ci)',
-    )
   })
 
   it('covers every markdown file under the fixture-doc trees in the classifier and tooling filter', () => {

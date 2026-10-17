@@ -48,18 +48,6 @@ unrelated, or fix-required before first push.
 
 ## Static Coverage
 
-`pnpm run repo-file-policy` checks several finite enum surfaces so stale high-risk values fail
-locally and in CI:
-
-- backend and web `topicTypes` runtime maps
-- `topic_types` and `post_types` SQL enum values
-- explicit topic route directories
-- public post route directories and route config maps
-
-Enum source parsing and comparisons are owned by the released
-`vouchington-tooling/finite-enum-ripple` API. This repository supplies tracked route inventories,
-paths, diagnostic labels, and exclusions in
-[`finite-enum-ripple-config.mts`](../../static-code-analysis/repo-file-policy/finite-enum-ripple-config.mts).
-
-The static guard is intentionally narrow. The purge scan above is still required for behavior,
-fixtures, docs, and one-off helper literals outside the known surfaces.
+`pnpm run repo-file-policy` guards the high-risk finite enum surfaces (topic and post type maps,
+SQL enums, route directories). It is intentionally narrow; the purge scan above is still required
+for behavior, fixtures, docs, and one-off helper literals outside those surfaces.
