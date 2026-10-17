@@ -1,6 +1,10 @@
-// Baseline from paired CI run 38564850912 (2026-10-14T12-44-17-241Z) with five-relation seed VACUUM.
+// Baseline from paired CI runs 38564850912 and 38992552694 with five-relation seed VACUUM.
 // These fingerprints appeared in both captures; remove each entry when its scan is fixed.
 export const BASELINE_FINGERPRINTS = [
+  'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_custom_plan|force_custom_plan:posts',
+  'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_custom_plan|force_custom_plan:topics',
+  'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_generic_plan|force_generic_plan:posts',
+  'mv-platform-stats-refresh|0|mv-platform-stats-refresh:force_generic_plan|force_generic_plan:topics',
   'mv-rss-feed-crawl-tiers-refresh|0|mv-rss-feed-crawl-tiers-refresh:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
   'mv-rss-feed-crawl-tiers-refresh|0|mv-rss-feed-crawl-tiers-refresh:force_custom_plan|force_custom_plan:rss_feeds',
   'mv-rss-feed-crawl-tiers-refresh|0|mv-rss-feed-crawl-tiers-refresh:force_custom_plan|force_custom_plan:topics',
@@ -131,7 +135,6 @@ export const BASELINE_FINGERPRINTS = [
   'topic-search-best|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
   'topic-search-best|0|buildTopicSearchQuery:force_generic_plan|force_generic_plan:topics',
   'topic-search-text|0|buildTopicSearchQuery:force_custom_plan|force_custom_plan:topics',
-  'trending-rss-feeds|0|getTrendingRssFeeds:force_custom_plan|force_custom_plan:relation__user__follow__rss_feed',
   'trending-topics|0|getTrendingTopics:force_custom_plan|force_custom_plan:topics',
   'trending-topics|0|getTrendingTopics:force_generic_plan|force_generic_plan:topics',
   'user-metrics-batch|0|getUserMetricsByAnyBatch:force_generic_plan|force_generic_plan:relation__user__follow__rss_feed',
