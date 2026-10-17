@@ -84399,6 +84399,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__category__topic__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__votes__user__id ON ONLY public.relation__post__category__topic__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic__votes__user__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -85231,6 +85258,33 @@
               "column": "entity_relation_id",
               "descending": false,
               "expression": "entity_relation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic_alias__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__votes__user__id ON ONLY public.relation__post__category__topic_alias__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -86686,6 +86740,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__post__related__post__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__post__votes__user__id ON ONLY public.relation__post__related__post__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__post__votes__user__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -87494,6 +87575,33 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__related__url__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__votes__user__id ON ONLY public.relation__post__related__url__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -88580,6 +88688,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__rss_feed_item__category__topic__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__rss_feed_item__category__topic__votes__user__id ON ONLY public.relation__rss_feed_item__category__topic__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__rss_feed_item__category__topic__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -89386,6 +89521,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relati__rss_feed_item__catego__topic_alias__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relati__rss_feed_item__catego__topic_alias__votes__user__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__rss_feed_item__category__topic_alias__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -90149,6 +90311,33 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__category__topic__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__category__topic__votes__user__id ON ONLY public.relation__topic__category__topic__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -90964,6 +91153,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__faq__post__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__post__votes__user__id ON ONLY public.relation__topic__faq__post__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__post__votes__user__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -91770,6 +91986,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__faq__url__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__votes__user__id ON ONLY public.relation__topic__faq__url__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__url__votes__user__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92567,6 +92810,33 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__guide__url__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__votes__user__id ON ONLY public.relation__topic__guide__url__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -93399,6 +93669,33 @@
               "column": "entity_relation_id",
               "descending": false,
               "expression": "entity_relation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__landing_page__url__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__votes__user__id ON ONLY public.relation__topic__landing_page__url__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -94642,6 +94939,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__publisher_type__topic__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__publisher_type__topic__votes__user__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "relation__topic__publisher_type__topic__votes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -95405,6 +95729,33 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__related__post__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__post__votes__user__id ON ONLY public.relation__topic__related__post__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -96220,6 +96571,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_relation__topic__related__topic__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__topic__votes__user__id ON ONLY public.relation__topic__related__topic__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__topic__votes__user__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -97017,6 +97395,33 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__related__url__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__votes__user__id ON ONLY public.relation__topic__related__url__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -97849,6 +98254,33 @@
               "column": "entity_relation_id",
               "descending": false,
               "expression": "entity_relation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__terms_of_service__url__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__votes__user__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -99259,6 +99691,33 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__user__category__topic__votes__user__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__category__topic__votes__user__id ON ONLY public.relation__user__category__topic__votes USING btree (user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "uuid_ops"
             }
           ],
@@ -135974,11 +136433,6 @@
     "view_embedded_users": {
       "comment": "Compact public user references without private account fields.",
       "definition": " SELECT 'user'::text AS __entity_type,\n    id,\n    username,\n    use_display_name_from,\n        CASE\n            WHEN (use_display_name_from = 'facebook'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (fa.facebook_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM facebook_accounts fa\n              WHERE (fa.user_id = users.id))\n            WHEN (use_display_name_from = 'apple'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (aa.apple_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM apple_accounts aa\n              WHERE (aa.user_id = users.id))\n            WHEN (use_display_name_from = 'google'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (ga.google_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM google_accounts ga\n              WHERE (ga.user_id = users.id))\n            WHEN (use_display_name_from = 'x'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (xa.x_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM x_accounts xa\n              WHERE (xa.user_id = users.id))\n            WHEN (use_display_name_from = 'linkedin'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (la.linkedin_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM linkedin_accounts la\n              WHERE (la.user_id = users.id))\n            WHEN (use_display_name_from = 'microsoft'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (ma.microsoft_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM microsoft_accounts ma\n              WHERE (ma.user_id = users.id))\n            WHEN (use_display_name_from = 'github'::user_display_name_sources) THEN ( SELECT jsonb_build_object('name', (gha.github_user_data ->> 'name'::text)) AS jsonb_build_object\n               FROM github_accounts gha\n              WHERE (gha.user_id = users.id))\n            ELSE NULL::jsonb\n        END AS display_account,\n    profile_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'user-profile-image'::image_surface_placement_surface_kinds) AND (surface.user_id = users.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS profile_image_placement,\n    ARRAY[]::text[] AS roles,\n        CASE\n            WHEN (platform_account_kind = 'system'::platform_account_kinds) THEN\n            CASE\n                WHEN (EXISTS ( SELECT 1\n                   FROM agents\n                  WHERE ((agents.system_user_id = users.id) AND (agents.deleted_at IS NULL)))) THEN 'ai_agent'::text\n                ELSE 'system'::text\n            END\n            WHEN ((platform_account_kind = 'official'::platform_account_kinds) OR (EXISTS ( SELECT 1\n               FROM (user_roles\n                 JOIN user_role_types ON ((user_role_types.id = user_roles.role_type_id)))\n              WHERE ((user_roles.user_id = users.id) AND (user_role_types.slug = ANY (ARRAY['administrator'::text, 'investor'::text])))))) THEN 'official'::text\n            ELSE NULL::text\n        END AS account_type\n   FROM users\n  WHERE (deleted_at IS NULL);",
-      "materialized": false
-    },
-    "view_entity_relation_votes": {
-      "comment": "Current concrete relation vote ledgers combined for cross-family reads; writes target each concrete table.",
-      "definition": " SELECT 'relation__user__category__topic'::elected_entity_relations AS entity_relation,\n    relation__user__category__topic__votes.user_id,\n    relation__user__category__topic__votes.subject_id,\n    relation__user__category__topic__votes.entity_relation_id,\n    relation__user__category__topic__votes.id,\n    relation__user__category__topic__votes.score,\n    relation__user__category__topic__votes.score_is_neutral,\n    relation__user__category__topic__votes.score_is_semantic,\n    relation__user__category__topic__votes.ip_address,\n    relation__user__category__topic__votes.device_id,\n    relation__user__category__topic__votes.session_id,\n    relation__user__category__topic__votes.user_agent_string_id,\n    relation__user__category__topic__votes.created_at\n   FROM relation__user__category__topic__votes\nUNION ALL\n SELECT 'relation__post__category__topic'::elected_entity_relations AS entity_relation,\n    relation__post__category__topic__votes.user_id,\n    relation__post__category__topic__votes.subject_id,\n    relation__post__category__topic__votes.entity_relation_id,\n    relation__post__category__topic__votes.id,\n    relation__post__category__topic__votes.score,\n    relation__post__category__topic__votes.score_is_neutral,\n    relation__post__category__topic__votes.score_is_semantic,\n    relation__post__category__topic__votes.ip_address,\n    relation__post__category__topic__votes.device_id,\n    relation__post__category__topic__votes.session_id,\n    relation__post__category__topic__votes.user_agent_string_id,\n    relation__post__category__topic__votes.created_at\n   FROM relation__post__category__topic__votes\nUNION ALL\n SELECT 'relation__post__category__topic_alias'::elected_entity_relations AS entity_relation,\n    relation__post__category__topic_alias__votes.user_id,\n    relation__post__category__topic_alias__votes.subject_id,\n    relation__post__category__topic_alias__votes.entity_relation_id,\n    relation__post__category__topic_alias__votes.id,\n    relation__post__category__topic_alias__votes.score,\n    relation__post__category__topic_alias__votes.score_is_neutral,\n    relation__post__category__topic_alias__votes.score_is_semantic,\n    relation__post__category__topic_alias__votes.ip_address,\n    relation__post__category__topic_alias__votes.device_id,\n    relation__post__category__topic_alias__votes.session_id,\n    relation__post__category__topic_alias__votes.user_agent_string_id,\n    relation__post__category__topic_alias__votes.created_at\n   FROM relation__post__category__topic_alias__votes\nUNION ALL\n SELECT 'relation__post__related__post'::elected_entity_relations AS entity_relation,\n    relation__post__related__post__votes.user_id,\n    relation__post__related__post__votes.subject_id,\n    relation__post__related__post__votes.entity_relation_id,\n    relation__post__related__post__votes.id,\n    relation__post__related__post__votes.score,\n    relation__post__related__post__votes.score_is_neutral,\n    relation__post__related__post__votes.score_is_semantic,\n    relation__post__related__post__votes.ip_address,\n    relation__post__related__post__votes.device_id,\n    relation__post__related__post__votes.session_id,\n    relation__post__related__post__votes.user_agent_string_id,\n    relation__post__related__post__votes.created_at\n   FROM relation__post__related__post__votes\nUNION ALL\n SELECT 'relation__post__related__url'::elected_entity_relations AS entity_relation,\n    relation__post__related__url__votes.user_id,\n    relation__post__related__url__votes.subject_id,\n    relation__post__related__url__votes.entity_relation_id,\n    relation__post__related__url__votes.id,\n    relation__post__related__url__votes.score,\n    relation__post__related__url__votes.score_is_neutral,\n    relation__post__related__url__votes.score_is_semantic,\n    relation__post__related__url__votes.ip_address,\n    relation__post__related__url__votes.device_id,\n    relation__post__related__url__votes.session_id,\n    relation__post__related__url__votes.user_agent_string_id,\n    relation__post__related__url__votes.created_at\n   FROM relation__post__related__url__votes\nUNION ALL\n SELECT 'relation__topic__related__topic'::elected_entity_relations AS entity_relation,\n    relation__topic__related__topic__votes.user_id,\n    relation__topic__related__topic__votes.subject_id,\n    relation__topic__related__topic__votes.entity_relation_id,\n    relation__topic__related__topic__votes.id,\n    relation__topic__related__topic__votes.score,\n    relation__topic__related__topic__votes.score_is_neutral,\n    relation__topic__related__topic__votes.score_is_semantic,\n    relation__topic__related__topic__votes.ip_address,\n    relation__topic__related__topic__votes.device_id,\n    relation__topic__related__topic__votes.session_id,\n    relation__topic__related__topic__votes.user_agent_string_id,\n    relation__topic__related__topic__votes.created_at\n   FROM relation__topic__related__topic__votes\nUNION ALL\n SELECT 'relation__topic__category__topic'::elected_entity_relations AS entity_relation,\n    relation__topic__category__topic__votes.user_id,\n    relation__topic__category__topic__votes.subject_id,\n    relation__topic__category__topic__votes.entity_relation_id,\n    relation__topic__category__topic__votes.id,\n    relation__topic__category__topic__votes.score,\n    relation__topic__category__topic__votes.score_is_neutral,\n    relation__topic__category__topic__votes.score_is_semantic,\n    relation__topic__category__topic__votes.ip_address,\n    relation__topic__category__topic__votes.device_id,\n    relation__topic__category__topic__votes.session_id,\n    relation__topic__category__topic__votes.user_agent_string_id,\n    relation__topic__category__topic__votes.created_at\n   FROM relation__topic__category__topic__votes\nUNION ALL\n SELECT 'relation__topic__publisher_type__topic'::elected_entity_relations AS entity_relation,\n    relation__topic__publisher_type__topic__votes.user_id,\n    relation__topic__publisher_type__topic__votes.subject_id,\n    relation__topic__publisher_type__topic__votes.entity_relation_id,\n    relation__topic__publisher_type__topic__votes.id,\n    relation__topic__publisher_type__topic__votes.score,\n    relation__topic__publisher_type__topic__votes.score_is_neutral,\n    relation__topic__publisher_type__topic__votes.score_is_semantic,\n    relation__topic__publisher_type__topic__votes.ip_address,\n    relation__topic__publisher_type__topic__votes.device_id,\n    relation__topic__publisher_type__topic__votes.session_id,\n    relation__topic__publisher_type__topic__votes.user_agent_string_id,\n    relation__topic__publisher_type__topic__votes.created_at\n   FROM relation__topic__publisher_type__topic__votes\nUNION ALL\n SELECT 'relation__topic__faq__post'::elected_entity_relations AS entity_relation,\n    relation__topic__faq__post__votes.user_id,\n    relation__topic__faq__post__votes.subject_id,\n    relation__topic__faq__post__votes.entity_relation_id,\n    relation__topic__faq__post__votes.id,\n    relation__topic__faq__post__votes.score,\n    relation__topic__faq__post__votes.score_is_neutral,\n    relation__topic__faq__post__votes.score_is_semantic,\n    relation__topic__faq__post__votes.ip_address,\n    relation__topic__faq__post__votes.device_id,\n    relation__topic__faq__post__votes.session_id,\n    relation__topic__faq__post__votes.user_agent_string_id,\n    relation__topic__faq__post__votes.created_at\n   FROM relation__topic__faq__post__votes\nUNION ALL\n SELECT 'relation__topic__related__post'::elected_entity_relations AS entity_relation,\n    relation__topic__related__post__votes.user_id,\n    relation__topic__related__post__votes.subject_id,\n    relation__topic__related__post__votes.entity_relation_id,\n    relation__topic__related__post__votes.id,\n    relation__topic__related__post__votes.score,\n    relation__topic__related__post__votes.score_is_neutral,\n    relation__topic__related__post__votes.score_is_semantic,\n    relation__topic__related__post__votes.ip_address,\n    relation__topic__related__post__votes.device_id,\n    relation__topic__related__post__votes.session_id,\n    relation__topic__related__post__votes.user_agent_string_id,\n    relation__topic__related__post__votes.created_at\n   FROM relation__topic__related__post__votes\nUNION ALL\n SELECT 'relation__topic__related__url'::elected_entity_relations AS entity_relation,\n    relation__topic__related__url__votes.user_id,\n    relation__topic__related__url__votes.subject_id,\n    relation__topic__related__url__votes.entity_relation_id,\n    relation__topic__related__url__votes.id,\n    relation__topic__related__url__votes.score,\n    relation__topic__related__url__votes.score_is_neutral,\n    relation__topic__related__url__votes.score_is_semantic,\n    relation__topic__related__url__votes.ip_address,\n    relation__topic__related__url__votes.device_id,\n    relation__topic__related__url__votes.session_id,\n    relation__topic__related__url__votes.user_agent_string_id,\n    relation__topic__related__url__votes.created_at\n   FROM relation__topic__related__url__votes\nUNION ALL\n SELECT 'relation__topic__faq__url'::elected_entity_relations AS entity_relation,\n    relation__topic__faq__url__votes.user_id,\n    relation__topic__faq__url__votes.subject_id,\n    relation__topic__faq__url__votes.entity_relation_id,\n    relation__topic__faq__url__votes.id,\n    relation__topic__faq__url__votes.score,\n    relation__topic__faq__url__votes.score_is_neutral,\n    relation__topic__faq__url__votes.score_is_semantic,\n    relation__topic__faq__url__votes.ip_address,\n    relation__topic__faq__url__votes.device_id,\n    relation__topic__faq__url__votes.session_id,\n    relation__topic__faq__url__votes.user_agent_string_id,\n    relation__topic__faq__url__votes.created_at\n   FROM relation__topic__faq__url__votes\nUNION ALL\n SELECT 'relation__topic__guide__url'::elected_entity_relations AS entity_relation,\n    relation__topic__guide__url__votes.user_id,\n    relation__topic__guide__url__votes.subject_id,\n    relation__topic__guide__url__votes.entity_relation_id,\n    relation__topic__guide__url__votes.id,\n    relation__topic__guide__url__votes.score,\n    relation__topic__guide__url__votes.score_is_neutral,\n    relation__topic__guide__url__votes.score_is_semantic,\n    relation__topic__guide__url__votes.ip_address,\n    relation__topic__guide__url__votes.device_id,\n    relation__topic__guide__url__votes.session_id,\n    relation__topic__guide__url__votes.user_agent_string_id,\n    relation__topic__guide__url__votes.created_at\n   FROM relation__topic__guide__url__votes\nUNION ALL\n SELECT 'relation__topic__landing_page__url'::elected_entity_relations AS entity_relation,\n    relation__topic__landing_page__url__votes.user_id,\n    relation__topic__landing_page__url__votes.subject_id,\n    relation__topic__landing_page__url__votes.entity_relation_id,\n    relation__topic__landing_page__url__votes.id,\n    relation__topic__landing_page__url__votes.score,\n    relation__topic__landing_page__url__votes.score_is_neutral,\n    relation__topic__landing_page__url__votes.score_is_semantic,\n    relation__topic__landing_page__url__votes.ip_address,\n    relation__topic__landing_page__url__votes.device_id,\n    relation__topic__landing_page__url__votes.session_id,\n    relation__topic__landing_page__url__votes.user_agent_string_id,\n    relation__topic__landing_page__url__votes.created_at\n   FROM relation__topic__landing_page__url__votes\nUNION ALL\n SELECT 'relation__topic__terms_of_service__url'::elected_entity_relations AS entity_relation,\n    relation__topic__terms_of_service__url__votes.user_id,\n    relation__topic__terms_of_service__url__votes.subject_id,\n    relation__topic__terms_of_service__url__votes.entity_relation_id,\n    relation__topic__terms_of_service__url__votes.id,\n    relation__topic__terms_of_service__url__votes.score,\n    relation__topic__terms_of_service__url__votes.score_is_neutral,\n    relation__topic__terms_of_service__url__votes.score_is_semantic,\n    relation__topic__terms_of_service__url__votes.ip_address,\n    relation__topic__terms_of_service__url__votes.device_id,\n    relation__topic__terms_of_service__url__votes.session_id,\n    relation__topic__terms_of_service__url__votes.user_agent_string_id,\n    relation__topic__terms_of_service__url__votes.created_at\n   FROM relation__topic__terms_of_service__url__votes\nUNION ALL\n SELECT 'relation__rss_feed_item__category__topic'::elected_entity_relations AS entity_relation,\n    relation__rss_feed_item__category__topic__votes.user_id,\n    relation__rss_feed_item__category__topic__votes.subject_id,\n    relation__rss_feed_item__category__topic__votes.entity_relation_id,\n    relation__rss_feed_item__category__topic__votes.id,\n    relation__rss_feed_item__category__topic__votes.score,\n    relation__rss_feed_item__category__topic__votes.score_is_neutral,\n    relation__rss_feed_item__category__topic__votes.score_is_semantic,\n    relation__rss_feed_item__category__topic__votes.ip_address,\n    relation__rss_feed_item__category__topic__votes.device_id,\n    relation__rss_feed_item__category__topic__votes.session_id,\n    relation__rss_feed_item__category__topic__votes.user_agent_string_id,\n    relation__rss_feed_item__category__topic__votes.created_at\n   FROM relation__rss_feed_item__category__topic__votes\nUNION ALL\n SELECT 'relation__rss_feed_item__category__topic_alias'::elected_entity_relations AS entity_relation,\n    relation__rss_feed_item__category__topic_alias__votes.user_id,\n    relation__rss_feed_item__category__topic_alias__votes.subject_id,\n    relation__rss_feed_item__category__topic_alias__votes.entity_relation_id,\n    relation__rss_feed_item__category__topic_alias__votes.id,\n    relation__rss_feed_item__category__topic_alias__votes.score,\n    relation__rss_feed_item__category__topic_alias__votes.score_is_neutral,\n    relation__rss_feed_item__category__topic_alias__votes.score_is_semantic,\n    relation__rss_feed_item__category__topic_alias__votes.ip_address,\n    relation__rss_feed_item__category__topic_alias__votes.device_id,\n    relation__rss_feed_item__category__topic_alias__votes.session_id,\n    relation__rss_feed_item__category__topic_alias__votes.user_agent_string_id,\n    relation__rss_feed_item__category__topic_alias__votes.created_at\n   FROM relation__rss_feed_item__category__topic_alias__votes;",
       "materialized": false
     },
     "view_media_delivery_registry_current_records": {

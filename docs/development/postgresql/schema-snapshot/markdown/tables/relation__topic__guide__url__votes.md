@@ -42,6 +42,7 @@ _none_
 
 - `idx_relation__topic__guide__url__votes__relation__id`: `CREATE INDEX idx_relation__topic__guide__url__votes__relation__id ON ONLY public.relation__topic__guide__url__votes USING btree (entity_relation_id, id)`
 - `idx_relation__topic__guide__url__votes__relation__user__id`: `CREATE INDEX idx_relation__topic__guide__url__votes__relation__user__id ON ONLY public.relation__topic__guide__url__votes USING btree (entity_relation_id, user_id, id DESC)`
+- `idx_relation__topic__guide__url__votes__user__id`: `CREATE INDEX idx_relation__topic__guide__url__votes__user__id ON ONLY public.relation__topic__guide__url__votes USING btree (user_id, id)`
 - `idx_relation__topic__guide__url__votes__user__relation__id`: `CREATE INDEX idx_relation__topic__guide__url__votes__user__relation__id ON ONLY public.relation__topic__guide__url__votes USING btree (user_id, entity_relation_id, id DESC)`
 - `relation__topic__guide__url__votes_pkey`: `CREATE UNIQUE INDEX relation__topic__guide__url__votes_pkey ON ONLY public.relation__topic__guide__url__votes USING btree (entity_relation_id, id)`
 
