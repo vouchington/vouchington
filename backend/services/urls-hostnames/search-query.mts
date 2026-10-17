@@ -28,10 +28,15 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
   searchQuery.append(sql`
     candidate_hostnames AS MATERIALIZED (
     SELECT h.id, h.hostname, h.votes_score_net
-    FROM url_hostnames h
   `)
-  if (typeof textQuery === 'string' && textQuery)
-    searchQuery.append(sql` JOIN text_match_ids text_match ON text_match.id = h.id`)
+  if (typeof textQuery === 'string' && textQuery) {
+    searchQuery.append(sql`FROM text_match_ids text_match
+      JOIN LATERAL (
+        SELECT * FROM url_hostnames WHERE id = text_match.id LIMIT 1
+      ) h ON true`)
+  } else {
+    searchQuery.append(sql`FROM url_hostnames h`)
+  }
 
   appendWhereClause(searchQuery, filters)
   searchQuery.append(sql` ORDER BY `)
@@ -62,22 +67,11 @@ function buildSearchFilters(
 ): ReturnType<typeof sql>[] {
   const filters: ReturnType<typeof sql>[] = []
   if (!options.includePrivate) filters.push(sql`publicly_introduced_at IS NOT NULL`)
-  appendTextFilter(filters, options)
   appendBooleanFilter(filters, 'is_blocked', options.is_blocked)
   appendBooleanFilter(filters, 'is_crawlable', options.is_crawlable)
   appendTopicFilters(filters, options, effectiveTopicIds)
   appendCursorFilter(filters, options)
   return filters
-}
-
-function appendTextFilter(
-  filters: ReturnType<typeof sql>[],
-  options: SearchUrlHostnamesOptions,
-): void {
-  const query = options.query || options.hostname
-  if (typeof query === 'string' && query) {
-    filters.push(sql`hostname ILIKE ${`%${query.toLowerCase()}%`}`)
-  }
 }
 
 function appendBooleanFilter(
