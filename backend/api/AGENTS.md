@@ -1,12 +1,12 @@
 # API routes
 
-- Load [event-ingress-routing](../../.agents/skills/event-ingress-routing/SKILL.md) before changing webhooks or inbound-event routes. Canonical route contracts live in `docs/requirements/api/**`; source README files are short entrypoints, retaining only the `## Performance` pointer when the repository guard requires it. Keep endpoint behavior and performance metrics in the owning docs page.
+- Load [event-ingress-routing](../../.agents/skills/event-ingress-routing/SKILL.md) before changing webhooks or inbound-event routes. Canonical route contracts live in `docs/requirements/api/**`; Keep endpoint behavior in those pages.
 - Keep routes thin: parse inputs, call `@services/*`, and shape responses. Reusable business logic belongs in services; never add `backend/api/**/shared/**`.
 - Use `requireAuth`, `getOptionalAuthAndRateLimit`, or `requireAuthAndRateLimit` from `response-helpers.mts`; use its UUID/JSON helpers too. Direct `ctx.getCurrentUser()`/`ctx.applyRouteRateLimit()` require a documented unusual preamble. Canonical 401 text is `Unauthorized`.
 - Authorize through service `currentUserCan*` helpers. POST/DELETE/PATCH routes also call `assertNotSuspended` and enforce domain caps, target-user existence, block/mute, and other applicable guards. Messaging follows [its authorization contract](../services/messaging/authorization.mts), with rejection-path integration coverage for every guard.
 - Preserve wrapped response contracts; election summaries are top-level sidecars, never nested entity data. Use `ctx.throw(status, message[, code])` with `@modules/on-error/error-codes` when clients branch on codes.
 - Public non-personalized GETs set logged-out `Cache-Control`. Entity reads use `@services/entity-cache`; logged-out lists/search use cached wrappers. Lists use batch APIs, never per-entity loop lookups, and expose [opaque cursors](../../docs/overview/architecture/pagination.md).
-- Keep the source README `## Performance` pointer (enforced by no-mistakes). The owning docs page records round trips, cache hits, and cache headers.
+- Follow [API performance requirements](../../docs/requirements/platform/api-performance.md) for round trips, caching, and batching.
 - APIs remain available regardless of frontend flags; never gate endpoints with `getFeatureFlagsFromCookie` 404s.
 - SSE uses `startSSE(ctx)`. Only `ECONNRESET` and `ERR_STREAM_PREMATURE_CLOSE` are benign pipeline disconnects; other errors reach `onError`. Close pub/sub subscriptions on disconnect/finally; recover reconnects from durable state.
 - SSE uses short `timeoutMs` and native `EventSource` reconnection. Do not make routine timeout cycles named-error terminal closes; follow [SSE bounds and exemptions](../../docs/development/runtime-timeouts.md#principle-sse--long-lived-connection-duration-under-fargate-spot).
