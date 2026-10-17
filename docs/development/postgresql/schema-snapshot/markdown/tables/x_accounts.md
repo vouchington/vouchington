@@ -8,8 +8,9 @@ Not partitioned — growth: unbounded.
 
 | Column                     | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                        |
 | -------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------ |
+| `id`                       | `uuid`                     | no       | `uuidv7()`          |          |           |           | Internal UUIDv7 identity of the X account.                                     |
 | `user_id`                  | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet.            |
-| `x_user_id`                | `text`                     | no       |                     |          |           |           | X's unique user identifier (primary key).                                      |
+| `x_user_id`                | `text`                     | no       |                     |          |           |           | X's unique external user identifier.                                           |
 | `x_user_email_address`     | `text`                     | yes      |                     |          |           |           | Email address from the X profile.                                              |
 | `x_user_data`              | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from X OAuth.                                           |
 | `access_token_ciphertext`  | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 access token ciphertext for X API calls.                   |
@@ -19,10 +20,11 @@ Not partitioned — growth: unbounded.
 | `created_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                |
 | `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                |
 
-**Primary key:** `PRIMARY KEY (x_user_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `x_accounts_x_user_id_key`: `UNIQUE (x_user_id)`
 
 **Check constraints:**
 _none_
@@ -34,10 +36,11 @@ _none_
 **Indexes:**
 
 - `idx_x_accounts__friends_synced_at`: `CREATE INDEX idx_x_accounts__friends_synced_at ON public.x_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
-- `idx_x_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_x_accounts__orphan_retention_cleanup ON public.x_accounts USING btree (created_at, x_user_id) WHERE (user_id IS NULL)`
+- `idx_x_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_x_accounts__orphan_retention_cleanup ON public.x_accounts USING btree (created_at, id) WHERE (user_id IS NULL)`
 - `idx_x_accounts__token_expires_at`: `CREATE INDEX idx_x_accounts__token_expires_at ON public.x_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
 - `idx_x_accounts__user_id`: `CREATE UNIQUE INDEX idx_x_accounts__user_id ON public.x_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
-- `x_accounts_pkey`: `CREATE UNIQUE INDEX x_accounts_pkey ON public.x_accounts USING btree (x_user_id)`
+- `x_accounts_pkey`: `CREATE UNIQUE INDEX x_accounts_pkey ON public.x_accounts USING btree (id)`
+- `x_accounts_x_user_id_key`: `CREATE UNIQUE INDEX x_accounts_x_user_id_key ON public.x_accounts USING btree (x_user_id)`
 
 **Triggers:**
 

@@ -6,15 +6,16 @@ X (Twitter) follower/following relationships for friend recommendations.
 
 Not partitioned — growth: unbounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                               |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `x_user_id`        | `text`                     | no       |                     |          |           |           | The X user whose friends list this entry belongs to.                                                                                  |
-| `x_friend_id`      | `text`                     | no       |                     |          |           |           | The X user ID of the friend.                                                                                                          |
-| `created_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
-| `last_observed_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock. |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
+| Column                | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                               |
+| --------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `x_account_id`        | `uuid`                     | no       |                     |          |           |           | Source X account whose following list contains this entry.                                                                            |
+| `x_friend_id`         | `text`                     | no       |                     |          |           |           | External X user ID of the friend, who may not have an account here.                                                                   |
+| `friend_x_account_id` | `uuid`                     | yes      |                     |          |           |           | Matching local X account when the friend has signed in.                                                                               |
+| `created_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
+| `last_observed_at`    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock. |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                       |
 
-**Primary key:** `PRIMARY KEY (x_user_id, x_friend_id)`
+**Primary key:** `PRIMARY KEY (x_account_id, x_friend_id)`
 
 **Unique constraints:**
 _none_
@@ -24,12 +25,14 @@ _none_
 
 **Foreign keys:**
 
-- `x_friends_x_user_id_fkey`: `FOREIGN KEY (x_user_id) REFERENCES x_accounts(x_user_id) ON DELETE CASCADE`
+- `x_friends_friend_x_account_id_fkey`: `FOREIGN KEY (friend_x_account_id) REFERENCES x_accounts(id) ON DELETE SET NULL`
+- `x_friends_x_account_id_fkey`: `FOREIGN KEY (x_account_id) REFERENCES x_accounts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_x_friends__friend_id`: `CREATE INDEX idx_x_friends__friend_id ON public.x_friends USING btree (x_friend_id)`
-- `x_friends_pkey`: `CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (x_user_id, x_friend_id)`
+- `idx_x_friends__friend_x_account_id`: `CREATE INDEX idx_x_friends__friend_x_account_id ON public.x_friends USING btree (friend_x_account_id) WHERE (friend_x_account_id IS NOT NULL)`
+- `x_friends_pkey`: `CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (x_account_id, x_friend_id)`
 
 **Triggers:**
 
