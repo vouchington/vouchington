@@ -161,7 +161,7 @@ gh pr edit <N> --add-label automation
 ```
 
 Marking ready is the hand-off. If this session did the PR's work, follow the canonical
-[Close-out](../../../node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md#close-out)
+Close-out (`node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md#close-out`)
 (hand-off retrospective, then merge note). A triaged PR this session did not author gets no
 hand-off retrospective, because a retrospective reads this session's transcripts, not the author's.
 

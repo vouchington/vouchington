@@ -1,8 +1,8 @@
 # Before pushing
 
 - Review the diff, sibling sites, and independent-review need per the canonical
-  [evidence sweep](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md)
-  and [review](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/review.md).
+  evidence sweep (`node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md`)
+  and review (`node_modules/vouchington-tooling/skills/agent-workflow/references/review.md`).
   For client/API changes, use the relevant [impact recipe](impact-recipes.md).
 - Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint for changed
   TypeScript, directly changed tests, scope inspection, and formatting. CI owns full area suites;

@@ -177,8 +177,8 @@ is never the agent's decision.
 
 Bottom-up ordering, the decent-shape rule, layer counting against the cap, lower-layer blocking,
 worker ownership, and one poll per stack are canonical:
-[Work bottom-up](../../../node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#work-bottom-up)
-and [Ownership and workers](../../../node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#ownership-and-workers).
+Work bottom-up (`node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#work-bottom-up`)
+and Ownership and workers (`node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#ownership-and-workers`).
 Vouchington adds: the parent never runs `pnpm exec pr-shepherd` for a stack; the layer cap and
 [must-stack decision](../agent-workflow/git-and-prs.md#branch-and-commit) stay in Git And PRs;
 a layer is "decent shape" when its before-push checks have passed. Dependent work is the next layer

@@ -18,7 +18,7 @@ implementation of the portable workflow.
 
 Accept optional `--retro-days <N>` (default 1) and `--session-days <N>` (default 7) invocation args.
 Reject an invalid day count and compute the two cutoffs once, per the canonical
-[session shapes and eligibility](../../../node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility);
+session shapes and eligibility (`node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility`);
 pass both into every partition prompt so inspectors never read their own clock.
 
 Use the machine-registered `vouchington-tooling` MCP server. First drain every worktree's outbox:
@@ -62,7 +62,7 @@ other shape is fully determined structurally and needs no entry content inspecti
 subagent then returns one compact disposition summary: partition index, deduplicated evidence
 themes — each carrying the session IDs that contributed to it, a mapping the root preserves through
 every later merge and deduplication — and each session's disposition. Classify each session by the canonical
-[session shapes and eligibility](../../../node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility)
+session shapes and eligibility (`node_modules/vouchington-tooling/skills/retrospective-distill/SKILL.md#session-shapes-and-eligibility`)
 (shape definitions, `retroAt`/`lastActive`, cutoff eligibility, entry-type-unresolved handling,
 deduplication by `sourceEventId`, and the zero-entry topology caveat). Vouchington sources for the
 `data.type` check: `dev/retrospective-distill/retrospective-entry.mts` (`data.type ===

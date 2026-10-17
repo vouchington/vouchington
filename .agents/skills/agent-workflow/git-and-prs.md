@@ -15,7 +15,7 @@
 - When a stack is required, stack without asking, whatever its length: add the work as the next
   layer, or rebase it onto the open PR and run `gh stack link <lower> <upper>` before either PR is
   enqueued. Never grow a stack beyond 10 PRs; layer counting and overflow follow the canonical
-  [stacked-prs](../../../node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#work-bottom-up) skill.
+  stacked-prs (`node_modules/vouchington-tooling/skills/stacked-prs/SKILL.md#work-bottom-up`) skill.
   Put ready layers at the bottom and append later work on top. Never ask whether to stack, or for
   an exception to stacking. Ask the human only when no option above resolves the conflict.
 - `pr_create` flags about 5,000 added or 20,000 deleted lines (against `origin/<base>`) for a split decision. Split only
@@ -46,7 +46,7 @@
 ### Reading the four refs
 
 Before any rebase or lease push, follow the canonical
-[four refs](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/four-refs.md)
+four refs (`node_modules/vouchington-tooling/skills/agent-workflow/references/four-refs.md`)
 procedure (setup, ref reading, lease push, unstacked and stacked tables). Vouchington overrides:
 the rebase target step is `./dev/rebase-onto-main` (`--stack` for a layer), and the stacked
 adoption's follow-up is `./dev/rebase-onto-main --stack`, only when the stack still needs to move
@@ -104,7 +104,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
 
 ## Close-out
 
-- Follow the canonical [Close-out](../../../node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md#close-out)
+- Follow the canonical Close-out (`node_modules/vouchington-tooling/skills/agent-workflow/SKILL.md#close-out`)
   rules for validation reporting, the hand-off retrospective, and the merge note. A stack's
   retrospective uses its top PR's number in `handoff-pr<number>`.
 - Hook mechanics and limitations belong in [agent sandbox](../../../docs/development/agent-sandbox.md)

@@ -49,7 +49,7 @@ the copy-ready external report, unless the caller opts out. Pass `TARGET_REPO` t
 `PR_REPO` to every PR call.
 
 Keep agent output bounded per the canonical
-[Bounded output](../../../node_modules/vouchington-tooling/skills/github-issue/SKILL.md#bounded-output)
+Bounded output (`node_modules/vouchington-tooling/skills/github-issue/SKILL.md#bounded-output`)
 rules.
 
 Before filing in Vouchington, verify every existing `## Files / areas` path against `HEAD`. Mark

@@ -1,7 +1,7 @@
 # Implementation
 
-Follow the canonical [implementation](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/implementation.md)
-and [evidence sweep](../../../node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md)
+Follow the canonical implementation (`node_modules/vouchington-tooling/skills/agent-workflow/references/implementation.md`)
+and evidence sweep (`node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md`)
 references (behavior-change updates, semantic conflict resolution, deadline removal, policy-table
 siblings, skipped-validation findings, final-diff comparison). Vouchington additions:
 
