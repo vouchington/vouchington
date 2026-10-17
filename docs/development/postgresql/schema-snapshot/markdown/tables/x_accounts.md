@@ -6,19 +6,19 @@ X (Twitter) OAuth accounts linked to users. Stores profile data and encrypted OA
 
 Not partitioned — growth: unbounded.
 
-| Column                     | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                        |
-| -------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------ |
-| `id`                       | `uuid`                     | no       | `uuidv7()`          |          |           |           | Internal UUIDv7 identity of the X account.                                     |
-| `user_id`                  | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet.            |
-| `x_user_id`                | `text`                     | no       |                     |          |           |           | X's unique external user identifier.                                           |
-| `x_user_email_address`     | `text`                     | yes      |                     |          |           |           | Email address from the X profile.                                              |
-| `x_user_data`              | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from X OAuth.                                           |
-| `access_token_ciphertext`  | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 access token ciphertext for X API calls.                   |
-| `refresh_token_ciphertext` | `text`                     | yes      |                     |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.              |
-| `access_token_expires_at`  | `timestamp with time zone` | yes      |                     |          |           |           | When the access token expires.                                                 |
-| `friends_synced_at`        | `timestamp with time zone` | yes      |                     |          |           |           | When the user's X (Twitter) friends list was last synced for friend discovery. |
-| `created_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                |
-| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                                |
+| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                        |
+| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------ |
+| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the X account.                                     |
+| `user_id`                  | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.            |
+| `x_user_id`                | `text`                     | no       |                              |          |           |           | X's unique external user identifier.                                           |
+| `x_user_email_address`     | `text`                     | yes      |                              |          |           |           | Email address from the X profile.                                              |
+| `x_user_data`              | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from X OAuth.                                           |
+| `access_token_ciphertext`  | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for X API calls.                   |
+| `refresh_token_ciphertext` | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.              |
+| `access_token_expires_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When the access token expires.                                                 |
+| `friends_synced_at`        | `timestamp with time zone` | yes      |                              |          |           |           | When the user's X (Twitter) friends list was last synced for friend discovery. |
+| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                |
+| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 

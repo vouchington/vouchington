@@ -136239,9 +136239,9 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
           "ordinalPosition": 10,
@@ -136501,12 +136501,12 @@
         "created_at": {
           "collation": null,
           "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4,
+          "nullable": true,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "friend_x_account_id": {
@@ -136517,7 +136517,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 identity of the observed friend relation.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
           "type": "uuid"
         },
         "last_observed_at": {
@@ -136528,7 +136539,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -136539,7 +136550,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "x_account_id": {
@@ -136550,7 +136561,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "uuid"
         },
         "x_friend_id": {
@@ -136561,7 +136572,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
         }
       },
@@ -136631,7 +136642,27 @@
         "x_friends_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (x_account_id, x_friend_id)",
+          "definition": "CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "x_friends_x_account_id_x_friend_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX x_friends_x_account_id_x_friend_id_key ON public.x_friends USING btree (x_account_id, x_friend_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -136650,7 +136681,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -136659,14 +136690,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["x_account_id", "x_friend_id"],
-        "definition": "PRIMARY KEY (x_account_id, x_friend_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_x_friends_updated_at": "CREATE TRIGGER trigger_x_friends_updated_at BEFORE UPDATE ON public.x_friends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "x_friends_x_account_id_x_friend_id_key": {
+          "columns": ["x_account_id", "x_friend_id"],
+          "definition": "UNIQUE (x_account_id, x_friend_id)"
+        }
+      }
     }
   },
   "views": {

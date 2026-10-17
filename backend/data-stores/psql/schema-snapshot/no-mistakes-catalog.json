@@ -142923,9 +142923,9 @@
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "stored",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
           "ordinalPosition": 10
@@ -143193,12 +143193,12 @@
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
+          "nullable": true,
+          "ordinalPosition": 5
         },
         "friend_x_account_id": {
           "comment": "Matching local X account when the friend has signed in.",
@@ -143208,7 +143208,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
+        },
+        "id": {
+          "comment": "Internal UUIDv7 identity of the observed friend relation.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
         },
         "last_observed_at": {
           "comment": "Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.",
@@ -143218,7 +143228,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "updated_at": {
           "comment": null,
@@ -143228,7 +143238,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "x_account_id": {
           "comment": "Source X account whose following list contains this entry.",
@@ -143238,7 +143248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 2
         },
         "x_friend_id": {
           "comment": "External X user ID of the friend, who may not have an account here.",
@@ -143248,7 +143258,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         }
       },
       "comment": "X (Twitter) follower/following relationships for friend recommendations.",
@@ -143320,7 +143330,30 @@
         "x_friends_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (x_account_id, x_friend_id)",
+          "definition": "CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "x_friends_x_account_id_x_friend_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX x_friends_x_account_id_x_friend_id_key ON public.x_friends USING btree (x_account_id, x_friend_id)",
           "immediate": true,
           "keys": [
             {
@@ -143344,7 +143377,7 @@
           ],
           "live": true,
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -143352,7 +143385,7 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["x_account_id", "x_friend_id"]
+        "columns": ["id"]
       },
       "relationKind": "table",
       "triggers": {
@@ -143360,7 +143393,11 @@
           "definition": "CREATE TRIGGER trigger_x_friends_updated_at BEFORE UPDATE ON public.x_friends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "x_friends_x_account_id_x_friend_id_key": {
+          "columns": ["x_account_id", "x_friend_id"]
+        }
+      }
     }
   },
   "views": {
