@@ -2,6 +2,148 @@
 
 [Schema index](README.md).
 
+## `mv_platform_stats` (materialized)
+
+Cached public platform counts, refreshed on the PostgreSQL materialized-view schedule.
+
+```sql
+ WITH post_counts AS (
+         SELECT (count(*))::integer AS post_count,
+            (count(*) FILTER (WHERE (view_public_post_eligibility.post_type = 'review'::post_types)))::integer AS review_count,
+            (count(*) FILTER (WHERE (view_public_post_eligibility.post_type = 'data_point'::post_types)))::integer AS data_point_count
+           FROM view_public_post_eligibility
+        )
+ SELECT 1 AS singleton_id,
+    ( SELECT (count(*))::integer AS count
+           FROM topics
+          WHERE ((topics.deleted_at IS NULL) AND (topics.merged_into_topic_id IS NULL))) AS topic_count,
+    ( SELECT (count(*))::integer AS count
+           FROM rss_feeds
+          WHERE ((rss_feeds.deleted_at IS NULL) AND (rss_feeds.is_enabled = true))) AS rss_feed_count,
+    post_count,
+    review_count,
+    data_point_count,
+    ( SELECT (count(*))::integer AS count
+           FROM url_hostnames
+          WHERE ((url_hostnames.votes_count_up > 0) AND (NOT url_hostnames.is_blocked))) AS hostname_count
+   FROM post_counts;
+```
+
+## `mv_revenue_changes` (materialized)
+
+Upgrade, downgrade and cancellation counts by fixed dashboard window and user, refreshed on schedule.
+
+```sql
+ WITH windows AS (
+         SELECT value.window_name,
+            value.cutoff_id
+           FROM ( VALUES ('today'::text,fn_min_uuidv7((date_trunc('day'::text, (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)) AT TIME ZONE 'UTC'::text))), ('7d'::text,fn_min_uuidv7((CURRENT_TIMESTAMP - '7 days'::interval))), ('30d'::text,fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))), ('90d'::text,fn_min_uuidv7((CURRENT_TIMESTAMP - '90 days'::interval))), ('all'::text,'00000000-0000-0000-0000-000000000000'::uuid)) value(window_name, cutoff_id)
+        ), scoped AS (
+         SELECT windows.window_name,
+            (changes.user_id)::text AS scope_id,
+            (count(*) FILTER (WHERE (changes.change_type = 'upgrade'::membership_change_types)))::integer AS upgrades,
+            (count(*) FILTER (WHERE (changes.change_type = 'downgrade'::membership_change_types)))::integer AS downgrades,
+            (count(*) FILTER (WHERE (changes.change_type = 'cancellation'::membership_change_types)))::integer AS cancellations
+           FROM (windows
+             JOIN membership_changes changes ON ((changes.id > windows.cutoff_id)))
+          GROUP BY windows.window_name, changes.user_id
+        )
+ SELECT scoped.window_name,
+    scoped.scope_id,
+    scoped.upgrades,
+    scoped.downgrades,
+    scoped.cancellations
+   FROM scoped
+UNION ALL
+ SELECT scoped.window_name,
+    '00000000-0000-0000-0000-000000000000'::text AS scope_id,
+    (sum(scoped.upgrades))::integer AS upgrades,
+    (sum(scoped.downgrades))::integer AS downgrades,
+    (sum(scoped.cancellations))::integer AS cancellations
+   FROM scoped
+  GROUP BY scoped.window_name;
+```
+
+## `mv_revenue_memberships` (materialized)
+
+Active memberships and exact observed direct Stripe revenue for global and per-user reads.
+
+```sql
+ WITH eligible_memberships AS (
+         SELECT m.user_id,
+            product.plan AS tier,
+            product.billing_interval AS "interval",
+            m.membership_source_id,
+            m.membership_product_id
+           FROM ((memberships m
+             JOIN view_current_paid_memberships current_paid ON ((current_paid.user_id = m.user_id)))
+             JOIN membership_products product ON ((product.id = m.membership_product_id)))
+          WHERE ((m.projection_ended_at IS NULL) AND (m.cancelled_at IS NULL) AND (m.expired_at IS NULL) AND (m.past_due_at IS NULL) AND (m.paused_at IS NULL))
+        ), active_counts AS (
+         SELECT eligible_memberships.user_id,
+            eligible_memberships.tier,
+            (count(*))::integer AS membership_count
+           FROM eligible_memberships
+          GROUP BY eligible_memberships.user_id, eligible_memberships.tier
+        ), revenue_counts AS (
+         SELECT eligible.user_id,
+            eligible.tier,
+            eligible."interval",
+            observation.observed_price_currency_code AS currency_code,
+            currency.minor_unit_exponent,
+            provider_context.application_id,
+            (count(*))::integer AS membership_count,
+            sum(observation.observed_price_minor_units) AS total_minor_units
+           FROM (((((eligible_memberships eligible
+             JOIN membership_sources source ON (((source.id = eligible.membership_source_id) AND (source.source_kind = 'direct'::membership_source_kinds))))
+             JOIN membership_source_states state ON (((state.membership_source_id = source.id) AND (state.membership_product_id = eligible.membership_product_id))))
+             JOIN membership_provider_observations observation ON ((observation.id = state.membership_provider_observation_id)))
+             JOIN membership_provider_contexts provider_context ON (((provider_context.id = observation.membership_provider_context_id) AND (provider_context.provider = 'stripe'::membership_provider_kinds) AND (provider_context.environment = 'production'::membership_provider_environments))))
+             JOIN currencies currency ON ((currency.code = observation.observed_price_currency_code)))
+          GROUP BY eligible.user_id, eligible.tier, eligible."interval", observation.observed_price_currency_code, currency.minor_unit_exponent, provider_context.application_id
+        ), scoped_rows AS (
+         SELECT (active_counts.user_id)::text AS scope_id,
+            ''::text AS application_id,
+            active_counts.tier,
+            NULL::text AS "interval",
+            NULL::text AS currency_code,
+            NULL::integer AS minor_unit_exponent,
+            active_counts.membership_count,
+            NULL::numeric AS total_minor_units
+           FROM active_counts
+        UNION ALL
+         SELECT (revenue_counts.user_id)::text AS user_id,
+            revenue_counts.application_id,
+            revenue_counts.tier,
+            (revenue_counts."interval")::text AS "interval",
+            (revenue_counts.currency_code)::text AS currency_code,
+            revenue_counts.minor_unit_exponent,
+            revenue_counts.membership_count,
+            revenue_counts.total_minor_units
+           FROM revenue_counts
+        )
+ SELECT scoped_rows.scope_id,
+    scoped_rows.application_id,
+    scoped_rows.tier,
+    scoped_rows."interval",
+    scoped_rows.currency_code,
+    scoped_rows.minor_unit_exponent,
+    scoped_rows.membership_count,
+    scoped_rows.total_minor_units
+   FROM scoped_rows
+UNION ALL
+ SELECT '00000000-0000-0000-0000-000000000000'::text AS scope_id,
+    scoped_rows.application_id,
+    scoped_rows.tier,
+    scoped_rows."interval",
+    scoped_rows.currency_code,
+    scoped_rows.minor_unit_exponent,
+    (sum(scoped_rows.membership_count))::integer AS membership_count,
+    sum(scoped_rows.total_minor_units) AS total_minor_units
+   FROM scoped_rows
+  GROUP BY scoped_rows.application_id, scoped_rows.tier, scoped_rows."interval", scoped_rows.currency_code, scoped_rows.minor_unit_exponent;
+```
+
 ## `mv_rss_feed_crawl_tiers` (materialized)
 
 Precomputed crawl_score and crawl_tier per enabled RSS feed. Refreshed nightly by the psql refreshMaterializedView job (refresh-rss-feed-crawl-tiers). Tier percentile thresholds (0.1%/1%/5%/20%) and score formula (log1p(weighted followers) + votes_score_net) are baked into this SQL. Unique follower demand weights are free=1, Plus=2, Pro=3, based on current active or past-due memberships with expires_at null or future. Unique index enables CONCURRENTLY refresh.
@@ -149,6 +291,43 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
    FROM (aggregate
      JOIN casing USING (topic_alias_id))
   WHERE (aggregate.contributor_count >= 3);
+```
+
+## `mv_trending_rss_feeds` (materialized)
+
+Rolling feed scores for day, week and month, refreshed on the PostgreSQL materialized-view schedule.
+
+```sql
+ WITH windows AS (
+         SELECT value.window_name,
+            value.days
+           FROM ( VALUES ('day'::text,1), ('week'::text,7), ('month'::text,30)) value(window_name, days)
+        ), recent_follows AS (
+         SELECT windows_1.window_name,
+            relation.object_id AS feed_id,
+            (count(*))::integer AS follow_count
+           FROM (windows windows_1
+             JOIN relation__user__follow__rss_feed relation ON (((relation.deleted_at IS NULL) AND (relation.created_at > (CURRENT_TIMESTAMP - ((windows_1.days)::double precision * '1 day'::interval))))))
+          GROUP BY windows_1.window_name, relation.object_id
+        ), recent_items AS (
+         SELECT windows_1.window_name,
+            source.rss_feed_id AS feed_id,
+            (count(*))::integer AS item_count
+           FROM ((windows windows_1
+             JOIN rss_feed_items item ON (((item.deleted_at IS NULL) AND (item.published_at > (CURRENT_TIMESTAMP - ((windows_1.days)::double precision * '1 day'::interval))))))
+             JOIN rss_feed_item_sources source ON ((source.rss_feed_item_id = item.id)))
+          GROUP BY windows_1.window_name, source.rss_feed_id
+        )
+ SELECT windows.window_name,
+    feed.id,
+    ((((COALESCE(follows.follow_count, 0))::numeric * 3.0) + (COALESCE(items.item_count, 0))::numeric))::double precision AS trending_score,
+    COALESCE(follows.follow_count, 0) AS follow_count,
+    COALESCE(items.item_count, 0) AS item_count
+   FROM (((windows
+     JOIN rss_feeds feed ON (((feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true))))
+     LEFT JOIN recent_follows follows ON (((follows.window_name = windows.window_name) AND (follows.feed_id = feed.id))))
+     LEFT JOIN recent_items items ON (((items.window_name = windows.window_name) AND (items.feed_id = feed.id))))
+  WHERE ((follows.feed_id IS NOT NULL) OR (items.feed_id IS NOT NULL));
 ```
 
 ## `view_community_list_items`
