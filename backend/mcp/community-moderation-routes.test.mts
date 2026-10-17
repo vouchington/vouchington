@@ -76,7 +76,7 @@ const expectedFlags = {
   add_community_moderation: {
     readOnlyHint: false,
     idempotentHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
   },
   update_community_moderation: {
     readOnlyHint: false,

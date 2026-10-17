@@ -16681,7 +16681,7 @@
             },
             "annotations": {
               "readOnlyHint": false,
-              "destructiveHint": false,
+              "destructiveHint": true,
               "idempotentHint": false
             },
             "_meta": {

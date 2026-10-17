@@ -201,7 +201,7 @@ ordinary user scopes; exact-grant scopes always require explicit consent.
 
 **Community moderation.** `read_community_moderation` is a free read tool under the exact
 `community-moderation:read` grant. `add_community_moderation` requires Plus and the exact
-`community-moderation:write` grant; its options are non-destructive. `update_community_moderation`
+`community-moderation:write` grant; it is marked destructive because banning removes active membership. `update_community_moderation`
 and `remove_community_moderation` also require Plus and the exact write grant. Update is marked
 destructive because it can unpublish a post or replace pinned posts; remove is marked destructive.
 All three write tools use conservative `idempotentHint: false` annotations; reads are idempotent.

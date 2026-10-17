@@ -30,7 +30,7 @@ const handlers: Record<string, CommunityModerationHandler> = {
 
 const definitions = [
   { name: 'read_community_moderation', methods: ['GET'], plus: false, destructive: false },
-  { name: 'add_community_moderation', methods: ['POST'], plus: true, destructive: false },
+  { name: 'add_community_moderation', methods: ['POST'], plus: true, destructive: true },
   { name: 'update_community_moderation', methods: ['PUT', 'PATCH'], plus: true, destructive: true },
   { name: 'remove_community_moderation', methods: ['DELETE'], plus: true, destructive: true },
 ] as const
