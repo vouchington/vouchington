@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import { isMediaDeliveryRegistryPublicationEnabled } from '@modules/aws/media-delivery-registry'
 import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
@@ -69,7 +69,7 @@ export async function publishStagedMediaDeliveryRecord(
 
 async function publishCommittedDeliveryRecord(
   mediaDeliveryRegistryRecordId: string,
-  query: NonNullable<QueryOptions['query']>,
+  query: QueryExecutor,
   dependencies?: Partial<MediaDeliveryDependencies>,
   ownedClaim?: MediaDeliveryClaim,
 ): Promise<void> {
@@ -140,7 +140,7 @@ async function publishCommittedDeliveryRecord(
 }
 
 async function readCurrentPlacementDeliveryRecord(
-  query: NonNullable<QueryOptions['query']>,
+  query: QueryExecutor,
   mediaDeliveryRegistryRecordId: string,
 ): Promise<ImageDeliveryRecord | null> {
   await query(sql`/* readCurrentPlacementDeliveryRecord:lock */
