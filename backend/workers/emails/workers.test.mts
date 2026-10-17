@@ -8,7 +8,33 @@ describe('emails worker router', () => {
     await emails.close()
   })
 
-  it('rejects a job that left the queue for the email-digests domain', async () => {
+  it('moves a digest job still waiting in emails onto the email-digests domain', async () => {
+    const sourceId = '00000000-0000-7000-8000-0000000000dd'
+    const payload = {
+      input: { userId: '00000000-0000-7000-8000-000000000001', trackingKey: 'daily:owned' },
+      variables: { communities: [] },
+    }
+    const moved = await processEmailJob({
+      id: sourceId,
+      name: 'processSendCommunityModerationSummaryEmail',
+      data: payload,
+    } as Job)
+    expect(moved).toMatchObject({
+      name: 'email-digests.processSendCommunityModerationSummaryEmail',
+      data: payload,
+      opts: { deduplication: { id: `emails:legacy-digest:${sourceId}`, mode: 'simple' } },
+    })
+    await expect(
+      processEmailJob({
+        id: sourceId,
+        name: 'processSendCommunityModerationSummaryEmail',
+        data: payload,
+      } as Job),
+    ).resolves.toBeNull()
+    await (moved as { remove: () => Promise<void> }).remove()
+  })
+
+  it('rejects a digest move that has no source id', async () => {
     await expect(
       processEmailJob({ name: 'dispatchEngagementEmails', data: {} } as Job),
     ).rejects.toBeInstanceOf(JobPayloadError)
