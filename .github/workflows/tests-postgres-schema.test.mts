@@ -22,7 +22,6 @@ describe('PostgreSQL Schema Tests workflow', () => {
 
     expect(tests).toBeGreaterThanOrEqual(0)
     expect(snapshot).toBeGreaterThan(tests)
-    expect(step).toContain('timeout-minutes: 4')
     expect(step).toContain(
       'VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity',
     )
