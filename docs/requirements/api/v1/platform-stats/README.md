@@ -27,10 +27,12 @@ Response is streamed via `streamJsonObject`.
 | GET /api/v1/platform-stats | 1 cold; 0 warm        | Valkey: all viewers; HTTP: anonymous only | Authenticated requests retain their auth lookup |
 
 The cold SQL reads one row from `mv_platform_stats`, refreshed every five minutes; Valkey and
-anonymous HTTP caching can add their configured short TTL. A cold anonymous request followed by
-two authenticated requests executes one row lookup instead of three while the entry remains fresh. The regression test
-owns a private Valkey container so parallel shared-cache invalidation cannot disturb this proof;
-run it in `backend-platform-stats-cache` (see the [project reference](../../../../development/reference-project-name-reference.md)).
+anonymous HTTP caching can add their configured short TTL. This server-side cadence and the existing
+response fields apply to web, Swift, and .NET callers alike; clients need no request or rendering
+change. A cold anonymous request followed by two authenticated requests executes one row lookup
+instead of three while the entry remains fresh. The regression test owns a private Valkey container
+so parallel shared-cache invalidation cannot disturb this proof; run it in
+`backend-platform-stats-cache` (see the [project reference](../../../../development/reference-project-name-reference.md)).
 
 ## Related
 
