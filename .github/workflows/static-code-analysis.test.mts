@@ -123,6 +123,22 @@ describe('static-code-analysis workflow', () => {
     expect(analyzer).toBeGreaterThan(steps.indexOf(controls[0]!))
   })
 
+  it('runs live Storybook component coverage after the shared analyzer releases its lock', () => {
+    type Step = { name?: string; run?: string; if?: string; 'timeout-minutes'?: number }
+    const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
+    const steps = parsed.jobs['no-mistakes']?.steps ?? []
+    const command = 'node web/storybook/check-component-story-coverage.mts'
+    const coverage = steps.filter(step => step.run === command)
+    const analyzer = steps.findIndex(
+      step => step.run === 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
+    )
+
+    expect(coverage).toHaveLength(1)
+    expect(coverage[0]?.if).toBeUndefined()
+    expect(coverage[0]?.['timeout-minutes']).toBeLessThanOrEqual(2)
+    expect(steps.indexOf(coverage[0]!)).toBeGreaterThan(analyzer)
+  })
+
   it('delegates Rust and AGENTS.md rules to no-mistakes check', () => {
     expect(workflow).not.toContain('no-mistakes-rust-no-inline-tests')
     expect(workflow).not.toContain('no-mistakes-agents-md-max-size')

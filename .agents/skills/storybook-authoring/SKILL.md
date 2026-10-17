@@ -34,7 +34,7 @@ browser-runner or Vite failures.
   #4415). The only explicit contract is the core entity surfaces (`entityStoryFiles`: communities,
   domains, landing-pages, news, posts, sources, topics, urls, users): each must export `ListPage`,
   `ListForm`, `MainPageContent`, and `Asides`, and the test asserts each file still exists.
-- `web/storybook/__tests__/component-story-coverage.test.ts` enforces that every reusable exported
+- The static CI `Check Storybook component coverage` step enforces that every reusable exported
   component with a `data-pw` attribute has direct Storybook coverage. The exclusions file exists
   only as a zero-length ratchet sentinel; any non-empty entry fails the test. When the coverage
   test fails, it prints the exact key for each missing component.

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
-import { componentRoot, repoRoot, sourceExtensions, storybookRoot } from './source'
+import { componentRoot, repoRoot, sourceExtensions, storybookRoot } from './source.ts'
 
 function sourceFilesUnder(root: string): string[] {
   const absoluteRoot = path.join(repoRoot, root)

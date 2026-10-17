@@ -4,7 +4,7 @@ import {
   createSourceModuleGraph,
   type SourceModuleGraph,
 } from 'vouchington-tooling/source-module-graph'
-import { repoRoot, sourceExtensions } from './source'
+import { repoRoot, sourceExtensions } from './source.ts'
 
 export interface StorybookSourceAnalysis {
   graph: SourceModuleGraph
