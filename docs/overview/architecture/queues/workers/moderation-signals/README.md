@@ -13,4 +13,4 @@ Handlers for the `moderation-signals` domain of the shared [`background` worker]
 
 - Queue surface: [../../moderation-signals/README.md](../../moderation-signals/README.md)
 - Service logic: [../../../services/communities/ban-evasion/](../../../../../../backend/services/communities/ban-evasion/)
-- Worker entrypoint: [../../../backend/entrypoints/worker-io/README.md](../../../../backend/entrypoints/worker-io/README.md)
+- Worker entrypoint: [../../../backend/entrypoints/worker-io/README.md](../../../../../../backend/entrypoints/worker-io/README.md)
