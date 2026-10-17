@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { safeUsername } from './data.mts'
 import { v7 } from 'uuid'
 import { read, write, beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -8,12 +9,12 @@ import { createTestSku } from './entities/memberships.mts'
 import { createTestFamilyMembership } from './entities/memberships/family.mts'
 
 export async function createVoteWeightDispatchUser() {
-  return createTestUserDirect({ username: `test-vw-dispatch-${randomUUID()}` })
+  return createTestUserDirect({ username: safeUsername('vw-dispatch') })
 }
 
 export async function createVoteWeightDispatchUserAt(at: Date): Promise<string> {
   const id = v7({ msecs: at.getTime() })
-  await createTestUserWithId(id, `test-vw-dispatch-${randomUUID()}`)
+  await createTestUserWithId(id, safeUsername('vw-dispatch'))
   return id
 }
 
