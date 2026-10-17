@@ -54,6 +54,9 @@ describe('Navbar sidebar trigger visibility', () => {
   })
 })
 
+const searchButtonName = /Search\.\.\. (?:⌘|Ctrl) K, Open search/
+const spanishSearchButtonName = /Buscar\.\.\. (?:⌘|Ctrl) K, Abrir búsqueda/
+
 describe('Navbar layout', () => {
   beforeEach(() => {
     setNavbarUser(null)
@@ -74,7 +77,7 @@ describe('Navbar layout', () => {
   it('keeps the search label visible at mobile and desktop breakpoints', () => {
     render(navbarUnderTest(NavbarComponent))
 
-    const searchButton = screen.getByRole('button', { name: 'Open search' })
+    const searchButton = screen.getByRole('button', { name: searchButtonName })
     expect(searchButton.textContent).toContain('Search...')
 
     const searchLabel = screen.getByText('Search...')
@@ -86,7 +89,7 @@ describe('Navbar layout', () => {
   it('uses a touch-safe search hit target with a compact visual shell', () => {
     const { container } = render(navbarUnderTest(NavbarComponent))
 
-    const searchButton = screen.getByRole('button', { name: 'Open search' })
+    const searchButton = screen.getByRole('button', { name: searchButtonName })
     expect(searchButton.className).toContain('h-11')
     expect(searchButton.className).toContain('sm:h-8')
 
@@ -100,7 +103,7 @@ describe('Navbar layout', () => {
 
     expect(screen.getByTestId('command-search')).toHaveAttribute('data-open', 'false')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open search' }))
+    fireEvent.click(screen.getByRole('button', { name: searchButtonName }))
 
     expect(screen.getByTestId('command-search')).toHaveAttribute('data-open', 'true')
   })
@@ -111,7 +114,7 @@ describe('Navbar layout', () => {
 
     render(<UiLocaleProvider uiLocale='es'>{navbarUnderTest(NavbarComponent)}</UiLocaleProvider>)
 
-    expect(screen.getByRole('button', { name: 'Abrir búsqueda' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: spanishSearchButtonName })).toBeInTheDocument()
     expect(screen.getByText('Buscar...')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Escribir' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Open search' })).toBeNull()

@@ -82,6 +82,11 @@ describe('ProfileMenu', () => {
       />,
     )
 
+    expect(screen.getByTestId('navbar-profile-menu-button')).toHaveAttribute(
+      'aria-label',
+      'TE, Open profile menu',
+    )
+
     const headerLink = screen.getByTestId('profile-menu-current-user')
     expect(headerLink).toBeInTheDocument()
     expect(headerLink).toHaveAttribute('href', '/user/testuser')

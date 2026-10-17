@@ -58,7 +58,17 @@ vi.mock(
 describe('IntentSwitcher', () => {
   it('renders the trigger with the active intent label', () => {
     render(<IntentSwitcher variant='navbar' />)
-    expect(screen.getByTestId('intent-switcher-trigger')).toBeDefined()
+    expect(screen.getByTestId('intent-switcher-trigger')).toHaveAttribute(
+      'aria-label',
+      'Navigate intents — News',
+    )
+  })
+
+  it('includes the visible sidebar label in the accessible name', () => {
+    render(<IntentSwitcher variant='sidebar' />)
+    const trigger = screen.getByTestId('intent-switcher-trigger')
+    expect(trigger).toHaveAttribute('aria-label', 'Navigate intents — News')
+    expect(trigger).toHaveTextContent('News')
   })
 
   it('filters requiresAuth intents when logged out', () => {

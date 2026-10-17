@@ -14,6 +14,12 @@ interface NavbarSearchButtonProps {
 export function NavbarSearchButton({ onOpenSearch }: NavbarSearchButtonProps) {
   const t = useTranslations()
   const isMac = useIsMac()
+  const searchText = t('extracted.navbar.topbarActions.search_7f553822')
+  const modifier = isMac
+    ? t('extracted.navbar.topbarActions.text_70b4b62a')
+    : t('extracted.navbar.topbarActions.ctrl_b075c3a0')
+  // WCAG 2.5.3 requires the visible label, in this DOM order, inside the accessible name.
+  const accessibleName = `${searchText} ${modifier} K, ${t('extracted.navbar.topbarActions.openSearch_50ce48b9')}`
 
   return (
     <Button
@@ -21,7 +27,7 @@ export function NavbarSearchButton({ onOpenSearch }: NavbarSearchButtonProps) {
       size='touch'
       data-pw='navbar-search-button'
       className='group relative min-w-0 max-w-sm flex-1 justify-start p-0 hover:bg-transparent sm:h-8 sm:p-0'
-      aria-label={t('extracted.navbar.topbarActions.openSearch_50ce48b9')}
+      aria-label={accessibleName}
       onClick={onOpenSearch}
     >
       <span
@@ -29,13 +35,9 @@ export function NavbarSearchButton({ onOpenSearch }: NavbarSearchButtonProps) {
         className='flex h-8 min-w-0 flex-1 items-center rounded-md border border-input bg-background px-3 text-sm text-muted-foreground shadow-sm transition-colors group-hover:bg-accent group-hover:text-accent-foreground'
       >
         <Search className='mr-2 h-4 w-4 shrink-0' />
-        <span className='truncate'>{t('extracted.navbar.topbarActions.search_7f553822')}</span>
+        <span className='truncate'>{searchText}</span>
         <KbdGroup className='ml-auto hidden shrink-0 sm:inline-flex'>
-          <Kbd>
-            {isMac
-              ? t('extracted.navbar.topbarActions.text_70b4b62a')
-              : t('extracted.navbar.topbarActions.ctrl_b075c3a0')}
-          </Kbd>
+          <Kbd>{modifier}</Kbd>
           <Kbd>K</Kbd>
         </KbdGroup>
       </span>

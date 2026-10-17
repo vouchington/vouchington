@@ -42,6 +42,13 @@ export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
     activeIntentId != null ? (visibleIntents.find(i => i.id === activeIntentId) ?? null) : null
 
   const ActiveIcon = activeIntent?.icon
+  const visibleLabel = activeIntent?.label
+    ? t(activeIntent.label)
+    : t('extracted.navbar.intentSwitcher.menu_99af6606')
+  // WCAG 2.5.3 requires the visible label inside the accessible name.
+  const accessibleName = t('extracted.navbar.intentSwitcher.navigateIntentsLabel_920e75d7', {
+    label: visibleLabel,
+  })
 
   return (
     <DropdownMenu>
@@ -55,24 +62,12 @@ export function IntentSwitcher({ variant }: { variant: 'navbar' | 'sidebar' }) {
             variant === 'navbar' && 'hidden sm:inline-flex gap-1.5 px-2 sm:px-3',
             variant === 'sidebar' && 'w-full justify-between gap-1.5',
           )}
-          aria-label={
-            variant === 'navbar'
-              ? activeIntent?.label
-                ? t('extracted.navbar.intentSwitcher.navigateIntentsLabel_920e75d7', {
-                    label: t(activeIntent.label),
-                  })
-                : t('extracted.navbar.intentSwitcher.navigateIntents_496c1f7e')
-              : t('extracted.navbar.intentSwitcher.navigateIntents_496c1f7e')
-          }
+          aria-label={accessibleName}
           data-pw='intent-switcher-trigger'
         >
           <span className='flex items-center gap-1.5'>
             {ActiveIcon && <ActiveIcon className='size-4 shrink-0' />}
-            <span className={cn(variant === 'navbar' && 'hidden sm:inline')}>
-              {activeIntent?.label
-                ? t(activeIntent.label)
-                : t('extracted.navbar.intentSwitcher.menu_99af6606')}
-            </span>
+            <span className={cn(variant === 'navbar' && 'hidden sm:inline')}>{visibleLabel}</span>
           </span>
           <ChevronDown className='size-4 shrink-0' />
         </Button>
