@@ -198,6 +198,14 @@ describe('backend Dockerfile dependency install', () => {
     expect(dockerignore).not.toContain('!static-code-analysis/**')
   })
 
+  it('omits the no-mistakes schema catalog from the backend image context', () => {
+    const lines = dockerignore.split(/\r?\n/)
+    const catalog = 'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json'
+    // `!backend/**` re-includes the tree, so this exclusion has to come later.
+    expect(lines.indexOf(catalog)).toBeGreaterThan(lines.indexOf('!backend/**'))
+    expect(lines).not.toContain('backend/data-stores/psql/schema-snapshot/schema.json')
+  })
+
   it.each([
     ['COPY --link --from=deploy-api /prod/api ./'],
     ['COPY --link --from=deploy-api --chown=65532:65532 /prod/api/node_modules ./node_modules'],

@@ -46,6 +46,8 @@
 **/*.stories.tsx
 **/__tests__
 **/__tests__/**
+# no-mistakes schema catalog. Live verification reads schema.json only.
+backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json
 **/test-helpers/**
 !backend/test-helpers/package.json
 backend/scripts/tests
