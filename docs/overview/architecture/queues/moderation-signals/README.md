@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/queues/moderation-signals/README.md](../../../../../backend/queues/moderation-signals/README.md)
 
-The `moderation-signals` domain of the shared [`background` queue](../background/README.md): spam
+The `moderation-signals` domain of the shared `background` queue: spam
 detection on posts and ban-evasion detection on community members. Both are DB-only (no model or
 external call), so the domain has **no `limiter` and no group**; the shared worker's concurrency is
 the only throttle. Its `workerConcurrency` baseline is 10, the two old workers' 5 each.
@@ -52,7 +52,5 @@ embedding copy retries can rediscover first posts whose enqueue failed.
 
 ## Related
 
-- [Spam Detection Service](../../services/spam-detection/README.md)
-- [Post Clearance Service](../../services/post-clearance/README.md)
 - Service logic: [../../services/communities/ban-evasion/](../../../../../backend/services/communities/ban-evasion/)
 - Worker: [../workers/moderation-signals/README.md](../workers/moderation-signals/README.md)
