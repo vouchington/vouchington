@@ -17,7 +17,7 @@ import type { AggregatedElectionStats, EntityElectionConfig } from './types.mts'
  * Intentionally reads the replica, not the primary: this recompute is a full idempotent
  * overwrite of an absolute value from an append-only vote table, run asynchronously with
  * throttle dedup and delayed through the throttle window plus a replica-lag safety margin
- * (`ELECTIONS_DEFAULTS.recomputeDelayMs`; see `backend/queues/vote-aggregation/enqueues/config-elections.mts` and
+ * (`ELECTIONS_DEFAULTS.recomputeDelayMs`; see `backend/queues/vote-aggregation/config.mts` and
  * `enqueues/elections.mts`). A stale read under residual lag does NOT self-correct when the missed vote is
  * the last one in a throttle burst, since no later vote-triggered recompute follows it — there is
  * currently no reconciler for this case (#11113). See #7352 for the replica-read rationale.

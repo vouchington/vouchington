@@ -6,10 +6,11 @@ Job queue for recalculating user vote weights based on auth strength, account ag
 
 ## Processors
 
-| Processor                              | Type       | Priority | Description                                                                          |
-| -------------------------------------- | ---------- | -------- | ------------------------------------------------------------------------------------ |
-| processRecalculateUserVoteWeight       | worker     | 10       | Recalculates a single user's vote weight; if changed, enqueues election stat updates |
-| processRecalculateVoteWeightDispatcher | dispatcher | 100      | Cursor-based batch dispatch for dirty markers and age-threshold recalculations       |
+| Job (`vote-aggregation.` prefix)       | Type       | Priority | Description                                                                                                          |
+| -------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| processRecalculateUserVoteWeight       | worker     | 10       | Recalculates a single user's vote weight; if changed, enqueues the first page of election stat updates               |
+| enqueueUserElectionUpdates             | dispatcher | 100      | Continues a user's election fan-out from a (lane, id) cursor, one page of `election_fan_out_page_size` votes per job |
+| processRecalculateVoteWeightDispatcher | dispatcher | 100      | Cursor-based batch dispatch for dirty markers and age-threshold recalculations                                       |
 
 ## Schedule
 

@@ -1,7 +1,7 @@
-import type { ELECTIONS_ORDERING } from './config-elections.mts'
+import type { ElectionLane } from '@queues/background/enqueues/vote-aggregation-jobs'
 
-export type ElectionsJobs = 'processUpdateElectionVoteStats'
-export type ElectionOrderingKey = keyof typeof ELECTIONS_ORDERING
+/** The lane an election recomputes in. */
+export type ElectionOrderingKey = ElectionLane
 
 declare const entityRelationElectionTableBrand: unique symbol
 export type EntityRelationElectionTable = string & {
@@ -13,17 +13,14 @@ export type EntityRelationElectionTarget = {
   relationTable: EntityRelationElectionTable
 }
 
-export type ElectionsJobData = {
-  name: ElectionsJobs
-  data:
-    | {
-        electionId: string
-        orderingKey: Exclude<ElectionOrderingKey, 'entity_relation'>
-        relationTable?: never
-      }
-    | {
-        electionId: string
-        orderingKey: 'entity_relation'
-        relationTable: EntityRelationElectionTable
-      }
-}
+export type ElectionJobInput =
+  | {
+      electionId: string
+      orderingKey: Exclude<ElectionOrderingKey, 'entity_relation'>
+      relationTable?: never
+    }
+  | {
+      electionId: string
+      orderingKey: 'entity_relation'
+      relationTable: EntityRelationElectionTable
+    }

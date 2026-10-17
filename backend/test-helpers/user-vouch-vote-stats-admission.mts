@@ -1,11 +1,13 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Job } from 'glide-mq'
 import { vi } from 'vitest'
+import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 
 export async function withOwnedVouchStats<Result>(targetId: string, action: () => Promise<Result>) {
   const retry = await import('../data-stores/valkey-glide-mq/glide-mq-retry.mts')
   const queue = (await import('../queues/vote-aggregation/queues.mts')).voteAggregation
-  const worker = (await import('../workers/vote-aggregation/workers.mts')).voteAggregation
+  const worker = getSharedBackgroundWorker()
   type Admission = { jobs?: Promise<unknown>; owned: boolean }
   type End = { failed: boolean; reason?: unknown }
   const context = new AsyncLocalStorage<Admission>()
@@ -20,7 +22,7 @@ export async function withOwnedVouchStats<Result>(targetId: string, action: () =
   let sdkFailed = false
   let deadline: AbortSignal | undefined
   const owns = (job: Job | undefined) =>
-    job?.name === 'processUpdateElectionVoteStats' &&
+    job?.name === VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name &&
     job.data.orderingKey === 'user_vouch' &&
     job.data.electionId === targetId
   const terminal = (job: Job | undefined, failed: boolean, reason?: unknown) => {

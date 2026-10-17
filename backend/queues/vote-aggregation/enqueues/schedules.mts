@@ -1,25 +1,22 @@
-import type { JobOptions } from 'glide-mq'
+import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import { PRIORITY_DISPATCHER, QUEUE_NAME } from './config-vote-weight.mts'
-import { voteAggregation } from '../queues.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueRecalculateVoteWeightDispatcher } from './vote-weight.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'dailyVoteWeightRecalculation',
     repeat: { pattern: '0 4 * * *' },
     template: {
-      name: 'processRecalculateVoteWeightDispatcher',
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      name: VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB.name,
+      opts: toSchedulerTemplateOptions({
+        ...ENQUEUE_BASE_DEFAULTS,
+        ...VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB.options,
+      }),
     },
     operatorSurfaces: [
       {
@@ -33,7 +30,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(voteAggregation, scheduledJobManifest)
-}

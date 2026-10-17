@@ -32,11 +32,17 @@ registry does not know.
 
 - **Names are namespaced.** A job is `<domain>.<name>`. Job ids, deduplication ids, scheduler ids,
   and ordering keys carry the domain too, so two domains can never collide.
-- **A job has one ordering key.** A domain is either capped as a whole (`domain`: every job shares
-  the key named after the domain, with the domain's `concurrency` and optional `rateLimit`),
-  ordered per entity (`entity`: each job supplies a key from `entityOrderingKey`, for example
-  `rss-feeds:dispatcher`), or not grouped (`none`). A domain that needs both a domain-wide cap and
-  per-entity keys cannot share the queue and keeps its own.
+- **A job has one ordering key, and every domain has a cap.** A domain is capped as a whole
+  (`domain`: every job shares the key named after the domain, with the domain's `concurrency` and
+  optional `rateLimit`; set to the domain's old worker concurrency) or runs a fixed set of singleton
+  lanes (`entity`: each job supplies a key from `entityOrderingKey`, so the cap is the sum of the
+  lanes). A job of a `domain` group may keep its own singleton key, such as a recovery dispatcher,
+  which puts it outside the group: the domain then runs at most its group concurrency plus one pass
+  per such key. A domain that needs both a domain-wide cap and per-entity keys cannot share the queue
+  and keeps its own.
+- **Deferral has a scope.** A provider rate-limit signal or a domain pause defers the whole group
+  when the domain shares one external limit (the default). A group with `deferral: 'job'` delays
+  only the signalling job, for domains whose jobs reach many independent hosts or none at all.
 - **Limits are per job.** A group `rateLimit` stands in for a queue-wide `limiter`, a group of
   concurrency 1 for `setGlobalConcurrency(1)`, and a per-job `lockDuration` or `timeout` for a
   worker-level value. There is no queue-wide `limiter`.
@@ -44,6 +50,10 @@ registry does not know.
   tasks use the default tier or a tier the domain ranks below 100, dispatchers and recovery use 100.
 - **Fan-out is paged.** A dispatcher or backfill enqueues one bounded page and continues through a
   cursor, because ranked priority orders only the jobs promoted together.
+
+Moved domains: `ses-inbound`, `openai-moderation`, `post-mentions`,
+`story-post-related-url-projections`, `post-publication`, `vote-aggregation`, and
+`entity-listeners`.
 
 The [worker](../workers/background/README.md) pairs each registered job with its handler and refuses
 to start when a job has no handler, a handler has no job, or a job has two handlers.

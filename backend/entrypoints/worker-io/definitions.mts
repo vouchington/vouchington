@@ -8,31 +8,18 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
         import('@queues/background/enqueues/schedules'),
         import('@queues/ses-inbound/enqueues/schedules'),
         import('@queues/openai-moderation/enqueues/schedules'),
+        import('@queues/story-post-related-url-projections/enqueues/schedules'),
+        import('@queues/post-publication/enqueues/schedules'),
+        import('@queues/vote-aggregation/enqueues/schedules'),
+        import('@queues/entity-listeners/enqueues/schedules'),
       ])
       return () => upsertBackgroundSchedules(domains.map(domain => domain.scheduledJobManifest))
     },
   },
   {
-    queueName: 'story-post-related-url-projections',
-    load: () =>
-      import('@queues/story-post-related-url-projections/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
-    queueName: 'post-publication',
-    load: () =>
-      import('@queues/post-publication/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
     queueName: 'activitypub',
     load: () =>
       import('@queues/activitypub/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'entity-listeners',
-    load: () =>
-      import('@queues/entity-listeners/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'notifications',
@@ -97,11 +84,6 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
     queueName: 'memberships',
     load: () =>
       import('@queues/memberships/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'vote-aggregation',
-    load: () =>
-      import('@queues/vote-aggregation/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
     queueName: 'kagi-smallweb',

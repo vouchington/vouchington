@@ -5,7 +5,3 @@ export const processImageCreated = async ({ id }: { id: string }): Promise<void>
   void enqueueCreateImageModeration(id)
   await enqueueCopyrightStaydownUploadMatch(id)
 }
-
-export const processImageUpdated = () => {}
-
-export const processImageDeleted = () => {}

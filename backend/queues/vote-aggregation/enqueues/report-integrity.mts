@@ -1,91 +1,60 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  REPORT_INTEGRITY_DEDUPLICATION_TTL_MS,
-} from './config-report-integrity.mts'
-import { voteAggregation } from '../queues.mts'
-import type {
-  ProcessReportIntegrityCheckData,
-  ReportIntegrityJobs,
-} from './types-report-integrity.mts'
+  VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
+  VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
+import { REPORT_INTEGRITY_DEDUPLICATION_TTL_MS } from './config-report-integrity.mts'
 
 type PendingReportEntity = { entityType: string; entityId: string }
 
-const JOB_NAME: ReportIntegrityJobs = 'processReportIntegrityCheck'
+function reportIntegrityDeduplication(entityType: string, entityId: string) {
+  return {
+    id: `processReportIntegrityCheck__${entityType}__${entityId}`,
+    mode: 'debounce' as const,
+    ttl: REPORT_INTEGRITY_DEDUPLICATION_TTL_MS,
+  }
+}
 
-const enqueueReportIntegrityCheckJob = createEnqueueFunction<
-  ProcessReportIntegrityCheckData,
-  ReportIntegrityJobs
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: JOB_NAME,
-})
+const enqueueReportIntegrityCheckJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
+)
 
 export function enqueueReportIntegrityCheck(
   entityType: string,
   entityId: string,
 ): EnqueueReturnType {
-  return enqueueReportIntegrityCheckJob({ entityType, entityId }, {
-    priority: PRIORITY_DEFAULT,
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000 },
-    removeOnComplete: 100,
-    removeOnFail: 100,
-    deduplication: {
-      id: `processReportIntegrityCheck__${entityType}__${entityId}`,
-      mode: 'debounce',
-      ttl: REPORT_INTEGRITY_DEDUPLICATION_TTL_MS,
-    },
-  } satisfies Partial<JobOptions>)
+  return enqueueReportIntegrityCheckJob(
+    { entityType, entityId },
+    { deduplication: reportIntegrityDeduplication(entityType, entityId) },
+  )
 }
 
-// Bulk enqueue for backfill dispatcher: one addBulk call per batch, not one per entity.
-export const enqueueReportIntegrityCheckBatch = createBulkEnqueueFunction<
-  PendingReportEntity,
-  ProcessReportIntegrityCheckData,
-  'processReportIntegrityCheck'
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: 'processReportIntegrityCheck',
-  buildJob: (e: PendingReportEntity) => ({
-    data: { entityType: e.entityType, entityId: e.entityId },
-    opts: {
-      priority: PRIORITY_DEFAULT,
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 },
-      removeOnComplete: 100,
-      removeOnFail: 100,
-      deduplication: {
-        id: `processReportIntegrityCheck__${e.entityType}__${e.entityId}`,
-        mode: 'debounce',
-        ttl: REPORT_INTEGRITY_DEDUPLICATION_TTL_MS,
-      },
-    } satisfies Partial<JobOptions>,
+// Bulk enqueue for the backfill dispatcher: one addBulk call per page, not one per entity.
+export const enqueueReportIntegrityCheckBatch = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
+  (entity: PendingReportEntity) => ({
+    data: { entityType: entity.entityType, entityId: entity.entityId },
+    opts: { deduplication: reportIntegrityDeduplication(entity.entityType, entity.entityId) },
   }),
-})
+)
 
-const enqueueBackfillReportIntegrityJob = createEnqueueFunction<
-  Record<string, never>,
-  'backfill_report_integrity'
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: 'backfill_report_integrity',
-})
+const enqueueBackfillReportIntegrityJob = createBackgroundEnqueue(
+  VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
+)
 
-export function enqueueBackfillReportIntegrity(): ReturnType<
-  typeof enqueueBackfillReportIntegrityJob
-> {
+/** Starts the backfill at the first page; an operator run is throttled for an hour. */
+export function enqueueBackfillReportIntegrity(): EnqueueReturnType {
   return enqueueBackfillReportIntegrityJob(
     {},
-    {
-      priority: 100,
-      deduplication: { id: 'backfill_report_integrity', mode: 'throttle', ttl: 3_600_000 },
-    },
+    { deduplication: { id: 'backfill_report_integrity', mode: 'throttle', ttl: 3_600_000 } },
+  )
+}
+
+/** Continues the backfill after the last entity id of the previous page. */
+export function enqueueContinueBackfillReportIntegrity(afterId: string): EnqueueReturnType {
+  return enqueueBackfillReportIntegrityJob(
+    { afterId },
+    { jobId: `backfill_report_integrity__${afterId}`, removeOnComplete: true, removeOnFail: true },
   )
 }

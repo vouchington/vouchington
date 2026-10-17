@@ -17,8 +17,9 @@ import { spam_detection } from '@queues/spam-detection/queues'
 import { classifierRunDispatcherJobId } from '../../../queues/ai-agents/enqueues/classifier-run.mts'
 import { COMMUNITY_MODERATION_CLASSIFIER_SLUG } from '@voucha/types/entities/community-moderation-classifier'
 import type { PrivateUser } from '@services/users/types'
+import { ENTITY_LISTENERS_POST_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
-import type { ProcessPostCreatedJobData } from '@queues/entity-listeners/types'
+import type { ProcessPostCreatedJobData } from '@queues/background/enqueues/entity-listeners-payloads'
 
 import { createPost } from '../create.mts'
 import type { CreatePostInput } from '../types.mts'
@@ -137,6 +138,7 @@ async function findPostCreatedJobInNonFailedState(postId: string) {
   ).flat()
   return jobs.find(
     job =>
-      job.name === 'processPostCreated' && (job.data as ProcessPostCreatedJobData).id === postId,
+      job.name === ENTITY_LISTENERS_POST_CREATED_JOB.name &&
+      (job.data as ProcessPostCreatedJobData).id === postId,
   )
 }

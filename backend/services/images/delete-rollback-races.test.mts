@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { interceptNextEntityListenerAddBulk } from '../../test-helpers/entity-listener-add-failure.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setPostClearanceStatus } from '@services/post-clearance'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
@@ -23,10 +23,6 @@ import { completeLocalTestImagePlacementDeliveryRecord } from '../../test-helper
 import { deleteImageById } from './delete.mts'
 
 describe('deleteImageById rollback races', () => {
-  beforeEach(async () => {
-    await entitiesListeners.obliterate({ force: true })
-  })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -60,7 +56,7 @@ describe('deleteImageById rollback races', () => {
       createPostModerationContent(originalPost).content_sha256,
     )
     const enqueueError = new Error('bulk post update enqueue failed')
-    vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAddBulk(async () => {
       await removeTestPostImage(postId, imageId)
       throw enqueueError
     })
@@ -112,7 +108,7 @@ describe('deleteImageById rollback races', () => {
       createPostModerationContent(originalPost).content_sha256,
     )
     const enqueueError = new Error('bulk post update enqueue failed')
-    vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAddBulk(async () => {
       await setPostClearanceStatus(
         postId,
         'rejected',

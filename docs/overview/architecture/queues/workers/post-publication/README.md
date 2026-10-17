@@ -12,7 +12,9 @@ Receipt-only hard deletes drain in bounded pages before topic and retained-ident
 generation-fenced receipt deletion makes the next page visible, while a stale lease leaves the
 current page intact for retry.
 
-Owns the thin globally serial worker for durable post-publication reconciliation. The processor never sends notifications or push messages; it only applies replay-safe cache, rating and sitemap projections before the exact-generation acknowledgement.
+Exports `postPublicationHandlers`, served by the shared [`background` worker](../background/README.md)
+(no worker of its own); the domain-wide concurrency-1 group keeps the handlers globally serial.
+Owns the thin handlers for durable post-publication reconciliation. The processor never sends notifications or push messages; it only applies replay-safe cache, rating and sitemap projections before the exact-generation acknowledgement.
 
 | Transition mode              | Durable state before effect                      | Required outcome                                                                                                   | Evidence                                                          |
 | ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |

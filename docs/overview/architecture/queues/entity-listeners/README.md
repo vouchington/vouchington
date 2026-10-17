@@ -16,14 +16,18 @@ downstream chain.
 
 ## Queue
 
-Every processor uses the `entity-listeners` queue. The worker rejects a payload that does not match the named job before the processor runs. The normal entity processors and
-`reconcileEntity` use priority 10 without group keys. The reconciliation dispatcher uses priority 100:
+Every processor is a job of the `entity-listeners` domain of the shared
+[`background`](../background/README.md) queue, named `entity-listeners.<name>`. The domain has one
+domain-wide group of 5 (the old worker concurrency) and no per-entity ordering keys, so a backlog of
+listener jobs cannot take the shared worker's other slots, and pausing the domain from the operator API defers them without spending an attempt.
+The worker rejects a payload that does not match the named job before the processor runs. The
+entity processors and `reconcileEntity` use priority 10; the reconciliation jobs use priority 100:
 
 - User events use `processUserCreated`, `processUserLoggedIn`, and `processUserUpdated`.
 - Topic events use `processTopicCreated`, `processTopicUpdated`, and `processTopicDeleted`.
 - Post events use `processPostCreated`, `processPostUpdated`, and `processPostDeleted`.
 - Image and URL creation use `processImageCreated` and `processUrlCreated`.
-- `reconcileEntities` has no group key.
+- `enqueueReconcileEntities` (the scheduler's trigger) and `reconcileEntities` share the domain's group like every other job.
 
 ## Durable recovery
 
@@ -74,7 +78,7 @@ Downstream systems triggered (all fire-and-forget):
 
 - If `created_by_id` exists, create the author's +1 vote through
   `@services/elections-votes/post` and bookmark through `@services/bookmarks/upsert`.
-- Always process @mentions through the `post-mentions` queue.
+- Always process @mentions through the `post-mentions` domain of the `background` queue.
 - For `pending` posts, enqueue `bedrock_embeddings_nova_multimodal_v1_single` and
   `openai-moderation.post` in the `background` queue (one attempt, like every other creation-moderation enqueue), and
   run `spam_detection` before clearance. Approval writes the durable `classifier_run_requests` for
@@ -110,7 +114,7 @@ Triggered by `enqueueOnPostUpdated(postId, { contentChanged })`.
   `spam_detection` queue.
 - On `contentChanged` with an approved community review, rerun the `community_moderation` queue.
 - Always rerun the `openai-moderation` domain of the `background` queue and process @mentions through the
-  `post-mentions` queue.
+  `post-mentions` domain of the `background` queue.
 - For comments, refresh ancestor metrics through the `vote-aggregation` queue.
 
 ## processPostDeleted

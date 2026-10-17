@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-The shared `vote-aggregation` worker processes `processReportIntegrityCheck` jobs enqueued
+The shared `background` worker processes `vote-aggregation.processReportIntegrityCheck` jobs enqueued
 fire-and-forget by `@services/moderation-reports/integrity` after each new moderation report.
 
 ## Job: processReportIntegrityCheck
@@ -14,8 +14,11 @@ one check.
 
 ## Backfill and targeted recovery
 
-The periodic dispatcher continues calling `processBackfillReportIntegrity()` without a selector.
-An internal caller recovering one known entity may pass `{ entityType, entityId }`. That path
+`vote-aggregation.backfill_report_integrity` enqueues one bounded page per job: entities in id
+order after the payload's `afterId`, at most `backfill_batch_size` of them. A full page queues the
+next job (`afterId` = its last id, which is also its job id); a short page ends the backfill.
+`processBackfillReportIntegrity(data, target)` accepts an optional `{ entityType, entityId }`
+target for an internal caller recovering one known entity. That path
 reads only that entity's unresolved reports inside the existing report window, keeps the same
 five-distinct-reporter threshold and live-entity predicates, and yields at most one candidate.
 It uses the same bulk producer and keeps the existing `{ enqueued }` result with or without a

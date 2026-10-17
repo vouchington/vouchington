@@ -1,11 +1,4 @@
-export type PostPublicationJobs =
-  | 'processReconcilePostPublication'
-  | 'processShadowAuditPostPublication'
-  | 'processAuditReviewSuccessionHistory'
-
-export type PostPublicationShadowAuditJobData = { dryRun: boolean; cursor: string | null }
-
-export type ReviewSuccessionHistoryAuditJobData = {
-  cursor: string | null
-  cutoffArchivedAt: string | null
-}
+export type {
+  PostPublicationShadowAuditJobData,
+  ReviewSuccessionHistoryAuditJobData,
+} from '@queues/background/enqueues/post-publication-jobs'

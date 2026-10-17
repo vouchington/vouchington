@@ -1,6 +1,5 @@
 import { background } from '@queues/background/queues'
 import { emails } from '@queues/emails/queues'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { urlsDomainsBlacklist } from '@queues/urls-domains-blacklist/queues'
 import { userRssFeedImports } from '@queues/user-rss-feed-imports/queues'
 import * as bedrockEmbeddingsQueues from '@queues/bedrock-embeddings/queues'
@@ -8,7 +7,6 @@ import {
   bedrock_embeddings_batch,
   bedrock_embeddings_batch_creation,
 } from '@queues/bedrock-embeddings-batch/queues'
-import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { psql } from '@queues/psql/queues'
 import * as crawlerQueues from '@queues/crawler/queues'
 import * as crawlDispatchQueues from '@queues/crawl-dispatch/queues'
@@ -25,11 +23,8 @@ import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { memberships } from '@queues/memberships/queues'
 import { notifications } from '@queues/notifications/queues'
-import { postMentions } from '@queues/post-mentions/queues'
-import { postPublication } from '@queues/post-publication/queues'
 import { sitemaps } from '@queues/sitemaps/queues'
 import { spam_detection } from '@queues/spam-detection/queues'
-import { storyPostRelatedUrlProjections } from '@queues/story-post-related-url-projections/queues'
 import { ai_agents as aiAgentsQueue, spendCapRechecks } from '@queues/ai-agents/queues'
 import { activitypub } from '@queues/activitypub/queues'
 import { blueskyFollowPropagation } from '@queues/bluesky-follow-propagation/queues'
@@ -45,10 +40,8 @@ import type { Queue } from 'glide-mq'
 const allQueues = [
   background,
   emails,
-  entitiesListeners,
   urlsDomainsBlacklist,
   userRssFeedImports,
-  voteAggregation,
   psql,
   ...Object.values(crawlerQueues),
   ...Object.values(crawlDispatchQueues),
@@ -68,11 +61,8 @@ const allQueues = [
   kagiSmallWeb,
   memberships,
   notifications,
-  postMentions,
-  postPublication,
   sitemaps,
   spam_detection,
-  storyPostRelatedUrlProjections,
   aiAgentsQueue,
   spendCapRechecks,
   activitypub,

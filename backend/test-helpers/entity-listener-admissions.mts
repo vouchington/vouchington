@@ -7,12 +7,27 @@ import { createTestQueueTerminalSource } from './glide-mq-vitest-terminal-source
 import { TestQueue } from 'glide-mq/testing'
 import { workerQueueConnection, workerQueuePrefix } from '../data-stores/valkey-glide-mq/index.mts'
 import { entitiesListeners } from '../queues/entity-listeners/queues.mts'
-import { QUEUE_NAME } from '../queues/entity-listeners/config.mts'
+import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
+import { ENTITY_LISTENERS_DOMAIN } from '../queues/background/enqueues/entity-listeners-jobs.mts'
 
+/** `jobName` is the listener's local name (`processPostCreated`); the queue-wide name is namespaced. */
 export type EntityListenerTarget = {
   jobName: string
   entityId?: string
   postSlug?: string
+}
+
+export function entityListenerJobName(localName: string): string {
+  return `${ENTITY_LISTENERS_DOMAIN.domain}.${localName}`
+}
+
+/** The shared `background` queue carries many domains: an owned admission is an entity-listeners job. */
+export function isEntityListenerAdmission(event: EnqueueAdmission): boolean {
+  return (
+    event.queue === entitiesListeners &&
+    event.queueName === BACKGROUND_QUEUE_NAME &&
+    event.jobName.startsWith(`${ENTITY_LISTENERS_DOMAIN.domain}.`)
+  )
 }
 
 export function entityListenerInputId(value: unknown): string | undefined {
@@ -29,7 +44,7 @@ export function observeEntityListenerTerminals() {
   const queue: unknown = entitiesListeners
   return queue instanceof TestQueue
     ? observeElectionTerminalSource(createTestQueueTerminalSource(queue, workerQueuePrefix))
-    : observeElectionQueueTerminals(QUEUE_NAME, {
+    : observeElectionQueueTerminals(BACKGROUND_QUEUE_NAME, {
         connection: workerQueueConnection,
         prefix: workerQueuePrefix,
       })
@@ -82,7 +97,10 @@ export function recordMissingEntityTargets(
   errors: unknown[],
 ): void {
   for (const target of targets)
-    if (!target.entityId || !observed.has(`${target.jobName}\0${target.entityId}`))
+    if (
+      !target.entityId ||
+      !observed.has(`${entityListenerJobName(target.jobName)}\0${target.entityId}`)
+    )
       errors.push(
         new Error(
           `Missing owned ${target.jobName} admission for ${target.entityId ?? target.postSlug}`,

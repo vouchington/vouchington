@@ -6,11 +6,13 @@ Queue system for asynchronous vote-stat refreshes.
 
 ## Queue
 
-| Queue              | Processor                        | Group Keys        | Default Priority |
-| ------------------ | -------------------------------- | ----------------- | ---------------- |
-| `vote-aggregation` | `processUpdateElectionVoteStats` | `post`            | 10               |
-| `vote-aggregation` | `processUpdateElectionVoteStats` | `entity_relation` | 10               |
-| `vote-aggregation` | `processUpdateElectionVoteStats` | `rss_feed_item`   | 10               |
+| Queue (domain)                    | Job                                               | Group              | Default Priority |
+| --------------------------------- | ------------------------------------------------- | ------------------ | ---------------- |
+| `background` (`vote-aggregation`) | `vote-aggregation.processUpdateElectionVoteStats` | `vote-aggregation` | 10               |
+
+The domain group allows 10 jobs of any `vote-aggregation` name at once. The payload carries the
+lane in `orderingKey` (`post`, `entity_relation`, `rss_feed_item`, `topic`, `hostname`,
+`agent_moderation`, or `user_vouch`); the lane is not an ordering key.
 
 ## Responsibilities
 
@@ -18,7 +20,7 @@ Queue system for asynchronous vote-stat refreshes.
 - keep expensive stats recalculation off synchronous request paths
 - coalesce each election ID into a fixed five-second throttle window, then wait one additional
   second for replica propagation before recomputing
-- carry the ordering key on every job and, for `entity_relation`, both the ID and its required
+- carry the lane (`orderingKey`) on every job and, for `entity_relation`, both the ID and its required
   metadata-validated relation table, allowing PostgreSQL to prune the relation table and UUIDv7
   range partitions; malformed queue payloads fail rather than scanning relation tables
 

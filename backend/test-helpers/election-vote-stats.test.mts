@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { QUEUE_NAME } from '../queues/vote-aggregation/enqueues/config-elections.mts'
+import { BACKGROUND_QUEUE_NAME } from '../queues/background/config.mts'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { getOrCreateQueue } from '../../test-helpers/glide-mq-vitest-internals.mts'
+import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import { onceElectionVoteStatsCompleted } from './election-vote-stats.mts'
 import type { EntityRelationElectionTable } from '../queues/vote-aggregation/enqueues/types-elections.mts'
-import { voteAggregation as electionsWorker } from '../workers/vote-aggregation/workers.mts'
 
-const JOB_NAME = 'processUpdateElectionVoteStats'
+const QUEUE_NAME = BACKGROUND_QUEUE_NAME
+const JOB_NAME = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
+const electionsWorker = getSharedBackgroundWorker()
+// The queue is the shared `background` queue: remove only the jobs this file added.
+const addedJobIds = new Set<string>()
 
 function electionTarget(electionId: string) {
   return { electionId, orderingKey: 'post' as const }
@@ -24,6 +29,7 @@ async function flushMicrotasks(): Promise<void> {
 async function addCompletedJob(electionId: string): Promise<void> {
   const queue = getOrCreateQueue(QUEUE_NAME)
   const job = await queue.enqueue(JOB_NAME, electionTarget(electionId))
+  addedJobIds.add(job!.id)
   const record = queue.jobs.get(job!.id)
   record!.state = 'completed'
 }
@@ -31,6 +37,7 @@ async function addCompletedJob(electionId: string): Promise<void> {
 async function addFailedJob(electionId: string, failedReason: string): Promise<void> {
   const queue = getOrCreateQueue(QUEUE_NAME)
   const job = await queue.enqueue(JOB_NAME, electionTarget(electionId))
+  addedJobIds.add(job!.id)
   const record = queue.jobs.get(job!.id)
   record!.state = 'failed'
   record!.failedReason = failedReason
@@ -38,9 +45,11 @@ async function addFailedJob(electionId: string, failedReason: string): Promise<v
 
 describe('onceElectionVoteStatsCompleted', () => {
   // This module's queue is a process-wide singleton (getOrCreateQueue), so completed jobs from one
-  // test are still visible to the next test's searchJobs scan unless cleared here.
+  // test are still visible to the next test's searchJobs scan unless removed here.
   afterEach(() => {
-    getOrCreateQueue(QUEUE_NAME).jobs.clear()
+    const queue = getOrCreateQueue(QUEUE_NAME)
+    for (const id of addedJobIds) queue.jobs.delete(id)
+    addedJobIds.clear()
   })
 
   it('resolves when the matching job already completed before the listener registered', async () => {

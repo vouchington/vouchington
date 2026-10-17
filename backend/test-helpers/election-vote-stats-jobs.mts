@@ -1,14 +1,15 @@
 import { voteAggregation as electionsQueue } from '../queues/vote-aggregation/queues.mts'
-import type { ElectionsJobData } from '../queues/vote-aggregation/enqueues/types-elections.mts'
+import type { ElectionJobInput } from '../queues/vote-aggregation/enqueues/types-elections.mts'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '../queues/background/enqueues/vote-aggregation-jobs.mts'
 import { promoteDelayedJobs } from './queue-jobs.mts'
 
-export const JOB_NAME = 'processUpdateElectionVoteStats'
+export const JOB_NAME = VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name
 const PROMOTE_INTERVAL_MS = 25
 
 export type ElectionJob = {
   id?: string
   name: string
-  data: ElectionsJobData['data']
+  data: ElectionJobInput
   failedReason?: string
 }
 
@@ -20,7 +21,7 @@ type ElectionQueueSearch = {
   }): Promise<ElectionJob[]>
 }
 
-export function matchesElectionJob(job: ElectionJob, target: ElectionsJobData['data']): boolean {
+export function matchesElectionJob(job: ElectionJob, target: ElectionJobInput): boolean {
   return (
     job.name === JOB_NAME &&
     job.data.electionId === target.electionId &&
@@ -34,7 +35,7 @@ type SettledElectionJobs = { completed: ElectionJob[]; failed: ElectionJob[] }
 // Pre-scans both terminal states: a job that already failed before this call's listeners
 // registered must be surfaced too, or the caller waits out the full timeout instead of rejecting.
 export async function findSettledElectionJobs(
-  target: ElectionsJobData['data'],
+  target: ElectionJobInput,
 ): Promise<SettledElectionJobs> {
   const search = electionsQueue as unknown as ElectionQueueSearch
   const matches = (job: ElectionJob) => matchesElectionJob(job, target)
@@ -55,7 +56,7 @@ export async function findSettledElectionJobs(
  * 0.16's test queue honors with a real timer, and the enqueue is fire-and-forget so the job may
  * not exist yet when a test starts waiting: the interval re-checks until the caller stops it.
  */
-export function startPromotingElectionJobs(target: ElectionsJobData['data']): () => void {
+export function startPromotingElectionJobs(target: ElectionJobInput): () => void {
   const timer = setInterval(() => {
     promoteDelayedJobs(electionsQueue, {
       name: JOB_NAME,

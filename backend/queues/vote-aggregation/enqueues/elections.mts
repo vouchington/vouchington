@@ -1,27 +1,23 @@
-import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
-import { voteAggregation } from '../queues.mts'
+import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import {
-  QUEUE_NAME,
-  ELECTIONS_ORDERING,
-  ELECTIONS_DEFAULTS,
-  PRIORITY_DEFAULT,
-} from './config-elections.mts'
+  type ElectionJobData,
+  VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
+import { ELECTIONS_DEFAULTS } from '../config.mts'
 import type {
+  ElectionJobInput,
   ElectionOrderingKey,
-  ElectionsJobData,
-  ElectionsJobs,
   EntityRelationElectionTarget,
 } from './types-elections.mts'
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 
-const PROCESSOR_NAME = 'processUpdateElectionVoteStats' as ElectionsJobs
 const entityRelationElectionTables = new Set(
   entityRelationMetadatum.flatMap(metadata => (metadata.election ? [metadata.table_name] : [])),
 )
 export type { ElectionOrderingKey } from './types-elections.mts'
-type ElectionJobInput = ElectionsJobData['data']
+// Kept from the old queue so a replayed throttle window still collapses onto the same id.
+const DEDUPLICATION_PREFIX = 'processUpdateElectionVoteStats'
 type ElectionErrorContext = {
   operation: string
 }
@@ -33,44 +29,37 @@ export function buildElectionJobOptions(
 ) {
   return {
     deduplication: {
-      id: `${PROCESSOR_NAME}__${orderingKey}__${relationTable ? `${relationTable}__` : ''}${electionId}`,
+      id: `${DEDUPLICATION_PREFIX}__${orderingKey}__${relationTable ? `${relationTable}__` : ''}${electionId}`,
       mode: 'throttle' as const,
       ttl: ELECTIONS_DEFAULTS.deduplicationTtlMs,
     },
-    ordering: ELECTIONS_ORDERING[orderingKey],
     delay: ELECTIONS_DEFAULTS.recomputeDelayMs,
   }
 }
 
-const enqueueBulkElectionJobs = createBulkEnqueueFunction<
-  ElectionJobInput,
-  ElectionsJobData['data'],
-  ElectionsJobs,
-  ElectionErrorContext
->({
-  queue: voteAggregation,
-  queueName: QUEUE_NAME,
-  jobName: PROCESSOR_NAME,
-  defaults: {
-    attempts: ELECTIONS_DEFAULTS.attempts,
-    backoff: ELECTIONS_DEFAULTS.backoff,
-    removeOnComplete: ELECTIONS_DEFAULTS.removeOnComplete,
-    removeOnFail: ELECTIONS_DEFAULTS.removeOnFail,
-  },
-  buildJob: input => ({
+const enqueueBulkElectionJobs = createBackgroundBulkEnqueue<ElectionJobInput, ElectionJobData>(
+  VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
+  input => ({
     data: input,
     opts: buildElectionJobOptions(input.electionId, input.orderingKey, input.relationTable),
   }),
-  decorateError: (error, context) => {
-    error.extra = {
-      queue: context.queueName,
-      operation: context.callContext?.operation,
-      electionCount: context.count,
-    }
-    error.tags = { critical: true }
-    return error
+  {
+    decorateError: (error, context) => {
+      error.extra = {
+        queue: context.queueName,
+        operation: (context.callContext as ElectionErrorContext | undefined)?.operation,
+        electionCount: context.count,
+      }
+      error.tags = { critical: true }
+      return error
+    },
   },
-})
+)
+
+/** The call-level options: a priority only when the caller names one, else the job's default. */
+function priorityOptions(priority?: number): { priority?: number } {
+  return priority === undefined ? {} : { priority }
+}
 
 export const enqueueBulkUpdatePostElectionVoteStats = createElectionBulkEnqueue(
   'post',
@@ -107,7 +96,7 @@ export function enqueueBulkUpdateEntityRelationElectionVoteStats(
         orderingKey: 'entity_relation' as const,
       }
     }),
-    { priority: priority ?? PRIORITY_DEFAULT } satisfies Partial<JobOptions>,
+    priorityOptions(priority),
     { operation: 'enqueueBulkUpdateEntityRelationElectionVoteStats' },
   )
 }
@@ -129,7 +118,7 @@ function createElectionBulkEnqueue(
   return (electionIds: string[], priority?: number): EnqueueReturnType =>
     enqueueBulkElectionJobs(
       electionIds.map(electionId => ({ electionId, orderingKey })),
-      { priority: priority ?? PRIORITY_DEFAULT } satisfies Partial<JobOptions>,
+      priorityOptions(priority),
       { operation },
     )
 }

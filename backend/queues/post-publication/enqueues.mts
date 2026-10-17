@@ -1,24 +1,13 @@
-import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { EnqueueReturnType } from '@voucha/types'
+import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
-  POST_PUBLICATION_ORDERING,
-  PRIORITY_RECONCILIATION,
-  QUEUE_NAME,
-  RECONCILIATION_DEDUPLICATION_ID,
-  RECONCILIATION_DEDUPLICATION_TTL_MS,
-} from './config.mts'
-import { postPublication } from './queues.mts'
-import type {
-  PostPublicationJobs,
-  PostPublicationShadowAuditJobData,
-  ReviewSuccessionHistoryAuditJobData,
-} from './types.mts'
+  POST_PUBLICATION_RECONCILE_JOB,
+  POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
+  POST_PUBLICATION_SHADOW_AUDIT_JOB,
+} from '@queues/background/enqueues/post-publication-jobs'
+import type { EnqueueReturnType } from '@voucha/types'
+import { RECONCILIATION_DEDUPLICATION_ID, RECONCILIATION_DEDUPLICATION_TTL_MS } from './config.mts'
 
-const enqueueReconciliationJob = createEnqueueFunction<Record<string, never>, PostPublicationJobs>({
-  queue: postPublication,
-  queueName: QUEUE_NAME,
-  jobName: 'processReconcilePostPublication',
-})
+const enqueueReconciliationJob = createBackgroundEnqueue(POST_PUBLICATION_RECONCILE_JOB)
 
 /** Throttled durable-work dispatcher used by the scheduler and an operator backfill. */
 export function enqueueReconcilePostPublication(
@@ -28,8 +17,6 @@ export function enqueueReconcilePostPublication(
   return enqueueReconciliationJob(
     {},
     {
-      priority: PRIORITY_RECONCILIATION,
-      ordering: POST_PUBLICATION_ORDERING.reconciliation,
       deduplication: {
         id: deduplicationId,
         mode: 'throttle',
@@ -39,29 +26,16 @@ export function enqueueReconcilePostPublication(
   )
 }
 
-/** Chains the next bounded page without throttle deduplication; ordering remains globally serial. */
+/** Chains the next bounded page without throttle deduplication; the domain group stays serial. */
 export function enqueueContinuePostPublicationReconciliation(): EnqueueReturnType {
-  return enqueueReconciliationJob(
-    {},
-    { priority: PRIORITY_RECONCILIATION, ordering: POST_PUBLICATION_ORDERING.reconciliation },
-  )
+  return enqueueReconciliationJob({})
 }
 
-const enqueueShadowAuditJob = createEnqueueFunction<
-  PostPublicationShadowAuditJobData,
-  PostPublicationJobs
->({
-  queue: postPublication,
-  queueName: QUEUE_NAME,
-  jobName: 'processShadowAuditPostPublication',
-})
+const enqueueShadowAuditJob = createBackgroundEnqueue(POST_PUBLICATION_SHADOW_AUDIT_JOB)
 
 /** Operator-triggered bounded shadow audit. Dry runs are read-only. */
 export function enqueuePostPublicationShadowAudit(dryRun: boolean): EnqueueReturnType {
-  return enqueueShadowAuditJob(
-    { dryRun, cursor: null },
-    { priority: PRIORITY_RECONCILIATION, ordering: POST_PUBLICATION_ORDERING.reconciliation },
-  )
+  return enqueueShadowAuditJob({ dryRun, cursor: null })
 }
 
 /** Continues a multi-page audit without throttle deduplication. */
@@ -69,27 +43,16 @@ export function enqueueContinuePostPublicationShadowAudit(
   dryRun: boolean,
   cursor: string,
 ): EnqueueReturnType {
-  return enqueueShadowAuditJob(
-    { dryRun, cursor },
-    { priority: PRIORITY_RECONCILIATION, ordering: POST_PUBLICATION_ORDERING.reconciliation },
-  )
+  return enqueueShadowAuditJob({ dryRun, cursor })
 }
 
-const enqueueReviewSuccessionHistoryAuditJob = createEnqueueFunction<
-  ReviewSuccessionHistoryAuditJobData,
-  PostPublicationJobs
->({
-  queue: postPublication,
-  queueName: QUEUE_NAME,
-  jobName: 'processAuditReviewSuccessionHistory',
-})
+const enqueueReviewSuccessionHistoryAuditJob = createBackgroundEnqueue(
+  POST_PUBLICATION_REVIEW_SUCCESSION_AUDIT_JOB,
+)
 
 /** Starts a read-only, UUID-paged audit of pre-cutover review succession history. */
 export function enqueueAuditReviewSuccessionHistory(): EnqueueReturnType {
-  return enqueueReviewSuccessionHistoryAuditJob(
-    { cursor: null, cutoffArchivedAt: null },
-    { priority: PRIORITY_RECONCILIATION, ordering: POST_PUBLICATION_ORDERING.reconciliation },
-  )
+  return enqueueReviewSuccessionHistoryAuditJob({ cursor: null, cutoffArchivedAt: null })
 }
 
 /** Continues the same frozen historical scope after a full audit page. */
@@ -97,8 +60,5 @@ export function enqueueContinueAuditReviewSuccessionHistory(
   cursor: string,
   cutoffArchivedAt: string,
 ): EnqueueReturnType {
-  return enqueueReviewSuccessionHistoryAuditJob(
-    { cursor, cutoffArchivedAt },
-    { priority: PRIORITY_RECONCILIATION, ordering: POST_PUBLICATION_ORDERING.reconciliation },
-  )
+  return enqueueReviewSuccessionHistoryAuditJob({ cursor, cutoffArchivedAt })
 }

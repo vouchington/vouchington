@@ -2,7 +2,7 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Shared `vote-aggregation` worker handles topic rating-stat refresh jobs.
+The shared `background` worker handles topic rating-stat refresh jobs as the `vote-aggregation` domain.
 
 Refreshes are serialized per topic in PostgreSQL and calculate, compare, and write from the same
 primary transaction. Concurrent queue and publication-reconciliation refreshes therefore cannot
@@ -10,7 +10,7 @@ overwrite a newer aggregate with an older snapshot.
 
 ## Exports
 
-- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
+- `voteAggregationHandlers` - the domain's handlers, registered in the shared background worker.
 
 ## Related
 

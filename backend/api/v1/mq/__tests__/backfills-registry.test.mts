@@ -149,7 +149,7 @@ describe('BACKFILL_REGISTRY', () => {
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
     await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
-      name: 'processRecalculateVoteWeightDispatcher',
+      name: 'vote-aggregation.processRecalculateVoteWeightDispatcher',
     })
   })
 })

@@ -6,7 +6,8 @@ Worker package for post mention processing jobs.
 
 ## Exports
 
-- `postMentions` - worker instance for the `post-mentions` queue.
+- `postMentionsHandlers` - the `post-mentions` domain's handlers, served by the shared
+  [`background` worker](../background/README.md) (no worker of its own).
 
 ## Related
 

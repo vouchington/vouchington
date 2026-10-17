@@ -1,9 +1,17 @@
-import { it, expect, describe } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { it, expect, describe, afterEach, vi } from 'vitest'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import {
   buildElectionJobOptions,
   enqueueBulkUpdateEntityRelationElectionVoteStats,
+  enqueueBulkUpdatePostElectionVoteStats,
+  enqueueBulkUpdateTopicElectionVoteStats,
 } from './elections.mts'
-import { ELECTIONS_DEFAULTS, ELECTIONS_ORDERING } from './config-elections.mts'
+import { ELECTIONS_DEFAULTS } from '../config.mts'
+import {
+  ELECTION_LANES,
+  VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
 import { voteAggregation } from '../queues.mts'
 import type { EntityRelationElectionTable } from './types-elections.mts'
 
@@ -30,14 +38,9 @@ describe('buildElectionJobOptions', () => {
     })
   })
 
-  it.each(Object.keys(ELECTIONS_ORDERING) as Array<keyof typeof ELECTIONS_ORDERING>)(
-    'passes through the %s ordering config',
-    orderingKey => {
-      const opts = buildElectionJobOptions('election-1', orderingKey)
-
-      expect(opts.ordering).toEqual(ELECTIONS_ORDERING[orderingKey])
-    },
-  )
+  it.each(ELECTION_LANES)('leaves the %s lane to the domain-wide group', orderingKey => {
+    expect(buildElectionJobOptions('election-1', orderingKey)).not.toHaveProperty('ordering')
+  })
 
   it('includes the relation table in entity-relation deduplication identity', () => {
     const first = buildElectionJobOptions(
@@ -63,7 +66,7 @@ describe('buildElectionJobOptions', () => {
     ).toThrow('Unknown election entity-relation table')
   })
 
-  it('enqueues entity-relation jobs with the required ordering key and relation table', async () => {
+  it('enqueues entity-relation jobs with the relation table', async () => {
     const target = {
       entityRelationId: crypto.randomUUID(),
       relationTable: 'relation__post__related__url' as EntityRelationElectionTable,
@@ -71,13 +74,56 @@ describe('buildElectionJobOptions', () => {
     await enqueueBulkUpdateEntityRelationElectionVoteStats([target])
 
     const jobs = await voteAggregation.searchJobs({
-      name: 'processUpdateElectionVoteStats',
+      name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
       data: { electionId: target.entityRelationId },
     })
     expect(jobs.map(job => job.data)).toContainEqual({
       electionId: target.entityRelationId,
       orderingKey: 'entity_relation',
       relationTable: target.relationTable,
+    })
+    expect(jobs[0]?.opts).toMatchObject({
+      priority: 10,
+      attempts: 3,
+    })
+  })
+})
+
+describe('election enqueue call options', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('recomputes a post election at the requested priority', async () => {
+    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockResolvedValueOnce([])
+    const electionId = randomUUID()
+
+    await enqueueBulkUpdatePostElectionVoteStats([electionId], 41)
+
+    expect(addBulk).toHaveBeenCalledExactlyOnceWith([
+      expect.objectContaining({
+        name: VOTE_AGGREGATION_UPDATE_ELECTION_JOB.name,
+        data: { electionId, orderingKey: 'post' },
+        opts: expect.objectContaining({ priority: 41 }),
+      }),
+    ])
+  })
+
+  it('tags a rejected admission as critical with the election context', async () => {
+    const failure = new Error('election admission rejected')
+    vi.spyOn(voteAggregation, 'addBulk').mockRejectedValueOnce(failure)
+
+    await expect(
+      enqueueBulkUpdateTopicElectionVoteStats([randomUUID(), randomUUID()]),
+    ).rejects.toBe(failure)
+
+    expect(failure).toMatchObject({
+      extra: {
+        queue: BACKGROUND_QUEUE_NAME,
+        operation: 'enqueueBulkUpdateTopicElectionVoteStats',
+        electionCount: 2,
+      },
+      tags: { critical: true },
     })
   })
 })

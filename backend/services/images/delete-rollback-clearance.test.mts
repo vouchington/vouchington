@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { interceptNextEntityListenerAddBulk } from '../../test-helpers/entity-listener-add-failure.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { setPostClearanceStatus } from '@services/post-clearance'
 import { createPostModerationContent } from '@services/posts/content'
@@ -15,10 +16,6 @@ import {
 import { deleteImageById } from './delete.mts'
 
 describe('deleteImageById clearance rollback', () => {
-  beforeEach(async () => {
-    await entitiesListeners.obliterate({ force: true })
-  })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -52,7 +49,7 @@ describe('deleteImageById clearance rollback', () => {
         typeof entitiesListeners.addBulk
       >
       void rejectedBulk.catch(() => {})
-      vi.spyOn(entitiesListeners, 'addBulk').mockReturnValueOnce(rejectedBulk)
+      interceptNextEntityListenerAddBulk(() => rejectedBulk)
 
       await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
 

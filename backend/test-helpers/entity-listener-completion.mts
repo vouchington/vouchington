@@ -7,9 +7,7 @@ import {
   onPostCommitCompletion,
   type PostCommitCompletion,
 } from '../services/posts/post-commit-completion.mts'
-import { entitiesListeners } from '../queues/entity-listeners/queues.mts'
-import { QUEUE_NAME } from '../queues/entity-listeners/config.mts'
-import { entitiesListeners as entityWorker } from '../workers/entity-listeners/workers.mts'
+import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import onError from '@modules/on-error'
 import {
   createEntityListenerLifetime,
@@ -20,6 +18,7 @@ import {
 
 import {
   entityListenerInputId,
+  isEntityListenerAdmission,
   rejectEntityListenerReason,
   recordMissingEntityTargets,
   observeEntityListenerTerminals,
@@ -27,8 +26,10 @@ import {
   type EntityListenerTarget,
 } from './entity-listener-admissions.mts'
 
-// These fixtures import the canonical worker without its normal runtime bootstrap.
-entityWorker.on('error', onError)
+// Entity listeners run on the fork's shared `background` worker, started without its normal runtime
+// bootstrap; attach the error handler once so an 'error' event cannot crash the process.
+const entityWorker = getSharedBackgroundWorker()
+if (entityWorker.listenerCount('error') === 0) entityWorker.on('error', onError)
 
 /** Own real factory promises and exact terminal IDs; never inspect queue history or infer isDrained. */
 export async function withEntityListenerCompletion<T>(
@@ -56,8 +57,7 @@ export async function withEntityListenerCompletion<T>(
   let closed = false
   let cleanup: Promise<void> | undefined
   const owns = (event: EnqueueAdmission) =>
-    event.queue === entitiesListeners &&
-    event.queueName === QUEUE_NAME &&
+    isEntityListenerAdmission(event) &&
     expected.some(
       target =>
         target.entityId &&
@@ -97,7 +97,7 @@ export async function withEntityListenerCompletion<T>(
             observeEntityListenerWork(event.completion, deadline),
           ])
           if (outcome!.status === 'rejected') errors.push(outcome!.reason)
-          else if (event.queue === entitiesListeners && event.queueName === QUEUE_NAME)
+          else if (isEntityListenerAdmission(event))
             retainEntityListenerJobs(event, outcome!.value, physical, observed, receipts, errors)
           errors.push(...event.observerErrors, ...event.reportingErrors)
         }
@@ -161,7 +161,7 @@ export async function withEntityListenerCompletion<T>(
       const direct = context.getStore() === token
       if (
         direct ||
-        (event.queue === entitiesListeners &&
+        (isEntityListenerAdmission(event) &&
           (owns(event) || expected.some(target => target.postSlug && !target.entityId)))
       )
         admissions.push({ event, direct })

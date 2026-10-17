@@ -2,11 +2,11 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Shared `vote-aggregation` worker handles vote integrity check jobs.
+The shared `background` worker handles vote integrity check jobs as the `vote-aggregation` domain.
 
 ## Exports
 
-- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
+- `voteAggregationHandlers` - the domain's handlers, registered in the shared background worker.
 
 ## Related
 

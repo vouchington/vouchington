@@ -1,4 +1,5 @@
 import type { Job } from 'glide-mq'
+import type { ElectionJobData } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { updateTopicElectionVoteStats } from '@services/elections-votes/topic'
 import { updateHostnameElectionVoteStats } from '@services/elections-votes/hostname'
 import { updateAgentModerationElectionVoteStats } from '@services/elections-votes/agent-moderation'
@@ -10,18 +11,10 @@ import {
 import { updateRssFeedItemElectionVoteStats } from '@services/elections-votes/rss-feed-item'
 import { updateUserVouchElectionVoteStats } from '@services/elections-votes/user-vouch'
 
-function getElectionId(job: Job): string {
-  return job.data.electionId
-}
+export async function processElection(job: Job<ElectionJobData>): Promise<void> {
+  const { electionId, orderingKey } = job.data
 
-export async function processElection(job: Job): Promise<void> {
-  const electionId = getElectionId(job)
-  const orderingKey = job.data.orderingKey
-  if (orderingKey !== job.opts.ordering?.key) {
-    throw new Error(`Election job ordering mismatch: ${orderingKey}`)
-  }
-
-  switch (orderingKey) {
+  switch (job.data.orderingKey) {
     case 'topic':
       await updateTopicElectionVoteStats(electionId)
       break

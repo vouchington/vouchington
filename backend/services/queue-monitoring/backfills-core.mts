@@ -14,6 +14,9 @@ import {
 import { enqueueBackfillFollowerDistributions } from '@queues/follower-distributions/enqueues'
 import { enqueueBackfillReportJudgements } from '@queues/ai-agents/enqueues/report-judgement'
 import { enqueueReconcileClassifierRuns } from '@queues/ai-agents/enqueues/reconcile-classifier-runs'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
+import { VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueBackfillReportIntegrity } from '@queues/vote-aggregation/enqueues/report-integrity'
 import {
   enqueueBackfillBlueskyDisconnectRequests,
@@ -49,8 +52,8 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'entity-listener-reconciliation',
-    queue_name: 'entity-listeners',
-    job_name: 'reconcileEntities',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
     description: 'Reconcile recently changed active entities from the durable checkpoint',
     source_table: 'entity_listener_reconciliation_cursors,users,topics,posts,images,urls',
     trigger: createBackfillTrigger(enqueueReconcileEntities),
@@ -145,8 +148,8 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'backfill_report_integrity',
-    queue_name: 'vote-aggregation',
-    job_name: 'backfill_report_integrity',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB.name,
     description: 'Re-enqueue integrity checks for entities with pending mass-report campaigns',
     source_table: 'moderation_reports',
     trigger: createBackfillTrigger(enqueueBackfillReportIntegrity),

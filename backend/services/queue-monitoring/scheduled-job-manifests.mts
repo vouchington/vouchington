@@ -29,7 +29,14 @@ import { scheduledJobManifest as urlsDomainsBlacklist } from '@queues/urls-domai
 import { scheduledJobManifest as voteWeight } from '@queues/vote-aggregation/enqueues/schedules'
 
 // Background domains register through one combined manifest, so the catalog lists that manifest.
-const background = combineBackgroundManifests([sesInbound, openaiModeration])
+const background = combineBackgroundManifests([
+  sesInbound,
+  openaiModeration,
+  entityListeners,
+  storyPostRelatedUrlProjections,
+  postPublication,
+  voteWeight,
+])
 
 export const SCHEDULED_JOB_MANIFESTS = [
   accountLifecycle,
@@ -41,7 +48,6 @@ export const SCHEDULED_JOB_MANIFESTS = [
   crawlDispatch,
   crawlReferralLinks,
   emails,
-  entityListeners,
   findYourFriends,
   heartbeat,
   contentAnalysis,
@@ -49,13 +55,10 @@ export const SCHEDULED_JOB_MANIFESTS = [
   memberships,
   notifications,
   oauthAuthorizationExchange,
-  postPublication,
   psql,
   rssFeeds,
   rssFeedMaintenance,
   sitemaps,
-  storyPostRelatedUrlProjections,
   unfurlReferralLinks,
   urlsDomainsBlacklist,
-  voteWeight,
 ] satisfies readonly ScheduledJobManifest[]

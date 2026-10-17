@@ -1,6 +1,4 @@
 import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT } from './config.mts'
 import {
   enqueueProcessPostCreated,
   enqueueProcessPostUpdated,
@@ -52,9 +50,7 @@ export const enqueueOnConversationMessageCreated = (
   return enqueueProcessConversationMessageCreated({ conversationId, messageId, senderId }, priority)
 }
 export const enqueueBulkOnUrlCreated = (ids: string[], priority?: number): EnqueueReturnType => {
-  return enqueueBulkProcessUrlCreated(ids, {
-    priority: priority ?? PRIORITY_DEFAULT,
-  } satisfies Partial<JobOptions>)
+  return enqueueBulkProcessUrlCreated(ids, priority === undefined ? undefined : { priority })
 }
 export const enqueueOnCommunityAgentPromptsDeactivated = (
   actorUserId: string,

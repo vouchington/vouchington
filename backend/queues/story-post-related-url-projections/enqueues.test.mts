@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB } from '@queues/background/enqueues/story-post-related-url-projections-jobs'
 import { readAllQueueJobs } from '../../test-helpers/queue-jobs.mts'
 import {
   enqueueContinueStoryPostRelatedUrlProjectionReconciliation,
   enqueueReconcileStoryPostRelatedUrlProjections,
   enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort,
 } from './enqueues.mts'
-import { storyPostRelatedUrlProjections } from './queues.mts'
+import { storyPostRelatedUrlProjectionsQueue } from './queues.mts'
 
 describe('story post related URL projection enqueues', () => {
-  it('persists ordered recovery and continuation jobs with distinct deduplication', async () => {
+  it('persists recovery and continuation jobs under the domain-wide group with distinct deduplication', async () => {
     const deduplicationId = `projection-test-${randomUUID()}`
     const [recovery, continuation] = await Promise.all([
       enqueueReconcileStoryPostRelatedUrlProjections({ deduplicationId }),
@@ -17,7 +18,7 @@ describe('story post related URL projection enqueues', () => {
     ])
 
     expect(recovery).toMatchObject({
-      name: 'processReconcileStoryPostRelatedUrlProjections',
+      name: STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name,
       opts: {
         priority: 100,
         ordering: { key: 'story-post-related-url-projections', concurrency: 1 },
@@ -25,12 +26,13 @@ describe('story post related URL projection enqueues', () => {
       },
     })
     expect(continuation).toMatchObject({
-      name: 'processReconcileStoryPostRelatedUrlProjections',
+      name: 'story-post-related-url-projections.reconcile',
       opts: {
         priority: 100,
         ordering: { key: 'story-post-related-url-projections', concurrency: 1 },
       },
     })
+    expect(continuation).not.toHaveProperty('opts.deduplication')
   })
 
   it('exposes completion of the best-effort recovery enqueue', async () => {
@@ -38,9 +40,9 @@ describe('story post related URL projection enqueues', () => {
     const completion = enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort({ deduplicationId })
 
     await completion
-    const jobs = await readAllQueueJobs(storyPostRelatedUrlProjections)
+    const jobs = await readAllQueueJobs(storyPostRelatedUrlProjectionsQueue)
     expect(jobs.filter(job => job.opts.deduplication?.id === deduplicationId)).toEqual([
-      expect.objectContaining({ name: 'processReconcileStoryPostRelatedUrlProjections' }),
+      expect.objectContaining({ name: STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB.name }),
     ])
   })
 })

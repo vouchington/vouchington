@@ -1,25 +1,24 @@
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import { POST_PUBLICATION_ORDERING, PRIORITY_RECONCILIATION, QUEUE_NAME } from '../config.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { POST_PUBLICATION_RECONCILE_JOB } from '@queues/background/enqueues/post-publication-jobs'
 import { enqueueReconcilePostPublication } from '../enqueues.mts'
-import { postPublication } from '../queues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'reconcile-post-publication',
     registration: 'sequential',
     repeat: { every: 300_000 },
     template: {
-      name: 'processReconcilePostPublication',
+      name: POST_PUBLICATION_RECONCILE_JOB.name,
       data: {},
-      opts: {
+      opts: toSchedulerTemplateOptions({
         ...ENQUEUE_BASE_DEFAULTS,
-        priority: PRIORITY_RECONCILIATION,
-        ordering: POST_PUBLICATION_ORDERING.reconciliation,
-      },
+        ...POST_PUBLICATION_RECONCILE_JOB.options,
+      }),
     },
     operatorSurfaces: [
       {
@@ -32,7 +31,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(postPublication, scheduledJobManifest)
-}

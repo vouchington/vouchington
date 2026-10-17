@@ -2,13 +2,13 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Shared `vote-aggregation` worker handles election vote-stat refresh jobs.
+The shared `background` worker runs election vote-stat refresh jobs as the `vote-aggregation` domain.
 
 ## Exports
 
-- `voteAggregation` - shared worker instance for the `vote-aggregation` queue. It validates the payload ordering key
-  against queue ordering and requires a metadata-validated relation table for entity-relation jobs;
-  it never scans tables to resolve an omitted target.
+- `voteAggregationHandlers` - the domain's handlers. The election handler requires a
+  metadata-validated relation table for entity-relation jobs; it never scans tables to resolve an
+  omitted target.
 
 ## Related
 

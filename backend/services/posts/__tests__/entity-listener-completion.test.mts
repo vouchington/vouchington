@@ -5,13 +5,14 @@ import { withEntityListenerAdmissionRead } from '@voucha/test-helpers/entity-lis
 import { observeEntityListenerTerminals } from '@voucha/test-helpers/entity-listener-admissions'
 import { createEnqueueFunction } from '../../../data-stores/valkey-glide-mq/glide-mq-enqueue.mts'
 import { entitiesListeners } from '../../../queues/entity-listeners/queues.mts'
-import { QUEUE_NAME } from '../../../queues/entity-listeners/config.mts'
+import { BACKGROUND_QUEUE_NAME } from '../../../queues/background/config.mts'
+import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '../../../queues/background/enqueues/entity-listeners-jobs.mts'
 import { settlePostCommitEffects } from '../post-commit-completion.mts'
 
 const enqueue = createEnqueueFunction({
   queue: entitiesListeners,
-  queueName: QUEUE_NAME,
-  jobName: 'processPostUpdated',
+  queueName: BACKGROUND_QUEUE_NAME,
+  jobName: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
 })
 
 describe('owned entity listener completion', () => {
@@ -132,7 +133,7 @@ describe('owned entity listener completion', () => {
     expect(returnedId).toEqual(expect.any(String))
     if (!returnedId) throw new Error('Held admission was not joined')
     const persisted = await entitiesListeners.getJob(returnedId)
-    expect(persisted?.name).toBe('processPostUpdated')
+    expect(persisted?.name).toBe(ENTITY_LISTENERS_POST_UPDATED_JOB.name)
     expect(persisted?.data).toEqual({ id })
     expect(await persisted?.getState()).toBe('completed')
   })

@@ -1,17 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import {
+  ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
+  ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,
+} from '@queues/background/enqueues/entity-listeners-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
-import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, QUEUE_NAME } from '../config.mts'
-import { entitiesListeners } from '../queues.mts'
-import type { ReconcileEntityData, EntityReconciliationDispatchData } from '../types.mts'
-
-const DEFAULTS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-}
+import type { ReconcileEntityData } from '../types.mts'
 
 function logicalEntityJobId(data: ReconcileEntityData): string {
   const changeKey = data.changeId ?? data.changedAtEpochUs
@@ -22,42 +16,28 @@ function logicalEntityJobId(data: ReconcileEntityData): string {
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/entity-listeners/README.md`.
  */
-export const enqueueBulkReconcileEntities = createBulkEnqueueFunction<
-  ReconcileEntityData,
-  ReconcileEntityData,
-  'reconcileEntity'
->({
-  queue: entitiesListeners,
-  queueName: QUEUE_NAME,
-  jobName: 'reconcileEntity',
-  defaults: DEFAULTS,
-  buildJob: data => {
+export const enqueueBulkReconcileEntities = createBackgroundBulkEnqueue(
+  ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,
+  (data: ReconcileEntityData) => {
     const jobId = logicalEntityJobId(data)
     return {
       data,
-      opts: {
-        jobId,
-        priority: PRIORITY_DEFAULT,
-        deduplication: { id: jobId, mode: 'simple' as const },
-      },
+      opts: { jobId, deduplication: { id: jobId, mode: 'simple' as const } },
     }
   },
-})
+)
 
-const enqueueReconcileEntitiesJob = createEnqueueFunction<
-  EntityReconciliationDispatchData,
-  'reconcileEntities'
->({
-  queue: entitiesListeners,
-  queueName: QUEUE_NAME,
-  jobName: 'reconcileEntities',
-  defaults: DEFAULTS,
-})
+const enqueueReconcileEntitiesJob = createBackgroundEnqueue(ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB)
 
-export function enqueueReconcileEntities(): EnqueueReturnType {
-  return enqueueReconcileEntitiesJob({}, {
+/** One root job at a time: a second root while one sweep is queued or running is coalesced. */
+export function entityReconciliationRootOptions() {
+  return {
     jobId: `entity-reconciliation-dispatcher__${randomUUID()}`,
-    priority: PRIORITY_DISPATCHER,
-    deduplication: { id: 'entity-reconciliation-dispatcher', mode: 'simple' },
-  } satisfies Partial<JobOptions>)
+    deduplication: { id: 'entity-reconciliation-dispatcher', mode: 'simple' as const },
+  }
+}
+
+/** Starts one fixed-window reconciliation; the job pages itself through its saved cursor. */
+export function enqueueReconcileEntities(): EnqueueReturnType {
+  return enqueueReconcileEntitiesJob({}, entityReconciliationRootOptions())
 }

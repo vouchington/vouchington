@@ -1,5 +1,6 @@
 // Suppress WARN-level messages from Glide's Rust logger (e.g. "item exists" from BF.RESERVE)
 import { Logger } from '@valkey/valkey-glide'
+import { startSharedBackgroundWorker } from './shared-background-worker.mts'
 
 Logger.setLoggerConfig('error')
 
@@ -8,9 +9,15 @@ Logger.setLoggerConfig('error')
 // Do not import post-publication, cache-purge, or crawl-embeds here: their processors run real
 // side effects (reconciliation, cache purge, embed crawling) on every job enqueued anywhere in this
 // isolate:false fork, not just in the file that imports them. worker-io definition identity tests
-// close those singletons after loading them (#10984); the post-publication enqueue test attaches and
-// closes its own stub worker per-test via `createWorker`/`closeAndUnregisterGlideMQInstance` (#11013).
+// close those singletons after loading them (#10984). post-publication is now a domain of the shared
+// `background` queue: never serve it from a global worker; a test that needs its jobs drained builds
+// its own `createBackgroundWorker({ handlers, domains: ['post-publication'] })` (with a stub handler
+// unless it wants real reconciliation) and closes it with `closeAndUnregisterGlideMQInstance` (#11013).
 // See docs/development/reference-tests-parallel-safety-and-test-root-hygiene.md#live-glidemq-workers-must-not-leak-across-isolatefalse-files.
 import '@workers/bloom-filters/workers'
-import '@workers/vote-aggregation/workers'
-import '@workers/entity-listeners/workers'
+
+// ONE `background` worker per fork, serving only these domains; a job of any other domain parks
+// instead of running. vote-aggregation and entity-listeners are the data-only side-effect domains
+// many tests expect. Helpers that watch the worker's events import `./shared-background-worker.mts`
+// so they observe this same instance.
+startSharedBackgroundWorker(['vote-aggregation', 'entity-listeners'])

@@ -1,18 +1,27 @@
-import { Worker, type Job } from 'glide-mq'
-import { describe, expect, it, vi } from 'vitest'
+import type { Job } from 'glide-mq'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
+  toSchedulerTemplateOptions,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { QUEUE_NAME } from '@queues/entity-listeners/config'
-import { entitiesListeners as queue } from '@queues/entity-listeners/queues'
+import {
+  ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB,
+  ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
+} from '@queues/background/enqueues/entity-listeners-jobs'
 import { scheduledJobManifest } from '@queues/entity-listeners/enqueues/schedules'
-import { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues/reconciliation'
+import { entityReconciliationRootOptions } from '@queues/entity-listeners/enqueues/reconciliation'
 import type {
   EntityReconciliationDispatchData,
   ReconcileEntityData,
 } from '@queues/entity-listeners/types'
+import {
+  startBackgroundHarness,
+  type BackgroundHarness,
+} from '@voucha/test-helpers/real-glide-background'
+// A relative import: @workers/background depends on this package, so a package dependency would cycle.
+import { createBackgroundProcessor } from '../../background/processors.mts'
 import { reconcileEntityBatches } from './reconciliation.mts'
 import { processReconciliationJob } from './process-reconciliation-job.mts'
 
@@ -23,7 +32,16 @@ vi.hoisted(() => {
 })
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
+const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
+
 describe('reconciliation sweep ownership', () => {
+  let harness: BackgroundHarness | undefined
+
+  afterEach(async () => {
+    await harness?.close()
+    harness = undefined
+  })
+
   it('coalesces repeated scheduler roots while one job advances bounded passes', async () => {
     const fixedWindow = {
       start: '2026-07-17T00:00:00.000Z',
@@ -42,64 +60,78 @@ describe('reconciliation sweep ownership', () => {
     const started = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
     const repeated = Promise.withResolvers<void>()
-    const completed = Promise.withResolvers<void>()
     const seen: { id: string; data: unknown }[] = []
     let roots = 0
     let checkpointAdvances = 0
-    const worker = new Worker(
-      QUEUE_NAME,
-      async (job: Job) => {
-        if (job.name === 'enqueueReconcileEntities') {
-          const result = await enqueueReconcileEntities()
-          if (++roots >= 2) repeated.resolve()
-          return result
-        }
-        seen.push({ id: job.id, data: job.data })
-        return processReconciliationJob(job, async (data, save) => {
-          const window = data.window ?? fixedWindow
-          await save({ window, ...(data.after && { after: data.after }) })
-          return reconcileEntityBatches(
-            oneBatch(data.after ? second : first),
-            new Date(window.end),
+    harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      concurrency: 5,
+      bodies: {
+        // The production root handler enqueues on the shared queue; this isolated queue needs the
+        // same job and options on its own queue.
+        [ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.name]: async () => {
+          const added = await harness!.queue.add(
+            ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
+            {},
             {
-              reconcileEntity: async () => {
-                if (!data.after) {
-                  started.resolve()
-                  await release.promise
-                }
-              },
-              advanceCheckpoint: async () => {
-                checkpointAdvances++
-              },
-            },
-            {
-              initialAfter: data.after,
-              hasMore: () => !data.after,
-              onMore: after => save({ window, ...(after && { after }) }),
+              ...ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.options,
+              ...entityReconciliationRootOptions(),
+              ordering: undefined,
             },
           )
-        })
+          if (++roots >= 2) repeated.resolve()
+          return added?.id ?? null
+        },
+        [ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name]: (job: Job) => {
+          seen.push({ id: job.id, data: job.data })
+          return processReconciliationJob(job, async (data, save) => {
+            const window = data.window ?? fixedWindow
+            await save({ window, ...(data.after && { after: data.after }) })
+            return reconcileEntityBatches(
+              oneBatch(data.after ? second : first),
+              new Date(window.end),
+              {
+                reconcileEntity: async () => {
+                  if (!data.after) {
+                    started.resolve()
+                    await release.promise
+                  }
+                },
+                advanceCheckpoint: async () => {
+                  checkpointAdvances++
+                },
+              },
+              {
+                initialAfter: data.after,
+                hasMore: () => !data.after,
+                onMore: after => save({ window, ...(after && { after }) }),
+              },
+            )
+          })
+        },
       },
-      {
-        connection: workerQueueConnection,
-        prefix: workerQueuePrefix,
-        concurrency: 5,
-        blockTimeout: 1000,
-      },
-    )
-    worker.on('completed', job => {
-      if (job.name === 'reconcileEntities') completed.resolve()
     })
+    const queue = harness.queue
+    // This test is about root coalescing, so the jobs run outside the domain group: GlideMQ can park
+    // a group job whose ordering sequence a parallel claim reaches first until another job completes.
     const template = scheduledJobManifest.jobs[0]!
-    const fastSchedule = defineScheduledJobManifest(QUEUE_NAME, [
+    const fastSchedule = defineScheduledJobManifest(queue.name, [
       {
         ...template,
+        template: {
+          name: ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.name,
+          data: {},
+          opts: toSchedulerTemplateOptions({
+            ...ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.options,
+            ordering: undefined,
+          }),
+        },
         repeat: () => ({ every: 1000 }),
         subMinuteJustification: 'Synthetic scheduler repeat regression within the test timeout.',
       },
     ])
     try {
-      await worker.waitUntilReady()
       await upsertScheduledJobManifest(queue, fastSchedule)
       await started.promise
       await repeated.promise
@@ -110,19 +142,15 @@ describe('reconciliation sweep ownership', () => {
         id: 'entity-reconciliation-dispatcher',
         mode: 'simple',
       })
-      await upsertScheduledJobManifest(queue, defineScheduledJobManifest(QUEUE_NAME, []))
+      await upsertScheduledJobManifest(queue, defineScheduledJobManifest(queue.name, []))
       release.resolve()
-      await completed.promise
+      await harness.settled(active!)
       expect(seen.map(item => item.id)).toEqual([active!.id, active!.id])
       expect(seen[1]!.data).toEqual({ window: fixedWindow, after: first })
       expect(checkpointAdvances).toBe(1)
       expect((await queue.getJob(active!.id))?.attemptsMade).toBe(0)
-      expect(await enqueueReconcileEntities()).toBeDefined()
     } finally {
       release.resolve()
-      await worker.close(true)
-      await queue.obliterate({ force: true })
-      await queue.close()
     }
   })
 

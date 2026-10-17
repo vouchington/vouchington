@@ -65,7 +65,15 @@ describe('background queue domain routes', () => {
       const byDomain = new Map(
         (body.domains as { domain: string }[]).map(entry => [entry.domain, entry]),
       )
-      expect([...byDomain.keys()].toSorted()).toEqual(['openai-moderation', 'ses-inbound'])
+      expect([...byDomain.keys()].toSorted()).toEqual([
+        'entity-listeners',
+        'openai-moderation',
+        'post-mentions',
+        'post-publication',
+        'ses-inbound',
+        'story-post-related-url-projections',
+        'vote-aggregation',
+      ])
       expect(byDomain.get('ses-inbound')).toMatchObject({
         paused: false,
         paused_at: null,
@@ -73,6 +81,10 @@ describe('background queue domain routes', () => {
         reason: null,
         delayed: { complete: false },
       })
+      // The delayed read is queue-wide and capped, so another domain's delayed jobs in this fork
+      // (election recomputes wait six seconds) may take scan slots: the count is a lower bound.
+      const ses = byDomain.get('ses-inbound') as unknown as { delayed: { count: number } }
+      expect(ses.delayed.count).toBeLessThanOrEqual(2)
     } finally {
       restore()
       await Promise.all(jobIds.map(async jobId => (await background.getJob(jobId))?.remove()))

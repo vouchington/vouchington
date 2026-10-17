@@ -3,8 +3,17 @@
 Source entrypoint: [backend/queues/story-post-related-url-projections/README.md](../../../../../backend/queues/story-post-related-url-projections/README.md)
 
 Drains durable, generation-fenced projections from active story RSS items to a story post's
-`post -> related -> url` relations. The single ordered reconciliation job is prompted after a
+`post -> related -> url` relations. The single reconciliation job is prompted after a
 membership transaction commits and recovers every five minutes.
+
+## Queue and domain
+
+The `story-post-related-url-projections` domain of the shared [`background` queue](../background/README.md);
+its old queue and `WORKER_CONCURRENCY_STORY_POST_RELATED_URL_PROJECTIONS` override are gone. The one job,
+`story-post-related-url-projections.reconcile` (priority 100), and its continuation share the
+domain-wide group `story-post-related-url-projections` with concurrency 1, so only one reconciliation
+runs across every worker. Operators pause, retry, and read stats for the domain; the domain
+contributes 2 to the shared worker's baseline.
 
 The best-effort recovery enqueue forwards the internal deduplication identity option used by the
 regular recovery enqueue and returns its completion promise. Production callers keep the shared

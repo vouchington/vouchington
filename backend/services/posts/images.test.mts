@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as moderationEnqueues from '@queues/openai-moderation/enqueues'
 import * as spamEnqueues from '@queues/spam-detection/enqueues'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { interceptNextEntityListenerAdd } from '../../test-helpers/entity-listener-add-failure.mts'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostByAny } from '@services/posts/get'
 import type { Post } from '@services/posts/types'
@@ -75,9 +75,7 @@ describe('setPostImages', () => {
     await insertTestPostImage({ postId, imageId: originalImageId })
     const post = (await getPostByAny(postId, { readOnly: false })) as Post
     const enqueueError = new Error('enqueue failed')
-    const rejectedEnqueue = Promise.reject(enqueueError) as ReturnType<typeof entitiesListeners.add>
-    void rejectedEnqueue.catch(() => {})
-    vi.spyOn(entitiesListeners, 'add').mockReturnValueOnce(rejectedEnqueue)
+    interceptNextEntityListenerAdd(() => Promise.reject(enqueueError))
     await expect(
       setPostImages(creator!, post, [{ image_id: replacementImageId, order_index: 0 }]),
     ).rejects.toThrow(enqueueError)

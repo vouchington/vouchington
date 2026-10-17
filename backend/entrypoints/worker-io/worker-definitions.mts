@@ -12,28 +12,8 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
     },
   },
   {
-    queueName: 'story-post-related-url-projections',
-    load: () =>
-      import('@workers/story-post-related-url-projections/workers').then(
-        module => module.storyPostRelatedUrlProjections,
-      ),
-  },
-  {
-    queueName: 'post-publication',
-    load: () => import('@workers/post-publication/workers').then(module => module.postPublication),
-  },
-  {
-    queueName: 'vote-aggregation',
-    load: () => import('@workers/vote-aggregation/workers').then(module => module.voteAggregation),
-  },
-  {
     queueName: 'cache-purge',
     load: () => import('@workers/cache-purge/workers').then(module => module.cachePurge),
-  },
-  {
-    queueName: 'entity-listeners',
-    load: () =>
-      import('@workers/entity-listeners/workers').then(module => module.entitiesListeners),
   },
   {
     queueName: 'emails',
@@ -56,10 +36,6 @@ export const WORKER_DEFINITIONS: WorkerDefinition[] = [
   {
     queueName: 'crawl_embeds',
     load: () => import('@workers/crawl-embeds/workers').then(module => module.crawlEmbeds),
-  },
-  {
-    queueName: 'post-mentions',
-    load: () => import('@workers/post-mentions/workers').then(module => module.postMentions),
   },
   { queueName: 'psql', load: () => import('@workers/psql/workers').then(module => module.psql) },
   {

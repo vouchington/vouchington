@@ -23,7 +23,3 @@ async function triggerBoilerplateRemoval(hostnameId: string, pathname: string) {
     await enqueueBulkBoilerplateRemoval([{ hostnameId, parentPath }])
   }
 }
-
-export const processUrlUpdated = () => {}
-
-export const processUrlDeleted = () => {}

@@ -1,6 +1,5 @@
 import { enqueueContinueStoryPostRelatedUrlProjectionReconciliation } from '@queues/story-post-related-url-projections/enqueues'
 import { reconcileStoryPostRelatedUrlProjection } from '@services/stories/story-post-related-url-projection'
-import type { Job } from 'glide-mq'
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
@@ -19,13 +18,4 @@ export async function processReconcileStoryPostRelatedUrlProjections(
   if (result.continue)
     await dependencies.enqueueContinueStoryPostRelatedUrlProjectionReconciliation()
   return { processed: result.processed }
-}
-
-export function processStoryPostRelatedUrlProjectionJob(
-  job: Pick<Job, 'name'>,
-  processReconciliation = processReconcileStoryPostRelatedUrlProjections,
-) {
-  if (job.name !== 'processReconcileStoryPostRelatedUrlProjections')
-    throw new Error(`Story post related URL projection job ${job.name} not found`)
-  return processReconciliation()
 }

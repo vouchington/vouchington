@@ -15,7 +15,7 @@ flowchart TD
   created --> listener[processPostCreated]
   listener --> votes[Creator auto-vote]
   listener --> subscribe[Auto-subscribe creator]
-  listener --> mentions[post-mentions queue]
+  listener --> mentions[background post-mentions]
   listener --> embeddings[Nova multimodal embeddings]
   listener --> omni[OpenAI omni moderation]
   omni --> clearance[checkPostClearance]

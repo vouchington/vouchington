@@ -218,10 +218,16 @@ expect(allJobs).toHaveLength(10)
 Workers are started in the vitest setup (`vitest.setup.glide-mq-workers.mts`):
 
 ```typescript
-import 'workers/vote-aggregation/workers'
-import 'workers/entity-listeners/workers'
-// etc.
+import '@workers/bloom-filters/workers'
+// One shared `background` worker for the data-only domains that moved into that queue:
+startSharedBackgroundWorker(['vote-aggregation', 'entity-listeners'])
 ```
+
+`test-helpers/shared-background-worker.mts` owns that one `background` worker; election and entity-listener
+helpers import its `getSharedBackgroundWorker()` to watch `completed`/`failed`. It serves only the listed
+domains and parks every other registered job (`delayed`), so it takes jobs only while no other
+worker is attached to `background`: a test file that builds its own
+`createBackgroundWorker({ handlers, domains })` owns the queue until it closes that worker.
 
 These workers process jobs in memory during tests. The shim drain waits only
 for the flushed job IDs (not queue-wide `drained`):

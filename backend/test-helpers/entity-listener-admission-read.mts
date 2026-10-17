@@ -3,10 +3,18 @@ import {
   onEnqueueAdmission,
   type EnqueueAdmission,
 } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import {
+  getSharedBackgroundWorker,
+  holdBackgroundDomain,
+} from '../../test-helpers/shared-background-worker.mts'
+import { ENTITY_LISTENERS_DOMAIN } from '../queues/background/enqueues/entity-listeners-jobs.mts'
 import { entitiesListeners as queue } from '../queues/entity-listeners/queues.mts'
-import { QUEUE_NAME } from '../queues/entity-listeners/config.mts'
-import { entitiesListeners as worker } from '../workers/entity-listeners/workers.mts'
-import { entityListenerInputId, rejectEntityListenerReason } from './entity-listener-admissions.mts'
+import {
+  entityListenerInputId,
+  entityListenerJobName,
+  isEntityListenerAdmission,
+  rejectEntityListenerReason,
+} from './entity-listener-admissions.mts'
 import { withEntityListenerCompletion } from './entity-listener-completion.mts'
 
 let held = false
@@ -18,28 +26,26 @@ export function withEntityListenerAdmissionRead<T>(
   read: () => Promise<void>,
 ): Promise<T> {
   const configuredQueue: unknown = queue
-  const configuredWorker: unknown = worker
+  const configuredWorker: unknown = getSharedBackgroundWorker()
+  const jobName = entityListenerJobName(target.jobName)
   if (!(configuredQueue instanceof TestQueue) || !(configuredWorker instanceof TestWorker))
     return Promise.reject(
       new Error('Admission ordering requires the normal fork-owned testing provider'),
     )
-  if (held || configuredWorker.isPaused())
-    return Promise.reject(new Error('The canonical entity worker is already held by another owner'))
-  let ownsPause = false
-  let resumed: Promise<void> | undefined
-  const resumeErrors: unknown[] = []
+  if (held)
+    return Promise.reject(new Error('The entity-listeners domain is already held by another owner'))
+  let ownsHold = false
+  let releaseDomain = () => {}
   const resume = () => {
-    if (!ownsPause) return Promise.resolve()
-    return (resumed ??= configuredWorker.resume().catch(err => {
-      resumeErrors.push(err)
-    }))
+    if (ownsHold) releaseDomain()
+    return Promise.resolve()
   }
   const added = Promise.withResolvers<{ id: string; name: string; data: unknown }>()
   const admitted = Promise.withResolvers<EnqueueAdmission>()
   const matchingJobs: { id: string; name: string; data: unknown }[] = []
   const matchingAdmissions: EnqueueAdmission[] = []
   const onAdded = (job: { id: string; name: string; data: unknown }) => {
-    if (job.name !== target.jobName || entityListenerInputId(job.data) !== target.entityId) return
+    if (job.name !== jobName || entityListenerInputId(job.data) !== target.entityId) return
     matchingJobs.push(job)
     added.resolve(job)
   }
@@ -48,19 +54,18 @@ export function withEntityListenerAdmissionRead<T>(
   return withEntityListenerCompletion(
     [target],
     async () => {
-      if (held || configuredWorker.isPaused())
-        throw new Error('Entity worker ownership changed before action')
+      if (held) throw new Error('Entity worker ownership changed before action')
       held = true
-      ownsPause = true
-      // true does not stop active work; caller must finish this fresh entity's prior owned job first.
-      // Unlike pause(false), it neither polls nor waits for unrelated active jobs.
-      await configuredWorker.pause(true)
+      ownsHold = true
+      // Gates only entity-listeners handlers: the shared queue's other domains keep running, so a
+      // producer that awaits one of their jobs before enqueuing ours does not stall. A gate does not
+      // stop work already started; the caller must finish this fresh entity's prior owned job first.
+      releaseDomain = holdBackgroundDomain(ENTITY_LISTENERS_DOMAIN.domain)
       configuredQueue.on('added', onAdded)
       off = onEnqueueAdmission(event => {
         if (
-          event.queue === queue &&
-          event.queueName === QUEUE_NAME &&
-          event.jobName === target.jobName &&
+          isEntityListenerAdmission(event) &&
+          event.jobName === jobName &&
           event.inputs.some(input => entityListenerInputId(input) === target.entityId)
         ) {
           matchingAdmissions.push(event)
@@ -137,7 +142,7 @@ export function withEntityListenerAdmissionRead<T>(
     {
       release: resume,
       restore: () => {
-        const errors = [...resumeErrors]
+        const errors: unknown[] = []
         try {
           configuredQueue.off('added', onAdded)
         } catch (err) {
@@ -148,7 +153,7 @@ export function withEntityListenerAdmissionRead<T>(
         } catch (err) {
           errors.push(err)
         }
-        if (ownsPause) held = false
+        if (ownsHold) held = false
         if (errors.length === 1) return rejectEntityListenerReason(errors[0])
         if (errors.length)
           return Promise.reject(

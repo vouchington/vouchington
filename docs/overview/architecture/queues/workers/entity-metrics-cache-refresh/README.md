@@ -2,11 +2,11 @@
 
 Source entrypoint: [backend/workers/vote-aggregation/README.md](../../../../../../backend/workers/vote-aggregation/README.md)
 
-Shared `vote-aggregation` worker handles refreshing cached topic, post, and user metrics.
+The shared `background` worker refreshes cached topic, post, and user metrics as the `vote-aggregation` domain.
 
 ## Exports
 
-- `voteAggregation` - shared worker instance for the `vote-aggregation` queue.
+- `voteAggregationHandlers` - the domain's handlers, registered in the shared background worker.
 
 ## Related
 

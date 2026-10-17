@@ -6,6 +6,8 @@ import {
 import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
 import { enqueueKagiSmallWebSync } from '@queues/kagi-smallweb/enqueues'
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import type { BloomFilterEntityType } from '@queues/bloom-filters/types'
@@ -75,8 +77,8 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'vote-weight-dispatch',
-    queue_name: 'vote-aggregation',
-    job_name: 'processRecalculateVoteWeightDispatcher',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB.name,
     description: 'Dispatch vote-weight recalculation from users',
     source_table: 'users',
     trigger: createVoteWeightTrigger(),

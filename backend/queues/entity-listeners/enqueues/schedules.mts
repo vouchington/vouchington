@@ -1,34 +1,24 @@
-import type { JobOptions } from 'glide-mq'
+import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
 import {
   defineScheduledJobManifest,
-  upsertScheduledJobManifest,
+  toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
-import {
-  getEntityListenerReconciliationIntervalSeconds,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
-import { entitiesListeners } from '../queues.mts'
+import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
+import { getEntityListenerReconciliationIntervalSeconds } from '../config.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
   {
     schedulerId: 'entityListenerReconciliation',
     repeat: () => ({ every: getEntityListenerReconciliationIntervalSeconds() * 1000 }),
     template: {
-      name: 'enqueueReconcileEntities',
+      name: ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.name,
       data: {},
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: PRIORITY_DISPATCHER,
-      } satisfies JobOptions,
+      opts: toSchedulerTemplateOptions({
+        ...ENQUEUE_BASE_DEFAULTS,
+        ...ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.options,
+      }),
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'entity-listener-reconciliation' }],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(entitiesListeners, scheduledJobManifest)
-}

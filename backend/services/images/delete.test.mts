@@ -1,6 +1,8 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { interceptNextEntityListenerAddBulk } from '../../test-helpers/entity-listener-add-failure.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ENQUEUE_BASE_DEFAULTS } from '@data-stores/valkey-glide-mq'
+import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
 import { createPostModerationContent } from '@services/posts/content'
 import { getPostModerationInput } from '@services/posts/moderation-input'
@@ -29,10 +31,6 @@ import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import * as imageStorage from './s3-upload-lifecycle.mts'
 
 describe('deleteImageById rollback', () => {
-  beforeEach(async () => {
-    await entitiesListeners.obliterate({ force: true })
-  })
-
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -54,11 +52,13 @@ describe('deleteImageById rollback', () => {
     await deleteImageById(imageId)
 
     const jobs = (await readAllQueueJobs(entitiesListeners)).filter(
-      job => job.name === 'processPostUpdated' && (job.data as { id?: string }).id === postId,
+      job =>
+        job.name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
+        (job.data as { id?: string }).id === postId,
     )
     expect(jobs).toHaveLength(1)
     expect(jobs[0]).toMatchObject({
-      name: 'processPostUpdated',
+      name: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
       data: { id: postId, contentChanged: true },
       opts: {
         priority: ENQUEUE_BASE_DEFAULTS.priority,
@@ -133,7 +133,7 @@ describe('deleteImageById rollback', () => {
       typeof entitiesListeners.addBulk
     >
     void rejectedBulk.catch(() => {})
-    vi.spyOn(entitiesListeners, 'addBulk').mockReturnValueOnce(rejectedBulk)
+    interceptNextEntityListenerAddBulk(() => rejectedBulk)
 
     await expect(deleteImageById(imageId)).rejects.toThrow(enqueueError)
 
@@ -166,7 +166,7 @@ describe('deleteImageById rollback', () => {
     expect(
       waiting.filter(
         job =>
-          job.name === 'processPostUpdated' &&
+          job.name === ENTITY_LISTENERS_POST_UPDATED_JOB.name &&
           postIds.includes((job.data as { id?: string }).id ?? ''),
       ),
     ).toEqual([])
@@ -191,7 +191,7 @@ describe('deleteImageById rollback', () => {
     let enqueueStarted!: () => void
     const started = new Promise<void>(resolve => (enqueueStarted = resolve))
     const blockedEnqueue = new Promise<never>((_, reject) => (rejectEnqueue = reject))
-    vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAddBulk(async () => {
       enqueueStarted()
       return blockedEnqueue
     })
@@ -232,7 +232,7 @@ describe('deleteImageById rollback', () => {
     const enqueueError = new Error('enqueue failed — omitRollback path')
     const rejected = Promise.reject(enqueueError) as ReturnType<typeof entitiesListeners.addBulk>
     void rejected.catch(() => {})
-    vi.spyOn(entitiesListeners, 'addBulk').mockReturnValueOnce(rejected)
+    interceptNextEntityListenerAddBulk(() => rejected)
 
     // With omitRollback=true, the function should not throw even when enqueue fails
     await expect(deleteImageById(imageId, true)).resolves.toBeUndefined()
@@ -275,7 +275,7 @@ describe('deleteImageById rollback', () => {
     const beforePost = await getPostModerationResetState(postId)
     const editedHash = randomBytes(32)
     const enqueueError = new Error('bulk post update enqueue failed')
-    vi.spyOn(entitiesListeners, 'addBulk').mockImplementationOnce(async () => {
+    interceptNextEntityListenerAddBulk(async () => {
       await setPostLLMModerationContentSha256(postId, editedHash)
       throw enqueueError
     })
