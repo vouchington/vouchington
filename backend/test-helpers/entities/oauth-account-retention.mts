@@ -7,17 +7,19 @@ export async function setOAuthAccountCreatedAt(
   provider: OAuthProvider,
   providerUserId: string,
   createdAt: Date,
-): Promise<void> {
+): Promise<string | null> {
   const config = providerTableConfigs[provider]
   // UUIDv7-backed accounts derive created_at from id, so the fixture moves their key instead.
-  const column = config.accountIdColumn === 'id' ? 'id' : 'created_at'
-  const value = column === 'id' ? uuidv7({ msecs: createdAt.getTime() }) : createdAt
+  const accountId = config.accountIdColumn === 'id' ? uuidv7({ msecs: createdAt.getTime() }) : null
+  const column = accountId ? 'id' : 'created_at'
+  const value = accountId ?? createdAt
   await write(
     allowUnannotatedQuery(
       `UPDATE ${config.table} SET ${column} = $1 WHERE ${config.providerUserIdColumn} = $2`,
     ),
     [value, providerUserId],
   )
+  return accountId
 }
 
 export async function getOAuthAccountCreatedAt(

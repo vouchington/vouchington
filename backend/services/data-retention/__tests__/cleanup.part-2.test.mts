@@ -1,6 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
-import { read } from '@data-stores/psql'
 import { insertTestLinkedInOAuthAccount } from '@voucha/test-helpers/entities/linkedin-oauth-accounts'
 import {
   createRandomString,
@@ -163,13 +162,12 @@ describe('orphaned OAuth account cleanup', () => {
     const unrelatedProviderId = `unrelated-facebook-${createRandomString(12)}`
     await insertTestOAuthAccount('facebook', activeProviderId)
     await insertTestOAuthAccount('facebook', unrelatedProviderId)
-    await setOAuthAccountCreatedAt('facebook', activeProviderId, window.firstEligibleDate)
-    await setOAuthAccountCreatedAt('facebook', unrelatedProviderId, window.secondEligibleDate)
-    const { rows: activeAccountRows } = await read<{ id: string }>(
-      `/* getRetainedFacebookAccountId */ SELECT id FROM facebook_accounts WHERE facebook_user_id = $1`,
-      [activeProviderId],
+    const activeAccountId = await setOAuthAccountCreatedAt(
+      'facebook',
+      activeProviderId,
+      window.firstEligibleDate,
     )
-    const activeAccountId = activeAccountRows[0]?.id
+    await setOAuthAccountCreatedAt('facebook', unrelatedProviderId, window.secondEligibleDate)
     if (!activeAccountId) throw new Error('Retained Facebook account fixture is missing')
     const authorizationId = v7()
     onTestFinished(async () => {
