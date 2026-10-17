@@ -2,7 +2,7 @@ import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { lockImageDeliveryMutation } from './delivery-lock.mts'
 import { assertImageDeliveryTransaction } from './transaction-contract.mts'
-import { markImageDeliveryAuthorityStarted } from './asset-admission-lock.mts'
+import { imageDeliveryAuthorityStartedSql } from './asset-admission-lock.mts'
 
 export type ImageSurfaceReference =
   | { surfaceKind: 'user-profile-image'; userId: string }
@@ -36,9 +36,10 @@ async function lockSurfaceOwnerDomains(
   query: QueryExecutor,
 ): Promise<void> {
   assertImageDeliveryTransaction(query)
-  await markImageDeliveryAuthorityStarted(query)
-  await query(sql`/* lockSurfaceOwnerDomains */
-    SELECT pg_advisory_xact_lock(hashtextextended(key, 0))
+  const statement = sql`/* lockSurfaceOwnerDomains */
+    SELECT count(pg_advisory_xact_lock(hashtextextended(key, 0))) AS locked, `
+  statement.append(imageDeliveryAuthorityStartedSql())
+  statement.append(sql` AS authority_started
     FROM (SELECT DISTINCT key FROM (
       SELECT 'image-user-profile:' || id::text AS key FROM unnest(${owners.userIds ?? []}::uuid[]) id
       UNION ALL SELECT 'image-profile-link:' || id::text FROM unnest(${owners.linkIds ?? []}::uuid[]) id
@@ -46,6 +47,7 @@ async function lockSurfaceOwnerDomains(
       UNION ALL SELECT 'image-community:' || id::text FROM unnest(${owners.communityIds ?? []}::uuid[]) id
     ) domains ORDER BY key) ordered
   `)
+  await query(statement)
 }
 
 export function imageSurfaceWhere(reference: ImageSurfaceReference): ReturnType<typeof sql> {
@@ -77,22 +79,30 @@ export function imageSurfaceReferences(
     )`
 }
 
-/** Includes historical reusable bindings: later owner writes cannot expand a held domain. */
+/**
+ * Includes historical reusable bindings: later owner writes cannot expand a held domain.
+ * `ownerDomainsHeld` is for callers that already took exactly these owner domains in this transaction.
+ */
 export async function lockImageSurfacePlacements(
   references: ImageSurfaceReference[],
   query: QueryExecutor,
+  options: { ownerDomainsHeld?: boolean } = {},
 ): Promise<void> {
-  await lockSurfaceOwnerDomains(
-    {
-      userIds: references.flatMap(ref => ('userId' in ref ? [ref.userId] : [])),
-      linkIds: references.flatMap(ref =>
-        'userProfileLinkId' in ref ? [ref.userProfileLinkId] : [],
-      ),
-      topicIds: references.flatMap(ref => ('topicId' in ref ? [ref.topicId] : [])),
-      communityIds: references.flatMap(ref => ('communityId' in ref ? [ref.communityId] : [])),
-    },
-    query,
-  )
+  if (options.ownerDomainsHeld) {
+    assertImageDeliveryTransaction(query)
+  } else {
+    await lockSurfaceOwnerDomains(
+      {
+        userIds: references.flatMap(ref => ('userId' in ref ? [ref.userId] : [])),
+        linkIds: references.flatMap(ref =>
+          'userProfileLinkId' in ref ? [ref.userProfileLinkId] : [],
+        ),
+        topicIds: references.flatMap(ref => ('topicId' in ref ? [ref.topicId] : [])),
+        communityIds: references.flatMap(ref => ('communityId' in ref ? [ref.communityId] : [])),
+      },
+      query,
+    )
+  }
   const statement = sql`/* lockImageSurfacePlacements */
     WITH refs AS (`
   statement.append(imageSurfaceReferences(references))

@@ -68,6 +68,7 @@ export async function createProfileLink(
     input.image_id ?? null,
     input.image_id ? userId : null,
     transaction,
+    { admission: true, ready: true },
   )
   if (input.image_id) {
     const { rows: updated } = await transaction<Omit<ProfileLink, 'url' | 'image_placement'>>(
@@ -122,6 +123,7 @@ export async function updateProfileLink(
       desiredImageId ?? null,
       desiredImageId ? userId : null,
       transaction,
+      { admission: true, ownerDomains: true },
     )
   const { rows } = await transaction(sql`/* updateProfileLink */
     UPDATE user_profile_links
@@ -164,6 +166,7 @@ export async function deleteProfileLink(userId: string, linkId: string): Promise
         null,
         null,
         transaction,
+        { ownerDomains: true },
       ),
     () =>
       transaction(sql`/* deleteProfileLink */ DELETE FROM user_profile_links WHERE id = ${linkId}`),

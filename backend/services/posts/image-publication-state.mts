@@ -23,7 +23,7 @@ export async function getLockedPostImagePublicationState(
   query: TransactionQuery,
   postId: string,
 ): Promise<PostImagePublicationState> {
-  const { rows } = await query<PostImagePublicationState>(sql`/* setPostImages */
+  const { rows } = await query<PostImagePublicationState>(sql`/* setPostImages:publicationState */
     SELECT post.title,
       post.markdown,
       post.structured_data,

@@ -64,6 +64,7 @@ export const updateTopic = async (
             reference.nextImageId ?? null,
             reference.nextImageId ? updater.id : null,
             imageQuery,
+            { prepublished: true },
           )
         }
       }
