@@ -53,7 +53,11 @@ export async function getBlueskyLinkAuthorization(
 
 export async function getBlueskyLinkAuthorizationForCallbackFromPrimary(
   authorizationId: string,
+  loadedAuthorization?: BlueskyLinkAuthorization,
 ): Promise<BlueskyLinkAuthorization> {
+  if (loadedAuthorization?.id === authorizationId) {
+    return assertUsableBlueskyLinkAuthorization(loadedAuthorization)
+  }
   const { rows } = await readBlueskyLinkAuthorization(authorizationId, write)
   return assertUsableBlueskyLinkAuthorization(rows[0])
 }

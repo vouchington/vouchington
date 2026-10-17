@@ -372,6 +372,10 @@ checks:
       always: true
     # CI-only static gates (#3015): `check` runs the repository rules, but impacted-checks would
     # otherwise list only typechecks and tests. Each command mirrors its static-code-analysis.yml step.
+    - name: ast-grep-rules
+      command: [pnpm, run, ast-grep]
+      fileArgs: none
+      always: true
     - name: no-mistakes-rules
       command: [pnpm, run, no-mistakes]
       fileArgs: none

@@ -4,6 +4,7 @@ import {
   createRandomString,
   createTestUser,
   ensureTestBlueskyLinkAuthorization,
+  getTestBlueskyLinkedAccountRow,
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
@@ -54,6 +55,36 @@ describe('GET /api/v1/auth/bluesky/callback', () => {
 
     expect(new URL(response.headers.location).searchParams.get('bluesky')).toBe('linked')
     expect(await getBlueskyLinkedAccountForUser(user.id)).toMatchObject({ bluesky_did: did })
+  })
+
+  it('cleans the pending credential when suspension wins after provider persistence', async () => {
+    const request = createRequest()
+    const user = await createTestUser()
+    const did = fakeDid()
+    const flowId = v7()
+    const stateKey = v7()
+    await ensureTestBlueskyLinkAuthorization({ authorizationId: flowId, userId: user.id })
+    const appState = JSON.stringify({ authorizationId: flowId })
+    await new BlueskyStateStore().set(stateKey, fakeState(appState))
+    await request.authenticateAs(user)
+    completeBlueskyCallbackMock.mockImplementationOnce(async () => {
+      await new BlueskySessionStore().set(did, fakeSession(did))
+      await suspendTestUser(user.id)
+      return { session: { did } as OAuthSession, state: appState }
+    })
+
+    try {
+      const response = await request
+        .get(`/api/v1/auth/bluesky/callback?code=abc&state=${stateKey}`)
+        .expect(302)
+
+      expect(new URL(response.headers.location).searchParams.get('bluesky_error')).toBe(
+        'account_suspended',
+      )
+      expect(await getTestBlueskyLinkedAccountRow(did)).toBeNull()
+    } finally {
+      await unsuspendTestUser(user.id)
+    }
   })
 
   it('rejects a suspended user before provider completion', async () => {

@@ -12,6 +12,7 @@ import {
   createBlueskyLinkAuthorization,
   getBlueskyLinkAuthorizationForCallbackFromPrimary,
   rejectBlueskyLinkAuthorization,
+  type BlueskyLinkAuthorization,
 } from './link-authorization.mts'
 
 export type BlueskyLinkCallbackMode = 'web' | 'native'
@@ -83,14 +84,19 @@ export async function beginBlueskyAccountLinkDirect(
 
 export async function peekBlueskyAccountLinkAppState(
   params: URLSearchParams,
-): Promise<BlueskyLinkAppState | null> {
+  loadedAuthorization?: BlueskyLinkAuthorization,
+): Promise<(BlueskyLinkAppState & { authorization: BlueskyLinkAuthorization }) | null> {
   const stateKey = params.get('state')
   if (!stateKey) return null
   const savedState = await new BlueskyStateStore().get(stateKey)
   if (!savedState) return null
   const authorizationId = decodeAuthorizationId(savedState.appState ?? null)
-  const authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(authorizationId)
+  const authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(
+    authorizationId,
+    loadedAuthorization,
+  )
   return {
+    authorization,
     authorizationId,
     userId: authorization.user_id,
     handle: authorization.handle,
@@ -102,8 +108,9 @@ export async function peekBlueskyAccountLinkAppState(
 export async function completeBlueskyAccountLinkCallbackDirect(
   params: URLSearchParams,
   expectedCallbackMode: BlueskyLinkCallbackMode,
-): Promise<{ did: string; state: BlueskyLinkAppState }> {
-  const expectedState = await peekBlueskyAccountLinkAppState(params)
+  loadedAuthorization: BlueskyLinkAuthorization,
+): Promise<{ did: string; state: BlueskyLinkAppState; authorization: BlueskyLinkAuthorization }> {
+  const expectedState = await peekBlueskyAccountLinkAppState(params, loadedAuthorization)
   if (expectedState && expectedState.callbackMode !== expectedCallbackMode) {
     throw createHttpError(400, 'Invalid Bluesky OAuth state')
   }
@@ -119,10 +126,11 @@ export async function completeBlueskyAccountLinkCallbackDirect(
       )
     : await runWithBlueskySessionPersistenceBlocked(callback)
   let returnedState: BlueskyLinkAppState
+  let authorization: BlueskyLinkAuthorization
   try {
     const returnedAuthorizationId = decodeAuthorizationId(result.state)
-    const authorization =
-      await getBlueskyLinkAuthorizationForCallbackFromPrimary(returnedAuthorizationId)
+    // Provider persistence can claim or reject this generation: this read must stay fresh.
+    authorization = await getBlueskyLinkAuthorizationForCallbackFromPrimary(returnedAuthorizationId)
     returnedState = {
       authorizationId: returnedAuthorizationId,
       userId: authorization.user_id,
@@ -150,7 +158,7 @@ export async function completeBlueskyAccountLinkCallbackDirect(
     }
     throw createHttpError(400, 'Invalid Bluesky OAuth state')
   }
-  if (!expectedState) return { did: result.session.did, state: returnedState }
+  if (!expectedState) return { did: result.session.did, state: returnedState, authorization }
   if (returnedState.authorizationId !== expectedState.authorizationId) {
     await deleteBlueskySessionForRejectedAuthorization(
       expectedState.userId,
@@ -159,5 +167,5 @@ export async function completeBlueskyAccountLinkCallbackDirect(
     )
     throw createHttpError(400, 'Invalid Bluesky OAuth state')
   }
-  return { did: result.session.did, state: returnedState }
+  return { did: result.session.did, state: returnedState, authorization }
 }

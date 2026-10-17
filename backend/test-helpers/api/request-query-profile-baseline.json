@@ -161,8 +161,8 @@
   },
   {
     "annotation": "createEmailVerificationToken",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The token upsert runs after fn_lock_active_user_for_mutation so account deletion cannot race credential creation",
+    "issue": 3119
   },
   {
     "annotation": "createImportBatch",
@@ -196,8 +196,8 @@
   },
   {
     "annotation": "createTotpAuthenticator",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The authenticator insert runs after fn_lock_active_user_for_mutation so account deletion cannot race factor creation",
+    "issue": 3119
   },
   {
     "annotation": "currentCopyrightJurisdictionPolicy",
@@ -215,11 +215,6 @@
     "issue": 2615
   },
   {
-    "annotation": "deletePasskey",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
-  },
-  {
     "annotation": "deletePendingRecommendation",
     "reason": "Pending-review admission is reread under FOR UPDATE before ordered extension and owning-post deletion writes",
     "issue": 2612
@@ -228,11 +223,6 @@
     "annotation": "deleteProfileLink",
     "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
     "issue": 3120
-  },
-  {
-    "annotation": "deleteTotpAuthenticator",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
   },
   {
     "annotation": "deleteUserModNote",
@@ -246,13 +236,13 @@
   },
   {
     "annotation": "disconnectOAuthAccount",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
+    "issue": 3119
   },
   {
     "annotation": "ensureConsentVersion",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Recheck the active version FOR UPDATE after the optimistic read, then revoke the old active row before inserting its unique-active replacement",
+    "issue": 3119
   },
   {
     "annotation": "ensureImagePlacementBinding:image",
@@ -376,8 +366,8 @@
   },
   {
     "annotation": "getOAuthClient",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Authorization rechecks client revocation and owner activity after locking participant users, rejecting changes since initial parameter validation",
+    "issue": 3119
   },
   {
     "annotation": "getPostByAny",
@@ -516,8 +506,8 @@
   },
   {
     "annotation": "grantConsent",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",
+    "issue": 3119
   },
   {
     "annotation": "insertCopyrightDeliveryRecipient",
@@ -561,8 +551,8 @@
   },
   {
     "annotation": "lockApiKeyOwner",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Read administrator roles after fn_lock_active_user_for_mutation to observe role changes that completed while acquiring the owner lock",
+    "issue": 3119
   },
   {
     "annotation": "lockAssessmentForm",
@@ -571,18 +561,18 @@
   },
   {
     "annotation": "lockBlueskyLinkAuthorization",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
+    "issue": 3119
   },
   {
     "annotation": "lockBlueskySessionOwner:did",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
+    "issue": 3119
   },
   {
     "annotation": "lockBlueskySessionOwner:user",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
+    "issue": 3119
   },
   {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
@@ -726,8 +716,8 @@
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Reread after SDK session persistence claims or rejects the authorization in its own transaction; reuse the pre-write row through route and completion checks",
+    "issue": 3119
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
@@ -756,8 +746,8 @@
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Lock the authorization row before branching on status and writing callback secrets or terminal expiry, preserving exact callback replay",
+    "issue": 3119
   },
   {
     "annotation": "recordMcpCallAudit",
@@ -786,13 +776,13 @@
   },
   {
     "annotation": "removeEmailAddress",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Lock the active user then email rows before checking last-auth-method and primary-address guards and deleting the target",
+    "issue": 3119
   },
   {
     "annotation": "renameTotpAuthenticator",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The authenticator update runs after fn_lock_active_user_for_mutation so account deletion cannot race factor mutation",
+    "issue": 3119
   },
   {
     "annotation": "renewContributionAdmissionLease",
@@ -866,18 +856,18 @@
   },
   {
     "annotation": "revokeAllAuthenticatedSessions",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
+    "issue": 3119
   },
   {
     "annotation": "revokeApiKey",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The key update runs after fn_lock_active_user_for_mutation to serialize revocation with key rotation and account deletion",
+    "issue": 3119
   },
   {
     "annotation": "revokeAuthenticatedSession",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
+    "issue": 3119
   },
   {
     "annotation": "revokeInvite",
@@ -886,8 +876,8 @@
   },
   {
     "annotation": "rotateApiKey",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
+    "issue": 3119
   },
   {
     "annotation": "runContributionAdmission.commit",
@@ -936,8 +926,8 @@
   },
   {
     "annotation": "setPrimaryEmailAddress",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "After locking the active user, clear the old primary before setting its replacement to satisfy the unique primary-address constraint",
+    "issue": 3119
   },
   {
     "annotation": "setRssFeedStateAsCurrentUser:latest",
@@ -981,8 +971,8 @@
   },
   {
     "annotation": "upsertAuthenticatedSession",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
+    "issue": 3119
   },
   {
     "annotation": "upsertEntityRelationElectionVotes",
@@ -1001,8 +991,8 @@
   },
   {
     "annotation": "upsertUserAgentString",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "On a miss INSERT ON CONFLICT may wait for another transaction; the following SELECT needs a new snapshot to see its committed row",
+    "issue": 3119
   },
   {
     "annotation": "upsertUserFinancialProfile",
@@ -1011,17 +1001,17 @@
   },
   {
     "annotation": "verifyEmailVerificationToken",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "After the active-user lock, consume the valid token before a fresh-snapshot address-ownership check and verified-address insert, preserving code-error precedence",
+    "issue": 3119
   },
   {
     "annotation": "verifyTotpSetup",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "After the optimistic code check, lock the active user then update only an unverified factor so concurrent verification returns the existing 422",
+    "issue": 3119
   },
   {
     "annotation": "withMfaLock",
-    "reason": "Auth and account steps repeat per session, factor or address",
-    "issue": 2610
+    "reason": "Lock the active user, then passkey rows, then TOTP rows before counting methods and consuming reauthentication to prevent concurrent last-factor deletions",
+    "issue": 3119
   }
 ]

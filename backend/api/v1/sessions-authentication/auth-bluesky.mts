@@ -109,7 +109,7 @@ app.route('/api/v1/auth/bluesky/callback').get(async (ctx: Context) => {
     appStateError = err
   }
   if (appState?.callbackMode === 'native' && appState.flowId) {
-    await completeNativeCallback(ctx, params, appState.flowId)
+    await completeNativeCallback(ctx, params, appState.flowId, appState.authorization)
     return
   }
   let authenticatedUserId: string | null = null

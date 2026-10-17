@@ -62,7 +62,7 @@ export async function deletePasskeyWithMfaProtection(
 ): Promise<void> {
   await withMfaLock(userId, async query => {
     await assertReAuthIfLastMethod(userId, query, reAuthToken)
-    await deletePasskey(userId, passkeyId, { query })
+    await deletePasskey(userId, passkeyId, query)
   })
   // Enqueue after the transaction commits so the job sees the committed delete.
   void enqueueRecalculateUserVoteWeight(userId)
@@ -75,6 +75,6 @@ export async function deleteTotpAuthenticatorWithMfaProtection(
 ): Promise<void> {
   await withMfaLock(userId, async query => {
     await assertReAuthIfLastMethod(userId, query, reAuthToken)
-    await deleteTotpAuthenticator(userId, authenticatorId, { query })
+    await deleteTotpAuthenticator(userId, authenticatorId, query)
   })
 }
