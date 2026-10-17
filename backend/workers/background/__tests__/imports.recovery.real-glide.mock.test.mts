@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,
@@ -82,24 +83,43 @@ describe('import recovery on a real shared queue', () => {
       },
     })
     const dispatchJobId = `${USER_RSS_FEED_IMPORT_DISPATCH_ID_PREFIX}__${importId}__start`
-    const enqueued: string[] = []
-    const enqueueDispatch = async (id: string) => {
-      // The shared database may hold other tests' unfinished imports; only this one is dispatched.
-      if (id !== importId) return undefined
-      enqueued.push(id)
-      await harness!.add(
-        IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
-        { importId: id },
-        { jobId: dispatchJobId, removeOnComplete: true, removeOnFail: true },
-      )
-      return undefined
-    }
+    const added: string[] = []
+    // The production release of a start id held by a finished record, over this harness's queue.
+    const enqueueDispatches = (ids: string[]) =>
+      enqueueBulkReactivatingFinished({
+        queue: harness!.queue,
+        // The shared database may hold other tests' unfinished imports; only this one is dispatched.
+        inputs: ids.filter(id => id === importId),
+        jobIdOf: () => dispatchJobId,
+        enqueueBulk: async inputs => {
+          const jobs = []
+          for (const id of inputs) {
+            // The add is skipped, returning no job, while a record still holds the id.
+            const job = await harness!.queue.add(
+              IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.name,
+              { importId: id },
+              {
+                ...IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.options,
+                jobId: dispatchJobId,
+                removeOnComplete: true,
+                removeOnFail: true,
+              },
+            )
+            if (job) {
+              added.push(id)
+              jobs.push(job)
+            }
+          }
+          return jobs
+        },
+      })
 
-    // The dispatcher fails its only attempt and is removed, as after its last retry.
+    // The dispatcher fails its only attempt and, like one that stalled past its limit, leaves its
+    // failed record holding the job id.
     const failing = await harness.add(
       IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
       { importId },
-      { jobId: dispatchJobId, attempts: 1, removeOnComplete: true, removeOnFail: true },
+      { jobId: dispatchJobId, attempts: 1, removeOnComplete: true, removeOnFail: false },
     )
     await expect(harness.settled(failing)).resolves.toBe('failed')
     expect(started).toEqual([])
@@ -107,16 +127,16 @@ describe('import recovery on a real shared queue', () => {
     dispatcherBroken = false
     // A sweep takes a bounded number of imports, oldest first; repeating it reaches this one
     // however many unfinished imports the shared database holds.
-    while (enqueued.length === 0) {
-      await recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatch })
+    while (added.length === 0) {
+      await recoverStalledUserRssFeedImports({ staleAfterMs: 0, enqueueDispatches })
     }
     await allRowsRan.promise
 
-    expect(enqueued).toEqual([importId])
+    expect(added).toEqual([importId])
     expect(started.toSorted()).toEqual(rowIds.toSorted())
 
     // The sweep marked the import as just touched, so the next one leaves it alone.
-    await recoverStalledUserRssFeedImports({ enqueueDispatch })
-    expect(enqueued).toEqual([importId])
+    await recoverStalledUserRssFeedImports({ enqueueDispatches })
+    expect(added).toEqual([importId])
   })
 })

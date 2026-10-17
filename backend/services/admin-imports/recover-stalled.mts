@@ -1,12 +1,12 @@
 import { write } from '@data-stores/psql'
 import { getAdminImportsWorkLimit, IMPORT_RECOVERY_STALE_MS } from '@queues/admin-imports/config'
-import { enqueueAdminTopicImportDispatch } from '@queues/admin-imports/enqueues'
+import { enqueueAdminTopicImportDispatches } from '@queues/admin-imports/enqueues'
 import sql from 'sql-template-strings'
 
 type RecoveryOptions = {
   /** How long an unfinished batch may make no progress before it is re-dispatched. */
   staleAfterMs?: number
-  enqueueDispatch?: typeof enqueueAdminTopicImportDispatch
+  enqueueDispatches?: (batchIds: string[]) => Promise<unknown>
 }
 
 /**
@@ -17,8 +17,8 @@ type RecoveryOptions = {
 export async function recoverStalledAdminTopicImports(
   options: RecoveryOptions = {},
 ): Promise<number> {
-  const { staleAfterMs = IMPORT_RECOVERY_STALE_MS, enqueueDispatch } = options
-  const enqueue = enqueueDispatch ?? enqueueAdminTopicImportDispatch
+  const { staleAfterMs = IMPORT_RECOVERY_STALE_MS, enqueueDispatches } = options
+  const enqueue = enqueueDispatches ?? enqueueAdminTopicImportDispatches
 
   const { rows } = await write<{ id: string }>(
     sql`/* readStalledAdminTopicImports */
@@ -34,7 +34,7 @@ export async function recoverStalledAdminTopicImports(
   if (rows.length === 0) return 0
 
   const ids = rows.map(row => row.id)
-  await Promise.all(ids.map(id => enqueue(id)))
+  await enqueue(ids)
   // The no-op write fires the `updated_at` trigger, which marks the batch as just touched.
   await write(
     sql`/* markStalledAdminTopicImportsRecovered */
