@@ -45,7 +45,7 @@ const ENDPOINTS: Record<CommunityListItemType, ToolApiEndpoint> = {
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "List one item_type on a public community's curated list, as a signed-out reader sees it. Each entry has an entity_id; label gives a hostname, URL or feed title where no tool reads that entity by id, or null if unreadable. Unreadable posts are omitted. Read topics with read_topic (option details), posts with read_posts (option details), and totals with read_community (option list_item_counts).",
+      "List a public community's curated item_type in list order, as a signed-out reader sees it. entity_id identifies each entry; label gives hostname, URL or feed title where no tool reads by id, or null if unreadable. Unreadable posts are omitted. Read topics with read_topic (option details), posts with read_posts (option details), and totals with read_community (option list_item_counts).",
     parameters: {
       type: 'object',
       properties: {

@@ -26,7 +26,12 @@ const readerScopes: ApiScope[] = [
   'feeds:read',
   'reference-data:read',
 ]
-const grants = [
+const grants: {
+  name: 'all' | 'Reader' | 'Plus' | 'Reviewer'
+  roles: string[]
+  plan: 'plus' | 'pro' | null
+  scopes: ApiScope[]
+}[] = [
   {
     name: 'all',
     roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
@@ -151,7 +156,7 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
       ...groups.flatMap(group =>
         group.options.map(({ option, source }) => ({
           name: `${group.name}.${option}`,
-          description: source.schema.description ?? '',
+          description: `${option}: ${source.schema.description ?? ''}`,
         })),
       ),
       ...ALL_TOOLS.filter(tool => !mergedNames.has(tool.schema.name)).map(tool => ({
@@ -206,7 +211,7 @@ describe('generated MCP catalog budgets through real tools/list filtering', () =
           const cap =
             config.surface === 'admin_mcp' && grant.name === 'all' && !enabled
               ? allAdminDisabled
-              : caps[config.surface][grant.name as keyof typeof caps.mcp]
+              : caps[config.surface][grant.name]
           for (const [metric, value] of Object.entries(measure(tools))) {
             expect(value).toBeLessThanOrEqual(cap[metric as keyof typeof cap])
           }
@@ -262,7 +267,7 @@ describe('participation write discovery contract', () => {
         .toSorted(),
     ).toEqual(names.toSorted())
     expect(hash(paid.filter(tool => !names.includes(tool.name)))).toBe(
-      'd292166c618932d9814740f47d7944dd726c000622badcbcf36900e919dbf282',
+      'acf339df1dceeec19bed8b1f43825ec74c08b7c18d17be00d8bfe0142c83fe2a',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
