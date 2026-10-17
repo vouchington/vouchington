@@ -19,6 +19,7 @@ describe('enqueueArticleSync', () => {
     expect(job!.name).toBe('article-sync.processArticleSync')
     expect(job!.opts).toMatchObject({
       priority: 10,
+      lockDuration: 120_000,
       ordering: { key: 'article-sync', concurrency: 1 },
       deduplication: { id: 'article-sync-singleton', mode: 'throttle' },
     })
