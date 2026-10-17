@@ -3308,6 +3308,26 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_admin_import_batches__unfinished_updated_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_admin_import_batches__unfinished_updated_at ON public.admin_import_batches USING btree (updated_at) WHERE (completed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "partition": null,
@@ -130570,6 +130590,26 @@
             }
           ],
           "predicate": "(created_via_oauth_client_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_rss_feed_import_batches__unfinished_updated_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_batches__unfinished_updated_at ON public.user_rss_feed_import_batches USING btree (updated_at) WHERE (completed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
