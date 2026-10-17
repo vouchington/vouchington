@@ -6071,6 +6071,8 @@
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Modifier votre fourchette de score de crédit, vos revenus déclarés, votre plafond total de crédit et vos années d’historique de crédit."},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Accès MCP complet pour les administrateurs"},
 {"id":"copy.scopeDescription.mcpUserFullAccess","value":"Accès MCP utilisateur, hors profil financier et dépenses ; demandez-les séparément."},
+{"id":"copy.scopeDescription.messagesRead","value":"Lire vos conversations privées, vos messages et les participants."},
+{"id":"copy.scopeDescription.messagesWrite","value":"Envoyer et gérer vos conversations privées, vos messages et les participants."},
 {"id":"copy.scopeDescription.spendingRead","value":"Lire vos catégories de dépenses, montants, fréquence et notes."},
 {"id":"copy.scopeDescription.spendingWrite","value":"Ajouter, modifier ou supprimer vos catégories de dépenses, montants, fréquence et notes."},
 {"id":"copy.settings.activeSessions.confirmCurrentDescription","value":"Cela mettra fin à votre session actuelle et vous renverra vers la connexion."},

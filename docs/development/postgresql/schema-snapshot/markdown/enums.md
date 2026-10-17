@@ -101,6 +101,8 @@
 - `mcp.admin:write`
 - `mcp.user:read`
 - `mcp.user:write`
+- `messages:read`
+- `messages:write`
 - `moderation:agent-votes`
 - `moderation:ai-rerun`
 - `moderation:approve`

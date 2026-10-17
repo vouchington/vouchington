@@ -1,3 +1,4 @@
+import { myMessageGroups } from '../mcp/my-messages.mts'
 import type { ApiScope } from '../modules/scopes/index.mts'
 import { communityModerationGroups } from '../mcp/community-moderation-tools.mts'
 import { participationWriteGroups } from '../mcp/registry/participation-write-groups.mts'
@@ -29,9 +30,12 @@ const userGroups = [
   ...userMergedAccountGroups,
 ]
 const userMergedNames = new Set(
-  [...userGroups, ...participationWriteGroups, ...communityModerationGroups].map(
-    group => group.name,
-  ),
+  [
+    ...userGroups,
+    ...participationWriteGroups,
+    ...communityModerationGroups,
+    ...myMessageGroups,
+  ].map(group => group.name),
 )
 const adminMergedNames = new Set(adminMergedGroups.map(group => group.name))
 const userFixtureKeys = new Set(userFixtures.cases.map(row => `${row.target}.${row.option}`))
@@ -131,7 +135,7 @@ function singleCases(surface: Surface, mergedNames: ReadonlySet<string>): Operat
 }
 
 export function currentOperationCases(): OperationCase[] {
-  const participation = participationWriteGroups.flatMap(group =>
+  const participation = [...participationWriteGroups, ...myMessageGroups].flatMap(group =>
     group.options.map(entry => {
       const args = sampleMcpToolArguments(entry.source as Tool)
       const tool = ALL_TOOLS.find(candidate => candidate.schema.name === group.name)!
@@ -154,10 +158,10 @@ export function currentOperationCases(): OperationCase[] {
     ...singleCases('mcp', userMergedNames),
   ]
   const admin = [...mergedAdminCases(), ...singleCases('admin_mcp', adminMergedNames)]
-  if (user.length !== 191 || admin.length !== 106)
+  if (user.length !== 200 || admin.length !== 106)
     throw new Error(`case count: ${user.length}/${admin.length}`)
   if (
-    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 186 ||
+    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 195 ||
     new Set(admin.map(row => `${row.name}.${row.option ?? ''}`)).size !== 106
   )
     throw new Error('distinct operation inventory drift')

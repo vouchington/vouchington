@@ -9215,6 +9215,8 @@
 {"alias":"settings.apiKeys.scopeDescription.financialProfileWrite","consumer":"web","copyId":"copy.scopeDescription.financialProfileWrite"},
 {"alias":"settings.apiKeys.scopeDescription.mcpAdminFullAccess","consumer":"web","copyId":"copy.scopeDescription.mcpAdminFullAccess"},
 {"alias":"settings.apiKeys.scopeDescription.mcpUserFullAccess","consumer":"web","copyId":"copy.scopeDescription.mcpUserFullAccess"},
+{"alias":"settings.apiKeys.scopeDescription.messagesRead","consumer":"web","copyId":"copy.scopeDescription.messagesRead"},
+{"alias":"settings.apiKeys.scopeDescription.messagesWrite","consumer":"web","copyId":"copy.scopeDescription.messagesWrite"},
 {"alias":"settings.apiKeys.scopeDescription.spendingRead","consumer":"web","copyId":"copy.scopeDescription.spendingRead"},
 {"alias":"settings.apiKeys.scopeDescription.spendingWrite","consumer":"web","copyId":"copy.scopeDescription.spendingWrite"},
 {"alias":"settings.apiKeys.year1","consumer":"web","copyId":"copy.settings.apiKeys.year1"},

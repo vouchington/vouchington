@@ -49,6 +49,7 @@
     "@services/landing-page-analytics": "workspace:^",
     "@services/lists": "workspace:^",
     "@services/memberships": "workspace:^",
+    "@services/messaging": "workspace:^",
     "@services/moderation-analytics": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/moderation-claims": "workspace:^",

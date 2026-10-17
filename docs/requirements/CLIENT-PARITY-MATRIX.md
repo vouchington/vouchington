@@ -33,3 +33,14 @@ Native credential and MCP adoption is tracked in
 [clients #218](https://github.com/vouchington/vouchington-clients/issues/218); the producer lands
 first. The [scope module](../overview/architecture/backend/README.md) and
 [MCP catalog](../overview/architecture/mcp/catalog.md) own the current contract.
+
+## Direct-message MCP consent
+
+Direct-message access uses explicit private-data grants, with localized read and write descriptions
+on web consent and credential selection. The shared scope catalog now carries these descriptions,
+so native credential pickers must recognize them before requesting DM access; umbrella grants do
+not include it. Native credential adoption remains tracked in
+[clients #177](https://github.com/vouchington/vouchington-clients/issues/177), and MCP option/result
+adoption in [clients #218](https://github.com/vouchington/vouchington-clients/issues/218). The
+producer lands first. The [MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool
+contract; AI chat transcripts are outside this DM decision.

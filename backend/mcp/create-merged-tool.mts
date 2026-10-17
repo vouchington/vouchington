@@ -32,7 +32,7 @@ export function createMergedTool(
       scopes: tool.meta?.requiredScopes?.mcp ?? null,
       adminScopes: tool.meta?.requiredScopes?.admin_mcp ?? null,
       plan: tool.meta?.plan ?? 'free',
-      suspendedAccess: tool.meta?.suspendedAccess === true,
+      suspendedAccess: tool.meta?.suspendedAccess ?? false,
       // ast-grep-ignore: no-roles-outside-services -- Declared tool gates, not user roles; authorization stays in mcp-tools services.
       roles: tool.roles ?? null,
       annotations: tool.meta?.annotations ?? null,

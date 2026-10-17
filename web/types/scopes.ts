@@ -10,6 +10,8 @@ export type ScopeDescriptionKey =
   | 'spending_write'
   | 'community_moderation_read'
   | 'community_moderation_write'
+  | 'messages_read'
+  | 'messages_write'
 
 /** One entry of the public scope catalogue; `requires` names the scope this one implies. */
 export interface ScopeCatalogEntry {

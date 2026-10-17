@@ -37,7 +37,12 @@ export function authorizeMcpTool(
   config: McpServerConfig,
   copyrightDecisionToolsEnabled = false,
 ): McpToolAuthorization {
-  if (user.suspended === true && tool.meta?.suspendedAccess !== true) return { status: 'suspended' }
+  if (user.suspended === true) {
+    const paying = user.membership_plan === 'plus' || user.membership_plan === 'pro'
+    const access = tool.meta?.suspendedAccess
+    if (access === true && !isToolAllowedForPlan(tool, user)) return { status: 'plan_denied' }
+    if (access !== 'free' && !(access === true && paying)) return { status: 'suspended' }
+  }
   if (!isToolAllowedForUser(tool, user)) return { status: 'role_denied' }
   if (!isToolAllowedForPlan(tool, user)) return { status: 'plan_denied' }
   if (tool.meta?.switch === 'copyright.mcpDecisionTools' && !copyrightDecisionToolsEnabled) {

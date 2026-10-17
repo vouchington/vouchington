@@ -10,6 +10,8 @@ export type ScopeDescriptionKey =
   | 'spending_write'
   | 'community_moderation_read'
   | 'community_moderation_write'
+  | 'messages_read'
+  | 'messages_write'
 
 export type ApiScope =
   | 'appeals:read'
@@ -52,6 +54,8 @@ export type ApiScope =
   | 'hostnames:read'
   | 'lists:read'
   | 'lists:write'
+  | 'messages:read'
+  | 'messages:write'
   | 'mcp.admin:read'
   | 'mcp.admin:write'
   | 'mcp.user:read'

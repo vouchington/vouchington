@@ -10,6 +10,8 @@ const MESSAGE_KEYS = {
   mcp_user_full_access: 'settings.apiKeys.scopeDescription.mcpUserFullAccess',
   community_moderation_read: 'settings.apiKeys.scopeDescription.communityModerationRead',
   community_moderation_write: 'settings.apiKeys.scopeDescription.communityModerationWrite',
+  messages_read: 'settings.apiKeys.scopeDescription.messagesRead',
+  messages_write: 'settings.apiKeys.scopeDescription.messagesWrite',
 } satisfies Record<ScopeDescriptionKey, MessageKey>
 
 /** Maps stable catalogue metadata to this client's localized copy without rendering server text. */
