@@ -1,10 +1,5 @@
-export const QUEUE_NAME = 'user-rss-feed-imports'
-export const PRIORITY_DEFAULT = 10
+/** Namespaced so a row's deduplication id can never collide with another domain's. */
+export const USER_RSS_FEED_IMPORT_ROW_DEDUP_PREFIX = 'imports.processUserRssFeedImportRow'
 
-export const USER_RSS_FEED_IMPORTS_DEFAULTS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 5000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-  deduplicationTtlMs: 60_000,
-}
+/** Job ids may not contain colons, so the domain prefix uses an underscore. */
+export const USER_RSS_FEED_IMPORT_DISPATCH_ID_PREFIX = 'imports_dispatchUserRssFeedImport'

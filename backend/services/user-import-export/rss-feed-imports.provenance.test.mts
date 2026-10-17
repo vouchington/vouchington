@@ -5,6 +5,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
 import {
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
@@ -59,9 +60,13 @@ describe('user RSS feed import provenance', () => {
     const created = await submitRssFeedImport(user, provenance, [newFeedUrl()], {
       should_follow_imported_feeds: false,
     })
-    await processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
-      createSourceFromUrlImpl: createSource,
-    })
+    await processRssFeedImportRow(
+      created.import.id,
+      await getFirstRssFeedImportRowId(created.import.id),
+      {
+        createSourceFromUrlImpl: createSource,
+      },
+    )
     const status = await getRssFeedImport(user.id, created.import.id)
     return { created, createSource, status }
   }
@@ -99,10 +104,14 @@ describe('user RSS feed import provenance', () => {
     ])
 
     await Promise.all(
-      [mcpImport, webImport].map(created =>
-        processRssFeedImportRow(created.import.id, created.rowIds[0]!, {
-          createSourceFromUrlImpl: createSource,
-        }),
+      [mcpImport, webImport].map(async created =>
+        processRssFeedImportRow(
+          created.import.id,
+          await getFirstRssFeedImportRowId(created.import.id),
+          {
+            createSourceFromUrlImpl: createSource,
+          },
+        ),
       ),
     )
 

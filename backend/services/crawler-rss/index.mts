@@ -55,7 +55,9 @@ export default async function CrawlerRss(
         url: requestUrl,
         headers: requestOptions.headers,
         timeoutMs,
-        signal: requestOptions.signal,
+        signal: options.signal
+          ? AbortSignal.any([requestOptions.signal, options.signal])
+          : requestOptions.signal,
         crawlerType: 'rss',
         startedAt,
       })
@@ -76,9 +78,10 @@ export default async function CrawlerRss(
       maxResponseSizeBytes,
       redirectResolver: ({ location }) => location,
       responseBodyReader: async context => {
-        const signal = bodyPhaseSignal
-          ? AbortSignal.any([bodyPhaseSignal, context.signal])
-          : context.signal
+        const signals = [bodyPhaseSignal, context.signal, options.signal].filter(
+          (candidate): candidate is AbortSignal => candidate !== undefined,
+        )
+        const signal = AbortSignal.any(signals)
         const body = await dependencies.readBodyAsBuffer({
           response: context.response,
           url: context.url,

@@ -2,6 +2,7 @@ import { read, beginTransaction, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
+import { getUserImportExportConfig } from './config.mts'
 import {
   type CreateUserRssFeedImportResult,
   type UserRssFeedImport,
@@ -22,58 +23,49 @@ export async function createRssFeedImport(
   urls: string[],
   should_follow_imported_feeds: boolean,
 ): Promise<CreateUserRssFeedImportResult> {
+  const chunkSize = getUserImportExportConfig().import_insert_chunk_size
   await using query = await beginTransaction()
   const { rows } = await write(
     sql`/* createRssFeedImport */
-      WITH inserted_batch AS (
-        INSERT INTO user_rss_feed_import_batches (
-          user_id,
-          created_via,
-          created_via_oauth_client_id,
-          should_follow_imported_feeds,
-          total_rows
-        )
-        VALUES (
-          ${userId},
-          ${provenance.createdVia},
-          ${provenance.oauthClientId},
-          ${should_follow_imported_feeds},
-          ${urls.length}
-        )
-        RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
-      ), inserted_rows AS (
-        INSERT INTO user_rss_feed_import_rows (
-          batch_id,
-          row_index,
-          input_url
-        )
-        SELECT inserted_batch.id, input.row_index, input.input_url
-        FROM inserted_batch
-        CROSS JOIN UNNEST(
-          ${urls.map((_, index) => index)}::int[],
-          ${urls}::text[]
-        ) AS input(row_index, input_url)
-        RETURNING id, row_index
+      INSERT INTO user_rss_feed_import_batches (
+        user_id,
+        created_via,
+        created_via_oauth_client_id,
+        should_follow_imported_feeds,
+        total_rows
       )
-      SELECT inserted_batch.id, inserted_batch.total_rows, inserted_batch.completed_rows,
-        inserted_batch.failed_rows, inserted_batch.completed_at, inserted_batch.created_at,
-        inserted_rows.id AS row_id
-      FROM inserted_batch
-      LEFT JOIN inserted_rows ON TRUE
-      ORDER BY inserted_rows.row_index
+      VALUES (
+        ${userId},
+        ${provenance.createdVia},
+        ${provenance.oauthClientId},
+        ${should_follow_imported_feeds},
+        ${urls.length}
+      )
+      RETURNING id, total_rows, completed_rows, failed_rows, completed_at, created_at
       `,
     { query },
   )
-
   const batch = rows[0] as UserRssFeedImportBatchRow
 
-  await query.commit()
-  return {
-    import: toImportSummary(batch),
-    rowIds: (rows as Array<{ row_id: string | null }>).flatMap(row =>
-      row.row_id === null ? [] : [row.row_id],
-    ),
+  // Bounded chunks keep one statement from carrying every URL of a large import.
+  for (let start = 0; start < urls.length; start += chunkSize) {
+    const chunk = urls.slice(start, start + chunkSize)
+    // oxlint-disable-next-line no-await-in-loop -- chunks of one transaction insert in row order
+    await write(
+      sql`/* createRssFeedImportRows */
+        INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
+        SELECT ${batch.id}, input.row_index, input.input_url
+        FROM UNNEST(
+          ${chunk.map((_, offset) => start + offset)}::int[],
+          ${chunk}::text[]
+        ) AS input(row_index, input_url)
+        `,
+      { query },
+    )
   }
+
+  await query.commit()
+  return { import: toImportSummary(batch) }
 }
 
 export async function getRssFeedImport(

@@ -28,6 +28,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/user-rss-feed-imports": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/entity-relations": "workspace:^",

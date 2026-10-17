@@ -35,7 +35,6 @@
     "@services/rss-feeds": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
-    "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",

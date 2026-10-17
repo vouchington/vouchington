@@ -17,15 +17,12 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
-    "@queues/admin-imports": "workspace:^",
+    "@queues/background": "workspace:^",
     "@services/admin-imports": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.18.0",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

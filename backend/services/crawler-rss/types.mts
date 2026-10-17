@@ -18,6 +18,8 @@ export interface CrawlerRssOptions {
    * This helps prevent gzip bombs and memory exhaustion.
    */
   maxResponseSizeBytes?: number
+  /** Aborts the request and the body read when a caller's own deadline passes. */
+  signal?: AbortSignal
 }
 
 export interface CrawlerRssSuccess {

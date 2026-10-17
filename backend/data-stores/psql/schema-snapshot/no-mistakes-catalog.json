@@ -136838,7 +136838,7 @@
           "validated": true
         },
         "user_rss_feed_import_batches_total_rows_check": {
-          "definition": "CHECK (((total_rows > 0) AND (total_rows <= 500)))",
+          "definition": "CHECK ((total_rows > 0))",
           "validated": true
         }
       },

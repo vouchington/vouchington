@@ -1,6 +1,6 @@
 import assert from 'http-assert'
 import { parseCsvRows } from '@modules/csv'
-import { enqueueBulkImportRows } from '@queues/admin-imports/enqueues'
+import { enqueueAdminTopicImportDispatch } from '@queues/admin-imports/enqueues'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import { createImportBatch } from './create-batch.mts'
@@ -35,8 +35,8 @@ export async function importAdminTopics(
   }
   const validation = validateTopicRows(rows)
   if (!validation.valid) return { valid: false as const, validation }
-  const { batch, rowIds } = await createImportBatch(currentUser, 'topic', rows)
-  await enqueueBulkImportRows(rowIds.map(rowId => ({ batchId: batch.id, rowId })))
+  const { batch } = await createImportBatch(currentUser, 'topic', rows)
+  await enqueueAdminTopicImportDispatch(batch.id)
   return {
     valid: true as const,
     batch: {

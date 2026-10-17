@@ -34,13 +34,20 @@ export type ImportSingleRssFeedOptions = {
   assertRssFeedLimit?: () => Promise<void>
   follow?: boolean
   createSourceFromUrlImpl?: typeof createSourceFromUrl
+  /** One deadline for the feed's network work; see `createSourceFromUrl`. */
+  signal?: AbortSignal
 }
 
 export async function importSingleRssFeed(
   currentUser: BasicUser,
   provenance: ContentProvenance,
   rawUrl: string,
-  { assertRssFeedLimit, follow = true, createSourceFromUrlImpl }: ImportSingleRssFeedOptions = {},
+  {
+    assertRssFeedLimit,
+    follow = true,
+    createSourceFromUrlImpl,
+    signal,
+  }: ImportSingleRssFeedOptions = {},
 ): Promise<ImportRssFeedResult> {
   const validation = validateRssFeedUrl(rawUrl)
   if (!validation.valid) {
@@ -87,6 +94,7 @@ export async function importSingleRssFeed(
     {
       assertContributionLimit: assertRssFeedLimit,
       follow,
+      signal,
     },
   )
   if (follow) {

@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_batches (
   created_via_oauth_client_id UUID,
   CONSTRAINT user_rss_feed_import_batches_created_via_oauth_client_id_check CHECK (created_via_oauth_client_id IS NULL OR (created_via IS NOT NULL AND created_via IN ('api', 'mcp'))),
   should_follow_imported_feeds BOOLEAN NOT NULL DEFAULT TRUE,
-  total_rows INT NOT NULL CHECK (total_rows > 0 AND total_rows <= 500),
+  total_rows INT NOT NULL CHECK (total_rows > 0),
   completed_rows INT NOT NULL DEFAULT 0 CHECK (completed_rows >= 0),
   failed_rows INT NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
   completed_at TIMESTAMPTZ,

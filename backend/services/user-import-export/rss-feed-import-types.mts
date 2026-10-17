@@ -54,7 +54,6 @@ export type UserRssFeedImportRow = {
 
 export type CreateUserRssFeedImportResult = {
   import: UserRssFeedImportSummary
-  rowIds: string[]
 }
 
 // The submitting request's provenance, read back for the queue job that creates the feeds. The

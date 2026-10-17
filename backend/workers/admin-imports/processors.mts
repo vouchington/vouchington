@@ -1,6 +1,5 @@
 import {
   getImportRowWithBatch,
-  processRssFeedRow,
   processTopicRow,
   updateRowCompleted,
   updateRowFailed,
@@ -14,7 +13,6 @@ import createHttpError from 'http-errors'
 type AdminImportProcessorDependencies = {
   getImportRowWithBatch: typeof getImportRowWithBatch
   getPrivateUserByAny: typeof getPrivateUserByAny
-  processRssFeedRow: typeof processRssFeedRow
   processTopicRow: typeof processTopicRow
   publishImportProgress: typeof publishImportProgress
   updateRowCompleted: typeof updateRowCompleted
@@ -31,7 +29,6 @@ export async function processImportRow(
   const deps = {
     getImportRowWithBatch,
     getPrivateUserByAny,
-    processRssFeedRow,
     processTopicRow,
     publishImportProgress,
     updateRowCompleted,
@@ -84,9 +81,6 @@ export async function processImportRow(
     switch (batch.import_type) {
       case 'topic':
         createdEntityId = await deps.processTopicRow(admin, row)
-        break
-      case 'rss_feed':
-        createdEntityId = await deps.processRssFeedRow(admin, row)
         break
       default:
         throw new Error(`Unknown import_type: ${batch.import_type}`)
