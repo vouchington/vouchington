@@ -1,6 +1,7 @@
 import type { Tool, ToolMeta, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import { closeDeclaredInputObjects, factorToolSchema } from './tool-schema-contract.mts'
 import { findSchemaViolation } from './schema-validator.mts'
+import { scopedSchema } from './create-merged-tool-schema.mts'
 
 export type MergedToolSource<TArgs = never, TResult = unknown> = Pick<
   Tool<TArgs, TResult>,
@@ -12,30 +13,6 @@ export type MergedToolSource<TArgs = never, TResult = unknown> = Pick<
 export type MergedToolOption<TArgs = never, TResult = unknown> = {
   option: string
   source: MergedToolSource<TArgs, TResult>
-}
-
-function scopedSchema(schema: Record<string, unknown>, index: number) {
-  const prefix = `Option${index}_`
-  const definitions = schema['$defs'] as Record<string, unknown> | undefined
-  function rewrite(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map(rewrite)
-    if (value === null || typeof value !== 'object') return value
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [
-        key,
-        key === '$ref' && typeof item === 'string' && item.startsWith('#/$defs/')
-          ? `#/$defs/${prefix}${item.slice('#/$defs/'.length)}`
-          : rewrite(item),
-      ]),
-    )
-  }
-  const { $defs: _definitions, ...body } = schema
-  return {
-    body: rewrite(body) as Record<string, unknown>,
-    definitions: Object.fromEntries(
-      Object.entries(definitions ?? {}).map(([key, value]) => [`${prefix}${key}`, rewrite(value)]),
-    ),
-  }
 }
 
 /** One MCP name, with each source tool's validator, handler and REST route selection retained. */
@@ -86,12 +63,15 @@ export function createMergedTool(
   const outputBranches: Record<string, unknown>[] = []
   const outputDefinitions: Record<string, unknown> = {}
   const definitionByBody = new Map<string, string>()
-  const seenOutputSchemas = new Set<string>()
-  for (const [index, { source }] of options.entries()) {
+  const seenOutputSchemas = new Map<string, number>()
+  const optionOutputIndexes = new Map<string, number>()
+  for (const [index, { option, source }] of options.entries()) {
     const outputSchema = source.meta!.outputSchema!
     const schemaKey = JSON.stringify(outputSchema)
-    if (seenOutputSchemas.has(schemaKey)) continue
-    seenOutputSchemas.add(schemaKey)
+    const existing = seenOutputSchemas.get(schemaKey)
+    optionOutputIndexes.set(option, existing ?? outputBranches.length)
+    if (existing !== undefined) continue
+    seenOutputSchemas.set(schemaKey, outputBranches.length)
     const scoped = scopedSchema(outputSchema, index)
     const replacements = new Map<string, string>()
     for (const [name, definition] of Object.entries(scoped.definitions)) {
@@ -149,6 +129,12 @@ export function createMergedTool(
       title,
       surfaces: [...new Set(options.flatMap(({ source }) => source.meta!.surfaces))],
       api: api.length ? api : null,
+      optionOutputPointers: Object.fromEntries(
+        [...optionOutputIndexes].map(([option, index]) => [
+          option,
+          outputBranches.length === 1 ? '#' : `#/anyOf/${index}`,
+        ]),
+      ),
       outputSchema: factorToolSchema({
         ...(outputBranches.length === 1
           ? outputBranches[0]

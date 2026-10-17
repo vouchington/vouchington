@@ -1,5 +1,6 @@
 import type { McpResultFixtureCase } from '@voucha/test-helpers/native-mcp-result-cases'
 import { findSchemaViolation } from '@voucha/mcp/schema-validator'
+import { getOptionOutputSchema } from '@voucha/mcp/option-output-pointers'
 import type { McpCatalog } from './build-mcp-catalog.mts'
 
 /** Validate generated result cases against the same catalog exposed to clients. */
@@ -19,7 +20,12 @@ export function buildMcpResultFixtures(
     const inputViolation = findSchemaViolation(tool.inputSchema, fixture.arguments)
     if (inputViolation)
       throw new Error(`MCP result fixture ${fixture.id} arguments: ${inputViolation}`)
-    const outputViolation = findSchemaViolation(tool.outputSchema, fixture.structuredContent)
+    const pointer =
+      tool['_meta']?.['voucha/optionOutputPointers']?.[fixture.arguments['option'] as string]
+    const selected = pointer ? getOptionOutputSchema(tool.outputSchema, pointer) : tool.outputSchema
+    const outputViolation =
+      findSchemaViolation(selected, fixture.structuredContent) ??
+      findSchemaViolation(tool.outputSchema, fixture.structuredContent)
     if (outputViolation)
       throw new Error(`MCP result fixture ${fixture.id} structuredContent: ${outputViolation}`)
   }

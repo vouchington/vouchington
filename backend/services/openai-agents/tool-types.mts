@@ -86,6 +86,9 @@ export type ToolMeta = {
   selectApi?: (args: Record<string, unknown>) => readonly ToolApiEndpoint[]
   // A merged tool validates the selected source contract before its advertised output union.
   selectOutputSchema?: (args: Record<string, unknown>) => ToolOutputSchema | undefined
+  // User MCP discovery publishes these local pointers into this tool's complete outputSchema.
+  // Multiple options may share a deduplicated branch; never infer correspondence from ordering.
+  optionOutputPointers?: Readonly<Record<string, string>>
   // Only registered literal options from a merged tool may enter the durable call audit.
   auditOption?: (args: Record<string, unknown>) => string | null
   // A suspended Plus or Pro member on the user server may list and call this tool. Set it only

@@ -5,6 +5,7 @@ import type {
   ToolSurface,
 } from '@services/openai-agents/tool-types'
 import { getToolRequiredScopes } from './select.mts'
+import { validateOptionOutputPointers } from '../option-output-pointers.mts'
 import { closeDeclaredInputObjects, factorToolSchema } from '../tool-schema-contract.mts'
 
 export type McpToolAnnotations = {
@@ -24,6 +25,7 @@ export type McpToolShape = {
   annotations?: McpToolAnnotations
   _meta?: {
     'voucha/requiredScopes': string[]
+    'voucha/optionOutputPointers'?: Readonly<Record<string, string>>
   }
 }
 
@@ -37,19 +39,31 @@ export function toolToMcpTool(
   surface: Extract<ToolSurface, 'mcp' | 'admin_mcp'> = 'mcp',
 ): McpToolShape {
   const mcpScopes = getToolRequiredScopes(tool, surface)
+  const inputSchema = factorToolSchema(
+    closeDeclaredInputObjects(tool.schema.parameters ?? { type: 'object', properties: {} }),
+  )
+  const outputSchema = tool.meta?.outputSchema
+    ? (factorToolSchema(tool.meta.outputSchema) as ToolOutputSchema)
+    : undefined
+  const optionOutputPointers = surface === 'mcp' ? tool.meta?.optionOutputPointers : undefined
+  if (optionOutputPointers)
+    validateOptionOutputPointers(tool.schema.name, inputSchema, outputSchema, optionOutputPointers)
   return {
     name: tool.schema.name,
     ...(tool.meta ? { title: tool.meta.title } : {}),
     description: tool.schema.description ?? undefined,
-    inputSchema: factorToolSchema(
-      closeDeclaredInputObjects(tool.schema.parameters ?? { type: 'object', properties: {} }),
-    ),
-    ...(tool.meta?.outputSchema
+    inputSchema,
+    ...(outputSchema ? { outputSchema } : {}),
+    ...(tool.meta ? { annotations: toMcpToolAnnotations(tool.meta.annotations) } : {}),
+    ...(mcpScopes || optionOutputPointers
       ? {
-          outputSchema: factorToolSchema(tool.meta.outputSchema) as ToolOutputSchema,
+          _meta: {
+            'voucha/requiredScopes': mcpScopes ?? [],
+            ...(optionOutputPointers
+              ? { 'voucha/optionOutputPointers': optionOutputPointers }
+              : {}),
+          },
         }
       : {}),
-    ...(tool.meta ? { annotations: toMcpToolAnnotations(tool.meta.annotations) } : {}),
-    ...(mcpScopes ? { _meta: { 'voucha/requiredScopes': mcpScopes } } : {}),
   }
 }

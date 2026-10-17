@@ -7,7 +7,7 @@ import { renderCatalogTable, spliceCatalogTable } from './agent-tool-catalog.mts
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
 import { buildMcpResultFixtures } from './mcp-result-cases.mts'
 import {
-  financialMcpResultCases,
+  nativeMcpResultCases,
   type McpResultFixtureCase,
 } from '@voucha/test-helpers/native-mcp-result-cases'
 
@@ -68,7 +68,7 @@ export async function runCatalogGeneration(
     closeResources,
     ready,
     tools,
-    cases = financialMcpResultCases,
+    cases = nativeMcpResultCases,
   }: {
     root?: string
     tools: readonly Tool[]
