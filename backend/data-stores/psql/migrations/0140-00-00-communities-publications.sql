@@ -787,10 +787,18 @@ CREATE INDEX IF NOT EXISTS idx_community_applications__created_via_oauth_client_
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS community_search_counts (
-  community_id UUID PRIMARY KEY REFERENCES communities(id) ON DELETE CASCADE,
-  member_count INTEGER NOT NULL DEFAULT 0 CHECK (member_count >= 0),
-  virtual_subscription_count INTEGER NOT NULL DEFAULT 0 CHECK (virtual_subscription_count >= 0),
-  list_item_count INTEGER NOT NULL DEFAULT 0 CHECK (list_item_count >= 0)
+  community_id UUID PRIMARY KEY
+    CONSTRAINT community_search_counts_community_foreign_key
+    REFERENCES communities(id) ON DELETE CASCADE,
+  member_count INTEGER NOT NULL DEFAULT 0
+    CONSTRAINT community_search_counts_member_nonnegative_check
+    CHECK (member_count >= 0),
+  virtual_subscription_count INTEGER NOT NULL DEFAULT 0
+    CONSTRAINT community_search_counts_virtual_subscription_nonnegative_check
+    CHECK (virtual_subscription_count >= 0),
+  list_item_count INTEGER NOT NULL DEFAULT 0
+    CONSTRAINT community_search_counts_list_item_nonnegative_check
+    CHECK (list_item_count >= 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_community_search_counts__members
