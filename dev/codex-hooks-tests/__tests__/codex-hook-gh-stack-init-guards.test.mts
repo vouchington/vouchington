@@ -154,4 +154,34 @@ describe('Codex hook gh stack init root guard (#11376, #11352)', () => {
       rmSync(dir, { force: true, recursive: true })
     }
   })
+
+  it('blocks when local main is stale against origin/main (#3017)', () => {
+    const dir = makeTestTempDirSync('stack-init-stale-main-')
+    try {
+      initRepoWithOriginMain(dir)
+      execFileSync('git', ['checkout', '-q', '--detach'], { cwd: dir, env: isolatedGitEnv() })
+      execFileSync('git', ['commit', '-q', '--allow-empty', '-m', 'newer'], {
+        cwd: dir,
+        env: isolatedGitEnv(),
+      })
+      // HEAD is the fresh origin/main tip; local main lags behind it.
+      execFileSync('git', ['update-ref', 'refs/remotes/origin/main', 'HEAD'], {
+        cwd: dir,
+        env: isolatedGitEnv(),
+      })
+      const reason = findPreToolUseBlock({
+        tool_input: { command: 'gh stack init', cwd: dir },
+      })?.reason
+      expect(reason).toContain('stale local main')
+      expect(reason).toContain('git fetch origin main:main')
+    } finally {
+      rmSync(dir, { force: true, recursive: true })
+    }
+  })
+
+  it('skips the local-main check when the directory is unknown', () => {
+    expect(
+      findPreToolUseBlock({ tool_input: { command: 'env -C"$PWD" gh stack init' } }),
+    ).toBeNull()
+  })
 })
