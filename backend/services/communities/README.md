@@ -1,3 +1,3 @@
 # Communities Service
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/communities/README.md).
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/README.md).

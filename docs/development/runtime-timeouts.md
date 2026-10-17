@@ -29,7 +29,7 @@ Size it from heartbeat and crash-recovery behavior, never from the SSE connectio
 Each lapsed lock increments the job's `stalledCount`, which never resets and is independent of
 `attempts`. A deploy that force-exits the process mid-job counts as a stall, so the budget absorbs
 one deploy plus one slow heartbeat (see
-[Worker construction](../overview/architecture/backend/data-stores/valkey-glide-mq/README.md#worker-construction)).
+[Worker construction](../overview/architecture/backend/README.md)).
 Raising a worker's `maxStalledCount` hides a job that keeps crashing; fix the job or its
 `lockDuration` instead.
 

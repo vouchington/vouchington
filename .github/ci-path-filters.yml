@@ -255,7 +255,7 @@ tooling:
   - 'docs/development/postgresql/schema-snapshot/markdown/**'
   - 'backend/**'
   - 'backend/agents/AGENTS.md'
-  - 'docs/overview/architecture/ai-agents/{README,reference-tests}.md'
+  - 'docs/overview/architecture/ai-agents/README.md'
   - 'docs/development/ci/workflows/**'
   - 'docs/development/local-development/{README,reference-bedrock-embeddings-local,reference-command-catalog}.md'
   - 'docs/development/postgresql/{reference-migrations-views-and-config-driven,schema-snapshot/README}.md'

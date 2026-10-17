@@ -1,3 +1,3 @@
 # OpenAI Moderation System
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/queues/openai-moderation/README.md).
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/queues/README.md).

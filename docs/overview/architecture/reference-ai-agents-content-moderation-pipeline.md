@@ -81,4 +81,4 @@ flag does. Moderators set it from the moderation settings page.
 `ai-generated` uses the local Rust `is-it-slop` detector rather than an OpenAI call. Its confidence
 score and threshold are stored in `agent_moderations.results`.
 
-Full flow details: [docs/overview/architecture/queues/ai-agents/README.md](queues/ai-agents/README.md)
+Full flow details: docs/overview/architecture/queues/README.md

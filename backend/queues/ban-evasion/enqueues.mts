@@ -69,7 +69,7 @@ export async function enqueueDetectBanEvasion(
  * Uses a post-specific dedup key so it cannot be swallowed by the initial first-post trigger.
  *
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/queues/ban-evasion/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
  */
 export async function enqueueDetectBanEvasionAfterPostEmbedding(
   communityId: string,

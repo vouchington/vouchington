@@ -6,13 +6,13 @@
 
 Single-entity lookups cached in Valkey with stale-while-revalidate. Config: `backend/services/entity-cache/config.mts`.
 
-| Entity                                                                                                                                                                         | TTL  |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
-| Posts, topics, user metrics, post metrics, topic metrics                                                                                                                       | 1h   |
-| Post elections, topic elections, hostname elections, entity relation elections, agent moderation elections, RSS feed item elections, RSS feeds, RSS feed items, users (public) | 5min |
-| Users (private)                                                                                                                                                                | 1h   |
-| Lookup caches (users, topics, posts, URLs)                                                                                                                                     | 24h  |
-| URLs, URL hostnames                                                                                                                                                            | 24h  |
+| Entity                                                                                                                                                                         | TTL   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| Posts, topics, user metrics, post metrics, topic metrics                                                                                                                       | 1h    |
+| Post elections, topic elections, hostname elections, entity relation elections, agent moderation elections, RSS feed item elections, RSS feeds, RSS feed items, users (public) | short |
+| Users (private)                                                                                                                                                                | 1h    |
+| Lookup caches (users, topics, posts, URLs)                                                                                                                                     | 24h   |
+| URLs, URL hostnames                                                                                                                                                            | 24h   |
 
 Entity cache uses batch fetching (`get*CachedBatch`) and asynchronous re-fetching when TTLs are about to expire.
 

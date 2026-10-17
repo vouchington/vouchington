@@ -1,3 +1,3 @@
 # Email Digests
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/queues/email-digests/README.md).
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/queues/README.md).

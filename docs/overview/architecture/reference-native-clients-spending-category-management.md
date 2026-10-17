@@ -2,14 +2,6 @@
 
 [Back to Native Client Strategy](native-clients.md)
 
-## Spending category management
-
-Both native clients provide the authenticated `/my/spending-categories` settings destination.
-They consume the cursor-paginated spending-category API, support topic search plus create/edit/delete
-for manageable entries, and render member-only household entries as read-only. The shared fixture
-contract is registered by Swift core and .NET endpoint-coverage tests; the feature UI is exercised by
-the SwiftUI and MAUI surface tests.
-
 ## Platform Ownership
 
 | Platform   | Stack                      | UI layer                      | Shared core                                                                                                     |
@@ -30,13 +22,13 @@ independently:
   Using MAUI for Android would require a parallel C# core forever: two implementations of every
   auth cookie flow, model type, and persistence layer. Swift on Android reuses the same package.
 
-- **Swift 6.3 (March 2026) = official first-class Android target.** The Android Workgroup ships
+- **Swift has an official Android target.** The Android Workgroup ships
   an official Swift SDK for Android; the Swift project itself hosts the support. This is not a
   third-party bridge.
 
 - **Skip Fuse = native performance.** [Skip](https://skip.tools) / Skip Fuse compiles Swift
   natively to Android ARM (no GC tax, no bridge overhead). Memory and battery profile are
-  comparable to hand-written Kotlin. Skip Fuse went fully open-source in January 2026 and its
+  comparable to hand-written Kotlin. Skip Fuse is open source and its
   technique is being merged back into the Swift project. A showcase app ships to both the App Store
   and Google Play from one Swift codebase.
 

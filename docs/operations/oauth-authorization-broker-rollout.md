@@ -4,7 +4,7 @@ Enable or roll back the shared Facebook, X, GitHub, LinkedIn, and Microsoft auth
 independently per provider for web and native clients. The operator needs DynamicConfig access
 (key `oauth-authorization-broker`) and API/worker log access. Flow design is in
 [login flows](../overview/architecture/reference-auth-overview-login-flows.md) and the
-[OAuth exchange queue](../overview/architecture/queues/oauth-authorization-exchange/README.md).
+[OAuth exchange queue](../overview/architecture/queues/README.md).
 
 ## Prerequisites
 

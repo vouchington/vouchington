@@ -12,8 +12,7 @@ Helpers used during local Cloudflare Worker development and CI smoke testing.
 
 ## `wrangler dev` restart budget
 
-`wrangler dev` can crash mid-suite (a known upstream `workers-sdk` cause, formerly filed as
-jonathanong/filaments#10819). `start.mts` auto-restarts the crashed child, but bounds how many times it
+`wrangler dev` can crash mid-suite (a known upstream `workers-sdk` cause). `start.mts` auto-restarts the crashed child, but bounds how many times it
 will do so via [`wrangler/restart-policy.mts`](../../../../../cloudflare-worker/scripts/wrangler/restart-policy.mts).
 
 `MAX_RESTARTS` is a **burst-window** budget, not a lifetime cap: an attempt that stays up for at

@@ -23,14 +23,6 @@ bindings fall back to the matching shared method-class binding when absent.
 
 ## Layer 2: Per-Endpoint (Backend)
 
-Endpoint-specific rate limiters for high-risk operations:
-
-| Endpoint            | Threshold                              | Window   | Keys                                                         |
-| ------------------- | -------------------------------------- | -------- | ------------------------------------------------------------ |
-| Email login token   | 5/min                                  | 60s      | email, IP, device, session                                   |
-| Email login verify  | 10/min                                 | 60s      | email, IP, device, session                                   |
-| MFA verification    | configurable + 5 failed attempts/login | 60s / 5m | IP, device, session, user, login attempt                     |
-| Passkey auth/signup | configurable                           | 60s      | device, IP, session                                          |
-| RSS feeds           | 3/min                                  | 60s      | identity + route, IP + route (identity = API key or anon IP) |
+Endpoint-specific limiters protect high-risk operations (email login token and verify, MFA verification, passkey auth and signup, RSS feeds). Thresholds, windows and keys live in each service.
 
 **Files:** `backend/services/users/authentication-flows.mts`, `backend/services/passkeys/flows.mts`, `backend/services/rss-xml/rate-limiter.mts`

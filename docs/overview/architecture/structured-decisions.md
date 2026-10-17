@@ -127,7 +127,7 @@ classified from its status (a 400 or 413 is permanent, so a classifier run ends 
 `provider-error` rather than retrying a request that can never fit), rather than the call layer
 itself ever splitting an over-budget request into shards. A transient failure is retried by the
 caller's own queue semantics; see
-[provider failures](backend/modules/structured-decisions/README.md#provider-failures).
+provider failures.
 
 `prepareSingleCallClassifierDecision` performs that same configuration, binding, provider, and
 coverage validation but returns the fully bound persistence input without writing it. A caller
@@ -139,6 +139,6 @@ ordinary convenience wrapper that prepares once and calls classifier persistence
 
 - [AI agents](ai-agents.md)
 - [Environment variables](../infrastructure/reference-environment-variables-ai-ml.md)
-- [Structured-decision module](backend/modules/structured-decisions/README.md)
-- [Classifier call layer](ai-agents/classifiers/README.md)
-- [Classifier persistence service](services/classifiers/README.md)
+- Structured-decision module
+- Classifier call layer
+- Classifier persistence service

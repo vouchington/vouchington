@@ -26,12 +26,12 @@ repository. Keep its rules authoritative; do not copy them here.
   ([source](../../../backend/data-stores/valkey/dynamic-config-fields.mts)), giving every field a
   default and a hard maximum. `data-retention-config` is the worked example:
   [config](../../../backend/services/data-retention/config.mts), and its
-  [README](../../../docs/overview/architecture/services/data-retention/README.md) owns the values.
+  [README](../../../docs/overview/architecture/services/README.md) owns the values.
 - **Namespace registration.** Add the namespace's `defineDynamicConfigNamespace()` entry to a
   `backend/services/dynamic-config-admin/registry-*-entries.mts` file, with each field's `max_value`
   taken from the constant the service reads, and add the namespace to `REGISTRY_ORDER` in
   [`registry-entries.mts`](../../../backend/services/dynamic-config-admin/registry-entries.mts).
-  Follow [Adding A Namespace](../../../docs/overview/architecture/services/dynamic-config-admin/README.md#adding-a-namespace).
+  Follow [Adding A Namespace](../../../docs/overview/architecture/services/README.md).
 - **Where sweeps start.** A sweep starts from a scheduled-job manifest,
   `backend/queues/*/enqueues/schedules.mts`, under the
   [scheduler rules](../../../docs/checklists/reference-backend-queues-schedulers-flows-and-backfills.md).
@@ -51,8 +51,8 @@ repository. Keep its rules authoritative; do not copy them here.
   `_cursors` tables; [#1598](https://github.com/vouchington/vouchington/issues/1598) owns reshaping
   the existing ones. Do not restate the shape here.
 - **Repair sweeper.** Extend candidate types in [entity-listener reconciliation](../../../backend/services/entity-listener-reconciliation/) for missed post-commit side effects; its overlapping `reconciled_through_at` window re-enqueues missed listener jobs instead of adding another sweeper (see the [replay-safe job checklist](../../../docs/checklists/reference-backend-queues-define-a-replay-safe-job.md)).
-- **External listings.** SES inbound reconciliation carries S3's continuation token in a bounded continuation job; see [the queue contract](../../../docs/overview/architecture/queues/ses-inbound/README.md).
+- **External listings.** SES inbound reconciliation carries S3's continuation token in a bounded continuation job; see [the queue contract](../../../docs/overview/architecture/queues/README.md).
 - **Bloom-filter failure path.** Follow [API-key Bloom-filter handling](../../../backend/services/api-keys/bloom-filter.mts): a failed `ValkeyBloomFilter` add clears the ready marker so reads fall back to PostgreSQL, then calls `enqueueRebuildBloomFilter` when the marker was removed.
 - **UUIDv7 bounds.** Use `getMinUUIDv7ForDate` and `getMinUUIDv7ForParentHistory` from [ids.mts](../../../backend/modules/utils/ids.mts); an age milestone M uses the primary-key range `[min(previousRun - M), min(now - M))`.
 
-- **Bloom repairs.** No scheduled full rebuilds; repair missed adds through the existing [entity-listener window](../../../docs/overview/architecture/services/entity-listener-reconciliation/README.md).
+- **Bloom repairs.** No scheduled full rebuilds; repair missed adds through the existing [entity-listener window](../../../docs/overview/architecture/services/README.md).

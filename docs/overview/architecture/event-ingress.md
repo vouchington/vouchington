@@ -42,7 +42,7 @@ only thing that matters.
 
 This distinction is load-bearing here specifically because `web`/`api` run on IPv6-only subnets
 with no IPv4 egress (see
-[`reference-networking-status-summary.md`](../infrastructure/reference-networking-status-summary.md)).
+`reference-networking-status-summary.md`).
 A self-contained check can always run directly on the request path, in the API or in an in-VPC
 Lambda. A check that needs a network round-trip cannot safely run there — it has to move to the
 worker fleet, which does have public egress.

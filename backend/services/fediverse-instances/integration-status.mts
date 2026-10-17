@@ -36,7 +36,7 @@ function assertReason(reason: string | null | undefined): void {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/fediverse-instances/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getLatestIntegrationStatusChange(
   topicId: string,

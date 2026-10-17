@@ -152,7 +152,7 @@ because cascades and RESTRICT checks touch soft-deleted children too. `SET NULL`
 A full recompute of a tally over a large append-only table reads the replica, not the primary, so
 bulk aggregation adds no primary load. Absorb replica lag by running the recompute asynchronously
 with throttle deduplication, an ordering key, and a delay of the throttle window plus a lag safety
-margin (see the [elections queue timing](../overview/architecture/queues/elections/README.md)). A
+margin (see the [elections queue timing](../overview/architecture/queues/README.md)). A
 recompute written back from a replica carries a freshness marker captured by the exact aggregate
 statement (the snapshot `xmax` plus in-progress count) and accepts only a later one, so
 out-of-order jobs cannot roll a newer tally back. The marker does not make residual lag

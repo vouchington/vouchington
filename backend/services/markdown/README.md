@@ -1,3 +1,3 @@
 # Markdown
 
-The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/markdown/README.md).
+The full guide and reference material lives in [the documentation catalog](../../../docs/overview/architecture/services/README.md).

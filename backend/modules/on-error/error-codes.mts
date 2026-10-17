@@ -19,7 +19,7 @@ export const ATTESTATION_NONCE_REPLAYED = 'ATTESTATION_NONCE_REPLAYED'
 // Multi-factor authentication
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/modules/on-error/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export const MFA_REQUIRED = 'MFA_REQUIRED'
 export const MFA_REAUTH_REQUIRED = 'MFA_REAUTH_REQUIRED'
@@ -53,7 +53,7 @@ export const CONTRIBUTION_ADMISSION_IN_PROGRESS = 'CONTRIBUTION_ADMISSION_IN_PRO
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/backend/modules/on-error/README.md`.
+ * Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export const MEMBERSHIP_REQUIRED = 'MEMBERSHIP_REQUIRED'
 

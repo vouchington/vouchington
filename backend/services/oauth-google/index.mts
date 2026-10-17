@@ -135,7 +135,7 @@ export async function upsertGoogleAccount(credential: string): Promise<OAuthAcco
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/oauth-google/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function getGoogleAccountByGoogleUserId(googleUserId: string): Promise<OAuthAccount | null> {
   return getOAuthAccountByProviderUserId('google', googleUserId)

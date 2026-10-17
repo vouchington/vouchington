@@ -18,16 +18,16 @@ form-specific initial fields to client forms. Server components should continue 
 
 Every visitor (anonymous or authenticated) holds two HTTP-only cookies:
 
-| Cookie | Expiry                                              | Contains                                                            |
-| ------ | --------------------------------------------------- | ------------------------------------------------------------------- |
-| `dt`   | 30 days                                             | Device JWT — identifies the device                                  |
-| `st`   | 2 days (30 days for an attested device — see below) | Session JWT — identifies the session; includes `uid` when logged in |
+| Cookie | Expiry                                                | Contains                                                            |
+| ------ | ----------------------------------------------------- | ------------------------------------------------------------------- |
+| `dt`   | long                                                  | Device JWT — identifies the device                                  |
+| `st`   | default (extended for an attested device — see below) | Session JWT — identifies the session; includes `uid` when logged in |
 
 Cookies are `httpOnly`, `sameSite=lax`, and `secure` in production only. The `maxAge` for each cookie is returned by the backend's `PATCH /api/v1/session` response (`dte` for the device token, `ste` for the session token), making expiry backend-controlled. `sameSite=lax` is one layer of CSRF defense — see [CSRF Protection](../../requirements/security/CSRF.md) for the full threat model.
 
 Session expiry is computed by `sessionExpiryFor(dc)` / `sessionExpirySecondsFor(dc)`
-(`ts-shared/session-jwt/constants.mts`) from the device token's `dc` claim: 30 days when
-`dc === 'attested'`, 2 days otherwise. The device token's own 30-day expiry never changes. See
+(`ts-shared/session-jwt/constants.mts`) from the device token's `dc` claim: the extended lifetime when
+`dc === 'attested'`, the default otherwise. The device token's own expiry never changes. See
 [App Attest](app-attestation.md) for how a device becomes attested.
 
 ### JWT Payload

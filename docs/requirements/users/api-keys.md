@@ -9,7 +9,7 @@ the query string) and the user MCP server (bearer token).
   admin resource and owned by a current administrator; an API key there gets the same `401` as any
   unrecognized credential. API keys never carry admin-audience scopes. See the
   [OAuth authorization server](../security/OAUTH-AUTHORIZATION-SERVER.md#protected-resources-and-discovery)
-  and the [MCP tools architecture](../../overview/architecture/services/mcp-tools/README.md#mcp-audit-log).
+  and the [MCP tools architecture](../../overview/architecture/services/README.md).
 - **RSS works without a key.** Unkeyed requests rate-limit by client IP; a keyed request is
   validated and rate-limits by key identity.
 - **Raw keys are never stored.** Only hashes are persisted, a checksum is verified before any
@@ -22,5 +22,5 @@ the query string) and the user MCP server (bearer token).
 
 ## Related
 
-- [API keys service](../../overview/architecture/services/api-keys/README.md)
+- [API keys service](../../overview/architecture/services/README.md)
 - [API keys service rules](../../../backend/services/api-keys/AGENTS.md)

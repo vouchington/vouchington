@@ -15,8 +15,8 @@ still apply to the request.
   `uid:{uid}:{routePrefix}` with that user's REST session requests. An API key carries only its key
   id, so its calls share the `ip:` and `apikey:` keys with that key's REST requests, not the user's
   `uid:` key.
-- **Unit**: one tool call, not one HTTP request. A JSON-RPC batch of N calls charges N times, in
-  order, and a spent bucket refuses only the calls that find it spent. The 25-message batch limit
+- **Unit**: one tool call, not one HTTP request. A JSON-RPC batch charges once per call, in
+  order, and a spent bucket refuses only the calls that find it spent. The batch size limit
   (HTTP 413) applies to every MCP request, since it bounds the charging work.
 - **Charged calls**: a call that will run, with a known tool, allowed scopes and valid arguments, and
   a request id. A call refused before it runs (unknown tool, denied, invalid arguments), a

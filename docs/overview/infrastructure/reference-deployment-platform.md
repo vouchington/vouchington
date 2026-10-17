@@ -11,10 +11,7 @@ resource details.
 
 ## Environments
 
-| Environment | Domain              | Purpose                                                     |
-| ----------- | ------------------- | ----------------------------------------------------------- |
-| Staging     | `staging.voucha.ai` | Live through the private infrastructure deployment receiver |
-| Production  | `voucha.ai`         | Not live; rollout tracked separately                        |
+Live through the private infrastructure deployment receiver: staging. Production rollout is not live.
 
 ## Source dispatch
 

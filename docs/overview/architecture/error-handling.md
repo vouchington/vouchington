@@ -19,6 +19,6 @@ CloudWatch and Sentry hunting, see
 - <a id="client-side-onerror-weblibon-error"></a>[Client-Side `onError` (`web/lib/on-error/`)](reference-error-handling-client-side-onerror-web-lib-on-error.md)
 - <a id="admin-debugging-with-request_id"></a>[Admin Debugging with request_id](reference-error-handling-client-side-onerror-web-lib-on-error.md#admin-debugging-with-request_id)
 - <a id="cloudflare-worker-edge-errors"></a>[Cloudflare Worker Edge Errors](reference-error-handling-client-side-onerror-web-lib-on-error.md#cloudflare-worker-edge-errors)
-- <a id="crawler-error-auto-disable"></a>[Crawler Error Auto-Disable](reference-error-handling-crawler-error-auto-disable.md)
+- <a id="crawler-error-auto-disable"></a>Crawler Error Auto-Disable
 - <a id="precondition-errors-and-action-oriented-modals"></a>[Precondition Errors and Action-Oriented Modals](reference-error-handling-precondition-errors-and-action-oriented-modals.md)
 - <a id="related"></a>[Related](reference-error-handling-precondition-errors-and-action-oriented-modals.md#related)

@@ -3,7 +3,7 @@
 Operator contract for any reset, restore, or rebuild that touches media-delivery state. It is
 staff-only guidance. The private infrastructure repository owns the provider-side procedure, access,
 and identities; this page defines the required ordering, prohibited shortcuts, and evidence. Design
-background is in the [service guide](../overview/architecture/services/media-delivery-safety/README.md).
+background is in the [service guide](../overview/architecture/services/README.md).
 Turning edge enforcement on for the first time follows
 [Media Delivery Edge Enforcement](media-delivery-edge-enforcement.md), which reuses workflow B below
 for its inventory comparison.

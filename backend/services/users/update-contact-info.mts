@@ -17,7 +17,7 @@ async function replacePrimaryContact(
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/users/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export const updateUserPhoneNumber = async (userId: string, phoneNumber: string, token: string) => {
   const verificationToken = requireVerificationToken(token, 'Phone verification token is required')
@@ -56,7 +56,7 @@ export const updateUserPhoneNumber = async (userId: string, phoneNumber: string,
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
  * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/services/users/README.md`.
+ * Evidence: `docs/overview/architecture/services/README.md`.
  */
 export const updateUserEmailAddress = async (
   userId: string,

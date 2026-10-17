@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/aside-preferences/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function getDismissedAsides(userId: string): Promise<Set<string>> {
   const { rows } = await read(sql`/* getDismissedAsides */

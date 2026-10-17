@@ -9,15 +9,14 @@
 3. Follow the private repository's reviewed, operator-controlled saved-plan procedure for the
    staging environment.
 4. Set all SSM Parameter Store values (see [environment-variables.md](environment-variables.md))
-5. Create Aurora databases (`voucha_staging`, `voucha`), run migrations
+5. Create Aurora databases per environment, run migrations
 6. Request SES production access (manual approval, 24-48h)
 7. Generate JWT key pairs → set `VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64` and `VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64`
 8. Generate `CF_WORKER_SECRET`, set in SSM Parameter Store + CF Worker env
 9. Generate VAPID keys for web push → set `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, `WEB_PUSH_SUBJECT`
 10. Dispatch and verify the Cloudflare Worker through the private infrastructure receiver
 11. First CI deploy to staging → confirm the matching private receiver run → smoke test. Stop there:
-    production promotion and rollback are not live and remain tracked as a follow-up (formerly
-    filed as jonathanong/filaments#10066).
+    production promotion and rollback are not live.
 
 Account-global apply remains operator-controlled in `vouchington-infra`; its CI apply workflow and
 trust are disabled. The apply policy can manage only the existing role ARN allowlist, pass the SOCI
@@ -57,11 +56,7 @@ a signature produced by **any** key in the list. Rotating a key is expand (add t
 front, keep the old key verifying) then contract (remove the old key once nothing still needs it) —
 with no requirement that every service instance pick up the new key list at the same instant.
 
-The absolute-sideload-URL change (formerly gated by a cross-workflow wait between the Cloudflare
-Worker, backend, and image Lambda deploys) is complete, and that wait has been removed — see
-[Static-asset deployment](reference-deployment-s3-static-assets.md). The capability header the wait used to poll for is now
-unconditionally present; there is nothing left to coordinate for the current URL _format_. A
-**future change to the signing scheme itself** (as opposed to a key rotation) must account for
+A **future change to the signing scheme itself** (as opposed to a key rotation) must account for
 already-issued signed URLs and independent current consumers. That protocol lifetime, rather than
 historical application schema deployment, determines whether dual verification is required.
 

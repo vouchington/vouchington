@@ -1,6 +1,6 @@
 # Backend
 
-- Use [backend docs](../docs/overview/architecture/backend/README.md), [setup](../docs/development/README.md), [auth/session architecture](../docs/overview/architecture/auth-overview.md), and [package inventories](../docs/overview/architecture/backend/catalogs/README.md). Commands belong in the [command catalog](../docs/overview/architecture/backend/README.md#commands).
+- Use [backend docs](../docs/overview/architecture/backend/README.md), [setup](../docs/development/README.md), [auth/session architecture](../docs/overview/architecture/auth-overview.md), and [package inventories](../docs/overview/architecture/backend/README.md). Commands belong in the [command catalog](../docs/overview/architecture/backend/README.md).
 - Load [package-json-checklist](../.agents/skills/package-json-checklist/SKILL.md) before creating services or changing manifests; load [backend Vitest authoring](../.agents/skills/backend-vitest-test-authoring/SKILL.md) for tests, fixtures, helpers, or mocks.
 - Check API fields against caller privileges (anonymous, user, owner, moderator, staff, admin); keep internal/admin fields out of lower-privilege responses.
 - Database lists use `@modules/pagination` cursor pagination and [the cross-surface contract](../docs/overview/architecture/pagination.md). Anonymous endpoints use `clampAnonLimit` (`ANON_MAX_LIMIT = 25`).
@@ -19,4 +19,4 @@
 - Enum removals/renames follow [the ripple checklist](../docs/development/finite-enum-ripple-checklist.md).
 - Topic queries preserve both active-topic filters; update [topic lifecycle/merge rules](../docs/requirements/content/TOPICS.md) and type vs. facet together.
 - Apply owning [API](api/AGENTS.md), [service](services/AGENTS.md), [vote](services/elections-votes/AGENTS.md), [PostgreSQL](data-stores/psql/AGENTS.md), and [queue](queues/AGENTS.md) invariants when changing those domains.
-- When MCP tools or their REST twins change inputs/outputs, update affected checked-in contracts, tool schemas, fixtures, and the MCP catalog together. Test actual handler results and rejection cases against declared schemas; do not widen schemas or remove validation to hide drift. Follow [schema maintenance](../docs/overview/architecture/services/mcp-tools/README.md#structured-tool-results).
+- When MCP tools or their REST twins change inputs/outputs, update affected checked-in contracts, tool schemas, fixtures, and the MCP catalog together. Test actual handler results and rejection cases against declared schemas; do not widen schemas or remove validation to hide drift. Follow [schema maintenance](../docs/overview/architecture/services/README.md).

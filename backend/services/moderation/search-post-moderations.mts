@@ -52,7 +52,7 @@ export async function searchPostModerationsByPostIds(
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/moderation/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function searchPostModerationsByAgent(
   postId: string,

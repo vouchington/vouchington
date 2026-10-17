@@ -9,7 +9,7 @@
 - `advisoryLockPool` is a dedicated set of primary connections for session advisory locks whose
   protected work may need ordinary write clients. Isolating them keeps lock holders from saturating
   `writePool` and lets unrelated lock keys progress concurrently (see the
-  [session advisory lock protocol](../../overview/architecture/services/session-advisory-lock/README.md)).
+  [session advisory lock protocol](../../overview/architecture/services/README.md)).
 - Idle-client `error` events are routed to the adapter's `onError`. PostgreSQL can close an idle
   connection during auto-pause or failover; the pool discards it, and an idle-client event alone
   does not mean a concurrent query failed.

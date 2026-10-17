@@ -1,19 +1,7 @@
 # Networking
 
-Staging and production cost estimates live in the private `vouchington/vouchington-docs`
-repository.
-
-## Contents
-
-- <a id="decision-per-task-ip-vs-managed-nat-gateway"></a>[Decision: Per-Task IP vs. Managed NAT Gateway](reference-networking-decision-per-task-ip-vs-managed-nat-gateway.md)
-- <a id="aws-application-endpoint-inventory"></a>[AWS Application Endpoint Inventory](reference-networking-aws-application-endpoint-inventory.md)
-- <a id="ipv6-only-staging-verification-gate"></a>[IPv6-only Staging Verification Gate](reference-networking-aws-application-endpoint-inventory.md)
-- <a id="alb-ipv6-frontend"></a>[ALB IPv6 Frontend](reference-networking-aws-application-endpoint-inventory.md)
-- <a id="status-summary"></a>[Status Summary](reference-networking-status-summary.md)
+Tasks run in public subnets with a public IPv4 each instead of behind a managed NAT gateway, because the NAT gateway's fixed cost is not justified at current scale; the ALB is the only ingress. End-user traffic terminates at Cloudflare's edge, and the origin is reachable over IPv6 where supported. Revisit the per-task IP choice if egress allow-listing or task count changes the math.
 
 ## Related
 
-[Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) —
-discovery and compatibility evidence required before changing a URL, hostname, or origin
-
-- [Status Summary](reference-networking-status-summary.md)
+[Endpoint Migration recipe](../../../.agents/skills/agent-workflow/impact-recipes.md#endpoint-migration) covers discovery and compatibility evidence required before changing a URL, hostname, or origin.

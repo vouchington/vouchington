@@ -21,7 +21,7 @@ function parseOutlineAttributes(tag: string): Record<string, string> {
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/user-import-export/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function parseOpml(opmlText: string): OpmlOutline[] {
   const outlines: OpmlOutline[] = []
@@ -62,7 +62,7 @@ export function* parseOpmlOutlines(opmlText: string): Generator<OpmlOutline> {
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/user-import-export/README.md`.
+ * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export function generateOpml(feeds: OpmlOutline[], title = 'RSS Feed Export'): string {
   const lines = [

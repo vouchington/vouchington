@@ -32,7 +32,7 @@ GlideMQ needs Valkey/Redis server functions (`FUNCTION LOAD` / `FCALL`). AWS Ela
 Serverless blocks them and is incompatible. Build queues and workers only through the factory in
 `@data-stores/valkey-glide-mq`, never `new Worker(...)` (enforced by an ast-grep rule), and keep
 `glide-mq` specs aligned across workspaces. See
-[Worker construction](../../overview/architecture/backend/data-stores/valkey-glide-mq/README.md#worker-construction).
+[Worker construction](../../overview/architecture/backend/README.md).
 
 **Enqueue retry.** Only client-side `Reached maximum inflight requests` is retried, because Glide
 rejects it before the command reaches Valkey. Other transient errors (connection close, request

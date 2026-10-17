@@ -50,7 +50,7 @@ User tool write hints follow `PUT`/`DELETE`, or a required UUID `idempotency_key
 Each MCP server also sends `instructions` on `initialize`
 ([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query or lower the limit.
 
-A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results). Every tool exposed on `mcp` or `admin_mcp` declares one, and the [static-backend live catalog check](../../../../ci/check-live-mcp-catalog.mjs) fails for any that does not.
+A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see Structured tool results. Every tool exposed on `mcp` or `admin_mcp` declares one, and the [static-backend live catalog check](../../../../ci/check-live-mcp-catalog.mjs) fails for any that does not.
 
 ---
 
@@ -129,7 +129,7 @@ exposing separate tools per write operation. The mapping to REST verbs is:
 | `remove`       | `DELETE /api/v1/my/…` |
 
 The `id` parameter is required for `update` and `remove` actions; it is the row UUID
-returned by the matching `get_my_*` tool. `remove` returns only `{ id }`; see [Structured tool results](../services/mcp-tools/README.md#structured-tool-results).
+returned by the matching `get_my_*` tool. `remove` returns only `{ id }`; see Structured tool results.
 
 `add_entity_relation` has no dedicated REST endpoint and uses the same relation command as the
 session REST route.
@@ -142,8 +142,8 @@ returns the canonical subject/predicate/object tuple; `relation_id` is included 
 tables that persist a row identifier.
 
 `manage_bookmark(set)`, `manage_bookmark(remove)`, and the five list write tools follow the same delegated-authority
-model; see [Bookmark and List Write Tools](bookmark-list-write-tools.md). `remove_entity_relation` and
-the referral link and topic recommendation tools do too; see [Relation, Referral Link and Topic Recommendation Write Tools](relation-referral-recommendation-write-tools.md). So do the eleven profile, notification, and preference tools: [Profile, Notification, and Preference Write Tools](profile-notification-write-tools.md). Post creation, replies, edits, archive and deletion use [Post and Comment Write Tools](post-comment-write-tools.md). Community creation, joining, leaving and applying, content reports, review disputes and moderation appeals use [Community, Report, Dispute and Appeal Tools](community-report-appeal-write-tools.md). The read tools are in [Hostname, List and User Read Tools](hostname-list-user-read-tools.md), [Trending, Referral, Search and Reference Read Tools](search-reference-read-tools.md), [Community List, List Membership and Membership Plan Read Tools](community-list-membership-read-tools.md), and [Own Profile, Notification, Preference and Recommendation Read Tools](own-data-read-tools.md).
+model; see Bookmark and List Write Tools. `remove_entity_relation` and
+the referral link and topic recommendation tools do too; see Relation, Referral Link and Topic Recommendation Write Tools. So do the eleven profile, notification, and preference tools: Profile, Notification, and Preference Write Tools. Post creation, replies, edits, archive and deletion use Post and Comment Write Tools. Community creation, joining, leaving and applying, content reports, review disputes and moderation appeals use Community, Report, Dispute and Appeal Tools. The read tools are in Hostname, List and User Read Tools, Trending, Referral, Search and Reference Read Tools, Community List, List Membership and Membership Plan Read Tools, and Own Profile, Notification, Preference and Recommendation Read Tools.
 
 ---
 
