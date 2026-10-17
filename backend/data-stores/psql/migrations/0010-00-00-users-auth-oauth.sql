@@ -755,11 +755,12 @@ COMMENT ON COLUMN facebook_accounts.friends_synced_at IS 'When the user''s Faceb
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS facebook_friends (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
   facebook_account_id UUID NOT NULL REFERENCES facebook_accounts(id) ON DELETE CASCADE,
   facebook_friend_id TEXT NOT NULL,
   friend_facebook_account_id UUID REFERENCES facebook_accounts(id) ON DELETE SET NULL,
 
-  PRIMARY KEY (facebook_account_id, facebook_friend_id),
+  UNIQUE (facebook_account_id, facebook_friend_id),
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -780,6 +781,7 @@ CREATE INDEX IF NOT EXISTS idx_facebook_friends__facebook_friend_id
 ON facebook_friends (facebook_friend_id);
 
 COMMENT ON TABLE facebook_friends IS 'Facebook friend relationships from linked accounts to provider friends.';
+COMMENT ON COLUMN facebook_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
 COMMENT ON COLUMN facebook_friends.facebook_account_id IS 'Source Facebook account whose friends list contains this entry.';
 COMMENT ON COLUMN facebook_friends.facebook_friend_id IS 'External Facebook user ID of the friend, who may not have an account here.';
 COMMENT ON COLUMN facebook_friends.friend_facebook_account_id IS 'Matching local Facebook account when the friend has signed in.';
