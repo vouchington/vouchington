@@ -15,7 +15,6 @@ type AddUrlOptions = {
   content_type?: string
   skipCreatedEvents?: boolean
   preserveHttp?: boolean
-  webRiskOptions?: Parameters<typeof assertUrlAllowedByWebRisk>[1]
 } & QueryOptions
 type TransactionQueryWithClient = NonNullable<QueryOptions['query']> & { client: object }
 
@@ -44,7 +43,6 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
       content_type,
       skipCreatedEvents = false,
       preserveHttp = false,
-      webRiskOptions,
       ...queryOptions
     } = options
     // Public-host checks are best-effort in batch mode — skip non-public items only.
@@ -67,11 +65,7 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
       return true
     })
 
-    await Promise.all(
-      uniqueUrls.map(url =>
-        webRiskOptions ? checkUrl(url.toString(), webRiskOptions) : checkUrl(url.toString()),
-      ),
-    )
+    await Promise.all(uniqueUrls.map(url => checkUrl(url.toString())))
 
     const hostnames = await upsertUrlHostnames(
       userId,

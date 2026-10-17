@@ -3544,9 +3544,6 @@ importers:
       '@services/stories':
         specifier: workspace:^
         version: link:../services/stories
-      '@services/topic-recommendations':
-        specifier: workspace:^
-        version: link:../services/topic-recommendations
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics

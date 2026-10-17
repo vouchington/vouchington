@@ -6,6 +6,5 @@ export const RELATION_READ_BATCH_SCENARIO_IDS = [
   'cached-topic-hostname-elections',
   'cached-post-moderation-elections',
   'post-moderation-viewer-votes',
-  'recommendation-hostname-conflicts',
   'url-blocked-policy-with-values',
 ] as const

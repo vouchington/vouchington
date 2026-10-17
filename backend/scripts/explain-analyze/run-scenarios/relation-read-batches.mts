@@ -15,8 +15,6 @@ import { seedUuid } from '../seed-data/common.mts'
 import { getCachedElectionGroups } from '@services/elections-votes/shared/cached-groups'
 import { caches } from '@services/entity-cache/caches'
 import { getPostAndModerationVotes } from '@services/elections-votes/shared/post-moderation-votes'
-import { getTopicRecommendationHostnameConflicts } from '@services/topic-recommendations'
-import { write } from '@data-stores/psql'
 import { assertUrlsHaveNoBlockedHostnames } from '@services/urls/assert-hostname-not-blocked'
 import { runRelatablePostAccessScenario } from './relatable-post-access.mts'
 
@@ -34,17 +32,6 @@ export async function runRelationReadBatchScenarios(): Promise<void> {
     () => assertUrlsHaveNoBlockedHostnames([seedUuid(0, '03'), seedUuid(1, '03')]),
     undefined,
     'assertUrlsHaveNoBlockedHostnames',
-  )
-  registerScenarioContract('recommendation-hostname-conflicts', {
-    expectations: [
-      { kind: 'maxProcessedRows', relation: 'relation__topic__landing_page__url', max: 4 },
-      { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
-    ],
-  })
-  await runAndCapture('recommendation-hostname-conflicts', () =>
-    getTopicRecommendationHostnameConflicts(seedUuid(2, '04'), seedHostnameIds.slice(0, 2), {
-      query: write,
-    }),
   )
   await Promise.all([
     caches.topic_elections.delete(seedTopicId),

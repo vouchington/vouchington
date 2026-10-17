@@ -1,27 +1,27 @@
 import undici, { Response as UndiciResponse } from 'undici'
 import { describe, expect, it, vi, type MockInstance } from 'vitest'
-import { overrideDynamicConfigFieldsForTest, urlExistsForTest } from '@voucha/test-helpers'
+import {
+  overrideDynamicConfigFieldsForTest,
+  urlExistsForTest,
+  updateUrlHostnameBlocked,
+} from '@voucha/test-helpers'
 import { createOwnedWebRiskFixture } from '@voucha/test-helpers/web-risk-state'
 import { webRiskConfig } from '@services/web-risk/config'
 import { createUrlUpsert } from './upsert.mts'
+import { upsertUrlHostnames } from '@services/urls-hostnames'
 
 // URL persistence owns this real checker integration; importing URLs from Web Risk would cycle.
 describe('addUrl integrates with Google Web Risk blocking', () => {
-  it('retains blocking when a caller passes its already loaded hostname policies', async () => {
+  it('rechecks mutable hostname policy after an earlier successful validation', async () => {
     const fixture = createOwnedWebRiskFixture()
-    const domain = `precomputed-risk-${crypto.randomUUID()}.example.com`
-    const url = `https://${domain}/blocked`
+    const domain = `changed-policy-${crypto.randomUUID()}.example.com`
+    const url = `https://${domain}/new-profile-url`
+    const hostnames = await upsertUrlHostnames(null, [domain])
     const { addUrl } = createUrlUpsert(fixture.check)
     try {
-      await expect(
-        fixture.own(
-          addUrl(null, url, {
-            webRiskOptions: {
-              policies: new Map([[domain, { is_blocked: true, should_skip_web_risk: false }]]),
-            },
-          }),
-        ),
-      ).rejects.toMatchObject({ status: 400 })
+      await fixture.check(url)
+      await updateUrlHostnameBlocked(hostnames.get(domain)!, true)
+      await expect(fixture.own(addUrl(null, url))).rejects.toMatchObject({ status: 400 })
       expect(await urlExistsForTest(url)).toBe(false)
     } finally {
       await fixture.cleanup()

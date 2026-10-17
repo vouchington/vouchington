@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { assertNoBlockedDomains, loadAllowedUrlHostnamePolicies } from './index.mts'
+import { assertNoBlockedDomains, assertUrlNotBlocked } from './index.mts'
 import { insertTestDomainBlacklist, createTestBlacklistSource } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
@@ -53,16 +53,15 @@ describe('index', () => {
     })
   })
 
-  describe('loadAllowedUrlHostnamePolicies', () => {
+  describe('assertUrlNotBlocked', () => {
     it('passes for a clean URL', async () => {
       const hostname = `profile-clean-${RANDOM_ID}.com`
-      const policies = await loadAllowedUrlHostnamePolicies(`https://${hostname}/page`)
-      expect(policies.get(hostname)).toMatchObject({ is_blocked: false })
+      await expect(assertUrlNotBlocked(`https://${hostname}/page`)).resolves.toBeUndefined()
     })
 
     it('rejects a blocked domain (status 400)', async () => {
       await expect(
-        loadAllowedUrlHostnamePolicies(`https://${TEST_BLOCKED_DOMAIN}/page`),
+        assertUrlNotBlocked(`https://${TEST_BLOCKED_DOMAIN}/page`),
       ).rejects.toMatchObject({
         status: 400,
         message: expect.stringContaining(TEST_BLOCKED_DOMAIN),
@@ -70,7 +69,7 @@ describe('index', () => {
     })
 
     it('passes for an invalid URL (domain resolves to unknown)', async () => {
-      await expect(loadAllowedUrlHostnamePolicies('not-a-valid-url')).resolves.toEqual(new Map())
+      await expect(assertUrlNotBlocked('not-a-valid-url')).resolves.toBeUndefined()
     })
   })
 })
