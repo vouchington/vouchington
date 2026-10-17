@@ -1,7 +1,5 @@
 # Schema Snapshot
 
-Source entrypoint: [backend/data-stores/psql/schema-snapshot/README.md](../../../../backend/data-stores/psql/schema-snapshot/README.md)
-
 The [generator](../../../../backend/data-stores/psql/schema-snapshot/generate.mts) writes a committed
 PostgreSQL schema snapshot from `pg_catalog`/`information_schema` introspection. The
 [runtime JSON catalog](../../../../backend/data-stores/psql/schema-snapshot/schema.json) stays in its

@@ -79,7 +79,7 @@ flowchart LR
 
 ## Related
 
-- [Backend README](../../../../backend/services/README.md) and [AGENTS.md](../../../../backend/services/AGENTS.md)
+- [AGENTS.md](../../../../backend/services/AGENTS.md)
 - [Queues map](../queues/README.md) and [AI platform](../ai-platform.md)
 - [MCP tools](../mcp/README.md) and [API conventions](../../../../backend/api/AGENTS.md)
 - Requirements behind the services: [trust system](../../../requirements/trust-safety/reference-trust-system-overview.md)

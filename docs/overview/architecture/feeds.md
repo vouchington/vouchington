@@ -109,10 +109,10 @@ GET /api/v1/communities/:idOrSlug/news?limit=25&after=<cursor>
 
 - Feed queries generate 600+ plan nodes due to CTE chains, broadcast/privacy subqueries, and partition scans.
 - PostgreSQL JIT compilation can dominate execution time at these plan sizes (JIT is disabled during profiling).
-- `relation__user__*` tables use plain B-tree indexes, so privacy filter lookups hit a single index scan. HASH partitioning is forbidden repo-wide because it makes broadcast checks fan out across every partition — see [entity-relations.md](entity-relations.md#table-structure), [partitioning-strategy.md](partitioning-strategy.md), and the measured incident in feeds/README.md#performance.
+- `relation__user__*` tables use plain B-tree indexes, so privacy filter lookups hit a single index scan. HASH partitioning is forbidden repo-wide because it makes broadcast checks fan out across every partition — see [entity-relations.md](entity-relations.md#table-structure), and [partitioning-strategy.md](partitioning-strategy.md).
 - The post feed composes viewer-aware publication eligibility once per candidate and resolved root.
 - Post feeds reuse one eligibility builder for direct candidates and distinct share targets; the
-  [EXPLAIN gates](../../../backend/scripts/explain-analyze/README.md) bound target probes and
+  [EXPLAIN gates](../../development/postgresql/explain-analyze/README.md) bound target probes and
   reject delivery joins that repeatedly rescan the eligible-target spool.
 - RSS feed pagination uses the `LIMIT + 1` pattern instead of a full-window row count so `has_next_page` does not require counting the full candidate set.
 

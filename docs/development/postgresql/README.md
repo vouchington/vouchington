@@ -1,7 +1,5 @@
 # PostgreSQL Data Store
 
-Source entrypoint: [backend/data-stores/psql/README.md](../../../backend/data-stores/psql/README.md)
-
 This package is the Vouchington adapter over
 [`@vouchington/postgres`](https://github.com/vouchington/vouchington-platform/tree/main/packages/postgres).
 It constructs the process singleton after local worktree connection guards, and keeps product

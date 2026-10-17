@@ -54,7 +54,7 @@ export async function createList(
 
 /**
  * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `backend/services/lists/README.md`.
+ * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
  */
 export async function getList(listId: string): Promise<List | null> {
   return fetchListById(read, listId)

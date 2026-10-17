@@ -4,7 +4,7 @@ Operator procedure for moving media delivery through `off`, `report`, and `enfor
 environment. The private infrastructure repository owns deployed values, edge behavior, metrics,
 and access. This page defines order and evidence. Design background is in the
 [service guide](../overview/architecture/services/README.md); variable
-semantics are in the [environment variable reference](../overview/infrastructure/reference-environment-variables-aws-s3-storage.md#media-delivery).
+semantics are in the typed `@ts-shared/env-contract`.
 
 ## Why the order matters
 

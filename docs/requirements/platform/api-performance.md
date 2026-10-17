@@ -24,9 +24,6 @@ read from code and configuration.
   order. A retained suppression targets only the awaited statement and states the ordering
   invariant. Never parallelize operations that share a transaction client or cursor.
 
-Every API README under `backend/api/v1/**/README.md` keeps a `## Performance` heading that points
-here.
-
 ## Related
 
 - [API design decisions](../api/README.md)

@@ -45,8 +45,7 @@ const legacyCaches = {
 
 // Every SKU fixture in this file gets its own catalog context (a unique applicationId) so no
 // two tests here — and no other unlocked fixture writer in the suite — can share a
-// membership_provider_products row. See "Shared membership catalog rows" in
-// backend/test-helpers/README.md.
+// membership_provider_products row.
 function createCatalogContext(): StripeCatalogContext {
   return {
     environment: STRIPE_PROVIDER_ENVIRONMENT,

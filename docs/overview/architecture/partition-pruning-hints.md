@@ -1,7 +1,7 @@
 # PostgreSQL Partition Pruning Hints
 
-The [partitioning strategy](partitioning-strategy.md) owns the exact schema inventory. This page
-only defines query-writing and verification rules.
+The [partitioning strategy](partitioning-strategy.md) explains when to partition; runtime partition
+policy lives in `schema-growth-registry.mts`. This page only defines query-writing and verification rules.
 
 ## Query Rules
 

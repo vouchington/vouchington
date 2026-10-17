@@ -227,8 +227,6 @@ describe('no-mistakes config', () => {
       'package-json-registry-only',
       'package-json-workspace-coverage',
       'no-empty-or-comments-only-files',
-      'required-local-docs',
-      'required-doc-section',
       'no-git-identity-mutation',
       'shellcheck-runner',
       'strict-package-layout',

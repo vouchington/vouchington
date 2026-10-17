@@ -2129,9 +2129,6 @@ rules:
     exclude:
       - '**/AGENTS.md'
       - articles/**
-      # Backend package READMEs are required beside code by required-local-docs and point at the
-      # architecture maps; they are not linked from an index.
-      - backend/**/README.md
       - '**/fixtures/**/*.md'
       - '**/__fixtures__/**/*.md'
       - '**/snapshots/**/*.md'
@@ -2863,44 +2860,6 @@ rules:
           bannedExtensions: [.js, .mjs, .cjs, .cts, .ts]
         - path: web
           bannedExtensions: [.js, .mjs, .cjs, .cts]
-
-  - name: backend local owner docs
-    rule: required-local-docs
-    scope: repository
-    options:
-      roots:
-        - backend/agents
-        - backend/api/v1
-        - backend/data-stores
-        - backend/entrypoints
-        - backend/modules
-        - backend/queues
-        - backend/services
-        - backend/workers
-      requiredFile: README.md
-      codeExtensions:
-        - ts
-        - mts
-        - cts
-        - js
-        - jsx
-        - mjs
-        - cjs
-        - tsx
-        - rs
-        - lua
-        - sql
-      testExcludePatterns:
-        - '*.test.*'
-        - '*.spec.*'
-        - __tests__
-
-  - name: API docs include performance section
-    rule: required-doc-section
-    scope: repository
-    options:
-      glob: backend/api/v1/**/README.md
-      requiredHeading: '## Performance'
 
   - name: git identity is not mutated by repo scripts
     rule: no-git-identity-mutation
