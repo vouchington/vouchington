@@ -530,7 +530,7 @@ CREATE TABLE IF NOT EXISTS x_friends (
   x_friend_id TEXT NOT NULL,
   friend_x_account_id UUID REFERENCES x_accounts(id) ON DELETE SET NULL,
   UNIQUE (x_account_id, x_friend_id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   last_observed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
