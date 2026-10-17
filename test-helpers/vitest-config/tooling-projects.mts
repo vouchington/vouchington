@@ -168,6 +168,7 @@ export const toolingProjects = [
         'static-code-analysis/docker-deploy/dockerfile-prewarm-ports.test.mts',
         'static-code-analysis/docker-deploy/__tests__/normalize-deployed-layer.test.mts',
         'static-code-analysis/docker-deploy/__tests__/prune-deployed-runtime-deps.test.mts',
+        'static-code-analysis/docker-deploy/__tests__/prune-opentelemetry-alternate-builds.test.mts',
         'static-code-analysis/docker-deploy/__tests__/restore-deployed-workspace-packages*.test.mts',
         'backend/dependency-cruiser-rules/__tests__/*.test.mts',
       ],
