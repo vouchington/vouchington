@@ -85,6 +85,27 @@
       }
     },
     {
+      "id": "native.mcp.read-my-preferences.email",
+      "tool": "read_my_preferences",
+      "arguments": {
+        "option": "email",
+        "arguments": {}
+      },
+      "structuredContent": {
+        "success": true,
+        "email_preferences": {
+          "is_engagement_emails_enabled": true,
+          "news_digest_frequency": "weekly",
+          "is_moderation_emails_enabled": true,
+          "community_digest_frequency": "weekly",
+          "moderation_email_cadence": "daily",
+          "moderation_email_days_of_week": [1, 2, 3, 4, 5],
+          "moderation_email_time_of_day": "09:00",
+          "moderation_email_timezone": "America/Los_Angeles"
+        }
+      }
+    },
+    {
       "id": "native.mcp.read-feed.posts",
       "tool": "read_feed",
       "arguments": {

@@ -1,3 +1,5 @@
+import { emailPreferencesFixture } from './api-fixtures/swift-email-cases.mts'
+
 /** Structured MCP results consumed by native clients. The catalog validates each case. */
 export type McpResultFixtureCase = {
   id: string
@@ -55,6 +57,12 @@ export const optionMcpResultCases: readonly McpResultFixtureCase[] = [
         },
       ],
     },
+  },
+  {
+    id: 'native.mcp.read-my-preferences.email',
+    tool: 'read_my_preferences',
+    arguments: { option: 'email', arguments: {} },
+    structuredContent: { success: true, email_preferences: emailPreferencesFixture },
   },
   {
     id: 'native.mcp.read-feed.posts',
