@@ -10,11 +10,8 @@ import {
   createDynamicConfigTestKey,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
-import {
-  DynamicConfig,
-  dynamicConfigValkeyClient,
-  getBoundedPositiveIntegerField,
-} from '@data-stores/valkey'
+import { DynamicConfig, dynamicConfigValkeyClient } from '@data-stores/valkey'
+import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import {
   insertTestRetainedIdentityRoot,
   insertTestRetainedRelationIdentity,

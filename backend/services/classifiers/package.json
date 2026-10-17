@@ -26,7 +26,8 @@
     "@services/elections-votes": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@voucha/types": "workspace:^",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "uuid": "^14.0.3"

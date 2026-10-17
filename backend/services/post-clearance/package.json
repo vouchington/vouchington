@@ -38,7 +38,8 @@
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-assert": "^1.5.0",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

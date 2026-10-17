@@ -29,7 +29,8 @@
     "@services/rss-feeds": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@voucha/types": "workspace:^",
-    "undici": "^8.11.2"
+    "undici": "^8.11.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@services/topics": "workspace:^",
