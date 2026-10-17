@@ -5,55 +5,14 @@ import {
   apiOpenApiNoContent,
   apiRequestContract,
 } from '../../response-contract.mts'
-import { getUrlHostnameByAnyCached } from '@services/entity-fetch/get'
-import {
-  getHostnameElectionVote,
-  upsertHostnameElectionVotes,
-} from '@services/elections-votes/hostname'
-import { currentUserCanViewHostname } from '@services/urls-hostnames'
+import { hostnameVoteOptions } from '@services/elections-votes/hostname/vote-handler-options'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
-import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateHostnameElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 
-const hostnameVoteHandler = createVoteHandler({
-  rateLimitPrefix: 'hostname-election-vote',
-  routeKey: 'PUT:/api/v1/hostnames/:id/vote',
-  requestContractOperation: 'PUT:/api/v1/hostnames/:id/vote',
-  entityType: 'hostname',
-  getEntity: getUrlHostnameByAnyCached,
-  entityNotFoundMessage: 'Hostname not found',
-  votePolicy: 'sentiment',
-  getCurrentVote: getHostnameElectionVote,
-  upsertVotes: upsertHostnameElectionVotes,
-  onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateHostnameElectionVoteStats),
-  assertAccess: (ctx, currentUser, hostname) => {
-    if (!currentUserCanViewHostname(currentUser, hostname)) ctx.throw(404, 'Hostname not found')
-  },
-})
-
+const hostnameVoteHandler = createVoteHandler(hostnameVoteOptions)
 const clearHostnameVoteHandler = createVoteClearHandler({
-  rateLimitPrefix: 'hostname-election-vote',
+  ...hostnameVoteOptions,
   routeKey: 'DELETE:/api/v1/hostnames/:id/vote',
   requestContractOperation: 'DELETE:/api/v1/hostnames/:id/vote',
-  entityType: 'hostname',
-  getEntity: getUrlHostnameByAnyCached,
-  entityNotFoundMessage: 'Hostname not found',
-  votePolicy: 'sentiment',
-  upsertVotes: upsertHostnameElectionVotes,
-  getCurrentVote: getHostnameElectionVote,
-  onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateHostnameElectionVoteStats),
-  assertClearAccess: async (ctx, currentUser, hostname) => {
-    const isPrivate =
-      typeof hostname !== 'object' ||
-      hostname === null ||
-      !('publicly_introduced_at' in hostname) ||
-      !hostname.publicly_introduced_at
-    if (
-      !currentUserCanViewHostname(currentUser, hostname) &&
-      (isPrivate || (await getHostnameElectionVote(currentUser.id, ctx.params.id!)) === null)
-    )
-      ctx.throw(404, 'Hostname not found')
-  },
 })
 
 app.route('/api/v1/hostnames/:id/vote').put(async ctx => {

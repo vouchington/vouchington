@@ -10274,7 +10274,7 @@
           "tool": {
             "name": "vote",
             "title": "Vote",
-            "description": "set_post: Set your post vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_post: Clear your current post vote. A vote already cleared succeeds without changing anything.\nset_topic: Set your topic vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_topic: Clear your current topic vote. A vote already cleared succeeds without changing anything.\nset_rss_feed_item: Set your rss feed item vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_rss_feed_item: Clear your current rss feed item vote. A vote already cleared succeeds without changing anything.",
+            "description": "set_post: Set your post vote. A repeated choice succeeds without changing anything. A post's allowed choices depend on its election policy.\nclear_post: Clear your current post vote. A vote already cleared succeeds without changing anything.\nset_topic: Set your topic vote. A repeated choice succeeds without changing anything.\nclear_topic: Clear your current topic vote. A vote already cleared succeeds without changing anything.\nset_rss_feed_item: Set your rss feed item vote. A repeated choice succeeds without changing anything.\nclear_rss_feed_item: Clear your current rss feed item vote. A vote already cleared succeeds without changing anything.\nset_hostname: Set your hostname vote. A repeated choice succeeds without changing anything.\nclear_hostname: Clear your current hostname vote. A vote already cleared succeeds without changing anything.\nset_user_vouch: Set your user vouch vote. A repeated choice succeeds without changing anything.\nclear_user_vouch: Clear your current user vouch vote. A vote already cleared succeeds without changing anything.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -10288,7 +10288,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         },
                         "choice": {
                           "type": "string",
@@ -10320,7 +10320,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S4"
+                          "$ref": "#/$defs/S5"
                         }
                       },
                       "required": ["id"],
@@ -10340,7 +10340,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         },
                         "choice": {
                           "$ref": "#/$defs/S1"
@@ -10363,7 +10363,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S3"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["id"],
@@ -10415,6 +10415,92 @@
                   },
                   "required": ["option", "arguments"],
                   "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["set_hostname"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "choice": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["id", "choice"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["clear_hostname"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S3"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["set_user_vouch"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S6"
+                        },
+                        "choice": {
+                          "$ref": "#/$defs/S1"
+                        }
+                      },
+                      "required": ["id", "choice"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["clear_user_vouch"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/$defs/S6"
+                        }
+                      },
+                      "required": ["id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
                 }
               ],
               "$defs": {
@@ -10430,12 +10516,22 @@
                 "S3": {
                   "type": "string",
                   "format": "uuid",
-                  "description": "The topic ID."
+                  "description": "The hostname ID."
                 },
                 "S4": {
                   "type": "string",
                   "format": "uuid",
+                  "description": "The topic ID."
+                },
+                "S5": {
+                  "type": "string",
+                  "format": "uuid",
                   "description": "The post ID."
+                },
+                "S6": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The user ID."
                 }
               }
             },
@@ -10462,7 +10558,11 @@
                 "set_topic": "#",
                 "clear_topic": "#",
                 "set_rss_feed_item": "#",
-                "clear_rss_feed_item": "#"
+                "clear_rss_feed_item": "#",
+                "set_hostname": "#",
+                "clear_hostname": "#",
+                "set_user_vouch": "#",
+                "clear_user_vouch": "#"
               }
             }
           },
@@ -10492,6 +10592,22 @@
             {
               "method": "DELETE",
               "path": "/api/v1/rss-feed-items/:id/vote"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/hostnames/:id/vote"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/hostnames/:id/vote"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/users/:id/vouch-vote"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/users/:id/vouch-vote"
             }
           ]
         },

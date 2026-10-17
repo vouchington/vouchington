@@ -5946,6 +5946,9 @@ importers:
       '@services/session-advisory-lock':
         specifier: workspace:^
         version: link:../session-advisory-lock
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
       '@services/users':
         specifier: workspace:^
         version: link:../users

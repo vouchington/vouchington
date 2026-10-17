@@ -14,19 +14,10 @@ import {
 } from '@services/users'
 import { getUserMetricsByAnyCached, getUserProfileMetricsByAny } from '@services/entity-fetch'
 import { listProfileLinks } from '@services/my/profile-links'
-import {
-  createVoteClearHandler,
-  createVoteHandler,
-  type CreateVoteHandlerOptions,
-} from '../../election-vote-handler.mts'
-import {
-  getUserVouchElectionById,
-  getUserVouchElectionVote,
-  upsertUserVouchElectionVotes,
-} from '@services/elections-votes/user-vouch'
+import { createVoteClearHandler, createVoteHandler } from '../../election-vote-handler.mts'
+import { getUserVouchElectionById } from '@services/elections-votes/user-vouch'
+import { userVouchVoteOptions } from '@services/elections-votes/user-vouch/vote-handler-options'
 import { getUserVouchContextResponse } from './get-user-vouch-context-response.mts'
-import { createVoteStatsNoopReconciler } from '@services/elections-votes/shared'
-import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import renderMarkdown from '@services/markdown'
 import {
@@ -132,29 +123,10 @@ app
     ctx.json(apiResponse('DELETE:/api/v1/users/:idOrSlug', { logout: currentUser.id === user.id }))
   })
 
-const userVouchBaseOptions: Omit<CreateVoteHandlerOptions, 'routeKey'> = {
-  rateLimitPrefix: 'user-vouch-election-vote',
-  entityType: 'user_vouch' as const,
-  getEntity: getPublicUserByAny,
-  entityNotFoundMessage: 'User not found',
-  votePolicy: 'sentiment' as const,
-  upsertVotes: upsertUserVouchElectionVotes,
-  getCurrentVote: getUserVouchElectionVote,
-  onNoop: createVoteStatsNoopReconciler(enqueueBulkUpdateUserVouchElectionVoteStats),
-  assertAccess: (ctx: Context, currentUser, entity) => {
-    ctx.assert((entity as { id: string }).id !== currentUser.id, 403, 'Cannot vote on yourself')
-  },
-  enqueueIntegrityCheck: false,
-}
-
-const userVouchVoteHandler = createVoteHandler({
-  ...userVouchBaseOptions,
-  routeKey: 'PUT:/api/v1/users/:id/vouch-vote',
-  requestContractOperation: 'PUT:/api/v1/users/:id/vouch-vote',
-})
+const userVouchVoteHandler = createVoteHandler(userVouchVoteOptions)
 
 const clearUserVouchVoteHandler = createVoteClearHandler({
-  ...userVouchBaseOptions,
+  ...userVouchVoteOptions,
   routeKey: 'DELETE:/api/v1/users/:id/vouch-vote',
   requestContractOperation: 'DELETE:/api/v1/users/:id/vouch-vote',
 })

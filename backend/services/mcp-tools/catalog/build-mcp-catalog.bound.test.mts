@@ -58,7 +58,7 @@ const grants: {
 // Owner-approved mcp.all caps: compact UTF-16 sizes plus 1.5%, rounded up to 1,000.
 const caps = {
   mcp: {
-    all: { count: 78, list: 299000, core: 119000, output: 281000 },
+    all: { count: 78, list: 301000, core: 120000, output: 283000 },
     Reader: { count: 9, list: 55000, core: 25000, output: 53000 },
     Plus: { count: 70, list: 217000, core: 110000, output: 240000 },
     Reviewer: { count: 0, list: 2, core: 2, output: 2 },
