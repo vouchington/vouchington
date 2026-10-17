@@ -9,7 +9,7 @@ community-scoped tools, and site admins have global control.
 
 ## Where each concern lives
 
-- Content policy keys, severity, and recommended actions: [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md).
+- Content policy keys, severity, and recommended actions: `ts-shared/utils/moderation-policy.mts`.
 - User reports and the review queue: [Reporting](./REPORTING.md), with
   [Report Judgements](./REPORT-JUDGEMENTS.md) for AI recommendations.
 - Appeals and legal disputes: [Moderation Appeals](./MODERATION-APPEALS.md) and
@@ -23,8 +23,6 @@ community-scoped tools, and site admins have global control.
 
 ## Reports
 
-**Reportable entities:** `rss_feed_item`, `post`, `comment`, `user`, `url_hostname`
-**Reasons:** `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other`. `vote_manipulation` is valid only when `entityType = 'post'`.
 **Flow:** a report creates or updates one pending row; see [Reporting](./REPORTING.md).
 
 ## Paid Transparency Projection

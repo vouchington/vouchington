@@ -15,10 +15,6 @@ import { createFixtureDeadline } from './fixture-deadline.mts'
 import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
 import {
-  type ModerationDocsOverrides,
-  trackModerationDocs,
-} from '../repo-file-policy/moderation-policy-test-fixtures.mts'
-import {
   emptySchemaSnapshot,
   partitionedSnapshotTable,
 } from '../repo-file-policy/schema-snapshot-test-fixtures.mts'
@@ -30,9 +26,6 @@ import { writeValidLocalLlmEndpointPolicyFixture } from '../repo-file-policy/loc
 export { mkdir, rm, writeFile } from 'node:fs/promises'
 export { join } from 'node:path'
 export { checkRepoFilePolicy } from '../repo-file-policy/index.mts'
-// Kept here (not just in repo-file-policy-test-sources.mts) so every existing consumer's
-// import path stays unchanged; the constant itself moved to stay under this file's line cap.
-export { SYNCED_MODERATION_POLICY_MATRIX_DOC } from '../repo-file-policy/repo-file-policy-test-sources.mts'
 
 export function setupRepoFilePolicyTest() {
   let remaining: ReturnType<typeof createFixtureDeadline>
@@ -86,11 +79,6 @@ export function setupRepoFilePolicyTest() {
   function setSnapshotTable(repoRoot: string, tableName: string, table: unknown) {
     snapshotTablesByRepo.get(repoRoot)![tableName] = table
   }
-
-  const trackSyncedModerationDocs = (
-    repoRoot: string,
-    overrides?: ModerationDocsOverrides,
-  ): Promise<void> => trackModerationDocs(repoRoot, track, overrides)
 
   async function trackTopicEnumSurfaces(
     repoRoot: string,
@@ -148,10 +136,7 @@ export function setupRepoFilePolicyTest() {
     }
   }
 
-  async function run(
-    repoRoot: string,
-    options: { formKeyboardDeadline?: bigint } = {},
-  ): Promise<{ stdout: string }> {
+  async function run(repoRoot: string): Promise<{ stdout: string }> {
     const trackedFiles = [...(trackedFilesByRepo.get(repoRoot) ?? [])]
     const ctx: SharedContext = {
       repoRoot,
@@ -161,7 +146,6 @@ export function setupRepoFilePolicyTest() {
     }
     const result = await checkRepoFilePolicy(ctx, {
       schemaSnapshot: emptySchemaSnapshot(snapshotTablesByRepo.get(repoRoot) ?? {}),
-      formKeyboardDeadline: options.formKeyboardDeadline,
       remaining,
     })
     if (result.errors.length > 0) {
@@ -181,7 +165,6 @@ export function setupRepoFilePolicyTest() {
     track,
     trackPath,
     trackPostEnumSurfaces,
-    trackSyncedModerationDocs,
     trackTopicEnumSurfaces,
   }
 }

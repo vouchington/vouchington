@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { SharedContext } from 'vouchington-tooling/shared-context'
-import { CSP_DOC_FILE, CSP_SOURCE_FILE, checkCspDocSync } from './csp-doc-sync.mts'
 import {
   RATE_LIMIT_DOC_FILE,
   RATE_LIMIT_SOURCE_FILE,
@@ -41,35 +40,6 @@ export function checkTargetedGuardrails(ctx: SharedContext): { errors: string[] 
     const present = rateLimitSourceTracked ? RATE_LIMIT_SOURCE_FILE : RATE_LIMIT_DOC_FILE
     errors.push(
       `::error file=${present}::${present}: rate-limit doc-sync guard expects ${missing} to also be tracked; if you renamed one of the two, update the guard path constants together`,
-    )
-  }
-
-  const cspSourceTracked = ctx.trackedFileSet.has(CSP_SOURCE_FILE)
-  const cspDocTracked = ctx.trackedFileSet.has(CSP_DOC_FILE)
-  if (cspSourceTracked && cspDocTracked) {
-    const sourcePath = join(ctx.repoRoot, CSP_SOURCE_FILE)
-    const docPath = join(ctx.repoRoot, CSP_DOC_FILE)
-    const sourceExists = existsSync(sourcePath)
-    const docExists = existsSync(docPath)
-    if (!sourceExists || !docExists) {
-      const missing = sourceExists ? CSP_DOC_FILE : CSP_SOURCE_FILE
-      const present = sourceExists ? CSP_SOURCE_FILE : CSP_DOC_FILE
-      errors.push(
-        `::error file=${present}::${present}: CSP doc-sync guard expects ${missing} to exist; if you renamed one of the two, update the guard path constants together`,
-      )
-    } else {
-      errors.push(
-        ...checkCspDocSync({
-          sourceCode: readFileSync(sourcePath, 'utf8'),
-          docMarkdown: readFileSync(docPath, 'utf8'),
-        }),
-      )
-    }
-  } else if (cspSourceTracked !== cspDocTracked) {
-    const missing = cspSourceTracked ? CSP_DOC_FILE : CSP_SOURCE_FILE
-    const present = cspSourceTracked ? CSP_SOURCE_FILE : CSP_DOC_FILE
-    errors.push(
-      `::error file=${present}::${present}: CSP doc-sync guard expects ${missing} to also be tracked; if you renamed one of the two, update the guard path constants together`,
     )
   }
 

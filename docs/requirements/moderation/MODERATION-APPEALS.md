@@ -23,7 +23,7 @@ an appeal cannot rewrite its history.
 
 - Appeals are expected to be answered within a service-level window; staff lists flag overdue ones.
 - Which decisions are appealable, and what recommended action they carry, comes from the
-  [Moderation Policy Matrix](./MODERATION-POLICY-MATRIX.md).
+  moderation policy registry in `ts-shared/utils/moderation-policy.mts`.
 - A suspension appeal can only be accepted by an administrator, not a moderator.
 - Community and platform removals of the same post are distinct appeal targets.
 - Delivery failure is ambiguous (the notification can succeed before the response is lost), so

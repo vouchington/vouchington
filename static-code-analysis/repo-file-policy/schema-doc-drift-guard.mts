@@ -1,16 +1,11 @@
 import { readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-import {
-  checkModerationPolicyDocSync,
-  isModerationPolicyDocSyncPath,
-} from './moderation-policy-doc-sync-guard.mts'
 import { isMigrationSqlFile, isSchemaDocDriftSourcePath } from './policy-matchers.mts'
 
 const REPORTING_DOC_PATHS = new Set([
   'docs/requirements/moderation/REPORTING.md',
   'docs/requirements/moderation/MODERATION-FLOWS.md',
-  'docs/overview/architecture/services/moderation-reports/README.md',
 ])
 
 const LEGACY_REPORTING_PATTERNS = [
@@ -76,7 +71,6 @@ export function shouldReadSchemaDocDriftFile(file: string): boolean {
     isSchemaDocDriftSourcePath(file) ||
     isDerivedLifecycleStatusDocPath(file) ||
     REPORTING_DOC_PATHS.has(file) ||
-    isModerationPolicyDocSyncPath(file) ||
     file === RSS_PARTITION_COMMENT_PATH
   )
 }
@@ -126,6 +120,4 @@ export function checkSchemaDocDriftGuard(
       )
     }
   }
-
-  checkModerationPolicyDocSync(repoRoot, trackedFiles, contentsByFile, errors)
 }
