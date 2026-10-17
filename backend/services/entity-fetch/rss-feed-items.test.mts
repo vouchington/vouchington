@@ -80,13 +80,16 @@ describe('rss-feed-items', () => {
         contentSha256,
       })
 
-      await bookmarkEntity(user, 'rss_feed_item', { id: rssFeedItemId }, 'save')
+      await Promise.all([
+        bookmarkEntity(user, 'rss_feed_item', { id: rssFeedItemId }, 'save'),
+        bookmarkEntity(user, 'rss_feed_item', { id: rssFeedItemId }, 'hide'),
+      ])
       await insertRssFeedItemVote(user.id, rssFeedItemId, 1, undefined, false, true)
 
-      const result = await fetchRssFeedItemsWithMetadata([rssFeedItemId], user)
+      const result = await fetchRssFeedItemsWithMetadata([rssFeedItemId, rssFeedItemId], user)
 
       expect(result.bookmarks).toBeDefined()
-      expect(result.bookmarks![rssFeedItemId].save).toBe(true)
+      expect(result.bookmarks![rssFeedItemId]).toMatchObject({ save: true, hide: true })
       expect(result.election_votes).toBeDefined()
       expect(result.election_votes![rssFeedItemId]).toBeDefined()
       expect(result.election_votes![rssFeedItemId].choice).toBe('like')

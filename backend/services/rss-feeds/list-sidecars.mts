@@ -5,7 +5,7 @@ import {
   type ViewTopicElection,
 } from '@services/elections-votes/topic'
 import type { ElectionVote } from '@services/elections-votes/shared'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import type { ViewHostnameElection } from '@services/elections-votes/hostname'
 import { getHostnameElectionsByIdBatch } from '@services/elections-votes/hostname/get-election-batch'
 import { getTopicElectionsByIdBatch } from '@services/elections-votes/topic/get-election-batch'
@@ -60,29 +60,28 @@ export async function buildRssFeedSidecars(
   ]
   const feedIds = feeds.map(feed => feed.id)
 
-  const [topic_elections, hostname_elections, votes, feedBookmarks, topicBookmarks] =
-    await Promise.all([
-      topicIds.length > 0
-        ? getTopicElectionByIdCachedBatch(topicIds).then(indexById)
-        : Promise.resolve({} as Record<string, ViewTopicElection>),
-      hostnameIds.length > 0
-        ? getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById)
-        : Promise.resolve({} as Record<string, ViewHostnameElection>),
-      currentUser && topicIds.length > 0
-        ? getTopicElectionVotesByUser(currentUser.id, topicIds)
-        : Promise.resolve([]),
-      currentUser && feedIds.length > 0
-        ? getBookmarksForEntities(currentUser, 'rss_feed', feedIds)
-        : Promise.resolve({}),
-      currentUser && topicIds.length > 0
-        ? getBookmarksForEntities(currentUser, 'topic', topicIds)
-        : Promise.resolve({}),
-    ])
+  const [topic_elections, hostname_elections, votes, bookmarkMaps] = await Promise.all([
+    topicIds.length > 0
+      ? getTopicElectionByIdCachedBatch(topicIds).then(indexById)
+      : Promise.resolve({} as Record<string, ViewTopicElection>),
+    hostnameIds.length > 0
+      ? getHostnameElectionByIdCachedBatch(hostnameIds).then(indexById)
+      : Promise.resolve({} as Record<string, ViewHostnameElection>),
+    currentUser && topicIds.length > 0
+      ? getTopicElectionVotesByUser(currentUser.id, topicIds)
+      : Promise.resolve([]),
+    currentUser
+      ? getBookmarkMapsForEntityGroups(currentUser, [
+          { entityTypeName: 'rss_feed', entities: feedIds },
+          { entityTypeName: 'topic', entities: topicIds },
+        ])
+      : Promise.resolve([{}, {}]),
+  ])
 
   const sidecars: RssFeedSidecars = { topic_elections, hostname_elections }
 
   if (currentUser) {
-    // Feed and topic IDs are both UUIDs; collision risk is zero.
+    const [feedBookmarks, topicBookmarks] = bookmarkMaps
     const bookmarks = { ...feedBookmarks, ...topicBookmarks }
     if (votes.length > 0) {
       sidecars.election_votes = Object.fromEntries(votes.map(vote => [vote.entity_id, vote]))

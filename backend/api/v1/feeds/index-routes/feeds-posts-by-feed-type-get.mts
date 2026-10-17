@@ -1,7 +1,7 @@
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import {
@@ -116,13 +116,10 @@ app.route('/api/v1/feeds/posts/:feed_type').get(async (ctx: Context) => {
       ),
     ] as string[]
 
-    const [postBookmarks, creatorBookmarks] = await Promise.all([
-      getBookmarksForEntities(currentUser, 'post', postIds),
-      creatorIds.length > 0
-        ? getBookmarksForEntities(currentUser, 'user', creatorIds)
-        : Promise.resolve({}),
+    const [postBookmarks, creatorBookmarks] = await getBookmarkMapsForEntityGroups(currentUser, [
+      { entityTypeName: 'post', entities: postIds },
+      { entityTypeName: 'user', entities: creatorIds },
     ])
-
     const bookmarks = { ...creatorBookmarks, ...postBookmarks }
     return Object.keys(bookmarks).length > 0 ? bookmarks : undefined
   })

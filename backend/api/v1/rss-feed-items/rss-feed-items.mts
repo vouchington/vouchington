@@ -17,7 +17,7 @@ import {
   getRssFeedItemByIdCachedBatch,
   getRssFeedItemElectionByIdCachedBatch,
 } from '@services/entity-fetch'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { attachPostProvenance } from '@services/content-provenance'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
@@ -132,6 +132,19 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   }
 
   if (currentUser) {
+    const bookmarkGroupsPromise = itemsPromise.then(async items => {
+      const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
+      const feedIds = [...new Set(items.flatMap(item => (item != null ? [item.rss_feed.id] : [])))]
+      return {
+        itemIds,
+        feedIds,
+        maps: await getBookmarkMapsForEntityGroups(currentUser, [
+          { entityTypeName: 'rss_feed_item', entities: itemIds },
+          { entityTypeName: 'rss_feed', entities: feedIds },
+        ]),
+      }
+    })
+
     // Look up related discussion posts by URL IDs from RSS feed items
     const relatedPostsPromise = itemsPromise.then(async items => {
       const urlIds = [...new Set(items.flatMap(item => (item?.url?.id ? [item.url.id] : [])))]
@@ -156,12 +169,9 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       r.postIds.length > 0 ? getPostMetricsByAnyCachedBatch(r.postIds).then(indexById) : {},
     )
 
-    output.bookmarks = itemsPromise.then(async items => {
-      const fetchedItemIds = items.flatMap(item => (item != null ? [item.id] : []))
-      if (fetchedItemIds.length === 0) return {}
-      const bookmarks = await getBookmarksForEntities(currentUser, 'rss_feed_item', fetchedItemIds)
-      return bookmarks
-    })
+    output.bookmarks = bookmarkGroupsPromise.then(({ itemIds, maps: [bookmarks] }) =>
+      itemIds.length > 0 ? bookmarks : {},
+    )
 
     output.election_votes = itemsPromise.then(async items => {
       const votableItemIds = items.flatMap(item => (item != null ? [item.id] : []))
@@ -172,12 +182,9 @@ app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
       return electionVotesMapToRecord(votesMap)
     })
 
-    output.rss_feed_bookmarks = itemsPromise.then(async items => {
-      const feedIds = [...new Set(items.flatMap(item => (item != null ? [item.rss_feed.id] : [])))]
-      if (feedIds.length === 0) return {}
-      const bookmarks = await getBookmarksForEntities(currentUser, 'rss_feed', feedIds)
-      return Object.keys(bookmarks).length > 0 ? bookmarks : {}
-    })
+    output.rss_feed_bookmarks = bookmarkGroupsPromise.then(({ feedIds, maps: [, bookmarks] }) =>
+      feedIds.length > 0 && Object.keys(bookmarks).length > 0 ? bookmarks : {},
+    )
   }
 
   ctx.setType('json')

@@ -3,7 +3,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 
 import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarkMapsForEntityGroups } from '@services/bookmarks/get'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
 import {
@@ -144,27 +144,23 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   }
 
   if (currentUser) {
-    const postBookmarksPromise = getBookmarksForEntities(currentUser, 'post', postIds)
-
-    output.bookmarks = Promise.all([postBookmarksPromise, postsPromise]).then(
-      async ([postBookmarks, posts]) => {
-        const creatorIds = [
-          ...new Set(
-            Object.values(indexById(posts)).flatMap(post =>
-              post.created_by_id ? [post.created_by_id] : [],
-            ),
+    output.bookmarks = postsPromise.then(posts => {
+      const creatorIds = [
+        ...new Set(
+          Object.values(indexById(posts)).flatMap(post =>
+            post.created_by_id ? [post.created_by_id] : [],
           ),
-        ] as string[]
+        ),
+      ] as string[]
 
-        const creatorBookmarks =
-          creatorIds.length > 0
-            ? await getBookmarksForEntities(currentUser, 'user', creatorIds)
-            : {}
-
-        const bookmarks = { ...creatorBookmarks, ...postBookmarks }
-        return bookmarks
-      },
-    )
+      return getBookmarkMapsForEntityGroups(currentUser, [
+        { entityTypeName: 'post', entities: postIds },
+        { entityTypeName: 'user', entities: creatorIds },
+      ]).then(([postBookmarks, creatorBookmarks]) => ({
+        ...creatorBookmarks,
+        ...postBookmarks,
+      }))
+    })
 
     const postElectionVotesPromise = postsPromise.then(async posts => {
       const votablePostIds = posts.flatMap(p => (p != null ? [p.id] : []))

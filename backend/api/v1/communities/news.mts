@@ -14,7 +14,7 @@ import {
 } from '@services/entity-fetch'
 import { getPostIdsByUrlIds } from '@services/posts/search/get-posts-by-url-ids'
 import { labelAndMaskPosts } from '@services/content-provenance'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { getRssFeedItemElectionVotesByUser } from '@services/elections-votes/rss-feed-item'
 import { getPublicUsersByAnyBatch } from '@services/users/get-public-batch'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
@@ -163,7 +163,9 @@ app.route('/api/v1/communities/:idOrSlug/news').get(async (ctx: Context) => {
     output.bookmarks = itemsPromise.then(async items => {
       const itemIds = items.flatMap(item => (item != null ? [item.id] : []))
       if (itemIds.length === 0) return undefined
-      const bookmarks = await getBookmarksForEntities(currentUser, 'rss_feed_item', itemIds)
+      const bookmarks = await getBookmarksForEntityGroups(currentUser, [
+        { entityTypeName: 'rss_feed_item', entities: itemIds },
+      ])
       return Object.keys(bookmarks).length > 0 ? bookmarks : undefined
     })
 

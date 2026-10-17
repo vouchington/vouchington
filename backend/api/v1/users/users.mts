@@ -8,7 +8,7 @@ import {
   searchUsers,
   usersSearchCursorScope,
 } from '@services/users'
-import { getBookmarksForEntities } from '@services/bookmarks'
+import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { validateUsername } from '@modules/utils'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
@@ -54,7 +54,11 @@ app.route('/api/v1/users').get(async (ctx: Context) => {
       : await searchUsers(qValue, { limit: options.limit, after })
 
     const muteBookmarks =
-      users.length > 0 ? await getBookmarksForEntities(currentUser, 'user', users) : null
+      users.length > 0
+        ? await getBookmarksForEntityGroups(currentUser, [
+            { entityTypeName: 'user', entities: users },
+          ])
+        : null
     const muted: Record<string, boolean> | undefined = muteBookmarks
       ? Object.fromEntries(users.map(u => [u.id, muteBookmarks[u.id]?.mute ?? false]))
       : undefined

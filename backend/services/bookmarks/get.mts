@@ -1,7 +1,7 @@
 import type { EntityRelationEntityType } from '@services/entity-relations/config'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import {
-  queryBookmarksForRelationPlans,
+  queryBookmarkGroupsForRelationPlans,
   mapBookmarkRowsToOutput,
   queryBookmarksForAllRelations,
   queryBookmarksForRelation,
@@ -107,18 +107,38 @@ export async function getBookmarksForEntityGroups(
     entities: Array<{ id: string } | string>
   }>,
 ) {
-  const plans: BookmarkRelationPlan[] = groups.flatMap(group => {
+  const grouped = await getBookmarkMapsForEntityGroups(user, groups)
+  const merged: Record<string, Record<string, boolean>> = {}
+  for (const group of grouped) {
+    for (const [entityId, bookmarks] of Object.entries(group)) {
+      merged[entityId] ||= {}
+      Object.assign(merged[entityId]!, bookmarks)
+    }
+  }
+  return merged
+}
+
+export async function getBookmarkMapsForEntityGroups(
+  user: PrivateUser,
+  groups: Array<{
+    entityTypeName: EntityRelationEntityType
+    entities: Array<{ id: string } | string>
+  }>,
+) {
+  const plans: BookmarkRelationPlan[] = groups.flatMap((group, groupIndex) => {
     const objectIds = [
       ...new Set(group.entities.map(entity => (typeof entity === 'string' ? entity : entity.id))),
     ]
     const relations = getUserBookmarkRelationsForEntityType(group.entityTypeName)
     return objectIds.length > 0 && relations.length > 0
-      ? [{ entityTypeName: group.entityTypeName, relations, objectIds }]
+      ? [{ groupIndex, entityTypeName: group.entityTypeName, relations, objectIds }]
       : []
   })
-  if (plans.length === 0) return {}
+  if (plans.length === 0) return groups.map(() => ({}))
 
-  if (!isBookmarkBloomFilterEnabled()) return queryBookmarksForRelationPlans(user.id, plans)
+  if (!isBookmarkBloomFilterEnabled()) {
+    return queryBookmarkGroupsForRelationPlans(user.id, plans, groups.length)
+  }
 
   const relationTableNames = [
     ...new Set(plans.flatMap(plan => plan.relations.map(r => r.table_name))),
@@ -147,7 +167,7 @@ export async function getBookmarksForEntityGroups(
     }
   }
   if (needsBackfill) void enqueueBackfillUserBookmarkBloomFilter({ userId: user.id })
-  return queryBookmarksForRelationPlans(user.id, narrowedPlans)
+  return queryBookmarkGroupsForRelationPlans(user.id, narrowedPlans, groups.length)
 }
 
 export const getBookmarksForEntity = async (

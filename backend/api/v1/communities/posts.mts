@@ -13,7 +13,7 @@ import {
   searchPendingPosts,
 } from '@services/communities'
 import { attachPostClaims } from '@services/moderation-claims'
-import { getBookmarksForEntities } from '@services/bookmarks/get'
+import { getBookmarksForEntityGroups } from '@services/bookmarks/get'
 import { attachPostProvenance } from '@services/content-provenance'
 import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getUrlEmbedsByUrlIds } from '@services/rss-feed-items/get-url-embed'
@@ -100,9 +100,9 @@ app.route('/api/v1/communities/:idOrSlug/posts').get(async (ctx: Context) => {
   }
 
   if (currentUser) {
-    output.bookmarks = getBookmarksForEntities(currentUser, 'post', allPostIds).then(b =>
-      Object.keys(b).length > 0 ? b : undefined,
-    )
+    output.bookmarks = getBookmarksForEntityGroups(currentUser, [
+      { entityTypeName: 'post', entities: allPostIds },
+    ]).then(b => (Object.keys(b).length > 0 ? b : undefined))
   }
 
   ctx.setType('json')
