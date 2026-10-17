@@ -1,4 +1,9 @@
-import { createTestUser, softDeleteUser } from '@voucha/test-helpers/entities/users'
+import {
+  createTestUsername,
+  createTestUserWithId,
+  softDeleteUser,
+} from '@voucha/test-helpers/entities/users'
+import { v7 as uuidv7 } from 'uuid'
 import { toEntityRelationElectionTable } from '@services/elections-votes/entity-relation/target'
 import { describe, expect, it } from 'vitest'
 import { createSameIdElectionRelations } from '@voucha/test-helpers/entities/entity-relation-election-collisions'
@@ -68,9 +73,10 @@ describe('relation election fanout', () => {
   })
 
   it('continues past a deleted-only page to its active fixture without expanding the read', async () => {
-    const ids = (await Promise.all([createTestUser(), createTestUser(), createTestUser()]))
-      .map(user => user.id)
-      .toSorted()
+    // Adjacent UUIDs leave no gap where another test worker can insert an identity.
+    const prefix = uuidv7().slice(0, -4)
+    const ids = ['0001', '0002', '0003'].map(suffix => `${prefix}${suffix}`)
+    await Promise.all(ids.map(id => createTestUserWithId(id, createTestUsername())))
     await softDeleteUser(ids[1]!)
     const deletedPage = await findUsersForElectionVoteReplay(ids[0]!, 1)
     expect(deletedPage).toEqual({ userIds: [], nextCursor: ids[1] })
