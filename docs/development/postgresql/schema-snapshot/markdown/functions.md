@@ -36,6 +36,14 @@ CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table
  STABLE
 ```
 
+## `fn_create_community_search_counts`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_create_community_search_counts()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_create_copyright_action_attempt`
 
 ```sql
@@ -295,6 +303,22 @@ CREATE OR REPLACE FUNCTION public.fn_project_capture_notification_push_intent()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_community_member_count`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_community_member_count()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_project_community_virtual_subscription_count`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_project_community_virtual_subscription_count()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

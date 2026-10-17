@@ -1240,6 +1240,9 @@
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
     },
+    "fn_create_community_search_counts()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_create_community_search_counts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO community_search_counts (community_id) VALUES (NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_create_copyright_action_attempt()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_create_copyright_action_attempt()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND OLD.lease_token IS NOT NULL\n    AND OLD.lease_token IS DISTINCT FROM NEW.lease_token THEN\n    INSERT INTO copyright_notice_action_attempt_results(attempt_id, completed_at, stale_at, blocked_at, failed_at, abandoned_at)\n    SELECT id, CASE WHEN NEW.completed_at_reason = 'completed' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'stale' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'blocked' THEN clock_timestamp() ELSE NULL END, CASE WHEN NEW.completed_at_reason = 'failed' OR (NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL AND NOT (NEW.completed_at IS NOT NULL)) THEN clock_timestamp() ELSE NULL END, CASE WHEN (NEW.completed_at_reason = 'completed' OR NEW.completed_at_reason = 'stale' OR NEW.completed_at_reason = 'blocked' OR NEW.completed_at_reason = 'failed' OR NEW.lease_token IS NULL AND NEW.failure_message IS NOT NULL) IS NOT TRUE THEN clock_timestamp() ELSE NULL END\n    FROM copyright_notice_action_attempts WHERE work_item_id = OLD.id AND lease_token = OLD.lease_token\n    ON CONFLICT (attempt_id) DO NOTHING;\n  END IF;\n  IF NEW.lease_token IS NOT NULL AND (TG_OP = 'INSERT' OR NEW.lease_token IS DISTINCT FROM OLD.lease_token) THEN\n    INSERT INTO copyright_notice_action_attempts(work_item_id, generation, attempt_number, lease_token, started_at)\n      SELECT NEW.id, NEW.generation, COALESCE(MAX(attempt_number), 0) + 1, NEW.lease_token, NEW.leased_at\n      FROM copyright_notice_action_attempts WHERE work_item_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1335,6 +1338,12 @@
     },
     "fn_project_community_image_placements()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_image_placements()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NULL, NULL, NULL, NEW.id, NULL);\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NULL, NULL, NULL, NEW.id, NULL);\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.profile_image_id IS DISTINCT FROM OLD.profile_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-profile-image', NEW.profile_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  IF TG_OP = 'INSERT' OR NEW.banner_image_id IS DISTINCT FROM OLD.banner_image_id THEN\n    PERFORM fn_sync_image_surface_placement('community-banner-image', NEW.banner_image_id, NULL, NULL, NEW.id, NULL);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_project_community_member_count()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_member_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.removed_at IS NULL THEN\n      UPDATE community_search_counts SET member_count = member_count - 1\n      WHERE community_id = OLD.community_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.removed_at IS NULL THEN\n      UPDATE community_search_counts SET member_count = member_count + 1\n      WHERE community_id = NEW.community_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_project_community_virtual_subscription_count()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_community_virtual_subscription_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP <> 'INSERT' THEN\n    IF OLD.deleted_at IS NULL THEN\n      UPDATE community_search_counts\n        SET virtual_subscription_count = virtual_subscription_count - 1\n      WHERE community_id = OLD.object_id;\n    END IF;\n  END IF;\n  IF TG_OP <> 'DELETE' THEN\n    IF NEW.deleted_at IS NULL THEN\n      UPDATE community_search_counts\n        SET virtual_subscription_count = virtual_subscription_count + 1\n      WHERE community_id = NEW.object_id;\n    END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_project_copyright_form_screening_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_form_screening_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' AND NEW.completed_at IS NULL AND NEW.failed_at IS NULL THEN\n    INSERT INTO copyright_notice_form_screening_work_items(copyright_notice_form_intake_id, attempt_id)\n      VALUES (NEW.copyright_notice_form_intake_id, NEW.id)\n    ON CONFLICT (copyright_notice_form_intake_id) DO UPDATE SET attempt_id = EXCLUDED.attempt_id,\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL, attempt_count = 0, available_at = clock_timestamp();\n  ELSIF NEW.completed_at IS NOT NULL OR NEW.failed_at IS NOT NULL THEN\n    DELETE FROM copyright_notice_form_screening_work_items WHERE attempt_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -14998,6 +15007,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_communities__search_name": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_communities__search_name ON public.communities USING btree (name, id) WHERE (deleted_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "name",
+              "descending": false,
+              "expression": "name",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(deleted_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_communities__slug": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -15065,6 +15106,9 @@
         },
         "trigger_communities_updated_at": {
           "definition": "CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_create_community_search_counts": {
+          "definition": "CREATE TRIGGER trigger_create_community_search_counts AFTER INSERT ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_create_community_search_counts()"
         },
         "trigger_sync_community_image_placements": {
           "definition": "CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_project_community_image_placements()"
@@ -19141,6 +19185,9 @@
       "triggers": {
         "trigger_community_members_updated_at": {
           "definition": "CREATE TRIGGER trigger_community_members_updated_at BEFORE UPDATE ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_project_community_member_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_member_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_project_community_member_count()"
         }
       },
       "uniqueConstraints": {}
@@ -21106,6 +21153,157 @@
           "definition": "CREATE TRIGGER trigger_community_saved_replies_updated_at BEFORE UPDATE ON public.community_saved_replies FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
+      "uniqueConstraints": {}
+    },
+    "community_search_counts": {
+      "checkConstraints": {
+        "community_search_counts_member_count_check": {
+          "definition": "CHECK ((member_count >= 0))",
+          "validated": true
+        },
+        "community_search_counts_virtual_subscription_count_check": {
+          "definition": "CHECK ((virtual_subscription_count >= 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "community_id": {
+          "comment": "Community whose search counts are projected.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "member_count": {
+          "comment": "Active members, matching view_community_metrics.member_count.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "virtual_subscription_count": {
+          "comment": "Active proxy follows plus proxy mutes, matching view_community_metrics.virtual_subscription_count.",
+          "dataType": "integer",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Transactionally maintained counts used to select indexed community search pages before hydrating metrics.",
+      "foreignKeys": {
+        "community_search_counts_community_id_fkey": {
+          "columns": ["community_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "community_search_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX community_search_counts_pkey ON public.community_search_counts USING btree (community_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_community_search_counts__members": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_search_counts__members ON public.community_search_counts USING btree (member_count DESC, community_id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "member_count",
+              "descending": true,
+              "expression": "member_count",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": true,
+              "expression": "community_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_community_search_counts__virtual_subscriptions": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_community_search_counts__virtual_subscriptions ON public.community_search_counts USING btree (virtual_subscription_count DESC, community_id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "virtual_subscription_count",
+              "descending": true,
+              "expression": "virtual_subscription_count",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.int4_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "community_id",
+              "descending": true,
+              "expression": "community_id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["community_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "conversation_messages": {
@@ -108340,7 +108538,11 @@
         "columns": ["subject_id", "object_id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_proxy_follow_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_proxy_follow_count AFTER INSERT OR DELETE OR UPDATE OF object_id, deleted_at ON public.relation__user__proxy_follow__community FOR EACH ROW EXECUTE FUNCTION fn_project_community_virtual_subscription_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__user__proxy_mute__community": {
@@ -108554,7 +108756,11 @@
         "columns": ["subject_id", "object_id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_project_community_proxy_mute_count": {
+          "definition": "CREATE TRIGGER trigger_project_community_proxy_mute_count AFTER INSERT OR DELETE OR UPDATE OF object_id, deleted_at ON public.relation__user__proxy_mute__community FOR EACH ROW EXECUTE FUNCTION fn_project_community_virtual_subscription_count()"
+        }
+      },
       "uniqueConstraints": {}
     },
     "relation__user__save__community": {

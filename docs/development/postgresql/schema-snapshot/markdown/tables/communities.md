@@ -86,6 +86,7 @@ _none_
 - `idx_communities__profile_image`: `CREATE INDEX idx_communities__profile_image ON public.communities USING btree (profile_image_id) WHERE ((profile_image_id IS NOT NULL) AND (deleted_at IS NULL))`
 - `idx_communities__profile_image_id_bare`: `CREATE INDEX idx_communities__profile_image_id_bare ON public.communities USING btree (profile_image_id) WHERE (profile_image_id IS NOT NULL)`
 - `idx_communities__search`: `CREATE INDEX idx_communities__search ON public.communities USING gin (search_vector) WHERE (deleted_at IS NULL)`
+- `idx_communities__search_name`: `CREATE INDEX idx_communities__search_name ON public.communities USING btree (name, id) WHERE (deleted_at IS NULL)`
 - `idx_communities__slug`: `CREATE UNIQUE INDEX idx_communities__slug ON public.communities USING btree (slug) WHERE (deleted_at IS NULL)`
 - `idx_communities__updated_at_id_active`: `CREATE INDEX idx_communities__updated_at_id_active ON public.communities USING btree (updated_at, ((id)::text)) WHERE (deleted_at IS NULL)`
 
@@ -93,4 +94,5 @@ _none_
 
 - `trigger_communities_content_provenance_immutable`: `CREATE TRIGGER trigger_communities_content_provenance_immutable AFTER UPDATE ON public.communities FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_communities_updated_at`: `CREATE TRIGGER trigger_communities_updated_at BEFORE UPDATE ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_create_community_search_counts`: `CREATE TRIGGER trigger_create_community_search_counts AFTER INSERT ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_create_community_search_counts()`
 - `trigger_sync_community_image_placements`: `CREATE TRIGGER trigger_sync_community_image_placements AFTER INSERT OR UPDATE OF profile_image_id, banner_image_id, deleted_at ON public.communities FOR EACH ROW EXECUTE FUNCTION fn_project_community_image_placements()`

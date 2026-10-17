@@ -55,3 +55,4 @@ _none_
 **Triggers:**
 
 - `trigger_community_members_updated_at`: `CREATE TRIGGER trigger_community_members_updated_at BEFORE UPDATE ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_project_community_member_count`: `CREATE TRIGGER trigger_project_community_member_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_members FOR EACH ROW EXECUTE FUNCTION fn_project_community_member_count()`
