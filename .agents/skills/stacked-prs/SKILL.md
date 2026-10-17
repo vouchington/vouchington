@@ -214,7 +214,7 @@ The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn 
    - The made-by-me half is a durable remote fact: the `pr_create` and `pr_update` tools stamp every
      PR body they write with `Agent: <harness> (<model>) session <id>`, resolved via
      `inspectHarnessEnvironment` across claude-code, codex, cursor, and grok. Compare against the
-     current session with `dev/agent-session-id/resolve.mts`'s `resolveSessionId()`:
+     current session id, the one the SessionStart hook printed as `Blackboard sessionId: <id>`:
      ```bash
      gh api repos/{o}/{r}/pulls/<N> --jq '.body' | grep -E '^Agent: .* (session|thread) <my-id>$'
      ```
