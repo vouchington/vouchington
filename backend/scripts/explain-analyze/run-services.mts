@@ -75,7 +75,7 @@ export { createIndividualCard } from '@services/individuals-households/individua
 export { createMyLandingPage } from '@services/my'
 export { reorderProfileLinks } from '@services/my/profile-links-reorder'
 export { createDataRequest } from '@services/account-data-requests/create'
-export { upsertUserFinancialProfile } from '../../services/user-financial-profiles/upsert.mts'
+export { upsertUserFinancialProfile } from '@services/user-financial-profiles'
 export { getIndividualRewardsProgramPointValuations } from '@services/individuals-households'
 export { getHouseholdSpendingCategoriesByUserId } from '@services/individuals-households'
 export { getIndividualRewardsProgramStatuses } from '@services/individuals-households'

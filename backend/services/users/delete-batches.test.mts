@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import type { deleteExportFromS3 } from '@services/account-data-requests'
 import {
-  addUserDeletionExternalWork,
+  addUserDeletionExternalWorks,
   claimUserDeletionAttempt,
   createUserDeletionRequest,
   processUserDeletionBatch,
@@ -162,7 +162,7 @@ describe('user deletion batches', () => {
   it('keeps required provider work pending until the provider succeeds', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWork(request.id, 's3-export', 'test/export.zip')
+    await addUserDeletionExternalWorks(request.id, 's3-export', ['test/export.zip'])
     await claimUserDeletionAttempt(request.id, request.processingAttemptId)
     const deleteS3 = vi
       .fn<typeof deleteExportFromS3>()
@@ -237,7 +237,7 @@ describe('user deletion batches', () => {
   it('does not start provider work after an attempt loses ownership', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWork(request.id, 's3-export', 'test/fenced-export.zip')
+    await addUserDeletionExternalWorks(request.id, 's3-export', ['test/fenced-export.zip'])
     const deleteS3 = vi.fn<typeof deleteExportFromS3>().mockResolvedValue(undefined)
 
     await expect(
@@ -251,7 +251,7 @@ describe('user deletion batches', () => {
   it('does not complete provider work after an attempt loses ownership during the call', async () => {
     const user = await createTestUser()
     const request = await createUserDeletionRequest(user.id, user.id)
-    await addUserDeletionExternalWork(request.id, 's3-export', 'test/rotated-export.zip')
+    await addUserDeletionExternalWorks(request.id, 's3-export', ['test/rotated-export.zip'])
     await claimUserDeletionAttempt(request.id, request.processingAttemptId)
     const successorAttemptId = randomUUID()
     const deleteS3 = vi.fn<typeof deleteExportFromS3>().mockImplementation(async () => {

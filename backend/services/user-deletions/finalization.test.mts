@@ -7,7 +7,10 @@ import {
   insertTestBlueskyLinkedAccount,
 } from '@voucha/test-helpers'
 import { createUserDeletionRequest } from './create.mts'
-import { addUserDeletionExternalWork, completeUserDeletionExternalWork } from './external-work.mts'
+import {
+  addUserDeletionExternalWorks,
+  completeUserDeletionExternalWorks,
+} from './external-work.mts'
 import { processUserDeletionBatch } from './lifecycle.mts'
 import { processUserDeletionCredentialsBatch } from '../users/delete-phase-credentials.mts'
 import {
@@ -119,9 +122,10 @@ describe('user deletion finalization', () => {
       { length: getUserDeletionsWorkLimit('batch_size') + 1 },
       (_, index) => `cache-tag:${user.id}:${index}`,
     )
+    await addUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', workKeys)
+    await completeUserDeletionExternalWorks(request.id, 'cloudflare-cache-tag', workKeys)
     for (const workKey of workKeys) {
-      await addUserDeletionExternalWork(request.id, 'cloudflare-cache-tag', workKey)
-      await completeUserDeletionExternalWork(request.id, 'cloudflare-cache-tag', workKey)
+      expect(workKey.startsWith(`cache-tag:${user.id}:`)).toBe(true)
       await addUserDeletionRelationImpactForTest(request.id, true)
     }
 
