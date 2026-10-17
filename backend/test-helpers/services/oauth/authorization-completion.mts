@@ -10,6 +10,7 @@ export type CompletionTestCleanup = {
   authorizationIds: string[]
   githubUserIds: string[]
   facebookUserIds: string[]
+  googleUserIds: string[]
   userIds: string[]
 }
 
@@ -18,6 +19,7 @@ export function registerCleanup(): CompletionTestCleanup {
     authorizationIds: [],
     githubUserIds: [],
     facebookUserIds: [],
+    googleUserIds: [],
     userIds: [],
   }
   onTestFinished(async () => {
@@ -27,11 +29,12 @@ export function registerCleanup(): CompletionTestCleanup {
 }
 
 export async function createOAuthAccount(
-  provider: 'facebook' | 'github',
+  provider: 'facebook' | 'github' | 'google',
   cleanup: CompletionTestCleanup,
 ) {
   const providerUserId = `broker-completion-${randomUUID()}`
   if (provider === 'github') cleanup.githubUserIds.push(providerUserId)
+  else if (provider === 'google') cleanup.googleUserIds.push(providerUserId)
   else cleanup.facebookUserIds.push(providerUserId)
   return upsertOAuthAccount(provider, providerUserId, `tests+${providerUserId}@voucha.ai`, {
     login: providerUserId,
@@ -42,7 +45,7 @@ export async function createOAuthAccount(
 export async function insertCompletionReadyAuthorization(
   options: {
     accountId: string
-    provider: 'facebook' | 'github'
+    provider: 'facebook' | 'github' | 'google'
     deviceId: string
     sessionId: string
     completionToken: string

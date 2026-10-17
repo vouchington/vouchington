@@ -1,9 +1,10 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   beginTransaction,
   createTestUser,
+  deleteTestOAuthAuthorizationFixtures,
   getTestOAuthAccountRaw,
   lockTestUserMutation,
   restoreUser,
@@ -38,20 +39,34 @@ describe('connectOAuthAccountToUser', () => {
     }
   })
 
-  it('throws 409 when the provider account belongs to another user', async () => {
-    const userA = await createTestUser()
-    const userB = await createTestUser()
-    const providerUserId = `github-connect-${randomUUID()}`
-    await upsertOAuthAccount('github', providerUserId, `tests+${providerUserId}@voucha.ai`, {
-      login: providerUserId,
-    })
+  it.each(['github', 'google'] as const)(
+    'throws 409 when the %s account belongs to another user and preserves its owner',
+    async provider => {
+      const userA = await createTestUser()
+      const userB = await createTestUser()
+      const providerUserId = `${provider}-connect-${randomUUID()}`
+      onTestFinished(() =>
+        deleteTestOAuthAuthorizationFixtures({
+          ...(provider === 'github'
+            ? { githubUserIds: [providerUserId] }
+            : { googleUserIds: [providerUserId] }),
+          userIds: [userA.id, userB.id],
+        }),
+      )
+      await upsertOAuthAccount(provider, providerUserId, `tests+${providerUserId}@voucha.ai`, {
+        login: providerUserId,
+      })
 
-    await connectOAuthAccountToUser('github', userA!.id, providerUserId)
+      await connectOAuthAccountToUser(provider, userA.id, providerUserId)
 
-    await expect(
-      connectOAuthAccountToUser('github', userB!.id, providerUserId),
-    ).rejects.toMatchObject({ status: 409 })
-  })
+      await expect(
+        connectOAuthAccountToUser(provider, userB.id, providerUserId),
+      ).rejects.toMatchObject({ status: 409 })
+      await expect(getTestOAuthAccountRaw(provider, providerUserId)).resolves.toMatchObject({
+        user_id: userA.id,
+      })
+    },
+  )
 
   it('throws 404 when the provider account does not exist', async () => {
     const user = await createTestUser()

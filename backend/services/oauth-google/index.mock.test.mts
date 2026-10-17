@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createRandomString } from '@voucha/test-helpers'
-import { createSign, generateKeyPairSync } from 'node:crypto'
+import { createSign, generateKeyPairSync, randomUUID } from 'node:crypto'
 import type { fetch as undiciFetch } from 'undici'
 import {
   deleteTestOAuthAuthorizationFixtures,
@@ -105,7 +105,7 @@ describe('google oauth', () => {
         googleUserIds: [googleUserId],
       }),
     )
-    const authorizationClaimId = createRandomString(32)
+    const authorizationClaimId = randomUUID()
     await markTestOAuthAuthorizationExchanging(authorizationId, authorizationClaimId)
     fetchSpy
       .mockResolvedValueOnce({
@@ -156,6 +156,56 @@ describe('google oauth', () => {
       'https://openidconnect.googleapis.com/v1/userinfo',
       expect.objectContaining({ headers: { Authorization: 'Bearer google-access-token' } }),
     ])
+  })
+
+  it('propagates cancellation through token and UserInfo fetches before account persistence', async () => {
+    const googleUserId = `google-aborted-${createRandomString(12)}`
+    const authorizationId = await insertTestOAuthAuthorization({ provider: 'google' })
+    const authorizationClaimId = randomUUID()
+    onTestFinished(() =>
+      deleteTestOAuthAuthorizationFixtures({
+        authorizationIds: [authorizationId],
+        googleUserIds: [googleUserId],
+      }),
+    )
+    await markTestOAuthAuthorizationExchanging(authorizationId, authorizationClaimId)
+    const controller = new AbortController()
+    const aborted = new Error('Google callback cancelled')
+    fetchSpy
+      .mockImplementationOnce(async (_input, init) => {
+        expect(init?.signal).toBe(controller.signal)
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ access_token: 'google-access-token' }),
+        } as Awaited<ReturnType<typeof undiciFetch>>
+      })
+      .mockImplementationOnce(async (_input, init) => {
+        expect(init?.signal).toBe(controller.signal)
+        controller.abort(aborted)
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ sub: googleUserId, email_verified: false }),
+        } as Awaited<ReturnType<typeof undiciFetch>>
+      })
+
+    await expect(
+      upsertGoogleAuthorizationCodeAccount(
+        'authorization-code',
+        'https://example.com/auth/callback/google/broker',
+        'server-pkce-verifier',
+        { authorizationId, authorizationClaimId, signal: controller.signal },
+      ),
+    ).rejects.toBe(aborted)
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+      status: 'exchanging',
+      google_account_id: null,
+      exchange_claim_id: authorizationClaimId,
+    })
   })
 
   it('rejects malformed token and UserInfo payloads before account persistence', async () => {

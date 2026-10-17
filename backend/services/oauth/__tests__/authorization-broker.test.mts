@@ -123,6 +123,32 @@ describe('OAuth authorization broker callback', () => {
     })
   })
 
+  it('persists and replays Google user cancellation without scheduling exchange', async () => {
+    const cleanup = registerCleanup()
+    const state = randomBytes(32).toString('base64url')
+    const flowId = await insertTestOAuthAuthorization({ provider: 'google', state })
+    cleanup.authorizationIds.push(flowId)
+
+    const result = await receiveOAuthAuthorizationCallback({
+      provider: 'google',
+      state,
+      error: 'access_denied',
+    })
+    const replay = await receiveOAuthAuthorizationCallback({
+      provider: 'google',
+      state,
+      error: 'access_denied',
+    })
+
+    expect(result).toMatchObject({ flowId, callbackMode: 'web', exchangeRequired: false })
+    expect(replay).toEqual(result)
+    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+      status: 'rejected',
+      callback_error: 'access_denied',
+      callback_code_ciphertext: null,
+    })
+  })
+
   it('rejects malformed, unknown, expired, and non-resumable callbacks', async () => {
     const cleanup = registerCleanup()
 
@@ -222,6 +248,7 @@ type BrokerTestCleanup = {
   authorizationIds: string[]
   githubUserIds: string[]
   linkedinUserIds: string[]
+  googleUserIds: string[]
 }
 
 function registerCleanup(): BrokerTestCleanup {
@@ -229,6 +256,7 @@ function registerCleanup(): BrokerTestCleanup {
     authorizationIds: [],
     githubUserIds: [],
     linkedinUserIds: [],
+    googleUserIds: [],
   }
   onTestFinished(async () => {
     await deleteTestOAuthAuthorizationFixtures(cleanup)

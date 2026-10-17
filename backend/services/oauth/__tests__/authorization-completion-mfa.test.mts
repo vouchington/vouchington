@@ -11,67 +11,85 @@ import {
 } from '../../../test-helpers/services/oauth/authorization-completion.mts'
 
 describe('OAuth authorization completion MFA', () => {
-  it('creates a private MFA attempt only after native completion proof succeeds', async () => {
-    const cleanup = registerCleanup()
-    const account = await createOAuthAccount('github', cleanup)
-    const user = await upsertUser({
-      emailAddress: account.provider_user_email_address!,
-      deviceId: randomUUID(),
-      sessionId: randomUUID(),
-    })
-    cleanup.userIds.push(user.id)
-    await insertTestTotpAuthenticator(user.id, `broker-completion-${randomUUID()}`)
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
-    const completionToken = randomBytes(32).toString('base64url')
-    const proofVerifier = randomBytes(32).toString('base64url')
-    const flowId = await insertCompletionReadyAuthorization(
-      {
-        accountId: account.provider_user_id,
-        provider: 'github',
-        deviceId,
-        sessionId,
-        completionToken,
-        purpose: 'authenticate',
-        callbackMode: 'native',
-        proofChallenge: createHash('sha256').update(proofVerifier).digest('base64url'),
-      },
-      cleanup,
-    )
+  it.each([
+    { provider: 'github' as const, googleAccountId: null },
+    { provider: 'google' as const, googleAccountId: expect.any(String) },
+  ])(
+    'creates and replays a private $provider MFA attempt only after native completion proof succeeds',
+    async ({ provider, googleAccountId }) => {
+      const cleanup = registerCleanup()
+      const account = await createOAuthAccount(provider, cleanup)
+      const user = await upsertUser({
+        emailAddress: account.provider_user_email_address!,
+        deviceId: randomUUID(),
+        sessionId: randomUUID(),
+      })
+      cleanup.userIds.push(user.id)
+      await insertTestTotpAuthenticator(user.id, `broker-completion-${randomUUID()}`)
+      const deviceId = randomUUID()
+      const sessionId = randomUUID()
+      const completionToken = randomBytes(32).toString('base64url')
+      const proofVerifier = randomBytes(32).toString('base64url')
+      const flowId = await insertCompletionReadyAuthorization(
+        {
+          accountId: account.provider_user_id,
+          provider,
+          deviceId,
+          sessionId,
+          completionToken,
+          purpose: 'authenticate',
+          callbackMode: 'native',
+          proofChallenge: createHash('sha256').update(proofVerifier).digest('base64url'),
+        },
+        cleanup,
+      )
 
-    await expect(
-      completeOAuthAuthorizationTransaction({
+      await expect(
+        completeOAuthAuthorizationTransaction({
+          flowId,
+          completionToken,
+          completionTokenSource: 'body',
+          deviceId,
+          sessionId,
+        }),
+      ).rejects.toMatchObject({ status: 401 })
+      await expect(peekLoginAttempt(flowId)).resolves.toBeNull()
+
+      const result = await completeOAuthAuthorizationTransaction({
         flowId,
         completionToken,
         completionTokenSource: 'body',
+        completionProofVerifier: proofVerifier,
         deviceId,
         sessionId,
-      }),
-    ).rejects.toMatchObject({ status: 401 })
-    await expect(peekLoginAttempt(flowId)).resolves.toBeNull()
-
-    const result = await completeOAuthAuthorizationTransaction({
-      flowId,
-      completionToken,
-      completionTokenSource: 'body',
-      completionProofVerifier: proofVerifier,
-      deviceId,
-      sessionId,
-    })
-    expect(result).toMatchObject({ kind: 'mfa_required', userId: user.id })
-    if (result.kind !== 'mfa_required') throw new Error('Expected MFA result')
-    expect(result.loginAttemptId).not.toBe(flowId)
-    await expect(peekLoginAttempt(flowId)).resolves.toBeNull()
-    await expect(peekLoginAttempt(result.loginAttemptId)).resolves.toMatchObject({
-      userId: user.id,
-    })
-    expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
-      status: 'completed',
-      result_kind: 'mfa_required',
-      result_user_id: user.id,
-    })
-    await expect(getAndDeleteLoginAttempt(result.loginAttemptId)).resolves.toMatchObject({
-      userId: user.id,
-    })
-  })
+      })
+      expect(result).toMatchObject({ kind: 'mfa_required', userId: user.id })
+      if (result.kind !== 'mfa_required') throw new Error('Expected MFA result')
+      expect(result.loginAttemptId).not.toBe(flowId)
+      const replay = await completeOAuthAuthorizationTransaction({
+        flowId,
+        completionToken,
+        completionTokenSource: 'body',
+        completionProofVerifier: proofVerifier,
+        deviceId,
+        sessionId,
+      })
+      expect(replay).toEqual(result)
+      await expect(peekLoginAttempt(flowId)).resolves.toBeNull()
+      await expect(peekLoginAttempt(result.loginAttemptId)).resolves.toMatchObject({
+        userId: user.id,
+      })
+      expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+        status: 'completed',
+        result_kind: 'mfa_required',
+        result_user_id: user.id,
+      })
+      expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
+        google_account_id: googleAccountId,
+      })
+      await expect(getAndDeleteLoginAttempt(result.loginAttemptId)).resolves.toMatchObject({
+        userId: user.id,
+      })
+    },
+  )
 })

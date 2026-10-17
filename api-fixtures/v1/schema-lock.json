@@ -118,7 +118,7 @@
     },
     "GET:/api/v1/auth/oauth/providers": {
       "fixtureIds": ["native.oauth.providers.broker-capabilities"],
-      "hash": "5332f343ae4805f080d906078e50dad1627a5bd82a63ca3d9c880c23900b06f4"
+      "hash": "c5ae4764362ff8e984ac39e29d904b95e498fcbfb4c7a6721bf5ee20f1606f5e"
     },
     "GET:/api/v1/auth/sessions": {
       "fixtureIds": ["native.auth.sessions.default"],
@@ -2397,7 +2397,7 @@
     },
     "native.oauth.providers.broker-capabilities": {
       "fixtureIds": ["native.oauth.providers.broker-capabilities"],
-      "hash": "ab0a229cb7c51a1bc2b224139d901391f51f83ccb73970fcdaa5688e0e88fe8f"
+      "hash": "c225a330ea6aa04e3e1714786830d16970a8d855e5cd2453a0c10af1093f4fbd"
     },
     "native.paid.url-crawl.default": {
       "fixtureIds": ["native.paid.url-crawl.default"],

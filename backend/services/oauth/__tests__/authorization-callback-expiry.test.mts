@@ -9,31 +9,35 @@ import { createTestUser, insertTestOAuthAccount } from '@voucha/test-helpers'
 import { receiveOAuthAuthorizationCallback } from '../authorization-callback.mts'
 
 describe('OAuth authorization callback expiry', () => {
-  it('commits terminal status and secret cleanup before returning the expiry error', async () => {
-    const state = randomUUID()
-    const authorizationId = await insertTestOAuthAuthorization({
-      state,
-      callbackCodeCiphertext: 'expired-callback-ciphertext',
-      completionTokenCiphertext: 'expired-completion-ciphertext',
-      expiresAt: new Date(Date.now() - 1_000),
-    })
-    onTestFinished(async () => {
-      await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
-    })
-
-    await expect(
-      receiveOAuthAuthorizationCallback({
-        provider: 'github',
+  it.each(['github', 'google'] as const)(
+    'commits terminal status and secret cleanup before returning the expired %s callback error',
+    async provider => {
+      const state = randomUUID()
+      const authorizationId = await insertTestOAuthAuthorization({
+        provider,
         state,
-        code: 'provider-code',
-      }),
-    ).rejects.toMatchObject({ status: 410 })
-    expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
-      status: 'expired',
-      callback_code_ciphertext: null,
-      completion_token_ciphertext: null,
-    })
-  })
+        callbackCodeCiphertext: 'expired-callback-ciphertext',
+        completionTokenCiphertext: 'expired-completion-ciphertext',
+        expiresAt: new Date(Date.now() - 1_000),
+      })
+      onTestFinished(async () => {
+        await deleteTestOAuthAuthorizationFixtures({ authorizationIds: [authorizationId] })
+      })
+
+      await expect(
+        receiveOAuthAuthorizationCallback({
+          provider,
+          state,
+          code: 'provider-code',
+        }),
+      ).rejects.toMatchObject({ status: 410 })
+      expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
+        status: 'expired',
+        callback_code_ciphertext: null,
+        completion_token_ciphertext: null,
+      })
+    },
+  )
 
   it('returns expiry without changing an already completed authorization', async () => {
     const state = randomUUID()
