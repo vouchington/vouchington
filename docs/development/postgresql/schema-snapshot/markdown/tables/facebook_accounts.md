@@ -6,19 +6,19 @@ Facebook OAuth accounts linked to users. Stores profile data and encrypted long-
 
 Not partitioned — growth: unbounded.
 
-| Column                        | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                     |
-| ----------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
-| `id`                          | `uuid`                     | no       | `uuidv7()`          |          |           |           | Internal UUIDv7 identity of the Facebook account.                           |
-| `user_id`                     | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet.         |
-| `facebook_user_id`            | `text`                     | no       |                     |          |           |           | Facebook's unique external user ID.                                         |
-| `facebook_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Facebook profile.                                    |
-| `email_domain_hostname_id`    | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.          |
-| `facebook_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Facebook's /api/me endpoint.                    |
-| `access_token_ciphertext`     | `text`                     | yes      |                     |          |           |           | Encrypted long-lived Facebook access token ciphertext for API calls.        |
-| `access_token_expires_at`     | `timestamp with time zone` | yes      |                     |          |           |           | When the long-lived access token expires.                                   |
-| `friends_synced_at`           | `timestamp with time zone` | yes      |                     |          |           |           | When the user's Facebook friends list was last synced for friend discovery. |
-| `created_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                             |
-| `updated_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                             |
+| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                     |
+| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
+| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Facebook account.                           |
+| `user_id`                     | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.         |
+| `facebook_user_id`            | `text`                     | no       |                              |          |           |           | Facebook's unique external user ID.                                         |
+| `facebook_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Facebook profile.                                    |
+| `email_domain_hostname_id`    | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.          |
+| `facebook_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Facebook's /api/me endpoint.                    |
+| `access_token_ciphertext`     | `text`                     | yes      |                              |          |           |           | Encrypted long-lived Facebook access token ciphertext for API calls.        |
+| `access_token_expires_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the long-lived access token expires.                                   |
+| `friends_synced_at`           | `timestamp with time zone` | yes      |                              |          |           |           | When the user's Facebook friends list was last synced for friend discovery. |
+| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                             |
+| `updated_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                             |
 
 **Primary key:** `PRIMARY KEY (id)`
 
