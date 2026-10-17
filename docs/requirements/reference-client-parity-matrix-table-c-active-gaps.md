@@ -35,6 +35,8 @@ each phase.
 | 20  | LinkedIn brokered login and account connection               | linkedin-oauth-broker              | Swift + .NET | None on native main: the default-disabled LinkedIn broker has web login and connection coverage, while paired Swift and .NET provider controls, durable callback handling, retry, and connected-state rendering remain pending in [clients#274].                                                                                                                                                                                      | 1     | [clients#274]                |
 | 21  | Microsoft brokered login and account connection              | microsoft-oauth-broker             | Swift + .NET | None on native main: the default-disabled Microsoft broker has web login and connection coverage, while paired Swift and .NET provider controls, callback handling, retry, and connected-state rendering remain pending in [clients#275].                                                                                                                                                                                             | 1     | [clients#275]                |
 
+| 22 | Community invite creation and metadata | communities | Swift + .NET | Partial: native clients still require the removed code field on invite metadata. Decode metadata-only list/redemption responses and display the creation code once; .NET must consume the creation response. | 1 | [vouchington#3020] |
+
 ## Synchronization rule
 
 When functional UI, intent placement, requirements, or evidence changes, coordinate linked
@@ -57,3 +59,4 @@ any mapped capability differs from web.
 [vouchington#2819]: https://github.com/vouchington/vouchington/issues/2819
 [clients#274]: https://github.com/vouchington/vouchington-clients/issues/274
 [clients#275]: https://github.com/vouchington/vouchington-clients/issues/275
+[vouchington#3020]: https://github.com/vouchington/vouchington/issues/3020

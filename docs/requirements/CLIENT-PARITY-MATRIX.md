@@ -78,7 +78,7 @@ list and redemption responses contain metadata. Web displays the creation code u
 another creation starts. Clients must offer a fresh invitation to share another code.
 
 Swift's `CommunityInvite.code` and .NET's `CommunityInvite.Code` currently require the removed
-field. Native adoption remains pending: make list/redemption models metadata-only and decode the
+field. Native adoption is tracked in [vouchington#3020](https://github.com/vouchington/vouchington/issues/3020): make list/redemption models metadata-only and decode the
 creation response separately, retaining its code only for the immediate display. The .NET send
 helper must consume that response. This producer change does not complete native invite UI parity.
 Shared invite fixtures exercise metadata without a code.
