@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { write } from '@data-stores/psql'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { CRAWL_EMBEDS_DEFAULTS } from '@queues/crawl-embeds/config'
 import { getPendingCrawlEmbed } from '@services/crawl-embeds/get-pending'
+import { isCrawlEmbedBackfillCandidate } from '@voucha/test-helpers/entities/crawl-embeds'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
 import { createTestUrlWithHostname } from '@voucha/test-helpers/entities/urls'
 import { processCrawlEmbedsJob } from '../processors.mts'
@@ -68,16 +68,7 @@ describe('crawl embeds policy denial through real GlideMQ', () => {
 
       // The backfill selects rows with a persisted endpoint and no resolved marker; this row has one.
       expect(await getPendingCrawlEmbed(crawl.id)).toBeNull()
-      const { rows } = await write(
-        `/* policyDenialBackfillCandidate */
-        SELECT id FROM crawls
-        WHERE id = $1
-          AND embed_metadata IS NOT NULL
-          AND embed_oembed_url IS NOT NULL
-          AND embed_oembed_resolved_at IS NULL`,
-        [crawl.id],
-      )
-      expect(rows).toEqual([])
+      expect(await isCrawlEmbedBackfillCandidate(crawl.id)).toBe(false)
     } finally {
       await worker.close()
       await queue.obliterate({ force: true })
