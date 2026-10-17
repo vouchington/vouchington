@@ -6,16 +6,16 @@ Apple Sign In accounts linked to users. Stores Apple profile data.
 
 Not partitioned — growth: unbounded.
 
-| Column                     | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                             |
-| -------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`                       | `uuid`                     | no       | `uuidv7()`          |          |           |           | Internal UUIDv7 identity of the Apple account.                      |
-| `user_id`                  | `uuid`                     | yes      |                     |          |           |           | The linked user. NULL if the user account has not been created yet. |
-| `apple_user_id`            | `text`                     | no       |                     |          |           |           | Apple's unique external user identifier.                            |
-| `apple_user_email_address` | `text`                     | yes      |                     |          |           |           | Email address from the Apple profile.                               |
-| `email_domain_hostname_id` | `uuid`                     | yes      |                     |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
-| `apple_user_data`          | `jsonb`                    | no       |                     |          |           |           | Raw JSONB profile data from Apple Sign In.                          |
-| `created_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
-| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP` |          |           |           |                                                                     |
+| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
+| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Apple account.                      |
+| `user_id`                  | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet. |
+| `apple_user_id`            | `text`                     | no       |                              |          |           |           | Apple's unique external user identifier.                            |
+| `apple_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Apple profile.                               |
+| `email_domain_hostname_id` | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
+| `apple_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Apple Sign In.                          |
+| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                     |
+| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
