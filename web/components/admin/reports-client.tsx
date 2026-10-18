@@ -2,7 +2,6 @@
 /* oxlint-disable max-lines -- reports dashboard owns table rendering plus mutation state */
 
 import { useMemo, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AdminTableShell } from '@/components/admin/admin-table-shell'
 import { KeyboardShortcutsDialog } from '@/components/keyboard-shortcuts-dialog'
@@ -24,19 +23,13 @@ import {
   type ModerationReportSortParam,
 } from '@/lib/api/client/reports'
 import { MODERATION_QUEUE_SHORTCUTS } from '@/lib/keyboard-shortcuts'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { AdminReportRow } from './admin-report-row'
 import { MemberReportRow } from './member-report-row'
 import { ClusteredReportsClient } from './reports-clustered-client'
 import { buildReportBulkOperations, countReporters } from './reports-bulk-operations'
 import { isOrdinaryPendingReport } from './report-action-eligibility'
-import { buildReportsPageHref } from './reports-clustered-format'
+import { ReportsPagination, ReportsSortSelect } from './reports-navigation'
+import { ReportsTableHeader } from './reports-table-header'
 
 export type {
   AdminModerationReport,
@@ -115,7 +108,7 @@ type FlatReportsClientProps = (
 ) & {
   canBulkRemove: boolean
   statusFilter?: string
-  sortOrder?: string
+  sortOrder?: ModerationReportSortParam
   currentAfter?: string
   clusterMode?: 'entity' | 'none'
 }
@@ -304,27 +297,10 @@ function FlatReportsClient(props: FlatReportsClientProps) {
           : null}
       </p>
       <div className='flex flex-wrap items-center gap-2'>
-        <Select
-          value={sortOrder ?? (viewerTier === 'staff' ? 'severity' : 'created_at_desc')}
-          onValueChange={value => {
-            const params = new URL(window.location.href).searchParams
-            params.set('sort', value)
-            params.delete('after')
-            params.delete('before')
-            router.push(`/reports?${params.toString()}`, { scroll: false })
-          }}
-        >
-          <SelectTrigger
-            aria-label={t('extracted.admin.reportsClient.sortReports_87711bde')}
-            className='h-11 w-44 sm:h-9'
-            data-pw='reports-sort-trigger'
-          >
-            <SelectValue placeholder={t('extracted.admin.reportsClient.sortReports_87711bde')} />
-          </SelectTrigger>
-          <SelectContent>
-            {viewerTier === 'staff' ? <StaffSortItems /> : <MemberSortItems />}
-          </SelectContent>
-        </Select>
+        <ReportsSortSelect
+          viewerTier={viewerTier}
+          sortOrder={sortOrder}
+        />
       </div>
       {viewerTier === 'staff' ? (
         <BulkActionToolbar
@@ -349,51 +325,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
         emptyMessage={t('extracted.admin.reportsClient.noPendingReports_36379210')}
       >
         <table className='min-w-full divide-y divide-border'>
-          <thead className='bg-muted/50'>
-            <tr>
-              {viewerTier === 'staff' ? (
-                <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                  {t('extracted.admin.reportsClient.select_2a78025d')}
-                </th>
-              ) : null}
-              <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                {t('extracted.admin.reportsClient.created_d70b9e24')}
-              </th>
-              {viewerTier === 'staff' ? (
-                <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                  {t('extracted.admin.reportsClient.reporter_ed738fe8')}
-                </th>
-              ) : null}
-              <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                {t('extracted.admin.reportsClient.target_978354db')}
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                {t('extracted.admin.reportsClient.reason_f81ab834')}
-              </th>
-              <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                {t('extracted.admin.reportsClient.status_920e413c')}
-              </th>
-              {viewerTier === 'staff' ? (
-                <>
-                  <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                    {t('extracted.admin.reportsClient.judgement_18d3597c')}
-                  </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                    {t('extracted.admin.reportsClient.note_d8da2c49')}
-                  </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                    {t('extracted.admin.reportsClient.resolvedBy_f266c7ec')}
-                  </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                    {t('extracted.admin.reportsClient.modNotes_4c351afd')}
-                  </th>
-                  <th className='px-6 py-3 text-left text-xs font-medium uppercase text-muted-foreground'>
-                    {t('extracted.admin.reportsClient.actions_ff8059dc')}
-                  </th>
-                </>
-              ) : null}
-            </tr>
-          </thead>
+          <ReportsTableHeader viewerTier={viewerTier} />
           <tbody className='divide-y divide-border bg-card'>
             {viewerTier === 'staff'
               ? (reports as AdminModerationReport[]).map(report => (
@@ -422,37 +354,13 @@ function FlatReportsClient(props: FlatReportsClientProps) {
           </tbody>
         </table>
       </AdminTableShell>
-      <div className='flex gap-4'>
-        {(data.page_info.has_previous_page ?? Boolean(currentAfter)) &&
-        data.page_info.start_cursor ? (
-          <Link
-            href={buildReportsPageHref({
-              before: data.page_info.start_cursor,
-              status: statusFilter,
-              sort: sortOrder,
-              cluster: clusterMode,
-            })}
-            className='text-sm underline'
-            prefetch={false}
-          >
-            {t('extracted.admin.adminPagination.previous_a57b08a4')}
-          </Link>
-        ) : null}
-        {data.page_info.has_next_page && data.page_info.end_cursor ? (
-          <Link
-            href={buildReportsPageHref({
-              after: data.page_info.end_cursor,
-              status: statusFilter,
-              sort: sortOrder,
-              cluster: clusterMode,
-            })}
-            className='text-sm underline'
-            prefetch={false}
-          >
-            {t('extracted.admin.reportsClient.nextPage_c08ac736')}
-          </Link>
-        ) : null}
-      </div>
+      <ReportsPagination
+        pageInfo={data.page_info}
+        currentAfter={currentAfter}
+        statusFilter={statusFilter}
+        sortOrder={sortOrder}
+        clusterMode={clusterMode}
+      />
       <KeyboardShortcutsDialog
         description={t(
           'extracted.admin.reportsClient.shortcutsForTheActiveModerationReport_e3dca514',
@@ -464,43 +372,6 @@ function FlatReportsClient(props: FlatReportsClientProps) {
         viewAllLink={false}
       />
     </div>
-  )
-}
-
-function StaffSortItems() {
-  const t = useTranslations()
-  return (
-    <>
-      <SelectItem value='severity'>
-        {t('extracted.admin.reportsClient.severity_5e9f9812')}
-      </SelectItem>
-      <SelectItem
-        value='most_reported'
-        data-pw='reports-sort-option-most-reported'
-      >
-        {t('extracted.admin.reportsClient.mostReported_7838addd')}
-      </SelectItem>
-      <SelectItem value='created_at_asc'>
-        {t('extracted.admin.reportsClient.oldestFirst_6e2ebdab')}
-      </SelectItem>
-      <SelectItem value='created_at_desc'>
-        {t('extracted.admin.reportsClient.newestFirst_ffb6f576')}
-      </SelectItem>
-    </>
-  )
-}
-
-function MemberSortItems() {
-  const t = useTranslations()
-  return (
-    <>
-      <SelectItem value='created_at_desc'>
-        {t('extracted.admin.reportsClient.newestFirst_ffb6f576')}
-      </SelectItem>
-      <SelectItem value='created_at_asc'>
-        {t('extracted.admin.reportsClient.oldestFirst_6e2ebdab')}
-      </SelectItem>
-    </>
   )
 }
 
