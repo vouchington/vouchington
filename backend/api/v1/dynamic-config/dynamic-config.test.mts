@@ -6,7 +6,6 @@ import {
   createDynamicConfigForTest,
   createDynamicConfigTestKey,
 } from '@voucha/test-helpers/dynamic-config'
-import type { DynamicConfigInstance } from '@data-stores/valkey'
 import type { getDynamicConfigRegistryEntry } from '@services/dynamic-config-admin'
 import { dynamicConfigRegistry } from '@services/dynamic-config-admin/registry'
 import type { PrivateUser } from '@services/users/types'
@@ -27,7 +26,9 @@ describe('dynamic-config', () => {
     for (const entry of temporaryEntries.splice(0)) {
       const index = dynamicConfigRegistry.indexOf(entry)
       if (index >= 0) dynamicConfigRegistry.splice(index, 1)
-      await closeScopedDynamicConfigContext([entry.config as DynamicConfigInstance])
+      await closeScopedDynamicConfigContext([
+        entry.config as ReturnType<typeof createDynamicConfigForTest>,
+      ])
     }
   })
 

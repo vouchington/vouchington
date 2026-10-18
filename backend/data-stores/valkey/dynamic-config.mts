@@ -9,7 +9,6 @@ type DynamicConfigOptions = ConstructorParameters<typeof RawDynamicConfig>[0]
 export const DynamicConfig: new (
   options: Omit<DynamicConfigOptions, 'key'> & { key: RegisteredDynamicConfigKey },
 ) => RawDynamicConfig = RawDynamicConfig
-export type DynamicConfigInstance = RawDynamicConfig
 
 /**
  * @public Facade re-export for #2998. Production call sites import this from
