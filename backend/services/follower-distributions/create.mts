@@ -1,11 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
-import { getFollowerIdsForDistribution } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
-import createError from 'http-errors'
 import sql from 'sql-template-strings'
 import {
-  assertNoRecentDistribution,
+  assertCanDistribute,
   dedupLockKey,
   type CreateDistributionInput,
   validateTarget,
@@ -66,16 +63,19 @@ async function createDistribution(
   const eagerOptions =
     typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const target = await validateTarget(currentUser, input, query)
   const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
-  // ast-grep-ignore: no-three-sequential-awaits -- the advisory lock must be held before the recent-distribution and follower reads so they see what the previous holder committed
+  // ast-grep-ignore: no-three-sequential-awaits -- target.id keys the lock, the guard result gates the distribution insert, and that insert's id feeds the recipient insert; the lock stays its own statement so the guard reads after the previous holder committed
   await query(sql`/* createDistribution:lock */
     SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
   `)
-  await assertNoRecentDistribution(currentUser.id, input.action, target.id, query)
-
-  const selectedRecipientIds = await validateSelectedRecipients(currentUser.id, options, query)
+  const selectedRecipientIds = await assertCanDistribute(
+    currentUser.id,
+    input.action,
+    target.id,
+    options.audience === 'selected_followers' ? options.recipient_user_ids.toSorted() : null,
+    query,
+  )
 
   const { rows } = await query(sql`/* createDistribution */
     INSERT INTO follower_distributions (
@@ -110,21 +110,4 @@ async function createDistribution(
   const result = { status: 'accepted', distribution_id: distributionId }
   await query.commit()
   return result as FollowerDistributionAccepted
-}
-
-async function validateSelectedRecipients(
-  senderUserId: string,
-  options: FollowerDistributionOptions,
-  query: TransactionQuery,
-): Promise<string[] | null> {
-  if (options.audience !== 'selected_followers') return null
-
-  const recipientUserIds = options.recipient_user_ids.toSorted()
-  const currentFollowerIds = await getFollowerIdsForDistribution(senderUserId, recipientUserIds, {
-    query,
-  })
-  if (currentFollowerIds.length !== recipientUserIds.length) {
-    throw createError(400, 'Selected users must be current followers')
-  }
-  return currentFollowerIds.toSorted()
 }
