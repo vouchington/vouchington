@@ -58,7 +58,6 @@
     "@modules/http-signatures": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/cache-purge": "workspace:^",
-    "@queues/emails": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/rss-feeds": "workspace:^",
     "@queues/sitemaps": "workspace:^",
