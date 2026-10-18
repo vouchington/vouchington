@@ -79,8 +79,8 @@ flowchart LR
   runs first when both are ready.
 - **Email cannot be exactly-once.** PostgreSQL and the mail provider do not share a transaction, so
   each processor picks one contract: retryable (may duplicate) or at-most-once (a delivery marker is
-  committed before the send, and may lose the email). Secret-bearing jobs are removed on completion
-  so a credential never outlives the job.
+  committed before the send, and may lose the email). Jobs marked sensitive are removed on either
+  successful completion or failure so a credential never outlives the job.
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.

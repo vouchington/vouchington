@@ -5,6 +5,7 @@ import type {
   BackgroundJobDefinition,
   BackgroundJobSpec,
 } from '../types.mts'
+import type { NoSensitiveFields } from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
 
 const LOCAL_NAME = /^[a-z][A-Za-z0-9_-]*$/
 
@@ -23,6 +24,15 @@ export function defineBackgroundDomain(
 
 export function defineBackgroundJob<TData = unknown>(
   domain: BackgroundDomainDefinition,
+  spec: BackgroundJobSpec & { sensitive: true },
+): BackgroundJobDefinition<TData, true> & { sensitive: true }
+export function defineBackgroundJob<TData = unknown>(
+  domain: BackgroundDomainDefinition,
+  spec: BackgroundJobSpec &
+    ([TData] extends [NoSensitiveFields<TData>] ? { sensitive?: undefined } : never),
+): BackgroundJobDefinition<TData, false>
+export function defineBackgroundJob<TData = unknown>(
+  domain: BackgroundDomainDefinition,
   spec: BackgroundJobSpec,
 ): BackgroundJobDefinition<TData> {
   if (!LOCAL_NAME.test(spec.name)) {
@@ -38,11 +48,16 @@ export function defineBackgroundJob<TData = unknown>(
   ] as const) {
     if (value !== undefined) assertPositiveInteger(`${spec.name} ${label}`, value)
   }
-  const { name, ...jobOptions } = spec
+  const { name, sensitive, ...jobOptions } = spec
   return {
     name: `${domain.domain}.${name}`,
     domain: domain.domain,
-    options: { ...jobOptions, ...(domainOrdering(domain) ?? {}) },
+    ...(sensitive ? { sensitive: true as const } : {}),
+    options: {
+      ...jobOptions,
+      ...(sensitive ? { removeOnComplete: true, removeOnFail: true } : {}),
+      ...(domainOrdering(domain) ?? {}),
+    },
   }
 }
 

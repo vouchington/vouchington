@@ -6,6 +6,7 @@
  */
 
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import type { NoSensitiveFields } from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
 import {
   ENTITY_LISTENERS_AUTO_FOLLOW_REFERRER_JOB,
   ENTITY_LISTENERS_COMMUNITY_AGENT_PROMPTS_DEACTIVATED_JOB,
@@ -25,9 +26,9 @@ import {
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import type { EnqueueReturnType } from '@voucha/types'
 
-function createEntityEnqueue<TData>(job: BackgroundJobDefinition<TData>) {
+function createEntityEnqueue<TData>(job: BackgroundJobDefinition<TData, false>) {
   const enqueue = createBackgroundEnqueue(job)
-  return (data: TData, priority?: number): EnqueueReturnType => {
+  return (data: NoSensitiveFields<TData>, priority?: number): EnqueueReturnType => {
     return enqueue(data, priority === undefined ? undefined : { priority })
   }
 }

@@ -1,6 +1,7 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
+import type { NoSensitiveFields } from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
 import {
   getFindYourFriendsWorkLimit,
   FIND_YOUR_FRIENDS_DEFAULTS,
@@ -24,7 +25,7 @@ const defaults = { attempts, backoff, removeOnComplete, removeOnFail } satisfies
 
 type SyncConfig<TData> = {
   jobName: FindYourFriendsSyncJobs
-  buildData: (id: string) => TData
+  buildData: (id: string) => TData & NoSensitiveFields<TData>
   deduplicationPrefix: string
   ordering: JobOptions['ordering']
 }

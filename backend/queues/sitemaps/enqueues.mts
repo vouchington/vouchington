@@ -60,7 +60,7 @@ function indexOptions(deduplicationId: string, priority?: number): Partial<JobOp
 }
 
 function createDispatcherEnqueue(
-  job: BackgroundJobDefinition<Record<string, never> | SitemapArchiveBackfillData>,
+  job: BackgroundJobDefinition<Record<string, never> | SitemapArchiveBackfillData, false>,
 ) {
   const enqueue = createBackgroundEnqueue(job)
 

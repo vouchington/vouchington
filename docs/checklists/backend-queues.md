@@ -17,6 +17,10 @@ ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 j
 
 ## Queue boundaries
 
+Job payloads pass identifiers and load the required state in the processor. Mark a job
+`sensitive: true` when its payload contains secrets or personal data; sensitive jobs are removed
+after either terminal outcome.
+
 Prefer fewer, shared queues: each queue costs a blocking connection, timers, and metrics.
 
 - **Share by default.** Background work of the same worker class goes into that class's shared

@@ -1,5 +1,6 @@
 import {
   enqueueSendCommunityInviteEmail,
+  enqueueSendCopyrightNoticeEmail,
   enqueueSendDataExportReadyEmail,
   enqueueSendEmailAddressLoginToken,
   enqueueSendEmailVerificationToken,
@@ -7,7 +8,6 @@ import {
 } from './enqueues.mts'
 import { describe, expect, it } from 'vitest'
 import { readEnqueuedJob } from '@voucha/test-helpers'
-import { SECRET_BEARING_EMAIL_JOBS } from './enqueues/job-options.mts'
 import { emails } from './queues.mts'
 
 describe('enqueues.generated', () => {
@@ -50,12 +50,6 @@ describe('enqueues.generated', () => {
         }),
     }
 
-    it('covers every job that carries a credential', () => {
-      expect(Object.keys(credentialEnqueues).toSorted()).toEqual(
-        [...SECRET_BEARING_EMAIL_JOBS].toSorted(),
-      )
-    })
-
     it.each(Object.entries(credentialEnqueues))(
       'drops a %s job as soon as it finishes, succeeded or failed',
       async (jobName, enqueue) => {
@@ -68,7 +62,7 @@ describe('enqueues.generated', () => {
       },
     )
 
-    it('keeps the default retained history for an email that carries no credential', async () => {
+    it('removes every recipient email payload after its terminal outcome', async () => {
       const enqueued = await enqueueSendWelcomeEmail(
         { userId: crypto.randomUUID() },
         { userName: 'Test User' },
@@ -76,7 +70,16 @@ describe('enqueues.generated', () => {
 
       expect(await readEnqueuedJob(emails, enqueued)).toMatchObject({
         name: 'processSendWelcomeEmail',
-        opts: { removeOnComplete: 100, removeOnFail: 100 },
+        opts: { removeOnComplete: true, removeOnFail: true },
+      })
+    })
+
+    it('removes copyright notification email jobs after their terminal outcome', async () => {
+      const enqueued = await enqueueSendCopyrightNoticeEmail(crypto.randomUUID())
+
+      expect(await readEnqueuedJob(emails, enqueued)).toMatchObject({
+        name: 'processSendCopyrightNoticeEmail',
+        opts: { removeOnComplete: true, removeOnFail: true },
       })
     })
   })
