@@ -10433,225 +10433,469 @@
         },
         {
           "tool": {
-            "name": "update_post",
-            "title": "Edit or Archive Own Post",
-            "description": "Edit your own post or comment. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.",
+            "name": "act_on_post",
+            "title": "Act on Post",
+            "description": "edit: Edit your own post or comment. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.\nadd_rating: Rate a topic on a review you may edit. Ratings may not all match when several topics are rated.\nedit_rating: Change the rating or order_index of a topic already rated on a review you may edit. Send at least one.\ndelete_rating: Remove a topic rating from a review you may edit.\nshare: Share a post with your followers, at most once per day.\nsend: Send a post to all or selected current followers, at most once per day.\nread: Mark a post you can see read.\nunread: Mark a post you can see unread.",
             "inputSchema": {
-              "additionalProperties": false,
-              "properties": {
-                "ai_summary_markdown": {
-                  "type": "string"
-                },
-                "archive": {
-                  "type": "boolean"
-                },
-                "broadcast": {
-                  "enum": ["everyone", "followers", "mutual_followers", "users"],
-                  "type": "string"
-                },
-                "categories": {
-                  "items": {
-                    "anyOf": [
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "hashtag": {
-                            "type": "string"
-                          },
-                          "type": {
-                            "const": "hashtag"
-                          }
-                        },
-                        "required": ["hashtag", "type"],
-                        "type": "object"
-                      },
-                      {
-                        "additionalProperties": false,
-                        "properties": {
-                          "topic_id": {
-                            "type": "string"
-                          },
-                          "type": {
-                            "const": "topic"
-                          }
-                        },
-                        "required": ["topic_id", "type"],
-                        "type": "object"
-                      }
-                    ]
-                  },
-                  "type": "array"
-                },
-                "data_point_vertical": {
-                  "type": "string"
-                },
-                "declared_language": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "is_anonymous": {
-                  "type": "boolean"
-                },
-                "markdown": {
-                  "type": "string"
-                },
-                "privacy": {
-                  "enum": ["private", "public"],
-                  "type": "string"
-                },
-                "slug": {
-                  "type": "string"
-                },
-                "structured_data": {},
-                "title": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string",
-                  "description": "The UUID or slug of your post or comment."
-                }
-              },
               "type": "object",
-              "required": ["id"]
-            },
-            "outputSchema": {
-              "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "post": {
+              "oneOf": [
+                {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "string"
+                    "option": {
+                      "enum": ["edit"]
                     },
-                    "slug": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "post_type": {
-                      "enum": [
-                        "article",
-                        "blog_post",
-                        "comment",
-                        "data_point",
-                        "discussion",
-                        "link",
-                        "review",
-                        "story",
-                        "topic_recommendation"
-                      ],
-                      "type": "string"
-                    },
-                    "title": {
-                      "type": "string"
-                    },
-                    "markdown": {
-                      "type": "string"
-                    },
-                    "parent_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "root_post_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "created_by_id": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "is_anonymous": {
-                      "type": "boolean"
-                    },
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "updated_at": {
-                      "type": "string"
-                    },
-                    "provenance": {
+                    "arguments": {
                       "additionalProperties": false,
                       "properties": {
-                        "app": {
+                        "ai_summary_markdown": {
+                          "type": "string"
+                        },
+                        "archive": {
+                          "type": "boolean"
+                        },
+                        "broadcast": {
+                          "enum": ["everyone", "followers", "mutual_followers", "users"],
+                          "type": "string"
+                        },
+                        "categories": {
+                          "items": {
+                            "anyOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "hashtag": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "const": "hashtag"
+                                  }
+                                },
+                                "required": ["hashtag", "type"],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "topic_id": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "const": "topic"
+                                  }
+                                },
+                                "required": ["topic_id", "type"],
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "type": "array"
+                        },
+                        "data_point_vertical": {
+                          "type": "string"
+                        },
+                        "declared_language": {
                           "anyOf": [
                             {
-                              "additionalProperties": false,
-                              "properties": {
-                                "client_id": {
-                                  "type": "string"
-                                },
-                                "client_name": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "verified"
-                                }
-                              },
-                              "required": ["client_id", "client_name", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "hostname": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "hostname"
-                                }
-                              },
-                              "required": ["hostname", "kind"],
-                              "type": "object"
-                            },
-                            {
-                              "additionalProperties": false,
-                              "properties": {
-                                "key": {
-                                  "type": "string"
-                                },
-                                "kind": {
-                                  "const": "known"
-                                }
-                              },
-                              "required": ["key", "kind"],
-                              "type": "object"
-                            },
-                            {
                               "type": "null"
+                            },
+                            {
+                              "type": "string"
                             }
                           ]
                         },
-                        "via": {
-                          "enum": ["api", "mcp"],
+                        "is_anonymous": {
+                          "type": "boolean"
+                        },
+                        "markdown": {
+                          "type": "string"
+                        },
+                        "privacy": {
+                          "enum": ["private", "public"],
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "structured_data": {},
+                        "title": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string",
+                          "description": "The UUID or slug of your post or comment."
+                        }
+                      },
+                      "type": "object",
+                      "required": ["id"]
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["add_rating"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "topic_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "rating": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 5
+                        },
+                        "order_index": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": ["id", "topic_id", "rating", "order_index"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["edit_rating"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "topic_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "rating": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 5
+                        },
+                        "order_index": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": ["id", "topic_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["delete_rating"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "topic_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["id", "topic_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["share"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
                           "type": "string"
                         }
                       },
-                      "required": ["app", "via"],
-                      "type": "object"
+                      "required": ["id"],
+                      "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "id",
-                    "slug",
-                    "post_type",
-                    "title",
-                    "markdown",
-                    "parent_post_id",
-                    "root_post_id",
-                    "created_by_id",
-                    "is_anonymous",
-                    "created_at",
-                    "updated_at"
-                  ],
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["send"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "audience": {
+                              "const": "all_followers"
+                            }
+                          },
+                          "required": ["id", "audience"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "audience": {
+                              "const": "selected_followers"
+                            },
+                            "recipient_user_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "minItems": 1,
+                              "maxItems": 100,
+                              "uniqueItems": true
+                            }
+                          },
+                          "required": ["id", "audience", "recipient_user_ids"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["read"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["unread"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
                   "additionalProperties": false
                 }
-              },
-              "required": ["success", "post"],
-              "additionalProperties": false,
+              ],
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["id"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "post": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "post_type": {
+                          "enum": [
+                            "article",
+                            "blog_post",
+                            "comment",
+                            "data_point",
+                            "discussion",
+                            "link",
+                            "review",
+                            "story",
+                            "topic_recommendation"
+                          ],
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "markdown": {
+                          "type": "string"
+                        },
+                        "parent_post_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "root_post_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "created_by_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "is_anonymous": {
+                          "type": "boolean"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        },
+                        "provenance": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "app": {
+                              "anyOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "client_id": {
+                                      "type": "string"
+                                    },
+                                    "client_name": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "verified"
+                                    }
+                                  },
+                                  "required": ["client_id", "client_name", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "hostname": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "hostname"
+                                    }
+                                  },
+                                  "required": ["hostname", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string"
+                                    },
+                                    "kind": {
+                                      "const": "known"
+                                    }
+                                  },
+                                  "required": ["key", "kind"],
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "via": {
+                              "enum": ["api", "mcp"],
+                              "type": "string"
+                            }
+                          },
+                          "required": ["app", "via"],
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "slug",
+                        "post_type",
+                        "title",
+                        "markdown",
+                        "parent_post_id",
+                        "root_post_id",
+                        "created_by_id",
+                        "is_anonymous",
+                        "created_at",
+                        "updated_at"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["success", "post"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "const": "accepted"
+                    },
+                    "distribution_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["status", "distribution_id"],
+                  "additionalProperties": false
+                }
+              ],
               "$defs": {
                 "S1": {
                   "anyOf": [
@@ -10671,7 +10915,17 @@
               "idempotentHint": false
             },
             "_meta": {
-              "voucha/requiredScopes": ["posts:read", "posts:write"]
+              "voucha/requiredScopes": ["posts:read", "posts:write"],
+              "voucha/optionOutputPointers": {
+                "edit": "#/anyOf/0",
+                "add_rating": "#/anyOf/1",
+                "edit_rating": "#/anyOf/1",
+                "delete_rating": "#/anyOf/1",
+                "share": "#/anyOf/2",
+                "send": "#/anyOf/2",
+                "read": "#/anyOf/1",
+                "unread": "#/anyOf/1"
+              }
             }
           },
           "plan": "plus",
@@ -10680,6 +10934,34 @@
             {
               "method": "PATCH",
               "path": "/api/v1/posts/:idOrSlug"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/posts/:idOrSlug/ratings"
+            },
+            {
+              "method": "PATCH",
+              "path": "/api/v1/posts/:idOrSlug/ratings/:topicId"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/posts/:idOrSlug/ratings/:topicId"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/posts/:idOrSlug/shares"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/posts/:idOrSlug/sends"
+            },
+            {
+              "method": "PUT",
+              "path": "/api/v1/posts/:id/read"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/posts/:id/read"
             }
           ]
         },
