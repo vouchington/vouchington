@@ -84,4 +84,42 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(workflow.slice(snapshotCheck)).toContain('if: ${{ !cancelled() }}')
     expect(workflow).toContain('node data-stores/psql/schema-snapshot/generate.mts --check')
   })
+
+  it('runs the bounded native MV owner between bootstrap checks and Vitest on the same database', () => {
+    const platformStats = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
+    const native = workflow.indexOf('      - name: Check native materialized-view contracts')
+    const tests = workflow.indexOf('      - name: Clear stale PostgreSQL schema JUnit report')
+    const nativeStep = workflow.slice(native, tests)
+
+    expect(native).toBeGreaterThan(platformStats)
+    expect(tests).toBeGreaterThan(native)
+    expect(nativeStep).toContain(
+      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node scripts/check-materialized-view-contracts.mts',
+    )
+    expect(nativeStep).not.toContain('if:')
+    expect(nativeStep).not.toContain('continue-on-error:')
+    expect(nativeStep).toContain("NODE_DISABLE_COMPILE_CACHE: '1'")
+    expect(nativeStep).toContain('NODE_V8_COVERAGE: ${{ runner.temp }}/native-mv-v8')
+    expect(nativeStep).toContain('ANALYTICS_BACKEND: local')
+  })
+
+  it('converts the native V8 directory after the unchanged schema snapshot check', () => {
+    const snapshot = workflow.indexOf('node data-stores/psql/schema-snapshot/generate.mts --check')
+    const conversion = workflow.indexOf('      - name: Convert native materialized-view coverage')
+    const publisher = workflow.indexOf('      - name: Preserve full native materialized-view LCOV')
+    const conversionStep = workflow.slice(conversion, publisher)
+
+    expect(conversion).toBeGreaterThan(snapshot)
+    expect(publisher).toBeGreaterThan(conversion)
+    expect(conversionStep).toContain('node node_modules/c8/bin/c8.js report')
+    expect(conversionStep).toContain('--temp-directory "$RUNNER_TEMP/native-mv-v8"')
+    expect(conversionStep).toContain('--reports-dir "$RUNNER_TEMP/native-mv-coverage"')
+    expect(conversionStep).toContain('--reporter json --reporter json-summary --reporter lcovonly')
+    expect(conversionStep).toContain(
+      "--include 'backend/{api,data-stores,modules,queues,services,workers}/**'",
+    )
+    expect(workflow).toContain(
+      'cp "$RUNNER_TEMP/native-mv-coverage/lcov.info" coverage-full/lcov.info',
+    )
+  })
 })

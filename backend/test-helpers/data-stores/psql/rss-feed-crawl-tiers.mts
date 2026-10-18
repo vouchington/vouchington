@@ -1,11 +1,4 @@
 import { read, write } from '@data-stores/psql'
-import { refreshMaterializedViewForTest } from '../../refresh-materialized-view.mts'
-
-const CRAWL_TIERS_VIEW = 'mv_rss_feed_crawl_tiers'
-
-export async function refreshRssFeedCrawlTiers(): Promise<void> {
-  await refreshMaterializedViewForTest(CRAWL_TIERS_VIEW)
-}
 
 export async function followRssFeed(followerIds: string[], feedId: string): Promise<void> {
   const values = followerIds.flatMap(id => [id, feedId])
