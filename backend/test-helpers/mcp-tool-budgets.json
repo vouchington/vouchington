@@ -1,5 +1,5 @@
 {
-  "source": "Measured from api-fixtures/v1/mcp.json at B18a catalog generation; per-tool list/core serialized sizes use compact JSON UTF-16 lengths.",
+  "source": "Measured from api-fixtures/v1/mcp.json; per-tool list/core serialized sizes use compact JSON UTF-16 lengths.",
   "formula": "ceil(measured * 1.015 / 1000) * 1000",
   "servers": {
     "user": {
@@ -415,8 +415,8 @@
       },
       "submit_rss_feed": {
         "measured": {
-          "list": 1013,
-          "core": 487
+          "list": 1286,
+          "core": 495
         },
         "max": {
           "list": 2000,
