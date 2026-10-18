@@ -22,7 +22,7 @@ import type {
 import { getOAuthClientDisplayName } from './known-clients.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 import { findOAuthProtectedResource } from './resources.mts'
-import { toProtocolOAuthClient } from './protocol-client.mts'
+import { createProtocolClientLookup } from './protocol-client.mts'
 
 type AuthorizationRequestRow = {
   id: string
@@ -117,16 +117,18 @@ export async function validateOAuthAuthorizationRequest(
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<ValidatedOAuthAuthorizationRequest> {
   const foundClients: OAuthClient[] = []
+  const findClient = createProtocolClientLookup(
+    async (clientId, dependencies: Partial<ClientIdMetadataDependencies>) => {
+      const client = await getOAuthClientForAuthorization(clientId, dependencies)
+      if (client) foundClients.push(client)
+      return client
+    },
+    clientIdMetadataDependencies,
+  )
   const validated = await validateAuthorizationRequest(input, {
     scopes: OAUTH_SCOPE_POLICY,
     resolveResource: findOAuthProtectedResource,
-    clients: {
-      findClient: async clientId => {
-        const client = await getOAuthClientForAuthorization(clientId, clientIdMetadataDependencies)
-        if (client) foundClients.push(client)
-        return toProtocolOAuthClient(client)
-      },
-    },
+    clients: { findClient },
   })
   const client = foundClients[0]
   if (!client || !validated.scopes.every(isApiScope)) {
