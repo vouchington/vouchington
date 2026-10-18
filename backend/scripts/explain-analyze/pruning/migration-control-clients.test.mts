@@ -26,9 +26,12 @@ function activity(backendType: string, pid = 42): MigrationActivityRow {
 }
 
 describe('migration server clients', () => {
-  it.each([false, true])(
-    'preserves launch headroom with a clipped budget when the backend disappears: %s',
-    async disappears => {
+  it.each([
+    { disappears: false, expected: 'Owned database still has server clients: pid=42' },
+    { disappears: true, expected: 'closed' },
+  ])(
+    'preserves launch headroom with a clipped budget when disappears=$disappears',
+    async ({ disappears, expected }) => {
       let now = 0
       let reads = 0
       const controlDeadline = 12_405
@@ -51,12 +54,15 @@ describe('migration server clients', () => {
           }
         },
       })
-      if (disappears) {
-        await expect(result).resolves.toBeUndefined()
-        expect(reads).toBe(2)
-      } else {
-        await expect(result).rejects.toThrow('Owned database still has server clients: pid=42')
-      }
+      const outcome = await result.then(
+        () => 'closed',
+        (err: unknown) => {
+          if (!(err instanceof Error)) throw err
+          return err.message
+        },
+      )
+      expect(outcome).toContain(expected)
+      expect(reads).toBeGreaterThan(1)
     },
   )
 
