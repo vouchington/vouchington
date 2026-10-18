@@ -16,8 +16,8 @@
   },
   {
     "annotation": "assertContributionAdmissionCapacity.count",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "A preflight check before beforeCommit and execute, then a re-check after the actor row lock must see consumption committed before that lock (admission.mts:70 and :87)",
+    "issue": 3117
   },
   {
     "annotation": "assertImagesReadyForSurface",
@@ -81,38 +81,38 @@
   },
   {
     "annotation": "claimContributionAdmission.abandonExpiredAttempt",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.claim",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.insert",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:37)",
+    "issue": 3117
   },
   {
     "annotation": "claimContributionAdmission.liveClaim",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:85)",
+    "issue": 3117
   },
   {
     "annotation": "claimContributionAdmission.mark",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.recordAttempt",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.reservation",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:48)",
+    "issue": 3117
   },
   {
     "annotation": "countUserMemberCommunities",
@@ -261,8 +261,8 @@
   },
   {
     "annotation": "extendContributionAdmissionReplay",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each imported topic replays its own committed reservation under that reservation row lock, in per-item order (import-topics.mts:78-92, admission-reservations.mts:80)",
+    "issue": 3117
   },
   {
     "annotation": "fencePublicationIdentityBridgeCapture",
@@ -656,8 +656,8 @@
   },
   {
     "annotation": "persistFinalizedContributionResponse",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "prepublishImageSurfaceDenial:current",
@@ -666,13 +666,13 @@
   },
   {
     "annotation": "publishFinalizedContributionResponse.lockClaim",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "publishFinalizedContributionResponse.release",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
@@ -746,8 +746,8 @@
   },
   {
     "annotation": "renewContributionAdmissionLease",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
+    "issue": 3117
   },
   {
     "annotation": "replaceMyLandingPageItems",
@@ -841,23 +841,23 @@
   },
   {
     "annotation": "runContributionAdmission.commit",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "runContributionAdmission.lockActor",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "runContributionAdmission.lockReservation",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "runContributionAdmission.recordAttemptResult",
-    "reason": "Contribution admission steps repeat per admitted item",
-    "issue": 2608
+    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
+    "issue": 3113
   },
   {
     "annotation": "selectCopyrightStatementFacts",
