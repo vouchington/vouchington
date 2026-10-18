@@ -2,6 +2,8 @@ export type TestWorkerProcessorDecorator = (processor: unknown, queueName: strin
 
 let testWorkerProcessorDecorator: TestWorkerProcessorDecorator | undefined
 
+/** @public Installs Voucha's query profiler from test-helpers/vitest.setup.worker-query-profiles.mts;
+ * production export analysis excludes that supported test setup consumer. */
 export function setTestWorkerProcessorDecorator(decorator: TestWorkerProcessorDecorator): void {
   testWorkerProcessorDecorator = decorator
 }
