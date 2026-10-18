@@ -76,8 +76,8 @@ export const adminReportTools = [
       openWorldHint: true,
     },
     run: async (user, { id }) => {
-      await rerunReportJudgement(user.id, id)
-      return { queued: true, rerun_by_id: user.id }
+      const runId = await rerunReportJudgement(user.id, id)
+      return { queued: true, rerun_by_id: user.id, run_id: runId }
     },
   }),
 ]

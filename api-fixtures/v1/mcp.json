@@ -34597,6 +34597,19 @@
                 "S1": {
                   "additionalProperties": false,
                   "properties": {
+                    "ai_draft_requested_run_id": {
+                      "type": "string"
+                    },
+                    "ai_draft_run_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "ai_drafted_at": {
                       "anyOf": [
                         {
@@ -35229,6 +35242,8 @@
                     }
                   },
                   "required": [
+                    "ai_draft_requested_run_id",
+                    "ai_draft_run_id",
                     "ai_drafted_at",
                     "ai_internal_response",
                     "ai_public_response",
@@ -36614,6 +36629,12 @@
                     "appeal": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -36880,6 +36901,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -36923,6 +36946,12 @@
                     "dispute": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -37119,6 +37148,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -37338,6 +37369,12 @@
                     "appeal": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -37604,6 +37641,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -37647,6 +37686,12 @@
                     "dispute": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -37843,6 +37888,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -38062,6 +38109,12 @@
                     "appeal": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -38328,6 +38381,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -38371,6 +38426,12 @@
                     "dispute": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -38567,6 +38628,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -38890,6 +38953,12 @@
                     "appeal": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -39156,6 +39225,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
@@ -39199,6 +39270,12 @@
                     "dispute": {
                       "additionalProperties": false,
                       "properties": {
+                        "ai_draft_requested_run_id": {
+                          "type": "string"
+                        },
+                        "ai_draft_run_id": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "ai_drafted_at": {
                           "$ref": "#/$defs/S1"
                         },
@@ -39395,6 +39472,8 @@
                         }
                       },
                       "required": [
+                        "ai_draft_requested_run_id",
+                        "ai_draft_run_id",
                         "ai_drafted_at",
                         "ai_internal_response",
                         "ai_public_response",
