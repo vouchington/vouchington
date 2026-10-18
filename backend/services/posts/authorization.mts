@@ -23,6 +23,8 @@ import {
 import type { CreatePostInput, Post } from './types.mts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { isPlatformAccount } from '@services/users'
+import { canViewPost } from './check-privacy-access.mts'
+import { getRouteAccessPost, getRoutePostByAnyCached } from './route-access.mts'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -162,4 +164,23 @@ export async function assertDelegatedPostActorActive(
 
 export function assertDelegatedCommunityWritable(community: { archived_at: unknown }): void {
   assert(!community.archived_at, 403, 'Community is archived')
+}
+
+/** A post whose read state the caller may change: it exists, is not under a recommendation, and the caller can see it. */
+export async function assertPostReadStateTarget(user: PrivateUser, id: string): Promise<void> {
+  const { post, root } = await getRoutePostByAnyCached(id)
+  assert(post && !post.deleted_at, 404, 'Post not found')
+  assert(await getRouteAccessPost(post, root), 404, 'Post not found')
+  assert(await canViewPost(user, post), 404, 'Post not found')
+}
+
+/** The review a caller may rate: readable at its route, theirs to update, and a review. */
+export async function loadPostRatingTarget(user: PrivateUser, idOrSlug: string): Promise<Post> {
+  const { post, root } = await getRoutePostByAnyCached(idOrSlug)
+  assert(post, 404, 'Post not found')
+  assert(!post.deleted_at, 404, 'Post not found')
+  assert(await getRouteAccessPost(post, root), 404, 'Post not found')
+  assert(currentUserCanUpdatePost(user, post), 403, 'Forbidden')
+  assert(post.post_type === 'review', 422, 'Post is not a review')
+  return post
 }

@@ -3,6 +3,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
+  createTestPost,
   createTestTopic,
   createTestRssFeedItemWithUrl,
   insertTestCommunity,
@@ -28,9 +29,11 @@ describe('registered participation write catalog SDK', () => {
       await sdk.connect(new StreamableHTTPClientTransport(url, { fetch }))
       return sdk
     })
+    const post = await createTestPost({ user, privacy: 'public' })
     const names = new Set<string>()
     try {
       for (const [name, option, args] of [
+        ['act_on_post', 'unread', { id: post.id }],
         ['participate_in_community', 'join', { community_id: community.id }],
         ['vote', 'set_topic', { id: topic.id, choice: 'like' }],
         ['set_rss_feed_item_read', 'read', { rss_feed_item_id: item.id }],

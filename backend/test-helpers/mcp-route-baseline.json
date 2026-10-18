@@ -1440,7 +1440,13 @@
     "I173": [["idOrSlug"]],
     "I174": [["noteId", "userId"]],
     "I175": [["community_id", "subject_user_id"]],
-    "I176": [["community_id", "conversationId", "text"]]
+    "I176": [["community_id", "conversationId", "text"]],
+    "I177": [["id", "order_index", "rating", "topic_id"]],
+    "I178": [["id", "topic_id"]],
+    "I179": [
+      ["audience", "id", "recipient_user_ids"],
+      ["audience", "id"]
+    ]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4104,8 +4110,8 @@
           "title"
         ],
         "operation": {
-          "tool": "update_post",
-          "option": null
+          "tool": "act_on_post",
+          "option": "edit"
         },
         "decision": false
       }
@@ -5958,6 +5964,118 @@
             "option": "reply_modmail"
           },
           "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/ratings": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "add_rating"
+          },
+          "decision": false,
+          "inputFields": "I177",
+          "requestBodyFields": ["order_index", "rating", "topic_id"]
+        }
+      ]
+    },
+    "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "edit_rating"
+          },
+          "decision": false,
+          "inputFields": "I177",
+          "requestBodyFields": ["order_index", "rating"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "delete_rating"
+          },
+          "decision": false,
+          "inputFields": "I178",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/shares": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "share"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/sends": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "send"
+          },
+          "decision": false,
+          "inputFields": "I179",
+          "requestBodyFields": ["audience", "recipient_user_ids"]
+        }
+      ]
+    },
+    "PUT:/api/v1/posts/:id/read": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "read"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:id/read": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "unread"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
         }
       ]
     }
