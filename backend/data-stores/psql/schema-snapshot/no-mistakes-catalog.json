@@ -1228,9 +1228,6 @@
     },
     "vote_integrity_resolutions": {
       "values": ["dismissed", "penalized", "suspended"]
-    },
-    "vote_weight_recalculation_dispatchers": {
-      "values": ["age_milestones", "membership_expirations", "family_source_changes"]
     }
   },
   "formatVersion": 2,
@@ -44185,84 +44182,6 @@
           "columns": ["token"]
         }
       }
-    },
-    "entity_listener_reconciliation_cursors": {
-      "checkConstraints": {
-        "entity_listener_reconciliation_cursors_is_singleton_check": {
-          "definition": "CHECK (is_singleton)",
-          "validated": true
-        }
-      },
-      "columns": {
-        "is_singleton": {
-          "comment": "One dispatcher owns the forward-only source timestamp high-water mark.",
-          "dataType": "boolean",
-          "defaultExpression": "true",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "reconciled_through_at": {
-          "comment": "Latest source timestamp whose complete candidate set was successfully reconciled.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
-        "updated_at": {
-          "comment": null,
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        }
-      },
-      "comment": "Durable high-water marks advanced only after a reconciliation dispatcher processes every candidate.",
-      "foreignKeys": {},
-      "indexes": {
-        "entity_listener_reconciliation_cursors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX entity_listener_reconciliation_cursors_pkey ON public.entity_listener_reconciliation_cursors USING btree (is_singleton)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "is_singleton",
-              "descending": false,
-              "expression": "is_singleton",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.bool_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["is_singleton"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_entity_listener_reconciliation_cursors_updated_at": {
-          "definition": "CREATE TRIGGER trigger_entity_listener_reconciliation_cursors_updated_at BEFORE UPDATE ON public.entity_listener_reconciliation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
     },
     "facebook_accounts": {
       "checkConstraints": {},
@@ -127934,6 +127853,38 @@
         }
       },
       "indexes": {
+        "idx_url_hostnames__age_threshold_days_id_crawlable": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_url_hostnames__age_threshold_days_id_crawlable ON public.url_hostnames USING btree (age_threshold_days, id) INCLUDE (crawl_swept_at) WHERE (is_crawlable AND (NOT is_blocked))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "age_threshold_days",
+              "descending": false,
+              "expression": "age_threshold_days",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.int2_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(is_crawlable AND (NOT is_blocked))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_url_hostnames__blocked": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -143095,79 +143046,6 @@
       "triggers": {
         "trigger_vote_weight_penalties_updated_at": {
           "definition": "CREATE TRIGGER trigger_vote_weight_penalties_updated_at BEFORE UPDATE ON public.vote_weight_penalties FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-        }
-      },
-      "uniqueConstraints": {}
-    },
-    "vote_weight_recalculation_cursors": {
-      "checkConstraints": {},
-      "columns": {
-        "changes_through_at": {
-          "comment": "Latest completed sweep boundary; NULL means the dispatcher has not advanced.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 2
-        },
-        "dispatcher": {
-          "comment": "The finite vote-weight signal dispatcher advanced by this cursor.",
-          "dataType": "vote_weight_recalculation_dispatchers",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "updated_at": {
-          "comment": "When this cursor row was last updated.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        }
-      },
-      "comment": "One durable high-water mark for each vote-weight signal dispatcher.",
-      "foreignKeys": {},
-      "indexes": {
-        "vote_weight_recalculation_cursors_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX vote_weight_recalculation_cursors_pkey ON public.vote_weight_recalculation_cursors USING btree (dispatcher)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "dispatcher",
-              "descending": false,
-              "expression": "dispatcher",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.enum_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["dispatcher"]
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_vote_weight_recalculation_cursors_updated_at": {
-          "definition": "CREATE TRIGGER trigger_vote_weight_recalculation_cursors_updated_at BEFORE UPDATE ON public.vote_weight_recalculation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
