@@ -1,10 +1,7 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
+import { verifyPathSignature, parseSigningKeys } from '@vouchington/utils/url-signing'
 import { RequestParseError } from '../errors.mts'
-import {
-  verifyPathSignature,
-  parseSigningKeys,
-  SIDELOAD_SIGNING_KEYS_ENV,
-} from '@ts-shared/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 import { getOgBase64url } from './event-path.mts'
 import { validateOgParams, type OgParams } from '../og/params.mts'
 
@@ -40,7 +37,7 @@ export function parseOgRequest(
     throw new RequestParseError('OG signing keys are not configured', 403)
   }
   const path = `/og/${base64url}`
-  if (!verifyPathSignature(path, sig, keys)) {
+  if (!verifyPathSignature(path, sig, keys, { allowUnsignedWhenNoKeys: true })) {
     throw new RequestParseError('Invalid or missing signature', 403)
   }
 

@@ -1,6 +1,7 @@
 import satori from 'satori'
 import sharp from 'sharp'
-import { authorizeDependencyStates, type PlacementSourcePolicy } from '@ts-shared/url-signing'
+import { authorizeDependencyStates } from '@vouchington/utils/url-signing'
+import type { PlacementSourcePolicy } from '@ts-shared/url-signing'
 import type { EnvironmentConfig } from '../config.mts'
 import type { createS3Client, fetchImageFromS3 } from '../s3/index.mts'
 import type { OgParams } from './params.mts'

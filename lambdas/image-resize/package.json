@@ -35,6 +35,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@vouchington/image-resize": "^0.2.0",
     "@vouchington/media": "^0.2.0",
+    "@vouchington/utils": "^0.7.4",
     "satori": "^0.44.3",
     "sharp": "^0.35.5",
     "ssrf-guard": "^1.0.0"

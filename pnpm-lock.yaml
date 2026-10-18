@@ -73,6 +73,9 @@ importers:
       '@vouchington/localization-compiler':
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
+      '@vouchington/utils':
+        specifier: ^0.7.4
+        version: 0.7.4
       '@vouchington/worker-runtime':
         specifier: ^0.1.2
         version: 0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.4)
@@ -2508,6 +2511,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/utils':
+        specifier: ^0.7.4
+        version: 0.7.4
 
   backend/modules/rss-unreliable-status-codes:
     dependencies:
@@ -5114,9 +5120,6 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -6489,6 +6492,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/utils':
+        specifier: ^0.7.4
+        version: 0.7.4
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -6945,9 +6951,6 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -7225,6 +7228,9 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
+      '@vouchington/utils':
+        specifier: ^0.7.4
+        version: 0.7.4
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -9770,6 +9776,9 @@ importers:
       '@vouchington/embeds':
         specifier: ^0.0.2
         version: 0.0.2
+      '@vouchington/utils':
+        specifier: ^0.7.4
+        version: 0.7.4
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11369,9 +11378,6 @@ importers:
       '@ts-shared/languages':
         specifier: workspace:^
         version: link:../../../ts-shared/languages
-      '@ts-shared/url-signing':
-        specifier: workspace:^
-        version: link:../../../ts-shared/url-signing
       '@ts-shared/user-profile-collections':
         specifier: workspace:^
         version: link:../../../ts-shared/user-profile-collections
@@ -13921,6 +13927,9 @@ importers:
       '@vouchington/media':
         specifier: ^0.2.0
         version: 0.2.0
+      '@vouchington/utils':
+        specifier: ^0.7.4
+        version: 0.7.4
       satori:
         specifier: ^0.44.3
         version: 0.44.3

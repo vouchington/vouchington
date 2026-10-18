@@ -1,4 +1,5 @@
-import { parseSigningKeys, SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
+import { parseSigningKeys } from '@vouchington/utils/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 
 let cachedSigningKeys: string[] | undefined
 

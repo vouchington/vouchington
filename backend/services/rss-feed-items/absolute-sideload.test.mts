@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
-import { signPath } from '@ts-shared/url-signing'
+import { signPath } from '@vouchington/utils/url-signing'
 import {
   sanitizeRssFeedItemContentHtml,
   sanitizeRssFeedItemContentHtmlBatch,
