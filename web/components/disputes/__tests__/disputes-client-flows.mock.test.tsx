@@ -104,14 +104,14 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     expect(await screen.findByText('Reviewed draft response')).toBeVisible()
   })
 
-  it('keeps a manual rerun pending when a different job writes a newer draft', async () => {
+  it('keeps a manual rerun pending when an earlier job writes a draft', async () => {
     const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
-    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'manual-job' })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: '101' })
     h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
       makeDispute({
         ai_drafted_at: '2026-01-02T00:00:00Z',
-        ai_draft_run_id: 'automatic-job',
-        ai_public_response: 'Different job draft',
+        ai_draft_run_id: '100',
+        ai_public_response: 'Earlier job draft',
       }),
     )
     render(
@@ -123,8 +123,30 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
-    expect(screen.queryByText('Different job draft')).not.toBeInTheDocument()
+    expect(screen.queryByText('Earlier job draft')).not.toBeInTheDocument()
     expect(screen.getByTitle('Re-run AI')).toBeDisabled()
+  })
+
+  it('reconciles a later run that supersedes the requested draft', async () => {
+    const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: '101' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        ai_drafted_at: '2026-01-02T00:00:00Z',
+        ai_draft_run_id: '102',
+        ai_public_response: 'Later job draft',
+      }),
+    )
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    expect(await screen.findByText('Later job draft')).toBeVisible()
+    expect(screen.getByTitle('Re-run AI')).toBeEnabled()
   })
 
   it('keeps a successfully admitted rerun pending if its first primary read fails', async () => {

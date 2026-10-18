@@ -26,17 +26,28 @@ export function usePendingAiRefresh(
   }, [refresh, onTimeout])
   useEffect(() => {
     const visible = new Set(pendingKeys)
+    let active = true
     for (const key of deadlines.current.keys()) {
       if (!visible.has(key)) deadlines.current.delete(key)
     }
     for (const key of expired.current) {
       if (!visible.has(key)) expired.current.delete(key)
     }
+    queueMicrotask(() => {
+      if (!active) return
+      setExpiredVisible(current => {
+        const next = new Set([...current].filter(key => visible.has(key)))
+        return next.size === current.size ? current : next
+      })
+    })
     for (const key of pendingKeys) {
       if (!deadlines.current.has(key))
         deadlines.current.set(key, Date.now() + MAX_PENDING_REFRESH_MS)
     }
-    if (pendingKeys.length === 0) return
+    if (pendingKeys.length === 0)
+      return () => {
+        active = false
+      }
     let inFlight = false
     const interval = window.setInterval(() => {
       const now = Date.now()
@@ -63,7 +74,10 @@ export function usePendingAiRefresh(
           inFlight = false
         })
     }, 5000)
-    return () => window.clearInterval(interval)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
   }, [pendingKeys])
   return pendingKeys.some(key => expiredVisible.has(key))
 }

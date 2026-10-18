@@ -30,7 +30,7 @@ export function useDisputeAiReruns(
   }
 
   function applySavedDraft(before: ReviewDispute, runId: string, saved: ReviewDispute) {
-    if (saved.ai_draft_run_id !== runId) return
+    if (saved.ai_draft_run_id !== runId && !isLaterQueueRun(runId, saved.ai_draft_run_id)) return
     dispatch({ type: 'update_dispute', dispute: saved })
     clearPendingRerun(before.id, runId)
   }
@@ -94,4 +94,10 @@ export function useDisputeAiReruns(
   }
 
   return { handleRerunAI, pendingRerunIds }
+}
+
+/** GlideMQ assigns monotonically increasing decimal IDs to jobs without a custom jobId. */
+function isLaterQueueRun(requested: string, saved: string | null | undefined): boolean {
+  if (!saved || !/^\d+$/.test(requested) || !/^\d+$/.test(saved)) return false
+  return BigInt(saved) > BigInt(requested)
 }

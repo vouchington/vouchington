@@ -35818,6 +35818,16 @@
                 "S1": {
                   "additionalProperties": false,
                   "properties": {
+                    "ai_draft_run_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
                     "ai_drafted_at": {
                       "anyOf": [
                         {
@@ -36274,6 +36284,7 @@
                     }
                   },
                   "required": [
+                    "ai_draft_run_id",
                     "ai_drafted_at",
                     "ai_internal_response",
                     "ai_public_response",
@@ -38745,17 +38756,38 @@
               }
             },
             "outputSchema": {
-              "additionalProperties": false,
-              "properties": {
-                "queued": {
-                  "const": true
+              "type": "object",
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "queued": {
+                      "const": true
+                    },
+                    "rerun_by_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["queued", "rerun_by_id"],
+                  "type": "object"
                 },
-                "rerun_by_id": {
-                  "type": "string"
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "queued": {
+                      "const": true
+                    },
+                    "rerun_by_id": {
+                      "type": "string"
+                    },
+                    "run_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["queued", "rerun_by_id", "run_id"],
+                  "type": "object"
                 }
-              },
-              "required": ["queued", "rerun_by_id"],
-              "type": "object"
+              ]
             },
             "annotations": {
               "readOnlyHint": false,

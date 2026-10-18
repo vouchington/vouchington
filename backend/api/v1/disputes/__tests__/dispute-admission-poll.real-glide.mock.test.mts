@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
+  createTestMembership,
   createTestUser,
   insertTestPost,
   insertTestPostReview,
   insertTestTopic,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
+import { callStructuredMcpTool, optionArgs } from '@voucha/test-helpers/mcp-tool-contract'
 import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
 import { ai_agents } from '@queues/ai-agents/queues'
 import type { DisputeResolutionJobData } from '@queues/ai-agents/types'
@@ -22,6 +24,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importO
 describe('dispute resolution queue admission and result polling', () => {
   it('returns pending before the processor runs and exposes the persisted draft on detail read', async () => {
     const staff = await createTestUser({ administrator: true })
+    await createTestMembership({ user_id: staff.id, plan: 'plus' })
     const creator = await createTestUser()
     const claimant = await createTestUser()
     const reviewer = await createTestUser()
@@ -85,6 +88,21 @@ describe('dispute resolution queue admission and result polling', () => {
         ai_draft_run_id: rerun.body.run_id,
       })
       expect(callModel).toHaveBeenCalledOnce()
+      const mcpRerun = await callStructuredMcpTool(
+        { ...staff, membership_plan: 'plus' },
+        'rerun_review_resolution_draft',
+        optionArgs('dispute', { id: dispute.id }),
+        ['moderation:read', 'moderation:ai-rerun'],
+        { interface: 'mcp', credential: 'oauth', client: null, oauthClientId: crypto.randomUUID() },
+      )
+      expect(mcpRerun).toMatchObject({
+        queued: true,
+        rerun_by_id: staff.id,
+        run_id: expect.any(String),
+      })
+      const mcpJob = await ai_agents.getJob(String(mcpRerun.run_id))
+      expect(mcpJob).not.toBeNull()
+      await mcpJob?.remove()
     } finally {
       await job?.remove()
     }

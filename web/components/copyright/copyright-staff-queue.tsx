@@ -43,6 +43,7 @@ export function CopyrightStaffQueue({
   const notices = [...noticeById.values()]
   const pendingNoticeIds = notices.flatMap(notice =>
     (notice.form_review &&
+      !notice.form_review.review &&
       (!notice.form_review.screening || notice.form_review.screening.state === 'pending')) ||
     notice.appeals.some(appeal => appeal.recommendation === null) ||
     notice.counter_notices.some(counter => counter.guidance === null) ||
