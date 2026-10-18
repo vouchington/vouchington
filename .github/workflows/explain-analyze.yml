@@ -134,6 +134,8 @@ jobs:
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
           EXPLAIN_PLAN_CACHE_MODE: compare
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
+          # The invite-redeem scenario hashes its fixture invite code.
+          VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake explain-analyze CI OTP HMAC secret
       - name: Enforce plan gates and write job summary
         timeout-minutes: 2
         run: node backend/scripts/explain-analyze/analyze.mts >> "$GITHUB_STEP_SUMMARY"
