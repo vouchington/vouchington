@@ -36,15 +36,15 @@ export async function getAuthorizedPostContributionMembershipPlan(currentUser: P
   return membershipPlan
 }
 
-export function isPostContentEditable(currentUser: PrivateUser, post: Post): boolean {
+export function isPostContentEditable(currentUser: PrivateUser, post: Post, now: number): boolean {
   if (currentUser.roles.includes('administrator')) return true
   const createdAt = getDateFromUUIDv7(post.id)
   if (!createdAt) return true
-  return Date.now() - createdAt.getTime() <= ONE_DAY_MS
+  return now - createdAt.getTime() <= ONE_DAY_MS
 }
 
-export function assertPostContentEditable(currentUser: PrivateUser, post: Post): void {
-  if (isPostContentEditable(currentUser, post)) return
+export function assertPostContentEditable(currentUser: PrivateUser, post: Post, now: number): void {
+  if (isPostContentEditable(currentUser, post, now)) return
   throw createCodedError(
     403,
     'Post title, content, and structured data can no longer be edited after 1 day',
