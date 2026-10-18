@@ -80,6 +80,7 @@ describe('paged dispatcher', () => {
           target,
           targetName: 'background',
           targetPrefix: connection.prefix,
+          continuationQueue: dispatch,
           readAndDispatch: async size => {
             expect(size).toBe(1)
             const id = (job.data.after ?? 0) + 1
@@ -145,6 +146,11 @@ describe('paged dispatcher', () => {
         expect(consumed).toEqual([1, 2, 3])
         expect(
           await (await target.getClient()).hgetall(`${connection.prefix}:{${targetName}}:dedup`),
+        ).toEqual([])
+        expect(
+          await (
+            await dispatch.getClient()
+          ).hgetall(`${connection.prefix}:{${dispatchName}}:dedup`),
         ).toEqual([])
         await dispatch.add('page', {}, { attempts: 3 })
         await secondDone.promise

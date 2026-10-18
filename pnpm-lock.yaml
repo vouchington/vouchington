@@ -1473,9 +1473,6 @@ importers:
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3
-      '@voucha/config':
-        specifier: workspace:^
-        version: link:../../config
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -1495,6 +1492,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -1507,9 +1507,6 @@ importers:
       '@data-stores/graceful-shutdown':
         specifier: workspace:^
         version: link:../graceful-shutdown
-      '@data-stores/valkey':
-        specifier: workspace:^
-        version: link:../valkey
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../valkey-core

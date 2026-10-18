@@ -1,4 +1,4 @@
-import { DynamicConfig } from '@data-stores/valkey'
+import { DynamicConfig } from '@data-stores/valkey-core/dynamic-config'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 export type PagedDispatcher =

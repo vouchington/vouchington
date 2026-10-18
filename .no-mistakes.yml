@@ -388,6 +388,18 @@ checks:
         - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
       fileArgs: none
       always: true
+    - name: backend-dependency-boundaries
+      command: [pnpm, run, dep-cruise:backend]
+      fileArgs: none
+      include:
+        - 'backend/**/*.mts'
+        - 'backend/**/*.cjs'
+        - 'ts-shared/**/*.ts'
+        - '**/package.json'
+        - pnpm-lock.yaml
+      exclude:
+        - '**/*.test.mts'
+        - '**/test-helpers/**'
     - name: knip-production-exports
       command: [pnpm, run, knip:production-exports]
       fileArgs: none

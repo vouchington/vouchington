@@ -48,6 +48,8 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     cursorKey: DispatchCursorKey
     target: Pick<Queue, 'name' | 'getJobCounts'>
     targetPrefix?: string
+    /** Defaults to the destination when dispatchers and row jobs share one queue. */
+    continuationQueue?: Pick<Queue, 'name'>
     targetName: 'background' | 'crawl-dispatch'
     readAndDispatch: (
       pageSize: number,
@@ -79,22 +81,22 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     await job.updateData({ ...job.data, dispatchReceipt: receipt })
   }
   const page = receipt
-  if (page.next && !page.nextAdmitted) {
+  let continuationDedupId: string | undefined
+  if (page.next) {
     const pageId = createHash('sha256')
       .update(`${job.id}:${JSON.stringify(page.next)}`)
       .digest('hex')
-    await options.enqueueNext(page.next, {
-      ...pagedDispatchJobOptions(options.dispatcher),
-      jobId: `${job.name}__page__${pageId}`,
-      // Continuation admission must also survive terminal pruning in the enqueue/checkpoint gap.
-      deduplication: {
-        id: `dispatch_next__${pageId}`,
-        mode: 'throttle',
-        ttl: Number.MAX_SAFE_INTEGER,
-      },
-    })
-    page.nextAdmitted = true
-    await job.updateData({ ...job.data, dispatchReceipt: page })
+    continuationDedupId = `dispatch_next__${pageId}`
+    if (!page.nextAdmitted) {
+      await options.enqueueNext(page.next, {
+        ...pagedDispatchJobOptions(options.dispatcher),
+        jobId: `${job.name}__page__${pageId}`,
+        // Covers terminal pruning in the enqueue/checkpoint gap; released after the checkpoint.
+        deduplication: { id: continuationDedupId, mode: 'throttle', ttl: Number.MAX_SAFE_INTEGER },
+      })
+      page.nextAdmitted = true
+      await job.updateData({ ...job.data, dispatchReceipt: page })
+    }
   }
   await afterDispatch?.()
   if (page.dedupIds.length) {
@@ -103,6 +105,15 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     await workerQueueCommandClient.hdel(
       `${options.targetPrefix ?? workerQueuePrefix}:{${options.target.name}}:dedup`,
       page.dedupIds,
+    )
+  }
+  if (continuationDedupId) {
+    // The persisted nextAdmitted checkpoint now owns replay safety, so this admission fence
+    // must not accumulate for successful pages. Retrying cleanup is safe after child pruning.
+    const queue = options.continuationQueue ?? options.target
+    await workerQueueCommandClient.hdel(
+      `${options.targetPrefix ?? workerQueuePrefix}:{${queue.name}}:dedup`,
+      [continuationDedupId],
     )
   }
   return page.result

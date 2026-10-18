@@ -100,5 +100,5 @@ namespace value. Public reads started after that write remain eligible to refres
 - [ts-shared/feature-flags](../../../ts-shared/feature-flags/index.mts) -- Voucha cookie-name and
   compatibility facade over the environment-agnostic platform primitives
 - [@vouchington/utils feature flags](https://github.com/vouchington/vouchington-platform/tree/main/packages/utils) -- dependency-free cookie codec mechanics
-- `backend/data-stores/valkey/dynamic-config.mts` -- `DynamicConfig` class
+- `backend/data-stores/valkey-core/dynamic-config.mts` -- registered-key `DynamicConfig` facade
 - [Web rules](../../../web/AGENTS.md) -- UI conventions for feature flags
