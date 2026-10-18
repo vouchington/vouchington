@@ -78,7 +78,3 @@ The root Vitest config installs a `configureVitest` plugin that rejects an effec
 ## Web route localization map
 
 `i18n-extract/route-selector-map.mts` makes one `no-mistakes` `analyzeProject` call with a dependency report per route and global-chrome file, writes the route selector map and the catalog's `routes.json`, and fails on unresolved local specifiers, computed `import()`/`require()`, unbounded `t()` assembly, and production `as MessageKey` casts. The `workspace` relationship is load-bearing: dropping it silently expands closures and changes membership for hundreds of routes. The generator scans quoted alias-shaped literals, not `t()` calls through an AST, so finite alias registries must live in a module the route graph can reach. Its `--check` form runs in static CI; regenerate and commit both artifacts when a route, its imports, shared chrome, or a web alias changes membership. See [localization requirements](../../../requirements/users/LOCALIZATION.md).
-
-## Form keyboard reference and local catalog
-
-`pnpm run repo-file-policy` inspects tracked index blobs for obsolete form keyboard links and requires the canonical helper reference and heading. Static CI also compiles the full local development catalog once with `node dev/localization/local-catalog.mts`.

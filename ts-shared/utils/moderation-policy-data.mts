@@ -17,6 +17,11 @@ export const MODERATION_REPORT_ENTITY_TYPES = [
 ] as const
 export type ModerationReportEntityType = (typeof MODERATION_REPORT_ENTITY_TYPES)[number]
 
+// Severity meanings (proposed, pending product sign-off):
+// - low: minor infraction; monitor before acting.
+// - medium: noteworthy violation; warn or escalate for staff review.
+// - high: serious harm potential; remove content and notify the user.
+// - critical: escalate immediately; possible legal or safety obligation.
 export const MODERATION_POLICY_SEVERITIES = ['low', 'medium', 'high', 'critical'] as const
 export type ModerationPolicySeverity = (typeof MODERATION_POLICY_SEVERITIES)[number]
 
