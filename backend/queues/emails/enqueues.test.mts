@@ -17,8 +17,8 @@ describe('copyright notice email enqueues', () => {
       expect(jobs[0]?.opts).toMatchObject({
         attempts: 3,
         backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
+        removeOnComplete: true,
+        removeOnFail: true,
         deduplication: {
           id: `copyright-delivery:${intentId}:email`,
           mode: 'throttle',
