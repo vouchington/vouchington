@@ -115,6 +115,8 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(conversionStep).toContain('--temp-directory "$RUNNER_TEMP/native-mv-v8"')
     expect(conversionStep).toContain('--reports-dir "$RUNNER_TEMP/native-mv-coverage"')
     expect(conversionStep).toContain('--reporter json --reporter json-summary --reporter lcovonly')
+    expect(conversionStep).toContain('--extension .mts --src backend')
+    expect(conversionStep.split('run: >-')[1]).not.toContain('--all')
     expect(conversionStep).toContain(
       "--include 'backend/{api,data-stores,modules,queues,services,workers}/**'",
     )

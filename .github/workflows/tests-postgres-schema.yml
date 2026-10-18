@@ -127,12 +127,14 @@ jobs:
       - name: Convert native materialized-view coverage with published c8
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1
+        # --all adds zero-hit TypeScript records for modules this native check never loaded;
+        # the backend unit suites cover those modules in the merged patch-coverage gate.
         run: >-
           node node_modules/c8/bin/c8.js report
           --temp-directory "$RUNNER_TEMP/native-mv-v8"
           --reports-dir "$RUNNER_TEMP/native-mv-coverage"
           --reporter json --reporter json-summary --reporter lcovonly
-          --extension .mts --all --src backend
+          --extension .mts --src backend
           --include 'backend/{api,data-stores,modules,queues,services,workers}/**'
           --exclude '**/*.test.mts'
       - name: Preserve full native materialized-view LCOV
