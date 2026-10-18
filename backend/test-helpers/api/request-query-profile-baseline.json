@@ -1,651 +1,897 @@
 [
   {
     "annotation": "addUrls",
+    "route": null,
+    "maxCount": null,
     "reason": "Topic recommendation approval creates a root URL for each proposed hostname",
     "issue": 3121
   },
   {
     "annotation": "allocateCommunityAgentPromptSlot",
+    "route": null,
+    "maxCount": null,
     "reason": "The slot UPDATE runs after FOR UPDATE locks all of the creator's prompts and the slot-count check made under that lock, so concurrent allocations serialize",
     "permanent": true,
     "code": "backend/services/community-agent-prompts/allocate.mts:38"
   },
   {
     "annotation": "assertContributionAdmissionCapacity.count",
+    "route": null,
+    "maxCount": null,
     "reason": "A preflight check before beforeCommit and execute, then a re-check after the actor row lock must see consumption committed before that lock (admission.mts:70 and :87)",
     "permanent": true,
     "code": "backend/services/contribution-gating/admission.mts:70"
   },
   {
     "annotation": "assertPostMutationAccess",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation creation reloads effective root and privacy after transaction publication locks to reject a concurrent root or visibility change",
     "issue": 3121
   },
   {
     "annotation": "assertReferralProgramExists",
+    "route": null,
+    "maxCount": null,
     "reason": "Two allowed mechanisms: the check at backend/services/referral-program-link-validations/create-and-link.mts:76 runs before slug validation and the insert, so it sets which 4xx a request gets (a bad or duplicate slug with a missing program); the check at backend/services/topics/validation.mts:127-146 runs after the validation-row insert and must see that new row",
     "permanent": true,
     "code": "backend/services/referral-program-link-validations/create-and-link.mts:76"
   },
   {
     "annotation": "assertUrlsHaveNoBlockedHostnames",
+    "route": null,
+    "maxCount": null,
     "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
     "issue": 3121
   },
   {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
+    "route": null,
+    "maxCount": null,
     "reason": "Manual association rereads link and review state after the intake row lock and again after the notice row lock, so a link or review committed while it waited rejects the association",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-manual-association.mts:52"
   },
   {
     "annotation": "backfillCategoriesForTopicAliases",
+    "route": null,
+    "maxCount": null,
     "reason": "The update runs after the candidate scan and item locks, so it can return a short page while matching rows remain beyond the LIMIT; the re-read after the batch write must see rows a concurrent writer changed (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
     "issue": 3336
   },
   {
     "annotation": "backfillCategoriesForTopicAliases.candidateItems",
+    "route": null,
+    "maxCount": null,
     "reason": "The terminal candidate scan re-reads after the batch write to see rows a concurrent writer changed; a short update page does not prove exhaustion (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
     "issue": 3336
   },
   {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
+    "route": null,
+    "maxCount": null,
     "reason": "Each bounded discovery follows the preceding publication-locked relation deletion and must find only the remaining active rows",
     "issue": 3121
   },
   {
     "annotation": "buildInsertQuery",
+    "route": null,
+    "maxCount": null,
     "reason": "Bidirectional relations write forward then reverse under the pair lock so overlapping inputs observe prior resurrection and newly-active state",
     "issue": 3121
   },
   {
     "annotation": "canViewDelegatedPostsBatch",
+    "route": null,
+    "maxCount": null,
     "reason": "Delegated create, update and delete recheck thread access after lockDelegatedPostThread acquires lifecycle and post locks",
     "issue": 3113
   },
   {
     "annotation": "canViewPostsBatch",
+    "route": null,
+    "maxCount": null,
     "reason": "Anonymous outbound-federation visibility is rechecked after the vote transaction commits",
     "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.insert",
+    "route": null,
+    "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:37)",
     "permanent": true,
     "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "claimContributionAdmission.liveClaim",
+    "route": null,
+    "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:85)",
     "permanent": true,
     "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "claimContributionAdmission.reservation",
+    "route": null,
+    "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:48)",
     "permanent": true,
     "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "createCopyrightDeliveryIntents",
+    "route": null,
+    "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt intents and the restriction-notice intents commit separately",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:356"
   },
   {
     "annotation": "createDeterministicCopyrightCorrespondencesInTransaction",
+    "route": null,
+    "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt message and the restriction-notice messages commit separately",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:345"
   },
   {
     "annotation": "createEmailVerificationToken",
+    "route": null,
+    "maxCount": null,
     "reason": "The token upsert runs after fn_lock_active_user_for_mutation so account deletion cannot race credential creation",
     "permanent": true,
     "code": "backend/services/my/email-address-verification.mts:54"
   },
   {
     "annotation": "createPublicationAliasIdentityStaging",
+    "route": null,
+    "maxCount": null,
     "reason": "Each alias claim stages its source posts in its own claim sequence; merging claims needs a batched alias capture (#3336)",
     "issue": 3336
   },
   {
     "annotation": "createTopicRecommendationLinkRelation",
+    "route": null,
+    "maxCount": null,
     "reason": "Pending #3121 design decision: conflict checks stay fresh after earlier hostname URL/provider/relation writes; batching requires a shared hostname-ownership serialization protocol.",
     "issue": 3121
   },
   {
     "annotation": "createTopicRevision",
+    "route": null,
+    "maxCount": null,
     "reason": "Topic create and alias-link revisions record different completed writes, and a merge inserts source then destination revisions (#3336)",
     "issue": 3336
   },
   {
     "annotation": "createTotpAuthenticator",
+    "route": null,
+    "maxCount": null,
     "reason": "The authenticator insert runs after fn_lock_active_user_for_mutation so account deletion cannot race factor creation",
     "permanent": true,
     "code": "backend/services/totp/create.mts:25"
   },
   {
     "annotation": "deletePendingRecommendation",
+    "route": null,
+    "maxCount": null,
     "reason": "Pending-review admission is reread under FOR UPDATE before ordered extension and owning-post deletion writes",
     "issue": 3121
   },
   {
     "annotation": "deleteProfileLink",
+    "route": null,
+    "maxCount": null,
     "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
     "permanent": true,
     "code": "backend/services/my/profile-links.mts:154"
   },
   {
     "annotation": "disconnectOAuthAccount",
+    "route": null,
+    "maxCount": null,
     "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
     "permanent": true,
     "code": "backend/services/my/oauth-account.mts:17"
   },
   {
     "annotation": "ensureConsentVersion",
+    "route": null,
+    "maxCount": null,
     "reason": "Recheck the active version FOR UPDATE after the optimistic read, then revoke the old active row before inserting its unique-active replacement",
     "permanent": true,
     "code": "backend/services/user-consents/create.mts:13"
   },
   {
     "annotation": "extendContributionAdmissionReplay",
+    "route": null,
+    "maxCount": null,
     "reason": "Each imported topic replays its own committed reservation under that reservation row lock, in per-item order (import-topics.mts:78-92, admission-reservations.mts:80)",
     "permanent": true,
     "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "fencePublicationIdentityBridgeCapture",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "fetchElectionVoteRowsByUser",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 3121
   },
   {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
+    "route": null,
+    "maxCount": null,
     "reason": "The form review reads the switch-on time before its transaction and enforcement rereads it after that transaction commits, so a switch-off or flip in between stops automation instead of enforcing on the earlier answer",
     "permanent": true,
     "code": "backend/services/copyright-notices/form-reviews.mts:20"
   },
   {
     "annotation": "getAutomodFeedbackContext:agent",
+    "route": null,
+    "maxCount": null,
     "reason": "The feedback transaction re-reads the automod action after taking its locks to reject a concurrent change (backend/services/moderation-training/automod-feedback.mts:48-70)",
     "permanent": true,
     "code": "backend/services/moderation-training/automod-feedback.mts:48-70"
   },
   {
     "annotation": "getBlocklistedDomainKeys",
+    "route": null,
+    "maxCount": null,
     "reason": "RSS source validation repeats blocklist fallback across protocol/provider attempts; remaining freshness and sequencing work is tracked in #3121",
     "issue": 3121
   },
   {
     "annotation": "getCommunityById",
+    "route": null,
+    "maxCount": null,
     "reason": "Community settings/archive output is read after writes",
     "issue": 3113
   },
   {
     "annotation": "getCommunityMember",
+    "route": null,
+    "maxCount": null,
     "reason": "Membership authority is read after pair advisory locks; bans recheck target membership after the kick UPDATE to reject concurrent role promotion",
     "issue": 3113
   },
   {
     "annotation": "getCommunityWithViewerById",
+    "route": null,
+    "maxCount": null,
     "reason": "Community post creation reloads community and membership after admission begins its write transaction; delegated creation also holds lifecycle and membership locks",
     "issue": 3113
   },
   {
     "annotation": "getLandingPageRowForUser",
+    "route": null,
+    "maxCount": null,
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
     "permanent": true,
     "code": "backend/services/my/landing-pages/reads.mts:14"
   },
   {
     "annotation": "getLocalHostnamePolicies",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 3121
   },
   {
     "annotation": "getMembershipPurchaseIntent",
+    "route": null,
+    "maxCount": null,
     "reason": "Idempotency is checked before locking and rechecked under the user row lock; the inserted intent is hydrated for admission checks and reread after the external provider launch (backend/services/memberships/purchase-intents.mts:55-140)",
     "permanent": true,
     "code": "backend/services/memberships/purchase-intents.mts:55"
   },
   {
     "annotation": "getOAuthClient",
+    "route": null,
+    "maxCount": null,
     "reason": "Authorization rechecks client revocation and owner activity after locking participant users, rejecting changes since initial parameter validation",
     "permanent": true,
     "code": "backend/services/oauth-authorization-server/authorization.mts:73"
   },
   {
     "annotation": "getPostByAny",
+    "route": null,
+    "maxCount": null,
     "reason": "Post mutations reload after locks and writes; follower sends revalidate in their independent write transaction after route preflight; approval and vote federation reread after committed mutations",
     "issue": 3113
   },
   {
     "annotation": "getPrivateUserByAny",
+    "route": null,
+    "maxCount": null,
     "reason": "Authenticated self reads and same-phase mutation inputs reuse rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside fresh report authorization after CAPTCHA/admission, post-body target resolution and postwrite reloads",
     "issue": 3113
   },
   {
     "annotation": "getPublicUserByAny",
+    "route": null,
+    "maxCount": null,
     "reason": "Follow commits before its independent best-effort trust vote checks the target; ban-evasion flag claiming and banning have separate committed retry boundaries",
     "issue": 3113
   },
   {
     "annotation": "getRelatablePostIds",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation creation rechecks both participant roles after publication locks to reject visibility changes while waiting",
     "issue": 3121
   },
   {
+    "annotation": "getRssFeedsByIdBatch",
+    "route": "GET /api/v1/rss-feeds/trending",
+    "maxCount": 2,
+    "reason": "A mixed stale-hit and true-miss RSS feed batch can issue one refresh-ahead SQL batch and one miss SQL batch for disjoint feed IDs in this route; no third batch is expected",
+    "permanent": true,
+    "code": "backend/services/entity-fetch/rss-feeds.mts:12"
+  },
+  {
     "annotation": "getTopicAliasesForMergeRevision",
+    "route": null,
+    "maxCount": null,
     "reason": "The destination aliases are re-read after the alias move and source-slug alias writes, so the after snapshot must see them",
     "issue": 3336
   },
   {
     "annotation": "getTopicByAny",
+    "route": null,
+    "maxCount": null,
     "reason": "Topic create and update return state after topic/alias writes; merged destination output is reloaded after the merge transaction commits",
     "issue": 3113
   },
   {
     "annotation": "getTopicDataPointInsights",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 3121
   },
   {
     "annotation": "getTopicsByAnyBatch",
+    "route": null,
+    "maxCount": null,
     "reason": "Post creation rechecks active topic state on the primary execution transaction after CAPTCHA/admission; link title resolution also rechecks categories after URL writes",
     "issue": 3113
   },
   {
     "annotation": "getUrlById",
+    "route": null,
+    "maxCount": null,
     "reason": "Stored URL existence is checked again in the intentional execution transaction after CAPTCHA and the separately committed capacity transaction (contribution-gating/admission.mts:69-79), so removed URLs reject before the post insert",
     "issue": 3113
   },
   {
     "annotation": "getUrlsByIds",
+    "route": null,
+    "maxCount": null,
     "reason": "Root URL creation hydrates URLs after their upserts in the shared approval transaction before writing each ordered relation",
     "issue": 3113
   },
   {
     "annotation": "getUserTagRelationById",
+    "route": null,
+    "maxCount": null,
     "reason": "The committed vote append is followed by a fresh active-tag check before primary stats refresh, preserving concurrent deletion state",
     "issue": 3121
   },
   {
     "annotation": "grantConsent",
+    "route": null,
+    "maxCount": null,
     "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",
     "permanent": true,
     "code": "backend/services/user-consents/create.mts:62"
   },
   {
     "annotation": "insertCopyrightDeliveryRecipients",
+    "route": null,
+    "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt recipient and the claimant decision recipient commit separately",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:356"
   },
   {
     "annotation": "listDescendantPostPublicationSitemapPage",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "listPostPublicationIdentityNativeSourcePage",
+    "route": null,
+    "maxCount": null,
     "reason": "Eight source branches page sequentially under one row budget and cursor; one statement would change page boundaries (#3336)",
     "issue": 3336
   },
   {
     "annotation": "listPublicationIdentityFeedItem",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "listPublicationIdentityFeedSourcePage",
+    "route": null,
+    "maxCount": null,
     "reason": "Feed items page under the shared source row budget and cursor; one statement would change page boundaries (#3336)",
     "issue": 3336
   },
   {
     "annotation": "listTopicAliasPublicationPostImpacts",
+    "route": null,
+    "maxCount": null,
     "reason": "Each alias retains its own ownership pages under its own dirty-work row (#3336)",
     "issue": 3336
   },
   {
     "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
+    "route": null,
+    "maxCount": null,
     "reason": "Each separately committed relation-vote append transaction must acquire its own active-user admission fence",
     "issue": 3121
   },
   {
     "annotation": "lockApiKeyOwner",
+    "route": null,
+    "maxCount": null,
     "reason": "Read administrator roles after fn_lock_active_user_for_mutation to observe role changes that completed while acquiring the owner lock",
     "permanent": true,
     "code": "backend/services/api-keys/lifetime.mts:8"
   },
   {
     "annotation": "lockAssessmentForm",
+    "route": null,
+    "maxCount": null,
     "reason": "The assessment is appended in its own transaction and each owed target is restricted in its own later transaction, and each takes the form review fence for its own transaction",
     "permanent": true,
     "code": "backend/services/copyright-notices/compliance.mts:14"
   },
   {
     "annotation": "lockBlueskyLinkAuthorization",
+    "route": null,
+    "maxCount": null,
     "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
     "permanent": true,
     "code": "backend/services/bluesky-accounts/callback-completion.mts:62"
   },
   {
     "annotation": "lockBlueskySessionOwner:did",
+    "route": null,
+    "maxCount": null,
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
     "permanent": true,
     "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner"
   },
   {
     "annotation": "lockBlueskySessionOwner:user",
+    "route": null,
+    "maxCount": null,
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
     "permanent": true,
     "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner"
   },
   {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
+    "route": null,
+    "maxCount": null,
     "reason": "Recording a disposition locks the notice owners before taking the incident row lock, then the incident resync recomputes the owner set after the disposition insert so an owner added since the first lock is locked too",
     "permanent": true,
     "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138"
   },
   {
     "annotation": "lockEntityRelationElectionVoteMutations",
+    "route": null,
+    "maxCount": null,
     "reason": "Each append transaction acquires sorted advisory vote locks; bidirectional direction ordering prevents inverse-call deadlocks",
     "issue": 3121
   },
   {
     "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
+    "route": null,
+    "maxCount": null,
     "reason": "Each bounded stats-update transaction acquires publication locks before relation row locks; committed prior chunks cannot lend their locks",
     "issue": 3121
   },
   {
     "annotation": "lockExistingTopicAliasPublicationScopes",
+    "route": null,
+    "maxCount": null,
     "reason": "Each alias claim locks its alias scope before its own row lock and rechecks after it (#3336)",
     "issue": 3336
   },
   {
     "annotation": "lockPostPublicationCaptures",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "lockPostPublicationRssFeedScopes",
+    "route": null,
+    "maxCount": null,
     "reason": "Per-item lock order: the final feed scopes must be locked before the dirty-work upsert, because the impact re-read after the item-row wait can include feeds the caller's pre-lock scan missed (backend/services/post-publication/capture-rss-feeds.mts:recordRssFeedTopicPublicationChanges)",
     "issue": 3336
   },
   {
     "annotation": "lockPostPublicationScope",
+    "route": null,
+    "maxCount": null,
     "reason": "Author, post and feed scope locks are distinct keys taken at separate sites, and the nested rss-feed state change re-locks its feed as its own entry point (#3336)",
     "issue": 3336
   },
   {
     "annotation": "lockPreparedPublicationScopes",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
+    "route": null,
+    "maxCount": null,
     "reason": "The capture re-reads category aliases after the feed lifecycle and row locks to catch aliases added since the first read",
     "issue": 3336
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
+    "route": null,
+    "maxCount": null,
     "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
     "permanent": true,
     "code": "backend/services/users/delete.mts:77"
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",
+    "route": null,
+    "maxCount": null,
     "reason": "Each alias capture locks its scope before its own write; merging needs a batched alias capture (#3336)",
     "issue": 3336
   },
   {
     "annotation": "maybeResolveCases",
+    "route": null,
+    "maxCount": null,
     "reason": "Issuing a warning commits the warning in its own transaction before the report resolution runs its own, so a failed resolution leaves a retryable pending report (backend/services/user-warnings/issue-warning.mts:26-34)",
     "permanent": true,
     "code": "backend/services/user-warnings/issue-warning.mts:26-34"
   },
   {
     "annotation": "orderPostPublicationRetainedKeyInput",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "pagePublicationAliasIdentityStaging",
+    "route": null,
+    "maxCount": null,
     "reason": "Each alias claim pages its own staged post identities in global UUID order (#3336)",
     "issue": 3336
   },
   {
     "annotation": "pagePublicationAliasSourceIdentities",
+    "route": null,
+    "maxCount": null,
     "reason": "Authored and relation sources are separate keyset walks per alias; one statement would change plans and cursors (#3336)",
     "issue": 3336
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
+    "route": null,
+    "maxCount": null,
     "reason": "Reread after SDK session persistence claims or rejects the authorization in its own transaction; reuse the pre-write row through route and completion checks",
     "permanent": true,
     "code": "backend/services/bluesky-accounts/link.mts:133"
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
+    "route": null,
+    "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:74"
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:references",
+    "route": null,
+    "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:74"
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:incoming",
+    "route": null,
+    "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:65"
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:outgoing",
+    "route": null,
+    "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:65"
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
+    "route": null,
+    "maxCount": null,
     "reason": "Each owed target is restricted in its own transaction, and the next owed target is read only after that commit so a concurrent restriction or superseding decision settles it",
     "permanent": true,
     "code": "backend/services/copyright-notices/enforce-assessment.mts:32"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
+    "route": null,
+    "maxCount": null,
     "reason": "Lock the authorization row before branching on status and writing callback secrets or terminal expiry, preserving exact callback replay",
     "permanent": true,
     "code": "backend/services/oauth/authorization-callback.mts:60"
   },
   {
     "annotation": "recordMcpCallAudit",
+    "route": null,
+    "maxCount": null,
     "reason": "The write-ahead audit row commits before the MCP call runs and the tool_error or rate_limited follow-up row is written after the call (backend/api/mcp-audit-helpers.mts:40-62)",
     "permanent": true,
     "code": "backend/api/mcp-audit-helpers.mts:40-62"
   },
   {
     "annotation": "recordModeratorAction",
+    "route": null,
+    "maxCount": null,
     "reason": "A staff operation writes its requested row before the external side effect and its finished row after it, and issuing a warning commits the warning and the report resolution in separate transactions (backend/services/moderator-actions/operation.mts:15-38, backend/services/user-warnings/issue-warning.mts:26-34)",
     "permanent": true,
     "code": "backend/services/moderator-actions/operation.mts:15-38"
   },
   {
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
+    "route": null,
+    "maxCount": null,
     "reason": "Each relation write resolves canonical topics at its own write boundary; merging writes needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
+    "route": null,
+    "maxCount": null,
     "reason": "The complaint row is rechecked after the placement advisory locks and the notice row lock to reject a decision superseded while it waited",
     "permanent": true,
     "code": "backend/services/copyright-notices/territorial-redress.mts:54"
   },
   {
     "annotation": "removeEmailAddress",
+    "route": null,
+    "maxCount": null,
     "reason": "Lock the active user then email rows before checking last-auth-method and primary-address guards and deleting the target",
     "permanent": true,
     "code": "backend/services/my/email-addresses.mts:78"
   },
   {
     "annotation": "renameTotpAuthenticator",
+    "route": null,
+    "maxCount": null,
     "reason": "The authenticator update runs after fn_lock_active_user_for_mutation so account deletion cannot race factor mutation",
     "permanent": true,
     "code": "backend/services/totp/update.mts:13"
   },
   {
     "annotation": "renewContributionAdmissionLease",
+    "route": null,
+    "maxCount": null,
     "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
     "permanent": true,
     "code": "backend/services/contribution-gating/admission.mts:49-51"
   },
   {
     "annotation": "replaceTopicRecommendationHostnames",
+    "route": null,
+    "maxCount": null,
     "reason": "Replacement deletes existing hostname membership before inserting the new sorted set in the same transaction",
     "issue": 3121
   },
   {
     "annotation": "replayClientGeneratedTurn",
+    "route": null,
+    "maxCount": null,
     "reason": "The route reads an acknowledged turn before any safety provider is called, and the transaction reads it again after locking the conversation so concurrent retries replay one turn",
     "permanent": true,
     "code": "backend/services/conversations-messages/client-generated-chat.mts:54"
   },
   {
     "annotation": "resolveEntityRelationElectionTargetById",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 3121
   },
   {
     "annotation": "resolvePublicationPostScopeLiveOwner",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "retainCurrentRssFeedPublicationKeys",
+    "route": null,
+    "maxCount": null,
     "reason": "The topic-change capture runs after the feed UPDATE and must see the new topic that the earlier state-change capture did not",
     "issue": 3336
   },
   {
     "annotation": "retainPostPublicationDirtyWorkKeys",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "retainPublicationIdentityBridges",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "retainPublicationIdentityRoots",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "revokeAllAuthenticatedSessions",
+    "route": null,
+    "maxCount": null,
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
     "permanent": true,
     "code": "backend/services/jwt-session/user-session-revocation.mts:37"
   },
   {
     "annotation": "revokeApiKey",
+    "route": null,
+    "maxCount": null,
     "reason": "The key update runs after fn_lock_active_user_for_mutation to serialize revocation with key rotation and account deletion",
     "permanent": true,
     "code": "backend/services/api-keys/revoke.mts:8"
   },
   {
     "annotation": "revokeAuthenticatedSession",
+    "route": null,
+    "maxCount": null,
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
     "permanent": true,
     "code": "backend/services/jwt-session/user-session-revocation.mts:16"
   },
   {
     "annotation": "rotateApiKey",
+    "route": null,
+    "maxCount": null,
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
     "permanent": true,
     "code": "backend/services/api-keys/rotate.mts:45"
   },
   {
     "annotation": "setMyLandingPageDefault",
+    "route": null,
+    "maxCount": null,
     "reason": "The current default must be cleared before setting the selected page because the partial unique index permits only one default per user (backend/services/my/landing-pages/set-default.mts:35-44)",
     "permanent": true,
     "code": "backend/services/my/landing-pages/set-default.mts:35"
   },
   {
     "annotation": "setPrimaryEmailAddress",
+    "route": null,
+    "maxCount": null,
     "reason": "After locking the active user, clear the old primary before setting its replacement to satisfy the unique primary-address constraint",
     "permanent": true,
     "code": "backend/services/my/email-addresses.mts:21"
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
+    "route": null,
+    "maxCount": null,
     "reason": "Each bounded stats chunk updates locked rows and captures publication transitions in its own transaction",
     "issue": 3121
   },
   {
     "annotation": "updateTopicRecommendation",
+    "route": null,
+    "maxCount": null,
     "reason": "The pending-state FOR UPDATE snapshot supplies omitted patch fields before ordered post and extension updates",
     "issue": 3121
   },
   {
     "annotation": "upsertAuthenticatedSession",
+    "route": null,
+    "maxCount": null,
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
     "permanent": true,
     "code": "backend/services/jwt-session/user-sessions.mts:25"
   },
   {
     "annotation": "upsertEntityRelationElectionVotes",
+    "route": null,
+    "maxCount": null,
     "reason": "Sorted bidirectional append transactions acquire admission and advisory locks; overlapping writes must observe the previously appended score",
     "issue": 3121
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",
+    "route": null,
+    "maxCount": null,
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
     "issue": 3336
   },
   {
     "annotation": "upsertUrlHostnames",
+    "route": null,
+    "maxCount": null,
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 3121
   },
   {
     "annotation": "upsertUserAgentString",
+    "route": null,
+    "maxCount": null,
     "reason": "On a miss INSERT ON CONFLICT may wait for another transaction; the following SELECT needs a new snapshot to see its committed row",
     "permanent": true,
     "code": "backend/data-stores/psql/upsert-user-agent-string.mts:15"
   },
   {
     "annotation": "upsertUserFinancialProfile",
+    "route": null,
+    "maxCount": null,
     "reason": "The owner individual and existing financial-profile row are locked in the transaction before validating currency-dependent patches; the second lock read prevents concurrent updates from validating against stale profile data (backend/services/user-financial-profiles/upsert.mts:17-39)",
     "permanent": true,
     "code": "backend/services/user-financial-profiles/upsert.mts:17"
   },
   {
     "annotation": "verifyEmailVerificationToken",
+    "route": null,
+    "maxCount": null,
     "reason": "After the active-user lock, consume the valid token before a fresh-snapshot address-ownership check and verified-address insert, preserving code-error precedence",
     "permanent": true,
     "code": "backend/services/my/email-address-verification.mts:93"
   },
   {
     "annotation": "verifyTotpSetup",
+    "route": null,
+    "maxCount": null,
     "reason": "After the optimistic code check, lock the active user then update only an unverified factor so concurrent verification returns the existing 422",
     "permanent": true,
     "code": "backend/services/totp/verify-setup.mts:14"
   },
   {
     "annotation": "withMfaLock",
+    "route": null,
+    "maxCount": null,
     "reason": "Lock the active user, then passkey rows, then TOTP rows before counting methods and consuming reauthentication to prevent concurrent last-factor deletions",
     "permanent": true,
     "code": "backend/services/mfa/protected-mfa-delete.mts:14"

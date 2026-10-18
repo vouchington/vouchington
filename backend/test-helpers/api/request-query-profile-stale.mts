@@ -4,11 +4,11 @@
 // one file): an entry is stale only when it is absent from every log, and fewer than
 // MIN_STALE_EVIDENCE_LOGS logs is not enough evidence to act on.
 import { readFileSync } from 'node:fs'
+import { parseRepeatBaseline } from '@data-stores/psql/request-query-profile-baseline'
 import {
   buildStaleReport,
   MIN_STALE_EVIDENCE_LOGS,
-  parseRepeatBaseline,
-} from '@data-stores/psql/request-query-profile-baseline'
+} from '@data-stores/psql/request-query-profile-stale-report'
 
 const baseline = parseRepeatBaseline(
   JSON.parse(

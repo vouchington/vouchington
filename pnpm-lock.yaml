@@ -3467,6 +3467,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../queues/background
+      '@queues/rss-feeds':
+        specifier: workspace:^
+        version: link:../queues/rss-feeds
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../queues/vote-aggregation

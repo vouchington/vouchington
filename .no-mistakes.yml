@@ -749,6 +749,12 @@ rules:
             file: backend/scripts/native-mv-contracts/refresh-lock.mts,
             callee: 'refreshMaterializedView',
           }
+        # The single-owner native queue contract inserts exactly three owned RSS feeds to assert
+        # two paged fetch jobs and the exhausted run budget, then deletes those fixture rows.
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker-paged.mts,
+            callee: 'insertTestRssFeedDirect',
+          }
         - {
             file: backend/scripts/native-mv-contracts/trending-http.mts,
             callee: 'insertEntityRelation',

@@ -24,3 +24,37 @@ export function recordRequestQueryProfileViolation(message: string): void {
 export function takeRequestQueryProfileViolations(): string[] {
   return violations().splice(0)
 }
+
+/** The same fail-closed request guard is used by Vitest hooks and plain-Node HTTP preflights. */
+export function assertNoRequestQueryProfileViolations(): void {
+  const recorded = takeRequestQueryProfileViolations()
+  if (recorded.length > 0) throw new Error(recorded.join('\n'))
+}
+
+/** Drain after the owned listener and its responses close, preserving both failures if needed. */
+export async function withRequestQueryProfileGuard<Result>(
+  run: () => Promise<Result>,
+): Promise<Result> {
+  let result: Result | undefined
+  let failed = false
+  let primary: unknown
+  try {
+    result = await run()
+  } catch (err) {
+    failed = true
+    primary = err
+  }
+  let guardFailure: Error | undefined
+  try {
+    assertNoRequestQueryProfileViolations()
+  } catch (err) {
+    guardFailure =
+      err instanceof Error ? err : new Error('Query-profile guard failed', { cause: err })
+  }
+  if (failed && guardFailure) {
+    throw new AggregateError([primary, guardFailure], 'HTTP request and query-profile guard failed')
+  }
+  if (failed) throw primary
+  if (guardFailure) throw guardFailure
+  return result as Result
+}

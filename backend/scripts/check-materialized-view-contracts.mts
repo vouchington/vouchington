@@ -7,6 +7,7 @@ import { checkTrendingHttpContracts } from './native-mv-contracts/trending-http.
 import { checkTrendingServiceContracts } from './native-mv-contracts/trending-service.mts'
 import { checkRefreshLockContracts } from './native-mv-contracts/refresh-lock.mts'
 import { checkRssWorkerContracts } from './native-mv-contracts/rss-worker.mts'
+import { checkRssWorkerPagedContracts } from './native-mv-contracts/rss-worker-paged.mts'
 import { checkCrawlTierContracts } from './native-mv-contracts/crawl-tiers.mts'
 import { checkRevenueContracts } from './native-mv-contracts/revenue.mts'
 import { checkHashtagAuthorDeletionContract } from './native-mv-contracts/hashtag-author-deletion.mts'
@@ -20,6 +21,7 @@ const contracts: ReadonlyArray<readonly [string, () => Promise<void>]> = [
   ['trending HTTP', checkTrendingHttpContracts],
   ['trending service', checkTrendingServiceContracts],
   ['refresh lock', checkRefreshLockContracts],
+  ['RSS worker paged', checkRssWorkerPagedContracts],
   ['RSS worker', checkRssWorkerContracts],
   ['crawl tiers', checkCrawlTierContracts],
   ['revenue', checkRevenueContracts],

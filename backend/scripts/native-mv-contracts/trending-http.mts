@@ -7,6 +7,7 @@ import { updateRssFeedById } from '@services/rss-feeds/update'
 import app, { createApiRequestGuardedListener } from '../../api/app.mts'
 import '../../api/index.mts'
 import { withOwnedApiServer } from '../../test-helpers/api-query-options-server.mts'
+import { withRequestQueryProfileGuard } from '../../test-helpers/api/request-query-profile-violations.mts'
 import { insertEntityRelation } from '../../test-helpers/entities/entity-relations.mts'
 import { createTestUserDirect } from '../../test-helpers/entities/users-direct.mts'
 import { createNativeTrendingFeed } from '../../test-helpers/native-trending-rss-feeds.mts'
@@ -54,83 +55,86 @@ export async function checkTrendingHttpContracts(): Promise<void> {
   const cookie = `dt=${deviceToken.token}; st=${sessionToken.token}`
   let requestCounter = 0
 
-  await withOwnedApiServer(createApiRequestGuardedListener(app.callback()), async address => {
-    const host = address.host === '::1' ? '[::1]' : address.host
-    const origin = `http://${host}:${address.port}`
-    async function getTrending(
-      query: Record<string, string | number>,
-      authenticated = false,
-    ): Promise<{ body: TrendingHttpBody; headers: Headers }> {
-      const url = new URL('/api/v1/rss-feeds/trending', origin)
-      for (const [key, value] of Object.entries(query)) url.searchParams.set(key, String(value))
-      requestCounter += 1
-      const headers: Record<string, string> = {
-        'user-agent': userAgent,
-        'x-forwarded-for': `2001:db8:3163:${(process.pid & 0xffff).toString(16)}::${requestCounter.toString(16)}`,
-        'x-voucha-client': 'web',
-        'x-voucha-platform': 'web',
-        'x-voucha-app-version': 'test',
+  await withRequestQueryProfileGuard(() =>
+    withOwnedApiServer(createApiRequestGuardedListener(app.callback()), async address => {
+      const host = address.host === '::1' ? '[::1]' : address.host
+      const origin = `http://${host}:${address.port}`
+      async function getTrending(
+        query: Record<string, string | number>,
+        authenticated = false,
+      ): Promise<{ body: TrendingHttpBody; headers: Headers }> {
+        const url = new URL('/api/v1/rss-feeds/trending', origin)
+        for (const [key, value] of Object.entries(query)) url.searchParams.set(key, String(value))
+        requestCounter += 1
+        const headers: Record<string, string> = {
+          'user-agent': userAgent,
+          'x-forwarded-for': `2001:db8:3163:${(process.pid & 0xffff).toString(16)}::${requestCounter.toString(16)}`,
+          'x-voucha-client': 'web',
+          'x-voucha-platform': 'web',
+          'x-voucha-app-version': 'test',
+        }
+        if (process.env.CF_WORKER_SECRET)
+          headers['x-cf-worker-secret'] = process.env.CF_WORKER_SECRET
+        if (authenticated) {
+          headers.cookie = cookie
+          headers['sec-fetch-site'] = 'same-origin'
+        }
+        const response = await fetch(url, { headers })
+        if (response.status !== 200) {
+          throw new Error(
+            `${url.pathname}${url.search}: HTTP ${response.status}: ${await response.text()}`,
+          )
+        }
+        return {
+          body: (await response.json()) as TrendingHttpBody,
+          headers: response.headers,
+        }
       }
-      if (process.env.CF_WORKER_SECRET) headers['x-cf-worker-secret'] = process.env.CF_WORKER_SECRET
-      if (authenticated) {
-        headers.cookie = cookie
-        headers['sec-fetch-site'] = 'same-origin'
-      }
-      const response = await fetch(url, { headers })
-      if (response.status !== 200) {
-        throw new Error(
-          `${url.pathname}${url.search}: HTTP ${response.status}: ${await response.text()}`,
-        )
-      }
-      return {
-        body: (await response.json()) as TrendingHttpBody,
-        headers: response.headers,
-      }
-    }
 
-    for (const timeRange of ['week', 'month']) {
-      const unscoped = await getTrending({ time_range: timeRange })
-      assert.ok(Array.isArray(unscoped.body.results))
-      assert.ok(unscoped.headers.get('cache-control')?.includes('public'))
-      const owned = await getTrending({ time_range: timeRange, after: boundaryAfter(trendingId) })
-      assert.equal(owned.body.results[0]?.id, trendingId)
-      assert.ok(owned.body.rss_feeds[trendingId])
-    }
+      for (const timeRange of ['week', 'month']) {
+        const unscoped = await getTrending({ time_range: timeRange })
+        assert.ok(Array.isArray(unscoped.body.results))
+        assert.ok(unscoped.headers.get('cache-control')?.includes('public'))
+        const owned = await getTrending({ time_range: timeRange, after: boundaryAfter(trendingId) })
+        assert.equal(owned.body.results[0]?.id, trendingId)
+        assert.ok(owned.body.rss_feeds[trendingId])
+      }
 
-    const ownedBoundary = boundaryAfter(trendingId)
-    const large = await getTrending({ limit: 100, min_score: 3, after: ownedBoundary }, true)
-    const largeIds = large.body.results.map(row => row.id)
-    assert.ok(largeIds.includes(trendingId))
-    assert.ok(!largeIds.includes(hiddenId))
-    assert.equal(large.headers.get('cache-control'), null)
-    const enabled = await getTrending({ limit: 1, min_score: 3, after: ownedBoundary }, true)
-    assert.equal(enabled.body.results[0]?.id, trendingId)
-    const hidden = await getTrending(
-      { limit: 1, min_score: 3, after: boundaryAfter(hiddenId) },
-      true,
-    )
-    assert.equal(hidden.body.results.length, 1)
-    assert.notEqual(hidden.body.results[0]?.id, hiddenId)
-    const belowThreshold = await getTrending(
-      { limit: 100, min_score: 4, after: ownedBoundary },
-      true,
-    )
-    assert.deepEqual(belowThreshold.body.results, [])
+      const ownedBoundary = boundaryAfter(trendingId)
+      const large = await getTrending({ limit: 100, min_score: 3, after: ownedBoundary }, true)
+      const largeIds = large.body.results.map(row => row.id)
+      assert.ok(largeIds.includes(trendingId))
+      assert.ok(!largeIds.includes(hiddenId))
+      assert.equal(large.headers.get('cache-control'), null)
+      const enabled = await getTrending({ limit: 1, min_score: 3, after: ownedBoundary }, true)
+      assert.equal(enabled.body.results[0]?.id, trendingId)
+      const hidden = await getTrending(
+        { limit: 1, min_score: 3, after: boundaryAfter(hiddenId) },
+        true,
+      )
+      assert.equal(hidden.body.results.length, 1)
+      assert.notEqual(hidden.body.results[0]?.id, hiddenId)
+      const belowThreshold = await getTrending(
+        { limit: 100, min_score: 4, after: ownedBoundary },
+        true,
+      )
+      assert.deepEqual(belowThreshold.body.results, [])
 
-    const first = await getTrending({ limit: 1, min_score: 3, after: ownedBoundary }, true)
-    assert.equal(first.body.results[0]?.id, trendingId)
-    assert.equal(first.body.results.length, 1)
-    assert.equal(first.body.page_info.has_next_page, true)
-    const cursor = first.body.page_info.end_cursor
-    assert.ok(cursor)
-    const second = await getTrending({ limit: 1, min_score: 3, after: cursor }, true)
-    assert.notEqual(second.body.results[0]?.id, first.body.results[0]?.id)
-    assert.equal(second.body.results.length, 1)
-    const ownedSecondary = await getTrending(
-      { limit: 1, min_score: 3, after: boundaryAfter(secondaryId) },
-      true,
-    )
-    assert.equal(ownedSecondary.body.results[0]?.id, secondaryId)
-    assert.ok(![first.body.results[0]?.id, second.body.results[0]?.id].includes(hiddenId))
-  })
+      const first = await getTrending({ limit: 1, min_score: 3, after: ownedBoundary }, true)
+      assert.equal(first.body.results[0]?.id, trendingId)
+      assert.equal(first.body.results.length, 1)
+      assert.equal(first.body.page_info.has_next_page, true)
+      const cursor = first.body.page_info.end_cursor
+      assert.ok(cursor)
+      const second = await getTrending({ limit: 1, min_score: 3, after: cursor }, true)
+      assert.notEqual(second.body.results[0]?.id, first.body.results[0]?.id)
+      assert.equal(second.body.results.length, 1)
+      const ownedSecondary = await getTrending(
+        { limit: 1, min_score: 3, after: boundaryAfter(secondaryId) },
+        true,
+      )
+      assert.equal(ownedSecondary.body.results[0]?.id, secondaryId)
+      assert.ok(![first.body.results[0]?.id, second.body.results[0]?.id].includes(hiddenId))
+    }),
+  )
 }

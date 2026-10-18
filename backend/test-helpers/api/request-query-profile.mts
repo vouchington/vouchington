@@ -64,7 +64,7 @@ export function profileRequestQueries(
 function reportRequestQueryProfile(route: string, profile: RequestQueryProfile): void {
   try {
     const summary = profile.summarize()
-    const unbaselined = findUnbaselinedRepeats(summary.repeats, BASELINE)
+    const unbaselined = findUnbaselinedRepeats(route, summary.repeats, BASELINE)
     if (unbaselined.length > 0) {
       recordRequestQueryProfileViolation(formatUnbaselinedRepeats(route, unbaselined))
     }
