@@ -1,6 +1,12 @@
-import type { SharedDbScopeObserver } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import type { SharedDbScopeEvent as PlatformScopeEvent } from '@vouchington/postgres/query-telemetry'
+import type { observeSharedDbScope } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
 
 const observerKey = Symbol.for('voucha.shared-db-scope-observer')
+export type SharedDbScopeEvent = PlatformScopeEvent<
+  Parameters<typeof observeSharedDbScope>[0],
+  string
+>
+type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 type ObserverHost = Record<symbol, SharedDbScopeObserver | undefined>
 
 /** Installs the test-only callback without adding a production registration API. */

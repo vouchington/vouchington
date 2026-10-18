@@ -1665,7 +1665,7 @@ rules:
       - 'backend/data-stores/psql/migrate.test.mts'
       - 'backend/data-stores/psql/pool-stats-sampler.test.mts'
       - 'backend/data-stores/psql/query-capture.test.mts'
-      - 'backend/data-stores/psql/query-telemetry.test.mts'
+      - 'backend/data-stores/psql/query-timing.test.mts'
       - 'backend/data-stores/valkey-core/app-integration.test.mts'
       - 'backend/data-stores/valkey-pubsub/__tests__/channel-pubsub.test.mts'
       - 'backend/data-stores/valkey-pubsub/__tests__/import-progress-pubsub.test.mts'

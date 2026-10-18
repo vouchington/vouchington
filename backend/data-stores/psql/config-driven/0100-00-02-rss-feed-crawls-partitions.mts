@@ -3,7 +3,7 @@
  * Retention is handled by dropping expired monthly partitions, not row deletes.
  */
 
-import { generateMonthlyPartitions } from './utils/partition-utils.mts'
+import { generateMonthlyPartitions } from '@vouchington/postgres/partitions'
 import { RSS_PARTITION_TABLES } from './utils/partition-config.mts'
 
 /** @public loaded by path by the config-driven migration runner */

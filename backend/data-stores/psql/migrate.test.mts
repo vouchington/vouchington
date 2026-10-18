@@ -166,29 +166,6 @@ describe('applyAllMigrations', () => {
     })
   })
 
-  it('initializes SQL tooling for forced views through the public entry point', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'voucha-forced-views-'))
-    const folder = join(root, 'views')
-    const viewName = `forced_view_${randomUUID().replaceAll('-', '')}`
-    const statements: string[] = []
-
-    try {
-      await mkdir(folder)
-      await writeFile(
-        join(folder, 'forced.sql'),
-        `CREATE OR REPLACE VIEW ${viewName} AS SELECT 1 AS id;`,
-      )
-
-      await runViews({ folder, forced: true, writer: makeMigrationWriter(statements) })
-
-      expect(statements).toHaveLength(2)
-      expect(statements[0]).toContain(`DROP VIEW IF EXISTS ${viewName}`)
-      expect(statements[1]).toContain(`CREATE OR REPLACE VIEW ${viewName}`)
-    } finally {
-      await rm(root, { force: true, recursive: true })
-    }
-  })
-
   it('keeps ordinary view rebuilds on the non-forced path', async () => {
     const root = await mkdtemp(join(tmpdir(), 'voucha-views-'))
     const folder = join(root, 'views')

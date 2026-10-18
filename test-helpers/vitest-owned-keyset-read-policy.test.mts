@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  SharedDbScopeEvent,
-  SharedDbKeysetRead,
-} from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import type { SharedDbKeysetRead } from '@vouchington/postgres/query-telemetry'
+import type { SharedDbScopeEvent } from './vitest-shared-db-scope-observer.mts'
 import { OwnedKeysetReadPolicy } from './vitest-owned-keyset-read-policy.mts'
 import { rejectUnscopedSharedDbCall } from './vitest-shared-db-scope-violations.mts'
 

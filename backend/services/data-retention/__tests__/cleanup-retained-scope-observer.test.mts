@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
-import type { SharedDbScopeEvent } from '@data-stores/psql/shared-db-scope-observer'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
 import { hasTestRetainedIdentityRoot, insertTestRetainedIdentityRoot } from '@voucha/test-helpers'
-import { installSharedDbScopeObserver } from '../../../../test-helpers/vitest-shared-db-scope-observer.mts'
+import {
+  installSharedDbScopeObserver,
+  type SharedDbScopeEvent,
+} from '../../../../test-helpers/vitest-shared-db-scope-observer.mts'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 import { cleanupRetainedRelationIdentities } from '../cleanup-retained-relation-identities.mts'
 

@@ -1,5 +1,5 @@
 import { write } from '@data-stores/psql'
-import { getUtcDayUuidv7Bounds } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { getUtcDayUuidv7Bounds } from '@vouchington/postgres/partitions'
 import sql from 'sql-template-strings'
 import { MAX_MONEY_AMOUNT, parsePostgresMoneyAmount } from '@ts-shared/money'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'

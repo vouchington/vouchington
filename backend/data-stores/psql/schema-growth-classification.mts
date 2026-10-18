@@ -1,4 +1,5 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
+import { buildUnboundedUnpartitionedTables as buildPlatformUnboundedTables } from '@vouchington/utils/schema-growth'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
 import { RETAINED_RELATION_GROWTH_POLICIES } from './schema-growth-retained-identities.mts'
 const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
@@ -84,56 +85,60 @@ const INDEFINITE_EDGE_TABLES = [
 export function buildUnboundedUnpartitionedTables(
   partitionedTables: ReadonlySet<string>,
 ): Map<string, string> {
-  return new Map([
-    ...INDEFINITE_ENTITY_AND_CONTENT_TABLES.map(table =>
-      typeof table === 'string'
-        ? ([
-            table,
-            'Durable entity/content rows grow with product adoption; indexed access remains selective.',
-          ] as const)
-        : table,
-    ),
-    ...INDEFINITE_AUDIT_AND_WORKFLOW_TABLES.map(
-      table => [table, 'Append-oriented audit/workflow history is retained indefinitely.'] as const,
-    ),
-    ...INDEFINITE_EDGE_TABLES.map(
-      table =>
-        [table, 'Relationship edges grow with entities but remain index-selective.'] as const,
-    ),
-    ...EXTRA_UNBOUNDED_TABLES.map(
-      table => [table, 'Rows grow with their owning entity or workflow.'] as const,
-    ),
-    ...entityRelationMetadatum.flatMap(({ table_name }) =>
-      partitionedTables.has(table_name)
-        ? []
-        : [
-            [
-              table_name,
-              'Config-generated relationship edges grow with entities but remain index-selective.',
-            ] as const,
-          ],
-    ),
-    ...RETAINED_RELATION_GROWTH_POLICIES,
-    [
-      'community_search_counts',
-      'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
+  return buildPlatformUnboundedTables({
+    partitionedTables,
+    groups: [
+      {
+        tables: INDEFINITE_ENTITY_AND_CONTENT_TABLES,
+        reason:
+          'Durable entity/content rows grow with product adoption; indexed access remains selective.',
+      },
+      {
+        tables: INDEFINITE_AUDIT_AND_WORKFLOW_TABLES,
+        reason: 'Append-oriented audit/workflow history is retained indefinitely.',
+      },
+      {
+        tables: INDEFINITE_EDGE_TABLES,
+        reason: 'Relationship edges grow with entities but remain index-selective.',
+      },
+      {
+        tables: EXTRA_UNBOUNDED_TABLES,
+        reason: 'Rows grow with their owning entity or workflow.',
+      },
     ],
-    [
-      'activitypub_inbox_delivery_work_items',
-      'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
+    entries: [
+      ...entityRelationMetadatum.flatMap(({ table_name }) =>
+        partitionedTables.has(table_name)
+          ? []
+          : [
+              [
+                table_name,
+                'Config-generated relationship edges grow with entities but remain index-selective.',
+              ] as const,
+            ],
+      ),
+      ...RETAINED_RELATION_GROWTH_POLICIES,
+      [
+        'community_search_counts',
+        'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
+      ],
+      [
+        'activitypub_inbox_delivery_work_items',
+        'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
+      ],
+      [
+        'ai_usage_provider_response_keys',
+        'Permanent global response-id idempotency keys cannot be partitioned without weakening cross-partition uniqueness; the primary-key lookup remains selective.',
+      ],
+      [
+        'notification_push_intents',
+        'Pending delivery work is retained until terminal and can grow without a time bound; terminal intents are deleted after 90 days, while the composite notification key and pending-work index keep recovery selective.',
+      ],
+      [
+        'notification_push_intent_subscription_receipts',
+        'Generation receipts retained with pending push intents; terminal intents expire after 90 days.',
+      ],
+      ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
     ],
-    [
-      'ai_usage_provider_response_keys',
-      'Permanent global response-id idempotency keys cannot be partitioned without weakening cross-partition uniqueness; the primary-key lookup remains selective.',
-    ],
-    [
-      'notification_push_intents',
-      'Pending delivery work is retained until terminal and can grow without a time bound; terminal intents are deleted after 90 days, while the composite notification key and pending-work index keep recovery selective.',
-    ],
-    [
-      'notification_push_intent_subscription_receipts',
-      'Generation receipts retained with pending push intents; terminal intents expire after 90 days.',
-    ],
-    ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
-  ])
+  })
 }

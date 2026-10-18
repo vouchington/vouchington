@@ -4,7 +4,8 @@ import {
 } from './authorization-exchange-recovery-ownership.mts'
 import { beginTransaction, write } from '@data-stores/psql'
 import { recoverableOAuthAuthorizationRowLocksSql } from './authorization-exchange-row-locks-sql.mts'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import {
   MAX_EXCHANGE_ATTEMPTS,
   STALE_EXCHANGE_CLAIM_SECONDS,

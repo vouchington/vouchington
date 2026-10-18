@@ -3,10 +3,8 @@ import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagina
 import type { PageInfo } from '@voucha/types/pagination'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import {
-  observeSharedDbScope,
-  sharedDbCursorScope,
-} from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbCursorScope } from '@vouchington/postgres/query-telemetry'
 
 export type CopyrightAgentDispatch =
   | { kind: 'email'; intakeId: string }

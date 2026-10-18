@@ -1,5 +1,9 @@
 import path from 'node:path'
 import type { Psql } from '@vouchington/postgres'
+import {
+  runViews as runPlatformViews,
+  type RunViewsOptions as PlatformRunViewsOptions,
+} from '@vouchington/postgres/views'
 import onError, { flushSentry } from '@modules/on-error'
 import {
   cleanupPartitions,
@@ -10,20 +14,23 @@ import {
   runConfigDriven as runConfigDrivenFromFolder,
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
-import { runViews as runViewsFromFolder, type RunViewsOptions } from './migration-runner/views.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
 import { initSqlAst, loadSqlParserModule } from './migration-runner/sql-statements.mts'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
-import { psql } from './setup.mts'
+import { psql, write } from './setup.mts'
 
 const __dirname = import.meta.dirname
+
+export type RunViewsOptions = Partial<Omit<PlatformRunViewsOptions, 'folder' | 'writer'>> & {
+  folder?: string
+  writer?: PlatformRunViewsOptions['writer']
+}
 
 export {
   cleanupPartitions,
   createMonthlyPartitions,
   refreshMaterializedView,
   type RunConfigDrivenOptions,
-  type RunViewsOptions,
 }
 
 export type MigrationPlatform = Pick<Psql, 'runMigrations' | 'withMigrationSession' | 'write'>
@@ -35,7 +42,10 @@ export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql
 
 export async function runViews(options: RunViewsOptions = {}) {
   if (options.forced) await initializeMigrationSql()
-  await runViewsFromFolder(__dirname, { logger: console, ...options })
+  const folder = options.folder ?? path.resolve(__dirname, 'views')
+  const writer = options.writer ?? write
+  const logger = options.logger ?? console
+  await runPlatformViews({ ...options, folder, writer, logger })
 }
 
 export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {
@@ -75,7 +85,7 @@ async function applyMigrationsInSession(
       await dropRssFeedCrawlsDefaultPartition(writer)
     }
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
-    await runViewsFromFolder(rootDir, { forced, logger, writer })
+    await runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
   })
 }
 

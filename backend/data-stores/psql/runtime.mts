@@ -9,7 +9,7 @@ import { getPsqlPoolConfiguration } from './pool-config.mts'
 import { registerPsqlPoolMetricsForTestEnvironment } from './pool-metrics.mts'
 import { startConfiguredPoolStatsSampler } from './pool-stats-sampler.mts'
 import { maybeCaptureQuery, runWithSingleQueryCapture } from './query-capture.mts'
-import { recordQueryTiming } from './query-telemetry.mts'
+import { recordQueryTiming } from './query-timing.mts'
 import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
 
 const { Pool } = pg

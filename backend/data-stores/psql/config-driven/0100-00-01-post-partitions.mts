@@ -3,7 +3,7 @@
  * and related tables. Add explicit range partitions when tables grow large.
  */
 
-import { generateDefaultPartitions } from './utils/partition-utils.mts'
+import { generateDefaultPartitions } from '@vouchington/postgres/partitions'
 import { POST_PARTITION_TABLES } from './utils/partition-config.mts'
 
 /** @public loaded by path by the config-driven migration runner */

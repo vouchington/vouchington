@@ -2,7 +2,8 @@ import { getMediaDeliverySafetyWorkLimit } from './work-limits.mts'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { stageImagePlacementDeliveryRecordPage } from './delivery-registry-staging-page.mts'
 
 export async function replayFailedMediaDeliveryRegistryRecords(input?: {

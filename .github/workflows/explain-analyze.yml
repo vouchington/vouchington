@@ -169,7 +169,7 @@ jobs:
           --reports-dir backend/scripts/explain-analyze/output/retirement-coverage
           --reporter json --reporter json-summary --reporter lcovonly
           --extension .mts --all --src backend
-          --include 'backend/data-stores/psql/migration-runner/retire-monthly-partitions.mts'
+          --include 'backend/data-stores/psql/migration-runner/before-retire-monthly-partition.mts'
           --include 'backend/data-stores/psql/migrate.mts'
           --include 'backend/data-stores/psql/explain-analyze.mts'
           --include 'backend/services/crawls/{dispatch-per-hostname,dispatch-tier-urls}.mts'

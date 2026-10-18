@@ -4,7 +4,8 @@ import { performance } from 'node:perf_hooks'
 import {
   retireExpiredMonthlyPartitions,
   type ExpiredMonthlyPartition,
-} from '@data-stores/psql/migration-runner/retire-monthly-partitions'
+} from '@vouchington/postgres/partitions'
+import { beforeRetireMonthlyPartition } from '@data-stores/psql/migration-runner/before-retire-monthly-partition'
 import { openRetirementTransaction } from './retirement-transaction.mts'
 import { MONTHLY_RETIREMENT_BATCH_ID, MONTHLY_RETIREMENT_SCHEMA } from './retirement-schema.mts'
 
@@ -49,11 +50,13 @@ export async function createMonthlyPartitionRetirementFixture(controlDeadline: n
         month: 1,
         dropPriority: 0,
       }))
-      await retireExpiredMonthlyPartitions(
-        partitions,
-        () => startTransaction(),
-        error => errors.push(error),
-      )
+      await retireExpiredMonthlyPartitions(partitions, {
+        startTransaction: () => startTransaction(),
+        reportError: error => {
+          errors.push(error)
+        },
+        beforeDetach: beforeRetireMonthlyPartition,
+      })
       return errors
     },
     async addUnexpectedCrawlReference() {

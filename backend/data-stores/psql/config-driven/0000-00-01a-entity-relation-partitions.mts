@@ -1,5 +1,5 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
-import { generateDefaultPartitions } from './utils/partition-utils.mts'
+import { generateDefaultPartitions } from '@vouchington/postgres/partitions'
 
 /** @public loaded by path by the config-driven migration runner */
 export default function generateEntityRelationPartitionsSql(): string {

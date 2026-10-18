@@ -1,4 +1,4 @@
-import type { SharedDbScopeEvent } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import type { SharedDbScopeEvent } from './vitest-shared-db-scope-observer.mts'
 
 export type OwnedEmailQueueKeyset = {
   actorId: string
