@@ -34,6 +34,32 @@ export async function withScheduledRunLease(
   const runtime =
     job.opts.timeout ?? lockDuration * ((options.maxStalledCount ?? DEFAULT_MAX_STALLED_COUNT) + 1)
   const ttl = Math.max(1, Math.min(runtime, interval ?? runtime))
+  const completeAdmission = async () => {
+    try {
+      await workerQueueCommandClient.hset(jobKey, { [ADMITTED_SCHEDULER_FIELD]: scheduler })
+      const previous = await workerQueueCommandClient.get(previousKey)
+      const previousJobId = previous === null ? null : decodeGlideString(previous)
+      if (previousJobId !== null && previousJobId !== job.id)
+        console.warn('overlap_lease_expired', {
+          queue,
+          scheduler,
+          jobId: job.id,
+          previousJobId,
+        })
+      await workerQueueCommandClient.set(previousKey, job.id, {
+        expiry: { type: TimeUnit.Milliseconds, count: Math.max(ttl * 2, (interval ?? ttl) * 2) },
+      })
+      return release
+    } catch (err) {
+      try {
+        await release()
+      } catch (err) {
+        // A failed cleanup must not hide the bookkeeping failure that triggered it.
+        console.error('scheduled_lease_bookkeeping_release_failed', err)
+      }
+      throw err
+    }
+  }
   const acquired = await workerQueueCommandClient.set(key, job.id, {
     conditionalSet: 'onlyIfDoesNotExist',
     expiry: { type: TimeUnit.Milliseconds, count: ttl },
@@ -41,7 +67,7 @@ export async function withScheduledRunLease(
   if (acquired === null) {
     const holder = await workerQueueCommandClient.get(key)
     // A retry of this same job may still own a lease after a failed release command.
-    if (holder !== null && decodeGlideString(holder) === job.id) return release
+    if (holder !== null && decodeGlideString(holder) === job.id) return completeAdmission()
     const admitted = await workerQueueCommandClient.hget(jobKey, ADMITTED_SCHEDULER_FIELD)
     if (admitted !== null && decodeGlideString(admitted) === scheduler) {
       // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
@@ -60,30 +86,7 @@ export async function withScheduledRunLease(
     console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
     return null
   }
-  try {
-    await workerQueueCommandClient.hset(jobKey, { [ADMITTED_SCHEDULER_FIELD]: scheduler })
-    const previous = await workerQueueCommandClient.get(previousKey)
-    const previousJobId = previous === null ? null : decodeGlideString(previous)
-    if (previousJobId !== null && previousJobId !== job.id)
-      console.warn('overlap_lease_expired', {
-        queue,
-        scheduler,
-        jobId: job.id,
-        previousJobId,
-      })
-    await workerQueueCommandClient.set(previousKey, job.id, {
-      expiry: { type: TimeUnit.Milliseconds, count: Math.max(ttl * 2, (interval ?? ttl) * 2) },
-    })
-    return release
-  } catch (err) {
-    try {
-      await release()
-    } catch (err) {
-      // A failed cleanup must not hide the bookkeeping failure that triggered it.
-      console.error('scheduled_lease_bookkeeping_release_failed', err)
-    }
-    throw err
-  }
+  return completeAdmission()
 }
 
 function scheduleInterval(raw: string | Uint8Array | null): number | null {

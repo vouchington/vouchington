@@ -95,6 +95,33 @@ describe('scheduled run lease recovery', () => {
     }
   })
 
+  it('repairs admission after a crash between acquiring the lease and recording it', async () => {
+    const name = `lease-admission-retry-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const leaseKey = `${base}:run:repeat`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const job = await queue.add('sweep', {}, { jobId: 'scheduled-root' })
+    if (!job) throw new Error('Expected a scheduled root')
+    Object.assign(job, { schedulerName: 'repeat' })
+    try {
+      await workerQueueCommandClient.set(leaseKey, job.id)
+      expect(
+        await workerQueueCommandClient.hget(`${base}:job:${job.id}`, 'scheduledRunLeaseAdmitted'),
+      ).toBeNull()
+      const release = await withScheduledRunLease(name, job, { lockDuration: 20_000 })
+      expect(release).not.toBeNull()
+      expect(
+        await workerQueueCommandClient.hget(`${base}:job:${job.id}`, 'scheduledRunLeaseAdmitted'),
+      ).toBe('repeat')
+      await release?.()
+      expect(await workerQueueCommandClient.get(leaseKey)).toBeNull()
+    } finally {
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([leaseKey, `${leaseKey}:previous`])
+      await queue.close()
+    }
+  })
+
   it('defers an admitted retained page behind a new tick, then resumes its saved cursor', async () => {
     const name = `lease-continuation-${crypto.randomUUID()}`
     const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
