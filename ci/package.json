@@ -13,7 +13,7 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "coverage-check": "^0.17.0",
     "jsonc-parser": "^3.3.1",
-    "no-mistakes": "^0.92.0",
+    "no-mistakes": "^0.93.0",
     "picomatch": "^4.0.4",
     "playwright": "^1.64.1",
     "rehype-stringify": "^10.0.1",
