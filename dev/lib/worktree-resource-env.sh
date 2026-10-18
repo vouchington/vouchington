@@ -147,50 +147,6 @@ worktree_resource_release_operation_lock() {
   unset WORKTREE_RESOURCE_OPERATION_LOCK_TOKEN
 }
 
-# Detached session-start cleanup holds this kernel flock for its whole run (released on any exit,
-# crash included), so a waiter blocks on the release event instead of polling the symlink lock.
-worktree_resource_background_flock_path() {
-  printf '%s' "${HOME}/.voucha/worktree-resource-operations/background-cleanup.flock"
-}
-
-# Re-execs "$@" holding the background flock; exits 0 quietly when another background cleanup runs
-# or perl is missing. Children inherit the descriptor, so the flock outlasts any helper they spawn.
-worktree_resource_exec_with_background_flock() {
-  local flock_path
-  flock_path=$(worktree_resource_background_flock_path)
-  mkdir -p "$(dirname "$flock_path")"
-  command -v perl >/dev/null 2>&1 || exit 0
-  VOUCHA_CLEANUP_BACKGROUND_FLOCKED=1 exec perl -MFcntl=:flock -e '
-    $^F = 255;
-    open(my $fh, ">>", shift) or exit 0;
-    flock($fh, LOCK_EX | LOCK_NB) or exit 0;
-    exec @ARGV or exit 0;
-  ' "$flock_path" "$@"
-}
-
-# Blocks until no background cleanup holds the flock, at most $1 seconds (default 120); returns 1 on
-# timeout. Returns at once when no cleanup runs or perl is missing.
-worktree_resource_wait_background_cleanup() {
-  local flock_path
-  flock_path=$(worktree_resource_background_flock_path)
-  [ -e "$flock_path" ] || return 0
-  command -v perl >/dev/null 2>&1 || return 0
-  perl -MFcntl=:flock -e '
-    $SIG{ALRM} = sub { exit 1 };
-    alarm shift;
-    open(my $fh, "<", shift) or exit 0;
-    flock($fh, LOCK_SH) or exit 0;
-  ' "${1:-120}" "$flock_path"
-}
-
-# Acquires the operation lock; if a detached cleanup holds it, waits for that cleanup to exit and
-# tries once more, so a background cleanup never makes the foreground operation fail.
-worktree_resource_acquire_operation_lock_after_background() {
-  worktree_resource_acquire_operation_lock 2>/dev/null && return 0
-  worktree_resource_wait_background_cleanup || true
-  worktree_resource_acquire_operation_lock
-}
-
 # is_disposable_checkout_path lives in refuse-on-main.sh.
 if ! declare -F is_disposable_checkout_path >/dev/null 2>&1; then
   # shellcheck source=dev/lib/refuse-on-main.sh

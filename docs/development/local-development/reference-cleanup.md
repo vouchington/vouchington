@@ -3,10 +3,12 @@
 [Back to Dev Environment Reference](README.md#cleanup)
 
 `./dev/cleanup` (supports `--yes`) reclaims finished worktrees first, then the databases and Valkey
-containers they leave behind, and prunable worktrees; `./dev/status` warns about them. Why it goes
-through `./dev/cleanup` and the host-wide operation lock, never the reclaim command directly: the
-existing sandbox exclusion covers it, and reclaim must not race another worktree's
-`./dev/initialize`. Keep and deletion rules are in the
+containers they leave behind, and prunable worktrees; `./dev/status` warns about them. The
+`post-merge` hook runs `./dev/cleanup --yes` so a pull that lands a merged PR frees its worktree;
+nothing runs at session start, because an agent session never deletes other worktrees implicitly.
+Reclaim runs only through `./dev/cleanup`, inside the host-wide operation lock, so it never
+races another worktree's `./dev/initialize` and the sandbox exclusion covers it. Keep and deletion
+rules are in the
 [tooling README, "Reclaiming finished worktrees"](https://github.com/vouchington/vouchington-tooling/blob/main/packages/vouchington-tooling/README.md#reclaiming-finished-worktrees).
 
 After moving a checkout, re-run `./dev/initialize web` first so

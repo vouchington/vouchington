@@ -25,13 +25,6 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [ -z "$ROOT" ]; then
   exit 0
 fi
-
-# Reclaim finished worktrees (and the databases and Valkey containers they leave behind). Detached
-# so a slow `gh` lookup never delays the session, and silent so it adds nothing to the context.
-if [ -x "$ROOT/dev/cleanup" ]; then
-  ("$ROOT/dev/cleanup" --yes --background </dev/null >/dev/null 2>&1 &)
-fi
-
 CLI="$(dirname "${BASH_SOURCE[0]}")/../node_modules/.bin/vouchington"
 
 ARGS=(fresh-base)

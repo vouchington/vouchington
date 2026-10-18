@@ -156,7 +156,7 @@ EOF
       })
 
       expect(result.status).toBe(0)
-      expect(readFileSync(argsFile, 'utf8')).toBe('--yes --background\n')
+      expect(readFileSync(argsFile, 'utf8')).toBe('--yes\n')
       expect(readFileSync(hookPath('post-merge'), 'utf8')).not.toContain('worktree reclaim')
     } finally {
       rmSync(tmp, { force: true, recursive: true })

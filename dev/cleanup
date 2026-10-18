@@ -9,17 +9,15 @@ NC='\033[0m'
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
-usage() { echo "Usage: ./dev/cleanup [--yes|-y] [--background]"; }
+usage() { echo "Usage: ./dev/cleanup [--yes|-y]"; }
 if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
 AUTO_YES=false
-BACKGROUND=false
 for arg in "$@"; do
     case "$arg" in
         --yes|-y)
             if $AUTO_YES; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
             AUTO_YES=true
             ;;
-        --background) BACKGROUND=true ;;
         *) echo "Error: unknown option: $arg" >&2; usage >&2; exit 2 ;;
     esac
 done
@@ -48,18 +46,41 @@ should_scan_orphaned_dbs() {
     dev_db_target_local_or_allowed cleanup
 }
 
-# --background (session start): hold the background flock so ./dev/initialize waits for this run, and
-# skip quietly whenever another resource operation holds the operation lock.
-if $BACKGROUND && [ -z "${VOUCHA_CLEANUP_BACKGROUND_FLOCKED:-}" ]; then
-    worktree_resource_exec_with_background_flock bash "$REPO_ROOT/dev/cleanup" "$@"
-fi
-
 echo -e "${BLUE}=== Voucha Worktree Cleanup ===${NC}\n"
 
 # --- Finished worktrees ---
-# shellcheck source=lib/cleanup-reclaim.sh
-source "$REPO_ROOT/dev/lib/cleanup-reclaim.sh"
-cleanup_reclaim_finished_worktrees
+# `vouchington worktree reclaim` removes worktrees whose PR is merged or closed at their HEAD (dry
+# run unless --yes). It runs from this checkout, which reclaim always keeps, and under the host-wide
+# worktree-resource operation lock so it never removes a worktree while another worktree's
+# ./dev/initialize holds that lock. The orphan scans after it reclaim the database and Valkey
+# container of any worktree it removed.
+reclaim_finished_worktrees() {
+    local cli="$REPO_ROOT/node_modules/.bin/vouchington" locked=false
+    local args=(worktree reclaim)
+    echo -e "${BLUE}Reclaiming finished worktrees...${NC}"
+    if [ ! -x "$cli" ]; then
+        echo -e "${YELLOW}Skipping worktree reclaim: run pnpm install to get vouchington-tooling.${NC}\n"
+        return 0
+    fi
+    if $AUTO_YES; then
+        args+=(--yes)
+        if worktree_resource_acquire_operation_lock 2>/dev/null; then
+            locked=true
+            trap worktree_resource_release_operation_lock EXIT
+        else
+            echo -e "${YELLOW}Skipping worktree reclaim: another worktree resource operation is running.${NC}\n"
+            return 0
+        fi
+    fi
+    (cd "$REPO_ROOT" && "$cli" "${args[@]}") ||
+        echo -e "${YELLOW}Worktree reclaim failed; continuing with orphan cleanup.${NC}"
+    if $locked; then
+        worktree_resource_release_operation_lock
+        trap - EXIT
+    fi
+    echo ""
+}
+reclaim_finished_worktrees
 
 refresh_live_worktree_paths() {
     WORKTREE_PATHS=()

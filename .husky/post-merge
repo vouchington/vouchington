@@ -14,4 +14,4 @@ fi
 # A pull may land the merge of a PR whose worktree is now finished; ./dev/cleanup reclaims it.
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 [ -x "$root/dev/cleanup" ] || exit 0
-"$root/dev/cleanup" --yes --background </dev/null >/dev/null 2>&1 || true
+"$root/dev/cleanup" --yes </dev/null >/dev/null 2>&1 || true

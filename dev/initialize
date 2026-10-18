@@ -1512,7 +1512,7 @@ main() {
         if ! $IS_MAIN; then
             DB_NAME=$owned_db_name
             VALKEY_CONTAINER=$owned_valkey_container
-            worktree_resource_acquire_operation_lock_after_background
+            worktree_resource_acquire_operation_lock
             trap worktree_resource_release_operation_lock EXIT
         fi
         validate_worktree_database_target || exit 1

@@ -1,5 +1,5 @@
-import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -148,25 +148,5 @@ describe('dev/check-fresh-base', () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toBe('')
-  })
-
-  it('starts ./dev/cleanup --yes detached, not the reclaim command directly', async () => {
-    const cwd = makeRepo()
-    mkdirSync(join(cwd, 'dev'))
-    writeFileSync(join(cwd, 'dev', 'cleanup'), `#!/bin/sh\nprintf '%s\\n' "$*" >&3\n`)
-    chmodSync(join(cwd, 'dev', 'cleanup'), 0o755)
-
-    // The detached cleanup inherits fd 3; its end of the pipe closes when it exits, so reading to
-    // EOF waits on that event without a timer or polling.
-    const child = spawn('/bin/bash', [scriptPath], {
-      cwd,
-      env: { ...process.env, CHECK_FRESH_BASE_SKIP_FETCH: '1' },
-      stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
-    })
-    child.stdin.end('{}')
-    let args = ''
-    for await (const chunk of child.stdio[3] as NodeJS.ReadableStream) args += String(chunk)
-
-    expect(args).toBe('--yes --background\n')
   })
 })
