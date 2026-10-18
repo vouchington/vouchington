@@ -17,7 +17,11 @@ import {
   type UserDataRequest,
 } from '@services/account-data-requests'
 import { enqueueExportRequest } from '@queues/account-lifecycle/enqueues/account-data-requests'
-import { dataRequestPubSub, type DataRequestStreamStatus } from '@data-stores/valkey-pubsub'
+import {
+  dataRequestPubSub,
+  type ChannelSubscription,
+  type DataRequestStreamStatus,
+} from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
 
 // An administrator can run an export for any account through the subject's own route (for example
@@ -120,30 +124,45 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
   ctx.assert(user, 404, 'User not found')
   ctx.assert(currentUserCanAccessDataRequest(currentUser, user.id), 403, 'Forbidden')
 
-  // First read to obtain the request ID used to address the pub/sub channel.
   const requestIdParam = typeof ctx.query.request_id === 'string' ? ctx.query.request_id : undefined
   // SSE routes have no response-route registration, so `apiQuery` cannot declare this key; assert
   // the UUID shape here so a malformed id is a 422 instead of a database 500.
   ctx.assert(!requestIdParam || isUUID(requestIdParam), 422, 'Invalid request ID')
-  const requestRef = requestIdParam
-    ? await getDataRequestById(user.id, currentUser.id, requestIdParam)
-    : await getLatestDataRequest(user.id, currentUser.id)
-  ctx.assert(requestRef, 404, 'No data request found')
 
-  // Subscribe BEFORE re-reading the current status so no terminal publish is missed.
-  const subscription = await dataRequestPubSub.subscribe(requestRef.id)
+  let subscription: ChannelSubscription<DataRequestStreamStatus> | undefined
   let subscriptionClosed = false
   let closeSubscriptionPromise: Promise<void> | undefined
   function closeSubscription() {
-    if (subscriptionClosed) return
+    if (!subscription || subscriptionClosed) return
     subscriptionClosed = true
     closeSubscriptionPromise = Promise.resolve(subscription.close())
   }
   const abortBeforeSSE = watchForAbortBeforeSSE(ctx.signal, closeSubscription)
   try {
-    // Re-read after subscribing so we see any status change that occurred between
-    // the first read and the subscribe call (worker may have finished in that window).
-    const request = (await getDataRequestById(user.id, currentUser.id, requestRef.id)) ?? requestRef
+    let request: UserDataRequest
+    if (requestIdParam) {
+      // Subscribe BEFORE the one read so a completion is caught by the read or the subscription.
+      // The read stays ahead of SSE, so a missing request is a 404 even when pub/sub is down.
+      try {
+        subscription = await dataRequestPubSub.subscribe(requestIdParam)
+      } catch (err) {
+        const visible = await getDataRequestById(user.id, currentUser.id, requestIdParam)
+        ctx.assert(visible, 404, 'No data request found')
+        throw err
+      }
+      if (abortBeforeSSE.wasAborted()) return
+      const found = await getDataRequestById(user.id, currentUser.id, requestIdParam)
+      ctx.assert(found, 404, 'No data request found')
+      request = found
+    } else {
+      // The latest id is unknown until read, so subscribe after it and re-read the row by id to
+      // catch a worker that finished in between. These are different statements, not a repeat.
+      const latest = await getLatestDataRequest(user.id, currentUser.id)
+      ctx.assert(latest, 404, 'No data request found')
+      subscription = await dataRequestPubSub.subscribe(latest.id)
+      if (abortBeforeSSE.wasAborted()) return
+      request = (await getDataRequestById(user.id, currentUser.id, latest.id)) ?? latest
+    }
 
     let initialValue: DataRequestStreamStatus | undefined
     const isTerminalStatus = (s: string) => s === 'ready' || s === 'failed' || s === 'expired'
@@ -155,7 +174,6 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
       }
       initialValue = { status: request.status, download_url: downloadUrl }
     }
-    /* v8 ignore next 2 -- socket abort timing is covered deterministically by watchForAbortBeforeSSE tests */
     if (abortBeforeSSE.wasAborted()) return
     abortBeforeSSE.stop()
     const { stream, pipelinePromise, lifecycleSignal } = startSSE(ctx)

@@ -42,8 +42,8 @@ export async function getDataRequestById(
   requestedById: string,
   requestId: string,
 ): Promise<UserDataRequest | null> {
-  // Lag-sensitive: the SSE route re-reads after subscribing to catch a worker
-  // completion that may have published before the stream connected.
+  // Lag-sensitive: the SSE route reads this after subscribing, so a worker
+  // completion that published before the stream connected is still seen.
   const { rows } = await write(sql`/* getDataRequestById */
     SELECT
       id,
