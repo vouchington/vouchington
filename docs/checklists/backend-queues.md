@@ -71,7 +71,8 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   `@modules/queue-errors` so the affected job waits without consuming a domain failure attempt.
 - **Record the intent before an effect.** A paid or otherwise non-idempotent external call needs a
   durable receipt before dispatch. A retry must reuse its recorded result or a provider-supported
-  idempotency key; an ambiguous billed attempt must not be sent again blindly.
+  idempotency key; an ambiguous billed attempt must not be sent again blindly. A resend blocked
+  after only positively unbilled capacity failures can release its pending reservation.
 - **Mark moderation summaries after local send checks and before SES.** A failed preference or
   suppression lookup can retry without a send mark. A definitive sending-rate rejection clears
   the mark for a queue retry; an unknown send outcome keeps it to prevent duplicate mail.

@@ -5,9 +5,11 @@ import type { ModelCallResult } from '@modules/model-providers/types'
 import {
   completeAgentCallReceipt,
   getAgentCallReceipt,
+  releaseUnbilledAgentCallReceipt,
   reserveAgentCallReceipt,
 } from '@services/ai-usage/agent-call-receipts'
 import { callAgentModel, type AgentModelCaller } from './call-agent-model.mts'
+import { UnbilledRetrySpendCapBreachError } from './openai-response-attempt-hooks.mts'
 
 type ReceiptedCall<Output> = {
   agentSlug: string
@@ -53,28 +55,36 @@ export async function callReceiptedAgentModel<Output>(
     return JSON.parse(decryptSecret(existing.result_ciphertext, purpose)) as ModelCallResult<Output>
   }
 
-  const result = await callAgentModel({
-    agentSlug,
-    selection,
-    input,
-    safetyIdentifier,
-    callModel,
-    communityId: params.communityId,
-    postId: params.postId,
-    // The spend-cap check runs first, so a rejected admission does not consume this receipt.
-    beforeDispatch: async () => {
-      if (
-        !(await reserveAgentCallReceipt(
-          key,
-          agentSlug,
-          requestSha256,
-          params.copyrightNoticeSubmissionId,
-        ))
-      ) {
-        unrecoverable(new Error(`Paid ${agentSlug} call ${key} is already reserved`))
-      }
-    },
-  })
+  let result: ModelCallResult<Output>
+  try {
+    result = await callAgentModel({
+      agentSlug,
+      selection,
+      input,
+      safetyIdentifier,
+      callModel,
+      communityId: params.communityId,
+      postId: params.postId,
+      // The spend-cap check runs first, so a rejected admission does not consume this receipt.
+      beforeDispatch: async () => {
+        if (
+          !(await reserveAgentCallReceipt(
+            key,
+            agentSlug,
+            requestSha256,
+            params.copyrightNoticeSubmissionId,
+          ))
+        ) {
+          unrecoverable(new Error(`Paid ${agentSlug} call ${key} is already reserved`))
+        }
+      },
+    })
+  } catch (err) {
+    if (err instanceof UnbilledRetrySpendCapBreachError) {
+      await releaseUnbilledAgentCallReceipt(key, requestSha256)
+    }
+    throw err
+  }
   const ciphertext = encryptSecret(JSON.stringify(result), purpose)
   await completeAgentCallReceipt(key, ciphertext)
   return result

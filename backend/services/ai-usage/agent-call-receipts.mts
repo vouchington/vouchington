@@ -58,3 +58,14 @@ export async function completeAgentCallReceipt(key: string, ciphertext: string):
   `)
   if (rows.length !== 1) throw new Error('Paid agent call receipt could not be completed')
 }
+
+/** Remove only an unchanged pending reservation after a proven unbilled resend was refused. */
+export async function releaseUnbilledAgentCallReceipt(
+  key: string,
+  requestSha256: string,
+): Promise<void> {
+  await write(sql`/* releaseUnbilledAgentCallReceipt */
+    DELETE FROM ai_agent_call_receipts
+    WHERE operation_key = ${key} AND request_sha256 = ${requestSha256}
+      AND result_ciphertext IS NULL`)
+}

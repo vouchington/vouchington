@@ -197,7 +197,8 @@ export async function releaseUnsentModerationEmailClaim(
 }
 
 export async function hasModerationEmailSent(userId: string, sendKey: string): Promise<boolean> {
-  const { rows } = await read(sql`/* hasModerationEmailSent */
+  // A definitive SES throttle clears sent_at on the writer; a retry must see that reset.
+  const { rows } = await write(sql`/* hasModerationEmailSent */
     SELECT 1
     FROM user_moderation_email_sends
     WHERE user_id = ${userId}
