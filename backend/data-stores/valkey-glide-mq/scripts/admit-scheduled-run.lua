@@ -1,7 +1,7 @@
 -- Return a durable decision with the lease operation. A response lost after a collision must
 -- not let a fresh tick retry after the holder finishes and execute work known to overlap.
 if redis.call('HGET', KEYS[2], ARGV[4]) == ARGV[2] then
-  return 0 -- previously skipped tick
+  return 4 -- previously skipped tick; do not count it again
 end
 
 local holder = redis.call('GET', KEYS[1])

@@ -30,7 +30,18 @@ export async function withScheduledRunLease(
       args: [job.id],
     })
   }
-  const entry = await workerQueueCommandClient.hget(`${baseKey}:schedulers`, scheduler)
+  let entry: string | Uint8Array | null = null
+  try {
+    entry = await workerQueueCommandClient.hget(`${baseKey}:schedulers`, scheduler)
+  } catch (err) {
+    // Scheduler metadata only narrows the lease TTL. Admission must still record a
+    // colliding tick while the current holder is live, even if this read fails.
+    try {
+      onError(err instanceof Error ? err : new Error(String(err)))
+    } catch (err) {
+      console.error('scheduled_interval_reporting_failed', err)
+    }
+  }
   const interval = scheduleInterval(entry)
   const lockDuration = job.opts.lockDuration ?? options.lockDuration ?? DEFAULT_LOCK_DURATION_MS
   const runtime =
@@ -69,6 +80,7 @@ export async function withScheduledRunLease(
     }),
   )
   if (decision === 1 || decision === 2) return completeAdmission()
+  if (decision === 4) return null // this tick was counted when it first collided
   if (decision !== 0 && decision !== 3) throw new Error('Unknown scheduled lease admission result')
   if (decision === 3) {
     // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.

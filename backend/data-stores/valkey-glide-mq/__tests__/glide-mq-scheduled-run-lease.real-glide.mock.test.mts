@@ -61,6 +61,45 @@ describe('scheduled run lease recovery', () => {
     }
   })
 
+  it('records a collision despite broken scheduler metadata and counts a recovered tick once', async () => {
+    const name = `lease-scheduler-read-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const first = await queue.add('sweep', {}, { jobId: 'first' })
+    const second = await queue.add('sweep', {}, { jobId: 'second' })
+    if (!first || !second) throw new Error('Expected both scheduled ticks')
+    Object.assign(first, { schedulerName: 'repeat' })
+    Object.assign(second, { schedulerName: 'repeat' })
+    const schedulerKey = `${base}:schedulers`
+    let release: (() => Promise<void>) | null = null
+    try {
+      // HGET now raises WRONGTYPE, but the atomic collision marker must still be written.
+      await workerQueueCommandClient.set(schedulerKey, 'wrong-type')
+      release = await withScheduledRunLease(name, first, { lockDuration: 20_000 })
+      expect(release).not.toBeNull()
+      expect(await withScheduledRunLease(name, second, { lockDuration: 20_000 })).toBeNull()
+      expect(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap')).toBe(
+        '1',
+      )
+      await release?.()
+      // A retry after the holder releases remains skipped without a second metric increment.
+      expect(await withScheduledRunLease(name, second, { lockDuration: 20_000 })).toBeNull()
+      expect(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap')).toBe(
+        '1',
+      )
+      expect(await workerQueueCommandClient.get(`${base}:run:repeat`)).toBeNull()
+    } finally {
+      await release?.()
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([
+        schedulerKey,
+        `${base}:run-metrics`,
+        `${base}:run:repeat:previous`,
+      ])
+      await queue.close()
+    }
+  })
+
   it('uses an isolated worker prefix and lets the same job reacquire its owned lease', async () => {
     const name = `lease-prefix-${crypto.randomUUID()}`
     const prefix = `isolated-${crypto.randomUUID()}`
