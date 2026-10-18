@@ -36,20 +36,23 @@ const NODEINFO_DOCUMENT = {
 }
 
 describe('createInstanceFromHostname — queued NodeInfo classification', () => {
-  it('returns a pending row, then persists NodeInfo after the real background job completes', async () => {
+  it('retries a transient NodeInfo failure, then persists metadata after the real job completes', async () => {
     fetchSpy.mockReset()
     const releaseNodeInfo = Promise.withResolvers<void>()
     const nodeInfoStarted = Promise.withResolvers<void>()
     fetchSpy.mockImplementationOnce(async () => {
       nodeInfoStarted.resolve()
       await releaseNodeInfo.promise
-      return new Response(
+      return new Response('NodeInfo temporarily unavailable', { status: 503 })
+    })
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
         JSON.stringify({
           links: [{ rel: 'http://nodeinfo.diaspora.software/ns/schema/2.0', href: NODEINFO_URL }],
         }),
         { status: 200 },
-      )
-    })
+      ),
+    )
     fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify(NODEINFO_DOCUMENT), { status: 200 }))
 
     const user = await createTestUserDirect()
@@ -59,11 +62,16 @@ describe('createInstanceFromHostname — queued NodeInfo classification', () => 
       domains: ['fediverse-instances'],
     })
     const completed = Promise.withResolvers<Job>()
+    let failedAttempts = 0
     worker.on('completed', job => {
       if (job.name === FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) completed.resolve(job)
     })
     worker.on('failed', (job, error) => {
-      if (job?.name === FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) completed.reject(error)
+      if (job?.name !== FEDIVERSE_INSTANCES_CLASSIFY_JOB.name) return
+      failedAttempts += 1
+      if (failedAttempts >= (FEDIVERSE_INSTANCES_CLASSIFY_JOB.options.attempts ?? 1)) {
+        completed.reject(error)
+      }
     })
     worker.on('error', error => completed.reject(error))
 
@@ -84,7 +92,8 @@ describe('createInstanceFromHostname — queued NodeInfo classification', () => 
       const job = await completed.promise
       expect(job.data).toMatchObject({ topicId: result.topic_id, hostnameId: expect.any(String) })
       expect(job.opts.ordering).toMatchObject({ key: 'fediverse-instances', concurrency: 5 })
-      expect(fetchSpy).toHaveBeenCalledTimes(2)
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+      expect(failedAttempts).toBe(1)
       expect(await getFediverseInstanceAttributes(result.topic_id)).toMatchObject({
         software: 'mastodon',
         protocol: 'activitypub',

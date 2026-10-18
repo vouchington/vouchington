@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import * as sourceImport from '@/lib/api/client/source-import'
 
 const { mockCreateSource, mockPush, mockTopicHref, mockOnError, mockOnSuccess } = vi.hoisted(
   () => ({
@@ -23,8 +24,12 @@ vi.mock(
     }) as unknown as typeof import('next/navigation'),
 )
 
-vi.mock(import('@/lib/api/client/source-import'), () => ({
-  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue('test-feed'),
+vi.mock(import('@/lib/api/client/source-import'), async importOriginal => ({
+  ...(await importOriginal()),
+  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue({
+    entityId: 'feed-id',
+    topicSlug: 'test-feed',
+  }),
 }))
 
 vi.mock(import('@/lib/links/entity-href'), () => ({
@@ -42,7 +47,13 @@ describe('AddSourceForm', () => {
   beforeEach(() => {
     mockCreateSource.mockReset()
     mockPush.mockReset()
+    mockOnError.mockReset()
+    mockOnSuccess.mockReset()
     mockTopicHref.mockReturnValue('/topics/test-feed')
+    vi.mocked(sourceImport.waitForSourceImport).mockResolvedValue({
+      entityId: 'feed-id',
+      topicSlug: 'test-feed',
+    })
     mockCreateSource.mockResolvedValue({
       import: {
         id: 'import-id',
@@ -136,6 +147,7 @@ describe('AddSourceForm', () => {
     await waitFor(() => {
       expect(mockOnError).toHaveBeenCalledWith(expect.any(Error), {
         fallback: 'Failed to add source',
+        displayMessageByCode: expect.any(Object),
         tags: { form: 'add-source' },
       })
     })

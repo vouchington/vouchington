@@ -12,6 +12,7 @@ import { limitKey } from './limits-helpers.mts'
 import {
   assertWithinContributionActionLimit,
   assertWithinContributionDailyLimit,
+  assertWithinContributionSubmissionLimit,
   getContributionActionLimitStatus,
   getContributionLimitTier,
 } from './limits.mts'
@@ -134,6 +135,28 @@ describe('contribution action limits', () => {
     ).rejects.toMatchObject({
       code: CONTRIBUTION_QUOTA_EXCEEDED,
       status: 429,
+    })
+  })
+
+  it('checks daily capacity at submission but charges it only when the worker creates a feed', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
+      rss_feed_free_short_limit: 3,
+      rss_feed_free_daily_limit: 1,
+    })
+
+    await assertWithinContributionSubmissionLimit(user, null, 'rss_feed')
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      short_window: { used: 1 },
+      daily_window: { used: 0 },
+    })
+
+    await assertWithinContributionDailyLimit(user, null, 'rss_feed')
+    await expect(
+      assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
+    ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      daily_window: { used: 1 },
     })
   })
 

@@ -42,12 +42,22 @@ export async function assertWithinContributionActionLimit(
 ): Promise<void> {
   const status = await checkContributionActionLimit(currentUser, membershipPlan, action, true)
   if (!status.allowed) {
-    throw createCodedError(
-      429,
-      'Contribution limit exceeded. Please try again later.',
-      CONTRIBUTION_QUOTA_EXCEEDED,
-    )
+    throw createContributionLimitExceededError()
   }
+}
+
+/** Admit an asynchronous submission now; its worker charges the daily window on actual creation. */
+export async function assertWithinContributionSubmissionLimit(
+  currentUser: BasicUser,
+  membershipPlan: ContributionLimitMembershipPlan,
+  action: ContributionLimitAction,
+): Promise<void> {
+  const tier = getContributionLimitTier(currentUser, membershipPlan)
+  const key = limitKey(currentUser.id, action)
+  const shortWindow = await checkWindow(shortLimiter, key, action, tier, 'short', true)
+  const dailyWindow = await checkWindow(dailyLimiter, key, action, tier, 'daily', false)
+  if (isWindowAllowed(shortWindow, true) && isWindowAllowed(dailyWindow, false)) return
+  throw createContributionLimitExceededError()
 }
 
 export async function assertWithinContributionDailyLimit(
@@ -57,11 +67,7 @@ export async function assertWithinContributionDailyLimit(
 ): Promise<void> {
   const status = await checkContributionDailyLimit(currentUser, membershipPlan, action, true)
   if (!status.allowed) {
-    throw createCodedError(
-      429,
-      'Contribution limit exceeded. Please try again later.',
-      CONTRIBUTION_QUOTA_EXCEEDED,
-    )
+    throw createContributionLimitExceededError()
   }
 }
 
@@ -183,4 +189,12 @@ async function checkContributionDailyLimit(
     short_window: shortWindow,
     daily_window: dailyWindow,
   }
+}
+
+function createContributionLimitExceededError() {
+  return createCodedError(
+    429,
+    'Contribution limit exceeded. Please try again later.',
+    CONTRIBUTION_QUOTA_EXCEEDED,
+  )
 }

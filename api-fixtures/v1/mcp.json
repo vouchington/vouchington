@@ -12949,7 +12949,7 @@
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": false,
-              "idempotentHint": true
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"],

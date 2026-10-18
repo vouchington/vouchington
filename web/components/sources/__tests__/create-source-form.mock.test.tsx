@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import * as clientApi from '@/lib/api/client'
 import * as importExportApi from '@/lib/api/client/import-export'
 import * as importStreamApi from '@/lib/api/client/import-stream'
+import * as sourceImportApi from '@/lib/api/client/source-import'
 import { CreateSourceForm } from '../create-source-form'
 import { expectTextareaCmdEnterSubmits } from '@/test-helpers/form-keyboard'
 
@@ -42,8 +43,12 @@ vi.mock(import('@/lib/api/client'), () => ({
   createSource: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('@/lib/api/client/source-import'), () => ({
-  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue('test-feed'),
+vi.mock(import('@/lib/api/client/source-import'), async importOriginal => ({
+  ...(await importOriginal()),
+  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue({
+    entityId: 'feed-id',
+    topicSlug: 'test-feed',
+  }),
 }))
 
 vi.mock(import('@/lib/api/client/import-export'), () => ({
@@ -67,6 +72,10 @@ const mockImport = {
 describe('CreateSourceForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(sourceImportApi.waitForSourceImport).mockResolvedValue({
+      entityId: 'feed-id',
+      topicSlug: 'test-feed',
+    })
     vi.mocked(importStreamApi.streamImportProgress).mockResolvedValue(undefined)
   })
 

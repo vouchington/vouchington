@@ -18,6 +18,13 @@ export type RssFeedImportBody = {
 
 export type RssFeedContentType = 'article' | 'podcast' | 'video' | 'mixed'
 
+export type RssFeedImportErrorCode =
+  | 'INVALID_URL'
+  | 'INVALID_FEED_CONTENT'
+  | 'FEED_FETCH_TIMEOUT'
+  | 'CONTRIBUTION_LIMIT_EXCEEDED'
+  | 'IMPORT_FAILED'
+
 export interface ImportResult {
   id?: string
   input: string
@@ -29,7 +36,7 @@ export interface ImportResult {
     | 'recommendation_created'
     | 'already_following'
     | 'error'
-  error_code?: string
+  error_code?: RssFeedImportErrorCode
   entity_id?: string
   topic_slug?: string
   recommendation_post_id?: string

@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import assert from 'http-assert'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
@@ -31,7 +31,7 @@ export async function getRssFeedImportSummary(
 ): Promise<UserRssFeedImportSummary | null> {
   if (!isUUID(importId)) return null
 
-  const { rows } = await read<UserRssFeedImportBatchRow>(
+  const { rows } = await write<UserRssFeedImportBatchRow>(
     sql`/* getRssFeedImportSummary */
       SELECT id, total_rows, completed_rows, failed_rows, completed_at, created_at
       FROM user_rss_feed_import_batches
@@ -45,7 +45,7 @@ export async function getRssFeedImportSummary(
 /**
  * The import's counters plus one keyset page of its rows, in input order. The page size is the
  * configured one; a smaller `limit` narrows it. `after` is the cursor of the previous page. One
- * statement reads both, so they come from one snapshot even when reads are spread over replicas.
+ * statement reads both on the primary, so a just-created import is immediately pollable.
  */
 export async function getRssFeedImport(
   currentUserId: string,
@@ -95,7 +95,7 @@ export async function getRssFeedImport(
     WHERE batch.id = ${importId}
       AND batch.user_id = ${currentUserId}
     ORDER BY page.row_index`)
-  const { rows } = await read<StatusRow>(query)
+  const { rows } = await write<StatusRow>(query)
   const batch = rows[0]
   if (!batch) return null
   // A cursor must name a row of this import; otherwise the page would look like the end.
