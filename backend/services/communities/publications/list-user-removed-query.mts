@@ -56,6 +56,7 @@ export function buildUserRemovedPostsQuery(
       p.rejected_at AS removed_at,
       1 AS removal_tier,
       'platform'::TEXT AS post_removal_kind
+    -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3255
     FROM posts p
     LEFT JOIN communities c ON c.id = p.community_id
     WHERE p.created_by_id = ${userId}

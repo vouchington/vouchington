@@ -12,7 +12,7 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.16",
     "ajv": "^8.20.0",
-    "no-mistakes": "^0.91.3",
+    "no-mistakes": "^0.92.0",
     "oxfmt": "^0.73.0",
     "smol-toml": "^1.9.1",
     "vouchington-tooling": "^0.52.1",

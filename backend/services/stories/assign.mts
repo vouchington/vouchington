@@ -13,7 +13,6 @@ import { refreshStoryPostForStory, type StoryPostRefreshResult } from './refresh
 import { invalidateStories } from './cache-invalidation.mts'
 import { recordPostPublicationChange } from '@services/post-publication'
 import { lockStoryLifecycles } from '@services/post-publication/story-lifecycle-lock'
-
 type AssignmentDependencies = {
   expectedStoryId?: string
   query?: TransactionQuery
@@ -70,12 +69,14 @@ export async function adminAssignItemToStory(
         ),
       ].toSorted()
       for (const affectedStoryId of affectedStoryIds) {
-        // oxlint-disable-next-line no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
+        // oxlint-disable no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
+        // no-mistakes-disable-next-line query-reached-per-item: preserve existing per-item behavior pending batching review; see #3256
         const refreshResult = await refreshStoryPost(
           affectedStoryId,
           { query },
           { enqueueAgent: false },
         )
+        // oxlint-enable no-await-in-loop
         refreshResults.push({ storyId: affectedStoryId, result: refreshResult })
         if (refreshResult) {
           // oxlint-disable-next-line no-await-in-loop -- capture follows the same global story order as refresh.

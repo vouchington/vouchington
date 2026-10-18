@@ -28,8 +28,8 @@ export async function recoverExportRequests(
   let enqueued = 0
   let hasMore = false
   for (let batch = 0; batch < maxBatches; batch++) {
-    // oxlint-disable-next-line no-await-in-loop -- committed recovery claims become ineligible before the next page.
-    const result = await claimRequests(undefined, batchSize)
+    // no-mistakes-disable-next-line query-reached-per-item: preserve existing per-item behavior pending batching review; see #3256
+    const result = await claimRequests(undefined, batchSize) // oxlint-disable-line no-await-in-loop -- committed recovery claims become ineligible before the next page.
     if (result.requests.length > 0) {
       // oxlint-disable-next-line no-await-in-loop -- one configured page of enqueues per claimed batch.
       await enqueueRequests(result.requests)
@@ -48,8 +48,8 @@ export async function processCleanupExpiredExports(
   const deleteExports = dependencies?.deleteExportsFromS3 ?? deleteExportsFromS3
   const { batchSize, maxBatches } = getDataRequestLimits()
   for (let batch = 0; batch < maxBatches; batch++) {
-    // oxlint-disable-next-line no-await-in-loop -- committed claims remove each completed page from the predicate.
-    const s3Keys = await expireRequests(batchSize)
+    // no-mistakes-disable-next-line query-reached-per-item: preserve existing per-item behavior pending batching review; see #3256
+    const s3Keys = await expireRequests(batchSize) // oxlint-disable-line no-await-in-loop -- committed claims remove each completed page from the predicate.
     if (s3Keys.length === 0) return { hasMore: false }
     try {
       // oxlint-disable-next-line no-await-in-loop -- bound provider work to one claimed page.

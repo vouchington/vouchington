@@ -25,7 +25,6 @@ export async function getPrioritizedReferralLinks(
     MAX_REQUESTED_LINK_LIMIT,
   )
   const all = options?.all ?? false
-
   const builtQuery = (() => {
     const query = sql`excluded_users AS (
   SELECT object_id AS user_id FROM relation__user__mute__user
@@ -58,12 +57,10 @@ active_links AS (
     AND al.deleted_at IS NULL
     AND al.deactivated_at IS NULL
     AND NOT EXISTS (SELECT 1 FROM official_links WHERE official_links.user_id = al.user_id)`
-
     if (!all) {
       query.append(sql`
     AND (${currentUserId}::uuid IS NULL OR al.user_id != ${currentUserId}::uuid)`)
     }
-
     query.append(sql`
     AND NOT EXISTS (SELECT 1 FROM excluded_users WHERE excluded_users.user_id = al.user_id)
     AND `)
@@ -71,6 +68,7 @@ active_links AS (
     query.append(sql`
 ),
 linked_topic_ids AS (
+  -- no-mistakes-disable-next-line postgres-required-predicates: preserve merged-topic eligibility pending owner decision; see #3257
   SELECT id FROM topics
   WHERE referral_program_topic_id = ${referralProgramId}
     AND deleted_at IS NULL
@@ -83,6 +81,7 @@ user_contributions AS (
     BOOL_OR(p.post_type = 'data_point') AS has_data_point,
     BOOL_OR(p.post_type = 'review') AS has_review,
     MAX(p.votes_score_net) AS best_score
+  -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
@@ -109,6 +108,7 @@ user_reviews AS (
       WHERE prt.post_id = p.id
         AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
     ) AS review_avg_rating
+  -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
@@ -131,13 +131,14 @@ user_tiers AS (
       WHEN 'pro' THEN 1
       WHEN 'plus' THEN 2
     END AS tier_rank
-  FROM view_current_paid_memberships membership
-  WHERE membership.user_id IN (SELECT user_id FROM active_links)
+  FROM memberships selected
+  JOIN view_current_paid_memberships membership ON membership.membership_id = selected.id
+  WHERE selected.user_id IN (SELECT user_id FROM active_links)
+    AND selected.projection_ended_at IS NULL
 ),
 ranked AS (
   SELECT DISTINCT ON (al.user_id)
     al.id, al.user_id, al.referral_program_topic_id AS referral_program_id, al.url, al.label,`)
-
     if (all) {
       query.append(sql`
     5 AS priority_group,`)
@@ -164,12 +165,14 @@ ranked AS (
         WHERE f.subject_id = ${currentUserId}::uuid AND f.object_id = al.user_id AND f.deleted_at IS NULL
       ) THEN 2
       WHEN ${currentUserId}::uuid IS NOT NULL AND EXISTS (
+        -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
         SELECT 1 FROM session_referral_attributions sra
         WHERE sra.user_id = ${currentUserId}::uuid AND sra.referrer_user_id = al.user_id
       ) THEN 3
       WHEN ${currentUserId}::uuid IS NOT NULL AND EXISTS (
         SELECT 1 FROM (
           SELECT DISTINCT ON (post_id) post_id, score
+          -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
           FROM post_votes
           WHERE user_id = ${currentUserId}::uuid
           ORDER BY post_id, id DESC
@@ -183,13 +186,10 @@ ranked AS (
       ELSE 5
     END AS priority_group,`)
     }
-
     appendPrioritizedRankingColumns(query)
     appendPrioritizedLinksQuery(query, { all, limit })
-
     return query
   })()
-
   const { rows } = await read(
     `/* getPrioritizedReferralLinks */
 WITH

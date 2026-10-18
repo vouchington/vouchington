@@ -854,7 +854,7 @@
       {
         "targets": [
           {
-            "sourceSpecifierPatterns": ["/^ssrf-guard/node$/"],
+            "sourceSpecifierPatterns": ["/^ssrf-guard\\/node$/"],
             "calleeNamePatterns": ["/^validateUrl$/"],
             "optionsPosition": 2,
             "requiredProperties": ["timeoutMs", "signal"],

@@ -183,6 +183,7 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
       JOIN stories publication_story
         ON publication_story.id = post_story.story_id
        AND publication_story.deleted_at IS NULL
+      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
       JOIN rss_feed_items story_item
         ON story_item.story_id = publication_story.id
        AND story_item.deleted_at IS NULL
@@ -194,7 +195,6 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
     )
   )`)
 }
-
 export function assertSafeSqlAlias(alias: string): void {
   if (!SAFE_SQL_IDENTIFIER.test(alias)) throw new Error(`Unsafe SQL alias: ${alias}`)
 }
