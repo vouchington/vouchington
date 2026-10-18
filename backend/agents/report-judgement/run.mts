@@ -15,7 +15,11 @@ import onError from '@modules/on-error'
 import { fetchEntityContent } from '@services/moderation'
 import { moderationAiConfig } from '@services/moderation-ai-config'
 import { withPrimaryReads } from '@services/moderation-reports/primary-reads'
-import { callJudgementModel, type JudgementModelCaller } from './model.mts'
+import {
+  callJudgementModel,
+  REPORT_JUDGEMENT_PROMPT_VERSION,
+  type JudgementModelCaller,
+} from './model.mts'
 
 interface JudgementInput {
   entityType: ModerationReportEntityType
@@ -139,6 +143,7 @@ export async function runReportJudgementAgent(
   // `posts`, and ai_usage_records.post_id has a real FK to it.
   const result = await callReceiptedAgentModel({
     agentSlug: 'report-judgement',
+    promptVersion: REPORT_JUDGEMENT_PROMPT_VERSION,
     operationId:
       input.operationId ?? `${entityType}:${entityId}:${triggeringReportId}:${rerunById ?? ''}`,
     selection,

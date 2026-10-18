@@ -24,7 +24,7 @@ COMMENT ON TABLE ai_agent_call_receipts IS 'Pre-dispatch receipts for paid agent
 COMMENT ON COLUMN ai_agent_call_receipts.id IS 'UUIDv7 receipt identity and creation order.';
 COMMENT ON COLUMN ai_agent_call_receipts.operation_key IS 'SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request.';
 COMMENT ON COLUMN ai_agent_call_receipts.agent_slug IS 'Agent that reserved the paid call.';
-COMMENT ON COLUMN ai_agent_call_receipts.request_sha256 IS 'SHA-256 of the selected model and exact provider input reserved for this operation; mismatched retries require review.';
+COMMENT ON COLUMN ai_agent_call_receipts.request_sha256 IS 'SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review.';
 COMMENT ON COLUMN ai_agent_call_receipts.copyright_notice_submission_id IS 'Retention owner for copyright guidance and appeal results; null for other agents.';
 COMMENT ON COLUMN ai_agent_call_receipts.result_ciphertext IS 'Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.';
 COMMENT ON COLUMN ai_agent_call_receipts.created_at IS 'Creation time derived from the UUIDv7 receipt identity.';

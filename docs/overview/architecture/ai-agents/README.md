@@ -17,8 +17,9 @@ and measurement, and [AI agents](../ai-agents.md) links the surrounding pipeline
   result can finish its domain write after a worker retry; an interrupted call with an unknown
   billing outcome requires review before it can be sent again. The receipt stores its result
   encrypted because advisory answers can contain private filing or report content. Its identity
-  follows the logical operation across retries, while a separate digest binds the original model
-  and prompt; changed source content requires review instead of another billable dispatch or a
+  follows the logical operation across retries, while a separate digest binds the original model,
+  prompt/schema contract version and input; changed source content or a new prompt contract requires
+  review instead of another billable dispatch or a
   stale result attached to new input. Copyright guidance and appeal receipts retain a submission
   foreign key so the case-retention sweep can erase their duplicate ciphertext. Existing receipts
   pass the worker's daily-spend admission gate to replay local writes or stop an uncertain call.

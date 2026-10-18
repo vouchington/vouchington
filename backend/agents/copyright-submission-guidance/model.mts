@@ -18,6 +18,8 @@ export type { CopyrightSubmissionGuidanceKind }
 export type CopyrightSubmissionGuidanceOutput =
   | CopyrightCounterNoticeGuidance
   | CopyrightLegalHoldGuidance
+/** Bump when the instructions, output schemas or parser contract changes. */
+export const COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION = 'copyright-submission-guidance-v1'
 /** The kind-aware model-calling seam; the run wraps it into the shared `AgentModelCaller` shape. */
 export type CopyrightSubmissionGuidanceModelCaller = (
   kind: CopyrightSubmissionGuidanceKind,
@@ -116,7 +118,7 @@ export const callCopyrightSubmissionGuidanceModel: CopyrightSubmissionGuidanceMo
       parse: value => parseCopyrightSubmissionGuidanceOutput(value, kind),
       maxOutputTokens: 2_000,
       safetyIdentifier,
-      promptCacheKey: 'copyright-submission-guidance-v1',
+      promptCacheKey: COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
       flex: true,
       maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
     },

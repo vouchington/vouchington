@@ -12,6 +12,7 @@ import { callAgentModel, type AgentModelCaller } from './call-agent-model.mts'
 type ReceiptedCall<Output> = {
   agentSlug: string
   operationId: string
+  promptVersion: string
   selection: Parameters<typeof callAgentModel>[0]['selection']
   input: string
   safetyIdentifier: string
@@ -31,10 +32,11 @@ export function agentCallOperationKey(agentSlug: string, operationId: string): s
 export async function callReceiptedAgentModel<Output>(
   params: ReceiptedCall<Output>,
 ): Promise<ModelCallResult<Output>> {
-  const { agentSlug, operationId, selection, input, safetyIdentifier, callModel } = params
+  const { agentSlug, operationId, promptVersion, selection, input, safetyIdentifier, callModel } =
+    params
   const key = agentCallOperationKey(agentSlug, operationId)
   const requestSha256 = createHash('sha256')
-    .update(JSON.stringify([selection, input]))
+    .update(JSON.stringify([selection, promptVersion, input]))
     .digest('hex')
   const purpose = `ai-agent-call-receipt:${key}`
   const existing = await getAgentCallReceipt(key)

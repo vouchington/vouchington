@@ -8,11 +8,10 @@ import {
 } from '@services/copyright-notices/submission-guidance'
 import {
   callCopyrightSubmissionGuidanceModel,
+  COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
   type CopyrightSubmissionGuidanceKind,
   type CopyrightSubmissionGuidanceModelCaller,
 } from './model.mts'
-
-const PROMPT_VERSION = 'copyright-submission-guidance-v1'
 
 export type { CopyrightSubmissionGuidanceModelCaller } from './model.mts'
 
@@ -31,6 +30,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   )
   const { output: guidance, model } = await callReceiptedAgentModel({
     agentSlug: 'copyright-submission-guidance',
+    promptVersion: COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
     operationId,
     copyrightNoticeSubmissionId: submissionId,
     selection,
@@ -42,7 +42,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   await appendCopyrightSubmissionGuidance({
     submissionId,
     inputSha256: createHash('sha256').update(modelInput).digest(),
-    promptVersion: PROMPT_VERSION,
+    promptVersion: COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
     model,
     guidance,
   })

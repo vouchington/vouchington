@@ -5,10 +5,9 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 import { copyrightAppealRecommendations } from '@services/copyright-notices'
 import {
   callCopyrightAppealRecommendationModel,
+  COPYRIGHT_APPEAL_PROMPT_VERSION,
   type CopyrightAppealRecommendationModelCaller,
 } from './model.mts'
-
-const PROMPT_VERSION = 'copyright-appeal-v1'
 
 export type { CopyrightAppealRecommendationModelCaller } from './model.mts'
 
@@ -26,6 +25,7 @@ export async function runCopyrightAppealRecommendationAgent(
   })
   const { output, model } = await callReceiptedAgentModel({
     agentSlug: 'copyright-appeal-recommendation',
+    promptVersion: COPYRIGHT_APPEAL_PROMPT_VERSION,
     operationId,
     copyrightNoticeSubmissionId: submissionId,
     selection,
@@ -37,7 +37,7 @@ export async function runCopyrightAppealRecommendationAgent(
   await copyrightAppealRecommendations.append({
     submissionId,
     inputSha256: createHash('sha256').update(input).digest(),
-    promptVersion: PROMPT_VERSION,
+    promptVersion: COPYRIGHT_APPEAL_PROMPT_VERSION,
     model,
     recommendation,
     rationale,

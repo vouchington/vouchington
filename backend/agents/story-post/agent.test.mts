@@ -9,6 +9,7 @@ import {
   TEST_OPENAI_SELECTION,
 } from '@voucha/test-helpers/agents/model-call-result'
 import { callStoryPostAgent, parseStoryPostOutput, type StoryPostModelCaller } from './agent.mts'
+import { callReceiptedAgentModel } from '@agents/_shared'
 import type { Story } from '@services/stories/types'
 import type { Response } from 'openai/resources/responses/responses'
 
@@ -26,6 +27,28 @@ const itemSummaries = [
 ]
 
 describe('callStoryPostAgent', () => {
+  it('stops replay when the prompt or schema contract version changes', async () => {
+    const operationId = randomUUID()
+    const callModel = makeAgentModelCaller({
+      title: 'First title',
+      ai_summary_markdown: 'First summary.',
+    })
+    const params = {
+      agentSlug: 'story-post',
+      operationId,
+      promptVersion: 'story-post-test-v1',
+      selection: TEST_MODEL_SELECTION,
+      input: 'A fixed story prompt',
+      safetyIdentifier: operationId,
+      callModel,
+    }
+    await callReceiptedAgentModel(params)
+    await expect(
+      callReceiptedAgentModel({ ...params, promptVersion: 'story-post-test-v2' }),
+    ).rejects.toThrow('request changed after reservation')
+    expect(callModel).toHaveBeenCalledOnce()
+  })
+
   it('reuses a completed paid receipt after a downstream retry', async () => {
     const story = makeStory()
     const callModel = makeAgentModelCaller({
