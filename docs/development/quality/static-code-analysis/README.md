@@ -47,6 +47,10 @@ Nested Oxlint configs do not inherit ancestor `overrides` or `plugins`: they res
 
 ## Enforcement Policy
 
+The `backend-no-enqueue-and-wait` ast-grep rule rejects queue result waits and misleading
+`enqueue*AndWait` names across backend code, including tests. Queue admission may still be awaited;
+the forbidden operation is waiting for another job's completion instead of durable state.
+
 Markdown reachability and structure-budget gates run without baselines: fix violations by linking, splitting, or reorganizing, not with an exception registry. Reachability requires every included document to be discoverable from a tracked `AGENTS.md` through `README.md` indexes. A long document may contain at most one table and one Mermaid fence. Run the check with `pnpm run no-mistakes`; do not force the root `--tsconfig`, which lacks package aliases such as the web `@/*` mapping and hides reachable imports from graph checks.
 
 Raw PostgreSQL SQL in backend tests belongs in focused first-layer helpers under the repository root `test-helpers/**` or a top-level workspace's `test-helpers/**`. Nested aliases, `test-support` directories, forwarding modules, and `test-helpers` in file basenames are rejected without a baseline, so tests consume typed setup and assertion operations rather than SQL executors.

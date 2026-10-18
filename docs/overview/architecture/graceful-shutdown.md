@@ -35,12 +35,12 @@ sequenceDiagram
   par Phase 4: close data store connections
     O->>V: Close refresh timers, then glide-mq and raw clients
   and
-    O->>P: End write, read, and advisory-lock pools
+    O->>P: End PostgreSQL pools, including job serialization
   end
   O-->>O: Exit naturally, or force-exit timer fires
 ```
 
-PostgreSQL closes all three lazily populated pools. Their combined maxima describe a worst-case
+PostgreSQL closes its lazily populated pools. Their combined maxima describe a worst-case
 per-process connection budget, not connections reserved at process start.
 
 ## Registration APIs

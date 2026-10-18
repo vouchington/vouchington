@@ -59,7 +59,7 @@ describe('fork leak growth checkpoint detection', () => {
     ])
   })
 
-  it('requires continuation after a finite three-pool ramp', () => {
+  it('requires continuation after a finite pool ramp', () => {
     const ramp = [...Array(5).fill(1), 21, 21, 41, 41, 42]
 
     expect(recordAll(createForkLeakDetector(), [...ramp, ...Array(5).fill(42)])).toEqual([])
@@ -152,9 +152,10 @@ describe('fork leak growth checkpoint detection', () => {
         write: { total: 20, idle: 19, nonIdleOrConnecting: 1, waiting: 0 },
         read: { total: 20, idle: 20, nonIdleOrConnecting: 0, waiting: 0 },
         advisoryLock: { total: 4, idle: 4, nonIdleOrConnecting: 0, waiting: 0 },
+        jobSerialization: { total: 4, idle: 4, nonIdleOrConnecting: 0, waiting: 0 },
       }),
     ).toContain(
-      'PostgreSQL pool metrics: write(total=20,idle=19,non-idle-or-connecting=1,waiting=0) read(total=20,idle=20,non-idle-or-connecting=0,waiting=0) advisory-lock(total=4,idle=4,non-idle-or-connecting=0,waiting=0)',
+      'PostgreSQL pool metrics: write(total=20,idle=19,non-idle-or-connecting=1,waiting=0) read(total=20,idle=20,non-idle-or-connecting=0,waiting=0) advisory-lock(total=4,idle=4,non-idle-or-connecting=0,waiting=0) job-serialization(total=4,idle=4,non-idle-or-connecting=0,waiting=0)',
     )
   })
 
@@ -167,10 +168,14 @@ describe('fork leak growth checkpoint detection', () => {
     const write = fakePsqlPool(20, 17, 2)
     const read = fakePsqlPool(8, 8, 0)
     const advisoryLock = fakePsqlPool(4, 1, 3)
+    const jobSerialization = fakePsqlPool(2, 1, 0)
     try {
-      expect(registerPsqlPoolMetricsForTestEnvironment({ write, read, advisoryLock }, 'test')).toBe(
-        true,
-      )
+      expect(
+        registerPsqlPoolMetricsForTestEnvironment(
+          { write, read, advisoryLock, jobSerialization },
+          'test',
+        ),
+      ).toBe(true)
       write.emit('connect')
 
       expect(getRegisteredPsqlPoolMetrics()).toEqual({
@@ -192,6 +197,12 @@ describe('fork leak growth checkpoint detection', () => {
           nonIdleOrConnecting: 3,
           waiting: 3,
         },
+        jobSerialization: {
+          total: 2,
+          idle: 1,
+          nonIdleOrConnecting: 1,
+          waiting: 0,
+        },
       })
     } finally {
       if (previousMetrics === undefined) delete target[metricsKey]
@@ -208,6 +219,7 @@ describe('fork leak growth checkpoint detection', () => {
         write: fakePsqlPool(99, 0, 99),
         read: fakePsqlPool(99, 0, 99),
         advisoryLock: fakePsqlPool(99, 0, 99),
+        jobSerialization: fakePsqlPool(99, 0, 99),
       },
       'production',
     )

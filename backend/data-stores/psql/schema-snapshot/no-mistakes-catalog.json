@@ -132133,7 +132133,7 @@
     "user_import_requests": {
       "checkConstraints": {
         "user_import_requests_check": {
-          "definition": "CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))",
+          "definition": "CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND (rss_feed_import_row_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))",
           "validated": true
         },
         "user_import_requests_check1": {
@@ -132158,7 +132158,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "entity_type": {
           "comment": "The imported entity family.",
@@ -132178,7 +132178,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "id": {
           "comment": null,
@@ -132198,7 +132198,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "rss_feed_id": {
           "comment": "RSS feed followed directly or after recommendation approval.",
@@ -132209,6 +132209,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5
+        },
+        "rss_feed_import_row_id": {
+          "comment": "Durable RSS import row whose follow this audit records.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
         },
         "topic_id": {
           "comment": "Topic followed directly or after recommendation approval.",
@@ -132228,7 +132238,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "updated_at": {
           "comment": null,
@@ -132238,7 +132248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The user who submitted the import request.",
@@ -132259,6 +132269,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "rss_feeds",
+          "validated": true
+        },
+        "user_import_requests_rss_feed_import_row_id_fkey": {
+          "columns": ["rss_feed_import_row_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_rss_feed_import_rows",
           "validated": true
         },
         "user_import_requests_topic_id_fkey": {
@@ -132308,6 +132326,29 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_user_import_requests__rss_feed_import_row_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rss_feed_import_row_id",
+              "descending": false,
+              "expression": "rss_feed_import_row_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(rss_feed_import_row_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "idx_user_import_requests__topic_id": {
@@ -137272,6 +137313,221 @@
           "definition": "CREATE TRIGGER trigger_user_rss_feed_import_batches_updated_at BEFORE UPDATE ON public.user_rss_feed_import_batches FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
+      "uniqueConstraints": {}
+    },
+    "user_rss_feed_import_row_discoveries": {
+      "checkConstraints": {
+        "user_rss_feed_import_row_discoveries_check": {
+          "definition": "CHECK (((discovered_feed_url_id IS NULL) OR (failed_at IS NULL)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "crawl_id": {
+          "comment": "Completed crawl used to resolve the feed link, if retained.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "discovered_feed_url_id": {
+          "comment": "URL registry row for the feed found in the completed HTML crawl.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "discovery_url_id": {
+          "comment": "HTML page URL whose crawl is pending or completed for feed discovery.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "failed_at": {
+          "comment": "When the HTML crawl completed without a usable feed link.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "generation": {
+          "comment": "Stable pending-crawl fence for this import row and page URL.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "import_row_id": {
+          "comment": "The RSS import row that requested this HTML page discovery.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Durable per-page HTML feed discovery outcomes for an RSS import row.",
+      "foreignKeys": {
+        "user_rss_feed_import_row_discoverie_discovered_feed_url_id_fkey": {
+          "columns": ["discovered_feed_url_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        },
+        "user_rss_feed_import_row_discoveries_crawl_id_fkey": {
+          "columns": ["crawl_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "crawls",
+          "validated": true
+        },
+        "user_rss_feed_import_row_discoveries_discovery_url_id_fkey": {
+          "columns": ["discovery_url_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        },
+        "user_rss_feed_import_row_discoveries_import_row_id_fkey": {
+          "columns": ["import_row_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_rss_feed_import_rows",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_user_rss_feed_import_row_discoveries__crawl_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_row_discoveries__crawl_id ON public.user_rss_feed_import_row_discoveries USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "crawl_id",
+              "descending": false,
+              "expression": "crawl_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(crawl_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_rss_feed_import_row_discoveries__discovery_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_row_discoveries__discovery_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovery_url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "discovery_url_id",
+              "descending": false,
+              "expression": "discovery_url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "discovered_feed_url_id",
+              "descending": false,
+              "expression": "discovered_feed_url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(discovered_feed_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "user_rss_feed_import_row_discoveries_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_rss_feed_import_row_discoveries_pkey ON public.user_rss_feed_import_row_discoveries USING btree (import_row_id, discovery_url_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "import_row_id",
+              "descending": false,
+              "expression": "import_row_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "discovery_url_id",
+              "descending": false,
+              "expression": "discovery_url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["import_row_id", "discovery_url_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
       "uniqueConstraints": {}
     },
     "user_rss_feed_import_rows": {

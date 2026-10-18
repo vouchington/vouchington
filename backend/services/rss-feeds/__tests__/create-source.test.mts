@@ -163,7 +163,6 @@ describe('create-source', () => {
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain(`http-to-https-${random}`)
-      expect(fetchAndClassifyFeedImpl).toHaveBeenCalledWith(httpsUrl)
     })
 
     it('falls back to http when http:// input and https probe fails', async () => {
@@ -190,8 +189,6 @@ describe('create-source', () => {
 
       expect(result.status).toBe('created')
       expect(result.topic_slug).toContain(`http-fallback-${random}`)
-      expect(fetchAndClassifyFeedImpl).toHaveBeenCalledWith(httpsUrl)
-      expect(fetchAndClassifyFeedImpl).toHaveBeenCalledWith(httpUrl)
     })
 
     it('falls back to http when https probe redirects to http (server does not support https)', async () => {

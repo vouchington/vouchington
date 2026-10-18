@@ -1,11 +1,16 @@
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { createCodedError } from '@modules/on-error/create-coded-error'
-import { CONTRIBUTION_QUOTA_EXCEEDED, INVALID_INPUT } from '@modules/on-error/error-codes'
+import { INVALID_INPUT } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@voucha/types/entities/user'
 import { CONTRIBUTION_GATE_ACCOUNT_AGE_MS } from './config.mts'
 import { getContributionLimitValue, getContributionLimitWindowSeconds } from './limits-config.mts'
-import { checkWindow, isWindowAllowed, limitKey } from './limits-helpers.mts'
+import {
+  checkWindow,
+  createContributionLimitExceededError,
+  isWindowAllowed,
+  limitKey,
+} from './limits-helpers.mts'
 import { UNLIMITED_CONTRIBUTION_LIMIT } from './limit-defaults.mts'
 import type {
   ContributionActionLimitStatus,
@@ -42,27 +47,21 @@ export async function assertWithinContributionActionLimit(
 ): Promise<void> {
   const status = await checkContributionActionLimit(currentUser, membershipPlan, action, true)
   if (!status.allowed) {
-    throw createCodedError(
-      429,
-      'Contribution limit exceeded. Please try again later.',
-      CONTRIBUTION_QUOTA_EXCEEDED,
-    )
+    throw createContributionLimitExceededError()
   }
 }
 
-export async function assertWithinContributionDailyLimit(
+/** Admit an asynchronous submission now; its worker checks and charges daily quota only on creation. */
+export async function assertWithinContributionSubmissionLimit(
   currentUser: BasicUser,
   membershipPlan: ContributionLimitMembershipPlan,
   action: ContributionLimitAction,
 ): Promise<void> {
-  const status = await checkContributionDailyLimit(currentUser, membershipPlan, action, true)
-  if (!status.allowed) {
-    throw createCodedError(
-      429,
-      'Contribution limit exceeded. Please try again later.',
-      CONTRIBUTION_QUOTA_EXCEEDED,
-    )
-  }
+  const tier = getContributionLimitTier(currentUser, membershipPlan)
+  const key = limitKey(currentUser.id, action)
+  const shortWindow = await checkWindow(shortLimiter, key, action, tier, 'short', true)
+  if (isWindowAllowed(shortWindow, true)) return
+  throw createContributionLimitExceededError()
 }
 
 export function getContributionActionLimitStatus(
@@ -161,25 +160,6 @@ async function checkContributionActionLimit(
     tier,
     allowed:
       isWindowAllowed(shortWindow, increment) && isWindowAllowed(dailyWindow, dailyIncrement),
-    short_window: shortWindow,
-    daily_window: dailyWindow,
-  }
-}
-
-async function checkContributionDailyLimit(
-  currentUser: BasicUser,
-  membershipPlan: ContributionLimitMembershipPlan,
-  action: ContributionLimitAction,
-  increment: boolean,
-): Promise<ContributionActionLimitStatus> {
-  const tier = getContributionLimitTier(currentUser, membershipPlan)
-  const key = limitKey(currentUser.id, action)
-  const shortWindow = await checkWindow(shortLimiter, key, action, tier, 'short', false)
-  const dailyWindow = await checkWindow(dailyLimiter, key, action, tier, 'daily', increment)
-  return {
-    action,
-    tier,
-    allowed: isWindowAllowed(dailyWindow, increment),
     short_window: shortWindow,
     daily_window: dailyWindow,
   }

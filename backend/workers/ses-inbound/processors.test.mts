@@ -202,8 +202,7 @@ function createDependencySpies() {
       vi.fn<ProcessDependencies['copySesInboundObjectToCopyrightEvidence']>(),
     createCopyrightEmailIntake: vi.fn<ProcessDependencies['createCopyrightEmailIntake']>(),
     deleteSesInboundObject: vi.fn<ProcessDependencies['deleteSesInboundObject']>(),
-    enqueueCopyrightEmailIntakeAndWait:
-      vi.fn<ProcessDependencies['enqueueCopyrightEmailIntakeAndWait']>(),
+    enqueueCopyrightEmailIntake: vi.fn<ProcessDependencies['enqueueCopyrightEmailIntake']>(),
     loadSesInboundObject: vi.fn<ProcessDependencies['loadSesInboundObject']>(),
     loadSesInboundObjectAndHash: vi.fn<ProcessDependencies['loadSesInboundObjectAndHash']>(),
     loadSesInboundObjectVersion: vi.fn<ProcessDependencies['loadSesInboundObjectVersion']>(),

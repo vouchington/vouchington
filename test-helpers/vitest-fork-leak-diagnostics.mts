@@ -52,6 +52,7 @@ function formatPsqlPoolMetrics(psqlPoolMetrics: PsqlPoolMetrics | null): string 
     formatPsqlPool('write', psqlPoolMetrics.write),
     formatPsqlPool('read', psqlPoolMetrics.read),
     formatPsqlPool('advisory-lock', psqlPoolMetrics.advisoryLock),
+    formatPsqlPool('job-serialization', psqlPoolMetrics.jobSerialization),
   ].join(' ')
 }
 

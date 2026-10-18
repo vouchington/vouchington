@@ -15,8 +15,10 @@ import {
 } from './rss-feed-import-row-updates.mts'
 import { getBatchProvenance, type CreateUserRssFeedImportResult } from './rss-feed-import-types.mts'
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
+import { RssFeedDiscoveryPendingError } from '@services/rss-feeds/discovery-pending'
 import { getUserActivePlan } from '@services/memberships'
-import { assertWithinContributionDailyLimit } from '@services/contribution-gating/limits'
+import { assertWithinRssFeedImportDailyLimit } from '@services/contribution-gating/rss-feed-import-limit'
+import { withRssFeedImportRowLock } from './rss-feed-import-row-lock.mts'
 type CompletedImportRssFeedStatus = Exclude<ImportRssFeedStatus, 'error'>
 
 export { getRssFeedImport, getRssFeedImportSummary } from './rss-feed-import-status.mts'
@@ -46,7 +48,20 @@ export async function processRssFeedImportRow(
     isFinalAttempt?: boolean
     /** The feed's time budget; defaults to `rss_feed_import_budget_ms`. */
     budgetMs?: number
-  } & Pick<ImportSingleRssFeedOptions, 'createSourceFromUrlImpl'> = {},
+  } & Pick<ImportSingleRssFeedOptions, 'crawlerRssOptions'> = {},
+): Promise<void> {
+  return withRssFeedImportRowLock(rowId, () =>
+    processLockedRssFeedImportRow(importId, rowId, options),
+  )
+}
+
+async function processLockedRssFeedImportRow(
+  importId: string,
+  rowId: string,
+  options: {
+    isFinalAttempt?: boolean
+    budgetMs?: number
+  } & Pick<ImportSingleRssFeedOptions, 'crawlerRssOptions'>,
 ): Promise<void> {
   const { isFinalAttempt = true } = options
   const rowWithBatch = await getRssFeedImportRowWithBatch(rowId)
@@ -77,10 +92,10 @@ export async function processRssFeedImportRow(
     // The queue job is not the submitting request, so the feeds carry the channel and OAuth client
     // that the batch stored when the request submitted the import.
     const result = await importSingleRssFeed(user, getBatchProvenance(batch), row.input_url, {
-      assertRssFeedLimit: () =>
-        assertWithinContributionDailyLimit(user, membershipPlan, 'rss_feed'),
+      assertRssFeedLimit: () => assertWithinRssFeedImportDailyLimit(user, membershipPlan, row.id),
       follow: batch.should_follow_imported_feeds,
-      createSourceFromUrlImpl: options.createSourceFromUrlImpl,
+      crawlerRssOptions: options.crawlerRssOptions,
+      importRowId: row.id,
       // One deadline covers Web Risk and both protocol attempts. Running out is a plain error, so
       // the job retries it.
       signal: AbortSignal.timeout(
@@ -93,6 +108,7 @@ export async function processRssFeedImportRow(
       result.entity_id!,
     )
   } catch (err) {
+    if (err instanceof RssFeedDiscoveryPendingError) return
     const message = err instanceof Error ? err.message : String(err)
     const finalFailure = isFinalAttempt || err instanceof UnrecoverableError
     await updateRssFeedImportRowFailed(row.id, message, { isFinalAttempt: finalFailure })

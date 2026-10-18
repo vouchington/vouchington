@@ -2093,6 +2093,9 @@ importers:
       '@services/user-financial-profiles':
         specifier: workspace:^
         version: link:../services/user-financial-profiles
+      '@services/user-import-export':
+        specifier: workspace:^
+        version: link:../services/user-import-export
       '@services/user-mod-notes':
         specifier: workspace:^
         version: link:../services/user-mod-notes
@@ -6562,6 +6565,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -6602,15 +6608,9 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
-      '@voucha/config':
-        specifier: workspace:^
-        version: link:../../config
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
 
   backend/services/fediverse-search:
     dependencies:
@@ -9882,6 +9882,9 @@ importers:
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
@@ -11140,6 +11143,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -11155,6 +11161,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@services/web-risk':
+        specifier: workspace:^
+        version: link:../web-risk
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
@@ -11171,6 +11180,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12244,6 +12256,9 @@ importers:
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
+      '@services/fediverse-instances':
+        specifier: workspace:^
+        version: link:../../services/fediverse-instances
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
@@ -12392,6 +12407,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.11.2
+        version: 8.11.2
 
   backend/workers/bedrock-batch-sqs:
     dependencies:
@@ -12814,6 +12832,9 @@ importers:
       '@services/crawls':
         specifier: workspace:^
         version: link:../../services/crawls
+      '@services/rss-feeds':
+        specifier: workspace:^
+        version: link:../../services/rss-feeds
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls

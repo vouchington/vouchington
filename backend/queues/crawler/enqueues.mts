@@ -1,10 +1,7 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import { CRAWL_URLS_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
-import { waitForCrawlUrlJobResult } from './enqueues/crawl-url-job-results.mts'
 import { crawlUrls } from './queues.mts'
 import type { CrawlerJobs, EnqueueCrawlerJobOptions, EnqueueCrawlUrlEntry } from './types.mts'
-import type { CrawlUrlJobResult } from './enqueues/crawl-url-job-result.mts'
-export type { CrawlUrlJobResult } from './enqueues/crawl-url-job-result.mts'
 
 type CrawlUrlBulkInput = EnqueueCrawlUrlEntry & {
   jobDelay?: number
@@ -18,9 +15,6 @@ const CRAWL_URL_JOB_RETRY_OPTIONS = {
   attempts: 3,
   backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
 }
-const PRIORITY_WAITING = 1
-const CRAWL_URL_WAIT_TIMEOUT_MS = 30_000
-const CRAWL_URL_WAIT_COMPLETED_RETENTION = { age: 60, count: 100 }
 
 const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
   CrawlUrlBulkInput,
@@ -36,7 +30,8 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
     rate_limit_retry_count?: number
     skip_chunks?: boolean
     skip_embed_resolution?: boolean
-    wait_for_result?: boolean
+    import_row_id?: string
+    import_discovery_generation?: string
   },
   CrawlerJobs
 >({
@@ -58,6 +53,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
     rateLimitMs,
   }) => {
     const delay = options?.delay ?? jobDelay ?? 0
+    const isImportDiscovery = Boolean(options?.importRowId && options.importDiscoveryGeneration)
     return {
       data: {
         url_id: urlId,
@@ -77,12 +73,12 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
         ...(options?.skipCreatedEventsForRedirects === true
           ? { skip_created_events_for_redirects: true }
           : {}),
-        ...(options?.waitForResult === true ? { wait_for_result: true } : {}),
+        ...(options?.importRowId ? { import_row_id: options.importRowId } : {}),
+        ...(options?.importDiscoveryGeneration
+          ? { import_discovery_generation: options.importDiscoveryGeneration }
+          : {}),
       },
       opts: {
-        ...(options?.waitForResult === true
-          ? { removeOnComplete: CRAWL_URL_WAIT_COMPLETED_RETENTION }
-          : {}),
         priority: priority ?? PRIORITY_DEFAULT,
         deduplication: {
           // A replacement is enqueued from inside the previous replacement while that job still
@@ -90,8 +86,8 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
           id:
             rateLimitRetryCount != null
               ? `${JOB_NAME}_ratelimit__${urlId}__${rateLimitRetryCount}`
-              : `${JOB_NAME}__${urlId}`,
-          mode: 'debounce',
+              : `${JOB_NAME}__${urlId}${options?.importRowId ? `__${options.importRowId}__${options.importDiscoveryGeneration}` : ''}`,
+          mode: isImportDiscovery ? 'simple' : 'debounce',
         },
         ...(delay > 0 ? { delay } : {}),
         ...(hostnameId
@@ -110,60 +106,4 @@ export const enqueueBulkCrawlUrls = (
   return enqueueBulkCrawlUrlJobs(
     entries.map(entry => ({ ...entry, jobDelay, priority, hostnameId, rateLimitMs })),
   )
-}
-
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #2853
-export async function enqueueCrawlUrlAndWait(
-  entry: EnqueueCrawlUrlEntry,
-  options: EnqueueCrawlerJobOptions & { waitTimeoutMs?: number } = {},
-): Promise<CrawlUrlJobResult | null> {
-  const {
-    crawlTimeoutMs = entry.options?.crawlTimeoutMs,
-    delay = entry.options?.delay ?? 0,
-    ensureCrawlerForRedirects = entry.options?.ensureCrawlerForRedirects,
-    hostnameId = entry.options?.hostnameId,
-    ignoreRobotsTxt = entry.options?.ignoreRobotsTxt,
-    maxResponseSizeBytes = entry.options?.maxResponseSizeBytes,
-    preserveHttpRedirects = entry.options?.preserveHttpRedirects,
-    priority = entry.options?.priority ?? PRIORITY_WAITING,
-    rateLimitMs = entry.options?.rateLimitMs ?? 1_000,
-    skipCanonicalUrl = entry.options?.skipCanonicalUrl,
-    skipChunks = entry.options?.skipChunks,
-    skipEmbedResolution = entry.options?.skipEmbedResolution,
-    skipCreatedEventsForRedirects = entry.options?.skipCreatedEventsForRedirects,
-    waitTimeoutMs = CRAWL_URL_WAIT_TIMEOUT_MS,
-  } = options
-  const job = await crawlUrls.add(
-    JOB_NAME,
-    {
-      url_id: entry.urlId,
-      ...(crawlTimeoutMs != null ? { crawl_timeout_ms: crawlTimeoutMs } : {}),
-      ...(ensureCrawlerForRedirects === true ? { ensure_crawler_for_redirects: true } : {}),
-      ...(ignoreRobotsTxt === true ? { should_ignore_robots_txt: true } : {}),
-      ...(maxResponseSizeBytes != null ? { max_response_size_bytes: maxResponseSizeBytes } : {}),
-      ...(preserveHttpRedirects === true ? { preserve_http_redirects: true } : {}),
-      ...(entry.rateLimitRetryCount != null
-        ? { rate_limit_retry_count: entry.rateLimitRetryCount }
-        : {}),
-      ...(skipCanonicalUrl === true ? { skip_canonical_url: true } : {}),
-      ...(skipChunks === true ? { skip_chunks: true } : {}),
-      ...(skipEmbedResolution === true ? { skip_embed_resolution: true } : {}),
-      ...(skipCreatedEventsForRedirects === true
-        ? { skip_created_events_for_redirects: true }
-        : {}),
-      wait_for_result: true,
-    },
-    {
-      ...CRAWL_URL_JOB_RETRY_OPTIONS,
-      removeOnComplete: CRAWL_URL_WAIT_COMPLETED_RETENTION,
-      removeOnFail: 100,
-      priority,
-      ...(delay > 0 ? { delay } : {}),
-      ...(hostnameId
-        ? { ordering: { key: hostnameId, rateLimit: { max: 1, duration: rateLimitMs } } }
-        : {}),
-    },
-  )
-  if (!job || !job.id) return null
-  return waitForCrawlUrlJobResult(job.id, waitTimeoutMs)
 }

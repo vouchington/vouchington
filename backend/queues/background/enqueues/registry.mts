@@ -30,6 +30,10 @@ import { POST_MENTIONS_DOMAIN, POST_MENTIONS_JOBS } from './post-mentions-jobs.m
 import { POST_PUBLICATION_DOMAIN, POST_PUBLICATION_JOBS } from './post-publication-jobs.mts'
 import { assertRegistryInvariants } from './registry-invariants.mts'
 import { RSS_FEEDS_DOMAIN, RSS_FEEDS_JOBS } from './rss-feeds-jobs.mts'
+import {
+  FEDIVERSE_INSTANCES_DOMAIN,
+  FEDIVERSE_INSTANCES_JOBS,
+} from './fediverse-instances-jobs.mts'
 import { SES_INBOUND_DOMAIN, SES_INBOUND_JOBS } from './ses-inbound-jobs.mts'
 import { SITEMAPS_DOMAIN, SITEMAPS_JOBS } from './sitemaps-jobs.mts'
 import {
@@ -59,6 +63,7 @@ export const BACKGROUND_DOMAIN_DEFINITIONS: readonly BackgroundDomainDefinition[
   FOLLOWER_DISTRIBUTIONS_DOMAIN,
   BLUESKY_FOLLOW_PROPAGATION_DOMAIN,
   RSS_FEEDS_DOMAIN,
+  FEDIVERSE_INSTANCES_DOMAIN,
   URLS_DOMAINS_BLACKLIST_DOMAIN,
   SITEMAPS_DOMAIN,
   CACHE_PURGE_DOMAIN,
@@ -84,6 +89,7 @@ export const BACKGROUND_JOBS: readonly BackgroundJobDefinition[] = [
   ...FOLLOWER_DISTRIBUTIONS_JOBS,
   ...BLUESKY_FOLLOW_PROPAGATION_JOBS,
   ...RSS_FEEDS_JOBS,
+  ...FEDIVERSE_INSTANCES_JOBS,
   ...URLS_DOMAINS_BLACKLIST_JOBS,
   ...SITEMAPS_JOBS,
   ...CACHE_PURGE_JOBS,

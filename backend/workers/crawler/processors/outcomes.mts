@@ -8,7 +8,7 @@ import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import type { CrawlBasic } from '@services/crawls/types'
 
-const MAX_RATE_LIMIT_RETRIES = 3
+export const MAX_RATE_LIMIT_RETRIES = 3
 
 export async function handleCrawlerProcessorError(
   urlId: string,
@@ -25,7 +25,6 @@ export async function handleCrawlerProcessorError(
     skipChunks?: boolean
     skipEmbedResolution?: boolean
     skipCreatedEventsForRedirects?: boolean
-    waitForResult?: boolean
   } = {},
 ): Promise<unknown> {
   // Rate-limit errors: never flood the domain with replacement jobs
@@ -52,7 +51,6 @@ export async function handleCrawlerProcessorError(
               skipChunks: options.skipChunks,
               skipEmbedResolution: options.skipEmbedResolution,
               skipCreatedEventsForRedirects: options.skipCreatedEventsForRedirects,
-              waitForResult: options.waitForResult,
             },
             rateLimitRetryCount: rateLimitRetryCount + 1,
           },

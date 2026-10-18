@@ -33537,7 +33537,7 @@
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "bodyKind": "content",
-      "hash": "c5f468c62f7abaffe9c0615e093f8f16ac9526540804d27756f5a2154bcbfaf2",
+      "hash": "053f3d89b9d93d2eb5417a86fc66a1afd6b5a2fe4f2b50da6fb8a19607be9720",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -33623,10 +33623,32 @@
                   "type": "string"
                 }
               },
-              "error": {
+              "error_code": {
                 "required": false,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "INVALID_URL"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "INVALID_FEED_CONTENT"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "FEED_FETCH_TIMEOUT"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "CONTRIBUTION_LIMIT_EXCEEDED"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "IMPORT_FAILED"
+                    }
+                  ]
                 }
               },
               "id": {
@@ -33671,6 +33693,12 @@
                       "value": "source_created"
                     }
                   ]
+                }
+              },
+              "topic_slug": {
+                "required": false,
+                "schema": {
+                  "type": "string"
                 }
               }
             },
@@ -96563,7 +96591,7 @@
       "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001",
       "responseSchema": {
-        "hash": "7d5187de7b9a1627a5b8bf6fd0f6cb83ce072abd1acb15843112d5b0bb39cf0b",
+        "hash": "8fd7af67c9bd10cd4d2b98fec6cd7ed7b795219484a6e9cfb71a8da631033f51",
         "key": "native.import-export.rss-feeds.status.retrying"
       },
       "route": {
@@ -96587,7 +96615,7 @@
       "migratedFrom": ["predecessor-issue#7887"],
       "path": "/api/v1/my/import/rss-feeds/70000000-0000-7000-8000-000000000001",
       "responseSchema": {
-        "hash": "3edf8f24534b4b3b8c3305f9aa893642f21854ffe75b94ce483ffc08890c9ca5",
+        "hash": "75cf0217bb6ec18eaa7886f94da438636cf2de683a203a0fb809c376ed40204f",
         "key": "native.import-export.rss-feeds.status.partial"
       },
       "route": {

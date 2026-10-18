@@ -86,6 +86,26 @@ export async function getLatestCrawlStatusCode(urlId: string): Promise<number | 
   return rows[0]?.response_status_code ?? null
 }
 
+/** Read the owned URL's latest persisted crawl from the primary after a worker settles. */
+export async function getLatestCrawlCompletionForUrl(
+  urlId: string,
+): Promise<{ completed: boolean; responseStatusCode: number | null } | null> {
+  const { rows } = await write<{
+    completed: boolean
+    response_status_code: number | null
+  }>(
+    allowUnannotatedQuery(sql`
+    SELECT completed_at IS NOT NULL AS completed, response_status_code
+    FROM crawls
+    WHERE url_id = ${urlId}
+    ORDER BY id DESC
+    LIMIT 1
+  `),
+  )
+  const row = rows[0]
+  return row ? { completed: row.completed, responseStatusCode: row.response_status_code } : null
+}
+
 export type LatestCrawlRedirectStatus = {
   networkError: string | null
   redirectUrlId: string | null

@@ -15,7 +15,7 @@
   },
   "rows": [
     {
-      "error": "Temporary source fetch failure. Retrying.",
+      "error_code": "IMPORT_FAILED",
       "id": "70000000-0000-7000-8000-000000000002",
       "input": "https://example.test/feed.xml",
       "status": "pending"

@@ -1,4 +1,4 @@
-import { read, beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import sql from 'sql-template-strings'
@@ -74,7 +74,8 @@ export async function getRssFeedImportRowWithBatch(rowId: string): Promise<{
 } | null> {
   if (!isUUID(rowId)) return null
 
-  const { rows } = await read(
+  // The dispatcher can pick up a newly committed row before a read replica has replayed it.
+  const { rows } = await write(
     sql`/* getRssFeedImportRowWithBatch */
       SELECT
         r.id, r.batch_id, r.input_url, r.completed_at, r.failed_at,

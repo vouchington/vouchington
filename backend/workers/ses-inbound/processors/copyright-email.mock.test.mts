@@ -140,7 +140,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         ),
       createCopyrightEmailIntake: createIntake,
       recordCopyrightEmailParse: recordParse,
-      enqueueCopyrightEmailIntakeAndWait: enqueue,
+      enqueueCopyrightEmailIntake: enqueue,
       deleteSesInboundObject: deleteObject,
     })
 
@@ -188,7 +188,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         .mockResolvedValue('evidence-key'),
       createCopyrightEmailIntake: createIntake,
       recordCopyrightEmailParse: recordParse,
-      enqueueCopyrightEmailIntakeAndWait: enqueue,
+      enqueueCopyrightEmailIntake: enqueue,
       deleteSesInboundObject: deleteObject,
     })
     expect(enqueue).toHaveBeenCalledTimes(2)
@@ -239,7 +239,7 @@ describe('SES copyright inbound routing while intake is switched off', () => {
         .fn<() => Promise<ParsedSesInboundEmail>>()
         .mockRejectedValue(new SesInboundTerminalError('invalid MIME')),
       recordCopyrightEmailParse: recordParse,
-      enqueueCopyrightEmailIntakeAndWait: enqueue,
+      enqueueCopyrightEmailIntake: enqueue,
       deleteSesInboundObject: deleteObject,
     })
 

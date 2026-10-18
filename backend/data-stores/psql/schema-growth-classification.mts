@@ -51,6 +51,7 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'user_moderation_email_sends',
   'user_rss_feed_import_batches',
   'user_rss_feed_import_rows',
+  'user_rss_feed_import_row_discoveries',
   'identity_verification_attempts',
   'vote_integrity_flags',
 ] as const

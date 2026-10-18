@@ -88,6 +88,7 @@
     "@services/urls": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/user-financial-profiles": "workspace:^",
+    "@services/user-import-export": "workspace:^",
     "@services/user-mod-notes": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
     "@services/user-warnings": "workspace:^",

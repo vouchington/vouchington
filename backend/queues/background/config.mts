@@ -29,6 +29,7 @@ export const BACKGROUND_DOMAINS = [
   'follower-distributions',
   'bluesky-follow-propagation',
   'rss-feeds',
+  'fediverse-instances',
   'urls-domains-blacklist',
   'sitemaps',
   'cache-purge',

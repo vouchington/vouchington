@@ -1,4 +1,5 @@
 import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   overrideDynamicConfigFieldsForTest,
@@ -11,10 +12,11 @@ import { contributionLimitConfig } from './limits-config.mts'
 import { limitKey } from './limits-helpers.mts'
 import {
   assertWithinContributionActionLimit,
-  assertWithinContributionDailyLimit,
+  assertWithinContributionSubmissionLimit,
   getContributionActionLimitStatus,
   getContributionLimitTier,
 } from './limits.mts'
+import { assertWithinRssFeedImportDailyLimit } from './rss-feed-import-limit.mts'
 
 describe('contribution action limits', () => {
   const testContributionLimitFields = () =>
@@ -113,27 +115,60 @@ describe('contribution action limits', () => {
     })
   })
 
-  it('can enforce daily quota without applying the short cooldown', async () => {
+  it('charges one daily slot for concurrent retries of the same RSS import row', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
-      topic_recommendation_free_short_limit: 1,
-      topic_recommendation_free_daily_limit: 2,
+      rss_feed_free_daily_limit: 1,
     })
-
-    await assertWithinContributionDailyLimit(user, null, 'topic_recommendation')
-    await assertWithinContributionDailyLimit(user, null, 'topic_recommendation')
-    await expect(
-      getContributionActionLimitStatus(user, null, 'topic_recommendation'),
-    ).resolves.toMatchObject({
-      short_window: { limit: 1, used: 0 },
-      daily_window: { limit: 2, used: 2 },
-    })
+    const rowId = randomUUID()
 
     await expect(
-      assertWithinContributionDailyLimit(user, null, 'topic_recommendation'),
-    ).rejects.toMatchObject({
-      code: CONTRIBUTION_QUOTA_EXCEEDED,
-      status: 429,
+      Promise.all([
+        assertWithinRssFeedImportDailyLimit(user, null, rowId),
+        assertWithinRssFeedImportDailyLimit(user, null, rowId),
+      ]),
+    ).resolves.toEqual([undefined, undefined])
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      daily_window: { used: 1 },
+    })
+
+    await expect(
+      assertWithinRssFeedImportDailyLimit(user, null, randomUUID()),
+    ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
+    await expect(assertWithinRssFeedImportDailyLimit(user, null, rowId)).resolves.toBeUndefined()
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      daily_window: { used: 1 },
+    })
+  })
+
+  it('admits an existing-feed submission when daily creation quota is full until the short window fills', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
+      rss_feed_free_short_limit: 2,
+      rss_feed_free_daily_limit: 1,
+    })
+
+    await assertWithinRssFeedImportDailyLimit(user, null, randomUUID())
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      short_window: { used: 0 },
+      daily_window: { used: 1 },
+    })
+
+    await expect(
+      assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
+    ).resolves.toBeUndefined()
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      short_window: { used: 1 },
+      daily_window: { used: 1 },
+    })
+    await expect(
+      assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
+    ).resolves.toBeUndefined()
+    await expect(
+      assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
+    ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      daily_window: { used: 1 },
     })
   })
 

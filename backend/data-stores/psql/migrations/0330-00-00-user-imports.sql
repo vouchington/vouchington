@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS user_import_requests (
   entity_type import_entity_types NOT NULL,
   topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   rss_feed_id UUID REFERENCES rss_feeds(id) ON DELETE CASCADE,
+  rss_feed_import_row_id UUID,
   topic_recommendation_post_id UUID REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE,
   input_value TEXT NOT NULL,
   followed_at TIMESTAMPTZ,
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS user_import_requests (
     (
       entity_type = 'topic'
       AND rss_feed_id IS NULL
+      AND rss_feed_import_row_id IS NULL
       AND (
         topic_id IS NOT NULL
         OR topic_recommendation_post_id IS NOT NULL
@@ -64,11 +66,17 @@ ON user_import_requests (user_id, topic_recommendation_post_id)
 WHERE topic_recommendation_post_id IS NOT NULL;
 COMMENT ON INDEX idx_user_import_requests__user_topic_recommendation IS 'Makes one missing-topic audit durable per user and recommendation across exact import retries.';
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_import_requests__rss_feed_import_row_id
+ON user_import_requests (rss_feed_import_row_id)
+WHERE rss_feed_import_row_id IS NOT NULL;
+COMMENT ON INDEX idx_user_import_requests__rss_feed_import_row_id IS 'Keeps one RSS import audit per durable import row even when a lost advisory session allows overlapping attempts.';
+
 COMMENT ON TABLE user_import_requests IS 'Tracks user import requests so imported or later-approved entities can be followed for the requesting user.';
 COMMENT ON COLUMN user_import_requests.user_id IS 'The user who submitted the import request.';
 COMMENT ON COLUMN user_import_requests.entity_type IS 'The imported entity family.';
 COMMENT ON COLUMN user_import_requests.topic_id IS 'Topic followed directly or after recommendation approval.';
 COMMENT ON COLUMN user_import_requests.rss_feed_id IS 'RSS feed followed directly or after recommendation approval.';
+COMMENT ON COLUMN user_import_requests.rss_feed_import_row_id IS 'Durable RSS import row whose follow this audit records.';
 COMMENT ON COLUMN user_import_requests.topic_recommendation_post_id IS 'Pending topic recommendation created by the import request.';
 COMMENT ON COLUMN user_import_requests.input_value IS 'Trimmed user-provided import value.';
 COMMENT ON COLUMN user_import_requests.followed_at IS 'When the user was linked to the imported entity.';
@@ -171,6 +179,44 @@ EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__batch_id__row_index
 ON user_rss_feed_import_rows (batch_id, row_index);
+
+ALTER TABLE user_import_requests
+  ADD CONSTRAINT user_import_requests_rss_feed_import_row_id_fkey
+  FOREIGN KEY (rss_feed_import_row_id)
+  REFERENCES user_rss_feed_import_rows(id) ON DELETE SET NULL NOT VALID;
+ALTER TABLE user_import_requests
+  VALIDATE CONSTRAINT user_import_requests_rss_feed_import_row_id_fkey;
+
+
+CREATE TABLE IF NOT EXISTS user_rss_feed_import_row_discoveries (
+  import_row_id UUID NOT NULL REFERENCES user_rss_feed_import_rows(id) ON DELETE CASCADE,
+  discovery_url_id UUID NOT NULL REFERENCES urls(id) ON DELETE CASCADE,
+  generation UUID NOT NULL,
+  crawl_id UUID REFERENCES crawls(id) ON DELETE SET NULL,
+  discovered_feed_url_id UUID REFERENCES urls(id) ON DELETE RESTRICT,
+  failed_at TIMESTAMPTZ,
+  PRIMARY KEY (import_row_id, discovery_url_id),
+  CHECK (discovered_feed_url_id IS NULL OR failed_at IS NULL)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_row_discoveries__discovery_url_id
+ON user_rss_feed_import_row_discoveries (discovery_url_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_row_discoveries__crawl_id
+ON user_rss_feed_import_row_discoveries (crawl_id)
+WHERE crawl_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id
+ON user_rss_feed_import_row_discoveries (discovered_feed_url_id)
+WHERE discovered_feed_url_id IS NOT NULL;
+
+COMMENT ON TABLE user_rss_feed_import_row_discoveries IS 'Durable per-page HTML feed discovery outcomes for an RSS import row.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.import_row_id IS 'The RSS import row that requested this HTML page discovery.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.discovery_url_id IS 'HTML page URL whose crawl is pending or completed for feed discovery.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.generation IS 'Stable pending-crawl fence for this import row and page URL.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.crawl_id IS 'Completed crawl used to resolve the feed link, if retained.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.discovered_feed_url_id IS 'URL registry row for the feed found in the completed HTML crawl.';
+COMMENT ON COLUMN user_rss_feed_import_row_discoveries.failed_at IS 'When the HTML crawl completed without a usable feed link.';
 
 COMMENT ON TABLE user_rss_feed_import_batches IS 'Tracks user-submitted RSS feed import batches processed asynchronously.';
 COMMENT ON COLUMN user_rss_feed_import_batches.user_id IS 'The user who submitted the RSS feed import.';

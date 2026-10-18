@@ -2,6 +2,7 @@
 
 import { ApiError } from '../error'
 import { parseErrorResponseBody } from '../error-helpers'
+import type { RssFeedImportStatus } from './import-export'
 
 export interface ImportProgress {
   batchId: string
@@ -14,8 +15,10 @@ export interface ImportProgress {
 /** Consecutive transient poll failures tolerated while a task is replaced (Spot, deploy). */
 export const IMPORT_POLL_MAX_TRANSIENT_ERRORS = 3
 
-function isTransientPollError(err: unknown): boolean {
-  if (err instanceof ApiError) return err.status >= 500 || err.status === 429
+function isTransientPollError(err: unknown, retryNotFound: boolean): boolean {
+  if (err instanceof ApiError) {
+    return err.status >= 500 || err.status === 429 || (retryNotFound && err.status === 404)
+  }
   return err instanceof TypeError
 }
 
@@ -23,6 +26,7 @@ export async function streamImportProgress(
   importId: string,
   onProgress: (progress: ImportProgress) => void,
   signal?: AbortSignal,
+  onCompleted?: (status: RssFeedImportStatus) => void,
 ): Promise<void> {
   const fetchProgress = async () => {
     const response = await fetch(`/api/v1/my/import/rss-feeds/${encodeURIComponent(importId)}`, {
@@ -39,16 +43,7 @@ export async function streamImportProgress(
       )
     }
 
-    const body = (await response.json()) as {
-      import: {
-        id: string
-        completed_rows: number
-        failed_rows: number
-        total_rows: number
-        pending_rows: number
-        completed_at: string | null
-      }
-    }
+    const body = (await response.json()) as RssFeedImportStatus
     const progress = {
       batchId: body.import.id,
       completed: body.import.completed_rows,
@@ -57,24 +52,26 @@ export async function streamImportProgress(
       done: body.import.pending_rows === 0 || body.import.completed_at !== null,
     }
     onProgress(progress)
+    if (progress.done) onCompleted?.(body)
     return progress.done
   }
 
   let transientErrors = 0
-  const poll = async (): Promise<boolean> => {
+  const poll = async (retryNotFound = false): Promise<boolean> => {
     try {
       const done = await fetchProgress()
       transientErrors = 0
       return done
     } catch (err) {
-      if (!isTransientPollError(err)) throw err
+      if (!isTransientPollError(err, retryNotFound)) throw err
       transientErrors += 1
       if (transientErrors >= IMPORT_POLL_MAX_TRANSIENT_ERRORS) throw err
       return false
     }
   }
 
-  if (signal?.aborted || (await poll())) return
+  // The initial read may reach a replica before the import creation is visible.
+  if (signal?.aborted || (await poll(true))) return
 
   await new Promise<void>((resolve, reject) => {
     let inFlight = false

@@ -7,7 +7,7 @@ import {
   readRetainedFailedSesInboundProcessJobs,
   type RetryableSesInboundJob,
 } from '@queues/ses-inbound/enqueues'
-import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
+import { enqueueCopyrightEmailIntake } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import {
   assertSesInboundProcessJobData,
@@ -57,7 +57,7 @@ export async function processSesInboundEmail(
     copySesInboundObjectToCopyrightEvidence,
     createCopyrightEmailIntake,
     deleteSesInboundObject,
-    enqueueCopyrightEmailIntakeAndWait,
+    enqueueCopyrightEmailIntake,
     loadSesInboundObject,
     loadSesInboundObjectAndHash,
     loadSesInboundObjectVersion,

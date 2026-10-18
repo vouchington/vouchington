@@ -371,7 +371,28 @@ checks:
       fileArgs: none
       always: true
     # CI-only static gates (#3015): `check` runs the repository rules, but impacted-checks would
-    # otherwise list only typechecks and tests. Each command mirrors its static-code-analysis.yml step.
+    # otherwise list only typechecks and tests. Each command mirrors its owning workflow step.
+    - name: dependency-cruise-web
+      command:
+        [
+          pnpm,
+          exec,
+          depcruise,
+          --config,
+          web/.dependency-cruiser.cjs,
+          --output-type,
+          err,
+          --cache,
+          --cache-strategy,
+          content,
+          web,
+        ]
+      fileArgs: none
+      include:
+        - 'web/**'
+        - 'ts-shared/**'
+        - package.json
+        - pnpm-lock.yaml
     - name: ast-grep-rules
       command: [pnpm, run, ast-grep]
       fileArgs: none

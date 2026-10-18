@@ -1,4 +1,4 @@
-import { enqueueCrawlUrlAndWait } from '@queues/crawler/enqueues'
+import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { getLatestHtmlSnapshotCrawlBefore } from '@services/crawls/get-latest-html-snapshot-before'
 import { getCrawlById } from '@services/crawls/get'
@@ -10,32 +10,14 @@ import type {
 import { safeResolveUrl } from '@services/crawls/crawl-url-utils'
 import { addUrl, getUrlById } from '@services/urls'
 import { isPublicRssFeedUrl } from './url-validation.mts'
+import { RssFeedDiscoveryPendingError } from './discovery-pending.mts'
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
+import { enqueueUserRssFeedImportRowContinuation } from '@queues/user-rss-feed-imports/enqueues'
+import onError from '@modules/on-error'
+import { randomUUID } from 'node:crypto'
+import { storeDiscoveredFeedUrl } from './store-discovered-feed-url.mts'
 
-type DiscoverFeedUrlDependencies = {
-  addUrl: typeof addUrl
-  enqueueCrawlUrlAndWait: typeof enqueueCrawlUrlAndWait
-  getCrawlById: typeof getCrawlById
-  getLatestHtmlSnapshotCrawlBefore: typeof getLatestHtmlSnapshotCrawlBefore
-  getOrCreateCrawlerForHostname: typeof getOrCreateCrawlerForHostname
-  getUrlById: typeof getUrlById
-}
-
-const defaultDependencies: DiscoverFeedUrlDependencies = {
-  addUrl,
-  enqueueCrawlUrlAndWait,
-  getCrawlById,
-  getLatestHtmlSnapshotCrawlBefore,
-  getOrCreateCrawlerForHostname,
-  getUrlById,
-}
-
-const CRAWL_DISCOVERY_WAIT_TIMEOUT_MS = 30_000
-const CRAWL_DISCOVERY_RATE_LIMIT_MS = 1_000
-const CRAWL_DISCOVERY_FETCH_TIMEOUT_MS = 10_000
-const CRAWL_DISCOVERY_MAX_RESPONSE_SIZE_BYTES = 256 * 1024
-const PRIORITY_WAITING = 1
-
-// Ordered by preference (first match wins for each type category).
 const FEED_TYPE_ORDER = [
   'application/rss+xml',
   'application/atom+xml',
@@ -43,92 +25,145 @@ const FEED_TYPE_ORDER = [
   'application/json',
 ] as const
 
-/**
- * Returns the first RSS/Atom/JSON Feed URL from crawler HTML links, or null.
- *
- * The crawler worker owns HTML parsing. API-facing RSS validation only reads the
- * persisted `links.alternate` output from the crawl result.
- */
 export function extractFeedLinkFromCrawlLinks(
   links: CrawlerHtmlStructuredObject | null | undefined,
   baseUrl: string,
 ): string | null {
   const alternate = links?.alternate
   if (!isStructuredObject(alternate)) return null
-
   for (const feedType of FEED_TYPE_ORDER) {
-    const hrefs = getAlternateHrefsForType(alternate, feedType)
-    for (const href of hrefs) {
+    for (const href of getAlternateHrefsForType(alternate, feedType)) {
       const resolved = safeResolveUrl(href, baseUrl)
-      if (!resolved) continue
-      if (resolved === baseUrl) continue
-      if (!isPublicRssFeedUrl(resolved)) continue
-      return resolved
+      if (resolved && resolved !== baseUrl && isPublicRssFeedUrl(resolved)) return resolved
     }
   }
-
   return null
 }
 
-/**
- * Runs an HTML crawl through the crawler queue and returns the first
- * autodiscovery feed URL found in the worker-side parsed link graph.
- *
- * Never throws — all errors result in null (the caller then 422s cleanly).
- */
+/** Enqueues an HTML crawl, leaving the import row pending until the crawler records its result. */
 export async function discoverFeedUrlFromHtml(
   pageUrl: string,
-  dependencies: DiscoverFeedUrlDependencies = defaultDependencies,
+  importRowId?: string,
 ): Promise<string | null> {
-  if (process.env.PLAYWRIGHT_TEST === 'true' && process.env.NODE_ENV === 'test') return null
-
-  try {
-    const preserveHttp = new URL(pageUrl).protocol === 'http:'
-    const url = await dependencies.addUrl(null, pageUrl, {
-      preserveHttp,
-      skipCreatedEvents: true,
-    })
-    const hostnameId = url?.hostname?.id
-    if (!url || !hostnameId) return null
-
-    await dependencies.getOrCreateCrawlerForHostname(null, hostnameId)
-    // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #2853
-    const result = await dependencies.enqueueCrawlUrlAndWait(
-      { urlId: url.id },
-      {
-        hostnameId,
-        crawlTimeoutMs: CRAWL_DISCOVERY_FETCH_TIMEOUT_MS,
-        ensureCrawlerForRedirects: true,
-        ignoreRobotsTxt: isRobotsTxtIgnoredForFeeds(),
-        maxResponseSizeBytes: CRAWL_DISCOVERY_MAX_RESPONSE_SIZE_BYTES,
-        preserveHttpRedirects: preserveHttp,
-        priority: PRIORITY_WAITING,
-        rateLimitMs: CRAWL_DISCOVERY_RATE_LIMIT_MS,
-        skipCanonicalUrl: true,
-        skipChunks: true,
-        skipEmbedResolution: true,
-        skipCreatedEventsForRedirects: true,
-        waitTimeoutMs: CRAWL_DISCOVERY_WAIT_TIMEOUT_MS,
-      },
-    )
-    if (!result) return null
-    const crawledUrl = await dependencies.getUrlById(result.url_id)
-    const baseUrl = crawledUrl?.url ?? url.url
-
-    if (result.response_status_code === 304) {
-      const previousCrawl = await dependencies.getLatestHtmlSnapshotCrawlBefore(
-        result.url_id,
-        result.crawl_id,
-      )
-      return extractFeedLinkFromCrawlLinks(previousCrawl?.links, baseUrl)
-    }
-    if (result.response_status_code < 200 || result.response_status_code >= 300) return null
-
-    const crawl = await dependencies.getCrawlById(result.crawl_id, result.url_id)
-    return extractFeedLinkFromCrawlLinks(crawl?.links, baseUrl)
-  } catch {
-    return null
+  if (!importRowId) return null
+  const preserveHttp = new URL(pageUrl).protocol === 'http:'
+  const url = await addUrl(null, pageUrl, { preserveHttp, skipCreatedEvents: true })
+  const hostnameId = url?.hostname?.id
+  if (!url || !hostnameId) return null
+  let state = await readImportDiscoveryState(importRowId, url.id)
+  if (state?.discovered_feed_url_id) {
+    const discovered = await getUrlById(state.discovered_feed_url_id, { readOnly: false })
+    if (discovered) return discovered.url
   }
+  if (state?.failed_at) return null
+
+  await getOrCreateCrawlerForHostname(null, hostnameId)
+  const requested = await write<{ generation: string }>(sql`/* requestRssFeedImportPageDiscovery */
+    INSERT INTO user_rss_feed_import_row_discoveries (
+      import_row_id, discovery_url_id, generation
+    )
+    SELECT ${importRowId}::uuid, ${url.id}::uuid, ${randomUUID()}::uuid
+    FROM user_rss_feed_import_rows import_row
+    WHERE import_row.id = ${importRowId} AND import_row.completed_at IS NULL
+      AND import_row.failed_at IS NULL
+    ON CONFLICT (import_row_id, discovery_url_id) DO NOTHING
+    RETURNING generation
+  `)
+  const requestedGeneration = requested.rows[0]?.generation
+  if (!requestedGeneration) state ??= await readImportDiscoveryState(importRowId, url.id)
+  const generation = requestedGeneration ?? state?.generation
+  if (!generation) return null
+  if (!requestedGeneration && state?.discovered_feed_url_id) {
+    const discovered = await getUrlById(state.discovered_feed_url_id, { readOnly: false })
+    if (discovered) return discovered.url
+  }
+  if (!requestedGeneration && state?.failed_at) return null
+  await enqueueBulkCrawlUrls(
+    [
+      {
+        urlId: url.id,
+        options: {
+          importRowId,
+          importDiscoveryGeneration: generation,
+          crawlTimeoutMs: 10_000,
+          ensureCrawlerForRedirects: true,
+          ignoreRobotsTxt: isRobotsTxtIgnoredForFeeds(),
+          maxResponseSizeBytes: 256 * 1024,
+          preserveHttpRedirects: preserveHttp,
+          skipCanonicalUrl: true,
+          skipChunks: true,
+          skipEmbedResolution: true,
+          skipCreatedEventsForRedirects: true,
+        },
+      },
+    ],
+    { hostnameId, rateLimitMs: 1_000 },
+  )
+  throw new RssFeedDiscoveryPendingError()
+}
+
+/** Called after crawl persistence; recovery can replay the pending row if enqueue fails. */
+export async function completeRssFeedImportDiscovery(
+  importRowId: string,
+  requestedUrlId: string,
+  generation: string,
+  result: { url_id: string; crawl_id: string; response_status_code: number } | null,
+): Promise<void> {
+  let feedUrl: string | null = null
+  if (
+    result &&
+    (result.response_status_code === 304 ||
+      (result.response_status_code >= 200 && result.response_status_code < 300))
+  ) {
+    const crawledUrl = await getUrlById(result.url_id, { readOnly: false })
+    if (crawledUrl) {
+      const crawl =
+        result.response_status_code === 304
+          ? await getLatestHtmlSnapshotCrawlBefore(result.url_id, result.crawl_id, {
+              readOnly: false,
+            })
+          : await getCrawlById(result.crawl_id, result.url_id, { readOnly: false })
+      feedUrl = extractFeedLinkFromCrawlLinks(crawl?.links, crawledUrl.url)
+    }
+  }
+  const discoveredFeedUrlId = feedUrl ? await storeDiscoveredFeedUrl(feedUrl) : null
+  const { rows } = await write<{ batch_id: string }>(sql`/* completeRssFeedImportDiscovery */
+    UPDATE user_rss_feed_import_row_discoveries discovery
+    SET crawl_id = ${result?.crawl_id ?? null}::uuid,
+        discovered_feed_url_id = ${discoveredFeedUrlId}::uuid,
+        failed_at = CASE WHEN ${discoveredFeedUrlId}::uuid IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END
+    FROM user_rss_feed_import_rows import_row
+    WHERE discovery.import_row_id = ${importRowId}::uuid
+      AND discovery.discovery_url_id = ${requestedUrlId}::uuid
+      AND discovery.generation = ${generation}::uuid
+      AND discovery.crawl_id IS NULL AND discovery.discovered_feed_url_id IS NULL
+      AND discovery.failed_at IS NULL
+      AND import_row.id = discovery.import_row_id
+      AND import_row.completed_at IS NULL AND import_row.failed_at IS NULL
+    RETURNING import_row.batch_id
+  `)
+  const row = rows[0]
+  if (row) await enqueueUserRssFeedImportRowContinuation(row.batch_id, importRowId).catch(onError)
+}
+
+async function readImportDiscoveryState(
+  importRowId: string,
+  discoveryUrlId: string,
+): Promise<{
+  generation: string
+  discovered_feed_url_id: string | null
+  failed_at: Date | null
+} | null> {
+  const { rows } = await write<{
+    generation: string
+    discovered_feed_url_id: string | null
+    failed_at: Date | null
+  }>(sql`/* readRssFeedImportPageDiscoveryState */
+    SELECT generation, discovered_feed_url_id, failed_at
+    FROM user_rss_feed_import_row_discoveries
+    WHERE import_row_id = ${importRowId} AND discovery_url_id = ${discoveryUrlId}
+  `)
+  return rows[0] ?? null
 }
 
 function getAlternateHrefsForType(
@@ -138,13 +173,9 @@ function getAlternateHrefsForType(
   const hrefs: string[] = []
   const exact = alternate[feedType]
   if (exact !== undefined) hrefs.push(...structuredValueToStrings(exact))
-
-  const feedTypeLower = feedType.toLowerCase()
   for (const [type, value] of Object.entries(alternate)) {
-    if (type === feedType) continue
-    if (type.toLowerCase().trim() === feedTypeLower) {
+    if (type !== feedType && type.toLowerCase().trim() === feedType.toLowerCase())
       hrefs.push(...structuredValueToStrings(value))
-    }
   }
   return hrefs
 }

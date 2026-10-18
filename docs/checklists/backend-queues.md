@@ -34,10 +34,10 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   only that work; a limiter a group cannot express, such as a token limiter charged by actual
   usage; a domain that needs both a domain-wide concurrency cap and per-entity ordering keys,
   since a job has one ordering key; a batch worker; or a distinct runtime.
-- **Never wait on a job result.** New code never makes a request or job wait for another job's
-  result (`addAndWait`, `waitUntilFinished`, polling a job's return value); return a pending resource
-  and let clients poll. The crawler's remaining wait path is being removed in
-  [#2853](https://github.com/vouchington/vouchington/issues/2853).
+- **Never wait on a job result.** Requests and jobs do not wait for another job's result
+  (`addAndWait`, `waitUntilFinished`, or polling a job's return value). Return a pending resource
+  and let clients poll its durable status. A dependent job resumes from persisted state after the
+  producer's outcome.
 - **Fan out in pages.** A job that enqueues one job per row of a query pages through a unique
   cursor and checks the target queue's depth before each page. HTTP routes enqueue one dispatcher,
   never the rows. Use the shared paged-dispatcher helper with DynamicConfig page, queue-depth,

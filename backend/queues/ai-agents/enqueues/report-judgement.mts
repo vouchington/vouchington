@@ -50,8 +50,7 @@ function buildReportJudgementJob(
  * Awaitable variant for manual staff-triggered re-runs: propagates enqueue failures so the
  * caller can surface an error instead of falsely reporting the job as queued.
  */
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
-export async function enqueueReportJudgementAndWait(
+export async function enqueueReportJudgement(
   entityType: string,
   entityId: string,
   triggeringReportId: string,

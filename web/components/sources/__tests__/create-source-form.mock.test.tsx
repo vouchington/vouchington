@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import * as clientApi from '@/lib/api/client'
 import * as importExportApi from '@/lib/api/client/import-export'
 import * as importStreamApi from '@/lib/api/client/import-stream'
+import * as sourceImportApi from '@/lib/api/client/source-import'
 import { CreateSourceForm } from '../create-source-form'
 import { expectTextareaCmdEnterSubmits } from '@/test-helpers/form-keyboard'
 
@@ -42,6 +43,14 @@ vi.mock(import('@/lib/api/client'), () => ({
   createSource: vi.fn<VitestLooseMock>(),
 }))
 
+vi.mock(import('@/lib/api/client/source-import'), async importOriginal => ({
+  ...(await importOriginal()),
+  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue({
+    entityId: 'feed-id',
+    topicSlug: 'test-feed',
+  }),
+}))
+
 vi.mock(import('@/lib/api/client/import-export'), () => ({
   importRssFeeds: vi.fn<VitestLooseMock>(),
 }))
@@ -63,6 +72,10 @@ const mockImport = {
 describe('CreateSourceForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(sourceImportApi.waitForSourceImport).mockResolvedValue({
+      entityId: 'feed-id',
+      topicSlug: 'test-feed',
+    })
     vi.mocked(importStreamApi.streamImportProgress).mockResolvedValue(undefined)
   })
 
@@ -82,10 +95,8 @@ describe('CreateSourceForm', () => {
 
   it('always calls createSource with follow: true', async () => {
     vi.mocked(clientApi.createSource).mockResolvedValue({
-      status: 'created',
-      rss_feed_id: 'rss-feed-id-1',
-      topic_id: 'topic-id-1',
-      topic_slug: 'test-feed',
+      import: { ...mockImport, total_rows: 1, pending_rows: 1 },
+      status_url: `/api/v1/my/import/rss-feeds/${mockImport.id}`,
     })
 
     render(<CreateSourceForm />)
@@ -137,10 +148,8 @@ describe('CreateSourceForm', () => {
 
   it('Cmd+Enter and Ctrl+Enter on the URL textarea submit the form; plain Enter does not', () => {
     vi.mocked(clientApi.createSource).mockResolvedValue({
-      status: 'created',
-      rss_feed_id: 'rss-feed-id-1',
-      topic_id: 'topic-id-1',
-      topic_slug: 'test-feed',
+      import: { ...mockImport, total_rows: 1, pending_rows: 1 },
+      status_url: `/api/v1/my/import/rss-feeds/${mockImport.id}`,
     })
 
     render(<CreateSourceForm />)

@@ -13,6 +13,7 @@ Not partitioned — growth: unbounded.
 | `entity_type`                  | `import_entity_types`      | no       |                              |          |           |           | The imported entity family.                                  |
 | `topic_id`                     | `uuid`                     | yes      |                              |          |           |           | Topic followed directly or after recommendation approval.    |
 | `rss_feed_id`                  | `uuid`                     | yes      |                              |          |           |           | RSS feed followed directly or after recommendation approval. |
+| `rss_feed_import_row_id`       | `uuid`                     | yes      |                              |          |           |           | Durable RSS import row whose follow this audit records.      |
 | `topic_recommendation_post_id` | `uuid`                     | yes      |                              |          |           |           | Pending topic recommendation created by the import request.  |
 | `input_value`                  | `text`                     | no       |                              |          |           |           | Trimmed user-provided import value.                          |
 | `followed_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the user was linked to the imported entity.             |
@@ -26,7 +27,7 @@ _none_
 
 **Check constraints:**
 
-- `user_import_requests_check`: `CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))`
+- `user_import_requests_check`: `CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND (rss_feed_import_row_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))`
 - `user_import_requests_check1`: `CHECK ((((followed_at IS NULL) AND (topic_id IS NULL) AND (rss_feed_id IS NULL)) OR ((followed_at IS NOT NULL) AND ((topic_id IS NOT NULL) OR (rss_feed_id IS NOT NULL)))))`
 - `user_import_requests_input_value_check`: `CHECK ((input_value = TRIM(BOTH FROM input_value)))`
 - `user_import_requests_input_value_check1`: `CHECK ((char_length(input_value) > 0))`
@@ -34,6 +35,7 @@ _none_
 **Foreign keys:**
 
 - `user_import_requests_rss_feed_id_fkey`: `FOREIGN KEY (rss_feed_id) REFERENCES rss_feeds(id) ON DELETE CASCADE`
+- `user_import_requests_rss_feed_import_row_id_fkey`: `FOREIGN KEY (rss_feed_import_row_id) REFERENCES user_rss_feed_import_rows(id) ON DELETE SET NULL`
 - `user_import_requests_topic_id_fkey`: `FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE`
 - `user_import_requests_topic_recommendation_post_id_fkey`: `FOREIGN KEY (topic_recommendation_post_id) REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE`
 - `user_import_requests_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
@@ -41,6 +43,7 @@ _none_
 **Indexes:**
 
 - `idx_user_import_requests__rss_feed_id`: `CREATE INDEX idx_user_import_requests__rss_feed_id ON public.user_import_requests USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
+- `idx_user_import_requests__rss_feed_import_row_id`: `CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)`
 - `idx_user_import_requests__topic_id`: `CREATE INDEX idx_user_import_requests__topic_id ON public.user_import_requests USING btree (topic_id) WHERE (topic_id IS NOT NULL)`
 - `idx_user_import_requests__topic_recommendation`: `CREATE INDEX idx_user_import_requests__topic_recommendation ON public.user_import_requests USING btree (topic_recommendation_post_id) WHERE ((topic_recommendation_post_id IS NOT NULL) AND (followed_at IS NULL))`
 - `idx_user_import_requests__topic_recommendation_post_id`: `CREATE INDEX idx_user_import_requests__topic_recommendation_post_id ON public.user_import_requests USING btree (topic_recommendation_post_id) WHERE (topic_recommendation_post_id IS NOT NULL)`

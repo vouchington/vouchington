@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createInstanceFromHostname } from './create-instance.mts'
 import { generateInstanceDetails, createInstanceInTransaction } from './create-instance-helpers.mts'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
@@ -35,17 +35,12 @@ describe('generateInstanceDetails', () => {
 })
 
 describe('createInstanceFromHostname', () => {
-  it('continues with unclassified metadata when the injected classifier transport fails', async () => {
+  it('returns before NodeInfo classification populates metadata', async () => {
     const user = await createTestUserDirect()
     const hostname = `fedi-classification-failure-${randomSuffix()}.example.com`
-    const classifier = vi.fn<(hostname: string) => Promise<never>>(async () => {
-      throw new Error('provider unavailable')
-    })
-
-    const result = await createInstanceFromHostname(user, WEB_PROVENANCE, hostname, classifier)
+    const result = await createInstanceFromHostname(user, WEB_PROVENANCE, hostname)
 
     expect(result.status).toBe('created')
-    expect(classifier).toHaveBeenCalledWith(hostname)
     const attributes = await getFediverseInstanceAttributes(result.topic_id)
     expect(attributes).toMatchObject({
       software: null,

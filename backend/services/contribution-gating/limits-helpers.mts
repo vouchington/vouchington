@@ -1,4 +1,6 @@
 import type { RateLimiter } from '@data-stores/valkey-rate-limiter'
+import { createCodedError } from '@modules/on-error/create-coded-error'
+import { CONTRIBUTION_QUOTA_EXCEEDED } from '@modules/on-error/error-codes'
 import { getContributionLimitValue, getContributionLimitWindowSeconds } from './limits-config.mts'
 import { UNLIMITED_CONTRIBUTION_LIMIT } from './limit-defaults.mts'
 import type {
@@ -37,4 +39,12 @@ export function isWindowAllowed(usage: ContributionLimitUsage, increment: boolea
 
 export function limitKey(userId: string, action: ContributionLimitAction): string {
   return `${action}:${userId}`
+}
+
+export function createContributionLimitExceededError() {
+  return createCodedError(
+    429,
+    'Contribution limit exceeded. Please try again later.',
+    CONTRIBUTION_QUOTA_EXCEEDED,
+  )
 }

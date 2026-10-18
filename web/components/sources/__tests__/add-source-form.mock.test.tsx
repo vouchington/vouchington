@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import * as sourceImport from '@/lib/api/client/source-import'
 
 const { mockCreateSource, mockPush, mockTopicHref, mockOnError, mockOnSuccess } = vi.hoisted(
   () => ({
@@ -23,6 +24,14 @@ vi.mock(
     }) as unknown as typeof import('next/navigation'),
 )
 
+vi.mock(import('@/lib/api/client/source-import'), async importOriginal => ({
+  ...(await importOriginal()),
+  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue({
+    entityId: 'feed-id',
+    topicSlug: 'test-feed',
+  }),
+}))
+
 vi.mock(import('@/lib/links/entity-href'), () => ({
   topicHref: mockTopicHref,
 }))
@@ -38,8 +47,25 @@ describe('AddSourceForm', () => {
   beforeEach(() => {
     mockCreateSource.mockReset()
     mockPush.mockReset()
+    mockOnError.mockReset()
+    mockOnSuccess.mockReset()
     mockTopicHref.mockReturnValue('/topics/test-feed')
-    mockCreateSource.mockResolvedValue({ topic_slug: 'test-feed' })
+    vi.mocked(sourceImport.waitForSourceImport).mockResolvedValue({
+      entityId: 'feed-id',
+      topicSlug: 'test-feed',
+    })
+    mockCreateSource.mockResolvedValue({
+      import: {
+        id: 'import-id',
+        total_rows: 1,
+        pending_rows: 1,
+        completed_rows: 0,
+        failed_rows: 0,
+        completed_at: null,
+        created_at: '2026-01-01T00:00:00.000Z',
+      },
+      status_url: '/api/v1/my/import/rss-feeds/import-id',
+    })
   })
 
   it('renders with correct input label for news kind', () => {
@@ -121,6 +147,7 @@ describe('AddSourceForm', () => {
     await waitFor(() => {
       expect(mockOnError).toHaveBeenCalledWith(expect.any(Error), {
         fallback: 'Failed to add source',
+        displayMessageByCode: expect.any(Object),
         tags: { form: 'add-source' },
       })
     })

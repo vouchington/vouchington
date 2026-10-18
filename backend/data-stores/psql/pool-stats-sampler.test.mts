@@ -23,7 +23,7 @@ function whenPoolRowsEmitted(sentinel: number): Promise<void> {
     originalEmit(table, record)
     if (table !== 'pg_pool_stats' || !('waiting' in record) || record.waiting !== sentinel) return
     count += 1
-    if (count === 3) {
+    if (count === 4) {
       spy.mockRestore()
       emitted.resolve()
     }
@@ -80,18 +80,21 @@ describe('pool-stats-sampler', () => {
       write: fakePool(10, 4, sentinel),
       read: fakePool(8, 8, sentinel),
       advisoryLock: fakePool(1, 0, sentinel),
+      jobSerialization: fakePool(2, 1, sentinel),
       readMax: 12,
       writeMax: 20,
       advisoryLockMax: 4,
+      jobSerializationMax: 4,
     }
     const emitted = whenPoolRowsEmitted(sentinel)
     emitPoolStats(pools)
     await emitted
     const rows = await readPoolRows(sentinel)
-    expect(rows).toHaveLength(3)
+    expect(rows).toHaveLength(4)
     const readRow = rows.find(r => r.pool === 'read')!
     const writeRow = rows.find(r => r.pool === 'write')!
     const advisoryLockRow = rows.find(r => r.pool === 'advisory-lock')!
+    const jobSerializationRow = rows.find(r => r.pool === 'job-serialization')!
     expect(Number(writeRow.total)).toBe(10)
     expect(Number(writeRow.idle)).toBe(4)
     expect(Number(writeRow.max)).toBe(20)
@@ -101,6 +104,9 @@ describe('pool-stats-sampler', () => {
     expect(Number(advisoryLockRow.total)).toBe(1)
     expect(Number(advisoryLockRow.idle)).toBe(0)
     expect(Number(advisoryLockRow.max)).toBe(4)
+    expect(Number(jobSerializationRow.total)).toBe(2)
+    expect(Number(jobSerializationRow.idle)).toBe(1)
+    expect(Number(jobSerializationRow.max)).toBe(4)
   })
 
   it('does not start a timer when analytics is disabled', () => {
@@ -126,7 +132,7 @@ describe('pool-stats-sampler', () => {
     await sampler[Symbol.asyncDispose]()
     expect(clock.dispose).toHaveBeenCalledOnce()
     clock.fire()
-    expect(await readPoolRows(sentinel)).toHaveLength(3)
+    expect(await readPoolRows(sentinel)).toHaveLength(4)
   })
 
   it('unrefs and disposes its real Node interval', async () => {
@@ -165,6 +171,7 @@ describe('pool-stats-sampler', () => {
         writePool: pools.write,
         readPool: pools.read,
         advisoryLockPool: pools.advisoryLock,
+        jobSerializationPool: pools.jobSerialization,
       },
       { readMax: 1, writeMax: 1, advisoryLockMax: 1 },
       true,
@@ -183,9 +190,11 @@ function sampledPools(waiting: number): SampledPools {
     write: fakePool(1, 1, waiting),
     read: fakePool(1, 1, waiting),
     advisoryLock: fakePool(0, 0, waiting),
+    jobSerialization: fakePool(0, 0, waiting),
     readMax: 1,
     writeMax: 1,
     advisoryLockMax: 1,
+    jobSerializationMax: 1,
   }
 }
 

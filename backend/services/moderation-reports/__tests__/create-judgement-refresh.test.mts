@@ -176,11 +176,11 @@ function insertFreshJudgement(
 }
 
 async function awaitReportJudgementSideEffect<T>(run: () => Promise<T>): Promise<T> {
-  const enqueue = reportJudgementEnqueue.enqueueReportJudgementAndWait
+  const enqueue = reportJudgementEnqueue.enqueueReportJudgement
   const pending: Promise<unknown>[] = []
   const settled = Promise.withResolvers<void>()
   const enqueueSpy = vi
-    .spyOn(reportJudgementEnqueue, 'enqueueReportJudgementAndWait')
+    .spyOn(reportJudgementEnqueue, 'enqueueReportJudgement')
     .mockImplementation((...args) => {
       const result = Promise.resolve(enqueue(...args)).finally(() => {
         settled.resolve()

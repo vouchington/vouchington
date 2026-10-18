@@ -4,7 +4,7 @@
  * instead of falling back to `system`.
  */
 import { randomUUID } from 'node:crypto'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { getFirstRssFeedImportRowId } from '@voucha/test-helpers/rss-feed-import-rows'
 import {
   createTestUserWithAge,
@@ -17,29 +17,23 @@ import {
   insertContentProvenanceOAuthClient,
 } from '@voucha/test-helpers/data-stores/psql/content-provenance'
 import type { PrivateUser } from '@services/users/types'
-import { createSourceFromUrl } from '@services/rss-feeds/create-source'
-import {
-  SYSTEM_PROVENANCE,
-  type ContentProvenance,
-} from '@voucha/types/entities/content-provenance'
+import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import {
   getRssFeedImport,
   processRssFeedImportRow,
   submitRssFeedImport,
 } from './rss-feed-imports.mts'
 
-// The real feed writer with only the network fetch replaced, so the feed row is really created.
-function createRealSource() {
-  return vi.fn<typeof createSourceFromUrl>((user, provenance, url, options) =>
-    createSourceFromUrl(user, provenance, url, {
-      ...options,
-      fetchAndClassifyFeedImpl: async () => ({
-        kind: 'feed',
-        title: 'Provenance import feed',
-        feedType: 'article',
-      }),
+const feedFetchOptions = {
+  dependencies: {
+    fetchUrl: async () => ({
+      response: new Response(
+        '<rss version="2.0"><channel><title>Provenance import feed</title></channel></rss>',
+        { headers: { 'content-type': 'application/rss+xml' } },
+      ),
+      responseSignal: new AbortController().signal,
     }),
-  )
+  },
 }
 
 const newFeedUrl = () => `https://import-provenance-${randomUUID()}.example.com/feed.xml`
@@ -56,19 +50,17 @@ describe('user RSS feed import provenance', () => {
   })
 
   async function submitAndProcess(provenance: ContentProvenance) {
-    const createSource = createRealSource()
-    const created = await submitRssFeedImport(user, provenance, [newFeedUrl()], {
+    const importUser = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    const created = await submitRssFeedImport(importUser, provenance, [newFeedUrl()], {
       should_follow_imported_feeds: false,
     })
     await processRssFeedImportRow(
       created.import.id,
       await getFirstRssFeedImportRowId(created.import.id),
-      {
-        createSourceFromUrlImpl: createSource,
-      },
+      { crawlerRssOptions: feedFetchOptions },
     )
-    const status = await getRssFeedImport(user.id, created.import.id)
-    return { created, createSource, status }
+    const status = await getRssFeedImport(importUser.id, created.import.id)
+    return { created, status }
   }
 
   it.each([
@@ -80,14 +72,11 @@ describe('user RSS feed import provenance', () => {
   ])('records the submitting channel for %s on the batch and its feed', async (_label, build) => {
     const provenance: ContentProvenance = build()
 
-    const { created, createSource, status } = await submitAndProcess(provenance)
+    const { created, status } = await submitAndProcess(provenance)
 
     await expect(
       readTestContentProvenance('user_rss_feed_import_batches', created.import.id),
     ).resolves.toEqual(provenance)
-    expect(createSource).toHaveBeenCalledTimes(1)
-    expect(createSource.mock.calls[0]![1]).toEqual(provenance)
-    expect(createSource.mock.calls[0]![1]).not.toEqual(SYSTEM_PROVENANCE)
     expect(status?.rows[0]).toMatchObject({ status: 'source_created' })
     await expect(
       readTestContentProvenance('rss_feeds', status!.rows[0]!.entity_id!),
@@ -97,7 +86,6 @@ describe('user RSS feed import provenance', () => {
   it('keeps each batch on its own provenance when jobs run interleaved', async () => {
     const web: ContentProvenance = { createdVia: 'web', oauthClientId: null }
     const mcp: ContentProvenance = { createdVia: 'mcp', oauthClientId }
-    const createSource = createRealSource()
     const [webImport, mcpImport] = await Promise.all([
       submitRssFeedImport(user, web, [newFeedUrl()], { should_follow_imported_feeds: false }),
       submitRssFeedImport(user, mcp, [newFeedUrl()], { should_follow_imported_feeds: false }),
@@ -109,7 +97,7 @@ describe('user RSS feed import provenance', () => {
           created.import.id,
           await getFirstRssFeedImportRowId(created.import.id),
           {
-            createSourceFromUrlImpl: createSource,
+            crawlerRssOptions: feedFetchOptions,
           },
         ),
       ),

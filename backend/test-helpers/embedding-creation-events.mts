@@ -133,8 +133,6 @@ export function createOwnedEmbeddingQueue(
         }),
       ),
     add: (...args: Parameters<Queue['add']>) => start(() => queue.add(...args)),
-    addAndWait: (...args: Parameters<Queue['addAndWait']>) =>
-      start(() => queue.addAndWait(...args)),
     releaseOnCleanup: (action: () => void) => {
       assertOpen()
       release.push(action)

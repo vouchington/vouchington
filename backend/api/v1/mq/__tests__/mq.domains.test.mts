@@ -73,6 +73,7 @@ describe('background queue domain routes', () => {
         'cache-purge',
         'email-digests',
         'entity-listeners',
+        'fediverse-instances',
         'follower-distributions',
         'imports',
         'kagi-smallweb',

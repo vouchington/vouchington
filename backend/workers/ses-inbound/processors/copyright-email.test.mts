@@ -41,7 +41,7 @@ describe('processCopyrightInboundEmail', () => {
         throw Object.assign(new Error('untrusted MIME'), { status: 422 })
       },
       recordCopyrightEmailParse,
-      enqueueCopyrightEmailIntakeAndWait: async () => {},
+      enqueueCopyrightEmailIntake: async () => {},
     }
 
     await processCopyrightInboundEmail(

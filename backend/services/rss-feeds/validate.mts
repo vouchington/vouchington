@@ -7,14 +7,19 @@ import { normalizeContentLanguageTag } from '@ts-shared/languages/content-langua
 import { CrawlerInvalidContentTypeError } from '@modules/on-error/errors'
 import { discoverFeedUrlFromHtml } from './discover-feed.mts'
 import { isYouTubeChannelFeedUrl } from '@modules/utils'
-
-const MISSING_FEED_CONTENT_ERROR_CODE = 'RSS_FEED_URL_MISSING_CONTENT'
+import { resumeRssFeedImportPageDiscovery } from './read-discovery-outcome.mts'
+import {
+  createMissingFeedContentError,
+  MISSING_FEED_CONTENT_ERROR_CODE,
+} from './missing-feed-content-error.mts'
 
 type FeedValidationDeps = {
   crawlerRss?: typeof CrawlerRss
+  crawlerRssOptions?: Parameters<typeof CrawlerRss>[1]
   discoverFeedUrlFromHtml?: typeof discoverFeedUrlFromHtml
   buildBoundedRssFeedItemsFromFeed?: typeof buildBoundedRssFeedItemsFromFeed
   signal?: AbortSignal
+  importRowId?: string
 }
 
 function resolveFeedValidationDeps(deps: FeedValidationDeps = {}) {
@@ -24,22 +29,6 @@ function resolveFeedValidationDeps(deps: FeedValidationDeps = {}) {
     buildBoundedRssFeedItemsFromFeed:
       deps.buildBoundedRssFeedItemsFromFeed ?? buildBoundedRssFeedItemsFromFeed,
   }
-}
-
-function createMissingFeedContentError(): Error & {
-  code: string
-  status: number
-  statusCode: number
-} {
-  const error = new Error('RSS feed URL did not return feed content') as Error & {
-    code: string
-    status: number
-    statusCode: number
-  }
-  error.code = MISSING_FEED_CONTENT_ERROR_CODE
-  error.status = 422
-  error.statusCode = 422
-  return error
 }
 
 export async function assertRssFeedUrlExists(
@@ -97,11 +86,21 @@ export async function fetchAndClassifyFeed(
     return { kind: 'feed', title: null, feedType: 'article' }
   }
 
+  if (deps.importRowId) {
+    const discovery = await resumeRssFeedImportPageDiscovery(
+      rssFeedUrl,
+      deps.importRowId,
+      discoverFeedUrlFromHtmlFn,
+    )
+    if (discovery) return discovery
+  }
+
   let parsedFeed: Record<string, unknown>
   try {
-    const result = await (deps.signal
-      ? crawlerRss(rssFeedUrl, { signal: deps.signal })
-      : crawlerRss(rssFeedUrl))
+    const result = await crawlerRss(rssFeedUrl, {
+      ...deps.crawlerRssOptions,
+      ...(deps.signal ? { signal: deps.signal } : {}),
+    })
     if ('redirect' in result && result.redirect) {
       return {
         kind: 'redirect',
@@ -130,13 +129,9 @@ export async function fetchAndClassifyFeed(
       err instanceof CrawlerInvalidContentTypeError &&
       err.contentType.toLowerCase().includes('html')
     ) {
-      try {
-        const discovered = await discoverFeedUrlFromHtmlFn(rssFeedUrl)
-        if (discovered && discovered !== rssFeedUrl) {
-          return { kind: 'redirect', location: discovered, isPermanent: false }
-        }
-      } catch {
-        // Discovery failed — fall through to the clean 422 below.
+      const discovered = await discoverFeedUrlFromHtmlFn(rssFeedUrl, deps.importRowId)
+      if (discovered && discovered !== rssFeedUrl) {
+        return { kind: 'redirect', location: discovered, isPermanent: false }
       }
     }
     // 3. Any other error (network, parse, non-HTML content-type, no feed link found) → 422.

@@ -12863,7 +12863,7 @@
           "tool": {
             "name": "submit_rss_feed",
             "title": "Submit RSS Feed",
-            "description": "submit: Submit a feed URL, returning the existing feed when already submitted. Follow defaults to true.",
+            "description": "submit: Submit a feed URL for asynchronous processing. Poll status_url for the result. Follow defaults to true.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -12895,29 +12895,61 @@
             },
             "outputSchema": {
               "type": "object",
+              "additionalProperties": false,
               "properties": {
-                "status": {
-                  "enum": ["created", "upvoted"]
+                "import": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "completed_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "completed_rows": {
+                      "type": "number"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "failed_rows": {
+                      "type": "number"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "pending_rows": {
+                      "type": "number"
+                    },
+                    "total_rows": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "completed_at",
+                    "completed_rows",
+                    "created_at",
+                    "failed_rows",
+                    "id",
+                    "pending_rows",
+                    "total_rows"
+                  ],
+                  "type": "object"
                 },
-                "rss_feed_id": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "topic_id": {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                "topic_slug": {
+                "status_url": {
                   "type": "string"
                 }
               },
-              "required": ["status", "rss_feed_id", "topic_id", "topic_slug"],
-              "additionalProperties": false
+              "required": ["import", "status_url"]
             },
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": false,
-              "idempotentHint": true
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"],

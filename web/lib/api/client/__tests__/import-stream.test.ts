@@ -38,16 +38,62 @@ describe('streamImportProgress', () => {
     ])
   })
 
-  it('throws ApiError on non-200 response', async () => {
+  it('throws ApiError on a non-transient response', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn<VitestLooseMock>().mockResolvedValue(new Response('Not Found', { status: 404 })),
+      vi.fn<VitestLooseMock>().mockResolvedValue(new Response('Forbidden', { status: 403 })),
     )
 
     await expect(streamImportProgress('import-1', () => {})).rejects.toMatchObject({
       name: 'ApiError',
-      status: 404,
+      status: 403,
     } satisfies Partial<ApiError>)
+  })
+
+  it('retries a first-poll 404 while the import reaches the read replica', async () => {
+    vi.useFakeTimers()
+    const firstPoll = Promise.withResolvers<void>()
+    const mockFetch = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => {
+        firstPoll.resolve()
+        return new Response('Not Found', { status: 404 })
+      })
+      .mockResolvedValueOnce(importResponse())
+    vi.stubGlobal('fetch', mockFetch)
+
+    const received: ImportProgress[] = []
+    const promise = streamImportProgress('import-1', progress => received.push(progress))
+    const handled = promise.catch((err: unknown) => err)
+    await firstPoll.promise
+    await vi.advanceTimersByTimeAsync(2000)
+    await expect(handled).resolves.toBeUndefined()
+
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(received).toEqual([
+      { batchId: 'import-1', completed: 2, failed: 0, total: 2, done: true },
+    ])
+  })
+
+  it('rejects a second-poll 404 after retrying the first 404', async () => {
+    vi.useFakeTimers()
+    const firstPoll = Promise.withResolvers<void>()
+    const mockFetch = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => {
+        firstPoll.resolve()
+        return new Response('Not Found', { status: 404 })
+      })
+      .mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const promise = streamImportProgress('import-1', () => {})
+    const handled = promise.catch((err: unknown) => err)
+    await firstPoll.promise
+    await vi.advanceTimersByTimeAsync(2000)
+
+    await expect(handled).resolves.toMatchObject({ name: 'ApiError', status: 404 })
+    expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
   it('uses the import id in the fetch URL', async () => {

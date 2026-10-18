@@ -24,6 +24,14 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## RSS feed submission
+
+REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` return the same pending import and
+`status_url`. Clients poll the private import status endpoint and use the completed row's
+`entity_id` to open the feed, or map its stable `error_code` to localized copy. Native client adoption is tracked in
+[clients #368](https://github.com/vouchington/vouchington-clients/issues/368); the producer lands
+first.
+
 ## Community moderation MCP handoff
 
 The four community moderation tools use exact `community-moderation:read` and

@@ -5,10 +5,7 @@ import { ai_agents } from '../queues.mts'
 
 const jobIdFor = (submissionId: string) => `copyright_submission_guidance_${submissionId}`
 
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
-export async function enqueueCopyrightSubmissionGuidanceAndWait(
-  submissionId: string,
-): Promise<void> {
+export async function enqueueCopyrightSubmissionGuidance(submissionId: string): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
     jobId: jobIdFor(submissionId),
@@ -32,10 +29,10 @@ export async function enqueueOrRetryCopyrightSubmissionGuidance(
       retry(): Promise<void>
       remove(): Promise<void>
     } | null>
-    enqueue: typeof enqueueCopyrightSubmissionGuidanceAndWait
+    enqueue: typeof enqueueCopyrightSubmissionGuidance
   } = {
     getJob: (...args) => ai_agents.getJob(...args),
-    enqueue: enqueueCopyrightSubmissionGuidanceAndWait,
+    enqueue: enqueueCopyrightSubmissionGuidance,
   },
 ): Promise<void> {
   const retained = await dependencies.getJob(jobIdFor(submissionId), { excludeData: true })

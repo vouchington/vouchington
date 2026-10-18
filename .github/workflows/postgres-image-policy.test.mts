@@ -89,7 +89,8 @@ describe('PostgreSQL workflow image policy', () => {
     const globalSetupProcess = 1
     const superuserReservedConnections = 3
     const worstCaseBudget =
-      (vitestMaxWorkers + globalSetupProcess) * (testPoolMax + testPoolMax + advisoryLockMax) +
+      (vitestMaxWorkers + globalSetupProcess) *
+        (testPoolMax + testPoolMax + advisoryLockMax + advisoryLockMax) +
       superuserReservedConnections
 
     expect(ciPostgresMaxConnections).toBeGreaterThanOrEqual(worstCaseBudget)
