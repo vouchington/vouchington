@@ -6,7 +6,8 @@
  * hostname attachment checks, initial state changes, and the real create path's enqueue effects.
  */
 
-import { createTestTopic, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { createTestTopic } from './entities/create-test-entities.mts'
+import { WEB_PROVENANCE } from './entities/content-provenance.mts'
 import { createRandomString } from '@voucha/test-helpers/data'
 import { createRssFeed } from '../services/rss-feeds/create.mts'
 

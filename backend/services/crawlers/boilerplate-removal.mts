@@ -16,9 +16,12 @@ export const searchCrawlerBoilerplateRemovalUrlCandidatesByHostnameId = async (
   parentPath: string,
   limit: number = 3,
   queryOptions: QueryOptions = {},
+  now: () => Date = () => new Date(),
 ): Promise<BoilerplateRemovalUrlCandidate[]> => {
+  const sampledNowMs = now().getTime()
+  if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
-    Date.now() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
 
   // Match URLs directly under the parent path (e.g., /blog/ for parent_path=/blog)

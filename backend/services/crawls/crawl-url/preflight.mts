@@ -78,7 +78,7 @@ export async function loadCrawlPreflight(
   const previousSnapshotReusable = isSnapshotReusable(
     previousHtmlSha256,
     previousHtmlSnapshotUploadedAt,
-    new Date(),
+    snapshotDecisionDate(dependencies?.now),
   )
   const crawl = await createCrawl(url.id, crawler.id, {
     last_modified_at: previousCrawl?.last_modified_at || null,
@@ -97,6 +97,12 @@ export async function loadCrawlPreflight(
     previousHtmlSnapshotUploadedAt,
     url,
   }
+}
+
+function snapshotDecisionDate(now: (() => Date) | undefined): Date {
+  const nowMs = (now?.() ?? new Date()).getTime()
+  if (!Number.isFinite(nowMs)) throw new RangeError('Invalid HTML snapshot decision time')
+  return new Date(nowMs)
 }
 
 function isLocalHostname(hostname: string) {

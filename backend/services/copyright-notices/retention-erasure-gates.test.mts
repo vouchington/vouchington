@@ -10,6 +10,7 @@ import { useFakeCopyrightEvidenceBucket } from '@voucha/test-helpers/services/co
 import { releasePreservationHoldAt } from '@voucha/test-helpers/services/copyright-notices/retention-preservation-holds'
 import { createRetentionTerritorialCase } from '@voucha/test-helpers/services/copyright-notices/retention-territorial-case'
 import { createRetentionMinimalCase } from '@voucha/test-helpers/services/copyright-notices/retention-minimal-case'
+import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { sweepCopyrightEvidenceRetention } from './index.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -88,6 +89,42 @@ describe('copyright evidence retention gates', () => {
       failed: [],
     })
     await watched.expectErased()
+  })
+
+  it('erases at the exact 30-day lifecycle edge, not one millisecond before', async () => {
+    await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
+    const atEdge = await createWatchedCase()
+    const afterEdge = await createWatchedCase()
+    const atAggregate = await getCopyrightNoticePrivateAggregate(atEdge.noticeId)
+    const afterAggregate = await getCopyrightNoticePrivateAggregate(afterEdge.noticeId)
+    expect(atAggregate?.lifecycleEvents).toHaveLength(1)
+    expect(afterAggregate?.lifecycleEvents).toHaveLength(1)
+    const atEvent = atAggregate?.lifecycleEvents[0]
+    const afterEvent = afterAggregate?.lifecycleEvents[0]
+    if (!atEvent || !afterEvent) throw new Error('Retention lifecycle event disappeared')
+    const atNow = atEvent.created_at.getTime() + 30 * DAY_MS
+    const afterNow = afterEvent.created_at.getTime() + 30 * DAY_MS
+
+    await expect(
+      sweepCopyrightEvidenceRetention({
+        now: new Date(atNow - 1),
+        noticeIds: [atEdge.noticeId],
+      }),
+    ).resolves.toEqual(nothing)
+    await atEdge.expectUntouched()
+
+    await expect(
+      sweepCopyrightEvidenceRetention({ now: new Date(atNow), noticeIds: [atEdge.noticeId] }),
+    ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
+    await atEdge.expectErased()
+
+    await expect(
+      sweepCopyrightEvidenceRetention({
+        now: new Date(afterNow + 1),
+        noticeIds: [afterEdge.noticeId],
+      }),
+    ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
+    await afterEdge.expectErased()
   })
 
   it.each(['eu_dsa', 'uk'] as const)(

@@ -134,6 +134,24 @@ describe('stored-secret encryption key', () => {
 })
 
 describe('native pruning coverage artifacts', () => {
+  it('runs the real RSS tier snapshot contract after migration and publishes its producer coverage', () => {
+    const { steps } = explainAnalyzeJob()
+    const migration = stepIndexRunning(steps, 'node data-stores/psql/migrate.mts')
+    const rss = stepIndexRunning(steps, 'node backend/scripts/check-rss-feed-crawl-tiers.mts')
+    const seed = stepIndexRunning(steps, 'node backend/scripts/seeds/dev-seed.mts')
+    const converter = steps[stepIndexRunning(steps, 'node node_modules/c8/bin/c8.js report')]
+
+    expect(migration).toBeLessThan(rss)
+    expect(rss).toBeLessThan(seed)
+    expect(steps[rss]?.env?.NODE_DISABLE_COMPILE_CACHE).toBe('1')
+    expect(steps[rss]?.env?.NODE_V8_COVERAGE).toBe(
+      '${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8',
+    )
+    expect(converter?.run).toContain(
+      "--include 'backend/services/rss-feeds/{get-to-fetch,crawl-config,update,update-fields,update-state-helpers}.mts'",
+    )
+  })
+
   it('checks native planner and rollback contracts after migration and before seeding', () => {
     const { steps } = explainAnalyzeJob()
     const migration = stepIndexRunning(steps, 'node data-stores/psql/migrate.mts')

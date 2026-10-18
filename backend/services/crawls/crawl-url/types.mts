@@ -36,6 +36,8 @@ export type CrawlUrlDependencies = {
   onRedirectError: (error: Error) => void
   resolveDnsCanary: () => Promise<void>
   resolveSafeCrawlerAddresses: typeof resolveSafeCrawlerAddresses
+  /** Internal business-clock source for snapshot-retention decisions. */
+  now: () => Date
 }
 
 export type CrawlUrlReturn = CrawlBasic | null

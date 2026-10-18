@@ -17,17 +17,15 @@ describe('cleanupAbandonedUploads staged-source concurrency', () => {
   })
 
   it('bounds cleanup above the advisory-lock pool size', async () => {
+    const now = new Date()
+    const uploadStagedAt = new Date(now.getTime() - 2 * 60 * 60 * 1000)
     const imageIds = await Promise.all(
       Array.from({ length: 5 }, async () => {
         const { image_id } = await createImageUploadUrl(user, {
           contentType: 'image/jpeg',
           contentLength: 1024,
         })
-        await backdateImageUploadStagedAt(
-          image_id,
-          new Date(Date.now() - 2 * 60 * 60 * 1000),
-          'complete',
-        )
+        await backdateImageUploadStagedAt(image_id, uploadStagedAt, 'complete')
         return image_id
       }),
     )
@@ -44,12 +42,12 @@ describe('cleanupAbandonedUploads staged-source concurrency', () => {
       active -= 1
     })
 
-    const cleanup = cleanupAbandonedUploads()
+    const cleanup = cleanupAbandonedUploads({ imageIds, now })
     await saturated.promise
     expect(maximumActive).toBe(4)
     release.resolve()
     const result = await cleanup
 
-    expect(result.stagedSourcesDeleted).toBeGreaterThanOrEqual(imageIds.length)
+    expect(result.stagedSourcesDeleted).toBe(imageIds.length)
   })
 })
