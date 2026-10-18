@@ -4,6 +4,8 @@
 
 PostgreSQL final-state schema invariants run as the `backend-postgres-schema` Vitest project against a freshly migrated database. The production migration task also checks the live schema after applying migrations; see [staging schema drift](postgresql/reference-migrations-views-and-config-driven.md#staging-schema-drift-pre-launch-only).
 
+The dedicated schema workflow also checks staging RSS seed data after its normal fresh migration. A schema snapshot cannot establish that a configuration-dependent seed ran in the intended order or that its publisher relation actually exists, so this check reads the resulting rows without applying SQL inside a test.
+
 ## Coverage visibility
 
 `backend-postgres-schema` runs without `--coverage`, and the backend area's patch-coverage gate merges LCOV only from the module, unit, and credentialed suites. Source whose only non-mocked call site is a schema test (for example `verify-live-schema.mts` and the live-DB catalog helpers) is correctly tested but invisible to that gate, so it is wrapped in `/* v8 ignore start */` / `/* v8 ignore stop */`.
