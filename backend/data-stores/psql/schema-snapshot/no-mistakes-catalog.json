@@ -552,6 +552,9 @@
     "list_visibilities": {
       "values": ["private", "unlisted", "public"]
     },
+    "mcp_call_audit_event_audiences": {
+      "values": ["user", "community_moderation", "brand", "admin", "legal"]
+    },
     "mcp_call_audit_event_outcomes": {
       "values": [
         "accepted",
@@ -566,9 +569,6 @@
         "insufficient_scope",
         "rate_limited"
       ]
-    },
-    "mcp_call_audit_event_surfaces": {
-      "values": ["mcp", "admin_mcp"]
     },
     "media_delivery_desired_states": {
       "values": ["allow", "withheld"]
@@ -51268,6 +51268,10 @@
     },
     "mcp_call_audit_events": {
       "checkConstraints": {
+        "mcp_call_audit_events_audience_check": {
+          "definition": "CHECK ((audience = ANY (ARRAY['user'::mcp_call_audit_event_audiences, 'community_moderation'::mcp_call_audit_event_audiences, 'brand'::mcp_call_audit_event_audiences, 'admin'::mcp_call_audit_event_audiences, 'legal'::mcp_call_audit_event_audiences])))",
+          "validated": true
+        },
         "mcp_call_audit_events_check": {
           "definition": "CHECK (((tool_option IS NULL) OR (tool_name IS NOT NULL)))",
           "validated": true
@@ -51277,7 +51281,7 @@
           "validated": true
         },
         "mcp_call_audit_events_check2": {
-          "definition": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
+          "definition": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((audience = 'legal'::mcp_call_audit_event_audiences) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
           "validated": true
         },
         "mcp_call_audit_events_check3": {
@@ -51294,10 +51298,6 @@
         },
         "mcp_call_audit_events_resource_check": {
           "definition": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
-          "validated": true
-        },
-        "mcp_call_audit_events_surface_check": {
-          "definition": "CHECK ((surface = ANY (ARRAY['mcp'::mcp_call_audit_event_surfaces, 'admin_mcp'::mcp_call_audit_event_surfaces])))",
           "validated": true
         },
         "mcp_call_audit_events_tool_name_check": {
@@ -51329,6 +51329,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 6
+        },
+        "audience": {
+          "comment": "MCP server audience that received the call.",
+          "dataType": "mcp_call_audit_event_audiences",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
         },
         "copyright_rationale_ciphertext": {
           "comment": "Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.",
@@ -51401,7 +51411,7 @@
           "ordinalPosition": 11
         },
         "resource": {
-          "comment": "Protected resource URL of the MCP surface that received the call.",
+          "comment": "Protected resource URL of the MCP audience that received the call.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -51410,18 +51420,8 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "surface": {
-          "comment": "MCP surface that received the call: mcp (user) or admin_mcp.",
-          "dataType": "mcp_call_audit_event_surfaces",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        },
         "tool_name": {
-          "comment": "Name of a registered tool on the surface for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.",
+          "comment": "Name of a registered tool on the audience for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
