@@ -50,6 +50,16 @@
     "issue": 2763
   },
   {
+    "annotation": "backfillCategoriesForTopicAliases",
+    "reason": "The update runs after the candidate scan and item locks, so it can return a short page while matching rows remain beyond the LIMIT; the re-read after the batch write must see rows a concurrent writer changed (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
+    "issue": 3114
+  },
+  {
+    "annotation": "backfillCategoriesForTopicAliases.candidateItems",
+    "reason": "The terminal candidate scan re-reads after the batch write to see rows a concurrent writer changed; a short update page does not prove exhaustion (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
+    "issue": 3114
+  },
+  {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "reason": "Each bounded discovery follows the preceding publication-locked relation deletion and must find only the remaining active rows",
     "issue": 2612
@@ -602,6 +612,11 @@
   {
     "annotation": "lockPostPublicationCaptures",
     "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
+    "issue": 3114
+  },
+  {
+    "annotation": "lockPostPublicationRssFeedScopes",
+    "reason": "Per-item lock order: the final feed scopes must be locked before the dirty-work upsert, because the impact re-read after the item-row wait can include feeds the caller's pre-lock scan missed (backend/services/post-publication/capture-rss-feeds.mts:recordRssFeedTopicPublicationChanges)",
     "issue": 3114
   },
   {

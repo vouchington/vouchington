@@ -36,10 +36,7 @@ export async function recordRssFeedDiscoverabilityChanges(
   return work
 }
 
-/**
- * Retains topic impacts for RSS items that have not been assigned to a story yet. Callers hold the
- * feeds' publication scopes via `lockPostPublicationRssFeedScopes` before writing the changed rows.
- */
+/** Retains topic impacts for RSS items that have not been assigned to a story yet. */
 export async function recordRssFeedTopicPublicationChanges(
   query: TransactionQuery,
   changes: readonly RssFeedTopicPublicationChange[],
@@ -58,6 +55,8 @@ export async function recordRssFeedTopicPublicationChanges(
   const work: PostPublicationDirtyWork[] = []
   for (let offset = 0; offset < feedIds.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = feedIds.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
+    // oxlint-disable-next-line no-await-in-loop -- sorted batches preserve the global feed lock order.
+    await lockPostPublicationRssFeedScopes(query, batch)
     // oxlint-disable-next-line no-await-in-loop -- each dirty-work upsert is bounded.
     const batchWork = await upsertPostPublicationDirtyWork(query, 'rss_feed', batch, [
       'post_topics_changed',
