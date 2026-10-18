@@ -31,7 +31,7 @@
   },
   {
     "annotation": "assertReferralProgramExists",
-    "reason": "The program is checked at backend/services/referral-program-link-validations/create-and-link.mts:76 before slug validation and the validation-row insert, then again at backend/services/topics/validation.mts:127-146 after the insert, which must see the new validation row and lock-time program state; dropping the first check would change which 4xx a bad or duplicate slug with a missing program returns",
+    "reason": "Two allowed mechanisms: the check at backend/services/referral-program-link-validations/create-and-link.mts:76 runs before slug validation and the insert, so it sets which 4xx a request gets (a bad or duplicate slug with a missing program); the check at backend/services/topics/validation.mts:127-146 runs after the validation-row insert and must see that new row",
     "issue": 3120
   },
   {
@@ -288,11 +288,6 @@
     "annotation": "findOpenCaseForEntity",
     "reason": "Moderation report and case steps repeat per entity",
     "issue": 2609
-  },
-  {
-    "annotation": "getAdministratorRefundRequestForMembershipKey",
-    "reason": "The transaction first checks idempotency, then rereads after an operation/request insert conflict to hydrate the already-persisted request before comparing its fingerprint (backend/services/memberships/refund-reconciliation/administrator-request.mts:18-22, backend/services/memberships/refund-reconciliation/administrator-request.mts:83-89)",
-    "issue": 3120
   },
   {
     "annotation": "getAutomodFeedbackContext:agent",
