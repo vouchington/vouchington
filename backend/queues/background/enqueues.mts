@@ -2,6 +2,7 @@ import type { JobOptions, Queue } from 'glide-mq'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type {
   CreateBulkEnqueueFunctionOptions,
+  CreateEnqueueFunctionOptions,
   GuardedBulkEnqueue,
 } from '@data-stores/valkey-glide-mq/glide-mq-enqueue-types'
 import type {
@@ -12,17 +13,19 @@ import { BACKGROUND_QUEUE_NAME } from './config.mts'
 import type { BackgroundJobDefinition } from './types.mts'
 import { background } from './queues.mts'
 
-type EnqueueOptions = Parameters<typeof createEnqueueFunction>[0]
-type BackgroundEnqueueOptions = Pick<EnqueueOptions, 'decorateError' | 'retry'>
+type BackgroundEnqueueOptions<TCallContext = unknown> = Pick<
+  CreateEnqueueFunctionOptions<string, TCallContext>,
+  'decorateError' | 'retry'
+>
 type Enqueue<TData> = (
   data: TData,
   perCallOpts?: Partial<JobOptions>,
   callContext?: unknown,
 ) => ReturnType<Queue['add']>
-type BulkEnqueue<TInput> = (
+type BulkEnqueue<TInput, TCallContext = unknown> = (
   inputs: TInput[],
   perCallOpts?: Partial<JobOptions>,
-  callContext?: unknown,
+  callContext?: TCallContext,
 ) => ReturnType<Queue['addBulk']>
 type GuardedEnqueue<TData> = <TActual extends TData>(
   data: TActual &
@@ -38,9 +41,9 @@ type GuardedEnqueue<TData> = <TActual extends TData>(
   callContext?: unknown,
 ) => ReturnType<Queue['add']>
 
-type BulkEnqueueFactory = <TInput, TData, TName extends string>(
-  options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName>,
-) => BulkEnqueue<TInput>
+type BulkEnqueueFactory = <TInput, TData, TName extends string, TCallContext = unknown>(
+  options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName, TCallContext>,
+) => BulkEnqueue<TInput, TCallContext>
 
 // The public helper overloads below prove the payload shape before entering this generic adapter.
 const createVerifiedBulkEnqueue = createBulkEnqueueFunction as unknown as BulkEnqueueFactory
@@ -81,10 +84,11 @@ export function createBackgroundEnqueue<TData>(
 export function createBackgroundBulkEnqueue<
   TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TData,
+  TCallContext = unknown,
 >(
   job: BackgroundJobDefinition<TData, true> & { sensitive: true },
   buildJob: TBuildJob,
-  options?: BackgroundEnqueueOptions,
+  options?: BackgroundEnqueueOptions<TCallContext>,
   ...contract: (TBuildJob extends (
     input: Parameters<TBuildJob>[0],
     index: number,
@@ -92,14 +96,15 @@ export function createBackgroundBulkEnqueue<
     ? []
     : [never]) &
     (ReturnType<TBuildJob>['data'] extends TData ? [] : [never])
-): BulkEnqueue<Parameters<TBuildJob>[0]>
+): BulkEnqueue<Parameters<TBuildJob>[0], TCallContext>
 export function createBackgroundBulkEnqueue<
   TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TData,
+  TCallContext = unknown,
 >(
   job: BackgroundJobDefinition<TData, false>,
   buildJob: TBuildJob,
-  options?: BackgroundEnqueueOptions,
+  options?: BackgroundEnqueueOptions<TCallContext>,
   ...contract: (TBuildJob extends (
     input: Parameters<TBuildJob>[0],
     index: number,
@@ -112,7 +117,7 @@ export function createBackgroundBulkEnqueue<
       : ReturnType<TBuildJob>['data'] extends NoSensitiveFields<ReturnType<TBuildJob>['data']>
         ? []
         : [never])
-): GuardedBulkEnqueue<Parameters<TBuildJob>[0]>
+): GuardedBulkEnqueue<Parameters<TBuildJob>[0], TCallContext>
 export function createBackgroundBulkEnqueue<
   TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TData,

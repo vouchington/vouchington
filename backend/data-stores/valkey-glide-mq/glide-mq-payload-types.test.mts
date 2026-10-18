@@ -119,6 +119,28 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
   // @ts-expect-error opaque actual inputs cannot bypass the bulk sensitive-field guard
   void enqueueOptionalBulkPayload([opaqueBulkInput])
 
+  const enqueueWithCallContext = createBulkEnqueueFunction({
+    queue,
+    queueName: 'queue',
+    jobName: 'typed-call-context',
+    buildJob: (input: { id: string }) => ({ data: input }),
+    decorateError: (
+      error,
+      context: {
+        queueName: string
+        jobName: string
+        count: number
+        callContext?: { operation: 'sweep' }
+      },
+    ) => {
+      void context.callContext?.operation
+      return error
+    },
+  })
+  void enqueueWithCallContext([{ id: 'one' }], undefined, { operation: 'sweep' })
+  // @ts-expect-error bulk call context remains tied to decorateError's context type
+  void enqueueWithCallContext([{ id: 'one' }], undefined, { operation: 'manual' })
+
   // @ts-expect-error bulk builders cannot require arguments beyond the supplied input and index
   createBulkEnqueueFunction({
     queue,
@@ -193,7 +215,24 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
   const enqueueBackgroundIds = createBackgroundBulkEnqueue(
     registeredIdJob,
     (input: { id: string }) => ({ data: input }),
+    {
+      decorateError: (
+        error,
+        context: {
+          queueName: string
+          jobName: string
+          count: number
+          callContext?: { operation: 'sweep' }
+        },
+      ) => {
+        void context.callContext?.operation
+        return error
+      },
+    },
   )
+  void enqueueBackgroundIds([{ id: 'one' }], undefined, { operation: 'sweep' })
+  // @ts-expect-error background bulk call context remains typed through the wrapper
+  void enqueueBackgroundIds([{ id: 'one' }], undefined, { operation: 'manual' })
   // @ts-expect-error background bulk actual inputs cannot smuggle sensitive fields
   void enqueueBackgroundIds([widerBackgroundPayload])
 

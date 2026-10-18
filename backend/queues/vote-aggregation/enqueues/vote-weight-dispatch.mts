@@ -112,8 +112,11 @@ export function enqueueVoteWeightAgeMilestones(
   data: Parameters<typeof enqueueAgeMilestonesJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.window && (data.milestoneIndex !== undefined || data.afterId !== undefined)) {
-    const safeData = safeAgeMilestonesData(data)
+  const safeData = safeAgeMilestonesData(data)
+  if (
+    safeData.window &&
+    (safeData.milestoneIndex !== undefined || safeData.afterId !== undefined)
+  ) {
     return enqueueBulkReactivatingFinished({
       queue: voteAggregation,
       inputs: [safeData],
@@ -121,15 +124,15 @@ export function enqueueVoteWeightAgeMilestones(
       enqueueBulk: inputs => enqueueBulkAgeContinuations(inputs.map(safeAgeMilestonesData)),
     }).then(jobs => jobs[0] ?? null)
   }
-  return enqueueAgeMilestonesJob(data, buildBackfillDispatcherJobOptions(options))
+  return enqueueAgeMilestonesJob(safeData, buildBackfillDispatcherJobOptions(options))
 }
 
 export function enqueueVoteWeightMembershipExpirations(
   data: Parameters<typeof enqueueMembershipExpirationsJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.window && data.after) {
-    const safeData = safeMembershipExpirationsData(data)
+  const safeData = safeMembershipExpirationsData(data)
+  if (safeData.window && safeData.after) {
     return enqueueBulkReactivatingFinished({
       queue: voteAggregation,
       inputs: [safeData],
@@ -138,15 +141,15 @@ export function enqueueVoteWeightMembershipExpirations(
         enqueueBulkExpirationContinuations(inputs.map(safeMembershipExpirationsData)),
     }).then(jobs => jobs[0] ?? null)
   }
-  return enqueueMembershipExpirationsJob(data, buildBackfillDispatcherJobOptions(options))
+  return enqueueMembershipExpirationsJob(safeData, buildBackfillDispatcherJobOptions(options))
 }
 
 export function enqueueVoteWeightFamilySourceChanges(
   data: Parameters<typeof enqueueFamilySourceChangesJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.window && data.branches) {
-    const safeData = safeFamilySourceChangesData(data)
+  const safeData = safeFamilySourceChangesData(data)
+  if (safeData.window && safeData.branches) {
     return enqueueBulkReactivatingFinished({
       queue: voteAggregation,
       inputs: [safeData],
@@ -155,15 +158,15 @@ export function enqueueVoteWeightFamilySourceChanges(
         enqueueBulkFamilyContinuations(inputs.map(safeFamilySourceChangesData)),
     }).then(jobs => jobs[0] ?? null)
   }
-  return enqueueFamilySourceChangesJob(data, buildBackfillDispatcherJobOptions(options))
+  return enqueueFamilySourceChangesJob(safeData, buildBackfillDispatcherJobOptions(options))
 }
 
 export function enqueueVoteWeightDirtyMarkers(
   data: Parameters<typeof enqueueDirtyMarkersJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.afterId) {
-    const safeData = safeDirtyMarkersData(data)
+  const safeData = safeDirtyMarkersData(data)
+  if (safeData.afterId) {
     return enqueueBulkReactivatingFinished({
       queue: voteAggregation,
       inputs: [safeData],
@@ -171,5 +174,5 @@ export function enqueueVoteWeightDirtyMarkers(
       enqueueBulk: inputs => enqueueBulkDirtyContinuations(inputs.map(safeDirtyMarkersData)),
     }).then(jobs => jobs[0] ?? null)
   }
-  return enqueueDirtyMarkersJob(data, buildBackfillDispatcherJobOptions(options))
+  return enqueueDirtyMarkersJob(safeData, buildBackfillDispatcherJobOptions(options))
 }
