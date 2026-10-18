@@ -6,13 +6,14 @@ Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in
 
 Not partitioned — growth: unbounded.
 
-| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                        |
-| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------- |
-| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 receipt identity and creation order.                                                                    |
-| `operation_key`     | `text`                     | no       |                              |          |           |           | SHA-256 of the logical operation, selected model, and exact provider input.                                    |
-| `agent_slug`        | `text`                     | no       |                              |          |           |           | Agent that reserved the paid call.                                                                             |
-| `result_ciphertext` | `text`                     | yes      |                              |          |           |           | Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure. |
-| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 receipt identity.                                                        |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                     |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 receipt identity and creation order.                                                                                 |
+| `operation_key`     | `text`                     | no       |                              |          |           |           | SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request. |
+| `agent_slug`        | `text`                     | no       |                              |          |           |           | Agent that reserved the paid call.                                                                                          |
+| `request_sha256`    | `text`                     | no       |                              |          |           |           | SHA-256 of the selected model and exact provider input reserved for this operation; mismatched retries require review.      |
+| `result_ciphertext` | `text`                     | yes      |                              |          |           |           | Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.              |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 receipt identity.                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,6 +24,7 @@ Not partitioned — growth: unbounded.
 **Check constraints:**
 
 - `ai_agent_call_receipts_operation_key_check`: `CHECK ((char_length(operation_key) = 64))`
+- `ai_agent_call_receipts_request_sha256_check`: `CHECK ((char_length(request_sha256) = 64))`
 - `ai_agent_call_receipts_result_ciphertext_check`: `CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))`
 
 **Foreign keys:**

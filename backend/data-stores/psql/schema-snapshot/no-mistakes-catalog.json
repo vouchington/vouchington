@@ -5330,6 +5330,10 @@
           "definition": "CHECK ((char_length(operation_key) = 64))",
           "validated": true
         },
+        "ai_agent_call_receipts_request_sha256_check": {
+          "definition": "CHECK ((char_length(request_sha256) = 64))",
+          "validated": true
+        },
         "ai_agent_call_receipts_result_ciphertext_check": {
           "definition": "CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))",
           "validated": true
@@ -5354,7 +5358,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "id": {
           "comment": "UUIDv7 receipt identity and creation order.",
@@ -5367,7 +5371,7 @@
           "ordinalPosition": 1
         },
         "operation_key": {
-          "comment": "SHA-256 of the logical operation, selected model, and exact provider input.",
+          "comment": "SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
@@ -5375,6 +5379,16 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
+        },
+        "request_sha256": {
+          "comment": "SHA-256 of the selected model and exact provider input reserved for this operation; mismatched retries require review.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
         },
         "result_ciphertext": {
           "comment": "Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.",
@@ -5384,7 +5398,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         }
       },
       "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
