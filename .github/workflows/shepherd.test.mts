@@ -35,12 +35,10 @@ const workflow = load(workflowText) as Workflow
 describe('shepherd workflow', () => {
   it('triggers on new PR conversation comments', () => {
     expect(workflow.on?.issue_comment?.types).toEqual(['created'])
-
     const gateJob = workflow.jobs?.['gate']
     expect(gateJob?.if).toContain('github.event.issue.pull_request != null')
     expect(gateJob?.if).toContain("contains(github.event.comment.body, '/shepherd')")
   })
-
   it('uses the same authorized associations as /fix (OWNER + COLLABORATOR + MEMBER)', () => {
     const gateJob = workflow.jobs?.['gate']
     expect(gateJob?.if).toContain(`fromJSON('["OWNER","COLLABORATOR","MEMBER"]')`)
@@ -172,7 +170,9 @@ describe('shepherd workflow', () => {
     expect(dispatchJob?.needs).toContain('gate')
     expect(dispatchJob?.needs).toContain('render-prompt')
     expect(dispatchJob?.if).toContain("needs.gate.outputs.should_dispatch == 'true'")
-    expect(dispatchJob?.uses).toBe('./.github/workflows/harness-dispatch.yml')
+    expect(dispatchJob?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/workflows\/harness-dispatch\.yml@[0-9a-f]{40}$/u,
+    )
     expect(dispatchJob?.secrets).toEqual({ HARNESS_API_KEY: '${{ secrets.HARNESS_API_KEY }}' })
     expect(dispatchJob?.with?.['agent-ref']).toBe(
       'refs/heads/${{ needs.gate.outputs.pr_head_ref }}',

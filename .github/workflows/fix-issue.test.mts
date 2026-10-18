@@ -33,7 +33,6 @@ type Workflow = {
 }
 
 const fixIssue = read('.github/workflows/fix-issue.yml')
-const harnessDispatch = read('.github/workflows/harness-dispatch.yml')
 const fixIssuePrompt = read('docs/prompts/automation/fix-issue.md')
 const parsedIssue = load(fixIssue) as Workflow
 
@@ -183,7 +182,9 @@ describe('fix-issue workflow', () => {
   it('dispatches with the explicit Harness secret', () => {
     const dispatchJob = parsedIssue.jobs?.['dispatch']
 
-    expect(dispatchJob?.uses).toBe('./.github/workflows/harness-dispatch.yml')
+    expect(dispatchJob?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/workflows\/harness-dispatch\.yml@[0-9a-f]{40}$/u,
+    )
     expect(dispatchJob?.secrets).toEqual({ HARNESS_API_KEY: '${{ secrets.HARNESS_API_KEY }}' })
     expect(dispatchJob?.needs).toContain('gate')
     expect(dispatchJob?.needs).toContain('render-prompt')
@@ -192,8 +193,10 @@ describe('fix-issue workflow', () => {
 
   it('posts the session link on the issue after a successful dispatch', () => {
     const commentJob = parsedIssue.jobs?.['comment-session']
-    const commentStep = commentJob?.steps?.find(
-      step => step.uses === './.github/actions/comment-harness-session',
+    const commentStep = commentJob?.steps?.find(step =>
+      step.uses?.startsWith(
+        'vouchington/vouchington-tooling/.github/actions/comment-harness-session@',
+      ),
     )
 
     expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")
@@ -233,7 +236,6 @@ describe('fix-issue workflow', () => {
     expect(fixIssuePrompt).toContain('## Root cause')
     expect(fixIssuePrompt).toContain('## Implementation choice')
     expect(fixIssuePrompt).toContain('## Options considered')
-    expect(harnessDispatch).toContain('ci/harness-session-dispatch.mts')
   })
 
   it('passes source issue context for Slack autofixer threads', () => {

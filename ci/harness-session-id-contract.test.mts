@@ -1,8 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { dispatchHarnessSession } from './harness-session-dispatch.mts'
 import { HARNESS_SESSION_ID, validateCheckpoint } from './shepherd-checkpoint.mts'
-import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const valid = 'sess-0123abcd'
 
@@ -18,40 +16,6 @@ describe('Auto Harness session id contract', () => {
     ]) {
       expect(HARNESS_SESSION_ID.test(invalid)).toBe(false)
     }
-  })
-
-  it('resumes a grammar-valid session with the default priority and no timeout', async () => {
-    const bodies = new Map<string, unknown>()
-    const fetchImplementation = vi.fn<typeof fetch>(async (input, init) => {
-      const route = `${init?.method ?? 'GET'} ${new URL(stringFromUnknown(input)).pathname}`
-      if (init?.body !== undefined) bodies.set(route, JSON.parse(stringFromUnknown(init.body)))
-      return new Response(
-        JSON.stringify({
-          created: false,
-          id: valid,
-          url: `https://harness.example.com/sessions/${valid}`,
-        }),
-        { headers: { 'content-type': 'application/json' }, status: 200 },
-      )
-    })
-
-    await expect(
-      dispatchHarnessSession(
-        {
-          HARNESS_API_KEY: 'token',
-          HARNESS_CONCURRENCY_ID: 'shepherd-9319',
-          HARNESS_DISPATCH_ENABLED: 'true',
-          HARNESS_PROMPT: 'continue',
-          HARNESS_REPOSITORY_ID: 'repo-filaments',
-          HARNESS_RESUME_SESSION_ID: valid,
-          HARNESS_URL: 'https://harness.example.com',
-        },
-        fetchImplementation,
-      ),
-    ).resolves.toMatchObject({ id: valid })
-    const resumeBody = bodies.get(`POST /api/v1/sessions/${valid}/resume`)
-    expect(resumeBody).toMatchObject({ priority: 0 })
-    expect(resumeBody).not.toHaveProperty('timeout')
   })
 
   it('rejects shepherd checkpoints whose session id breaks the grammar', () => {

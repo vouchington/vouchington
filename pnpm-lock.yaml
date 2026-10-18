@@ -13732,9 +13732,6 @@ importers:
       '@vouchington/localization-compiler':
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
-      auto-harness-client:
-        specifier: ^0.8.1
-        version: 0.8.1
       coverage-check:
         specifier: ^0.17.0
         version: 0.17.0(@vitest/coverage-v8@5.0.4)(vitest@5.0.4)
@@ -19575,11 +19572,6 @@ packages:
 
   atomically@2.1.1:
     resolution: {integrity: sha512-P4w9o2dqARji6P7MHprklbfiArZAWvo07yW7qs3pdljb3BWr12FIB7W+p0zJiuiVsUpRO0iZn1kFFcpPegg0tQ==}
-
-  auto-harness-client@0.8.1:
-    resolution: {integrity: sha512-XOvROoriZjI/55LoVilr1YbneQEY46aBu7n7w6VqRL/J1BCWTWrD3T1JH+R5dR6YiNn9gJ4SZml7jnGIs+5IaQ==}
-    engines: {node: '>=20'}
-    hasBin: true
 
   await-lock@3.0.0:
     resolution: {integrity: sha512-eO6fLiSnrJrMdjWMNK8zbVRXPs2TKJg78iKZd9wDpN3na5tcoV6EoeiOlMgk2QaAQ1gIrK1YuMsJHXWqz89tSA==}
@@ -28553,8 +28545,6 @@ snapshots:
     dependencies:
       stubborn-fs: 2.0.0
       when-exit: 2.1.5
-
-  auto-harness-client@0.8.1: {}
 
   await-lock@3.0.0: {}
 

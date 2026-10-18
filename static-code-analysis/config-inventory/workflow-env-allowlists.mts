@@ -37,43 +37,11 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'COVERAGE_HEAD',
   'COVERAGE_PR',
   'COVERAGE_REPO',
-  // Read through dependency-free Harness/checkpoint CLIs' typed environment parameters. This
-  // checker intentionally does not treat generic `environment.NAME` property reads as global
-  // process-environment readers, so keep the exact workflow-to-CLI fields explicit here.
+  // Read through the checkpoint CLI's typed environment parameter.
   'CHECKPOINT_STATUS',
-  // Read through buildHarnessDispatchMetadata()'s typed HarnessMetadataEnvironment parameter in
-  // ci/harness-session-dispatch-metadata.mts — same `environment.NAME` blind spot as
-  // CHECKPOINT_STATUS above.
-  'AGENT_REF',
-  'ALLOW_DUPLICATE_ISSUE_COMPLETION',
-  'CHECKPOINT_ISSUE_NUMBER',
-  'COMPLETION_MODE',
-  'EXISTING_ISSUE_MAINTENANCE',
-  'EXPECTED_HEAD_SHA',
-  'PR_LABEL',
-  'PUBLISH_BASE_REF',
-  'PUBLISH_CONTRACT',
-  'PUBLISH_DUPLICATE_KEY',
-  'PUBLISH_RELATED_CANDIDATES',
-  'PUBLISH_TARGET_PR_NUMBER',
-  'PUBLISH_TITLE_PREFIX',
-  'PUBLISH_TITLE_SUFFIX',
-  'SLACK_SOURCE',
   'DOCKER_BUILD_SUMMARY',
   'DOCKER_CLI_EXPERIMENTAL',
   'HARNESS_AGENT_DISPATCH_ENABLED',
-  'HARNESS_CONCURRENCY_ID',
-  'HARNESS_FALLBACKS',
-  'HARNESS_PRIORITY',
-  'HARNESS_PROMPT',
-  'HARNESS_QUEUE_TTL_SECONDS',
-  'HARNESS_REF',
-  'HARNESS_REPOSITORY_ID',
-  'HARNESS_REQUIRED_LABELS',
-  'HARNESS_RESUME_SESSION_ID',
-  'HARNESS_TARGET',
-  'HARNESS_TIMEOUT',
-  'HARNESS_URL',
   // Node.js consumes this before application code to disable its compile cache for precise V8
   // coverage in the native EXPLAIN preflight; it is not a repository TypeScript environment read.
   'NODE_DISABLE_COMPILE_CACHE',

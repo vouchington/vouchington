@@ -4,7 +4,7 @@ Rotating maintenance prompts selected from [scheduled/](scheduled/) by
 [scheduled-prompts.yml](../../.github/workflows/scheduled-prompts.yml).
 The workflow renders the selected prompt through
 [scheduled-prompt.md](automation/scheduled-prompt.md) before calling
-[harness-dispatch.yml](../../.github/workflows/harness-dispatch.yml).
+[harness-dispatch.yml](https://github.com/vouchington/vouchington-tooling/blob/main/.github/workflows/harness-dispatch.yml).
 Prompts marked `harness-scheduled-completion: issue` use the issue wrapper in
 [automation/scheduled-issue.md](automation/scheduled-issue.md). Prompts additionally marked
 `harness-scheduled-scope: existing-issues` inspect one stable ascending page of at most 50 open
