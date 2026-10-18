@@ -14,7 +14,7 @@ export type CreateDistributionInput = {
   action: FollowerDistributionAction
   postIdOrSlug?: string
   rssFeedItemId?: string
-  options: SendFollowersInput
+  options: SendFollowersInput | (() => SendFollowersInput)
 }
 
 export async function validateTarget(
@@ -37,7 +37,7 @@ export async function validateTarget(
   }
 }
 
-export async function preflightRssFeedItemDistributionTarget(
+async function preflightRssFeedItemDistributionTarget(
   rssFeedItemId: string,
   options?: { query?: TransactionQuery },
 ): Promise<string> {

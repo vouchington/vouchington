@@ -240,12 +240,6 @@
     "issue": 3121
   },
   {
-    "annotation": "getRssFeedItemById",
-    "reason": "POST /api/v1/rss-feed-items/:id/sends reads the item before the request body is parsed so a missing item answers 404 before a malformed body answers 400 (share-send.mts:62); createDistribution reads it again inside its write transaction, before the advisory lock, so the distribution insert never reaches the item foreign key for a removed item (create-guards.mts:36)",
-    "permanent": true,
-    "code": "backend/api/v1/rss-feed-items/share-send.mts:62"
-  },
-  {
     "annotation": "getTopicAliasesForMergeRevision",
     "reason": "The destination aliases are re-read after the alias move and source-slug alias writes, so the after snapshot must see them",
     "issue": 3114

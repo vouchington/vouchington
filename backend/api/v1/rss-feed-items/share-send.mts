@@ -6,7 +6,6 @@ import {
   parseSendFollowersInput,
   sendRssFeedItemToFollowers,
   shareRssFeedItemWithFollowers,
-  preflightRssFeedItemDistributionTarget,
 } from '@services/follower-distributions'
 import { assertNotSuspended } from '@services/users'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
@@ -59,16 +58,31 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/sends').post(async (ctx: Contex
     path: ctx.params,
   })
   const rssFeedItemId = validateUUIDParam(ctx, 'rssFeedItemId')
-  await preflightRssFeedItemDistributionTarget(rssFeedItemId)
-  const body = await ctx.request.json('128kb')
-  validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends', { body })
-  const input = parseSendFollowersInput(body)
-  const result = await sendRssFeedItemToFollowers(currentUser, rssFeedItemId, input)
+  // A missing item answers 404 before a bad body answers its error, so a body error is held until
+  // the service has read the item in its own transaction. The body is read here, before that
+  // transaction opens, so a slow client never holds a database connection.
+  const input = await readSendFollowersInput(ctx)
+  const result = await sendRssFeedItemToFollowers(currentUser, rssFeedItemId, () => {
+    if (input instanceof Error) throw input
+    return input
+  })
 
   await enqueueDistributionOrMarkFailed(result.distribution_id)
   ctx.setStatus(202)
   ctx.json(apiResponse('POST:/api/v1/rss-feed-items/:rssFeedItemId/sends', result))
 })
+
+async function readSendFollowersInput(
+  ctx: Context,
+): Promise<ReturnType<typeof parseSendFollowersInput> | Error> {
+  try {
+    const body = await ctx.request.json('128kb')
+    validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends', { body })
+    return parseSendFollowersInput(body)
+  } catch (err) {
+    return err instanceof Error ? err : new Error(String(err))
+  }
+}
 
 async function enqueueDistributionOrMarkFailed(distributionId: string) {
   try {

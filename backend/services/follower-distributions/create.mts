@@ -15,6 +15,12 @@ import { parseSendFollowersInput, type SendFollowersInput } from './send-followe
 
 export type FollowerDistributionOptions = SendFollowersInput
 
+/**
+ * Options resolved by a function run after the target exists: a missing target answers 404 before
+ * an invalid body answers its own error, with no separate read of the target.
+ */
+export type DeferredFollowerDistributionOptions = () => FollowerDistributionOptions
+
 export function sharePostWithFollowers(
   currentUser: PrivateUser,
   postIdOrSlug: string,
@@ -48,7 +54,7 @@ export function shareRssFeedItemWithFollowers(
 export function sendRssFeedItemToFollowers(
   currentUser: PrivateUser,
   rssFeedItemId: string,
-  options: FollowerDistributionOptions,
+  options: FollowerDistributionOptions | DeferredFollowerDistributionOptions,
 ): Promise<FollowerDistributionAccepted> {
   return createDistribution(currentUser, { action: 'rss_feed_item_send', rssFeedItemId, options })
 }
@@ -57,10 +63,12 @@ async function createDistribution(
   currentUser: PrivateUser,
   input: CreateDistributionInput,
 ): Promise<FollowerDistributionAccepted> {
-  const options = parseSendFollowersInput(input.options)
+  const eagerOptions =
+    typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const target = await validateTarget(currentUser, input, query)
+  const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
   await query(sql`/* createDistribution:lock */
     SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
   `)
