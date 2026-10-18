@@ -1,3 +1,8 @@
+import {
+  DEFAULT_FLUSH_TIMEOUT_MS,
+  settleRunnableQueueJobs,
+  type ShimTestQueue,
+} from '@vouchington/worker-runtime/testing'
 import type { BackgroundDomain } from '../backend/queues/background/config.mts'
 import { entityListenersHandlers } from '../backend/workers/entity-listeners/workers.mts'
 import { voteAggregationHandlers } from '../backend/workers/vote-aggregation/workers.mts'
@@ -11,7 +16,7 @@ type SharedBackgroundWorker = ReturnType<typeof createBackgroundWorker>
 type TestWorkerInternals = {
   paused: boolean
   wake(): void
-  queue: { workers: Set<unknown> }
+  queue: ShimTestQueue
 }
 
 let sharedWorker: SharedBackgroundWorker | undefined
@@ -29,7 +34,7 @@ function yieldToOtherBackgroundWorkers(worker: SharedBackgroundWorker): void {
   const { workers } = internals.queue
   const { wake } = internals
   internals.wake = () => {
-    internals.paused = [...workers].some(other => other !== worker)
+    internals.paused = [...workers].some(other => other !== (worker as unknown))
     Reflect.apply(wake, internals, [])
   }
 }
@@ -59,6 +64,22 @@ export function getSharedBackgroundWorker(): SharedBackgroundWorker {
     throw new Error('The shared background worker is not running: load the glide-mq workers setup')
   }
   return sharedWorker
+}
+
+/**
+ * Wait for jobs the shared background worker can still run, so a later socket snapshot does not
+ * count connections those jobs have checked out. Returns false when this fork never started the
+ * worker. Waiting work belongs to the queue: another attached worker can consume it even when
+ * the shared worker has yielded. Delayed and suspended jobs stay parked.
+ */
+export async function settleSharedBackgroundJobs(
+  flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
+): Promise<boolean> {
+  if (!sharedWorker) return false
+  const { queue } = sharedWorker as unknown as TestWorkerInternals
+  if (queue.workers.size === 0 && queue.activeWorkers.size === 0) return false
+  await settleRunnableQueueJobs(queue, flushTimeoutMs)
+  return true
 }
 
 type JobProcessor = (job: { name: string }) => Promise<unknown>

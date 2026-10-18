@@ -62,7 +62,7 @@
     "@vouchington/localization-compiler": "^0.2.2",
     "@vouchington/postgres": "^0.0.16",
     "@vouchington/rate-limit": "^0.2.0",
-    "@vouchington/worker-runtime": "^0.1.2",
+    "@vouchington/worker-runtime": "^0.1.3",
     "glide-mq": "^0.18.0",
     "jose": "^6.2.12",
     "no-mistakes": "^0.92.0",

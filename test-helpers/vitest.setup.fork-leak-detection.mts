@@ -14,6 +14,7 @@ import {
   waitForForkLeakHandshakeSettle,
 } from './vitest-fork-leak-handshake.mts'
 import { countResourcesByType } from './vitest-process-resources.mts'
+import { settleSharedBackgroundJobs } from './shared-background-worker.mts'
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
@@ -30,6 +31,9 @@ afterEach(async context => {
   // runs before close callbacks (close-callbacks phase) in the same loop iteration; setTimeout
   // schedules into the next iteration, after this iteration's close callbacks have all run.
   await waitForResourceCloseCallbacks()
+  // Runnable shared-worker jobs check out pool clients. Count sockets only after they finish;
+  // a client still checked out then is still growth. Parked jobs are not waited on.
+  if (await settleSharedBackgroundJobs()) await waitForResourceCloseCallbacks()
   // Collapse only registered PostgreSQL pool handshakes into the checkpoint
   // that observes them. Unmatched socket growth remains visible to the detector.
   const settlement = await waitForForkLeakHandshakeSettle({
