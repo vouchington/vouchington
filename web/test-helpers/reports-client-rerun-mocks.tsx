@@ -52,6 +52,7 @@ vi.mock(
         onValueChange: (value: string) => void
         value: string
       }) => (
+        // ast-grep-ignore: web-no-raw-form-elements -- this test double replaces the UI Select with native select semantics so rerun tests can change sort order
         <select
           aria-label='Sort reports'
           value={value}
