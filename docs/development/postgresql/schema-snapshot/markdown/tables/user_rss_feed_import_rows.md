@@ -6,19 +6,24 @@ Individual RSS feed import URLs and per-row processing outcomes.
 
 Not partitioned — growth: unbounded.
 
-| Column          | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                |
-| --------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------- |
-| `id`            | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                        |
-| `batch_id`      | `uuid`                              | no       |                              |          |           |           | The RSS feed import batch this row belongs to.                         |
-| `row_index`     | `integer`                           | no       |                              |          |           |           | Zero-based position of the input URL in the submitted import.          |
-| `input_url`     | `text`                              | no       |                              |          |           |           | Trimmed user-submitted RSS feed URL.                                   |
-| `outcome`       | `user_rss_feed_import_row_outcomes` | yes      |                              |          |           |           | Terminal per-row import result. NULL means pending or retrying.        |
-| `rss_feed_id`   | `uuid`                              | yes      |                              |          |           |           | RSS feed resolved or created for this row.                             |
-| `completed_at`  | `timestamp with time zone`          | yes      |                              |          |           |           | When this row completed with a non-error outcome.                      |
-| `failed_at`     | `timestamp with time zone`          | yes      |                              |          |           |           | When this row reached a terminal error outcome.                        |
-| `error_message` | `text`                              | yes      |                              |          |           |           | Most recent row processing error, terminal only when outcome is error. |
-| `created_at`    | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                        |
-| `updated_at`    | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                        |
+| Column                 | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                  |
+| ---------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
+| `id`                   | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                          |
+| `batch_id`             | `uuid`                              | no       |                              |          |           |           | The RSS feed import batch this row belongs to.                                           |
+| `row_index`            | `integer`                           | no       |                              |          |           |           | Zero-based position of the input URL in the submitted import.                            |
+| `input_url`            | `text`                              | no       |                              |          |           |           | Trimmed user-submitted RSS feed URL.                                                     |
+| `discovery_url_id`     | `uuid`                              | yes      |                              |          |           |           | HTML page URL whose crawl is pending for feed discovery.                                 |
+| `discovery_generation` | `uuid`                              | yes      |                              |          |           |           | Per-attempt fence that rejects stale crawl outcomes after recovery or another HTML page. |
+| `discovery_crawl_id`   | `uuid`                              | yes      |                              |          |           |           | Completed crawl used to resolve the feed link.                                           |
+| `discovered_feed_url`  | `text`                              | yes      |                              |          |           |           | External feed URL found in the completed HTML crawl.                                     |
+| `discovery_failed_at`  | `timestamp with time zone`          | yes      |                              |          |           |           | Time the HTML crawl completed without a usable feed link.                                |
+| `outcome`              | `user_rss_feed_import_row_outcomes` | yes      |                              |          |           |           | Terminal per-row import result. NULL means pending or retrying.                          |
+| `rss_feed_id`          | `uuid`                              | yes      |                              |          |           |           | RSS feed resolved or created for this row.                                               |
+| `completed_at`         | `timestamp with time zone`          | yes      |                              |          |           |           | When this row completed with a non-error outcome.                                        |
+| `failed_at`            | `timestamp with time zone`          | yes      |                              |          |           |           | When this row reached a terminal error outcome.                                          |
+| `error_message`        | `text`                              | yes      |                              |          |           |           | Most recent row processing error, terminal only when outcome is error.                   |
+| `created_at`           | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                          |
+| `updated_at`           | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                          |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -37,11 +42,15 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `user_rss_feed_import_rows_batch_id_fkey`: `FOREIGN KEY (batch_id) REFERENCES user_rss_feed_import_batches(id) ON DELETE CASCADE`
+- `user_rss_feed_import_rows_discovery_crawl_id_fkey`: `FOREIGN KEY (discovery_crawl_id) REFERENCES crawls(id) ON DELETE SET NULL`
+- `user_rss_feed_import_rows_discovery_url_id_fkey`: `FOREIGN KEY (discovery_url_id) REFERENCES urls(id) ON DELETE SET NULL`
 - `user_rss_feed_import_rows_rss_feed_id_fkey`: `FOREIGN KEY (rss_feed_id) REFERENCES rss_feeds(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `idx_user_rss_feed_import_rows__batch_id__row_index`: `CREATE INDEX idx_user_rss_feed_import_rows__batch_id__row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)`
+- `idx_user_rss_feed_import_rows__discovery_crawl_id`: `CREATE INDEX idx_user_rss_feed_import_rows__discovery_crawl_id ON public.user_rss_feed_import_rows USING btree (discovery_crawl_id) WHERE (discovery_crawl_id IS NOT NULL)`
+- `idx_user_rss_feed_import_rows__discovery_url_id`: `CREATE INDEX idx_user_rss_feed_import_rows__discovery_url_id ON public.user_rss_feed_import_rows USING btree (discovery_url_id) WHERE (discovery_url_id IS NOT NULL)`
 - `idx_user_rss_feed_import_rows__rss_feed_id`: `CREATE INDEX idx_user_rss_feed_import_rows__rss_feed_id ON public.user_rss_feed_import_rows USING btree (rss_feed_id) WHERE (rss_feed_id IS NOT NULL)`
 - `user_rss_feed_import_rows__batch_row_index`: `CREATE UNIQUE INDEX user_rss_feed_import_rows__batch_row_index ON public.user_rss_feed_import_rows USING btree (batch_id, row_index)`
 - `user_rss_feed_import_rows_pkey`: `CREATE UNIQUE INDEX user_rss_feed_import_rows_pkey ON public.user_rss_feed_import_rows USING btree (id)`
