@@ -10,22 +10,37 @@ files:
   - 'backend/workers/**/*.test.mts'
   - 'backend/services/**/*.test.mts'
 rule:
-  kind: call_expression
-  all:
-    - has:
-        field: function
-        pattern: vi.fn
-    - has:
-        field: type_arguments
-        has:
-          any:
-            - kind: type_query
-              regex: ^typeof\s+(\w+\.)*enqueue[A-Z]
-            - kind: lookup_type
-              has:
-                kind: literal_type
-                regex: ^['"]enqueue[A-Z]
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            pattern: vi.fn
+        - has:
+            field: type_arguments
+            has:
+              any:
+                - kind: type_query
+                  regex: ^typeof\s+(.*\.)?enqueue[A-Z]
+                - kind: lookup_type
+                  has:
+                    kind: literal_type
+                    regex: ^['"]enqueue[A-Z]
+    # The Tsx grammar parses `vi.fn<typeof import('x').enqueueFoo>()` as a comparison.
+    - kind: binary_expression
+      all:
+        - has:
+            field: left
+            pattern: vi.fn
+        - has:
+            field: right
+            kind: unary_expression
+            regex: ^typeof\s+import\(.*\)\.enqueue[A-Z]
 examples:
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const enqueue = vi.fn<typeof import('@queues/example/enqueues').enqueueFoo>()
+    isValid: false
   - file: backend/workers/example/processors.test.mts
     code: |
       const enqueue = vi.fn<Deps['enqueueContinuation']>(async () => undefined)

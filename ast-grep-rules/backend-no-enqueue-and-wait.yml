@@ -20,6 +20,11 @@ rule:
       has:
         field: property
         regex: ^(addAndWait|waitUntilFinished)$
+    - kind: subscript_expression
+      has:
+        field: index
+        kind: string
+        regex: ^['"](addAndWait|waitUntilFinished)['"]$
     - kind: pair_pattern
       has:
         field: key
@@ -45,6 +50,14 @@ rule:
               field: property
               regex: ^enqueue\w*AndWait$
 examples:
+  - file: backend/services/example/rerun.mts
+    code: |
+      await queue['addAndWait']('judge', data)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await job['waitUntilFinished'](queueEvents)
+    isValid: false
   - file: backend/services/example/rerun.mts
     code: |
       const { addAndWait: waitForJob } = queue

@@ -36,7 +36,23 @@ rule:
               regex: ^ttl$
           - kind: shorthand_property_identifier
             regex: ^ttl$
+          - kind: spread_element
+            has:
+              stopBy: end
+              any:
+                - kind: pair
+                  has:
+                    field: key
+                    regex: ^ttl$
+                - kind: shorthand_property_identifier
+                  regex: ^ttl$
 examples:
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: { id, mode: 'debounce', ...(isCrawl ? {} : { ttl: ONE_MINUTE_MS }) },
+      }
+    isValid: false
   - file: backend/queues/example/enqueues.mts
     code: |
       const opts = {
