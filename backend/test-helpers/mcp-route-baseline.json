@@ -5971,7 +5971,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",
@@ -5987,7 +5987,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",
@@ -6003,7 +6003,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",
@@ -6019,7 +6019,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",
@@ -6035,7 +6035,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",
@@ -6051,7 +6051,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",
@@ -6067,7 +6067,7 @@
       "pullRequest": 3130,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F74",
           "operation": {
             "tool": "act_on_post",

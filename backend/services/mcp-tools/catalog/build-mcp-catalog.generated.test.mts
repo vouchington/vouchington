@@ -45,6 +45,7 @@ const mergedNames = new Set(groups.map(group => group.name))
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 const customer = { id: 'catalog-contract-caller', roles: [], membership_plan: null }
 const participationNames = [
+  'act_on_post',
   'vote',
   'set_rss_feed_item_read',
   'share_rss_feed_item',
@@ -180,7 +181,7 @@ describe('generated MCP catalog contracts', () => {
         .toSorted(),
     ).toEqual(participationNames.toSorted())
     expect(hash(paid.filter(tool => !participationNames.includes(tool.name)))).toBe(
-      '7d00bb819569402e8845f86826441b47b4f90169394734f70d335733e85bb93b',
+      'df97c49f5e918e9723883aa6d0072b35b387e166e7efd8042cfce5a725175730',
     )
     for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
       expect(
