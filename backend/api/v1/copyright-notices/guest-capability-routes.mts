@@ -35,10 +35,10 @@ function isGuestFilingKind(value: unknown): value is CopyrightGuestFilingRequest
   return guestFilingKinds.some(kind => kind === value)
 }
 
-function futureInstant(value: unknown): Date | null {
+function futureInstant(value: unknown, issuedAt: Date): Date | null {
   if (typeof value !== 'string') return null
   const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) || parsed <= new Date() ? null : parsed
+  return Number.isNaN(parsed.getTime()) || parsed <= issuedAt ? null : parsed
 }
 
 // Every handler keeps its admission order (content type, authentication and role, rate limit,
@@ -54,14 +54,20 @@ app.route('/api/v1/copyright-notices/:id/guest-capabilities').post(async (ctx: C
   )
   assertNotSuspended(currentUser)
   const body = (await ctx.request.json('1mb')) as CopyrightGuestCapabilityIssueRequest
-  const expiresAt = futureInstant(body.expires_at)
+  const issuedAt = new Date()
+  const expiresAt = futureInstant(body.expires_at, issuedAt)
   if (!expiresAt) ctx.throw(422, 'expires_at must be a future instant')
   const noticeId = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-notices/:id/guest-capabilities', {
     path: ctx.params,
     body,
   })
-  const capability = await issueCopyrightGuestCapability({ currentUser, noticeId, expiresAt })
+  const capability = await issueCopyrightGuestCapability({
+    currentUser,
+    noticeId,
+    expiresAt,
+    issuedAt,
+  })
   ctx.setStatus(201)
   ctx.json(
     apiResponse('POST:/api/v1/copyright-notices/:id/guest-capabilities', {

@@ -108,6 +108,7 @@ export const createUnsentDeliveryCase = () =>
 export const createLiveGuestCapabilityCase = () =>
   blockMinimalCase(async entry => {
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: entry.moderator,
       noticeId: entry.noticeId,
       expiresAt: new Date(Date.now() + 7 * DAY_MS),

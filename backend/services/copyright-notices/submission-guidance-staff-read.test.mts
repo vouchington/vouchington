@@ -79,6 +79,7 @@ describe('copyright submission guidance in the staff case projection', () => {
     const staff = await createTestCopyrightStaff()
     const now = new Date()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId: aggregate.notice.id,
       expiresAt: new Date(now.getTime() + 60_000),

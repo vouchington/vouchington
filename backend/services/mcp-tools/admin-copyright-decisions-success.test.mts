@@ -144,6 +144,7 @@ describe('registered copyright case and capability decisions', () => {
     )
     const admin = await createTestUser({ administrator: true })
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: admin,
       noticeId: restricted.noticeId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

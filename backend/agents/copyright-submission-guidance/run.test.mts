@@ -138,11 +138,13 @@ describe('copyright submission guidance agent', () => {
     const now = new Date()
     const [firstCapability, secondCapability] = await Promise.all([
       issueCopyrightGuestCapability({
+        issuedAt: new Date(),
         currentUser: staff,
         noticeId,
         expiresAt: new Date(now.getTime() + 60_000),
       }),
       issueCopyrightGuestCapability({
+        issuedAt: new Date(),
         currentUser: staff,
         noticeId,
         expiresAt: new Date(now.getTime() + 60_000),
