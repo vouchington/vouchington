@@ -1,6 +1,7 @@
 import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { withPagedDispatchPage } from './paged-dispatch-context.mts'
+import { createPagedDispatchFences } from './paged-dispatch-fences.mts'
 import { createHash } from 'node:crypto'
 import type { Job, JobOptions, Queue } from 'glide-mq'
 import { processRetainedSweep } from './retained-sweep.mts'
@@ -66,17 +67,21 @@ export async function processPagedDispatcher<TData extends object, TResult>(
       resumeAt: Date.now() + getPagedDispatchLimit(`${options.dispatcher}_backoff_ms`),
     }) as Promise<never>
   }
-  type Receipt = { result: TResult; next?: TData; dedupIds: string[]; nextAdmitted?: boolean }
+  const fences = createPagedDispatchFences(options.target.name, job.id, options.targetPrefix)
+  type Receipt = { result: TResult; next?: TData; nextAdmitted?: boolean }
   const data = job.data as TData & { dispatchReceipt?: Receipt }
   let receipt = data.dispatchReceipt
   let afterDispatch: (() => Promise<void>) | undefined
   if (!receipt) {
-    const admitted = await withPagedDispatchPage(job.id, options.targetName, () =>
-      options.readAndDispatch(getPagedDispatchLimit(`${options.dispatcher}_page_size`)),
+    const admitted = await withPagedDispatchPage(
+      job.id,
+      options.targetName,
+      () => options.readAndDispatch(getPagedDispatchLimit(`${options.dispatcher}_page_size`)),
+      fences.checkpoint,
     )
     const { afterDispatch: commit, ...page } = admitted.value
     afterDispatch = commit
-    receipt = { ...page, dedupIds: admitted.dedupIds }
+    receipt = page
     // A retry after admission reuses this result instead of reading and admitting another page.
     await job.updateData({ ...job.data, dispatchReceipt: receipt })
   }
@@ -99,20 +104,14 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     }
   }
   await afterDispatch?.()
-  if (page.dedupIds.length) {
-    // GlideMQ stores dedup fields under its queue hash-tag namespace. This adapter owns that
-    // integration; the real transport regression covers marker cleanup after job pruning.
-    await workerQueueCommandClient.hdel(
-      `${options.targetPrefix ?? workerQueuePrefix}:{${options.target.name}}:dedup`,
-      page.dedupIds,
-    )
-  }
+  if (!(await fences.clearPage(getPagedDispatchLimit(`${options.dispatcher}_page_size`))))
+    return processRetainedSweep(job, async () => ({ hasMore: true })) as Promise<never>
   if (continuationDedupId) {
     // The persisted nextAdmitted checkpoint now owns replay safety, so this admission fence
     // must not accumulate for successful pages. Retrying cleanup is safe after child pruning.
     const queue = options.continuationQueue ?? options.target
     await workerQueueCommandClient.hdel(
-      `${options.targetPrefix ?? workerQueuePrefix}:{${queue.name}}:dedup`,
+      `${options.targetPrefix ?? workerQueuePrefix ?? 'glide'}:{${queue.name}}:dedup`,
       [continuationDedupId],
     )
   }

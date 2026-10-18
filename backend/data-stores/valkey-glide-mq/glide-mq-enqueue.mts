@@ -1,4 +1,7 @@
-import { pagedDispatchRowOptions } from './paged-dispatch-context.mts'
+import {
+  checkpointPagedDispatchFences,
+  pagedDispatchRowOptions,
+} from './paged-dispatch-context.mts'
 import onError from '@modules/on-error'
 import { publishEnqueueAdmission } from './glide-mq-admission.mts'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
@@ -128,10 +131,12 @@ export function createBulkEnqueueFunction<
       }
     })
 
-    const promise =
+    const add = () =>
       options.retry !== false
         ? retryTransientEnqueue(() => options.queue.addBulk(jobs))
         : options.queue.addBulk(jobs)
+    const checkpoint = checkpointPagedDispatchFences()
+    const promise = checkpoint ? checkpoint.then(add) : add()
     reportRejectedEnqueue(promise, options, inputs.length, callContext)
     publishEnqueueAdmission({
       queue: options.queue,

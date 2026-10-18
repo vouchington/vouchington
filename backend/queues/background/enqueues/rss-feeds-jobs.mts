@@ -20,13 +20,14 @@ const DEFAULTS = {
 } as const
 
 export type RssFeedFetchData = { rssFeedId: string; ttl?: number }
+export type RssFeedsDispatchData = { afterId?: string; remainingBudget?: number }
 
 export const RSS_FEEDS_FETCH_JOB = defineBackgroundJob<RssFeedFetchData>(RSS_FEEDS_DOMAIN, {
   name: 'fetchRssFeed',
   priority: PRIORITY_TASK,
   ...DEFAULTS,
 })
-export const RSS_FEEDS_DISPATCH_JOB = defineBackgroundJob<{ afterId?: string }>(RSS_FEEDS_DOMAIN, {
+export const RSS_FEEDS_DISPATCH_JOB = defineBackgroundJob<RssFeedsDispatchData>(RSS_FEEDS_DOMAIN, {
   name: 'dispatchRssFeeds',
   priority: PRIORITY_DISPATCH,
   ...DEFAULTS,

@@ -42,7 +42,11 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   cursor and checks the target queue's depth before each page. HTTP routes enqueue one dispatcher,
   never the rows. Use the shared paged-dispatcher helper with DynamicConfig page, queue-depth,
   and backoff limits; dispatchers retry indefinitely. Dispatcher state lives in job data, not
-  PostgreSQL. Ranked priority orders only jobs promoted together, so a large
+  PostgreSQL. The depth threshold is a soft admission limit: each admitted page may cross it.
+  Shared workers preserve ordinary jobs' stall budget while allowing dispatchers to resume.
+  Record ownership of row-admission fences before bulk enqueue; clean them in bounded batches
+  after the page receipt is durable, preserving each row queue's failure-retention policy.
+  Ranked priority orders only jobs promoted together, so a large
   batch already in the ready list delays every later task in the shared queue, whatever its
   priority.
 - **Throttle our own datastores with concurrency.** Use a `limiter` or group `rateLimit` only to
