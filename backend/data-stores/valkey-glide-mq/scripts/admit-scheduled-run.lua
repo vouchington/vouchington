@@ -16,7 +16,8 @@ if holder then
   redis.call('HSET', KEYS[2], ARGV[4], ARGV[2])
   -- Record the fresh collision in the same atomic decision. A lost reply then retries as
   -- decision 4 without double-counting. A damaged metrics key cannot turn a skip into work.
-  pcall(redis.call, 'HINCRBY', KEYS[3], 'skipped_overlap', 1)
+  local counted = pcall(redis.call, 'HINCRBY', KEYS[3], 'skipped_overlap', 1)
+  if not counted then return 5 end -- durable skip; caller reports the metric failure
   return 0 -- fresh overlapping tick
 end
 

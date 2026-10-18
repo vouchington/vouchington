@@ -83,8 +83,15 @@ export async function withScheduledRunLease(
     console.info('skipped_overlap', { queue, scheduler, jobId: job.id, recovered: true })
     return null // the original collision atomically counted this tick
   }
-  if (decision !== 0 && decision !== 3) throw new Error('Unknown scheduled lease admission result')
-  if (decision === 3) {
+  if (decision !== 0 && decision !== 3 && decision !== 5)
+    throw new Error('Unknown scheduled lease admission result')
+  if (decision === 5) {
+    try {
+      onError(new Error(`Scheduled overlap metric increment failed for ${queue}/${scheduler}`))
+    } catch (err) {
+      console.error('scheduled_overlap_metric_reporting_failed', err)
+    }
+  } else if (decision === 3) {
     // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
     // Keep its saved cursor by delaying it until the current holder finishes.
     await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))
