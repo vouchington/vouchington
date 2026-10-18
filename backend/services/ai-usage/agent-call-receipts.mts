@@ -1,20 +1,24 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-type ReceiptRow = { result_ciphertext: string | null }
+type ReceiptRow = { request_sha256: string; result_ciphertext: string | null }
 
 /** Read the writer so a retry sees a result committed by the preceding attempt immediately. */
 export async function getAgentCallReceipt(key: string): Promise<ReceiptRow | undefined> {
   const { rows } = await write<ReceiptRow>(sql`/* getAgentCallReceipt */
-    SELECT result_ciphertext FROM ai_agent_call_receipts WHERE operation_key = ${key}
+    SELECT request_sha256, result_ciphertext FROM ai_agent_call_receipts WHERE operation_key = ${key}
   `)
   return rows[0]
 }
 
-export async function reserveAgentCallReceipt(key: string, agentSlug: string): Promise<boolean> {
+export async function reserveAgentCallReceipt(
+  key: string,
+  agentSlug: string,
+  requestSha256: string,
+): Promise<boolean> {
   const { rows } = await write(sql`/* reserveAgentCallReceipt */
-    INSERT INTO ai_agent_call_receipts (operation_key, agent_slug)
-    VALUES (${key}, ${agentSlug})
+    INSERT INTO ai_agent_call_receipts (operation_key, agent_slug, request_sha256)
+    VALUES (${key}, ${agentSlug}, ${requestSha256})
     ON CONFLICT DO NOTHING
     RETURNING id
   `)

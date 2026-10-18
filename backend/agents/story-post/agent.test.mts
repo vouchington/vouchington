@@ -39,6 +39,41 @@ describe('callStoryPostAgent', () => {
     expect(callModel).toHaveBeenCalledOnce()
   })
 
+  it('stops changed story input or model selection from billing the same operation twice', async () => {
+    const story = makeStory()
+    const first = makeAgentModelCaller({ title: 'First', ai_summary_markdown: 'First.' })
+    await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, first)
+
+    const retry = makeAgentModelCaller({ title: 'Duplicate', ai_summary_markdown: 'Duplicate.' })
+    await expect(
+      callStoryPostAgent(
+        { ...story, title: 'Retitled after dispatch' },
+        itemSummaries,
+        TEST_MODEL_SELECTION,
+        retry,
+      ),
+    ).rejects.toThrow('request changed after reservation')
+    await expect(
+      callStoryPostAgent(story, itemSummaries, TEST_OPENAI_SELECTION, retry),
+    ).rejects.toThrow('request changed after reservation')
+    expect(first).toHaveBeenCalledOnce()
+    expect(retry).not.toHaveBeenCalled()
+  })
+
+  it('allows an explicit new operation identity to make a fresh paid call', async () => {
+    const story = makeStory()
+    const callModel = makeAgentModelCaller({ title: 'First', ai_summary_markdown: 'First.' })
+    await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+    await callStoryPostAgent(
+      story,
+      itemSummaries,
+      TEST_MODEL_SELECTION,
+      callModel,
+      `${story.id}:force-job`,
+    )
+    expect(callModel).toHaveBeenCalledTimes(2)
+  })
+
   it('does not call the provider again after an ambiguous paid attempt', async () => {
     const story = makeStory()
     const callModel: StoryPostModelCaller = () =>

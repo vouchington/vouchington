@@ -16,4 +16,7 @@ and measurement, and [AI agents](../ai-agents.md) links the surrounding pipeline
 - Paid background decisions reserve a durable receipt before the provider request. A completed
   result can finish its domain write after a worker retry; an interrupted call with an unknown
   billing outcome requires review before it can be sent again. The receipt stores its result
-  encrypted because advisory answers can contain private filing or report content.
+  encrypted because advisory answers can contain private filing or report content. Its identity
+  follows the logical operation across retries, while a separate digest binds the original model
+  and prompt; changed source content requires review instead of another billable dispatch or a
+  stale result attached to new input.

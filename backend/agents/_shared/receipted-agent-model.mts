@@ -26,11 +26,17 @@ export async function callReceiptedAgentModel<Output>(
 ): Promise<ModelCallResult<Output>> {
   const { agentSlug, operationId, selection, input, safetyIdentifier, callModel } = params
   const key = createHash('sha256')
-    .update(JSON.stringify([agentSlug, operationId, selection, input]))
+    .update(JSON.stringify([agentSlug, operationId]))
+    .digest('hex')
+  const requestSha256 = createHash('sha256')
+    .update(JSON.stringify([selection, input]))
     .digest('hex')
   const purpose = `ai-agent-call-receipt:${key}`
   const existing = await getAgentCallReceipt(key)
   if (existing) {
+    if (existing.request_sha256 !== requestSha256) {
+      unrecoverable(new Error(`Paid ${agentSlug} call ${key} request changed after reservation`))
+    }
     if (!existing.result_ciphertext) {
       unrecoverable(new Error(`Paid ${agentSlug} call ${key} has an uncertain receipt`))
     }
@@ -47,7 +53,7 @@ export async function callReceiptedAgentModel<Output>(
     postId: params.postId,
     // The spend-cap check runs first, so a rejected admission does not consume this receipt.
     beforeDispatch: async () => {
-      if (!(await reserveAgentCallReceipt(key, agentSlug))) {
+      if (!(await reserveAgentCallReceipt(key, agentSlug, requestSha256))) {
         unrecoverable(new Error(`Paid ${agentSlug} call ${key} is already reserved`))
       }
     },
