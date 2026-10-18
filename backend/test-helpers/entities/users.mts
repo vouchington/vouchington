@@ -38,6 +38,8 @@ export {
   unsuspendTestUser,
 } from './users-lifecycle.mts'
 
+export { setTestUserAdminVoteWeight } from './users-admin-vote-weight.mts'
+
 export { lockTestUserMutation, lockTestUserRowForUpdate } from './users-mutation-locks.mts'
 
 // Split out of this file (concern: raw/direct user-row primitives) into users-direct.mts; kept
