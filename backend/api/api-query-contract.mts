@@ -1,4 +1,7 @@
-import type { AnyQueryContractCarrier, ValidatedQueryContractCarriers } from '@modules/pagination'
+import type {
+  AnyQueryContractCarrier,
+  ValidatedQueryContractCarriers,
+} from '@vouchington/pagination'
 
 /** Preserve compile-time validation of this application's query carriers. */
 export function apiQuery<
