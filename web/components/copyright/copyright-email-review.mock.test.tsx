@@ -179,7 +179,10 @@ describe('CopyrightEmailReview', () => {
     mockGet.mockResolvedValueOnce({
       copyright_email_intake: { ...makeIntake(otherIntakeId), recommendation: null },
     })
-    const queue = makeQueuePage([makeQueueItem(), makeQueueItem(otherIntakeId)])
+    const queue = makeQueuePage([
+      { ...makeQueueItem(), recommendation_id: null },
+      { ...makeQueueItem(otherIntakeId), recommendation_id: null },
+    ])
     render(<CopyrightEmailReview data={queue} />)
 
     await selectEmailIntake(intakeId)

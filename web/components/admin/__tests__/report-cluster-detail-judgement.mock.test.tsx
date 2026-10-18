@@ -62,6 +62,7 @@ describe('ReportDetail judgement freshness', () => {
       <ReportDetail
         report={makeReport({
           judgement: {
+            id: '00000000-0000-7000-8000-000000000001',
             recommended_action: 'warn',
             public_response: 'Public warning.',
             internal_response: 'Needs review.',

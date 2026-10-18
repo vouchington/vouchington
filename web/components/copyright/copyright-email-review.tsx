@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
 import type {
   CopyrightEmailIntakeQueueItem,
   CopyrightEmailIntakeQueuePage,
@@ -18,6 +19,7 @@ import { CopyrightEmailQueueItem } from './copyright-email-queue-item'
 import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
 import {
   listCopyrightEmailIntakes,
+  getCopyrightEmailIntake,
   type CopyrightEmailIntake,
 } from '@/lib/api/client/copyright-email-intakes'
 import { useCopyrightEmailReviewActions } from './copyright-email-review-actions'
@@ -32,6 +34,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     fetchError,
     clearError,
     resetToFirstPage,
+    replaceFirstPage,
     resetKey,
   } = usePaginatedList(
     data,
@@ -44,7 +47,17 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     for (const item of page.copyright_email_intakes) itemById.set(item.id, item)
   }
   const items = [...itemById.values()]
+  usePendingAiRefresh(
+    items.some(
+      item =>
+        item.waiting_reason === 'awaiting_review' &&
+        item.parse_status === 'succeeded' &&
+        item.recommendation_id === null,
+    ),
+    async () => replaceFirstPage?.(await listCopyrightEmailIntakes()),
+  )
   const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
+  const selectedRecommendationId = items.find(item => item.id === detail?.id)?.recommendation_id
   const [rationale, setRationale] = useState('')
   const [draft, setDraft] = useState<CopyrightEmailApprovalDraft | null>(null)
   const [correspondenceDraft, setCorrespondenceDraft] = useState<CopyrightEmailCorrespondenceDraft>(
@@ -55,6 +68,20 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    if (!detail || detail.recommendation || !selectedRecommendationId) return
+    let current = true
+    void getCopyrightEmailIntake(detail.id)
+      .then(response => {
+        if (current) setDetail(response.copyright_email_intake)
+      })
+      .catch(() => {
+        if (current) setError('Could not refresh the email recommendation.')
+      })
+    return () => {
+      current = false
+    }
+  }, [detail, selectedRecommendationId])
   const {
     admitCorrespondence,
     associateWithNotice,

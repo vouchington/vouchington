@@ -5,13 +5,19 @@ import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-moc
 
 const mockNav = createNavMock()
 
-const { mockResolveModerationReport, mockRerunReportJudgement, mockOnError, mockOnSuccess } =
-  vi.hoisted(() => ({
-    mockResolveModerationReport: vi.fn<VitestLooseMock>(),
-    mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
-    mockOnError: vi.fn<VitestLooseMock>(),
-    mockOnSuccess: vi.fn<VitestLooseMock>(),
-  }))
+const {
+  mockResolveModerationReport,
+  mockRerunReportJudgement,
+  mockOnError,
+  mockOnSuccess,
+  mockUsePendingAiRefresh,
+} = vi.hoisted(() => ({
+  mockResolveModerationReport: vi.fn<VitestLooseMock>(),
+  mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
+  mockOnError: vi.fn<VitestLooseMock>(),
+  mockOnSuccess: vi.fn<VitestLooseMock>(),
+  mockUsePendingAiRefresh: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveModerationReport,
@@ -19,6 +25,9 @@ vi.mock(import('@/lib/api/client/reports'), () => ({
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError, onSuccess: mockOnSuccess }))
+vi.mock(import('@/hooks/use-pending-ai-refresh'), () => ({
+  usePendingAiRefresh: mockUsePendingAiRefresh,
+}))
 vi.mock(
   import('next/navigation'),
   () => navMockModule as unknown as typeof import('next/navigation'),
@@ -88,6 +97,39 @@ describe('ReportsClient re-run judgement button', () => {
     await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
     await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledWith('Judgement re-run queued'))
     await waitFor(() => expect(mockNav.refresh).toHaveBeenCalled())
+  })
+
+  it('keeps polling a rerun until the judgement row ID changes, even with identical text', async () => {
+    const judgement = {
+      id: '00000000-0000-7000-8000-000000000001',
+      recommended_action: 'remove' as const,
+      public_response: 'Same response',
+      internal_response: 'Same rationale',
+      is_stale: false,
+      judged_report_count: 1,
+      current_report_count: 1,
+    }
+    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    const { rerender } = render(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeReportsResponse({ judgement })}
+      />,
+    )
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function))
+    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(true, expect.any(Function)),
+    )
+    rerender(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeReportsResponse({
+          judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' },
+        })}
+      />,
+    )
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function))
   })
 
   it('routes a failed re-run through onError and keeps the row', async () => {

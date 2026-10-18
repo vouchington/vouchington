@@ -29,6 +29,7 @@ import type {
   AdminModerationReportDuplicateCluster,
 } from './reports-client-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
 
 interface ClusteredReportsClientProps {
   data: AdminClusteredModerationReportsResponse
@@ -68,6 +69,10 @@ export function ClusteredReportsClient({
   const [loadingClusterAction, setLoadingClusterAction] = useState<ClusterAction | null>(null)
   const [loadingDuplicateId, setLoadingDuplicateId] = useState<string | null>(null)
   const [rerunningReportId, setRerunningReportId] = useState<string | null>(null)
+  const [rerunBefore, setRerunBefore] = useState<{
+    reportId: string
+    judgementId: string | null
+  } | null>(null)
   const [isRefreshing, startRefreshTransition] = useTransition()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
@@ -78,6 +83,14 @@ export function ClusteredReportsClient({
   const duplicateClusters = useMemo(
     () => filterVisibleDuplicateClusters(data.duplicate_clusters, removedClusterKeys),
     [data.duplicate_clusters, removedClusterKeys],
+  )
+  const visibleReports = clusters.flatMap(cluster => cluster.reports)
+  const rerunReport =
+    rerunBefore && visibleReports.find(report => report.id === rerunBefore.reportId)
+  usePendingAiRefresh(
+    visibleReports.some(report => !report.judgement) ||
+      Boolean(rerunReport && rerunReport.judgement?.id === rerunBefore?.judgementId),
+    () => router.refresh(),
   )
   const disabled =
     Boolean(loadingClusterId || loadingDuplicateId || rerunningReportId) || isRefreshing
@@ -191,6 +204,7 @@ export function ClusteredReportsClient({
     startRefreshTransition(async () => {
       try {
         await rerunReportJudgement(report.id)
+        setRerunBefore({ reportId: report.id, judgementId: report.judgement?.id ?? null })
         onSuccess(t('extracted.admin.reportsClusteredClient.judgementReRunQueued_ac6c0160'))
         router.refresh()
       } catch (err) {

@@ -6,10 +6,12 @@ import { loadServiceModelSelection } from '@services/ai-usage'
 /** The agent persists advice only; moderator action is deliberately outside this processor. */
 export async function processCopyrightSubmissionGuidance(
   job: Job<CopyrightSubmissionGuidanceJobData>,
+  callModel?: NonNullable<Parameters<typeof runCopyrightSubmissionGuidanceAgent>[2]>,
 ): Promise<{ success: true }> {
   await runCopyrightSubmissionGuidanceAgent(
     job.data.submission_id,
     await loadServiceModelSelection('copyright-submission-guidance'),
+    callModel,
   )
   return { success: true }
 }

@@ -2,11 +2,15 @@ import type { Job } from 'glide-mq'
 import type { ReportJudgementJobData } from '@queues/ai-agents/types'
 import { enqueueAutoDispatchJudgement } from '@queues/ai-agents/enqueues/auto-dispatch-judgement'
 import { runReportJudgementAgent } from '@agents/report-judgement'
+import type { JudgementModelCaller } from '@agents/report-judgement/run'
 import { loadServiceModelSelection } from '@services/ai-usage'
 import type { ModerationReportEntityType } from '@services/moderation-reports'
 import onError from '@modules/on-error'
 
-export async function processReportJudgement(job: Job<ReportJudgementJobData>): Promise<unknown> {
+export async function processReportJudgement(
+  job: Job<ReportJudgementJobData>,
+  callModel?: JudgementModelCaller,
+): Promise<unknown> {
   const { entity_type, entity_id, triggering_report_id, rerun_by_id } = job.data
   const result = await runReportJudgementAgent(
     {
@@ -16,6 +20,7 @@ export async function processReportJudgement(job: Job<ReportJudgementJobData>): 
       rerunById: rerun_by_id ?? null,
     },
     await loadServiceModelSelection('report-judgement'),
+    callModel,
   )
 
   if (!result) return { success: true }

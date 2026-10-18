@@ -27,6 +27,7 @@ export const report: AdminModerationReport = {
   resolved_by_id: null,
   is_system_generated: false,
   judgement: {
+    id: '00000000-0000-7000-8000-000000000001',
     recommended_action: 'remove',
     public_response: 'This content was removed for violating our spam policy.',
     internal_response:

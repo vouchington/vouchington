@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
 import { listCopyrightReviewQueue } from '@/lib/api/client/copyright-notices'
 import onError, { onSuccess } from '@/lib/on-error'
 import type { CopyrightStaffQueueItem, CopyrightStaffQueuePage } from '@/types/copyright-notices'
@@ -17,20 +18,40 @@ export function CopyrightStaffQueue({
   data: CopyrightStaffQueuePage
   canAdminister?: boolean
 }) {
-  const { pages, hasNextPage, endCursor, loadMore, loadingMore, fetchError, clearError, resetKey } =
-    usePaginatedList(
-      data,
-      '/api/v1/copyright-notices/review-queue',
-      {},
-      {
-        loadPage: after => listCopyrightReviewQueue({ after }),
-      },
-    )
+  const {
+    pages,
+    hasNextPage,
+    endCursor,
+    loadMore,
+    loadingMore,
+    fetchError,
+    clearError,
+    replaceFirstPage,
+    resetKey,
+  } = usePaginatedList(
+    data,
+    '/api/v1/copyright-notices/review-queue',
+    {},
+    {
+      loadPage: after => listCopyrightReviewQueue({ after }),
+    },
+  )
   const noticeById = new Map<string, CopyrightStaffQueueItem>()
   for (const page of pages) {
     for (const notice of page.copyright_notices) noticeById.set(notice.id, notice)
   }
   const notices = [...noticeById.values()]
+  usePendingAiRefresh(
+    notices.some(
+      notice =>
+        (notice.form_review &&
+          (!notice.form_review.screening || notice.form_review.screening.state === 'pending')) ||
+        notice.appeals.some(appeal => appeal.recommendation === null) ||
+        notice.counter_notices.some(counter => counter.guidance === null) ||
+        notice.legal_holds.some(hold => hold.guidance === null),
+    ),
+    async () => replaceFirstPage?.(await listCopyrightReviewQueue()),
+  )
   const [rationale, setRationale] = useState('')
   const [pending, startTransition] = useTransition()
   const trimmedRationale = rationale.trim()

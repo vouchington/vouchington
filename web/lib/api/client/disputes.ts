@@ -70,3 +70,17 @@ export function dismissDispute(disputeId: string): Promise<{ dispute: ReviewDisp
 export function rerunDisputeAI(disputeId: string): Promise<void> {
   return clientApi.post(`/api/v1/disputes/${disputeId}/resolution-drafts`, {})
 }
+
+/** The rerun request only confirms queue admission; read the saved draft separately. */
+export async function reconcileDisputeAIDraft(before: ReviewDispute): Promise<ReviewDispute> {
+  async function readSavedDraft(attempt: number): Promise<ReviewDispute> {
+    const { dispute } = await clientApi.get<{ dispute: ReviewDispute }>(
+      `/api/v1/disputes/${before.id}`,
+    )
+    if (dispute.ai_drafted_at && dispute.ai_drafted_at !== before.ai_drafted_at) return dispute
+    if (attempt >= 19) throw new Error('The AI draft is still processing. Refresh to check again.')
+    await new Promise<void>(resolve => setTimeout(resolve, 3000))
+    return readSavedDraft(attempt + 1)
+  }
+  return readSavedDraft(0)
+}

@@ -30,6 +30,7 @@ export async function attachJudgements<
     const context = contextsMap.get(key)
     const judgement: FullJudgementSummary | null = raw
       ? {
+          id: raw.id,
           recommended_action: raw.recommended_action,
           public_response: raw.public_response,
           internal_response: raw.internal_response,

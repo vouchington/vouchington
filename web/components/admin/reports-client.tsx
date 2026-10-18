@@ -50,6 +50,7 @@ import type {
   MemberModerationReportsResponse,
 } from './reports-client-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
 
 type ReportsClientProps = (
   | {
@@ -127,6 +128,10 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   const [resolvedIds, setResolvedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [rerunningId, setRerunningId] = useState<string | null>(null)
+  const [rerunBefore, setRerunBefore] = useState<{
+    reportId: string
+    judgementId: string | null
+  } | null>(null)
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [bulkAction, setBulkAction] = useState<ModerationBulkAction | null>(null)
   const [bulkMessage, setBulkMessage] = useState<string | null>(null)
@@ -137,6 +142,17 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     [data.results, resolvedIds],
   )
   const isEmpty = reports.length === 0
+  const pendingJudgement =
+    viewerTier === 'staff' && (reports as AdminModerationReport[]).some(report => !report.judgement)
+  const rerunReport =
+    rerunBefore &&
+    (reports as AdminModerationReport[]).find(report => report.id === rerunBefore.reportId)
+  usePendingAiRefresh(
+    Boolean(
+      pendingJudgement || (rerunReport && rerunReport.judgement?.id === rerunBefore?.judgementId),
+    ),
+    () => router.refresh(),
+  )
   const hotkeyItems =
     viewerTier === 'staff'
       ? (reports as AdminModerationReport[]).map(report => ({
@@ -201,7 +217,9 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     // and the follow-up router.refresh() transition complete (web/AGENTS.md rule 29).
     startRefreshTransition(async () => {
       try {
+        const before = (reports as AdminModerationReport[]).find(report => report.id === reportId)
         await rerunReportJudgement(reportId)
+        setRerunBefore({ reportId, judgementId: before?.judgement?.id ?? null })
         onSuccess(t('extracted.admin.reportsClient.judgementReRunQueued_ac6c0160'))
         // Note: because the rerun is async (202), the new judgement may not be
         // immediately visible until the background worker completes.

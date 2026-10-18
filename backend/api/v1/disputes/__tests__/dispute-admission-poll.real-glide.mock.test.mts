@@ -1,0 +1,90 @@
+import { describe, expect, it, vi } from 'vitest'
+import type { Job } from 'glide-mq'
+import { createRequest } from '@voucha/test-helpers/api/server'
+import {
+  createTestUser,
+  insertTestPost,
+  insertTestPostReview,
+  insertTestTopic,
+  readAllQueueJobs,
+} from '@voucha/test-helpers'
+import { makeAgentModelCaller } from '@voucha/test-helpers/agents/model-call-result'
+import { ai_agents } from '@queues/ai-agents/queues'
+import type { DisputeResolutionJobData } from '@queues/ai-agents/types'
+import { createTopicClaim } from '@services/topic-claims/create'
+import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
+import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
+import { createReviewDispute } from '@services/review-disputes/create'
+import { processDisputeResolution } from '../../../../workers/ai-agents/processors/process-dispute-resolution.mts'
+
+vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
+
+describe('dispute resolution queue admission and result polling', () => {
+  it('returns pending before the processor runs and exposes the persisted draft on detail read', async () => {
+    const staff = await createTestUser({ administrator: true })
+    const creator = await createTestUser()
+    const claimant = await createTestUser()
+    const reviewer = await createTestUser()
+    const topicId = await insertTestTopic({
+      name: `Admission Topic ${crypto.randomUUID()}`,
+      slug: `admission-topic-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: creator.id,
+    })
+    const { claim } = await createTopicClaim(claimant.id, {
+      topicId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    await adminVerifyTopicClaim(staff.id, claim.id)
+    const postId = await insertTestPost({
+      title: `Dispute admission ${crypto.randomUUID()}`,
+      slug: `dispute-admission-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: reviewer.id,
+      markdown: 'A review to dispute.',
+      postType: 'review',
+    })
+    await insertTestPostReview(postId, topicId, 1)
+    const input = parseCreateReviewDisputeInput({
+      post_id: postId,
+      reason: 'defamatory',
+      claim_text: `Claim ${crypto.randomUUID()}`,
+    })
+    const { dispute } = await createReviewDispute(claimant, input)
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    const rerun = await request.post(`/api/v1/disputes/${dispute.id}/resolution-drafts`).expect(202)
+    expect(rerun.body).toMatchObject({ queued: true })
+    const path = `/api/v1/disputes/${dispute.id}`
+    expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
+      status: 'pending',
+      ai_drafted_at: null,
+    })
+    const jobs = await readAllQueueJobs(ai_agents)
+    const job = jobs.find(
+      candidate =>
+        candidate.name === 'dispute-resolution' &&
+        'dispute_id' in candidate.data &&
+        candidate.data.dispute_id === dispute.id &&
+        'rerun_by_id' in candidate.data &&
+        candidate.data.rerun_by_id === staff.id,
+    )
+    expect(job).toBeDefined()
+    try {
+      const callModel = makeAgentModelCaller({
+        recommended_action: 'no_action',
+        public_response: 'We reviewed the disputed review.',
+        internal_response: 'No policy violation found.',
+      })
+      await processDisputeResolution(job! as Job<DisputeResolutionJobData>, callModel)
+      expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
+        status: 'pending',
+        recommended_action: 'no_action',
+        public_response: 'We reviewed the disputed review.',
+        ai_drafted_at: expect.any(String),
+      })
+      expect(callModel).toHaveBeenCalledOnce()
+    } finally {
+      await job?.remove()
+    }
+  })
+})

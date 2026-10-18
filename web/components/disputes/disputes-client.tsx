@@ -12,6 +12,7 @@ import {
   sendDisputeResolution,
   updateDisputeDraft,
   rerunDisputeAI,
+  reconcileDisputeAIDraft,
   listReviewDisputesClient,
 } from '@/lib/api/client/disputes'
 import { DisputesTable } from './disputes-table'
@@ -90,7 +91,10 @@ export function DisputesClient({
   async function handleRerunAI(id: string) {
     dispatch({ type: 'set_loading', id })
     try {
+      const before = disputes.find(dispute => dispute.id === id)
+      if (!before) throw new Error(`Could not find dispute ${id}`)
       await rerunDisputeAI(id)
+      dispatch({ type: 'update_dispute', dispute: await reconcileDisputeAIDraft(before) })
     } catch (err) {
       /* c8 ignore next -- error path requires injecting a rerun AI failure */
       onError(err, {

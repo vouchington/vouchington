@@ -62,3 +62,13 @@ not include it. Native credential adoption remains tracked in
 adoption in [clients #218](https://github.com/vouchington/vouchington-clients/issues/218). The
 producer lands first. The [MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool
 contract; AI chat transcripts are outside this DM decision.
+
+## AI review admission and results
+
+An accepted AI review request confirms that work was queued. Client and staff presentation paths
+keep the item pending and read the authorized resource until the saved recommendation or draft is
+visible; the enqueue response itself carries no model result. Staff report judgement reruns compare
+the persisted judgement identity because a completed rerun may produce the same text. Web implements
+this separation for moderation appeals, disputes, reports, copyright review, and copyright email
+intake. Native adoption is tracked as dependent client work under
+[clients #373](https://github.com/vouchington/vouchington-clients/issues/373); the producer lands first.

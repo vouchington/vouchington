@@ -176,6 +176,7 @@ describe('ReportsClient', () => {
 
   describe('judgement verdict chip', () => {
     const testJudgement = {
+      id: '00000000-0000-7000-8000-000000000001',
       recommended_action: 'remove' as const,
       public_response: 'This content was removed for violating our spam policy.',
       internal_response: 'Clear spam pattern detected across multiple communities.',

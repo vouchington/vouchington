@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   mockResolveDisputeAnnotate: vi.fn<VitestLooseMock>(),
   mockDismissDispute: vi.fn<VitestLooseMock>(),
   mockRerunDisputeAI: vi.fn<VitestLooseMock>(),
+  mockReconcileDisputeAIDraft: vi.fn<VitestLooseMock>(),
   mockUpdateDisputeDraft: vi.fn<VitestLooseMock>(),
   mockListReviewDisputesClient: vi.fn<VitestLooseMock>(),
   mockOnError: vi.fn<VitestLooseMock>(),
@@ -21,6 +22,7 @@ vi.mock(import('@/lib/api/client/disputes'), () => ({
   resolveDisputeAnnotate: h.mockResolveDisputeAnnotate,
   dismissDispute: h.mockDismissDispute,
   rerunDisputeAI: h.mockRerunDisputeAI,
+  reconcileDisputeAIDraft: h.mockReconcileDisputeAIDraft,
   updateDisputeDraft: h.mockUpdateDisputeDraft,
   listReviewDisputesClient: h.mockListReviewDisputesClient,
 }))
@@ -71,6 +73,34 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
         expect.objectContaining({ fallback: 'Failed to send dispute resolution' }),
       ),
     )
+  })
+
+  it('shows the saved AI draft only after queue admission and reconciliation', async () => {
+    const before = makeDispute({ ai_drafted_at: null, ai_public_response: null })
+    const after = makeDispute({
+      ai_drafted_at: '2026-01-02T00:00:00Z',
+      ai_public_response: 'Reviewed draft response',
+    })
+    let completeAdmission!: () => void
+    h.mockRerunDisputeAI.mockImplementationOnce(
+      () =>
+        new Promise<void>(resolve => {
+          completeAdmission = resolve
+        }),
+    )
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(after)
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    expect(h.mockReconcileDisputeAIDraft).not.toHaveBeenCalled()
+    completeAdmission()
+    await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledWith(before))
+    expect(await screen.findByText('Reviewed draft response')).toBeVisible()
   })
 
   it.each([

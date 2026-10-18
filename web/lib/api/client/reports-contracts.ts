@@ -45,6 +45,7 @@ export interface StaffModerationReport extends ModerationReportListItem {
   is_system_generated: boolean
   community_ban_evasion?: CommunityBanEvasionContext | null
   judgement: {
+    id: string
     recommended_action: 'no_action' | 'warn' | 'remove' | 'escalate'
     public_response: string
     internal_response: string
