@@ -47,7 +47,7 @@ Nested Oxlint configs do not inherit ancestor `overrides` or `plugins`: they res
 
 ## Enforcement Policy
 
-The `backend-no-job-result-wait` ast-grep rule rejects queue result waits and misleading
+The `backend-no-enqueue-and-wait` ast-grep rule rejects queue result waits and misleading
 `enqueue*AndWait` names across backend code, including tests. Queue admission may still be awaited;
 the forbidden operation is waiting for another job's completion instead of durable state.
 

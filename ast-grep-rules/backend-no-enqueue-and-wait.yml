@@ -6,14 +6,9 @@ note: >-
   See the queue checklist's never-wait rule (docs/checklists/backend-queues.md#queue-boundaries).
   This covers addAndWait, waitUntilFinished, and any enqueue...AndWait function or call. Return a
   pending resource and let the client poll it. This also covers aliases such as destructuring
-  `{ addAndWait: waitForJob }`. Existing violations carry a scoped ast-grep-ignore comment naming
-  the issue that removes them; drop the comment when that issue lands.
+  `{ addAndWait: waitForJob }` and bare references to either wait method.
 files:
   - 'backend/**/*.mts'
-ignores:
-  - 'backend/**/*.test.mts'
-  - 'backend/**/__tests__/**'
-  - 'backend/test-helpers/**'
 rule:
   any:
     - kind: member_expression
@@ -30,6 +25,8 @@ rule:
         field: key
         regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
     - kind: shorthand_property_identifier_pattern
+      regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
+    - kind: identifier
       regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
     - kind: import_specifier
       all:
@@ -140,4 +137,20 @@ examples:
   - file: backend/services/example/rerun.test.mts
     code: |
       await queue.addAndWait('judge', data)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await addAndWait('judge', data)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      registerCallback(addAndWait)
+    isValid: false
+  - file: web/lib/example.mts
+    code: |
+      await queue.addAndWait('judge', data)
     isValid: true
+  - file: backend/services/example/rerun.mts
+    code: |
+      registerCallback(enqueueReviewAndWait)
+    isValid: false
