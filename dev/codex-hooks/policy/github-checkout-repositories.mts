@@ -3,14 +3,11 @@ import { join } from 'node:path'
 
 import { gitConfiguredRemoteDefaults, gitRemoteVerbose } from '../local-process.mts'
 import {
-  repositoryOfRemotePath,
-  repositoryOfRemoteUrl,
-  repositoryOfRepoSelector,
-} from './github-repository-identities.mts'
-
-// One `git remote -v` line: `<name>\t<url> (fetch|push)`, which a partial clone suffixes with its
-// ` [<filter>]`.
-const REMOTE_LINE = /^[^\t]+\t(.+) \((fetch|push)\)(?: \[[^\]]*\])?$/
+  remoteLineRepository,
+  repositoriesFromConfiguredDefaults,
+  selectedRepositoryFromDefaults,
+} from './github-checkout-remote-config.mts'
+import { repositoryOfRemotePath, repositoryOfRemoteUrl } from './github-repository-identities.mts'
 
 /**
  * Lowercased OWNER/REPO identities on github.com, read the way gh reads them: the fetch URLs of `git remote -v` plus any `gh repo set-default` (`remote.<name>.gh-resolved`). Hostless
@@ -34,17 +31,9 @@ export function checkoutRepositories(cwd: string): ReadonlySet<string> | undefin
       repositories.add(repository)
     }
   }
-  for (const line of defaults.split('\n')) {
-    const value = line.slice(line.indexOf(' ') + 1)
-    if (line === '' || value === 'base') {
-      continue
-    }
-    const repository = repositoryOfRepoSelector(value)
-    if (repository === undefined) {
-      return undefined
-    }
-    repositories.add(repository)
-  }
+  const configured = repositoriesFromConfiguredDefaults(defaults)
+  if (configured === undefined) return undefined
+  for (const repository of configured) repositories.add(repository)
   return repositories
 }
 
@@ -53,6 +42,12 @@ export function checkoutRepositories(cwd: string): ReadonlySet<string> | undefin
  */
 export function checkoutRepository(cwd: string): string | undefined {
   const repositories = checkoutRepositories(cwd)
+  const remotes = gitRemoteVerbose(cwd)
+  const defaults = gitConfiguredRemoteDefaults(cwd)
+  if (repositories === undefined || remotes === undefined || defaults === undefined)
+    return undefined
+  const selected = selectedRepositoryFromDefaults(remotes, defaults)
+  if (selected !== null) return selected
   return repositories?.size === 1 ? [...repositories][0] : undefined
 }
 
@@ -90,13 +85,4 @@ function declaredRepository(root: string): string | null | undefined {
   return url.startsWith('github:')
     ? repositoryOfRemotePath(url.slice('github:'.length))
     : (repositoryOfRemoteUrl(url) ?? undefined)
-}
-
-// null for a push line or a hostless fetch URL; undefined for a line the hook doesn't recognize.
-function remoteLineRepository(line: string): string | null | undefined {
-  const match = REMOTE_LINE.exec(line)
-  if (match === null) {
-    return undefined
-  }
-  return match[2] === 'push' ? null : repositoryOfRemoteUrl(match[1])
 }

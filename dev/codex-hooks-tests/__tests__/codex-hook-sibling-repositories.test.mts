@@ -21,18 +21,20 @@ describe('same-owner repositories keep their own content policy', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   it.each([
-    ['--repo', '--repo acme/platform', ''],
-    ['GH_REPO', '', 'GH_REPO=acme/platform '],
+    ['--repo', '--repo github.com/acme/platform', ''],
+    ['GH_REPO', '', 'GH_HOST=github.com GH_REPO=acme/platform '],
   ])('allows a sibling repository via %s', (_name, flags, prefix) => {
     expect(reasonOf(nonDraftPr(flags, prefix))).toBeUndefined()
   })
 
   it('uses inherited GH_REPO for a sibling repository', () => {
+    vi.stubEnv('GH_HOST', 'github.com')
     vi.stubEnv('GH_REPO', 'acme/platform')
     expect(reasonOf(nonDraftPr(''))).toBeUndefined()
   })
 
   it('allows an implicit sibling checkout and its matching PR URL', async () => {
+    vi.stubEnv('GH_HOST', 'github.com')
     await withRepo({ origin: 'git@github.com:acme/platform.git' }, dir => {
       expect(reasonOf(nonDraftPr(''), dir)).toBeUndefined()
       expect(reasonOf(editPr('https://github.com/acme/platform/pull/5'), dir)).toBeUndefined()
@@ -47,10 +49,25 @@ describe('same-owner repositories keep their own content policy', () => {
     expect(reasonOf(nonDraftPr('--repo github.com/acme/platform'))).toBeUndefined()
     expect(reasonOf(nonDraftPr('--repo https://github.com/acme/platform'))).toBeUndefined()
     expect(reasonOf(nonDraftPr('--repo acme/platform', 'GH_HOST=github.com '))).toBeUndefined()
-    expect(reasonOf(nonDraftPr('--repo acme/platform', 'env -u GH_HOST '))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo acme/platform', 'env -u GH_HOST '))).toBeDefined()
     await withRepo({ origin: 'git@github.com:acme/platform.git' }, dir => {
       expect(reasonOf(nonDraftPr(''), dir)).toBeDefined()
     })
+  })
+
+  it('requires explicit github.com when GH_HOST is unset for hostless selectors', () => {
+    expect(reasonOf(nonDraftPr('--repo acme/platform'))).toBeDefined()
+    expect(reasonOf(nonDraftPr('', 'GH_REPO=acme/platform '))).toBeDefined()
+    vi.stubEnv('GH_HOST', 'github.com')
+    expect(reasonOf(nonDraftPr('--repo acme/platform'))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('', 'GH_REPO=acme/platform '))).toBeUndefined()
+  })
+
+  it('preserves .git in non-URL gh repository selectors', () => {
+    vi.stubEnv('GH_HOST', 'github.com')
+    expect(reasonOf(nonDraftPr('--repo acme/app.git'))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo github.com/acme/app.git'))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo https://github.com/acme/app.git'))).toContain('pr_create')
   })
 
   it.each(['GH_HOST=other.example ', 'GH_HOST="$HOST" ', 'export GH_HOST=other.example; '])(
@@ -64,15 +81,34 @@ describe('same-owner repositories keep their own content policy', () => {
     },
   )
 
-  it('for disagreeing repositories under one owner', () => {
+  it('lets a literal PR URL select the edit target ahead of cwd or --repo', () => {
     expect(
       reasonOf(editPr('https://github.com/acme/platform/pull/5', '--repo acme/app')),
-    ).toContain('pr_update')
+    ).toBeUndefined()
     expect(
       reasonOf(editPr('https://github.com/acme/another/pull/5', '--repo acme/platform')),
-    ).toContain('pr_update')
+    ).toBeUndefined()
     expect(
       reasonOf(editPr('https://other.example/acme/platform/pull/5', '--repo acme/platform')),
     ).toContain('pr_update')
+    expect(
+      findGitHubWorkflowBlock(
+        editPr('https://github.com/acme/app.git/pull/5'),
+        '/repository-scope-session',
+        {
+          sessionRepositories: () => new Set(['acme/app.git']),
+        },
+      )?.reason,
+    ).toContain('pr_update')
+    expect(reasonOf(editPr('5 --add-label https://github.com/acme/platform/pull/5'))).toContain(
+      'pr_update',
+    )
+    expect(reasonOf(editPr('5 --attach https://github.com/acme/platform/pull/5'))).toContain(
+      'pr_update',
+    )
+    expect(reasonOf(editPr('5 --unknown https://github.com/acme/platform/pull/5'))).toContain(
+      'pr_update',
+    )
+    expect(reasonOf(editPr('5 https://github.com/acme/platform/pull/5'))).toContain('pr_update')
   })
 })

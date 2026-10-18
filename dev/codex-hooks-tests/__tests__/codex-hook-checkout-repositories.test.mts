@@ -43,6 +43,7 @@ describe('github checkout repositories', () => {
       ['a repository name in another case', 'https://github.com/Widgets-Inc/Tool.git'],
       ['an https URL', 'https://github.com/widgets-inc/tool.git'],
       ['an ssh URL with a port', 'ssh://git@github.com:22/widgets-inc/tool.git'],
+      ['GitHub SSH over port 443', 'ssh://git@ssh.github.com:443/widgets-inc/tool.git'],
       ['a trailing slash', 'https://github.com/widgets-inc/tool/'],
     ])('reads %s', async (_name, url) => {
       await withRepo({ origin: url }, dir =>
@@ -68,6 +69,7 @@ describe('github checkout repositories', () => {
         { origin: 'https://github.com/acme/app.git', upstream: 'https://github.com/acme/tool.git' },
       ],
       ['an unknown host', { origin: 'https://other.example/acme/tool.git' }],
+      ['an unrecognized GitHub SSH port', { origin: 'ssh://git@ssh.github.com:22/acme/tool.git' }],
       ['an unproven SSH alias', { origin: 'github:acme/tool.git' }],
       ['two owners', { ...FORK_REMOTE, upstream: 'https://github.com/acme/tool.git' }],
     ])('is undefined for %s', async (_name, remotes) => {
@@ -96,6 +98,34 @@ describe('github checkout repositories', () => {
       )
       const base = { 'remote.upstream.gh-resolved': 'base' }
       await withRepo(remotes, dir => expect(checkoutRepositories(dir)?.size).toBe(2), base)
+    })
+
+    it('uses the remote named by a unique gh set-default while retaining every home remote', async () => {
+      const remotes = { ...FORK_REMOTE, upstream: 'https://github.com/acme/tool.git' }
+      const setDefault = { 'remote.upstream.gh-resolved': 'base' }
+      await withRepo(
+        remotes,
+        dir => {
+          expect(checkoutRepository(dir)).toBe('acme/tool')
+          expect(checkoutRepositories(dir)).toEqual(new Set(['forker/tool', 'acme/tool']))
+        },
+        setDefault,
+      )
+    })
+
+    it('uses a unique gh set-default repository selector with its selected remote host', async () => {
+      const remotes = { ...FORK_REMOTE, upstream: 'https://github.com/acme/tool.git' }
+      const setDefault = { 'remote.upstream.gh-resolved': 'widgets-inc/tool' }
+      await withRepo(
+        remotes,
+        dir => {
+          expect(checkoutRepository(dir)).toBe('widgets-inc/tool')
+          expect(checkoutRepositories(dir)).toEqual(
+            new Set(['forker/tool', 'acme/tool', 'widgets-inc/tool']),
+          )
+        },
+        setDefault,
+      )
     })
 
     it('reads a partial-clone fetch line, which git suffixes with its filter', async () => {
@@ -181,6 +211,7 @@ describe('github checkout repositories', () => {
     })
 
     it('keeps the content rules for a fork-only checkout targeting its upstream', async () => {
+      vi.stubEnv('GH_HOST', 'github.com')
       await withRepo(FORK_REMOTE, dir => {
         writeManifest(dir, { repository: UPSTREAM_URL })
         const options = { sessionRepositories: () => sessionHomeRepositories(dir) }

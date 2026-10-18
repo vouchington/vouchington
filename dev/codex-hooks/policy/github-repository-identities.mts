@@ -11,7 +11,7 @@ export function repositoryOfRepoSelector(value: string): string | undefined {
   if (!REPO_SELECTOR_CHARACTERS.test(path) || segments.includes('')) return undefined
   if (isUrl && segments.length !== 3) return undefined
   if (segments.length === 3 && segments.shift()?.toLowerCase() !== 'github.com') return undefined
-  return segments.length === 2 ? githubRepository(segments[0], segments[1]) : undefined
+  return segments.length === 2 ? githubRepository(segments[0], segments[1], isUrl) : undefined
 }
 
 // null for a hostless remote gh ignores (a local path or file://); undefined when a hosted URL that
@@ -21,7 +21,8 @@ export function repositoryOfRemoteUrl(url: string): string | null | undefined {
   if (withScheme !== null) {
     const [, scheme, host, path] = withScheme
     if (scheme.toLowerCase() === 'file' || host === '') return null
-    return /^(?:[^@/]+@)?github\.com(?::\d+)?$/i.test(host)
+    return /^(?:[^@/]+@)?github\.com(?::\d+)?$/i.test(host) ||
+      (scheme.toLowerCase() === 'ssh' && /^(?:[^@/]+@)?ssh\.github\.com:443$/i.test(host))
       ? repositoryOfRemotePath(path)
       : undefined
   }
@@ -35,11 +36,11 @@ export function repositoryOfRemoteUrl(url: string): string | null | undefined {
 
 export function repositoryOfRemotePath(path: string): string | undefined {
   const segments = path.replace(/^\/+|\/+$/g, '').split('/')
-  return segments.length === 2 ? githubRepository(segments[0], segments[1]) : undefined
+  return segments.length === 2 ? githubRepository(segments[0], segments[1], true) : undefined
 }
 
-function githubRepository(owner: string, name: string): string | undefined {
-  const repository = name.replace(/\.git$/i, '')
+function githubRepository(owner: string, name: string, stripGitSuffix = false): string | undefined {
+  const repository = stripGitSuffix ? name.replace(/\.git$/i, '') : name
   return GITHUB_OWNER.test(owner) &&
     /^[a-z\d_.-]+$/i.test(repository) &&
     repository !== '.' &&

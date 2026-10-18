@@ -36,7 +36,7 @@ describe('gh content-rule repository scope', () => {
     vi.stubEnv('GIT_CONFIG_GLOBAL', '/dev/null')
     vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1')
     vi.stubEnv('GH_REPO', '')
-    vi.stubEnv('GH_HOST', '')
+    vi.stubEnv('GH_HOST', 'github.com')
   })
 
   afterEach(() => {
@@ -159,7 +159,6 @@ describe('gh content-rule repository scope', () => {
         { upstream: 'https://github.com/acme/tool.git' },
         { 'remote.upstream.partialclonefilter': 'blob:none' },
       ],
-      ['a set-default on the session repository', {}, { 'remote.origin.gh-resolved': 'acme/tool' }],
       ['an unparseable hosted remote', { lab: 'https://gitlab.example/group/sub/tool.git' }, {}],
     ])('for cwd remotes with %s', async (_name, extraRemotes, config) => {
       await withRepo(
@@ -219,6 +218,17 @@ describe('gh content-rule repository scope', () => {
           CLOSING_KEYWORD,
         )
       })
+    })
+
+    it('uses the repository selected by gh-resolved for implicit targeting', async () => {
+      await withRepo(WIDGETS_REMOTE, dir => expect(reasonOf(nonDraftPr(''), dir)).toBeUndefined(), {
+        'remote.origin.gh-resolved': 'widgets-inc/another',
+      })
+      await withRepo(
+        WIDGETS_REMOTE,
+        dir => expect(reasonOf(nonDraftPr(''), dir)).toContain(DRAFT_FIRST),
+        { 'remote.origin.gh-resolved': 'acme/app' },
+      )
     })
 
     it('for an expanded or non-PR URL selector', () => {

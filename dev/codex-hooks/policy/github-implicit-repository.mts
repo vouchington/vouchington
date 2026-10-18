@@ -64,7 +64,7 @@ function githubHostIsProven(tokens: string[], index: number, isTopLevelCommand: 
   const inherited = isTopLevelCommand && followsOnlyChainedCds(tokens, index)
   if (!('GH_HOST' in env) && !inherited) return false
   const host = 'GH_HOST' in env ? env.GH_HOST : process.env.GH_HOST
-  return host === undefined || host === '' || host.toLowerCase() === 'github.com'
+  return host?.toLowerCase() === 'github.com'
 }
 
 // A `NAME+=value` append or `NAME[i]=value` element gives gh a value the hook can't read, so only a
