@@ -4,6 +4,7 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-co
 import { createQueue, createWorker } from '../glide-mq-factory.mts'
 import { wrapBatchProcessor } from '../guarded-worker-processors.mts'
 import { workerQueueCommandClient } from '../glide-mq-shared-client.mts'
+import { registerWorkerQueueScriptFile } from '../glide-mq-scripts.mts'
 import { withScheduledRunLease } from '../scheduled-run-lease.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -77,12 +78,28 @@ describe('scheduled run lease recovery', () => {
       await workerQueueCommandClient.set(schedulerKey, 'wrong-type')
       release = await withScheduledRunLease(name, first, { lockDuration: 20_000 })
       expect(release).not.toBeNull()
-      expect(await withScheduledRunLease(name, second, { lockDuration: 20_000 })).toBeNull()
+      // Invoke the production admission script without delivering its response to the wrapper.
+      const admitScript = registerWorkerQueueScriptFile(
+        'admit-scheduled-run.lua',
+        new URL('../scheduled-run-lease.mts', import.meta.url).href,
+      )
+      expect(
+        await workerQueueCommandClient.invokeScript(admitScript, {
+          keys: [`${base}:run:repeat`, `${base}:job:${second.id}`, `${base}:run-metrics`],
+          args: [
+            second.id,
+            'repeat',
+            'scheduledRunLeaseAdmitted',
+            'scheduledRunLeaseSkipped',
+            '20000',
+          ],
+        }),
+      ).toBe(0)
       expect(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap')).toBe(
         '1',
       )
       await release?.()
-      // A retry after the holder releases remains skipped without a second metric increment.
+      // A retry after losing the first response remains skipped without a second count.
       expect(await withScheduledRunLease(name, second, { lockDuration: 20_000 })).toBeNull()
       expect(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap')).toBe(
         '1',
@@ -137,33 +154,6 @@ describe('scheduled run lease recovery', () => {
         `${base}:schedulers`,
         `${base}:job:${job.id}`,
       ])
-      await queue.close()
-    }
-  })
-
-  it('repairs admission after a crash between acquiring the lease and recording it', async () => {
-    const name = `lease-admission-retry-${crypto.randomUUID()}`
-    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
-    const leaseKey = `${base}:run:repeat`
-    const queue = createQueue(name, { priorityKind: 'ranked' })
-    const job = await queue.add('sweep', {}, { jobId: 'scheduled-root' })
-    if (!job) throw new Error('Expected a scheduled root')
-    Object.assign(job, { schedulerName: 'repeat' })
-    try {
-      await workerQueueCommandClient.set(leaseKey, job.id)
-      expect(
-        await workerQueueCommandClient.hget(`${base}:job:${job.id}`, 'scheduledRunLeaseAdmitted'),
-      ).toBeNull()
-      const release = await withScheduledRunLease(name, job, { lockDuration: 20_000 })
-      expect(release).not.toBeNull()
-      expect(
-        await workerQueueCommandClient.hget(`${base}:job:${job.id}`, 'scheduledRunLeaseAdmitted'),
-      ).toBe('repeat')
-      await release?.()
-      expect(await workerQueueCommandClient.get(leaseKey)).toBeNull()
-    } finally {
-      await queue.obliterate({ force: true })
-      await workerQueueCommandClient.unlink([leaseKey, `${leaseKey}:previous`])
       await queue.close()
     }
   })

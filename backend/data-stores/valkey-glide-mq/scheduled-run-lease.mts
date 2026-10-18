@@ -49,7 +49,6 @@ export async function withScheduledRunLease(
   const ttl = Math.max(1, Math.min(runtime, interval ?? runtime))
   const completeAdmission = async () => {
     try {
-      await workerQueueCommandClient.hset(jobKey, { [ADMITTED_SCHEDULER_FIELD]: scheduler })
       const previous = await workerQueueCommandClient.get(previousKey)
       const previousJobId = previous === null ? null : decodeGlideString(previous)
       if (previousJobId !== null && previousJobId !== job.id)
@@ -75,25 +74,30 @@ export async function withScheduledRunLease(
   }
   const decision = Number(
     await workerQueueCommandClient.invokeScript(admitScript, {
-      keys: [key, jobKey],
+      keys: [key, jobKey, `${baseKey}:run-metrics`],
       args: [job.id, scheduler, ADMITTED_SCHEDULER_FIELD, SKIPPED_SCHEDULER_FIELD, String(ttl)],
     }),
   )
   if (decision === 1 || decision === 2) return completeAdmission()
-  if (decision === 4) return null // this tick was counted when it first collided
+  if (decision === 4) {
+    console.info('skipped_overlap', { queue, scheduler, jobId: job.id, recovered: true })
+    return null // the original collision atomically counted this tick
+  }
   if (decision !== 0 && decision !== 3) throw new Error('Unknown scheduled lease admission result')
   if (decision === 3) {
     // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
     // Keep its saved cursor by delaying it until the current holder finishes.
     await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))
   }
-  try {
-    await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
-  } catch (err) {
+  if (decision === 3) {
     try {
-      onError(err instanceof Error ? err : new Error(String(err)))
+      await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
     } catch (err) {
-      console.error('scheduled_overlap_metric_reporting_failed', err)
+      try {
+        onError(err instanceof Error ? err : new Error(String(err)))
+      } catch (err) {
+        console.error('scheduled_overlap_metric_reporting_failed', err)
+      }
     }
   }
   console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
