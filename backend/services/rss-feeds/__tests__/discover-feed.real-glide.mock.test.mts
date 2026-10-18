@@ -6,7 +6,7 @@ import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '../../../data-stores/valkey-glide-mq/index.mts'
-import { CRAWL_URLS_QUEUE_NAME } from '@queues/crawler/config'
+import { BACKGROUND_CPU_QUEUE_NAME as CRAWL_URLS_QUEUE_NAME } from '@queues/background-cpu/config'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   getFirstRssFeedImportRowId,
