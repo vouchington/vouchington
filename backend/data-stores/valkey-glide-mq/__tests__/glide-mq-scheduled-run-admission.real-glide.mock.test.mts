@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { createQueue } from '../glide-mq-factory.mts'
 import { workerQueueCommandClient } from '../glide-mq-shared-client.mts'
 import { registerWorkerQueueScriptFile } from '../glide-mq-scripts.mts'
@@ -8,6 +9,45 @@ import { withScheduledRunLease } from '../scheduled-run-lease.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('scheduled run admission', () => {
+  it('still skips a fresh tick when overlap metric storage and reporting fail', async () => {
+    const name = `lease-metric-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const first = await queue.add('sweep', {}, { jobId: 'first' })
+    const second = await queue.add('sweep', {}, { jobId: 'second' })
+    if (!first || !second) throw new Error('Expected both scheduled ticks')
+    Object.assign(first, { schedulerName: 'repeat' })
+    Object.assign(second, { schedulerName: 'repeat' })
+    const release = await withScheduledRunLease(name, first, { lockDuration: 20000 })
+    const reportingError = new Error('Sentry capture failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await workerQueueCommandClient.set(`${base}:run-metrics`, 'wrong-type')
+      sentryCaptureExceptionMock.mockImplementation(() => {
+        throw reportingError
+      })
+      expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
+      expect(consoleError).toHaveBeenCalledWith(
+        'scheduled_overlap_metric_reporting_failed',
+        reportingError,
+      )
+      expect(
+        await workerQueueCommandClient.hget(`${base}:job:${second.id}`, 'scheduledRunLeaseSkipped'),
+      ).toBe('repeat')
+      await release?.()
+      // Even if the collision response were lost, this tick cannot run after the holder releases.
+      expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
+      expect(await workerQueueCommandClient.get(`${base}:run:repeat`)).toBeNull()
+    } finally {
+      sentryCaptureExceptionMock.mockReset()
+      consoleError.mockRestore()
+      await release?.()
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([`${base}:run-metrics`, `${base}:run:repeat:previous`])
+      await queue.close()
+    }
+  })
+
   it('records admission before an expired lease can let a newer tick skip its retry', async () => {
     const name = `lease-admission-retry-${crypto.randomUUID()}`
     const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`

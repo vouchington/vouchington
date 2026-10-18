@@ -34,34 +34,6 @@ describe('scheduled run lease recovery', () => {
     }
   })
 
-  it('still skips a fresh tick when overlap metric storage fails', async () => {
-    const name = `lease-metric-${crypto.randomUUID()}`
-    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
-    const queue = createQueue(name, { priorityKind: 'ranked' })
-    const first = await queue.add('sweep', {}, { jobId: 'first' })
-    const second = await queue.add('sweep', {}, { jobId: 'second' })
-    if (!first || !second) throw new Error('Expected both scheduled ticks')
-    Object.assign(first, { schedulerName: 'repeat' })
-    Object.assign(second, { schedulerName: 'repeat' })
-    const release = await withScheduledRunLease(name, first, { lockDuration: 20000 })
-    try {
-      await workerQueueCommandClient.set(`${base}:run-metrics`, 'wrong-type')
-      expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
-      expect(
-        await workerQueueCommandClient.hget(`${base}:job:${second.id}`, 'scheduledRunLeaseSkipped'),
-      ).toBe('repeat')
-      await release?.()
-      // Even if the collision response were lost, this tick cannot run after the holder releases.
-      expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
-      expect(await workerQueueCommandClient.get(`${base}:run:repeat`)).toBeNull()
-    } finally {
-      await release?.()
-      await queue.obliterate({ force: true })
-      await workerQueueCommandClient.unlink([`${base}:run-metrics`, `${base}:run:repeat:previous`])
-      await queue.close()
-    }
-  })
-
   it('records a collision despite broken scheduler metadata and counts a recovered tick once', async () => {
     const name = `lease-scheduler-read-${crypto.randomUUID()}`
     const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
@@ -173,9 +145,11 @@ describe('scheduled run lease recovery', () => {
       blockTimeout: 500,
     })
     const oldDelayedAgain = Promise.withResolvers<void>()
+    const oldDelayedAfterMetricFailure = Promise.withResolvers<void>()
     let oldDelayCount = 0
     events.on('delay-changed', ({ jobId }: { jobId: string }) => {
       if (jobId === first.id && ++oldDelayCount === 2) oldDelayedAgain.resolve()
+      if (jobId === first.id && oldDelayCount === 3) oldDelayedAfterMetricFailure.resolve()
     })
     const firstMoved = Promise.withResolvers<void>()
     const oldWorker = createWorker<typeof first.data>(name, async job => {
@@ -221,6 +195,10 @@ describe('scheduled run lease recovery', () => {
       expect(
         await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap'),
       ).toBeNull()
+      // A damaged metric key must not lose the already-admitted retained page.
+      await workerQueueCommandClient.set(`${base}:run-metrics`, 'wrong-type')
+      await oldDelayedAfterMetricFailure.promise
+      expect(seenPages).toEqual([])
       releaseNew.resolve()
       await oldCompleted.promise
       expect(seenPages).toEqual([2])
