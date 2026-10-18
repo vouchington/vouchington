@@ -8,7 +8,8 @@ import { RequestParseError } from '../../errors.mts'
 
 import { toBase64Url } from '../../../test-helpers/image-resize/index.mts'
 
-import { signPath, SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
+import { signPath } from '@vouchington/utils/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 
 import { TEST_SIDELOAD_SIGNING_KEY } from '@ts-shared/url-signing/test-key'
 

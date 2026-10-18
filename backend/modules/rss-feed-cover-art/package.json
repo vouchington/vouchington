@@ -25,7 +25,8 @@
   "dependencies": {
     "@modules/utils": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "@vouchington/utils": "^0.7.4"
   },
   "devDependencies": {}
 }

@@ -1,9 +1,5 @@
-import {
-  SIDELOAD_SIGNING_KEYS_ENV,
-  parseSigningKeys,
-  signPath,
-  type PlacementSourcePolicy,
-} from '@ts-shared/url-signing'
+import { parseSigningKeys, signPath } from '@vouchington/utils/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV, type PlacementSourcePolicy } from '@ts-shared/url-signing'
 import { getServerImageOrigin } from '@/lib/utils/image-origin'
 import type { PublicLandingPage } from '@/types/landing-pages'
 

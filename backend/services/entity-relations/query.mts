@@ -2,11 +2,8 @@ import sql from 'sql-template-strings'
 import { read, write } from '@data-stores/psql'
 import type { EntityRelationEntityType, EntityRelationPredicateType } from './config.mts'
 import { entityRelationMetadatum } from './metadata.mts'
-import {
-  buildSideloadImageUrl,
-  parseSigningKeys,
-  SIDELOAD_SIGNING_KEYS_ENV,
-} from '@ts-shared/url-signing'
+import { parseSigningKeys } from '@vouchington/utils/url-signing'
+import { buildSideloadImageUrl, SIDELOAD_SIGNING_KEYS_ENV } from '@ts-shared/url-signing'
 import { getImageOrigin } from '@modules/utils/image-origin'
 import {
   buildEntityRelationSelectQuery,

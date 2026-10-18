@@ -4,11 +4,8 @@ import {
 } from '@jongleberry/vurst-markdown'
 import { replaceEntityMentions } from '@services/entity-links'
 import { absolutizeSideloadImageSources } from '@modules/utils/absolute-sideload-html'
-import {
-  parseSigningKeys,
-  SIDELOAD_SIGNING_KEYS_ENV,
-  CURRENT_SIDELOAD_PATH_PREFIX,
-} from '@ts-shared/url-signing'
+import { parseSigningKeys } from '@vouchington/utils/url-signing'
+import { SIDELOAD_SIGNING_KEYS_ENV, CURRENT_SIDELOAD_PATH_PREFIX } from '@ts-shared/url-signing'
 
 type MarkdownRenderOptions = {
   allowHtml?: boolean

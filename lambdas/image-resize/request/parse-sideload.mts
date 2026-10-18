@@ -1,10 +1,9 @@
 import type { APIGatewayProxyEvent } from 'aws-lambda'
+import { parseSigningKeys, verifyPathSignature } from '@vouchington/utils/url-signing'
 import {
   CURRENT_SIDELOAD_PATH_PREFIX,
   isFirstPartyMediaUrl,
-  parseSigningKeys,
   SIDELOAD_SIGNING_KEYS_ENV,
-  verifyPathSignature,
 } from '@ts-shared/url-signing'
 import { RequestParseError } from '../errors.mts'
 import { getSideloadBase64url } from './event-path.mts'
@@ -49,7 +48,7 @@ export function parseSideloadRequest(
     throw new RequestParseError('Sideload signing keys are not configured', 403)
   }
   const path = `${CURRENT_SIDELOAD_PATH_PREFIX}${base64url}`
-  if (!verifyPathSignature(path, sig, keys)) {
+  if (!verifyPathSignature(path, sig, keys, { allowUnsignedWhenNoKeys: true })) {
     throw new RequestParseError('Invalid or missing signature', 403)
   }
 

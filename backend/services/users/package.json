@@ -57,7 +57,6 @@
     "@services/user-consents": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@ts-shared/languages": "workspace:^",
-    "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
@@ -73,6 +72,7 @@
     "@services/agents": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
     "@services/lists": "workspace:^",
+    "@ts-shared/url-signing": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }

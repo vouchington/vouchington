@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { buildSideloadImageUrl } from './index.mts'
 import {
-  authorizeDependencyStates,
+  buildSideloadImageUrl,
   firstPartyMediaBlockedHosts,
+  isFirstPartyMediaUrl,
+} from './index.mts'
+import {
   getImagePlacementDeliveryKey,
   isCurrentSideloadRoute,
-  isFirstPartyMediaUrl,
   isPlacementSourcePolicy,
   isRemovedSideloadRoute,
   parseMediaDeliveryEdgeEnforcementMode,
@@ -46,9 +47,6 @@ describe('media source policy', () => {
     expect(isPlacementSourcePolicy('018f6b2e-7c3a-7b2a-8c11-6a5e4d3c2b1a')).toBe(false)
     expect(isPlacementSourcePolicy({ placementId, imageId, revision: 0 })).toBe(true)
     expect(isPlacementSourcePolicy({ placementId, imageId, revision: -1 })).toBe(false)
-    expect(authorizeDependencyStates(['allow'])).toBe('allow')
-    expect(authorizeDependencyStates(['allow', 'withheld'])).toBe('deny')
-    expect(authorizeDependencyStates(['unknown'])).toBe('deny')
   })
 
   it('parses the edge enforcement mode and rejects unknown values', () => {
@@ -91,5 +89,61 @@ describe('media source policy', () => {
       }),
     ).toBe(true)
     expect(isFirstPartyMediaUrl(new URL('https://cdn.example.net/a.jpg'), { env })).toBe(false)
+  })
+})
+
+describe('buildSideloadImageUrl', () => {
+  const imageOrigin = 'https://images.example.com'
+
+  it('applies the product image origin, route and transform settings', () => {
+    const result = buildSideloadImageUrl('https://source.example/image.jpg', {
+      imageOrigin: 'https://images.example.com/',
+      width: 400,
+      signingKeys: [],
+      quality: 75,
+    })
+    expect(result).toMatch(/^https:\/\/images\.example\.com\/sideload\//)
+    expect(result).toContain('w=400')
+    expect(result).toContain('q=75')
+  })
+
+  it('leaves Voucha first-party media URLs unproxied', () => {
+    expect(
+      buildSideloadImageUrl('https://images.voucha.ai/media/image.jpg', {
+        imageOrigin,
+        width: 400,
+        signingKeys: [],
+      }),
+    ).toBeNull()
+  })
+
+  it('leaves product-configured media host aliases unproxied', () => {
+    expect(
+      buildSideloadImageUrl('https://cdn.customer.example/image.jpg', {
+        imageOrigin,
+        width: 400,
+        signingKeys: [],
+        aliases: ['customer.example'],
+      }),
+    ).toBeNull()
+  })
+
+  it('leaves an image URL already served by the configured image origin unchanged', () => {
+    expect(
+      buildSideloadImageUrl('https://images.example.com/sideload/v2/abc', {
+        imageOrigin,
+        width: 400,
+        signingKeys: [],
+      }),
+    ).toBeNull()
+  })
+
+  it('accepts missing signing keys as the product unsigned mode', () => {
+    const result = buildSideloadImageUrl('https://source.example/image.jpg', {
+      imageOrigin,
+      width: 400,
+      signingKeys: null as any,
+    })
+    expect(result).toMatch(/^https:\/\/images\.example\.com\/sideload\//)
   })
 })

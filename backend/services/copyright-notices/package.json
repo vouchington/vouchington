@@ -44,7 +44,6 @@
     "@services/urls": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
-    "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
@@ -55,6 +54,7 @@
     "valkyries": "^0.10.0"
   },
   "devDependencies": {
+    "@ts-shared/url-signing": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "@vouchington/postgres": "^0.0.16",
