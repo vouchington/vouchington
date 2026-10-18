@@ -59,53 +59,56 @@ const plusScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
 )
 
 describe('generated MCP catalog contracts', () => {
-  it('publishes every canonical member option mapping only on the user audience', () => {
-    const user = catalog.servers.find(server => server.audience === 'user')!
-    const canonicalOptions = user.tools.filter(({ tool }) => {
-      const branches = tool.inputSchema['oneOf'] as Record<string, unknown>[] | undefined
-      return (
-        branches?.length &&
-        branches.every(branch => {
-          const properties = branch['properties'] as
-            | Record<string, Record<string, unknown>>
-            | undefined
-          const values = properties?.['option']?.['enum']
-          const required = branch['required'] as string[] | undefined
-          return (
-            Array.isArray(values) &&
-            values.length === 1 &&
-            typeof values[0] === 'string' &&
-            properties?.['arguments'] &&
-            required?.includes('option') &&
-            required.includes('arguments')
-          )
-        })
+  it.each(['user', 'community_moderation'] as const)(
+    'publishes canonical %s option mappings',
+    audience => {
+      const user = catalog.servers.find(server => server.audience === audience)!
+      const canonicalOptions = user.tools.filter(({ tool }) => {
+        const branches = tool.inputSchema['oneOf'] as Record<string, unknown>[] | undefined
+        return (
+          branches?.length &&
+          branches.every(branch => {
+            const properties = branch['properties'] as
+              | Record<string, Record<string, unknown>>
+              | undefined
+            const values = properties?.['option']?.['enum']
+            const required = branch['required'] as string[] | undefined
+            return (
+              Array.isArray(values) &&
+              values.length === 1 &&
+              typeof values[0] === 'string' &&
+              properties?.['arguments'] &&
+              required?.includes('option') &&
+              required.includes('arguments')
+            )
+          })
+        )
+      })
+      expect(
+        user.tools
+          .filter(entry => entry.tool['_meta']?.['voucha/optionOutputPointers'])
+          .map(entry => entry.tool.name)
+          .toSorted(),
+      ).toEqual(canonicalOptions.map(entry => entry.tool.name).toSorted())
+      const mapped = ALL_TOOLS.filter(
+        tool => tool.meta?.audience === audience && tool.meta.optionOutputPointers,
       )
-    })
-    expect(
-      user.tools
-        .filter(entry => entry.tool['_meta']?.['voucha/optionOutputPointers'])
-        .map(entry => entry.tool.name)
-        .toSorted(),
-    ).toEqual(canonicalOptions.map(entry => entry.tool.name).toSorted())
-    const mapped = ALL_TOOLS.filter(
-      tool => tool.meta?.audience === 'user' && tool.meta.optionOutputPointers,
-    )
-    expect(mapped.length).toBeGreaterThan(0)
-    for (const tool of mapped) {
-      const listed = user.tools.find(entry => entry.tool.name === tool.schema.name)!.tool
-      expect(listed['_meta']?.['voucha/optionOutputPointers']).toEqual(
-        tool.meta!.optionOutputPointers,
-      )
-    }
-    expect(
-      catalog.servers
-        .filter(server => server.audience !== 'user')
-        .every(server =>
-          server.tools.every(entry => !entry.tool['_meta']?.['voucha/optionOutputPointers']),
-        ),
-    ).toBe(true)
-  })
+      expect(mapped.length).toBeGreaterThan(0)
+      for (const tool of mapped) {
+        const listed = user.tools.find(entry => entry.tool.name === tool.schema.name)!.tool
+        expect(listed['_meta']?.['voucha/optionOutputPointers']).toEqual(
+          tool.meta!.optionOutputPointers,
+        )
+      }
+      expect(
+        catalog.servers
+          .filter(server => !['user', 'community_moderation'].includes(server.audience))
+          .every(server =>
+            server.tools.every(entry => !entry.tool['_meta']?.['voucha/optionOutputPointers']),
+          ),
+      ).toBe(true)
+    },
+  )
 
   it('limits every tool and option description to 400 characters with named offenders', () => {
     const descriptions = [

@@ -14,10 +14,8 @@ export { findMcpStepUpScopes } from './resolve-tool-call.mts'
 export {
   USER_MCP_SERVER_CONFIG,
   COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
-  BRAND_MCP_SERVER_CONFIG,
   ADMIN_MCP_SERVER_CONFIG,
   LEGAL_MCP_SERVER_CONFIG,
-  ALL_MCP_SERVER_CONFIGS,
   MOUNTED_MCP_SERVER_CONFIGS,
   type McpServerConfig,
 } from './config.mts'

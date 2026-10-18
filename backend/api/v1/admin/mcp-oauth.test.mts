@@ -95,7 +95,7 @@ describe('POST /api/v1/admin/mcp with OAuth access tokens', () => {
     const denied = await postAdminMcp(umbrella.access_token, call).expect(200)
     expect(denied.body.error).toEqual({
       code: -32601,
-      message: 'Tool not found: list_copyright_review_queue',
+      message: 'MCP error -32601: Tool not found: list_copyright_review_queue',
     })
     expect(denied.headers['www-authenticate']).toBeUndefined()
     const exact = await issueTestOAuthTokens(owner, {

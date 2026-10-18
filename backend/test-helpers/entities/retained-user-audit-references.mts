@@ -74,8 +74,8 @@ export async function insertTestRetainedUserAuditRow(
     await query(
       `/* insertTestRetainedUserAuditMcpCall */
       INSERT INTO mcp_call_audit_events
-        (surface, correlation_id, actor_user_id, oauth_client_id, resource, jsonrpc_method, outcome)
-      SELECT 'mcp', $1::uuid, $2::uuid, id, 'https://example.test/mcp', 'tools/list', 'accepted'
+        (audience, correlation_id, actor_user_id, oauth_client_id, resource, jsonrpc_method, outcome)
+      SELECT 'user', $1::uuid, $2::uuid, id, 'https://example.test/mcp', 'tools/list', 'accepted'
       FROM oauth_clients WHERE client_id = $3`,
       [randomUUID(), actorId, client.client_id],
     )

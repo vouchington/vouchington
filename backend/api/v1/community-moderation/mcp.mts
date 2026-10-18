@@ -12,7 +12,7 @@ app.route('/api/v1/community-moderation/mcp').post(async (ctx: Context) => {
   )
   const response = apiOpenApiHttpResponse(
     'POST:/api/v1/community-moderation/mcp',
-    await dispatchMcpRequest(ctx, COMMUNITY_MODERATION_MCP_SERVER_CONFIG),
+    await dispatchMcpRequest(ctx, COMMUNITY_MODERATION_MCP_SERVER_CONFIG.audience),
   )
   const contentType = response.headers.get('Content-Type')
   if (contentType) ctx.setType(contentType)

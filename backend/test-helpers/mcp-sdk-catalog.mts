@@ -14,7 +14,11 @@ import {
 import { handleMcpHttpRequest } from '../services/mcp-tools/handle-request.mts'
 import { createTestMembership } from './entities/memberships.mts'
 import { createTestUser } from './entities/users.mts'
-import { issueTestOAuthTokensForClient } from './services/oauth-authorization-server/test-support.mts'
+import { randomTestOAuthRedirectUri } from './services/oauth-authorization-server/test-support.mts'
+import {
+  registerOAuthClient,
+  getOAuthClient,
+} from '../services/oauth-authorization-server/index.mts'
 
 const preModerationScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
   scope => scope !== 'community-moderation:read' && scope !== 'community-moderation:write',
@@ -106,20 +110,23 @@ export async function connectSdkCatalog<T>(
   const owner = account ?? (await createTestUser({ administrator: testCase.admin }))
   if (testCase.plan !== null) await createTestMembership({ user_id: owner.id, plan: testCase.plan })
   const user = { ...owner, membership_plan: testCase.plan }
-  const origin: CredentialRequestOrigin = testCase.server.acceptsApiKeys
-    ? { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null }
-    : {
+  // This SDK harness enters verified dispatch directly so it can vary caller roles independently
+  // of OAuth grant admission. A real registered client supplies staff content provenance.
+  const client = testCase.server.acceptsApiKeys
+    ? null
+    : await registerOAuthClient({
+        client_name: 'MCP SDK contract',
+        redirect_uris: [randomTestOAuthRedirectUri()],
+        scope: testCase.server.audience === 'legal' ? 'copyright-notices:read' : 'mcp.admin:read',
+      })
+  const origin: CredentialRequestOrigin = client
+    ? {
         interface: 'mcp',
         credential: 'oauth',
         client: null,
-        oauthClientId: (
-          await issueTestOAuthTokensForClient(owner, {
-            audience: testCase.server.audience,
-            scope:
-              testCase.server.audience === 'legal' ? 'copyright-notices:read' : 'mcp.admin:read',
-          })
-        ).clientId,
+        oauthClientId: (await getOAuthClient(client.client_id))!.id,
       }
+    : { interface: 'mcp', credential: 'api_key', client: null, oauthClientId: null }
   return makeClient(
     new URL(`http://localhost${testCase.server.routePath}`),
     async (input, init) => {

@@ -104,7 +104,18 @@ describe('MCP server audience isolation through HTTP', () => {
         method: 'tools/call',
         params: { name, arguments: {} },
       }).expect(200)
-      expect(response.body.error).toEqual({ code: -32601, message: `Tool not found: ${name}` })
+      const unknown = 'audience_isolation_unknown'
+      const missing = await post(target, tokens.get(target.audience)!, {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: unknown, arguments: {} },
+      }).expect(200)
+      expect(missing.body.error.code).toBe(-32601)
+      expect(response.body.error).toEqual({
+        ...missing.body.error,
+        message: missing.body.error.message.replace(unknown, name),
+      })
       expect(response.headers['www-authenticate']).toBeUndefined()
     },
   )
@@ -132,13 +143,28 @@ describe('MCP server audience isolation through HTTP', () => {
     '%s keys authenticate only on their own member server',
     async audience => {
       for (const target of MOUNTED_MCP_SERVER_CONFIGS) {
-        const response = await post(target, keys.get(audience)!).expect(
-          target.audience === audience ? 200 : 401,
-        )
+        const response = await post(target, keys.get(audience)!)
         expect(response.status).toBe(target.audience === audience ? 200 : 401)
       }
     },
   )
+
+  it.each(
+    MOUNTED_MCP_SERVER_CONFIGS.filter(config =>
+      ['community_moderation', 'legal'].includes(config.audience),
+    ),
+  )('$audience preserves stateless notifications and method rejection', async config => {
+    for (const method of ['get', 'delete'] as const) {
+      const response = await createRequest()[method](config.routePath).expect(405)
+      expect(response.headers.allow).toBe('POST')
+    }
+    const notification = await post(config, tokens.get(config.audience)!, {
+      jsonrpc: '2.0',
+      method: 'notifications/initialized',
+    }).expect(202)
+    expect(notification.text).toBe('')
+    expect(notification.headers['content-type']).toBeUndefined()
+  })
 
   it('keeps the brand server unmounted while publishing its empty resource metadata', async () => {
     const brand = ALL_MCP_SERVER_CONFIGS.find(config => config.audience === 'brand')!

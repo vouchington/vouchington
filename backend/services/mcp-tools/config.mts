@@ -61,9 +61,6 @@ export const ALL_MCP_SERVER_CONFIGS: readonly McpServerConfig[] = [
   LEGAL_MCP_SERVER_CONFIG,
 ]
 
-export const MOUNTED_MCP_SERVER_CONFIGS: readonly McpServerConfig[] = [
-  USER_MCP_SERVER_CONFIG,
-  COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
-  ADMIN_MCP_SERVER_CONFIG,
-  LEGAL_MCP_SERVER_CONFIG,
-]
+export const MOUNTED_MCP_SERVER_CONFIGS = ALL_MCP_SERVER_CONFIGS.filter(
+  config => config.audience !== 'brand',
+)

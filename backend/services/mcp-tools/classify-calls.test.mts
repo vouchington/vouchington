@@ -7,7 +7,7 @@ import {
   MAX_AUDITED_MCP_MESSAGES,
   planMcpCalls,
 } from './classify-calls.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { ADMIN_MCP_SERVER_CONFIG, LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 
 const admin = { id: 'admin-id', roles: ['administrator'], membership_plan: null } as const
 const READ: ApiScope[] = ['mcp.admin:read']
@@ -111,7 +111,7 @@ describe('planMcpCalls events', () => {
         }),
         admin,
         ['copyright-notices:read', 'copyright-notices:write'],
-        ADMIN_MCP_SERVER_CONFIG,
+        LEGAL_MCP_SERVER_CONFIG,
         false,
       ).events,
     ).toEqual([{ jsonrpcMethod: 'tools/call', toolName: null, outcome: 'not_found' }])
@@ -132,7 +132,7 @@ describe('planMcpCalls events', () => {
       }),
       admin,
       ['copyright-notices:read', 'copyright-notices:write'],
-      ADMIN_MCP_SERVER_CONFIG,
+      LEGAL_MCP_SERVER_CONFIG,
       true,
     )
     expect(events).toEqual([

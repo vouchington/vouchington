@@ -10,7 +10,7 @@ app.route('/api/v1/legal/mcp').post(async (ctx: Context) => {
   apiRequestContract<'POST:/api/v1/legal/mcp', unknown>('POST:/api/v1/legal/mcp')
   const response = apiOpenApiHttpResponse(
     'POST:/api/v1/legal/mcp',
-    await dispatchMcpRequest(ctx, LEGAL_MCP_SERVER_CONFIG),
+    await dispatchMcpRequest(ctx, LEGAL_MCP_SERVER_CONFIG.audience),
   )
   const contentType = response.headers.get('Content-Type')
   if (contentType) ctx.setType(contentType)
