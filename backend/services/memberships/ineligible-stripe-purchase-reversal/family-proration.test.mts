@@ -43,6 +43,29 @@ describe('getFamilyCollisionRefundAmount', () => {
     ).toBe(0)
   })
 
+  it.each(['2026-01-31T23:59:59.999Z', '2028-02-29T23:59:59.999Z', '2026-12-31T23:59:59.999Z'])(
+    'ends refundable service exactly at %s',
+    periodEnd => {
+      const periodEndsAt = new Date(periodEnd)
+      const endMs = periodEndsAt.getTime()
+      const periodStartedAt = new Date(endMs - 1_000)
+
+      for (const [offsetMs, expectedMinorUnits] of [
+        [-1, 1],
+        [0, 0],
+        [1, 0],
+      ] as const) {
+        expect(
+          getFamilyCollisionRefundAmount(1_000, {
+            collisionAt: new Date(endMs + offsetMs),
+            periodEndsAt,
+            periodStartedAt,
+          }),
+        ).toBe(expectedMinorUnits)
+      }
+    },
+  )
+
   it('rejects a family collision without a positive service period', () => {
     expect(() =>
       getFamilyCollisionRefundAmount(1_000, {
