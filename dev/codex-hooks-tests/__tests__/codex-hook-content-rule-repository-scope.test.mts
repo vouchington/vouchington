@@ -8,9 +8,9 @@ import {
 import { withRepo } from '../git-remote-repo.mts'
 import { withTestTempDir } from '../test-temp-root.mts'
 
-// Synthetic owners: the session checkout belongs to `acme`; `widgets-inc` is another owner.
-const SESSION = { sessionOwners: () => new Set(['acme']) }
-const UNREAD_CWD = '/owner-scope-session'
+// The session belongs to acme/app; widgets-inc/tool is a foreign repository.
+const SESSION = { sessionRepositories: () => new Set(['acme/app']) }
+const UNREAD_CWD = '/repository-scope-session'
 const DRAFT_FIRST = 'pr_create'
 const CLOSING_KEYWORD = 'pr_update'
 const TARGET_MAIN = 'PRs must target main'
@@ -29,20 +29,21 @@ function reasonOf(
 
 const WIDGETS_REMOTE = { origin: 'git@github.com:widgets-inc/tool.git' }
 
-describe('gh content-rule owner scope', () => {
+describe('gh content-rule repository scope', () => {
   beforeEach(() => {
     // A developer's own gitconfig (url.insteadOf rewrites) or GH_REPO must not leak in. GH_REPO is
     // stubbed empty, which gh treats as unset: stubbing `undefined` doesn't unset in this project (#435).
     vi.stubEnv('GIT_CONFIG_GLOBAL', '/dev/null')
     vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1')
     vi.stubEnv('GH_REPO', '')
+    vi.stubEnv('GH_HOST', '')
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  describe('content rules skip a provably other-owner target', () => {
+  describe('content rules skip a provably other-repository target', () => {
     it.each([
       ['--repo', '--repo widgets-inc/tool', ''],
       ['-R with a host and another case', '-R github.com/Widgets-Inc/tool', ''],
@@ -50,10 +51,14 @@ describe('gh content-rule owner scope', () => {
       ['a GH_REPO prefix', '', 'GH_REPO=widgets-inc/tool '],
       [
         '--repo overriding an exported GH_REPO',
-        '--repo widgets-inc/tool',
+        '--repo github.com/widgets-inc/tool',
         'export GH_REPO=acme/app; ',
       ],
-      ['--repo behind command wrappers', '--repo widgets-inc/tool', 'env -C /srv/home nohup '],
+      [
+        '--repo behind command wrappers',
+        '--repo github.com/widgets-inc/tool',
+        'env -C /srv/home nohup ',
+      ],
     ])('via %s', (_name, flags, prefix) => {
       expect(reasonOf(nonDraftPr(flags, prefix))).toBeUndefined()
     })
@@ -72,7 +77,9 @@ describe('gh content-rule owner scope', () => {
     })
 
     it('reads a literal target inside a nested shell command', () => {
-      expect(reasonOf(`bash -c '${nonDraftPr('--repo widgets-inc/tool')}'`)).toBeUndefined()
+      expect(
+        reasonOf(`bash -c '${nonDraftPr('--repo github.com/widgets-inc/tool')}'`),
+      ).toBeUndefined()
       expect(reasonOf(`bash -c '${nonDraftPr('--repo acme/app')}'`)).toContain(DRAFT_FIRST)
     })
 
@@ -86,7 +93,7 @@ describe('gh content-rule owner scope', () => {
     it.each([
       ['a set-default of `base`', { 'remote.origin.gh-resolved': 'base' }, {}],
       ['a hostless remote', {}, { mirror: '/srv/git/tool.git' }],
-    ])('keeps the remote owner with %s', async (_name, config, extraRemotes) => {
+    ])('keeps the remote repository with %s', async (_name, config, extraRemotes) => {
       await withRepo(
         { ...WIDGETS_REMOTE, ...extraRemotes },
         dir => expect(reasonOf(nonDraftPr(''), dir)).toBeUndefined(),
@@ -109,23 +116,25 @@ describe('gh content-rule owner scope', () => {
       expect(reasonOf(command)).toBeUndefined()
     })
 
-    it('accepts a literal PR URL selector on the other owner', async () => {
+    it('accepts a literal PR URL selector on the other repository', async () => {
       await withRepo(WIDGETS_REMOTE, dir => {
         expect(reasonOf(editPr('https://github.com/widgets-inc/tool/pull/5'), dir)).toBeUndefined()
       })
     })
   })
 
-  describe('content rules stay on without proof of another owner', () => {
+  describe('content rules stay on without proof of another repository', () => {
     it.each([
-      ['the session owner', '--repo acme/app', ''],
-      ['the session owner in another case', '--repo ACME/app', ''],
+      ['the session repository', '--repo acme/app', ''],
+      ['the session repository in another case', '--repo ACME/app', ''],
       ['an expanded owner', '--repo "$OWNER/tool"', ''],
       ['an expanded repository segment', '--repo "widgets-inc/$REPO"', ''],
+      ['an unknown host', '--repo other.example/acme/platform', ''],
+      ['an invalid repository name', '--repo acme/..', ''],
       ['a malformed selector', '--repo widgets-inc', ''],
       ['an expanded GH_REPO prefix', '', 'GH_REPO="$TARGET" '],
       ['a GH_REPO exported outside the prefix', '', 'export GH_REPO=acme/app; '],
-      ['a GH_REPO prefix for the session owner', '', 'GH_REPO=acme/app '],
+      ['a GH_REPO prefix for the session repository', '', 'GH_REPO=acme/app '],
       ['a GH_REPO prefix on an earlier command', '', 'GH_REPO=widgets-inc/tool true && '],
       ['a GH_REPO that env -i clears', '', 'GH_REPO=widgets-inc/tool env -i PATH=/usr/bin '],
       ['a GH_REPO that env - clears', '', 'GH_REPO=widgets-inc/tool env - PATH=/usr/bin '],
@@ -138,13 +147,19 @@ describe('gh content-rule owner scope', () => {
     })
 
     it.each([
+      [
+        'two repositories under one owner',
+        { upstream: 'https://github.com/widgets-inc/another.git' },
+        {},
+      ],
+      ['an unknown host', { lab: 'https://other.example/acme/platform.git' }, {}],
       ['a second owner', { upstream: 'https://github.com/acme/tool.git' }, {}],
       [
         'a partial-clone second owner',
         { upstream: 'https://github.com/acme/tool.git' },
         { 'remote.upstream.partialclonefilter': 'blob:none' },
       ],
-      ['a set-default on the session owner', {}, { 'remote.origin.gh-resolved': 'acme/tool' }],
+      ['a set-default on the session repository', {}, { 'remote.origin.gh-resolved': 'acme/tool' }],
       ['an unparseable hosted remote', { lab: 'https://gitlab.example/group/sub/tool.git' }, {}],
     ])('for cwd remotes with %s', async (_name, extraRemotes, config) => {
       await withRepo(
@@ -198,7 +213,7 @@ describe('gh content-rule owner scope', () => {
       })
     })
 
-    it('for a PR URL selector on the session owner from an other-owner checkout', async () => {
+    it('for a PR URL selector on the session repository from an other-repository checkout', async () => {
       await withRepo(WIDGETS_REMOTE, dir => {
         expect(reasonOf(editPr('https://github.com/acme/app/pull/5'), dir)).toContain(
           CLOSING_KEYWORD,
@@ -213,56 +228,62 @@ describe('gh content-rule owner scope', () => {
       ).toContain(CLOSING_KEYWORD)
     })
 
-    it('without injected or provable session owners', () => {
+    it('without injected or provable session repositories', () => {
       const command = nonDraftPr('--repo widgets-inc/tool')
       expect(reasonOf(command, UNREAD_CWD, {})).toContain(DRAFT_FIRST)
-      expect(reasonOf(command, UNREAD_CWD, { sessionOwners: () => undefined })).toContain(
+      expect(reasonOf(command, UNREAD_CWD, { sessionRepositories: () => undefined })).toContain(
         DRAFT_FIRST,
       )
-      expect(reasonOf(command, UNREAD_CWD, { sessionOwners: () => new Set() })).toContain(
+      expect(reasonOf(command, UNREAD_CWD, { sessionRepositories: () => new Set() })).toContain(
         DRAFT_FIRST,
       )
     })
 
-    it('for a target among several session owners', () => {
-      const sessionOwners = () => new Set(['forker', 'Acme'])
-      expect(reasonOf(nonDraftPr('--repo acme/tool'), UNREAD_CWD, { sessionOwners })).toContain(
-        DRAFT_FIRST,
-      )
-      expect(reasonOf(nonDraftPr('--repo forker/tool'), UNREAD_CWD, { sessionOwners })).toContain(
-        DRAFT_FIRST,
-      )
+    it('for a target among several session repositories', () => {
+      const sessionRepositories = () => new Set(['forker/tool', 'Acme/tool'])
+      expect(
+        reasonOf(nonDraftPr('--repo acme/tool'), UNREAD_CWD, { sessionRepositories }),
+      ).toContain(DRAFT_FIRST)
+      expect(
+        reasonOf(nonDraftPr('--repo forker/tool'), UNREAD_CWD, { sessionRepositories }),
+      ).toContain(DRAFT_FIRST)
       const widgets = nonDraftPr('--repo widgets-inc/tool')
-      expect(reasonOf(widgets, UNREAD_CWD, { sessionOwners })).toBeUndefined()
+      expect(reasonOf(widgets, UNREAD_CWD, { sessionRepositories })).toBeUndefined()
     })
   })
 
-  describe('global rules ignore the owner scope', () => {
+  describe('global rules ignore the repository scope', () => {
     it.each([
-      ['gh pr merge', 'gh pr merge 5 --repo widgets-inc/tool --squash'],
-      ['gh api merge', 'gh api -X PUT repos/widgets-inc/tool/pulls/5/merge'],
-      ['gh stack', 'gh stack switch --repo widgets-inc/tool'],
-    ])('%s still blocks for another owner', (_name, command) => {
+      ['gh pr merge', 'gh pr merge 5 --repo acme/platform --squash'],
+      ['gh api merge', 'gh api -X PUT repos/acme/platform/pulls/5/merge'],
+      ['gh stack', 'gh stack switch --repo acme/platform'],
+    ])('%s still blocks for another repository', (_name, command) => {
       expect(reasonOf(command)).toBeDefined()
     })
 
-    it('never reads the session owners for other gh commands', () => {
-      const sessionOwners = vi.fn<() => ReadonlySet<string> | undefined>(() => new Set(['acme']))
+    it('never reads the session repositories for other gh commands', () => {
+      const sessionRepositories = vi.fn<() => ReadonlySet<string> | undefined>(
+        () => new Set(['acme/app']),
+      )
       findGitHubWorkflowBlock('gh pr merge 5 --repo widgets-inc/tool', UNREAD_CWD, {
-        sessionOwners,
+        sessionRepositories,
       })
-      findGitHubWorkflowBlock('gh pr view 5 --repo widgets-inc/tool', UNREAD_CWD, { sessionOwners })
-      expect(sessionOwners).not.toHaveBeenCalled()
+      findGitHubWorkflowBlock('gh pr view 5 --repo widgets-inc/tool', UNREAD_CWD, {
+        sessionRepositories,
+      })
+      expect(sessionRepositories).not.toHaveBeenCalled()
     })
   })
 
-  describe('preToolUseOutput threads the session owners', () => {
+  describe('preToolUseOutput threads the session repositories', () => {
     const payload = { tool_input: { command: nonDraftPr('--repo widgets-inc/tool') } }
 
-    it('allows another owner only when session owners are injected and exclude it', () => {
-      expect(preToolUseOutput(payload, { sessionOwners: () => new Set(['acme']) }).exitCode).toBe(0)
-      const home = () => new Set(['acme', 'widgets-inc'])
-      expect(preToolUseOutput(payload, { sessionOwners: home }).stderr).toContain(DRAFT_FIRST)
+    it('allows another repository only when session repositories are injected and exclude it', () => {
+      expect(
+        preToolUseOutput(payload, { sessionRepositories: () => new Set(['acme/app']) }).exitCode,
+      ).toBe(0)
+      const home = () => new Set(['acme/app', 'widgets-inc/tool'])
+      expect(preToolUseOutput(payload, { sessionRepositories: home }).stderr).toContain(DRAFT_FIRST)
       expect(preToolUseOutput(payload).stderr).toContain(DRAFT_FIRST)
     })
   })

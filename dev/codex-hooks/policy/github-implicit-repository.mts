@@ -1,4 +1,4 @@
-import { checkoutOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
+import { checkoutRepository, repositoryOfRepoSelector } from './github-checkout-repositories.mts'
 import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
 import { plainShellAssignment } from './shell-token-utils.mts'
 
@@ -9,12 +9,12 @@ const MODELED_PREFIX_WORD = /^(?:env|command|-u.+|--unset=.+)$/
 const GIT_VARIABLE = /^GIT_[A-Z\d_]*=/
 
 /**
- * The GitHub owner gh resolves without `--repo`: a non-empty `GH_REPO`, else the cwd's remotes —
+ * The GitHub repository gh resolves without `--repo`: a non-empty `GH_REPO`, else the cwd's remotes —
  * or undefined unless the hook provably sees what gh will. gh's own prefix may only set or unset
  * variables, and the inherited `GH_REPO` and `cwd` count only for a top-level gh reached through
  * nothing but `&&`-joined literal `cd`s, with no `GIT_*` prefix for the cwd.
  */
-export function implicitRepositoryOwner(
+export function implicitRepository(
   tokens: string[],
   index: number,
   isTopLevelCommand: boolean,
@@ -32,10 +32,38 @@ export function implicitRepositoryOwner(
   }
   const ghRepo = prefixSetsGhRepo ? env.GH_REPO : process.env.GH_REPO
   if (ghRepo !== undefined && ghRepo !== '') {
-    return ownerOfRepoSelector(ghRepo)
+    return invocationRepositorySelector(ghRepo, tokens, index, isTopLevelCommand)
   }
   const cwdIsProven = inherited && cwd !== undefined && !prefix.some(isGitVariable)
-  return cwdIsProven ? checkoutOwner(cwd) : undefined
+  return cwdIsProven && githubHostIsProven(tokens, index, isTopLevelCommand)
+    ? checkoutRepository(cwd)
+    : undefined
+}
+
+// Explicit hosts override GH_HOST; a hostless selector needs the effective host proven too.
+export function invocationRepositorySelector(
+  selector: string,
+  tokens: string[],
+  index: number,
+  isTopLevelCommand: boolean,
+): string | undefined {
+  const repository = repositoryOfRepoSelector(selector)
+  const hasHost =
+    selector
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/$/, '')
+      .split('/').length === 3
+  return hasHost || githubHostIsProven(tokens, index, isTopLevelCommand) ? repository : undefined
+}
+
+function githubHostIsProven(tokens: string[], index: number, isTopLevelCommand: boolean): boolean {
+  const prefix = tokens.slice(commandSegmentStart(tokens, index), index)
+  const env = commandPrefixAt(tokens, index)?.env
+  if (env === undefined || !prefixOnlySetsVariables(prefix)) return false
+  const inherited = isTopLevelCommand && followsOnlyChainedCds(tokens, index)
+  if (!('GH_HOST' in env) && !inherited) return false
+  const host = 'GH_HOST' in env ? env.GH_HOST : process.env.GH_HOST
+  return host === undefined || host === '' || host.toLowerCase() === 'github.com'
 }
 
 // A `NAME+=value` append or `NAME[i]=value` element gives gh a value the hook can't read, so only a

@@ -133,7 +133,7 @@ export function preToolUseOutput(
 ): PreToolUseResult {
   const block = findPreToolUseBlock(payload, {
     automationContext: options.automationContext,
-    sessionOwners: options.sessionOwners,
+    sessionRepositories: options.sessionRepositories,
   })
   if (block === null) {
     return { exitCode: 0, stderr: '', stdout: '' }

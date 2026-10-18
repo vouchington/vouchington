@@ -1,6 +1,6 @@
 import type { GitHubWorkflowPolicyOptions } from './core.mts'
-import { githubOwner, ownerOfRepoSelector } from './github-checkout-owners.mts'
-import { implicitRepositoryOwner } from './github-implicit-repository.mts'
+import { repositoryOfRepoSelector } from './github-checkout-repositories.mts'
+import { implicitRepository, invocationRepositorySelector } from './github-implicit-repository.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import type { ShellWord } from './shell-tokenizer.mts'
 import { parseGhOptions } from './github-options.mts'
@@ -20,13 +20,13 @@ const EDIT_NON_SELECTOR_VALUE_FLAGS = new Set([
 /**
  * Returns, for one inspected command, whether a gh invocation in it is exempt from Vouchington's
  * PR and issue content rules (`gh pr create/new/edit`, `gh issue create`): true only when it
- * provably targets a repository whose GitHub owner is outside the session's home owners. Every
- * doubt keeps the rules: no injected, readable, non-empty home owners, an unresolved cwd, remotes
- * naming several owners, or a repository or PR selector that is a shell expansion. Without a
- * literal `--repo`, implicitRepositoryOwner proves the target only when gh provably sees what the
+ * provably targets a github.com repository outside the session's home repositories. Every
+ * doubt keeps the rules: no injected, readable, non-empty home repositories, an unresolved cwd, remotes
+ * naming several repositories, or a repository or PR selector that is a shell expansion. Without a
+ * literal `--repo`, implicitRepository proves the target only when gh provably sees what the
  * hook sees — a nested `bash -c`, heredoc, or `$(…)` body, or any command or joiner before gh
  * other than `&&`-joined literal `cd`s, needs a literal `--repo` or `GH_REPO` prefix. Any other
- * invocation — merge authority, `gh api`, the gh stack policy — is never exempt. See #434.
+ * invocation — merge authority, `gh api`, the gh stack policy — is never exempt.
  */
 export function contentRuleExemption(
   words: ShellWord[],
@@ -39,44 +39,47 @@ export function contentRuleExemption(
     const isContentRuleInvocation =
       (area === 'pr' && (action === 'create' || action === 'new' || action === 'edit')) ||
       (area === 'issue' && action === 'create')
-    if (!isContentRuleInvocation || options.sessionOwners === undefined) {
+    if (!isContentRuleInvocation || options.sessionRepositories === undefined) {
       return false
     }
     const repo = parseGhOptions(invocation.optionTokens).repo.at(-1)
     const base =
       repo === undefined
-        ? implicitRepositoryOwner(tokens, index, isTopLevelCommand, cwd)
-        : ownerOfRepoSelector(repo)
-    const target = targetOwner(base, invocation, words)
+        ? implicitRepository(tokens, index, isTopLevelCommand, cwd)
+        : invocationRepositorySelector(repo, tokens, index, isTopLevelCommand)
+    const target = targetRepository(base, invocation, words)
     if (target === undefined) {
       return false
     }
-    const home = options.sessionOwners()
+    const home = options.sessionRepositories()
     if (home === undefined || home.size === 0) {
       return false
     }
-    return !Array.from(home, owner => owner.toLowerCase()).includes(target)
+    return !Array.from(home, repository => repository.toLowerCase()).includes(target)
   }
 }
 
-function targetOwner(
+function targetRepository(
   base: string | undefined,
   invocation: GhInvocation,
   words: ShellWord[],
 ): string | undefined {
-  const owners = new Set([base])
+  const repositories = new Set([base])
   if (invocation.area === 'pr' && invocation.action === 'edit') {
-    for (const owner of editSelectorOwners(invocation, words)) {
-      owners.add(owner)
+    for (const repository of editSelectorRepositories(invocation, words)) {
+      repositories.add(repository)
     }
   }
-  return owners.size === 1 ? [...owners][0] : undefined
+  return repositories.size === 1 ? [...repositories][0] : undefined
 }
 
 // `gh pr edit <url>` edits that URL's repository whatever --repo or the cwd says, so a literal PR
-// URL selector joins the owner set and a selector the hook can't read leaves the target unproven.
-function editSelectorOwners(invocation: GhInvocation, words: ShellWord[]): (string | undefined)[] {
-  const owners: (string | undefined)[] = []
+// URL selector joins the repository set and a selector the hook can't read leaves the target unproven.
+function editSelectorRepositories(
+  invocation: GhInvocation,
+  words: ShellWord[],
+): (string | undefined)[] {
+  const repositories: (string | undefined)[] = []
   invocation.optionTokenIndexes.forEach((wordIndex, position) => {
     const word = words[wordIndex]
     const previous = invocation.optionTokens[position - 1]
@@ -84,11 +87,13 @@ function editSelectorOwners(invocation: GhInvocation, words: ShellWord[]): (stri
       return
     }
     if (word.expandable) {
-      owners.push(undefined)
+      repositories.push(undefined)
     } else if (/^https?:\/\//i.test(word.value)) {
-      const owner = /^https?:\/\/[^/]+\/([^/]+)\/[^/]+\/pull\/\d+/i.exec(word.value)?.[1]
-      owners.push(owner === undefined ? undefined : githubOwner(owner))
+      const selector = /^(https?:\/\/[^/]+\/[^/]+\/[^/]+)\/pull\/\d+(?:[/?#].*)?$/i.exec(
+        word.value,
+      )?.[1]
+      repositories.push(selector === undefined ? undefined : repositoryOfRepoSelector(selector))
     }
   })
-  return owners
+  return repositories
 }
