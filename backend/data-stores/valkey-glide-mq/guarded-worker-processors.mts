@@ -42,7 +42,7 @@ export function wrapBatchProcessor<D, R>(
         const index = runnable.indexOf(job)
         return index < 0 ? (undefined as R) : values[index]!
       })
-      await Promise.all(releases.map(release => release()))
+      await releaseAfterFailure(releases)
       return result
     } catch (err) {
       await releaseAfterFailure(releases)
@@ -61,7 +61,7 @@ async function runJob<D, R>(
   if (!release) return undefined as R
   try {
     const result = await activeJobs.run([activeJob(queue, job)], () => processor(job))
-    await release()
+    await releaseAfterFailure([release])
     return result
   } catch (err) {
     await releaseAfterFailure([release])

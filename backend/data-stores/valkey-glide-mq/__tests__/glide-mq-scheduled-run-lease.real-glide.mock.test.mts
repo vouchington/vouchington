@@ -143,4 +143,33 @@ describe('scheduled run lease recovery', () => {
       await queue.close()
     }
   })
+
+  it('does not retry successful processing when lease cleanup fails', async () => {
+    const name = `lease-success-cleanup-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const leaseKey = `${base}:run:repeat`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const job = await queue.add('work', {}, { attempts: 2 })
+    if (!job) throw new Error('Expected a scheduled root')
+    await workerQueueCommandClient.hset(`${base}:job:${job.id}`, { schedulerName: 'repeat' })
+    const completed = Promise.withResolvers<void>()
+    let processed = 0
+    const worker = createWorker(name, async () => {
+      processed += 1
+      await workerQueueCommandClient.unlink([leaseKey])
+      await workerQueueCommandClient.hset(leaseKey, { invalid: 'lease-value' })
+    })
+    worker.on('completed', () => completed.resolve())
+    try {
+      await worker.waitUntilReady()
+      await completed.promise
+      expect(processed).toBe(1)
+      expect(await job.getState()).toBe('completed')
+    } finally {
+      await worker.close(true)
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([leaseKey, `${leaseKey}:previous`])
+      await queue.close()
+    }
+  })
 })
