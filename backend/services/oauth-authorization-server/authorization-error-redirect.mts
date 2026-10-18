@@ -7,6 +7,7 @@ import {
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
+import { createProtocolClientLookup } from './protocol-client.mts'
 
 export async function getOAuthAuthorizationErrorRedirect(
   input: {
@@ -47,17 +48,7 @@ export async function getOAuthAuthorizationErrorRedirect(
   return authorizationErrorRedirect(input, {
     issuer: getOAuthIssuer(),
     clients: {
-      findClient: async () =>
-        client
-          ? {
-              clientId: client.client_id,
-              clientName: client.client_name,
-              redirectUris: client.redirect_uris,
-              scopes: client.scopes,
-              tokenEndpointAuthMethod: client.token_endpoint_auth_method,
-              clientSecretHash: client.client_secret_hash,
-            }
-          : null,
+      findClient: createProtocolClientLookup(async () => client ?? null, undefined),
     },
   })
 }
