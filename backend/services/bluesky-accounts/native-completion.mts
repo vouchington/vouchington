@@ -28,13 +28,14 @@ export async function finalizeNativeBlueskyAccountLink(
   flowId: string,
   completionToken: string,
   completionProofVerifier: string,
+  completionNow: () => Date,
 ): Promise<void> {
   const discovered = await findCompletion(flowId)
   if (!discovered) throw createHttpError(404, 'Bluesky link completion not found or expired')
   await using query = await beginTransaction()
 
   await lockBlueskyAuthorizationOwner(currentUserId, discovered.bluesky_did, flowId, query)
-  const completion = await getLockedCompletion(flowId, query)
+  const completion = await getLockedCompletion(flowId, query, completionNow)
   assertCompletionOwnerAndToken(completion, currentUserId, flowId, completionToken)
   const proofChallenge = await getHandoffProofChallenge(flowId, currentUserId, query)
   if (!nativeCompletionProofMatches(completionProofVerifier, proofChallenge)) {
@@ -70,6 +71,7 @@ async function findCompletion(flowId: string): Promise<{ bluesky_did: string } |
 async function getLockedCompletion(
   flowId: string,
   query: TransactionQuery,
+  completionNow: () => Date,
 ): Promise<CompletionRow> {
   const { rows } = await read<CompletionRow>(
     sql`/* getLockedNativeBlueskyLinkCompletion */
@@ -82,7 +84,7 @@ async function getLockedCompletion(
     { query },
   )
   const completion = rows[0]
-  if (!completion || completion.expires_at <= new Date()) {
+  if (!completion || completion.expires_at <= completionNow()) {
     throw createHttpError(404, 'Bluesky link completion not found or expired')
   }
   return completion

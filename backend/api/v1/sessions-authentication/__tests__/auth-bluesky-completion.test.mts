@@ -89,6 +89,7 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
         completion.flowId,
         completion.token,
         completion.verifier,
+        () => new Date(),
       ),
     ).rejects.toMatchObject({ status: 404 })
     expect(await testBlueskyLinkCompletionExists(completion.flowId)).toBe(true)
@@ -105,6 +106,7 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
         completion.flowId,
         completion.token,
         completion.verifier,
+        () => new Date(),
       ),
     ).rejects.toMatchObject({ status: 403, code: 'ACCOUNT_SUSPENDED' })
     expect(await testBlueskyLinkCompletionExists(completion.flowId)).toBe(true)
@@ -119,6 +121,7 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
         completion.flowId,
         completion.token,
         completion.verifier,
+        () => new Date(),
       ),
     )
 
@@ -163,6 +166,46 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
       .expect(404)
   })
 
+  it('enforces the exact completion-expiry boundary', async () => {
+    const user = await createTestUser()
+    const instant = new Date()
+
+    for (const offsetMs of [-1, 0]) {
+      const completion = await createCompletion(user.id)
+      await setTestBlueskyLinkCompletionExpiresAt(
+        completion.flowId,
+        new Date(instant.getTime() + offsetMs),
+      )
+
+      await expect(
+        finalizeNativeBlueskyAccountLink(
+          user.id,
+          completion.flowId,
+          completion.token,
+          completion.verifier,
+          () => instant,
+        ),
+      ).rejects.toMatchObject({ status: 404 })
+      expect(await getTestBlueskyLinkedAccountRow(completion.did)).toMatchObject({ user_id: null })
+      expect(await testBlueskyLinkCompletionExists(completion.flowId)).toBe(true)
+    }
+
+    const valid = await createCompletion(user.id)
+    await setTestBlueskyLinkCompletionExpiresAt(valid.flowId, new Date(instant.getTime() + 1))
+
+    await expect(
+      finalizeNativeBlueskyAccountLink(
+        user.id,
+        valid.flowId,
+        valid.token,
+        valid.verifier,
+        () => instant,
+      ),
+    ).resolves.toBeUndefined()
+    expect(await getTestBlueskyLinkedAccountRow(valid.did)).toMatchObject({ user_id: user.id })
+    expect(await testBlueskyLinkCompletionExists(valid.flowId)).toBe(false)
+  })
+
   it('retains the completion when account attachment rolls back', async () => {
     const user = await createTestUser()
     await insertTestBlueskyLinkedAccount({ userId: user.id })
@@ -189,6 +232,7 @@ describe('POST /api/v1/auth/bluesky/link-completions', () => {
         completion.flowId,
         completion.token,
         getTestBlueskyCompletionProofVerifier(uuidv7()),
+        () => new Date(),
       ),
     ).rejects.toMatchObject({ status: 404 })
 

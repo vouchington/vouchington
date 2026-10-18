@@ -221,6 +221,7 @@ describe('deleteUser Bluesky cleanup', () => {
         flowId,
         token,
         getTestBlueskyCompletionProofVerifier(flowId),
+        () => new Date(),
       ),
     ])
 
