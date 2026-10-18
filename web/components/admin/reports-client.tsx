@@ -145,8 +145,15 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     }
   }
   const pendingRerun = pendingRerunEntities.size > 0
-  const pollingTimedOut = usePendingAiRefresh(pendingJudgement || pendingRerun, () =>
-    router.refresh(),
+  const pollingTimedOut = usePendingAiRefresh(
+    pendingJudgement || pendingRerun,
+    () => router.refresh(),
+    [
+      ...(reports as AdminModerationReport[]).flatMap(report =>
+        report.judgement ? [] : [report.id],
+      ),
+      ...Object.entries(rerunBefore).map(([id, before]) => `${id}:${before ?? 'new'}`),
+    ].join('|'),
   )
   const hotkeyItems =
     viewerTier === 'staff'

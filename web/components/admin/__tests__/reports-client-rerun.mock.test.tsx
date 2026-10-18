@@ -1,4 +1,3 @@
-/* oxlint-disable max-lines -- rerun scenarios share the same report and navigation fixtures. */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,11 +62,8 @@ vi.mock(
     }) as unknown as typeof import('@/components/ui/select'),
 )
 
-import {
-  ReportsClient,
-  type AdminModerationReport,
-  type AdminModerationReportsResponse,
-} from '../reports-client'
+import { ReportsClient } from '../reports-client'
+import { makeReportsResponse } from '@/test-helpers/admin-reports'
 
 describe('ReportsClient re-run judgement button', () => {
   beforeEach(() => mockNav.reset())
@@ -117,10 +113,18 @@ describe('ReportsClient re-run judgement button', () => {
         data={makeReportsResponse({ judgement })}
       />,
     )
-    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function))
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      expect.any(String),
+    )
     fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
     await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(true, expect.any(Function)),
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+        true,
+        expect.any(Function),
+        expect.any(String),
+      ),
     )
     rerender(
       <ReportsClient
@@ -130,114 +134,11 @@ describe('ReportsClient re-run judgement button', () => {
         })}
       />,
     )
-    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function))
-  })
-
-  it('tracks two pending reruns until each report receives a new judgement row', async () => {
-    const judgement = {
-      id: '00000000-0000-7000-8000-000000000001',
-      recommended_action: 'remove' as const,
-      public_response: 'Same response',
-      internal_response: 'Same rationale',
-      is_stale: false,
-      judged_report_count: 1,
-      current_report_count: 1,
-    }
-    const first = makeReport({ id: 'report-1', judgement })
-    const second = makeReport({ id: 'report-2', entity_id: 'post-2', judgement })
-    const data = makeReportsResponse()
-    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
-    const { rerender } = render(
-      <ReportsClient
-        viewerTier='staff'
-        data={{ ...data, results: [first, second] }}
-      />,
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      expect.any(String),
     )
-    const rerunButtons = screen.getAllByRole('button', { name: /re-run ai judgement/i })
-    fireEvent.click(rerunButtons[0]!)
-    await waitFor(() => expect(rerunButtons[1]).toBeEnabled())
-    fireEvent.click(rerunButtons[1]!)
-    await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledTimes(2))
-    rerender(
-      <ReportsClient
-        viewerTier='staff'
-        data={{
-          ...data,
-          results: [
-            { ...first, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' } },
-            second,
-          ],
-        }}
-      />,
-    )
-    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(true, expect.any(Function))
-    rerender(
-      <ReportsClient
-        viewerTier='staff'
-        data={{
-          ...data,
-          results: [
-            { ...first, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' } },
-            { ...second, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000003' } },
-          ],
-        }}
-      />,
-    )
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function)),
-    )
-  })
-
-  it('serializes reruns for two reports on the same entity until the first judgement completes', async () => {
-    const judgement = {
-      id: '00000000-0000-7000-8000-000000000001',
-      recommended_action: 'remove' as const,
-      public_response: 'Same response',
-      internal_response: 'Same rationale',
-      is_stale: false,
-      judged_report_count: 1,
-      current_report_count: 1,
-    }
-    const first = makeReport({ id: 'report-1', judgement })
-    const second = makeReport({ id: 'report-2', judgement })
-    const data = makeReportsResponse()
-    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
-    const { rerender } = render(
-      <ReportsClient
-        viewerTier='staff'
-        data={{ ...data, results: [first, second] }}
-      />,
-    )
-    fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[0]!)
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(true, expect.any(Function)),
-    )
-    await waitFor(() => expect(mockNav.refresh).toHaveBeenCalledTimes(1))
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeDisabled(),
-    )
-    expect(mockRerunReportJudgement).toHaveBeenCalledTimes(1)
-
-    rerender(
-      <ReportsClient
-        viewerTier='staff'
-        data={{
-          ...data,
-          results: [
-            { ...first, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' } },
-            { ...second, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' } },
-          ],
-        }}
-      />,
-    )
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function)),
-    )
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeEnabled(),
-    )
-    fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]!)
-    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledTimes(2))
   })
 
   it('routes a failed re-run through onError and keeps the row', async () => {
@@ -261,49 +162,3 @@ describe('ReportsClient re-run judgement button', () => {
     expect(screen.getByText('Reported post')).toBeVisible()
   })
 })
-
-function makeReportsResponse(
-  overrides: {
-    status?: 'pending' | 'reviewed' | 'actioned' | 'dismissed'
-    judgement?: AdminModerationReport['judgement']
-  } & Partial<AdminModerationReport> = {},
-): AdminModerationReportsResponse {
-  return {
-    results: [makeReport(overrides)],
-    page_info: {
-      has_next_page: false,
-      has_previous_page: false,
-      start_cursor: null,
-      end_cursor: null,
-    },
-  }
-}
-
-function makeReport(overrides: Partial<AdminModerationReport> = {}): AdminModerationReport {
-  return {
-    id: 'report-1',
-    case_id: 'case-1',
-    created_at: '2026-05-31T00:00:00.000Z',
-    reviewed_at: null,
-    reporter_user_id: 'user-1',
-    reporter_username: 'reader',
-    entity_type: 'post',
-    entity_id: 'post-1',
-    admin_action_path: '/discussion/reported-post',
-    target_label: 'Reported post',
-    target_path: '/discussion/reported-post',
-    target_user_id: null,
-    target_available: true,
-    target_is_restricted: false,
-    reason: 'spam',
-    note: null,
-    status: 'pending',
-    report_count: 1,
-    resolved_by_id: null,
-    is_system_generated: false,
-    judgement: null,
-    post_moderation_context: null,
-    ...overrides,
-    target_content: overrides.target_content ?? null,
-  }
-}

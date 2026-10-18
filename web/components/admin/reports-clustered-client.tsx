@@ -93,6 +93,10 @@ export function ClusteredReportsClient({
   const pollingTimedOut = usePendingAiRefresh(
     visibleReports.some(report => !report.judgement) || pendingRerunEntities.size > 0,
     () => router.refresh(),
+    [
+      ...visibleReports.flatMap(report => (report.judgement ? [] : [report.id])),
+      ...Object.entries(rerunBefore).map(([id, before]) => `${id}:${before ?? 'new'}`),
+    ].join('|'),
   )
   const disabled =
     Boolean(loadingClusterId || loadingDuplicateId || rerunningReportId) || isRefreshing

@@ -1,4 +1,5 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { withPrimaryReads } from '@data-stores/psql'
 import { rerunReportJudgement } from '@services/moderation-reports/rerun-judgement'
 import { listModerationReportPage } from '@services/moderation-reports/list-page'
 import app from '../../app.mts'
@@ -60,14 +61,16 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
     ctx.json(
       apiResponse(
         'GET:/api/v1/reports#clustered',
-        await listModerationReportPage('staff', null, { ...options, cluster: 'entity' }),
+        await withPrimaryReads(() =>
+          listModerationReportPage('staff', null, { ...options, cluster: 'entity' }),
+        ),
       ),
     )
   } else if (isStaff) {
     ctx.json(
       apiResponse(
         'GET:/api/v1/reports#staff',
-        await listModerationReportPage('staff', null, options),
+        await withPrimaryReads(() => listModerationReportPage('staff', null, options)),
       ),
     )
   } else {

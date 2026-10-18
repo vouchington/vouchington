@@ -8,13 +8,20 @@ const MAX_PENDING_REFRESH_MS = 60_000
 export function usePendingAiRefresh(
   pending: boolean,
   refresh: () => void | Promise<void>,
+  pendingKey: string | null = null,
+  onTimeout?: () => void,
 ): boolean {
   const latestRefresh = useRef(refresh)
-  const pendingToken = useMemo(() => (pending ? Symbol('pending-ai-refresh') : null), [pending])
+  const latestTimeout = useRef(onTimeout)
+  const pendingToken = useMemo(
+    () => (pending ? Symbol(`pending-ai-refresh:${pendingKey ?? ''}`) : null),
+    [pending, pendingKey],
+  )
   const [timedOutToken, setTimedOutToken] = useState<symbol | null>(null)
   useEffect(() => {
     latestRefresh.current = refresh
-  }, [refresh])
+    latestTimeout.current = onTimeout
+  }, [refresh, onTimeout])
   useEffect(() => {
     if (!pending) return
     let inFlight = false
@@ -23,6 +30,7 @@ export function usePendingAiRefresh(
       if (Date.now() >= deadline) {
         window.clearInterval(interval)
         setTimedOutToken(pendingToken)
+        latestTimeout.current?.()
         return
       }
       if (inFlight) return

@@ -41,16 +41,19 @@ export function CopyrightStaffQueue({
     for (const notice of page.copyright_notices) noticeById.set(notice.id, notice)
   }
   const notices = [...noticeById.values()]
+  const pendingNoticeIds = notices.flatMap(notice =>
+    (notice.form_review &&
+      (!notice.form_review.screening || notice.form_review.screening.state === 'pending')) ||
+    notice.appeals.some(appeal => appeal.recommendation === null) ||
+    notice.counter_notices.some(counter => counter.guidance === null) ||
+    notice.legal_holds.some(hold => hold.guidance === null)
+      ? [notice.id]
+      : [],
+  )
   const refreshTimedOut = usePendingAiRefresh(
-    notices.some(
-      notice =>
-        (notice.form_review &&
-          (!notice.form_review.screening || notice.form_review.screening.state === 'pending')) ||
-        notice.appeals.some(appeal => appeal.recommendation === null) ||
-        notice.counter_notices.some(counter => counter.guidance === null) ||
-        notice.legal_holds.some(hold => hold.guidance === null),
-    ),
+    pendingNoticeIds.length > 0,
     () => refreshLoadedPages?.(() => listCopyrightReviewQueue()),
+    pendingNoticeIds.join('|'),
   )
   const [rationale, setRationale] = useState('')
   const [pending, startTransition] = useTransition()

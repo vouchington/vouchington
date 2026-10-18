@@ -1,4 +1,5 @@
 import { createBoundedCursorApi } from './bounded-cursor-api.mts'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import pg from 'pg'
 import onError from '@modules/on-error'
 import { createPsql, type Psql } from '@vouchington/postgres'
@@ -51,10 +52,19 @@ jobSerializationPool.on('error', onError)
 const runtimeQuery = psql.query
 const runtimeRead = psql.read
 const runtimeWrite = psql.write
+const primaryReadScope = new AsyncLocalStorage<boolean>()
+/** Keep a staff reconciliation request on the writer through all nested service reads. */
+export function withPrimaryReads<T>(callback: () => Promise<T>): Promise<T> {
+  return primaryReadScope.run(true, callback)
+}
 export const query: Psql['query'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeQuery(input, valuesOrOptions, options))
 export const read: Psql['read'] = (input, valuesOrOptions, options) =>
-  runWithSingleQueryCapture(() => runtimeRead(input, valuesOrOptions, options))
+  runWithSingleQueryCapture(() =>
+    primaryReadScope.getStore()
+      ? runtimeWrite(input, valuesOrOptions, options)
+      : runtimeRead(input, valuesOrOptions, options),
+  )
 export const write: Psql['write'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeWrite(input, valuesOrOptions, options))
 export const { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } =

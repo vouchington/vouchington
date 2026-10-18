@@ -1,4 +1,5 @@
 'use client'
+/* oxlint-disable max-lines -- review queue coordinates pagination and approval state. */
 
 import { useEffect, useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -46,14 +47,16 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     for (const item of page.copyright_email_intakes) itemById.set(item.id, item)
   }
   const items = [...itemById.values()]
+  const pendingItems = items.filter(
+    item =>
+      item.waiting_reason === 'awaiting_review' &&
+      item.parse_status === 'succeeded' &&
+      item.recommendation_id === null,
+  )
   const refreshTimedOut = usePendingAiRefresh(
-    items.some(
-      item =>
-        item.waiting_reason === 'awaiting_review' &&
-        item.parse_status === 'succeeded' &&
-        item.recommendation_id === null,
-    ),
+    pendingItems.length > 0,
     () => refreshLoadedPages?.(() => listCopyrightEmailIntakes()),
+    pendingItems.map(item => item.id).join('|'),
   )
   const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
   const selectedRecommendationId = items.find(item => item.id === detail?.id)?.recommendation_id

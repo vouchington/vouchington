@@ -35,21 +35,32 @@ export function useDisputeAiReruns(
     clearPendingRerun(before.id, before)
   }
 
-  usePendingAiRefresh(pendingRerunIds.size > 0, async () => {
-    await Promise.all(
-      [...pendingReruns].map(async ([id, { before, expiresAt }]) => {
-        if (Date.now() >= expiresAt) {
-          clearPendingRerun(id, before)
-          onError(new Error('The AI draft is still processing. Refresh to check again.'), {
-            fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
-            tags: { form: 'dispute-rerun' },
-          })
-          return
-        }
-        applySavedDraft(before, await reconcileDisputeAIDraft(before))
-      }),
-    )
-  })
+  usePendingAiRefresh(
+    pendingRerunIds.size > 0,
+    async () => {
+      await Promise.all(
+        [...pendingReruns].map(async ([id, { before, expiresAt }]) => {
+          if (Date.now() >= expiresAt) {
+            clearPendingRerun(id, before)
+            onError(new Error('The AI draft is still processing. Refresh to check again.'), {
+              fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
+              tags: { form: 'dispute-rerun' },
+            })
+            return
+          }
+          applySavedDraft(before, await reconcileDisputeAIDraft(before))
+        }),
+      )
+    },
+    [...pendingReruns].map(([id, { expiresAt }]) => `${id}:${expiresAt}`).join('|'),
+    () => {
+      setPendingReruns(new Map())
+      onError(new Error('The AI draft is still processing. Refresh to check again.'), {
+        fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
+        tags: { form: 'dispute-rerun' },
+      })
+    },
+  )
 
   async function handleRerunAI(id: string) {
     dispatch({ type: 'set_loading', id })
