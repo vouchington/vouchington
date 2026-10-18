@@ -1,110 +1,107 @@
+import { fork } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { Worker, type Job } from 'glide-mq'
-import { afterAll, describe, expect, it, vi } from 'vitest'
-import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { readEnqueuedJob } from '@voucha/test-helpers'
+import { Queue } from 'glide-mq'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
+import type { ReplayResult, ReplayScenario } from '@voucha/test-helpers/vote-weight-replay-child'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { voteAggregation } from '../queues.mts'
-import {
-  enqueueRecalculateUserVoteWeight,
-  enqueueRecalculateVoteWeightEvents,
-  enqueueVoteWeightDirtyMarkers,
-} from './vote-weight.mts'
+import { buildWorkerQueueSettings } from '../../../data-stores/valkey-core/glide-mq-client.mts'
 
-// Retained native job records are the replay boundary; the in-memory queue adapter has no hashes.
+// The dedicated project uses native GlideMQ; the child keeps its queue namespace private.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
-async function enqueueAndComplete<T extends Job | Job[]>(enqueue: () => Promise<T>): Promise<T> {
-  const completed = Promise.withResolvers<void>()
-  const seen = new Set<string>()
-  let expectedId: string | undefined
-  const worker = new Worker(BACKGROUND_QUEUE_NAME, async () => undefined, {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
-    blockTimeout: 1000,
+async function runIsolatedReplay(scenario: ReplayScenario, userId: string): Promise<ReplayResult> {
+  const url = new URL(process.env.VALKEY_WORKER_QUEUE_URL ?? process.env.VALKEY_URL!)
+  // A numeric URL path maps to a unique GlideMQ key prefix on the same server, never SELECT/new DB.
+  url.pathname = `/${BigInt(`0x${randomUUID().replaceAll('-', '')}`).toString()}`
+  const isolatedQueueSettings = buildWorkerQueueSettings(url.toString())
+  const child = fork(
+    new URL('../../../test-helpers/vote-weight-replay-child.mts', import.meta.url),
+    [scenario, userId],
+    {
+      env: { ...process.env, VALKEY_WORKER_QUEUE_URL: url.toString() },
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+    },
+  )
+  let result: ReplayResult | undefined
+  let failure: Error | undefined
+  child.on('message', message => {
+    if (!message || typeof message !== 'object' || !('type' in message)) {
+      failure = new Error('Malformed vote-weight child receipt')
+    } else if (message.type === 'error') {
+      failure = new Error(String('message' in message ? message.message : 'Child failed'))
+    } else if (message.type === 'result' && 'result' in message) {
+      result = message.result as ReplayResult
+    } else {
+      failure = new Error('Unexpected vote-weight child receipt')
+    }
   })
-  worker.on('error', error => completed.reject(error))
-  worker.on('failed', (_job, error) => completed.reject(error))
-  worker.on('completed', job => {
-    seen.add(job.id)
-    if (job.id === expectedId) completed.resolve()
+  child.on('error', error => {
+    failure = error
   })
-  try {
-    await worker.waitUntilReady()
-    const added = await enqueue()
-    const jobs = Array.isArray(added) ? added : [added]
-    expect(jobs).toHaveLength(1)
-    const id = jobs[0]!.id
-    expectedId = id
-    if (seen.has(id)) completed.resolve()
-    await completed.promise
-    return added
-  } finally {
-    await worker.close()
-  }
+  const closed = new Promise<ReplayResult>((resolve, reject) => {
+    child.once('close', (code, signal) => {
+      if (failure) return reject(failure)
+      if (code !== 0 || signal)
+        return reject(new Error(`Vote-weight child exited (${code}, ${signal})`))
+      if (!result) return reject(new Error('Vote-weight child exited without a result'))
+      resolve(result)
+    })
+  })
+  onTestFinished(async () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM')
+    const [childOutcome] = await Promise.allSettled([closed])
+    // The parent owns cleanup even when SIGTERM prevents the child's finally block from running.
+    const queue = new Queue(BACKGROUND_QUEUE_NAME, isolatedQueueSettings)
+    let cleanupError: Error | undefined
+    try {
+      await queue.obliterate({ force: true })
+    } catch (err) {
+      cleanupError = err instanceof Error ? err : new Error('Queue removal failed', { cause: err })
+    } finally {
+      try {
+        await queue.close()
+      } catch (err) {
+        const closeError =
+          err instanceof Error ? err : new Error('Queue close failed', { cause: err })
+        cleanupError = cleanupError
+          ? new AggregateError([cleanupError, closeError], 'Isolated queue cleanup failed')
+          : closeError
+      }
+    }
+    if (!cleanupError) return
+    if (childOutcome?.status === 'rejected')
+      throw new AggregateError([childOutcome.reason, cleanupError], 'Child and cleanup failed', {
+        cause: childOutcome.reason,
+      })
+    throw cleanupError
+  })
+  return closed
 }
 
-describe('vote-weight event replay through real GlideMQ', () => {
-  afterAll(() => voteAggregation.close())
-
+describe('vote-weight event replay through isolated real GlideMQ', () => {
   it('reactivates a retained completed event when an overlap reads it again', async () => {
-    const userId = randomUUID()
-    const jobId = `voteWeight__${userId}__membershipExpired__${randomUUID()}`
-    try {
-      const first = await enqueueAndComplete(() =>
-        enqueueRecalculateVoteWeightEvents([{ userId, jobId }]),
-      )
-      expect(first.map(job => job.id)).toEqual([jobId])
-      await expect((await voteAggregation.getJob(jobId))?.getState()).resolves.toBe('completed')
-      const replay = await enqueueAndComplete(() =>
-        enqueueRecalculateVoteWeightEvents([{ userId, jobId }]),
-      )
-      expect(replay.map(job => job.id)).toEqual([jobId])
-      await expect((await voteAggregation.getJob(jobId))?.getState()).resolves.toBe('completed')
-    } finally {
-      await (await voteAggregation.getJob(jobId))?.remove()
-    }
+    const userId = (await createTestUser()).id
+    const result = await runIsolatedReplay('event', userId)
+    expect(result.firstId).toMatch(new RegExp(`^voteWeight__${userId}__membershipExpired__`))
+    expect(result.replayId).toBe(result.firstId)
+    expect([result.firstState, result.replayState]).toEqual(['completed', 'completed'])
   })
 
   it('reactivates the stable force id for a later administrator recalculation', async () => {
-    const userId = randomUUID()
-    const jobId = `voteWeight__${userId}__force`
-    const enqueue = async () => {
-      const result = await enqueueRecalculateUserVoteWeight(userId, true)
-      if (!Array.isArray(result) || result.length !== 1)
-        throw new Error('Expected one forced vote-weight job')
-      return readEnqueuedJob(voteAggregation, result[0])
-    }
-    try {
-      const first = await enqueueAndComplete(enqueue)
-      expect(first.id).toBe(jobId)
-      await expect((await voteAggregation.getJob(jobId))?.getState()).resolves.toBe('completed')
-      const replay = await enqueueAndComplete(enqueue)
-      expect(replay.id).toBe(jobId)
-      await expect(voteAggregation.getJob(jobId)).resolves.toMatchObject({
-        id: jobId,
-        data: { userId, forceRecalculate: true },
-      })
-    } finally {
-      await (await voteAggregation.getJob(jobId))?.remove()
-    }
+    const userId = (await createTestUser()).id
+    const result = await runIsolatedReplay('force', userId)
+    expect(result.firstId).toBe(`voteWeight__${userId}__force`)
+    expect(result.replayId).toBe(result.firstId)
+    expect([result.firstState, result.replayState]).toEqual(['completed', 'completed'])
+    expect(result.replayData).toMatchObject({ userId, forceRecalculate: true })
   })
 
   it('reactivates a finished dispatcher continuation with the same stable id', async () => {
-    const data = { afterId: `ffffffff-ffff-4fff-8fff-${randomUUID().slice(24)}` }
-    let jobId: string | undefined
-    try {
-      const first = await enqueueAndComplete(async () =>
-        readEnqueuedJob(voteAggregation, await enqueueVoteWeightDirtyMarkers(data)),
-      )
-      jobId = first.id
-      await expect((await voteAggregation.getJob(jobId))?.getState()).resolves.toBe('completed')
-      const replay = await enqueueAndComplete(async () =>
-        readEnqueuedJob(voteAggregation, await enqueueVoteWeightDirtyMarkers(data)),
-      )
-      expect(replay.id).toBe(jobId)
-    } finally {
-      if (jobId) await (await voteAggregation.getJob(jobId))?.remove()
-    }
+    const userId = (await createTestUser()).id
+    const result = await runIsolatedReplay('continuation', userId)
+    expect(result.firstId).toMatch(/^voteWeightDispatch__dirty__/)
+    expect(result.replayId).toBe(result.firstId)
+    expect([result.firstState, result.replayState]).toEqual(['completed', 'completed'])
   })
 })
