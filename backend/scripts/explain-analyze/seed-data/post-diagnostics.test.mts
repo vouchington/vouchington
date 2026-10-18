@@ -7,7 +7,7 @@ import {
   getPostSeedDiagnosticsBackend,
   getPostSeedDiagnosticsBlockerPid,
   holdPostSeedDiagnosticsLock,
-  rejectMissingPostSeedDiagnosticsColumn,
+  rejectPostSeedDiagnosticsOperation,
   tryPostSeedDiagnosticsLock,
   waitForPostSeedDiagnosticsLock,
 } from '@voucha/test-helpers/post-seed-diagnostics'
@@ -74,9 +74,10 @@ describe('post seed diagnostics', () => {
         if (blockedResult.status === 'rejected') throw blockedResult.error
         await expect(
           diagnostics.operation('clearance', 7, () =>
-            rejectMissingPostSeedDiagnosticsColumn(transaction),
+            rejectPostSeedDiagnosticsOperation(transaction),
           ),
-        ).rejects.toThrow('missing_column')
+        ).rejects.toThrow('Injected post-seed diagnostics failure')
+        await expect(getPostSeedDiagnosticsBackend(transaction)).resolves.toEqual(backendContext)
       } finally {
         await diagnostics.stop()
       }
@@ -124,6 +125,7 @@ describe('post seed diagnostics', () => {
             name: 'clearance',
             batch_index: 7,
             status: 'error',
+            error: 'Error: Injected post-seed diagnostics failure',
           }),
           expect.objectContaining({ kind: 'cumulative_end' }),
           expect.objectContaining({ kind: 'seed_end' }),

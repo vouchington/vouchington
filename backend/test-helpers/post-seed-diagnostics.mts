@@ -1,4 +1,5 @@
 import type { QueryExecutor } from '@data-stores/psql'
+import { rejectQuery } from './injected-failures.mts'
 
 type PostSeedBackend = {
   pid: number
@@ -59,6 +60,11 @@ export async function waitForPostSeedDiagnosticsLock(
   )
 }
 
-export async function rejectMissingPostSeedDiagnosticsColumn(query: QueryExecutor): Promise<void> {
-  await query('/* postSeedDiagnosticsTestFailure */ SELECT missing_column')
+export async function rejectPostSeedDiagnosticsOperation(query: QueryExecutor): Promise<void> {
+  const failingQuery = rejectQuery(
+    query,
+    statement => statement.includes('postSeedDiagnosticsTestFailure'),
+    'Injected post-seed diagnostics failure',
+  )
+  await failingQuery('/* postSeedDiagnosticsTestFailure */ SELECT 1')
 }
