@@ -30,6 +30,7 @@ export async function listReviewSuccessionHistoryAuditRows(
   const statement = sql`/* listReviewSuccessionHistoryAuditRows */
     WITH archived_page AS MATERIALIZED (
       SELECT review.id
+      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3255
       FROM posts review
       WHERE (${cursor}::uuid IS NULL OR review.id > ${cursor}::uuid)
         AND review.post_type = 'review'
