@@ -1,5 +1,6 @@
 import { TimeUnit } from '@glidemq/speedkey'
 import type { Job, WorkerOptions } from 'glide-mq'
+import onError from '@modules/on-error'
 import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { registerWorkerQueueScriptFile } from './glide-mq-scripts.mts'
@@ -47,7 +48,15 @@ export async function withScheduledRunLease(
       // Keep its saved cursor by delaying it until the current holder finishes.
       await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))
     }
-    await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
+    try {
+      await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
+    } catch (err) {
+      try {
+        onError(err instanceof Error ? err : new Error(String(err)))
+      } catch (err) {
+        console.error('scheduled_overlap_metric_reporting_failed', err)
+      }
+    }
     console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
     return null
   }

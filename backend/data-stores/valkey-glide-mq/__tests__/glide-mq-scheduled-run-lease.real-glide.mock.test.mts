@@ -8,6 +8,27 @@ import { withScheduledRunLease } from '../scheduled-run-lease.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('scheduled run lease recovery', () => {
+  it('still skips a fresh tick when overlap metric storage fails', async () => {
+    const name = `lease-metric-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const first = await queue.add('sweep', {}, { jobId: 'first' })
+    const second = await queue.add('sweep', {}, { jobId: 'second' })
+    if (!first || !second) throw new Error('Expected both scheduled ticks')
+    Object.assign(first, { schedulerName: 'repeat' })
+    Object.assign(second, { schedulerName: 'repeat' })
+    const release = await withScheduledRunLease(name, first, { lockDuration: 20000 })
+    try {
+      await workerQueueCommandClient.set(`${base}:run-metrics`, 'wrong-type')
+      expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
+    } finally {
+      await release?.()
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([`${base}:run-metrics`, `${base}:run:repeat:previous`])
+      await queue.close()
+    }
+  })
+
   it('uses an isolated worker prefix and lets the same job reacquire its owned lease', async () => {
     const name = `lease-prefix-${crypto.randomUUID()}`
     const prefix = `isolated-${crypto.randomUUID()}`

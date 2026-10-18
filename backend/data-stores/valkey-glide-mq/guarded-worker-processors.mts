@@ -108,6 +108,10 @@ export function rejectSelfAdd(queue: string, jobName: string, opts?: JobOptions)
     activeDedupId: active.dedupId ?? null,
   }
   if (process.env.NODE_ENV !== 'production') throw error
-  onError(error)
+  try {
+    onError(error)
+  } catch (err) {
+    console.error('self_add_guard_reporting_failed', err)
+  }
   return true
 }
