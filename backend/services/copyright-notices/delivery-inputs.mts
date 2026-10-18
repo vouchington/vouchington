@@ -1,5 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import {
+  copyrightClaimantDecisionFlagsSql,
+  type CopyrightClaimantDecisionFlags,
+} from './claimant-decision-flags.mts'
 import { copyrightClaimantEmailSql, type CopyrightClaimantEmailRow } from './claimant-email.mts'
 import {
   copyrightStatementFactsFromRows,
@@ -20,6 +24,8 @@ export type CopyrightDeliveryInputs = {
   parties: TargetPoster[]
   /** Still encrypted: decrypt it with `decryptCopyrightClaimantEmail` only when a claimant is told. */
   claimantEmail: CopyrightClaimantEmailRow | null
+  /** Present only when the request asked for the claimant decision flags. */
+  claimantDecisionFlags: CopyrightClaimantDecisionFlags | null
 }
 
 /**
@@ -34,12 +40,15 @@ export async function selectCopyrightDeliveryInputs(
     authorities: readonly CopyrightStatementAuthority[]
     targetIds: readonly string[]
     purposes: readonly PosterPurpose[]
+    /** Also read which claimant decisions the notice carries, from the same post-lock snapshot. */
+    claimantDecisionFlags?: boolean
   },
 ): Promise<CopyrightDeliveryInputs> {
   const { rows } = await transaction<{
     facts: CopyrightStatementFactsRow[]
     parties: TargetPoster[]
     claimant_email: CopyrightClaimantEmailRow | null
+    claimant_decision_flags: CopyrightClaimantDecisionFlags | null
   }>(
     sql`/* selectCopyrightDeliveryInputs */
     SELECT
@@ -54,7 +63,15 @@ export async function selectCopyrightDeliveryInputs(
       .append(copyrightTargetPostersSql(request.targetIds, request.purposes))
       .append(sql`) party) AS parties,
       (SELECT to_jsonb(email) FROM (`)
-      .append(copyrightClaimantEmailSql(noticeId)).append(sql`) email) AS claimant_email
+      .append(copyrightClaimantEmailSql(noticeId))
+      .append(sql`) email) AS claimant_email,`)
+      .append(
+        request.claimantDecisionFlags
+          ? sql`(SELECT to_jsonb(flags) FROM (`
+              .append(copyrightClaimantDecisionFlagsSql(noticeId))
+              .append(sql`) flags)`)
+          : sql`NULL::jsonb`,
+      ).append(sql` AS claimant_decision_flags
   `),
   )
   const row = rows[0]!
@@ -62,5 +79,6 @@ export async function selectCopyrightDeliveryInputs(
     facts: copyrightStatementFactsFromRows(noticeId, row.facts, request.authorities.length),
     parties: row.parties,
     claimantEmail: row.claimant_email,
+    claimantDecisionFlags: row.claimant_decision_flags,
   }
 }

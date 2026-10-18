@@ -1,11 +1,11 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
+import { claimantDecisionIsOwed } from './claimant-decision-flags.mts'
 import { decryptCopyrightClaimantEmail } from './claimant-email.mts'
 import { selectCopyrightDeliveryInputs } from './delivery-inputs.mts'
 import {
   claimantDecisionDelivery,
-  claimantDecisionIsOwed,
-  lockCopyrightClaimantDecisionState,
+  lockCopyrightNoticeForClaimantDecision,
   type CopyrightClaimantDecisionEvent,
 } from './claimant-decision-notices.mts'
 import {
@@ -54,22 +54,22 @@ export async function buildCopyrightRestrictionDecisionDeliveries(
     500,
     'Restriction decisions must share one notice',
   )
-  const claimantState = await lockCopyrightClaimantDecisionState(noticeId, transaction)
-  // The facts, recipients and claimant address are independent reads of the post-lock snapshot.
-  const { facts, parties, claimantEmail } = await selectCopyrightDeliveryInputs(
-    noticeId,
-    transaction,
-    {
+  const { claimant_user_id } = await lockCopyrightNoticeForClaimantDecision(noticeId, transaction)
+  // The facts, recipients, claimant address and decision flags are independent reads of the
+  // post-lock snapshot.
+  const { facts, parties, claimantEmail, claimantDecisionFlags } =
+    await selectCopyrightDeliveryInputs(noticeId, transaction, {
       authorities: inputs.map(input => ({
         targetId: input.targetId,
         restrictionId: input.restrictionId,
       })),
       targetIds: [...new Set(inputs.map(input => input.targetId))],
       purposes: [...new Set(inputs.flatMap(posterPurposes))],
-    },
-  )
+      claimantDecisionFlags: true,
+    })
+  const flags = claimantDecisionFlags!
   // The claimant's address is decrypted once, and only when a claimant is told.
-  const claimantAddress = inputs.some(input => claimantDecisionIsOwed(claimantState, input.event))
+  const claimantAddress = inputs.some(input => claimantDecisionIsOwed(flags, input.event))
     ? decryptCopyrightClaimantEmail(claimantEmail)
     : null
   const told = new Set<CopyrightClaimantDecisionEvent>()
@@ -77,9 +77,11 @@ export async function buildCopyrightRestrictionDecisionDeliveries(
   for (const [index, input] of inputs.entries()) {
     const decisionFacts = facts[index]!
     deliveries.push(...buildCopyrightPosterNoticeDeliveries(input, decisionFacts, parties))
-    if (told.has(input.event) || !claimantDecisionIsOwed(claimantState, input.event)) continue
+    if (told.has(input.event) || !claimantDecisionIsOwed(flags, input.event)) continue
     told.add(input.event)
-    deliveries.push(claimantDecisionDelivery(input, claimantState, decisionFacts, claimantAddress))
+    deliveries.push(
+      claimantDecisionDelivery(input, claimant_user_id, decisionFacts, claimantAddress),
+    )
   }
   return deliveries
 }

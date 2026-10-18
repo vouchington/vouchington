@@ -3,7 +3,12 @@ import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mt
 import { listNotifications } from '@services/notifications'
 import { deliverCopyrightInAppNotification } from './delivery-transport.mts'
 import { describe, expect, it } from 'vitest'
-import { createTestUser } from '@voucha/test-helpers'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import {
+  getTestPostgresBackendProcessId,
+  waitForTestPostgresLockWaiter,
+} from '@voucha/test-helpers/postgres-lock-wait'
+import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import {
   createClearScreenedForm,
   createGuestCopyrightForm,
@@ -138,5 +143,32 @@ describe('claimant copyright decision notices', () => {
     expect(decision.find(row => row.channel === 'email')?.text).toContain(
       'A person made this decision',
     )
+  })
+  it('reads the decision flags after the notice lock, so a waiting reversal sees the committed rejection', async () => {
+    const notice = await createSignedInCopyrightForm()
+    const caseId = notice.intake.copyright_notice_id
+    await using holder = await beginTransaction()
+    const holderProcessId = await getTestPostgresBackendProcessId(holder)
+    await createCopyrightClaimantDecisionNoticeInTransaction(
+      { noticeId: caseId, event: 'not_accepted' },
+      holder,
+    )
+    let reversal: Promise<void> | undefined
+    try {
+      reversal = replayTestCopyrightClaimantDecision(caseId, 'reversed')
+      await waitForTestPostgresLockWaiter(
+        holderProcessId,
+        'createCopyrightClaimantDecisionNoticeInTransaction:recipient',
+      )
+    } finally {
+      await holder.commit()
+      await reversal?.catch(() => undefined)
+    }
+    await reversal
+    const decisions = (await readTestCopyrightStatementIntents(caseId)).filter(
+      row => row.delivery_kind === 'claimant_decision_notice',
+    )
+    expect(decisions).toHaveLength(2)
+    expect(decisions.filter(row => row.text?.includes('We could not accept'))).toHaveLength(2)
   })
 })
