@@ -58,6 +58,6 @@
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
     "@vouchington/postgres": "^0.0.16",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.5"
   }
 }
