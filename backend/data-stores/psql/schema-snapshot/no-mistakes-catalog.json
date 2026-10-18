@@ -5417,7 +5417,7 @@
       },
       "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
       "foreignKeys": {
-        "ai_agent_call_receipts_copyright_notice_submission_id_fkey": {
+        "fk_ai_agent_call_receipts__copyright_notice_submission": {
           "columns": ["copyright_notice_submission_id"],
           "onDelete": "RESTRICT",
           "onUpdate": "NO ACTION",

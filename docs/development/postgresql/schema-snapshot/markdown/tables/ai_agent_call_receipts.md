@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `ai_agent_call_receipts_copyright_notice_submission_id_fkey`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_ai_agent_call_receipts__copyright_notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
