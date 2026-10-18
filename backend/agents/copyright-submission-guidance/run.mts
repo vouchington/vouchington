@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { callAgentModel } from '@agents/_shared'
+import { callReceiptedAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
@@ -8,11 +8,10 @@ import {
 } from '@services/copyright-notices/submission-guidance'
 import {
   callCopyrightSubmissionGuidanceModel,
+  COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
   type CopyrightSubmissionGuidanceKind,
   type CopyrightSubmissionGuidanceModelCaller,
 } from './model.mts'
-
-const PROMPT_VERSION = 'copyright-submission-guidance-v1'
 
 export type { CopyrightSubmissionGuidanceModelCaller } from './model.mts'
 
@@ -21,6 +20,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   submissionId: string,
   selection: ModelSelection,
   callModel: CopyrightSubmissionGuidanceModelCaller = callCopyrightSubmissionGuidanceModel,
+  operationId = submissionId,
 ): Promise<CopyrightSubmissionGuidanceKind | null> {
   const filing = await getCopyrightSubmissionGuidanceSource(submissionId)
   if (!filing) return null
@@ -28,8 +28,11 @@ export async function runCopyrightSubmissionGuidanceAgent(
     await sanitizePromptInjection(JSON.stringify(filing.input)),
     { source: 'copyright_submission', contentType: filing.kind },
   )
-  const { output: guidance, model } = await callAgentModel({
+  const { output: guidance, model } = await callReceiptedAgentModel({
     agentSlug: 'copyright-submission-guidance',
+    promptVersion: COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
+    operationId,
+    copyrightNoticeSubmissionId: submissionId,
     selection,
     input: modelInput,
     safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),
@@ -39,7 +42,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   await appendCopyrightSubmissionGuidance({
     submissionId,
     inputSha256: createHash('sha256').update(modelInput).digest(),
-    promptVersion: PROMPT_VERSION,
+    promptVersion: COPYRIGHT_SUBMISSION_GUIDANCE_PROMPT_VERSION,
     model,
     guidance,
   })

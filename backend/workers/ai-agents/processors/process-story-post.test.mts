@@ -18,7 +18,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { upsertSystemUser } from '@services/users/system-users'
 import { createStoryPost } from '@services/stories/story-posts'
 import { getPostByAny } from '@services/posts/get'
-import { processStoryPost, wouldStoryPostCallOpenAI } from './process-story-post.mts'
+import { getStoryPostSpendState, processStoryPost } from './process-story-post.mts'
 import type { StoryPostJobData } from '@queues/ai-agents/types'
 
 const callStoryPostAgentSpy = vi.spyOn(storyPostAgent, 'callStoryPostAgent')
@@ -150,34 +150,43 @@ describe('process-story-post', () => {
     expect(result).toBeNull()
   })
 
-  it('wouldStoryPostCallOpenAI — true for a fresh unsummarized story post', async () => {
+  it('getStoryPostSpendState — true for a fresh unsummarized story post', async () => {
     const { story, testUser } = await makeStoryWithItem()
     const result = await createStoryPost(story.id, testUser)
 
-    await expect(wouldStoryPostCallOpenAI(result.post.id, false)).resolves.toBe(true)
+    await expect(getStoryPostSpendState(result.post.id, false)).resolves.toEqual({
+      postId: result.post.id,
+      wouldCallModel: true,
+    })
   })
 
-  it('wouldStoryPostCallOpenAI — false for a non-force retry once a summary exists', async () => {
+  it('getStoryPostSpendState — false for a non-force retry once a summary exists', async () => {
     const { story, testUser } = await makeStoryWithItem()
     const result = await createStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
 
-    await expect(wouldStoryPostCallOpenAI(result.post.id, false)).resolves.toBe(false)
+    await expect(getStoryPostSpendState(result.post.id, false)).resolves.toEqual({
+      postId: result.post.id,
+      wouldCallModel: false,
+    })
   })
 
-  it('wouldStoryPostCallOpenAI — true for a forced retry even once a summary exists', async () => {
+  it('getStoryPostSpendState — true for a forced retry even once a summary exists', async () => {
     const { story, testUser } = await makeStoryWithItem()
     const result = await createStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Already set.',
     })
 
-    await expect(wouldStoryPostCallOpenAI(result.post.id, true)).resolves.toBe(true)
+    await expect(getStoryPostSpendState(result.post.id, true)).resolves.toEqual({
+      postId: result.post.id,
+      wouldCallModel: true,
+    })
   })
 
-  it('wouldStoryPostCallOpenAI — false for an unknown post_id', async () => {
+  it('getStoryPostSpendState — null for an unknown post_id', async () => {
     await expect(
-      wouldStoryPostCallOpenAI('00000000-0000-0000-0000-000000000000', false),
-    ).resolves.toBe(false)
+      getStoryPostSpendState('00000000-0000-0000-0000-000000000000', false),
+    ).resolves.toBeNull()
   })
 })

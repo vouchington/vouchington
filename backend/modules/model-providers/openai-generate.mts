@@ -5,6 +5,7 @@ import {
 } from '@modules/openai-utils/create-response'
 import { createOpenRouterResponse, toOpenRouterModel } from '@modules/openrouter-utils'
 import { ModelProviderError } from './errors.mts'
+import { MissingModelClientCredentialError } from '@modules/openai-utils/missing-client-credential'
 import type {
   BilledModelResponse,
   GenerateJsonRequest,
@@ -54,13 +55,26 @@ export async function callOpenAIJson<T>(
     },
   }
   const options = request.maxRetries === undefined ? undefined : { maxRetries: request.maxRetries }
-  const response: OpenAIResponse =
-    transport === 'openrouter'
-      ? await (deps.createOpenRouterResponse ?? createOpenRouterResponse)(
-          { ...params, model: toOpenRouterModel(model) },
-          options,
-        )
-      : await (deps.createOpenAIResponse ?? createOpenAIResponse)({ ...params, model }, options)
+  let response: OpenAIResponse
+  try {
+    response =
+      transport === 'openrouter'
+        ? await (deps.createOpenRouterResponse ?? createOpenRouterResponse)(
+            { ...params, model: toOpenRouterModel(model) },
+            options,
+          )
+        : await (deps.createOpenAIResponse ?? createOpenAIResponse)({ ...params, model }, options)
+  } catch (err) {
+    // The lazy client throws this only while resolving local credentials, before SDK dispatch.
+    // Leave every SDK/network failure untouched because its billing outcome may be uncertain.
+    if (err instanceof MissingModelClientCredentialError) {
+      throw new ModelProviderError('client-unavailable', err.message, {
+        retryClass: 'permanent',
+        cause: err,
+      })
+    }
+    throw err
+  }
   const billed: BilledModelResponse = {
     provider: 'openai',
     transport,

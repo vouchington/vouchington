@@ -5,6 +5,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 import { S3ImagesClient } from '@modules/aws'
+import { isAwsThrottlingError, wrapHttpForRetry } from '@modules/queue-errors'
 import type { Readable } from 'node:stream'
 import {
   SES_INBOUND_FAILED_PREFIX,
@@ -40,7 +41,7 @@ async function loadSesInboundObjectWithMetadata(
         ? { IfMatch: sourceIdentity.eTag }
         : {}),
     }),
-  )
+  ).catch(wrapS3HttpForRetry)
   rejectOversizedRawEmail(response.ContentLength)
   if (!response.Body) throw new SesInboundTerminalError('Raw SES object has no body')
   if (!response.LastModified)
@@ -67,7 +68,7 @@ export async function loadSesInboundObjectVersion(
 export async function deleteSesInboundObject(objectKey: string): Promise<void> {
   await S3ImagesClient.send(
     new DeleteObjectCommand({ Bucket: getSesInboundBucket(), Key: objectKey }),
-  )
+  ).catch(wrapS3HttpForRetry)
 }
 
 /**
@@ -96,7 +97,7 @@ export async function copySesInboundObjectToCopyrightEvidence(
       CopySourceIfMatch: sourceIdentity.eTag,
       MetadataDirective: 'COPY',
     }),
-  )
+  ).catch(wrapS3HttpForRetry)
   return destinationKey
 }
 
@@ -129,8 +130,10 @@ export async function moveSesInboundObjectToFailed(
       Key: `${SES_INBOUND_FAILED_PREFIX}${sesMessageId}`,
       CopySource: `${bucket}/${encodeURIComponent(objectKey).replaceAll('%2F', '/')}`,
     }),
+  ).catch(wrapS3HttpForRetry)
+  await S3ImagesClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey })).catch(
+    wrapS3HttpForRetry,
   )
-  await S3ImagesClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey }))
 }
 
 /* no-mistakes: integration=aws */
@@ -151,7 +154,7 @@ async function listSesInboundObjectsWithPrefix(
       Prefix: prefix,
       ContinuationToken: continuationToken,
     }),
-  )
+  ).catch(wrapHttpForRetry)
   return {
     objectKeys: (page.Contents ?? []).flatMap(object => (object.Key ? [object.Key] : [])),
     ...(page.NextContinuationToken ? { nextContinuationToken: page.NextContinuationToken } : {}),
@@ -173,4 +176,24 @@ function getCopyrightEvidenceBucket(): string {
   const bucket = process.env.S3_BUCKET_COPYRIGHT_EVIDENCE?.trim()
   if (!bucket) throw new Error('S3_BUCKET_COPYRIGHT_EVIDENCE is required')
   return bucket
+}
+
+// Preserve Smithy's retryable 400s after SDK retries; the generic wrapper sees only status.
+function wrapS3HttpForRetry(error: unknown): never {
+  if (isAwsThrottlingError(error)) return wrapHttpForRetry(error)
+  const candidate = error as {
+    name?: unknown
+    $retryable?: unknown
+    $metadata?: { httpStatusCode?: unknown }
+  } | null
+  if (
+    candidate?.$metadata?.httpStatusCode === 400 &&
+    candidate.name !== 'AbortError' &&
+    ((typeof candidate.$retryable === 'object' && candidate.$retryable !== null) ||
+      ['TimeoutError', 'RequestTimeout', 'RequestTimeoutException'].includes(
+        candidate.name as string,
+      ))
+  )
+    throw error
+  return wrapHttpForRetry(error)
 }

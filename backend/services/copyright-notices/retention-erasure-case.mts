@@ -115,6 +115,13 @@ export async function eraseCopyrightRetentionCase(
     // oxlint-disable-next-line no-await-in-loop -- one transaction connection runs its statements in order.
     await transaction(eraseCopyrightRetentionTableSql(spec, noticeId))
   }
+  // Receipt ciphertext duplicates guidance/appeal output before the domain write. Its submission
+  // FK identifies the case even when that write never completed.
+  // ast-grep-ignore: no-three-sequential-awaits -- one transaction erases receipts and evidence before inserting the completion marker.
+  await transaction(sql`/* eraseCopyrightAgentCallReceipts */
+    UPDATE ai_agent_call_receipts SET result_ciphertext = 'erased'
+    WHERE copyright_notice_submission_id IN
+      (SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId})`)
   await transaction(sql`/* deleteCopyrightRetentionStorageObjects */
     DELETE FROM copyright_notice_storage_objects
     WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)

@@ -28,9 +28,11 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
+    "@modules/token-secrets": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/openai-background-responses": "workspace:^",
-    "@ts-shared/utils": "workspace:^"
+    "@ts-shared/utils": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^",

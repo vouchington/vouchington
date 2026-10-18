@@ -26,7 +26,7 @@ describe('processSendCommunityModerationSummaryEmail', () => {
     vi.unstubAllEnvs()
   })
 
-  it('skips moderation summaries already marked as sent', async () => {
+  it('does not resend when SES fails after the summary was marked', async () => {
     const user = await createTestUser()
     const community = await insertTestCommunity({ createdById: user!.id })
     await insertTestCommunityMember({
@@ -78,7 +78,9 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       ],
     }
 
-    await processSendCommunityModerationSummaryEmail(input, variables)
+    vi.mocked(ses.sendEmail).mockRejectedValueOnce(new Error('SES outcome unknown'))
+    const firstSend = processSendCommunityModerationSummaryEmail(input, variables)
+    await expect(firstSend).rejects.toThrow('SES outcome unknown')
     vi.mocked(ses.sendEmail).mockClear()
 
     await expect(processSendCommunityModerationSummaryEmail(input, variables)).resolves.toBeNull()

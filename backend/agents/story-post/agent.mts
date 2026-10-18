@@ -1,5 +1,5 @@
 import {
-  callAgentModel,
+  callReceiptedAgentModel,
   QUEUED_BACKGROUND_RETRY_POLICY,
   type AgentModelCaller,
 } from '@agents/_shared'
@@ -37,6 +37,9 @@ Rules:
 - Focus on facts, not speculation
 - Be neutral in tone`
 
+/** Bump when the instructions, output schema or parser contract changes. */
+export const STORY_POST_PROMPT_VERSION = 'story-post-v1'
+
 export const callStoryPostModel: StoryPostModelCaller = (
   input,
   safetyIdentifier,
@@ -54,7 +57,7 @@ export const callStoryPostModel: StoryPostModelCaller = (
       safetyIdentifier,
       // SYSTEM_INSTRUCTIONS is a static prefix shared by every story-post call. Versioned so a
       // prompt edit can be paired with a key bump to invalidate.
-      promptCacheKey: 'story-post-v1',
+      promptCacheKey: STORY_POST_PROMPT_VERSION,
       // Background generation, not user-facing latency-sensitive: half-price flex tier.
       flex: true,
       maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
@@ -75,6 +78,7 @@ export async function callStoryPostAgent(
   itemSummaries: Array<{ title: string; summary: string }>,
   selection: ModelSelection,
   callModel: StoryPostModelCaller = callStoryPostModel,
+  operationId = story.id,
 ): Promise<StoryPostAgentResult> {
   const [sanitizedArticles, sanitizedStoryTitle] = await Promise.all([
     Promise.all(
@@ -98,8 +102,10 @@ export async function callStoryPostAgent(
   // Records the ledger row for both outcomes: a successful answer, or a billed one that failed
   // validation (which still billed tokens) before the error propagates, so a queued retry doesn't
   // compound an unrecorded charge with another one.
-  const { output } = await callAgentModel({
+  const { output } = await callReceiptedAgentModel({
     agentSlug: 'story-post',
+    operationId,
+    promptVersion: STORY_POST_PROMPT_VERSION,
     selection,
     input: content,
     safetyIdentifier: story.id,

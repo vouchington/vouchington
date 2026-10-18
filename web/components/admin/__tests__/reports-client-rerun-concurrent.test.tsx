@@ -44,12 +44,17 @@ describe('ReportsClient concurrent judgement reruns', () => {
       />,
     )
     const rerunButtons = screen.getAllByRole('button', { name: /re-run ai judgement/i })
-    fireEvent.click(rerunButtons[0]!)
+    await act(async () => fireEvent.click(rerunButtons[0]!))
     await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledTimes(1))
     const firstPendingKey = mockUsePendingAiRefresh.mock.lastCall?.[2]
     await waitFor(() => expect(rerunButtons[1]).toBeEnabled())
-    fireEvent.click(rerunButtons[1]!)
+    await act(async () => fireEvent.click(rerunButtons[1]!))
     await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+        'rerun:report-1:report_judgement_test-run|rerun:report-2:report_judgement_test-run',
+      ),
+    )
     expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).not.toBe(firstPendingKey)
     rerender(
       <ReportsClient
@@ -69,13 +74,21 @@ describe('ReportsClient concurrent judgement reruns', () => {
       expect.any(String),
       expect.any(Function),
     )
-    mockGetReportJudgementRun
-      .mockResolvedValueOnce({ completed: true, judgement_id: 'judgement-from-run-1' })
-      .mockResolvedValueOnce({ completed: false, judgement_id: null })
+    mockGetReportJudgementRun.mockImplementation(async (reportId: unknown) =>
+      reportId === 'report-1'
+        ? { completed: true, judgement_id: 'judgement-from-run-1' }
+        : { completed: false, judgement_id: null },
+    )
     let poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
-    await act(async () => poll?.())
-    expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
-      'rerun:report-2:report_judgement_test-run',
+    await act(async () => {
+      await poll?.()
+    })
+    expect(mockGetReportJudgementRun).toHaveBeenCalledWith('report-1', 'report_judgement_test-run')
+    expect(mockGetReportJudgementRun).toHaveBeenCalledWith('report-2', 'report_judgement_test-run')
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+        'rerun:report-2:report_judgement_test-run',
+      ),
     )
     rerender(
       <ReportsClient
@@ -89,17 +102,22 @@ describe('ReportsClient concurrent judgement reruns', () => {
         }}
       />,
     )
-    mockGetReportJudgementRun.mockResolvedValueOnce({
-      completed: true,
-      judgement_id: 'judgement-from-run-2',
-    })
+    mockGetReportJudgementRun.mockImplementation(async (reportId: unknown) =>
+      reportId === 'report-2'
+        ? { completed: true, judgement_id: 'judgement-from-run-2' }
+        : { completed: false, judgement_id: null },
+    )
     poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
-    await act(async () => poll?.())
-    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-      false,
-      expect.any(Function),
-      '',
-      expect.any(Function),
+    await act(async () => {
+      await poll?.()
+    })
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+        false,
+        expect.any(Function),
+        '',
+        expect.any(Function),
+      ),
     )
   })
 

@@ -53,6 +53,9 @@ Respond with a JSON object containing:
 - Always be conservative — if unsure, escalate.
 - Do not assume guilt; consider context and community rules.`
 
+/** Bump when the instructions, output schema or parser contract changes. */
+export const REPORT_JUDGEMENT_PROMPT_VERSION = 'report-judgement-v1'
+
 export const callJudgementModel: JudgementModelCaller = (
   input,
   safetyIdentifier,
@@ -72,7 +75,7 @@ export const callJudgementModel: JudgementModelCaller = (
       // SYSTEM_PROMPT embeds the full content policy + report-reason coverage -- the largest
       // static prefix of any agent in the repo, and cached input is 10x cheaper. Versioned so a
       // prompt edit here can be paired with a key bump if the cache should be invalidated.
-      promptCacheKey: 'report-judgement-v1',
+      promptCacheKey: REPORT_JUDGEMENT_PROMPT_VERSION,
       flex: true,
       maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
     },

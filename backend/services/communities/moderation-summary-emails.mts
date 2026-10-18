@@ -172,6 +172,16 @@ export async function markModerationEmailSent(userId: string, sendKey: string): 
   return rows.length > 0
 }
 
+/** SES rejected the request before sending, so the same claimed job may retry. */
+export async function resetRejectedModerationEmailSend(
+  userId: string,
+  sendKey: string,
+): Promise<void> {
+  await write(sql`/* resetRejectedModerationEmailSend */
+    UPDATE user_moderation_email_sends SET sent_at = NULL
+    WHERE user_id = ${userId} AND send_key = ${sendKey} AND sent_at IS NOT NULL`)
+}
+
 export async function releaseUnsentModerationEmailClaim(
   userId: string,
   sendKey: string,
@@ -187,7 +197,8 @@ export async function releaseUnsentModerationEmailClaim(
 }
 
 export async function hasModerationEmailSent(userId: string, sendKey: string): Promise<boolean> {
-  const { rows } = await read(sql`/* hasModerationEmailSent */
+  // A definitive SES throttle clears sent_at on the writer; a retry must see that reset.
+  const { rows } = await write(sql`/* hasModerationEmailSent */
     SELECT 1
     FROM user_moderation_email_sends
     WHERE user_id = ${userId}

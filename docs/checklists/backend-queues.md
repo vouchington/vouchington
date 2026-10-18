@@ -67,6 +67,17 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   so a trampoline job or per-scheduler deduplication is unnecessary.
 - **Throttle our own datastores with concurrency.** Use a `limiter` or group `rateLimit` only to
   stay under an external service's rate limit.
+- **Honor upstream rate limits.** Classify an external 429 and its `Retry-After` through
+  `@modules/queue-errors` so the affected job waits without consuming a domain failure attempt.
+- **Record the intent before an effect.** A paid or otherwise non-idempotent external call needs a
+  durable receipt before dispatch. A retry must reuse its recorded result or a provider-supported
+  idempotency key; an ambiguous billed attempt must not be sent again blindly. A resend blocked
+  after only positively unbilled capacity failures can release its pending reservation.
+- **Mark moderation summaries after local send checks and before SES.** A failed preference or
+  suppression lookup can retry without a send mark. A definitive sending-rate rejection clears
+  the mark for a queue retry; an unknown send outcome keeps it to prevent duplicate mail.
+  The mark-first contract accepts a lost summary if execution stops or the mark acknowledgement
+  is lost before dispatch. An unconfirmed mark cannot safely be cleared without proving ownership.
 - **When merging,** namespace job names, deduplication IDs, job IDs, scheduler IDs, and ordering
   keys by domain, and size the worker for the combined load. A job that already needs an ordering
   key keeps it, namespaced, and gives up any domain-wide group cap.

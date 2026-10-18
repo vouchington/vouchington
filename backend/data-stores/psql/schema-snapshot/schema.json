@@ -25,6 +25,14 @@
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
     },
+    "ai_agent_call_receipt_agent_slugs": {
+      "values": [
+        "story-post",
+        "report-judgement",
+        "copyright-submission-guidance",
+        "copyright-appeal-recommendation"
+      ]
+    },
     "ai_model_providers": {
       "values": ["anthropic", "openai", "typesafe"]
     },
@@ -1735,6 +1743,9 @@
     },
     "fn_update_posts_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.title, '')), 'A') ||\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.markdown, '')), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_report_agent_call_receipt_target": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_report_agent_call_receipt_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.agent_slug = 'report-judgement'\n      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) <> 1 THEN\n      RAISE EXCEPTION 'Report call receipts require exactly one live target';\n    END IF;\n  ELSIF OLD.result_ciphertext = 'erased'\n    OR (OLD.agent_slug = 'report-judgement'\n      AND num_nonnulls(OLD.post_id, OLD.reported_user_id, OLD.hostname_id, OLD.rss_feed_item_id) = 1\n      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) = 0) THEN\n    NEW.result_ciphertext := 'erased';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_rss_feed_items_search_vector": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_rss_feed_items_search_vector()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.search_vector :=\n    setweight(to_tsvector('voucha_english', COALESCE(NEW.data->>'title', '')), 'A') ||\n    setweight(to_tsvector('voucha_english',\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encodedSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content:encoded', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'contentSnippet', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'content', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'summary', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '') || ' ' ||\n      COALESCE(NULLIF(BTRIM(REGEXP_REPLACE(REGEXP_REPLACE(NEW.data->>'media:description', '<[^>]*>', ' ', 'g'), '&nbsp;|&#160;|&#xA0;', ' ', 'gi')), ''), '')\n    ), 'D');\n  RETURN NEW;\nEND;\n$function$\n"
@@ -5142,6 +5153,345 @@
         "agents_system_user_id_key": {
           "columns": ["system_user_id"],
           "definition": "UNIQUE (system_user_id)"
+        }
+      }
+    },
+    "ai_agent_call_receipts": {
+      "checkConstraints": {
+        "ai_agent_call_receipts_check": "CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::ai_agent_call_receipt_agent_slugs, 'copyright-appeal-recommendation'::ai_agent_call_receipt_agent_slugs])) = (copyright_notice_submission_id IS NOT NULL)))",
+        "ai_agent_call_receipts_check1": "CHECK (\nCASE\n    WHEN (agent_slug = 'report-judgement'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1) OR ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text))))\n    ELSE (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0)\nEND)",
+        "ai_agent_call_receipts_operation_key_check": "CHECK ((char_length(operation_key) = 64))",
+        "ai_agent_call_receipts_request_sha256_check": "CHECK ((char_length(request_sha256) = 64))",
+        "ai_agent_call_receipts_result_ciphertext_check": "CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))"
+      },
+      "columns": {
+        "agent_slug": {
+          "collation": null,
+          "comment": "Agent that reserved the paid call.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "ai_agent_call_receipt_agent_slugs"
+        },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Retention owner for copyright guidance and appeal results; null for other agents.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Creation time derived from the UUIDv7 receipt identity.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "timestamp with time zone"
+        },
+        "hostname_id": {
+          "collation": null,
+          "comment": "Reported URL hostname; hard deletion erases the result while retaining the paid operation key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "uuid"
+        },
+        "id": {
+          "collation": null,
+          "comment": "UUIDv7 receipt identity and creation order.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "operation_key": {
+          "collation": null,
+          "comment": "SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "text"
+        },
+        "post_id": {
+          "collation": null,
+          "comment": "Reported post or comment; hard deletion erases the result while retaining the paid operation key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "reported_user_id": {
+          "collation": null,
+          "comment": "Reported user; hard deletion erases the result while retaining the paid operation key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "uuid"
+        },
+        "request_sha256": {
+          "collation": null,
+          "comment": "SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
+        "result_ciphertext": {
+          "collation": null,
+          "comment": "Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "text"
+        },
+        "rss_feed_item_id": {
+          "collation": null,
+          "comment": "Reported RSS feed item; hard deletion erases the result while retaining the paid operation key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "uuid"
+        }
+      },
+      "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
+      "foreignKeys": {
+        "fk_ai_agent_call_receipts__copyright_notice_submission": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__hostname": {
+          "columns": ["hostname_id"],
+          "definition": "FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__post": {
+          "columns": ["post_id"],
+          "definition": "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__reported_user": {
+          "columns": ["reported_user_id"],
+          "definition": "FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__rss_feed_item": {
+          "columns": ["rss_feed_item_id"],
+          "definition": "FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "ai_agent_call_receipts_operation_key_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_agent_call_receipts_operation_key_key ON public.ai_agent_call_receipts USING btree (operation_key)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "operation_key",
+              "descending": false,
+              "expression": "operation_key",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_agent_call_receipts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_agent_call_receipts_pkey ON public.ai_agent_call_receipts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__copyright_submission": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__copyright_submission ON public.ai_agent_call_receipts USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_submission_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__hostname": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__hostname ON public.ai_agent_call_receipts USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__post ON public.ai_agent_call_receipts USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__reported_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__reported_user ON public.ai_agent_call_receipts USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(reported_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__rss_feed_item ON public.ai_agent_call_receipts USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_erase_report_agent_call_receipt_target": "CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_update_report_agent_call_receipt_target()"
+      },
+      "uniqueConstraints": {
+        "ai_agent_call_receipts_operation_key_key": {
+          "columns": ["operation_key"],
+          "definition": "UNIQUE (operation_key)"
         }
       }
     },

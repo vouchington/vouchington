@@ -27,6 +27,9 @@ appears overbroad; recommend reverse when it appears unsupported; otherwise reco
 This recommendation never authorizes a takedown, restoration, or other action. A human moderator
 must make every decision. Return concise JSON only.`
 
+/** Bump when the instructions, output schema or parser contract changes. */
+export const COPYRIGHT_APPEAL_PROMPT_VERSION = 'copyright-appeal-v1'
+
 export const callCopyrightAppealRecommendationModel: CopyrightAppealRecommendationModelCaller = (
   input,
   safetyIdentifier,
@@ -42,7 +45,7 @@ export const callCopyrightAppealRecommendationModel: CopyrightAppealRecommendati
       parse: parseCopyrightAppealRecommendationOutput,
       maxOutputTokens: 2_000,
       safetyIdentifier,
-      promptCacheKey: 'copyright-appeal-v1',
+      promptCacheKey: COPYRIGHT_APPEAL_PROMPT_VERSION,
       flex: true,
       maxRetries: QUEUED_BACKGROUND_RETRY_POLICY.maxRetries,
     },

@@ -20,6 +20,7 @@
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/email-digests": "workspace:^",
@@ -33,6 +34,7 @@
     "@workers/emails": "workspace:^"
   },
   "devDependencies": {
+    "@services/ses-bounce-events": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -9,12 +9,13 @@ import {
   TEST_OPENAI_SELECTION,
 } from '@voucha/test-helpers/agents/model-call-result'
 import { callStoryPostAgent, parseStoryPostOutput, type StoryPostModelCaller } from './agent.mts'
+import { callReceiptedAgentModel } from '@agents/_shared'
 import type { Story } from '@services/stories/types'
 import type { Response } from 'openai/resources/responses/responses'
 
 const makeStory = (overrides: Partial<Story> = {}): Story =>
   ({
-    id: 'story-123',
+    id: randomUUID(),
     title: 'Test Story Title',
     published_at: new Date('2025-01-01T00:00:00Z'),
     ...overrides,
@@ -26,6 +27,115 @@ const itemSummaries = [
 ]
 
 describe('callStoryPostAgent', () => {
+  it('stops replay when the prompt or schema contract version changes', async () => {
+    const operationId = randomUUID()
+    const callModel = makeAgentModelCaller({
+      title: 'First title',
+      ai_summary_markdown: 'First summary.',
+    })
+    const params = {
+      agentSlug: 'story-post',
+      operationId,
+      promptVersion: 'story-post-test-v1',
+      selection: TEST_MODEL_SELECTION,
+      input: 'A fixed story prompt',
+      safetyIdentifier: operationId,
+      callModel,
+    }
+    await callReceiptedAgentModel(params)
+    await expect(
+      callReceiptedAgentModel({ ...params, promptVersion: 'story-post-test-v2' }),
+    ).rejects.toThrow('request changed after reservation')
+    expect(callModel).toHaveBeenCalledOnce()
+  })
+
+  it('reuses a completed paid receipt after a downstream retry', async () => {
+    const story = makeStory()
+    const callModel = makeAgentModelCaller({
+      title: 'First title',
+      ai_summary_markdown: 'First summary.',
+    })
+    const first = await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+    const second = await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+
+    expect(second).toEqual(first)
+    expect(callModel).toHaveBeenCalledOnce()
+  })
+
+  it('stops changed story input or model selection from billing the same operation twice', async () => {
+    const story = makeStory()
+    const first = makeAgentModelCaller({ title: 'First', ai_summary_markdown: 'First.' })
+    await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, first)
+
+    const retry = makeAgentModelCaller({ title: 'Duplicate', ai_summary_markdown: 'Duplicate.' })
+    await expect(
+      callStoryPostAgent(
+        { ...story, title: 'Retitled after dispatch' },
+        itemSummaries,
+        TEST_MODEL_SELECTION,
+        retry,
+      ),
+    ).rejects.toThrow('request changed after reservation')
+    await expect(
+      callStoryPostAgent(story, itemSummaries, TEST_OPENAI_SELECTION, retry),
+    ).rejects.toThrow('request changed after reservation')
+    expect(first).toHaveBeenCalledOnce()
+    expect(retry).not.toHaveBeenCalled()
+  })
+
+  it('allows an explicit new operation identity to make a fresh paid call', async () => {
+    const story = makeStory()
+    const callModel = makeAgentModelCaller({ title: 'First', ai_summary_markdown: 'First.' })
+    await callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+    await callStoryPostAgent(
+      story,
+      itemSummaries,
+      TEST_MODEL_SELECTION,
+      callModel,
+      `${story.id}:force-job`,
+    )
+    expect(callModel).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not call the provider again after an ambiguous paid attempt', async () => {
+    const story = makeStory()
+    const callModel: StoryPostModelCaller = () =>
+      Promise.reject(new Error('response lost after dispatch'))
+    await expect(
+      callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel),
+    ).rejects.toThrow('response lost after dispatch')
+
+    const retry = makeAgentModelCaller({ title: 'Duplicate', ai_summary_markdown: 'Duplicate.' })
+    await expect(
+      callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, retry),
+    ).rejects.toThrow('uncertain receipt')
+    expect(retry).not.toHaveBeenCalled()
+  })
+
+  it('keeps a second job from calling the provider while the first paid call stalls', async () => {
+    const story = makeStory()
+    const started = Promise.withResolvers<void>()
+    const provider = Promise.withResolvers<Awaited<ReturnType<StoryPostModelCaller>>>()
+    const callModel: StoryPostModelCaller = () => {
+      started.resolve()
+      return provider.promise
+    }
+    const first = callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, callModel)
+    await started.promise
+
+    const duplicate = makeAgentModelCaller({
+      title: 'Duplicate',
+      ai_summary_markdown: 'Duplicate.',
+    })
+    await expect(
+      callStoryPostAgent(story, itemSummaries, TEST_MODEL_SELECTION, duplicate),
+    ).rejects.toThrow('uncertain receipt')
+    expect(duplicate).not.toHaveBeenCalled()
+
+    provider.resolve(makeModelCallResult({ title: 'First', ai_summary_markdown: 'First.' }))
+    await expect(first).resolves.toEqual({ title: 'First', ai_summary_markdown: 'First.' })
+  })
+
   it('returns the title and summary the model wrote', async () => {
     const result = await callStoryPostAgent(
       makeStory(),
@@ -74,17 +184,13 @@ describe('callStoryPostAgent', () => {
 
   it('passes the story id as the safety identifier and the selection to the model caller', async () => {
     const callModel = makeAgentModelCaller({ title: 'Test', ai_summary_markdown: 'Summary.' })
+    const story = makeStory()
 
-    await callStoryPostAgent(
-      makeStory({ id: 'story-abc' }),
-      itemSummaries,
-      TEST_OPENAI_SELECTION,
-      callModel,
-    )
+    await callStoryPostAgent(story, itemSummaries, TEST_OPENAI_SELECTION, callModel)
 
     expect(callModel).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining('Article One'),
-      'story-abc',
+      story.id,
       { selection: TEST_OPENAI_SELECTION, openaiTransport: 'openrouter' },
     )
   })

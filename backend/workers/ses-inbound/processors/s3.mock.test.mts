@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadSesInboundObjectAndHash } from './s3.mts'
+import { UnrecoverableError, Worker } from 'glide-mq'
+import { CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { loadSesInboundObjectAndHash, moveSesInboundObjectToFailed } from './s3.mts'
 
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
   ...(await importOriginal<typeof import('@modules/aws')>()),
@@ -61,6 +63,81 @@ describe('loadSesInboundObjectAndHash', () => {
     })
     expect(loaded.receivedAt).toBe(receivedAt)
     expect(loaded.sourceIdentity).toEqual({ eTag: '"etag-1"', versionId: 'version-1' })
+  })
+
+  it('defers a throttled S3 read for the SDK response Retry-After', async () => {
+    const error = Object.assign(new Error('SlowDown'), {
+      $metadata: { httpStatusCode: 429 },
+      $response: { headers: { 'retry-after': '17' } },
+    })
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    const request = loadSesInboundObjectAndHash('copyright-incoming/abc')
+    await expect(request).rejects.toBeInstanceOf(Worker.RateLimitError)
+    await expect(request).rejects.toMatchObject({
+      delayMs: 17_000,
+      cause: error,
+    })
+  })
+
+  it.each([
+    Object.assign(new Error('Request timeout'), {
+      name: 'RequestTimeout',
+      $fault: 'client',
+      $metadata: { httpStatusCode: 400 },
+    }),
+    Object.assign(new Error('Retryable S3 failure'), {
+      name: 'S3TransientError',
+      $fault: 'client',
+      $retryable: {},
+      $metadata: { httpStatusCode: 400 },
+    }),
+  ])('preserves Smithy retryable S3 client errors after SDK retries: $name', async error => {
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toBe(error)
+  })
+
+  it('routes a throttling 400 with Retry-After through the queue HTTP classifier', async () => {
+    const error = Object.assign(new Error('S3 request throttled'), {
+      name: 'Throttling',
+      $fault: 'client',
+      $retryable: { throttling: true },
+      $metadata: { httpStatusCode: 400 },
+      $response: { headers: { 'retry-after': '17' } },
+    })
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toBe(error)
+  })
+
+  it('still makes a permanent S3 client error unrecoverable', async () => {
+    const error = Object.assign(new Error('Access denied'), {
+      name: 'AccessDenied',
+      $fault: 'client',
+      $metadata: { httpStatusCode: 400 },
+    })
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toBeInstanceOf(
+      UnrecoverableError,
+    )
+  })
+
+  it('defers a failed-object move when deletion is throttled after the copy', async () => {
+    const error = Object.assign(new Error('SlowDown'), {
+      $metadata: { httpStatusCode: 429 },
+      $response: { headers: { 'retry-after': '11' } },
+    })
+    vi.mocked(S3ImagesClient.send)
+      .mockResolvedValueOnce({} as never)
+      .mockRejectedValueOnce(error)
+
+    const move = moveSesInboundObjectToFailed('copyright-incoming/abc', 'message-123')
+    await expect(move).rejects.toBeInstanceOf(Worker.RateLimitError)
+    await expect(move).rejects.toMatchObject({ delayMs: 11_000, cause: error })
+    expect(vi.mocked(S3ImagesClient.send).mock.calls[0]?.[0]).toBeInstanceOf(CopyObjectCommand)
+    expect(vi.mocked(S3ImagesClient.send).mock.calls[1]?.[0]).toBeInstanceOf(DeleteObjectCommand)
   })
 
   it('rejects the digest when the object stream fails part-way through', async () => {

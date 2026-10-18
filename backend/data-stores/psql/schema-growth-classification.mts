@@ -131,6 +131,10 @@ export function buildUnboundedUnpartitionedTables(
         'Permanent global response-id idempotency keys cannot be partitioned without weakening cross-partition uniqueness; the primary-key lookup remains selective.',
       ],
       [
+        'ai_agent_call_receipts',
+        'Permanent paid-call idempotency receipts require global operation-key uniqueness; the unique-key lookup remains selective.',
+      ],
+      [
         'notification_push_intents',
         'Pending delivery work is retained until terminal and can grow without a time bound; terminal intents are deleted after 90 days, while the composite notification key and pending-work index keep recovery selective.',
       ],

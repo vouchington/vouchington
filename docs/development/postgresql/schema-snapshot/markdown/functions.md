@@ -1309,6 +1309,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_posts_search_vector()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_report_agent_call_receipt_target`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_report_agent_call_receipt_target()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_rss_feed_items_search_vector`
 
 ```sql

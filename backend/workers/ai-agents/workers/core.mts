@@ -4,8 +4,9 @@ import onError, { recordSpendCapBreach } from '@modules/on-error'
 import { ModelProviderError } from '@modules/model-providers/errors'
 import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
-import { runWithJobTokenAccumulator } from '@agents/_shared'
-import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
+import { agentCallOperationKey, runWithJobTokenAccumulator } from '@agents/_shared'
+import { getAgentCallReceipt } from '@services/ai-usage/agent-call-receipts'
+import { getStoryPostSpendState } from '../processors/process-story-post.mts'
 import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import {
   AI_AGENT_JOB_PRODUCES_SPEND,
@@ -125,10 +126,42 @@ function jobProducesSpend(job: Job<AIAgentJobData>): boolean {
 // story-post retries do not pay a round trip on every dispatch.
 async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
   if (job.name === 'story-post') {
-    const storyPostData = job.data as import('@queues/ai-agents/types').StoryPostJobData
-    return wouldStoryPostCallOpenAI(storyPostData.post_id, storyPostData.force ?? false)
+    const data = job.data as import('@queues/ai-agents/types').StoryPostJobData
+    const state = await getStoryPostSpendState(data.post_id, data.force ?? false)
+    if (!state?.wouldCallModel) return false
+    // The processor resolves a slug to this same post.id before choosing the paid-call receipt.
+    const operationId = data.force ? `${state.postId}:${job.id}` : state.postId
+    return !(await getAgentCallReceipt(agentCallOperationKey('story-post', operationId)))
+  }
+  const receiptIdentity = existingReceiptIdentity(job)
+  if (receiptIdentity) {
+    const [agentSlug, operationId] = receiptIdentity
+    // A completed receipt only replays local writes. An uncertain one must reach the processor
+    // too, so it can stop permanently for review instead of being parked by the spend gate.
+    if (await getAgentCallReceipt(agentCallOperationKey(agentSlug, operationId))) return false
   }
   return true
+}
+
+function existingReceiptIdentity(job: Job<AIAgentJobData>): [string, string] | null {
+  if (job.name === 'report-judgement') {
+    const data = job.data as import('@queues/ai-agents/types').ReportJudgementJobData
+    return [
+      'report-judgement',
+      data.rerun_by_id
+        ? job.id
+        : `${data.entity_type}:${data.entity_id}:${data.triggering_report_id}`,
+    ]
+  }
+  if (job.name === 'copyright-appeal-recommendation') {
+    const data = job.data as import('@queues/ai-agents/types').CopyrightAppealRecommendationJobData
+    return ['copyright-appeal-recommendation', data.submission_id]
+  }
+  if (job.name === 'copyright-submission-guidance') {
+    const data = job.data as import('@queues/ai-agents/types').CopyrightSubmissionGuidanceJobData
+    return ['copyright-submission-guidance', data.submission_id]
+  }
+  return null
 }
 
 export function createAIAgentsWorker(deps: Partial<AIAgentsWorkerDeps> = {}): Worker {

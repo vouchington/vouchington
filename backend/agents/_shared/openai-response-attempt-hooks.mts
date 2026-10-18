@@ -8,6 +8,9 @@ import type { OpenAIResponseAttemptHooks } from './create-response.mts'
 
 export type { OpenAIResponseAttemptHooks } from './create-response.mts'
 
+/** A later physical attempt was refused after only positively unbilled capacity failures. */
+export class UnbilledRetrySpendCapBreachError extends SpendCapBreachError {}
+
 interface OpenAIResponseAttemptHookDeps {
   assertDailySpendCapNotBreached?: typeof assertDailySpendCapNotBreached
   latchAccountingUncertainty?: typeof latchAccountingUncertainty
@@ -28,7 +31,7 @@ export function createOpenAIResponseAttemptHooks(
     beforeAttempt: async ({ attempt }) => {
       if (attempt === 1) return
       const breach = await checkSpendCap(agentSlug)
-      if (breach) throw new SpendCapBreachError(breach)
+      if (breach) throw new UnbilledRetrySpendCapBreachError(breach)
     },
     onUnknownBilledAttempt: async ({ requestStartedAt }) => {
       await latchUncertainty({

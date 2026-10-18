@@ -18,6 +18,7 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 4. Start from durable source-of-truth state, pass minimal identifiers, mark jobs `sensitive: true`
    when payloads contain secrets or personal data, make every retry safe, and await or explicitly
    mark every fan-out edge.
+   For external effects, follow the [retry and receipt rules](../../../docs/checklists/backend-queues.md#queue-boundaries).
 5. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
    data-driven worker-placement requirements from the checklist. Scheduler templates take no
    `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.

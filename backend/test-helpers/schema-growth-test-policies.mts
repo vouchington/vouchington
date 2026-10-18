@@ -80,6 +80,10 @@ const UNBOUNDED_RECONSIDERATION_EXCEPTIONS = new Map([
     'Only if the replacement preserves global response-id uniqueness across every ledger partition.',
   ],
   [
+    'ai_agent_call_receipts',
+    'Only if the replacement preserves global paid-call operation-key uniqueness across every receipt partition.',
+  ],
+  [
     'web_push_endpoint_owners',
     'Only if the replacement preserves global endpoint uniqueness and claim serialization across every subscription partition.',
   ],
