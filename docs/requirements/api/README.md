@@ -49,7 +49,5 @@ contracts. This page records only the decisions code cannot show.
 
 RSS XML is mounted outside `/api/v1`; see [RSS](../../overview/architecture/backend/README.md).
 
-- [v1/reports/README.md](v1/reports/README.md) (guard-pinned token mirror)
-
 See the [API performance requirements](../platform/api-performance.md) and
 [backend API instructions](../../../backend/api/AGENTS.md).

@@ -33,7 +33,7 @@ flowchart LR
   `markdown`, `post-publication`, `post-revisions`, `search`, `feeds`, `sitemaps`.
 - Social graph and messaging: `entity-relations`, `messaging`, `modmail`, `conversations-messages`,
   `notifications*`, `engagement-emails`.
-- Moderation and trust ([moderation reports](moderation-reports/README.md)): `moderation-*`, `review-disputes`, `user-warnings`, `copyright-notices`,
+- Moderation and trust: `moderation-*`, `review-disputes`, `user-warnings`, `copyright-notices`,
   `spam-detection`, `vote-weight`, `vote-integrity`, `elections-votes`, `report-integrity`.
 - AI and classification: `classifier-runs`, `classifiers`, `post-classifier`, `autotagger`,
   `ai-usage`, `openai-*`, `bedrock-embeddings*`.

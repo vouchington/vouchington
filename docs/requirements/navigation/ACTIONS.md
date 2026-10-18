@@ -21,6 +21,4 @@ reporter or moderation-record actions; see [Moderation Analytics](../moderation/
 
 ### Report
 
-The Report action is available on `rss_feed_item`, `post`, `comment`, `user`, and `url_hostname`. It is auth-only and never shown to signed-out users.
-
-Clicking any Report trigger opens a modal with a reason radio group (`spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other`) plus an optional free-text note. `vote_manipulation` is valid only for `post` reports. Submissions are idempotent per entity.
+The Report action is auth-only and never shown to signed-out users. Clicking any Report trigger opens a modal with a reason radio group plus an optional free-text note. Submissions are idempotent per entity.

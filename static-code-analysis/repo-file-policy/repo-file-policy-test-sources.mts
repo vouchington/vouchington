@@ -1,22 +1,3 @@
-export const SYNCED_MODERATION_POLICY_MATRIX_DOC = [
-  '## Policy Entries',
-  '| Key | Label | Report Reason | AI Category | Surfaces | Severity | Appeal Eligible | Recommended Action (advisory) |',
-  '| --- | --- | --- | --- | --- | --- | --- | --- |',
-  '| spam | Spam | ✓ | ✓ | all | low | ✓ | remove |\n| harassment | Harassment | ✓ | ✓ | all | high | ✓ | remove |\n| misinformation | Misinformation | ✓ | ✓ | all | medium | ✓ | warn |\n| illegal_content | Illegal content | ✓ | ✓ | all | critical | ✓ | escalate |\n| hate_speech | Hate speech | — | ✓ | all | high | ✓ | remove |\n| sexual_content | Sexual content | — | ✓ | all | high | ✓ | remove |\n| violence | Violence | — | ✓ | all | critical | ✓ | escalate |\n| privacy_violation | Privacy violation | — | ✓ | all | high | ✓ | remove |\n| off_topic | Off topic | — | ✓ | all | low | ✓ | no_action |\n| vote_manipulation | Vote manipulation | ✓ | — | post | medium | ✓ | escalate |\n| other | Other | ✓ | — | all | low | ✓ | no_action |',
-  '"all" means all `MODERATION_REPORT_ENTITY_TYPES`: `rss_feed_item`, `post`, `comment`, `user`, `url_hostname`.',
-  '## Derived Lists',
-  '- **Report reasons (List A)** — `MODERATION_REPORT_REASONS` — entries with `isReportReason: true`:',
-  '  `spam`, `harassment`, `misinformation`, `illegal_content`, `vote_manipulation`, `other`',
-  '- **AI content-policy categories (List B)** — `CONTENT_POLICY_CATEGORIES` — entries with',
-  '  `isAiCategory: true`:',
-  '  `spam`, `harassment`, `misinformation`, `illegal_content`, `hate_speech`, `sexual_content`, `violence`, `privacy_violation`, `off_topic`',
-  '## Action Enums',
-  '| Export | Values | Used by |\n| `MODERATION_JUDGEMENT_ACTIONS` | `no_action`, `warn`, `remove`, `escalate` | |\n| `MODERATION_APPEAL_ACTIONS` | `accept`, `deny`, `reduce` | |',
-  '## Severity Levels',
-  '| Level | Meaning |\n| low | |\n| medium | |\n| high | |\n| critical | |',
-  '## Runbooks',
-].join('\n')
-
 export function topicTypesSource(entries: Record<string, string>, exported: boolean) {
   const prefix = exported ? 'export ' : ''
   return `${prefix}const topicTypes = {\n${Object.entries(entries)
