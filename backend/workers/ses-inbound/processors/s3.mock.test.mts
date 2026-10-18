@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Worker } from 'glide-mq'
-import { loadSesInboundObjectAndHash } from './s3.mts'
+import { CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { loadSesInboundObjectAndHash, moveSesInboundObjectToFailed } from './s3.mts'
 
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
   ...(await importOriginal<typeof import('@modules/aws')>()),
@@ -77,6 +78,22 @@ describe('loadSesInboundObjectAndHash', () => {
       delayMs: 17_000,
       cause: error,
     })
+  })
+
+  it('defers a failed-object move when deletion is throttled after the copy', async () => {
+    const error = Object.assign(new Error('SlowDown'), {
+      $metadata: { httpStatusCode: 429 },
+      $response: { headers: { 'retry-after': '11' } },
+    })
+    vi.mocked(S3ImagesClient.send)
+      .mockResolvedValueOnce({} as never)
+      .mockRejectedValueOnce(error)
+
+    const move = moveSesInboundObjectToFailed('copyright-incoming/abc', 'message-123')
+    await expect(move).rejects.toBeInstanceOf(Worker.RateLimitError)
+    await expect(move).rejects.toMatchObject({ delayMs: 11_000, cause: error })
+    expect(vi.mocked(S3ImagesClient.send).mock.calls[0]?.[0]).toBeInstanceOf(CopyObjectCommand)
+    expect(vi.mocked(S3ImagesClient.send).mock.calls[1]?.[0]).toBeInstanceOf(DeleteObjectCommand)
   })
 
   it('rejects the digest when the object stream fails part-way through', async () => {
