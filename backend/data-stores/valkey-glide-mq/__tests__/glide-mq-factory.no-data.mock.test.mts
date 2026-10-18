@@ -178,11 +178,11 @@ describe('glide-mq-factory', () => {
   it('tracks bulk counts and decorates rejected promises before reporting', async () => {
     const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
     const error = new Error('bulk failed')
-    const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'job'>({
+    const enqueueBulk = createBulkEnqueueFunction({
       queue: createRejectingQueueStub<{ id: string }>(error),
       queueName: 'queue',
       jobName: 'job',
-      buildJob: input => ({ data: input }),
+      buildJob: (input: { id: string }) => ({ data: input }),
       trackJobEnqueue: mockTrackJobEnqueue,
       decorateError: (err, context) => {
         err.extra = { count: context.count, operation: context.callContext }
@@ -267,11 +267,11 @@ describe('glide-mq-factory', () => {
     it('createBulkEnqueueFunction retries a transient error and succeeds when the queue recovers', async () => {
       const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'bulk-1' })
-      const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'j'>({
+      const enqueueBulk = createBulkEnqueueFunction({
         queue: stub,
         queueName: 'q',
         jobName: 'j',
-        buildJob: input => ({ data: input }),
+        buildJob: (input: { id: string }) => ({ data: input }),
         trackJobEnqueue: mockTrackJobEnqueue,
       })
       const promise = enqueueBulk([{ id: '1' }])
@@ -283,11 +283,11 @@ describe('glide-mq-factory', () => {
     it('createBulkEnqueueFunction does not retry when retry: false', async () => {
       const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'bulk-1' })
-      const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'j'>({
+      const enqueueBulk = createBulkEnqueueFunction({
         queue: stub,
         queueName: 'q',
         jobName: 'j',
-        buildJob: input => ({ data: input }),
+        buildJob: (input: { id: string }) => ({ data: input }),
         retry: false,
         trackJobEnqueue: mockTrackJobEnqueue,
       })

@@ -1,6 +1,10 @@
 import type { JobOptions, Queue } from 'glide-mq'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { NoSensitiveFields } from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
+import type { CreateBulkEnqueueFunctionOptions } from '@data-stores/valkey-glide-mq/glide-mq-enqueue-types'
+import type {
+  HasSensitiveFields,
+  NoSensitiveFields,
+} from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
 import { BACKGROUND_QUEUE_NAME } from './config.mts'
 import type { BackgroundJobDefinition } from './types.mts'
 import { background } from './queues.mts'
@@ -17,6 +21,13 @@ type BulkEnqueue<TInput> = (
   perCallOpts?: Partial<JobOptions>,
   callContext?: unknown,
 ) => ReturnType<Queue['addBulk']>
+
+type BulkEnqueueFactory = <TInput, TData, TName extends string>(
+  options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName>,
+) => BulkEnqueue<TInput>
+
+// The public helper overloads below prove the payload shape before entering this generic adapter.
+const createVerifiedBulkEnqueue = createBulkEnqueueFunction as unknown as BulkEnqueueFactory
 
 /** An enqueue helper for one registered job; per-call options override the job's defaults. */
 export function createBackgroundEnqueue<TData>(
@@ -51,44 +62,52 @@ export function createBackgroundEnqueue<TData>(
 }
 
 /** A bulk enqueue helper for one registered job; `buildJob` may add per-input options. */
-export function createBackgroundBulkEnqueue<TInput, TData>(
+export function createBackgroundBulkEnqueue<
+  TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
+  TData,
+>(
   job: BackgroundJobDefinition<TData, true> & { sensitive: true },
-  buildJob: (input: TInput, index: number) => { data: TData; opts?: Partial<JobOptions> },
+  buildJob: TBuildJob,
   options?: BackgroundEnqueueOptions,
-): BulkEnqueue<TInput>
-export function createBackgroundBulkEnqueue<TInput, TData>(
+): BulkEnqueue<Parameters<TBuildJob>[0]>
+export function createBackgroundBulkEnqueue<
+  TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
+  TData,
+>(
   job: BackgroundJobDefinition<TData, false>,
-  buildJob: (
-    input: TInput,
-    index: number,
-  ) => { data: NoSensitiveFields<TData>; opts?: Partial<JobOptions> },
+  buildJob: TBuildJob &
+    ([true] extends [HasSensitiveFields<ReturnType<TBuildJob>['data']>]
+      ? never
+      : ReturnType<TBuildJob>['data'] extends NoSensitiveFields<ReturnType<TBuildJob>['data']>
+        ? unknown
+        : never),
   options?: BackgroundEnqueueOptions,
-): BulkEnqueue<TInput>
-export function createBackgroundBulkEnqueue<TInput, TData>(
+): BulkEnqueue<Parameters<TBuildJob>[0]>
+export function createBackgroundBulkEnqueue<
+  TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
+  TData,
+>(
   job: BackgroundJobDefinition<TData>,
-  buildJob: (input: TInput, index: number) => { data: TData; opts?: Partial<JobOptions> },
+  buildJob: TBuildJob,
   options: BackgroundEnqueueOptions = {},
 ) {
   if (job.sensitive) {
-    return createBulkEnqueueFunction<TInput, TData, string>({
+    return createVerifiedBulkEnqueue({
       ...options,
       queue: background,
       queueName: BACKGROUND_QUEUE_NAME,
       jobName: job.name,
       defaults: job.options,
-      buildJob,
+      buildJob: buildJob as never,
       sensitive: true,
     })
   }
-  return createBulkEnqueueFunction<TInput, TData, string>({
+  return createVerifiedBulkEnqueue({
     ...options,
     queue: background,
     queueName: BACKGROUND_QUEUE_NAME,
     jobName: job.name,
     defaults: job.options,
-    buildJob: buildJob as (
-      input: TInput,
-      index: number,
-    ) => { data: NoSensitiveFields<TData>; opts?: Partial<JobOptions> },
+    buildJob: buildJob as never,
   })
 }

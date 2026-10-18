@@ -30,16 +30,15 @@ const enqueueAppleNotificationJob = createEnqueueFunction<
   defaults: appleNotificationDefaults,
 })
 
-export const enqueueBulkProcessAppleNotifications = createBulkEnqueueFunction<
-  ProcessAppleNotificationData,
-  ProcessAppleNotificationData,
-  MembershipsJobs
->({
+export const enqueueBulkProcessAppleNotifications = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: JOB_NAME,
   defaults: appleNotificationDefaults,
-  buildJob: data => ({ data, opts: appleNotificationJobOptions(data) }),
+  buildJob: (data: ProcessAppleNotificationData) => ({
+    data,
+    opts: appleNotificationJobOptions(data),
+  }),
 })
 
 const enqueueRecoverAppleNotificationsJob = createEnqueueFunction<

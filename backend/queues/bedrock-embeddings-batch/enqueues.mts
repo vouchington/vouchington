@@ -47,16 +47,12 @@ export function creationJobOptions(
   }
 }
 
-const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction<
-  string,
-  { batch_id: string },
-  string
->({
+const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: 'bedrock-embeddings.poll_batch',
   defaults: requireBackgroundCpuJob('bedrock-embeddings.poll_batch').options,
-  buildJob: batchId => ({
+  buildJob: (batchId: string) => ({
     data: { batch_id: batchId },
     opts: {
       deduplication: {

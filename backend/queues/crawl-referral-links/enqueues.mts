@@ -9,22 +9,15 @@ import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { ReferralCrawlDispatchData } from './types.mts'
 
 type CrawlReferralLinkEntry = { linkId: string; urlId: string; referralProgramId: string }
-type CrawlReferralLinkContext = { hostnameId: string; rateLimitMs: number }
-
 const CRAWL_JOB_NAME = 'crawl.crawl_referral_link'
 const DISPATCHER_JOB_NAME = 'crawl.crawl_referral_links_dispatcher'
 
-const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction<
-  CrawlReferralLinkEntry,
-  CrawlReferralLinkEntry,
-  string,
-  CrawlReferralLinkContext
->({
+const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: CRAWL_JOB_NAME,
   defaults: getBackgroundCpuJob(CRAWL_JOB_NAME)!.options,
-  buildJob: data => ({
+  buildJob: (data: CrawlReferralLinkEntry) => ({
     data,
     opts: {
       deduplication: {

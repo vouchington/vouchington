@@ -62,16 +62,12 @@ const enqueueSendCopyrightNoticeEmailJob = createGlideMqEnqueueFunction({
 })
 
 /** One batched add of `enqueueSendCopyrightNoticeEmail` jobs, each with its own dedup id. */
-export const enqueueBulkSendCopyrightNoticeEmails = createGlideMqBulkEnqueueFunction<
-  string,
-  ProcessSendCopyrightNoticeEmailVariables,
-  'processSendCopyrightNoticeEmail'
->({
+export const enqueueBulkSendCopyrightNoticeEmails = createGlideMqBulkEnqueueFunction({
   queue: emails,
   queueName: QUEUE_NAME,
   jobName: 'processSendCopyrightNoticeEmail',
   sensitive: true,
-  buildJob: intentId => ({
+  buildJob: (intentId: string) => ({
     data: { intentId } satisfies ProcessSendCopyrightNoticeEmailVariables,
     opts: copyrightNoticeEmailJobOptions(intentId),
   }),

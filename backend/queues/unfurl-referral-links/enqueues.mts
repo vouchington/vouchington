@@ -53,16 +53,12 @@ function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
 }
 
 /** One batched add of `enqueueUnfurlReferralLink` jobs, each with its own dedup id and options. */
-export const enqueueBulkUnfurlReferralLinks = createBulkEnqueueFunction<
-  UnfurlReferralLinkEntry,
-  UnfurlReferralLinkEntry,
-  string
->({
+export const enqueueBulkUnfurlReferralLinks = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: UNFURL_JOB_NAME,
   defaults: requireBackgroundCpuJob(UNFURL_JOB_NAME).options,
-  buildJob: data => ({ data, opts: unfurlReferralLinkJobOptions(data) }),
+  buildJob: (data: UnfurlReferralLinkEntry) => ({ data, opts: unfurlReferralLinkJobOptions(data) }),
 })
 
 /** Logical dedup id `unfurl_referral_link__<parentLinkId>` (debounce) -- a burst of re-requests

@@ -25,16 +25,15 @@ const enqueueRecovery = createEnqueueFunction<Record<string, never>, Memberships
   defaults,
 })
 
-const enqueueBulkSource = createBulkEnqueueFunction<
-  ReconcileMicrosoftStoreSourceData & { bucket: number },
-  ReconcileMicrosoftStoreSourceData,
-  MembershipsJobs
->({
+const enqueueBulkSource = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: 'reconcileMicrosoftStoreSource',
   defaults,
-  buildJob: ({ bucket, ...data }) => ({ data, opts: sourceJobOptions(data, bucket) }),
+  buildJob: ({ bucket, ...data }: ReconcileMicrosoftStoreSourceData & { bucket: number }) => ({
+    data,
+    opts: sourceJobOptions(data, bucket),
+  }),
 })
 
 function currentSourceBucket(): number {

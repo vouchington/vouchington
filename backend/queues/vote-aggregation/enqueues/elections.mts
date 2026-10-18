@@ -1,9 +1,6 @@
 import type { EnqueueReturnType } from '@voucha/types'
 import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
-import {
-  type ElectionJobData,
-  VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
-} from '@queues/background/enqueues/vote-aggregation-jobs'
+import { VOTE_AGGREGATION_UPDATE_ELECTION_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { ELECTIONS_DEFAULTS } from '../config.mts'
 import type {
   ElectionJobInput,
@@ -37,9 +34,9 @@ export function buildElectionJobOptions(
   }
 }
 
-const enqueueBulkElectionJobs = createBackgroundBulkEnqueue<ElectionJobInput, ElectionJobData>(
+const enqueueBulkElectionJobs = createBackgroundBulkEnqueue(
   VOTE_AGGREGATION_UPDATE_ELECTION_JOB,
-  input => ({
+  (input: ElectionJobInput) => ({
     data: input,
     opts: buildElectionJobOptions(input.electionId, input.orderingKey, input.relationTable),
   }),

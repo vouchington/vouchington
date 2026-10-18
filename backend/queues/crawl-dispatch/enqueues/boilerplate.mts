@@ -15,16 +15,12 @@ type EnqueueBoilerplateRemovalEntry = {
 const REMOVAL_JOB_NAME: BoilerplateRemovalJobs = 'boilerplate_removal'
 const DISPATCHER_JOB_NAME: BoilerplateRemovalJobs = 'boilerplate_removal_dispatcher'
 
-const enqueueBulkBoilerplateRemovalJobs = createBulkEnqueueFunction<
-  EnqueueBoilerplateRemovalEntry,
-  { hostname_id: string; parent_path: string },
-  string
->({
+const enqueueBulkBoilerplateRemovalJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: `crawl.${REMOVAL_JOB_NAME}`,
   defaults: requireBackgroundCpuJob(`crawl.${REMOVAL_JOB_NAME}`).options,
-  buildJob: ({ hostnameId, parentPath }) => ({
+  buildJob: ({ hostnameId, parentPath }: EnqueueBoilerplateRemovalEntry) => ({
     data: { hostname_id: hostnameId, parent_path: parentPath },
     opts: {
       deduplication: {

@@ -62,11 +62,7 @@ describe('canonical enqueue admission observation', () => {
         { id: crypto.randomUUID(), jobId: `first-${crypto.randomUUID()}` },
         { id: crypto.randomUUID(), jobId: `second-${crypto.randomUUID()}` },
       ]
-      const enqueue = createBulkEnqueueFunction<
-        { id: string; jobId: string },
-        { id: string },
-        'bulk'
-      >({
+      const enqueue = createBulkEnqueueFunction({
         queue,
         queueName: queue.name,
         jobName: 'bulk',

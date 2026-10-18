@@ -68,11 +68,7 @@ describe('glide-mq factory', () => {
         jobName: 'wrapped',
       })
       expect(() => enqueue({}, { priority: 0 })).toThrow(RangeError)
-      const enqueueBulk = createBulkEnqueueFunction<
-        Record<string, never>,
-        Record<string, never>,
-        'wrapped'
-      >({
+      const enqueueBulk = createBulkEnqueueFunction({
         queue: none,
         queueName: `${name}-none`,
         jobName: 'wrapped',
@@ -151,12 +147,12 @@ describe('createEnqueueFunction', () => {
 describe('createBulkEnqueueFunction', () => {
   it('merges per-job options before per-call options', async () => {
     const stub = createQueueStub<{ id: string }>()
-    const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'job'>({
+    const enqueueBulk = createBulkEnqueueFunction({
       queue: stub.queue,
       queueName: 'queue',
       jobName: 'job',
       defaults: { priority: 50 },
-      buildJob: input => ({
+      buildJob: (input: { id: string }) => ({
         data: input,
         opts: {
           priority: 25,
@@ -176,11 +172,11 @@ describe('createBulkEnqueueFunction', () => {
 
   it('does not enqueue empty batches', async () => {
     const stub = createQueueStub<{ id: string }>()
-    const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'job'>({
+    const enqueueBulk = createBulkEnqueueFunction({
       queue: stub.queue,
       queueName: 'queue',
       jobName: 'job',
-      buildJob: input => ({ data: input }),
+      buildJob: (input: { id: string }) => ({ data: input }),
     })
 
     await enqueueBulk([])

@@ -69,11 +69,7 @@ export async function enqueueReportJudgement(
 }
 
 // Bulk enqueue for backfill dispatcher: one addBulk call per batch, not one per entity.
-export const enqueueReportJudgementBatch = createBulkEnqueueFunction<
-  MissingJudgementEntity,
-  ReportJudgementJobData,
-  'report-judgement'
->({
+export const enqueueReportJudgementBatch = createBulkEnqueueFunction({
   queue: ai_agents,
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'report-judgement',

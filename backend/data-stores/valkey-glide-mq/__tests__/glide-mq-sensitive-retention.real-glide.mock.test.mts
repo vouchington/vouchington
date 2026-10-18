@@ -39,7 +39,7 @@ describe('sensitive enqueue retention through real GlideMQ', () => {
                 retry: false,
                 trackJobEnqueue,
               })({ nested: { token: 'test-token' } })
-            : await createBulkEnqueueFunction<string, { nested: { email: string } }, 'sensitive'>({
+            : await createBulkEnqueueFunction({
                 queue: queue as Queue & { priorityKind: 'none' },
                 queueName: lifecycle.queue.name,
                 jobName: 'sensitive',
@@ -47,7 +47,10 @@ describe('sensitive enqueue retention through real GlideMQ', () => {
                 sensitive: true,
                 retry: false,
                 trackJobEnqueue,
-                buildJob: email => ({ data: { nested: { email } }, opts: { priority: 0 } }),
+                buildJob: (email: string) => ({
+                  data: { nested: { email } },
+                  opts: { priority: 0 },
+                }),
               })(['tests+3274@voucha.ai'])
 
         const job = Array.isArray(result) ? result[0] : result

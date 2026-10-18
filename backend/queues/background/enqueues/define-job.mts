@@ -5,7 +5,10 @@ import type {
   BackgroundJobDefinition,
   BackgroundJobSpec,
 } from '../types.mts'
-import type { NoSensitiveFields } from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
+import type {
+  HasSensitiveFields,
+  NoSensitiveFields,
+} from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
 
 const LOCAL_NAME = /^[a-z][A-Za-z0-9_-]*$/
 
@@ -29,7 +32,11 @@ export function defineBackgroundJob<TData = Record<string, never>>(
 export function defineBackgroundJob<TData = Record<string, never>>(
   domain: BackgroundDomainDefinition,
   spec: BackgroundJobSpec &
-    ([TData] extends [NoSensitiveFields<TData>] ? { sensitive?: undefined } : never),
+    ([TData] extends [NoSensitiveFields<TData>]
+      ? [true] extends [HasSensitiveFields<TData>]
+        ? never
+        : { sensitive?: undefined }
+      : never),
 ): BackgroundJobDefinition<TData, false>
 export function defineBackgroundJob<TData = Record<string, never>>(
   domain: BackgroundDomainDefinition,

@@ -47,12 +47,12 @@ const enqueueLanguageDetectionJobs = {
 
 function createBulkLanguageDetectionEnqueue(jobName: LanguageDetectionEntityType) {
   const job = requireBackgroundCpuJob(`content-analysis.${jobName}`)
-  return createBulkEnqueueFunction<string, LanguageDetectionData, string>({
+  return createBulkEnqueueFunction({
     queue: backgroundCpu,
     queueName: BACKGROUND_CPU_QUEUE_NAME,
     jobName: job.name,
     defaults: job.options,
-    buildJob: id => ({ data: { id }, opts: makeJobOpts(jobName, id, PRIORITY_DEFAULT) }),
+    buildJob: (id: string) => ({ data: { id }, opts: makeJobOpts(jobName, id, PRIORITY_DEFAULT) }),
   })
 }
 

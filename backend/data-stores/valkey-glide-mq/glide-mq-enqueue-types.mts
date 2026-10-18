@@ -1,6 +1,6 @@
 import type { trackJobEnqueue } from '@data-stores/analytics/queue'
 import type { JobOptions, Queue } from 'glide-mq'
-import type { NoSensitiveFields } from './glide-mq-payload-types.mts'
+import type { HasSensitiveFields, NoSensitiveFields } from './glide-mq-payload-types.mts'
 import type { QueuePriorityKind } from './queue-priority.mts'
 
 type AddQueue = Pick<Queue, 'add'> & { readonly priorityKind: QueuePriorityKind }
@@ -43,13 +43,7 @@ export type CreateBulkEnqueueFunctionOptions<
   jobName: TName
   defaults?: Partial<JobOptions>
   sensitive?: boolean
-  buildJob: (
-    input: TInput,
-    index: number,
-  ) => {
-    data: TData
-    opts?: Partial<JobOptions>
-  }
+  buildJob: (input: TInput, index: number) => { data: TData; opts?: Partial<JobOptions> }
   decorateError?: (
     error: ErrorWithReportingContext,
     context: EnqueueErrorContext<TCallContext>,
@@ -70,32 +64,57 @@ export type CreateEnqueueFunction = {
   ) => ReturnType<AddQueue['add']>
   <TData, TName extends string, TCallContext = unknown>(
     options: CreateEnqueueFunctionOptions<TName, TCallContext> & { sensitive?: false },
-  ): (
-    data: NoSensitiveFields<TData>,
+  ): <TActual extends TData>(
+    data: TActual &
+      NoSensitiveFields<TData> &
+      ([true] extends [HasSensitiveFields<TData>] ? never : unknown) &
+      (TData extends Record<string, never>
+        ? unknown
+        : ([true] extends [HasSensitiveFields<TActual>] ? never : unknown) &
+            NoSensitiveFields<NoInfer<TActual>>),
     perCallOpts?: Partial<JobOptions>,
     callContext?: TCallContext,
   ) => ReturnType<AddQueue['add']>
 }
 
 export type CreateBulkEnqueueFunction = <
-  TInput,
-  TData,
+  TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TName extends string,
   TCallContext = unknown,
 >(
   options:
-    | (CreateBulkEnqueueFunctionOptions<TInput, TData, TName, TCallContext> & {
+    | (Omit<
+        CreateBulkEnqueueFunctionOptions<
+          Parameters<TBuildJob>[0],
+          ReturnType<TBuildJob>['data'],
+          TName,
+          TCallContext
+        >,
+        'buildJob'
+      > & {
+        buildJob: TBuildJob
         sensitive: true
       })
-    | (Omit<CreateBulkEnqueueFunctionOptions<TInput, TData, TName, TCallContext>, 'buildJob'> & {
-        buildJob: (
-          input: TInput,
-          index: number,
-        ) => { data: NoSensitiveFields<TData>; opts?: Partial<JobOptions> }
+    | (Omit<
+        CreateBulkEnqueueFunctionOptions<
+          Parameters<TBuildJob>[0],
+          ReturnType<TBuildJob>['data'],
+          TName,
+          TCallContext
+        >,
+        'buildJob'
+      > & {
+        buildJob: TBuildJob
         sensitive?: false
-      }),
+      } & ([true] extends [HasSensitiveFields<ReturnType<TBuildJob>['data']>]
+          ? never
+          : [ReturnType<TBuildJob>['data']] extends [
+                NoSensitiveFields<NoInfer<ReturnType<TBuildJob>['data']>>,
+              ]
+            ? unknown
+            : never)),
 ) => (
-  inputs: TInput[],
+  inputs: Parameters<TBuildJob>[0][],
   perCallOpts?: Partial<JobOptions>,
   callContext?: TCallContext,
 ) => ReturnType<AddBulkQueue['addBulk']>

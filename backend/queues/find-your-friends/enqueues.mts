@@ -1,7 +1,6 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import type { NoSensitiveFields } from '@data-stores/valkey-glide-mq/glide-mq-payload-types'
 import {
   getFindYourFriendsWorkLimit,
   FIND_YOUR_FRIENDS_DEFAULTS,
@@ -23,11 +22,24 @@ const { attempts, backoff, removeOnComplete, removeOnFail, deduplicationTtlMs } 
 
 const defaults = { attempts, backoff, removeOnComplete, removeOnFail } satisfies Partial<JobOptions>
 
-type SyncConfig<TData> = {
-  jobName: FindYourFriendsSyncJobs
-  buildData: (id: string) => TData & NoSensitiveFields<TData>
+type SyncConfig = {
   deduplicationPrefix: string
   ordering: JobOptions['ordering']
+} & (
+  | { jobName: 'syncFacebookFriends'; idField: 'facebookAccountId' }
+  | { jobName: 'syncXFriends'; idField: 'xAccountId' }
+  | { jobName: 'syncGithubFriends'; idField: 'githubAccountId' }
+)
+
+function buildSyncData(field: SyncConfig['idField'], id: string) {
+  switch (field) {
+    case 'facebookAccountId':
+      return { facebookAccountId: id }
+    case 'xAccountId':
+      return { xAccountId: id }
+    case 'githubAccountId':
+      return { githubAccountId: id }
+  }
 }
 
 function buildJobOptions(
@@ -46,20 +58,23 @@ function buildJobOptions(
   }
 }
 
-function createSyncEnqueues<TData>(config: SyncConfig<TData>) {
-  const enqueueOne = createEnqueueFunction<TData, FindYourFriendsSyncJobs>({
+function createSyncEnqueues(config: SyncConfig) {
+  const enqueueOne = createEnqueueFunction<
+    ReturnType<typeof buildSyncData>,
+    FindYourFriendsSyncJobs
+  >({
     queue: findYourFriendsQueue,
     queueName: QUEUE_NAME,
     jobName: config.jobName,
     defaults,
   })
-  const enqueueBulk = createBulkEnqueueFunction<string, TData, FindYourFriendsSyncJobs>({
+  const enqueueBulk = createBulkEnqueueFunction({
     queue: findYourFriendsQueue,
     queueName: QUEUE_NAME,
     jobName: config.jobName,
     defaults,
-    buildJob: id => ({
-      data: config.buildData(id),
+    buildJob: (id: string) => ({
+      data: buildSyncData(config.idField, id),
       opts: buildJobOptions(
         `${config.deduplicationPrefix}__${id}`,
         config.ordering,
@@ -71,7 +86,7 @@ function createSyncEnqueues<TData>(config: SyncConfig<TData>) {
   return {
     one: async (id: string, priority = PRIORITY_DEFAULT): Promise<void> => {
       await enqueueOne(
-        config.buildData(id),
+        buildSyncData(config.idField, id),
         buildJobOptions(`${config.deduplicationPrefix}__${id}`, config.ordering, priority),
       )
     },
@@ -89,7 +104,7 @@ function createSyncEnqueues<TData>(config: SyncConfig<TData>) {
 
 const facebookSync = createSyncEnqueues({
   jobName: 'syncFacebookFriends',
-  buildData: facebookAccountId => ({ facebookAccountId }),
+  idField: 'facebookAccountId',
   deduplicationPrefix: 'sync_facebook',
   ordering: {
     ...FIND_YOUR_FRIENDS_ORDERING.sync_facebook,
@@ -99,7 +114,7 @@ const facebookSync = createSyncEnqueues({
 
 const xSync = createSyncEnqueues({
   jobName: 'syncXFriends',
-  buildData: xAccountId => ({ xAccountId }),
+  idField: 'xAccountId',
   deduplicationPrefix: 'sync_x',
   ordering: {
     ...FIND_YOUR_FRIENDS_ORDERING.sync_x,
@@ -109,7 +124,7 @@ const xSync = createSyncEnqueues({
 
 const githubSync = createSyncEnqueues({
   jobName: 'syncGithubFriends',
-  buildData: githubAccountId => ({ githubAccountId }),
+  idField: 'githubAccountId',
   deduplicationPrefix: 'sync_github',
   ordering: {
     ...FIND_YOUR_FRIENDS_ORDERING.sync_github,
