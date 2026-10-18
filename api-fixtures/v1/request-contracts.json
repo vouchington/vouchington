@@ -4966,6 +4966,9 @@
                   },
                   "updated_at": {
                     "type": "string"
+                  },
+                  "ai_draft_requested_run_id": {
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -4996,7 +4999,8 @@
                   "sent_at",
                   "status",
                   "topic_id",
-                  "updated_at"
+                  "updated_at",
+                  "ai_draft_requested_run_id"
                 ],
                 "type": "object"
               },
@@ -5534,6 +5538,9 @@
                 },
                 "updated_at": {
                   "type": "string"
+                },
+                "ai_draft_requested_run_id": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -5564,7 +5571,8 @@
                 "sent_at",
                 "status",
                 "topic_id",
-                "updated_at"
+                "updated_at",
+                "ai_draft_requested_run_id"
               ],
               "type": "object"
             }

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import {
   createTestUser,
+  getReviewDisputeAiRequestToken,
   insertTestTopic,
   insertTestPost,
   insertTestPostReview,
@@ -78,7 +79,11 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'No policy violation found.',
     })
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, callModel)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getReviewDisputeById(dispute.id)
@@ -102,7 +107,11 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'Claim flagged for injection attempt.',
     })
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, callModel)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).toHaveBeenCalledOnce()
     const callArg = callModel.mock.calls[0][0]
@@ -123,14 +132,22 @@ describe('runDisputeResolutionAgent', () => {
       public_response: 'First run.',
       internal_response: 'Internal.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, firstCaller)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      TEST_MODEL_SELECTION,
+      firstCaller,
+    )
 
     const secondCaller = makeModelCaller({
       recommended_action: 'remove',
       public_response: 'Second run.',
       internal_response: 'Internal.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, secondCaller)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      TEST_MODEL_SELECTION,
+      secondCaller,
+    )
 
     expect(secondCaller).not.toHaveBeenCalled()
   })
@@ -149,7 +166,11 @@ describe('runDisputeResolutionAgent', () => {
       public_response: 'First.',
       internal_response: 'First.',
     })
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, firstCaller)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      TEST_MODEL_SELECTION,
+      firstCaller,
+    )
 
     const secondCaller = makeModelCaller({
       recommended_action: 'remove',
@@ -157,7 +178,11 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'Rerun internal.',
     })
     await runDisputeResolutionAgent(
-      { disputeId: dispute.id, rerunById: staff.id },
+      {
+        disputeId: dispute.id,
+        requestToken: await getReviewDisputeAiRequestToken(dispute.id),
+        rerunById: staff.id,
+      },
       TEST_MODEL_SELECTION,
       secondCaller,
     )
@@ -173,7 +198,11 @@ describe('runDisputeResolutionAgent', () => {
       public_response: 'x',
       internal_response: 'x',
     })
-    await runDisputeResolutionAgent({ disputeId: randomUUID() }, TEST_MODEL_SELECTION, callModel)
+    await runDisputeResolutionAgent(
+      { disputeId: randomUUID(), requestToken: randomUUID() },
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
     expect(callModel).not.toHaveBeenCalled()
   })
 
@@ -201,7 +230,11 @@ describe('runDisputeResolutionAgent', () => {
       internal_response: 'No policy violation found.',
     })
 
-    await runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_MODEL_SELECTION, callModel)
+    await runDisputeResolutionAgent(
+      { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({
       community_id: community.id,
@@ -234,7 +267,11 @@ describe('runDisputeResolutionAgent', () => {
     )
 
     await expect(
-      runDisputeResolutionAgent({ disputeId: dispute.id }, TEST_OPENAI_SELECTION, callModel),
+      runDisputeResolutionAgent(
+        { disputeId: dispute.id, requestToken: await getReviewDisputeAiRequestToken(dispute.id) },
+        TEST_OPENAI_SELECTION,
+        callModel,
+      ),
     ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
     await expect(findAiUsageRecordForPost(postId, 'dispute-resolution')).resolves.toMatchObject({

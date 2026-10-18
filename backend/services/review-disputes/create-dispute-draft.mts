@@ -5,6 +5,7 @@ import type { ReviewDispute, ReviewDisputeRecommendedAction } from './config.mts
 
 export interface AiDraftInput {
   disputeId: string
+  requestToken: string
   recommendedAction: ReviewDisputeRecommendedAction
   aiPublicResponse: string
   aiInternalResponse: string
@@ -12,7 +13,7 @@ export interface AiDraftInput {
   runId?: string
 }
 
-export async function createReviewDisputeDraft(input: AiDraftInput): Promise<ReviewDispute> {
+export async function createReviewDisputeDraft(input: AiDraftInput): Promise<ReviewDispute | null> {
   const now = new Date()
   const { rows } = await write(sql`/* createReviewDisputeDraft */
     WITH lifecycle_change_id AS (
@@ -25,10 +26,12 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
           ai_internal_response = ${input.aiInternalResponse},
           model = ${input.model},
           ai_drafted_at = ${now},
+          ai_draft_run_id = ${input.runId ?? null},
           public_response = ${input.aiPublicResponse},
           drafted_at = COALESCE(drafted_at, ${now}),
           latest_lifecycle_change_id = (SELECT id FROM lifecycle_change_id)
       WHERE id = ${input.disputeId}
+        AND ai_draft_request_token = ${input.requestToken}
         AND approved_at IS NULL
         AND sent_at IS NULL
         AND resolved_at IS NULL
@@ -64,6 +67,39 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
     SELECT * FROM updated
   `)
   const result = rows[0] as ReviewDispute | undefined
+  if (!result) {
+    const { rows: currentRows } = await write<{ ai_draft_request_token: string }>(sql`
+      /* createReviewDisputeDraft:checkRequest */
+      SELECT ai_draft_request_token FROM review_disputes WHERE id = ${input.disputeId}
+    `)
+    if (currentRows[0] && currentRows[0].ai_draft_request_token !== input.requestToken) return null // a newer request superseded this job while it was processing
+  }
   assert(result, 404, 'Dispute not found, already approved, sent, or resolved')
   return result
+}
+
+/** The row lock waits for an enqueueing transaction to commit or roll back before model IO. */
+export async function isCurrentReviewDisputeDraftRequest(
+  disputeId: string,
+  requestToken: string,
+): Promise<boolean> {
+  const { rows } = await write<{
+    ai_draft_request_token: string
+    approved_at: Date | null
+    sent_at: Date | null
+    resolved_at: Date | null
+  }>(sql`
+    /* isCurrentReviewDisputeDraftRequest */
+    SELECT ai_draft_request_token, approved_at, sent_at, resolved_at
+    FROM review_disputes
+    WHERE id = ${disputeId}
+    FOR UPDATE
+  `)
+  const dispute = rows[0]
+  return (
+    dispute?.ai_draft_request_token === requestToken &&
+    dispute.approved_at === null &&
+    dispute.sent_at === null &&
+    dispute.resolved_at === null
+  )
 }

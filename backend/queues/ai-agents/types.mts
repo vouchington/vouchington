@@ -46,6 +46,7 @@ export type ReportJudgementJobData = {
 
 export type DisputeResolutionJobData = {
   dispute_id: string
+  ai_draft_request_token: string
   rerun_by_id?: string | null
 }
 

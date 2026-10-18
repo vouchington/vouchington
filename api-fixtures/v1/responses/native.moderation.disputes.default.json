@@ -1,6 +1,7 @@
 {
   "disputes": [
     {
+      "ai_draft_requested_run_id": "dispute_resolution_00000000-0000-7000-8000-000000000211",
       "ai_draft_run_id": null,
       "ai_drafted_at": null,
       "ai_internal_response": null,

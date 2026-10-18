@@ -2,7 +2,11 @@ import { callAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { moderationAiConfig } from '@services/moderation'
-import { getReviewDisputeById, createReviewDisputeDraft } from '@services/review-disputes'
+import {
+  getReviewDisputeByIdFromPrimary,
+  createReviewDisputeDraft,
+  isCurrentReviewDisputeDraftRequest,
+} from '@services/review-disputes'
 import onError from '@modules/on-error'
 import { callDisputeModel, type DisputeModelCaller } from './model.mts'
 
@@ -10,6 +14,7 @@ export type { DisputeModelCaller } from './model.mts'
 
 export interface DisputeModelInput {
   disputeId: string
+  requestToken: string
   rerunById?: string | null
   runId?: string
 }
@@ -25,9 +30,9 @@ export async function runDisputeResolutionAgent(
   selection: ModelSelection,
   callModel: DisputeModelCaller = callDisputeModel,
 ): Promise<void> {
-  const { disputeId, rerunById, runId } = input
+  const { disputeId, requestToken, rerunById, runId } = input
 
-  const dispute = await getReviewDisputeById(disputeId)
+  const dispute = await getReviewDisputeByIdFromPrimary(disputeId)
   if (!dispute) {
     onError(new Error(`runDisputeResolutionAgent: dispute not found: ${disputeId}`))
     return
@@ -36,6 +41,8 @@ export async function runDisputeResolutionAgent(
   if (dispute.approved_at != null || dispute.sent_at != null || dispute.resolved_at != null) {
     return
   }
+
+  if (!(await isCurrentReviewDisputeDraftRequest(disputeId, requestToken))) return
 
   // Manual reruns bypass only existing-draft idempotency.
   if (!rerunById && dispute.ai_drafted_at != null) return
@@ -95,5 +102,6 @@ export async function runDisputeResolutionAgent(
     aiInternalResponse: result.output.internal_response,
     model: result.model,
     runId,
+    requestToken,
   })
 }

@@ -30,7 +30,16 @@ export function useDisputeAiReruns(
   }
 
   function applySavedDraft(before: ReviewDispute, runId: string, saved: ReviewDispute) {
-    if (saved.ai_draft_run_id !== runId && !isLaterQueueRun(runId, saved.ai_draft_run_id)) return
+    const requestedRunId = saved.ai_draft_requested_run_id
+    // A newer staff request may supersede ours. Only the current server request
+    // completing is terminal; staff approval, delivery, or resolution also ends AI drafting.
+    if (
+      !saved.approved_at &&
+      !saved.sent_at &&
+      !saved.resolved_at &&
+      (!requestedRunId || saved.ai_draft_run_id !== requestedRunId)
+    )
+      return
     dispatch({ type: 'update_dispute', dispute: saved })
     clearPendingRerun(before.id, runId)
   }
@@ -94,10 +103,4 @@ export function useDisputeAiReruns(
   }
 
   return { handleRerunAI, pendingRerunIds }
-}
-
-/** GlideMQ assigns monotonically increasing decimal IDs to jobs without a custom jobId. */
-function isLaterQueueRun(requested: string, saved: string | null | undefined): boolean {
-  if (!saved || !/^\d+$/.test(requested) || !/^\d+$/.test(saved)) return false
-  return BigInt(saved) > BigInt(requested)
 }

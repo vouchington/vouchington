@@ -8,6 +8,7 @@ const h = vi.hoisted(() => ({
   mockResolveDisputeAnnotate: vi.fn<VitestLooseMock>(),
   mockDismissDispute: vi.fn<VitestLooseMock>(),
   mockRerunDisputeAI: vi.fn<VitestLooseMock>(),
+  mockReconcileDisputeAIDraft: vi.fn<VitestLooseMock>(),
   mockUpdateDisputeDraft: vi.fn<VitestLooseMock>(),
   mockOnError: vi.fn<VitestLooseMock>(),
 }))
@@ -19,6 +20,7 @@ vi.mock(import('@/lib/api/client/disputes'), () => ({
   resolveDisputeAnnotate: h.mockResolveDisputeAnnotate,
   dismissDispute: h.mockDismissDispute,
   rerunDisputeAI: h.mockRerunDisputeAI,
+  reconcileDisputeAIDraft: h.mockReconcileDisputeAIDraft,
   updateDisputeDraft: h.mockUpdateDisputeDraft,
 }))
 
@@ -30,6 +32,52 @@ import { makeDispute, makeDisputesData } from './fixtures/disputes-client-fixtur
 describe('DisputesClient — rendering and staff actions', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('keeps polling within the original deadline while a superseding run is still pending', async () => {
+    const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'request-101' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        ai_draft_run_id: 'earlier-result',
+        ai_draft_requested_run_id: 'request-102',
+        ai_public_response: 'Draft from an earlier request',
+      }),
+    )
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
+    expect(screen.queryByText('Draft from an earlier request')).not.toBeInTheDocument()
+    expect(screen.getByTitle('Re-run AI')).toBeDisabled()
+  })
+
+  it('reconciles an approved dispute while its AI rerun is pending', async () => {
+    const before = makeDispute({ ai_drafted_at: null })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'request-101' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        approved_at: '2026-01-02T00:00:00Z',
+        ai_draft_run_id: null,
+        ai_draft_requested_run_id: 'request-101',
+      }),
+    )
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /send/i })).toBeEnabled())
+    expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce()
+    expect(screen.getByTitle('Re-run AI')).toBeDisabled()
   })
 
   it('renders the dispute count', () => {

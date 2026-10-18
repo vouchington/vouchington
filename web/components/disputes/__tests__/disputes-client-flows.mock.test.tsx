@@ -80,6 +80,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     const after = makeDispute({
       ai_drafted_at: '2026-01-02T00:00:00Z',
       ai_draft_run_id: 'job-1',
+      ai_draft_requested_run_id: 'job-1',
       ai_public_response: 'Reviewed draft response',
     })
     let completeAdmission!: (value: { queued: true; run_id: string }) => void
@@ -111,6 +112,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
       makeDispute({
         ai_drafted_at: '2026-01-02T00:00:00Z',
         ai_draft_run_id: '100',
+        ai_draft_requested_run_id: '101',
         ai_public_response: 'Earlier job draft',
       }),
     )
@@ -134,6 +136,7 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
       makeDispute({
         ai_drafted_at: '2026-01-02T00:00:00Z',
         ai_draft_run_id: '102',
+        ai_draft_requested_run_id: '102',
         ai_public_response: 'Later job draft',
       }),
     )

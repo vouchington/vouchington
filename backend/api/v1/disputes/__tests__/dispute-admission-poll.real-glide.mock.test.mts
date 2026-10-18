@@ -17,6 +17,8 @@ import { createTopicClaim } from '@services/topic-claims/create'
 import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 import { parseCreateReviewDisputeInput } from '@services/review-disputes/parse'
 import { createReviewDispute } from '@services/review-disputes/create'
+import { createReviewDisputeDraft } from '@services/review-disputes/create-dispute-draft'
+import { updateReviewDisputeDraft } from '@services/review-disputes/update-dispute-draft'
 import { processDisputeResolution } from '../../../../workers/ai-agents/processors/process-dispute-resolution.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -72,8 +74,29 @@ describe('dispute resolution queue admission and result polling', () => {
         candidate.data.rerun_by_id === staff.id,
     )
     expect(job).toBeDefined()
+    const automaticJob = jobs.find(
+      candidate =>
+        candidate.name === 'dispute-resolution' &&
+        'dispute_id' in candidate.data &&
+        candidate.data.dispute_id === dispute.id &&
+        'rerun_by_id' in candidate.data &&
+        candidate.data.rerun_by_id === null,
+    )
+    expect(automaticJob).toBeDefined()
+    if (!automaticJob) throw new Error('Expected automatic dispute job')
     expect(rerun.body.run_id).toBe(job?.id)
+    expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
+      ai_draft_requested_run_id: rerun.body.run_id,
+      ai_draft_run_id: null,
+    })
     try {
+      const staleModel = makeAgentModelCaller({
+        recommended_action: 'remove',
+        public_response: 'Older automatic result.',
+        internal_response: 'Older automatic reasoning.',
+      })
+      await processDisputeResolution(automaticJob! as Job<DisputeResolutionJobData>, staleModel)
+      expect(staleModel).not.toHaveBeenCalled()
       const callModel = makeAgentModelCaller({
         recommended_action: 'no_action',
         public_response: 'We reviewed the disputed review.',
@@ -86,8 +109,28 @@ describe('dispute resolution queue admission and result polling', () => {
         public_response: 'We reviewed the disputed review.',
         ai_drafted_at: expect.any(String),
         ai_draft_run_id: rerun.body.run_id,
+        ai_draft_requested_run_id: rerun.body.run_id,
       })
       expect(callModel).toHaveBeenCalledOnce()
+      const staleSave = await createReviewDisputeDraft({
+        disputeId: dispute.id,
+        requestToken: (automaticJob.data as DisputeResolutionJobData).ai_draft_request_token,
+        runId: automaticJob.id,
+        recommendedAction: 'remove',
+        aiPublicResponse: 'Older automatic draft must not replace the requested rerun.',
+        aiInternalResponse: 'Older in-flight job.',
+        model: 'test-model',
+      })
+      expect(staleSave).toBeNull()
+      await updateReviewDisputeDraft(staff.id, dispute.id, {
+        internalNotes: 'Later staff lifecycle change.',
+      })
+      expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
+        public_response: 'We reviewed the disputed review.',
+        ai_draft_run_id: rerun.body.run_id,
+        ai_draft_requested_run_id: rerun.body.run_id,
+        internal_notes: 'Later staff lifecycle change.',
+      })
       const mcpRerun = await callStructuredMcpTool(
         { ...staff, membership_plan: 'plus' },
         'rerun_review_resolution_draft',
@@ -105,6 +148,7 @@ describe('dispute resolution queue admission and result polling', () => {
       await mcpJob?.remove()
     } finally {
       await job?.remove()
+      await automaticJob?.remove()
     }
   })
 })

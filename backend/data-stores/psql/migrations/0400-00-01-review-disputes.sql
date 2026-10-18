@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
+  ai_draft_request_token uuid NOT NULL DEFAULT uuidv7(),
+  ai_draft_run_id text,
 
   -- Human-owned outbound message (the ONLY thing ever delivered to the disputant)
   public_response text,
@@ -207,6 +209,8 @@ COMMENT ON COLUMN review_disputes.approved_at IS 'When a moderator approved the 
 COMMENT ON COLUMN review_disputes.sent_at IS 'When the approved public_response was delivered to the disputant.';
 COMMENT ON COLUMN review_disputes.model IS 'OpenAI model used for the AI draft.';
 COMMENT ON COLUMN review_disputes.ai_drafted_at IS 'When the AI agent drafted the recommended_action and ai_public_response.';
+COMMENT ON COLUMN review_disputes.ai_draft_request_token IS 'Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.';
+COMMENT ON COLUMN review_disputes.ai_draft_run_id IS 'Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.';
 COMMENT ON COLUMN review_disputes.internal_notes IS 'Internal moderator notes, never shared with the disputant.';
 COMMENT ON COLUMN review_disputes.drafted_at IS 'When the moderator first seeded public_response from the AI draft.';
 COMMENT ON COLUMN review_disputes.edited_at IS 'When the moderator last edited public_response.';

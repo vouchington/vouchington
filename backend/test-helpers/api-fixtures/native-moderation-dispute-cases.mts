@@ -9,8 +9,7 @@ const defaultBody = responseBody('native.moderation.disputes.default') as {
 const pendingDispute = defaultBody.disputes[0]!
 
 function disputeBody(overrides: Record<string, unknown> = {}) {
-  const { ai_draft_run_id: _runId, ...dispute } = pendingDispute
-  return { dispute: { ...dispute, ...overrides } }
+  return { dispute: { ...pendingDispute, ...overrides } }
 }
 
 const disputeRoute = {

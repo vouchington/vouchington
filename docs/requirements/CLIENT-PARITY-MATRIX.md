@@ -70,9 +70,12 @@ keep the item pending and read the authorized resource until the saved recommend
 visible; the enqueue response itself carries no model result. Staff report judgement reruns compare
 the persisted judgement identity because a completed rerun may produce the same text. Web implements
 this separation for moderation appeals, disputes, reports, copyright review, and copyright email
-intake. Staff dispute reruns correlate the admitted queue job ID with the saved lifecycle draft so
-another job cannot appear to complete the requested rerun. Staff dispute reconciliation and report lists read the primary; queued report reruns are
-serialized per entity so each completion can be attributed. Copyright queues refresh every loaded page, and
+intake. Staff dispute reruns use opaque request-derived run IDs that remain unique across queue
+restarts. The staff resource exposes the current requested run and the run that saved its draft;
+clients continue polling within the original deadline until those IDs match, even when another
+staff request supersedes theirs. A prior job cannot overwrite the newer request's draft. Staff
+dispute reconciliation and report lists read the primary; queued report reruns are serialized per
+entity so each completion can be attributed. Copyright queues refresh every loaded page, and
 staff polling stops after a bounded wait with a visible refresh prompt. Native adoption is tracked
 as dependent client work under
 [clients #373](https://github.com/vouchington/vouchington-clients/issues/373); the producer lands first.

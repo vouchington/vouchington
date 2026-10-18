@@ -12,8 +12,8 @@ const DISPUTE_SELECT = sql`
     ELSE 'resolved'
   END AS status,
   rd.recommended_action, rd.ai_public_response, rd.ai_internal_response, rd.model, rd.ai_drafted_at,
-  CASE WHEN latest_change.change_type = 'ai_draft'
-    THEN latest_change.metadata->>'run_id' ELSE NULL END AS ai_draft_run_id,
+  rd.ai_draft_run_id,
+  ('dispute_resolution_' || rd.ai_draft_request_token::text) AS ai_draft_requested_run_id,
   rd.public_response, rd.internal_notes, rd.drafted_at, rd.edited_at, rd.edited_by_id,
   rd.approved_at, rd.approved_by_id, rd.sent_at, rd.resolved_at, rd.resolved_by_id,
   rd.resolution_action, rd.latest_lifecycle_change_id, rd.updated_at,
@@ -53,8 +53,6 @@ const DISPUTE_SELECT = sql`
 `
 
 const DISPUTE_JOINS = sql`
-  LEFT JOIN review_dispute_lifecycle_changes latest_change
-    ON latest_change.id = rd.latest_lifecycle_change_id
   LEFT JOIN view_users_public disputant ON disputant.id = rd.disputant_user_id
   JOIN posts p ON p.id = rd.post_id
   LEFT JOIN topics t

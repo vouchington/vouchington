@@ -11,6 +11,7 @@ export async function processDisputeResolution(
   await runDisputeResolutionAgent(
     {
       disputeId: job.data.dispute_id,
+      requestToken: job.data.ai_draft_request_token,
       rerunById: job.data.rerun_by_id ?? null,
       runId: job.id,
     },
