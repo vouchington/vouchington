@@ -5210,7 +5210,7 @@
         },
         "request_sha256": {
           "collation": null,
-          "comment": "SHA-256 of the selected model and exact provider input reserved for this operation; mismatched retries require review.",
+          "comment": "SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

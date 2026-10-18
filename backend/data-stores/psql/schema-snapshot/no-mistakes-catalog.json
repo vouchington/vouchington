@@ -5395,7 +5395,7 @@
           "ordinalPosition": 2
         },
         "request_sha256": {
-          "comment": "SHA-256 of the selected model and exact provider input reserved for this operation; mismatched retries require review.",
+          "comment": "SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
