@@ -191,7 +191,7 @@ CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_row_discoveries__crawl_id
 ON user_rss_feed_import_row_discoveries (crawl_id)
 WHERE crawl_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_rss_feed_import_row_discoveries__discovered_feed_url_id
+CREATE INDEX IF NOT EXISTS idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id
 ON user_rss_feed_import_row_discoveries (discovered_feed_url_id)
 WHERE discovered_feed_url_id IS NOT NULL;
 
