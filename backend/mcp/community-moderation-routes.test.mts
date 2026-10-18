@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { isCommunityOwnerAiOperation } from '@voucha/test-helpers/mcp-write-exclusions-community-owner'
 import { ALL_TOOLS, getRegisteredToolByName } from './registry/index.mts'
 import { communityModerationGroups } from './community-moderation-tools.mts'
 import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
@@ -226,23 +227,7 @@ describe('community moderator MCP routes', () => {
   })
 
   it('makes every excluded operation unreachable from every MCP tool', () => {
-    const excluded = (method: string, path: string) => {
-      const match = path.match(/^\/api\/v1\/communities\/[^/]+(?<tail>\/.*)?$/)
-      if (!match) return false
-      const tail = match.groups?.tail ?? ''
-      return (
-        (method === 'DELETE' && tail === '') ||
-        (method === 'POST' && tail === '/ownership-transfers') ||
-        (method === 'PATCH' && /^\/members\/[^/]+$/.test(tail)) ||
-        tail === '/agent-prompts' ||
-        tail.startsWith('/agent-prompts/') ||
-        tail === '/ai-agents' ||
-        tail.startsWith('/ai-agents/') ||
-        (method === 'PATCH' && tail === '/automod-settings') ||
-        (method === 'POST' && tail === '/automod/simulate') ||
-        (method === 'POST' && /^\/automod\/recent-actions\/[^/]+\/feedback$/.test(tail))
-      )
-    }
+    const excluded = isCommunityOwnerAiOperation
     const exposed = ALL_TOOLS.filter(tool =>
       tool.meta?.surfaces.some(surface => surface === 'mcp' || surface === 'admin_mcp'),
     )
