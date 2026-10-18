@@ -4,7 +4,7 @@ Source entrypoint: [web/storybook/README.md](../../../../web/storybook/README.md
 
 ## Component story coverage
 
-`component-story-coverage.test.ts` requires every runtime PascalCase named export (and any runtime default export) of a `web/components/**/*.tsx` file containing `data-pw` to be directly reachable from a story. That includes PascalCase runtime values such as enums, so it can require a story for an export that is not a React component. The exclusions file stays empty. Incomplete module facts fail the check rather than silently shrinking its inventory.
+The static CI `Check Storybook component coverage` step requires every runtime PascalCase named export (and any runtime default export) of a `web/components/**/*.tsx` file containing `data-pw` to be directly reachable from a story. The check runs after no-mistakes in the same job, so its live module analysis does not compete for the analyzer lock with unit tests. `component-story-coverage.test.ts` retains finite fixture checks of the analysis helpers. PascalCase runtime values such as enums can require a story even when they are not React components. The exclusions file stays empty. Incomplete module facts fail the check rather than silently shrinking its inventory.
 
 ## Troubleshooting
 

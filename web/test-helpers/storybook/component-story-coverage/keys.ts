@@ -1,5 +1,5 @@
 import type { SourceModuleGraph } from 'vouchington-tooling/source-module-graph'
-import { componentRoot, exportKey, isStoryFile, storybookRoot } from './source'
+import { componentRoot, exportKey, isStoryFile, storybookRoot } from './source.ts'
 
 export interface NamespaceComponentImport {
   file: string

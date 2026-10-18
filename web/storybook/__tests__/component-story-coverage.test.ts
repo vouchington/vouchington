@@ -2,21 +2,13 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import excludedComponentReasonsJson from './component-story-exclusions.json' with { type: 'json' }
 import { analyzeStorybookSources } from '../../test-helpers/storybook/component-story-coverage/analysis'
 import { componentExports } from '../../test-helpers/storybook/component-story-coverage/source'
-import { workspaceFiles } from '../../test-helpers/storybook/component-story-coverage/workspace'
 import {
   coveredComponentKeys,
   namespaceComponentImports,
   reachableStorybookFiles,
 } from '../../test-helpers/storybook/component-story-coverage/keys'
-import {
-  formatMissingComponentsMessage,
-  formatNamespaceImportsMessage,
-} from '../../test-helpers/storybook/component-story-coverage/message'
-
-const excludedComponentReasons = excludedComponentReasonsJson as Record<string, string>
 
 describe('component Storybook coverage helpers', () => {
   let root: string
@@ -112,46 +104,5 @@ describe('component Storybook coverage helpers', () => {
     await expect(analyzeStorybookSources([file], root)).rejects.toThrow(
       'Incomplete source module facts',
     )
-  })
-})
-
-describe('component Storybook coverage', () => {
-  it('covers exported reusable web components from Storybook stories', async () => {
-    const files = workspaceFiles()
-    const { graph, modules } = await analyzeStorybookSources(files)
-    const components = componentExports(files, modules)
-    const storyFiles = reachableStorybookFiles(files, graph)
-    const coveredKeys = coveredComponentKeys(storyFiles, graph)
-    const excludedKeys = new Set(Object.keys(excludedComponentReasons))
-    const nonEmptyExclusions = [...excludedKeys].toSorted()
-
-    const namespaceImports = namespaceComponentImports(storyFiles, graph)
-    const missingComponents = components
-      .filter(component => !coveredKeys.has(component.key))
-      .filter(component => !excludedKeys.has(component.key))
-      .map(component => ({
-        component: component.displayName,
-        export: component.exportName,
-        file: component.file,
-      }))
-      .toSorted((a, b) => a.file.localeCompare(b.file) || a.export.localeCompare(b.export))
-
-    if (namespaceImports.length > 0) console.error(formatNamespaceImportsMessage(namespaceImports))
-    expect(namespaceImports).toEqual([])
-
-    if (nonEmptyExclusions.length > 0) {
-      console.error(
-        [
-          `${nonEmptyExclusions.length} component Storybook exclusion(s) remain after the zero-exclusion ratchet:`,
-          ...nonEmptyExclusions.map(key => `  - ${key}`),
-          'Add direct Storybook coverage instead of adding exclusions.',
-        ].join('\n'),
-      )
-    }
-    expect(nonEmptyExclusions).toEqual([])
-
-    if (missingComponents.length > 0)
-      console.error(formatMissingComponentsMessage(missingComponents))
-    expect(missingComponents).toEqual([])
   })
 })
