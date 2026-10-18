@@ -64,28 +64,48 @@ export function getSharedBackgroundWorker(): SharedBackgroundWorker {
 type JobProcessor = (job: { name: string }) => Promise<unknown>
 
 const domainGates = new Map<string, Promise<void>>()
+// Handlers a gate delayed, until they settle. A held job its test already removed still runs its
+// handler on release, and that DB work must not outlive the test that held it.
+const gatedRuns = new Map<string, Set<Promise<unknown>>>()
 let gatingInstalled = false
 
 /**
  * Hold one domain's jobs: they still become active on the shared worker, but their handler does not
  * start until the returned release runs. Pausing the worker instead would stall every other
  * domain's job too, including jobs a producer awaits before it reaches the held domain's job.
+ *
+ * The returned release resolves once every handler the gate delayed has settled; await it, or those
+ * handlers keep querying (and opening pool sockets) after the holding test ends.
  */
-export function holdBackgroundDomain(domain: BackgroundDomain): () => void {
+export function holdBackgroundDomain(domain: BackgroundDomain): () => Promise<void> {
   const worker = getSharedBackgroundWorker()
   if (!gatingInstalled) {
     const internals = worker as unknown as { processor: JobProcessor }
     const processor = internals.processor
     internals.processor = job => {
       const gate = domainGates.get(job.name.slice(0, job.name.indexOf('.')))
-      return gate ? gate.then(() => processor(job)) : processor(job)
+      if (!gate) return processor(job)
+      const domainName = job.name.slice(0, job.name.indexOf('.'))
+      const runs = gatedRuns.get(domainName) ?? new Set()
+      gatedRuns.set(domainName, runs)
+      const run = (async () => {
+        try {
+          await gate
+          return await processor(job)
+        } finally {
+          runs.delete(run)
+        }
+      })()
+      runs.add(run)
+      return run
     }
     gatingInstalled = true
   }
   const gate = Promise.withResolvers<void>()
   domainGates.set(domain, gate.promise)
-  return () => {
+  return async () => {
     if (domainGates.get(domain) === gate.promise) domainGates.delete(domain)
     gate.resolve()
+    await Promise.allSettled([...(gatedRuns.get(domain) ?? [])])
   }
 }
