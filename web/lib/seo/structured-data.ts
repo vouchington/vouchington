@@ -1,7 +1,18 @@
+import {
+  createCollectionPageJsonLd,
+  createComparisonPageJsonLd,
+  createItemListJsonLd,
+  createOrganizationJsonLd,
+  createSiteNavigationJsonLd,
+  createWebPageJsonLd,
+  createWebSiteJsonLd,
+  type ItemListInput,
+} from '@vouchington/utils/json-ld'
 import { buildAbsoluteUrl, SITE_NAME } from './constants'
-import { escapeInlineScriptJson } from '@/lib/utils/inline-script-json'
 
 export type StructuredDataValue = Record<string, unknown>
+
+const site = { siteName: SITE_NAME, absoluteUrl: buildAbsoluteUrl }
 
 export interface SiteNavigationItem {
   name: string
@@ -28,56 +39,22 @@ interface CommunityPageSchemaOptions {
 }
 
 export function createOrganizationSchema(): StructuredDataValue {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: SITE_NAME,
-    url: buildAbsoluteUrl('/'),
-    logo: buildAbsoluteUrl('/icon.svg'),
-  }
+  return createOrganizationJsonLd(site, '/icon.svg')
 }
 
 export function createWebSiteSchema(): StructuredDataValue {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: SITE_NAME,
-    url: buildAbsoluteUrl('/'),
-  }
+  return createWebSiteJsonLd(site)
 }
 
 export function createSiteNavigationSchema(items: SiteNavigationItem[]): StructuredDataValue {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'SiteNavigationElement',
-    name: 'Primary navigation',
-    hasPart: items.map(item => ({
-      '@type': 'WebPage',
-      name: item.name,
-      url: buildAbsoluteUrl(item.path),
-    })),
-  }
+  return createSiteNavigationJsonLd(site, items)
 }
 
-export function createCollectionPageSchema({
-  title,
-  description,
-  path,
-}: CollectionPageOptions): StructuredDataValue {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: title,
-    description,
-    url: buildAbsoluteUrl(path),
-    isPartOf: {
-      '@type': 'WebSite',
-      name: SITE_NAME,
-      url: buildAbsoluteUrl('/'),
-    },
-  }
+export function createCollectionPageSchema(options: CollectionPageOptions): StructuredDataValue {
+  return createCollectionPageJsonLd(site, options)
 }
 
+/** Topic type selection remains a product schema decision. */
 export function createTopicSchema({
   name,
   description,
@@ -93,23 +70,10 @@ export function createTopicSchema({
   }
 }
 
-export function createCommunityPageSchema({
-  name,
-  description,
-  path,
-}: CommunityPageSchemaOptions): StructuredDataValue {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name,
-    ...(description ? { description } : {}),
-    url: buildAbsoluteUrl(path),
-    isPartOf: {
-      '@type': 'WebSite',
-      name: SITE_NAME,
-      url: buildAbsoluteUrl('/'),
-    },
-  }
+export function createCommunityPageSchema(
+  options: CommunityPageSchemaOptions,
+): StructuredDataValue {
+  return createWebPageJsonLd(site, options)
 }
 
 interface ComparisonPageSchemaOptions {
@@ -123,60 +87,14 @@ export function createComparisonPageSchema({
   topicB,
   path,
 }: ComparisonPageSchemaOptions): StructuredDataValue {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: `${topicA.name} vs ${topicB.name}`,
-    url: buildAbsoluteUrl(path),
-    about: [
-      {
-        '@type': topicA.schemaOrgType ?? 'Thing',
-        name: topicA.name,
-        url: buildAbsoluteUrl(topicA.path),
-      },
-      {
-        '@type': topicB.schemaOrgType ?? 'Thing',
-        name: topicB.name,
-        url: buildAbsoluteUrl(topicB.path),
-      },
-    ],
-    isPartOf: {
-      '@type': 'WebSite',
-      name: SITE_NAME,
-      url: buildAbsoluteUrl('/'),
-    },
-  }
-}
-
-export interface ItemListInput {
-  name: string
-  url: string
-  description?: string
-  image?: string
+  return createComparisonPageJsonLd(site, { a: topicA, b: topicB, path })
 }
 
 export function createItemListSchema(
   items: ItemListInput[],
   listName: string,
-): Record<string, unknown> {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: listName,
-    numberOfItems: items.length,
-    itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      name: item.name,
-      url: buildAbsoluteUrl(item.url),
-      ...(item.description ? { description: item.description } : {}),
-      ...(item.image ? { image: buildAbsoluteUrl(item.image) } : {}),
-    })),
-  }
-}
-
-export function serializeStructuredData(data: StructuredDataValue): string {
-  return escapeInlineScriptJson(JSON.stringify(data))
+): StructuredDataValue {
+  return createItemListJsonLd(site, items, listName)
 }
 
 export {

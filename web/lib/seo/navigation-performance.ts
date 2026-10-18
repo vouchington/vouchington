@@ -1,4 +1,5 @@
-import { escapeInlineScriptJson } from '@/lib/utils/inline-script-json'
+import { createSpeculationRules } from '@vouchington/utils/speculation-rules'
+import { escapeInlineScriptJson } from '@vouchington/utils/json-ld'
 
 // Same names, in the same order, as NO_VARY_SEARCH_PARAM_NAMES. A browser may reuse a
 // query-free prefetch for these click ids only because the Worker cache key ignores them too.
@@ -36,38 +37,12 @@ const SPECULATION_EXCLUDED_SELECTORS = [
 
 export function serializeSpeculationRules(): string {
   return escapeInlineScriptJson(
-    JSON.stringify({
-      prefetch: [
-        {
-          source: 'document',
-          where: {
-            and: [
-              { href_matches: '/*' },
-              ...SPECULATION_EXCLUDED_HREF_PATTERNS.map(pattern => ({
-                not: { href_matches: pattern },
-              })),
-              ...SPECULATION_EXCLUDED_SELECTORS.map(selector => ({
-                not: { selector_matches: selector },
-              })),
-            ],
-          },
-          eagerness: 'conservative',
-          expects_no_vary_search: NO_VARY_SEARCH_HEADER,
-        },
-      ],
-    }),
+    JSON.stringify(
+      createSpeculationRules({
+        excludedHrefPatterns: SPECULATION_EXCLUDED_HREF_PATTERNS,
+        excludedSelectors: SPECULATION_EXCLUDED_SELECTORS,
+        noVarySearchHeader: NO_VARY_SEARCH_HEADER,
+      }),
+    ),
   )
-}
-
-export function getPreconnectOrigin(rawOrigin: string | undefined): string | null {
-  const trimmed = rawOrigin?.trim()
-  if (!trimmed) return null
-
-  try {
-    const url = new URL(trimmed)
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
-    return url.origin
-  } catch {
-    return null
-  }
 }

@@ -1,4 +1,4 @@
-import { createExcerpt } from './metadata'
+import { createExcerpt } from '@vouchington/utils/seo-metadata'
 import type { InteractionStats } from './post-schema'
 import type { PostsResponseBody } from '@/types/api-responses'
 import type { PostElection, PostMetrics } from '@/types/posts'

@@ -1,5 +1,5 @@
 import type { NotificationPushSubscription } from './notification-push-subscription'
-import type { WebPushBinding } from '@/lib/push-service-worker'
+import type { WebPushBinding } from '@vouchington/utils/web-push-binding'
 
 export function getPushManager(registration: ServiceWorkerRegistration) {
   return (registration as ServiceWorkerRegistration & { pushManager: PushManager }).pushManager

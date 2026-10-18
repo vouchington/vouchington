@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 
-import { createExcerpt, createNoIndexMetadata, createPageMetadata } from './metadata'
+import { createExcerpt } from '@vouchington/utils/seo-metadata'
+import { createNoIndexMetadata, createPageMetadata } from './metadata'
 import { buildAbsoluteUrl } from './constants'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createBreadcrumbSchema, createTopicSchema } from './structured-data'

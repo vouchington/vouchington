@@ -6,7 +6,6 @@ import {
   createCommunityPageSchema,
   createOrganizationSchema,
   createSiteNavigationSchema,
-  serializeStructuredData,
 } from '../../structured-data'
 import { createProfilePageSchema } from '../../profile-page-schema'
 import { PUBLIC_NAV_ITEMS } from '@/lib/navigation/public-nav'
@@ -72,15 +71,6 @@ describe('structured data helpers — page schemas', () => {
         url: `https://voucha.ai${item.href}`,
       })),
     )
-  })
-
-  it('escapes unsafe characters when serializing', () => {
-    const json = serializeStructuredData({
-      '@context': 'https://schema.org',
-      name: 'A < B',
-    })
-
-    expect(json).toContain(String.raw`\u003c`)
   })
 
   it('builds breadcrumb schema with correct positions', () => {

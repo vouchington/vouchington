@@ -7,7 +7,7 @@ import {
 } from '@/lib/service-worker-activation'
 import { bootstrapAuthenticatedPushBinding } from '@/lib/push-bootstrap'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
-import { base64UrlToUint8Array } from './utils'
+import { decodeVapidPublicKey } from '@vouchington/utils/web-push'
 import { getPushManager } from './push-utils'
 import type { WebPushSubscription } from '@/types/api-responses'
 
@@ -88,7 +88,7 @@ async function getOrCreateSubscription(registration: ServiceWorkerRegistration, 
     existingSubscription ??
     (await getPushManager(registration).subscribe({
       userVisibleOnly: true,
-      applicationServerKey: base64UrlToUint8Array(publicKey),
+      applicationServerKey: Uint8Array.from(decodeVapidPublicKey(publicKey)),
     }))
   )
 }

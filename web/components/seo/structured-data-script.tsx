@@ -1,4 +1,4 @@
-import { serializeStructuredData } from '@/lib/seo/structured-data'
+import { serializeJsonLd } from '@vouchington/utils/json-ld'
 
 interface StructuredDataScriptProps {
   data: Record<string, unknown>
@@ -23,8 +23,8 @@ export function StructuredDataScript({ data, nonce }: StructuredDataScriptProps)
       type='application/ld+json'
       nonce={nonce}
       suppressHydrationWarning
-      // oxlint-disable-next-line react/no-danger -- JSON-LD requires inline script content. serializeStructuredData escapes < characters.
-      dangerouslySetInnerHTML={{ __html: serializeStructuredData(data) }}
+      // oxlint-disable-next-line react/no-danger -- JSON-LD requires inline script content. serializeJsonLd escapes < characters.
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   )
 }

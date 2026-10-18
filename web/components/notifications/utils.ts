@@ -1,14 +1,6 @@
 import type { Notification, NotificationCommunity } from '@/types/api-responses'
 import { communityHref } from '@/lib/links/entity-href'
 
-export function base64UrlToUint8Array(value: string) {
-  const padding = '='.repeat((4 - (value.length % 4)) % 4)
-  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const raw = window.atob(base64)
-  /* c8 ignore next -- uses window.atob; tested at integration level with real push subscriptions */
-  return Uint8Array.from(raw, char => char.codePointAt(0)!)
-}
-
 export function getSafeNotificationTarget(targetPath: string): string | null {
   try {
     const url = new URL(targetPath, window.location.origin)

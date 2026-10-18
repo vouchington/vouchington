@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from 'react'
+import type { ItemListInput } from '@vouchington/utils/json-ld'
 import { DiscoveryAsides } from '@/components/asides/discovery-asides'
 import {
   MediaItemListingView,
@@ -19,7 +20,6 @@ import {
   createBreadcrumbSchema,
   createCollectionPageSchema,
   createItemListSchema,
-  type ItemListInput,
 } from '@/lib/seo/structured-data'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 
