@@ -4,7 +4,7 @@ import {
   queryEnum,
   queryInteger,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { FediverseIntegrationStatus } from '@services/fediverse-instances/integration-status'
 import { parseBooleanish } from '@ts-shared/utils/query'

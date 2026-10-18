@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { throwRateLimited } from '@modules/queue-errors'
+import { throwRateLimited } from '@vouchington/queue-errors'
 import {
   startBackgroundHarness,
   type BackgroundHarness,

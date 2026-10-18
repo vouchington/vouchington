@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { BedrockEmbeddingsClient } from '@modules/aws/bedrock-runtime'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { insertCentralizedEmbeddingsBulk } from '../../centralized-table.mts'
 import { lookupExistingEmbedding } from '../../lookup.mts'
 import { addEmbeddingHashesToBloomFilter } from '../../bloom-filter/bloom-filter.mts'

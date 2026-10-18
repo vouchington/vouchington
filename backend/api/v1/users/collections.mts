@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { getUserUsersCollection } from '@services/users'
 import {
   getUserHostnamesCollection,

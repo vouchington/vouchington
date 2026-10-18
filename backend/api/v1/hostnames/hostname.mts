@@ -26,12 +26,8 @@ import { searchUrls } from '@services/urls/search'
 import { searchRssFeeds } from '@services/rss-feeds'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import { isUUID } from '@modules/utils'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryInteger,
-  queryString,
-} from '@modules/pagination'
+import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import {

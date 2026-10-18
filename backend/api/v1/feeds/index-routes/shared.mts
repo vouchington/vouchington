@@ -1,12 +1,12 @@
 import {
-  createPaginationParser,
   defineQueryContract,
   queryBoolean,
   queryCsvArray,
   queryEnum,
   queryNumber,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { VALID_MEDIA_TYPES } from '@modules/pagination/filters'
 import { loadCommunityForViewer } from '@services/communities'
 import type { PostFeedType, RssFeedItemFeedType } from '@services/feeds/types'

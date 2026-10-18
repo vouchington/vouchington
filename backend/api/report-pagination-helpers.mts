@@ -1,10 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryEnum,
-  queryString,
-} from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryString } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import {
   MODERATION_REPORT_STATUSES,
   type ModerationReportSort,

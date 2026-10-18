@@ -3,7 +3,7 @@ import { attachTopicProvenance } from '@services/content-provenance'
 import type { Context } from '@jongleberry/api-server'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import {

@@ -17,7 +17,7 @@ import {
 } from '@services/user-warnings'
 import { isUUID } from '@modules/utils'
 import { apiQuery } from '../../response-contract.mts'
-import { defineQueryContract, queryUuid } from '@modules/pagination'
+import { defineQueryContract, queryUuid } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type IssueUserWarningRequest = {

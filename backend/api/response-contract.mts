@@ -1,5 +1,8 @@
 import type { ApiHttpResponse, ApiHttpResponseVariant } from '@voucha/types/api-http-response'
-import type { AnyQueryContractCarrier, ValidatedQueryContractCarriers } from '@modules/pagination'
+import type {
+  AnyQueryContractCarrier,
+  ValidatedQueryContractCarriers,
+} from '@vouchington/pagination'
 
 /**
  * Marks an HTTP response body as a shared API fixture contract.

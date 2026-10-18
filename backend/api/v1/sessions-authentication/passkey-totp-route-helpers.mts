@@ -1,9 +1,9 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
+import type { QueryContract } from '@vouchington/pagination'
 import {
   buildPageInfo,
   decodeScopedUuidCursor,
-  type QueryContract,
   type PaginationRuntimeLimitBounds,
 } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'

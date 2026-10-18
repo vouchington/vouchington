@@ -1,14 +1,13 @@
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
-  type PaginationRuntimeLimitBounds,
-  createPaginationParser,
   defineQueryContract,
   queryBoolean,
   queryCsvArray,
   queryString,
   queryUuid,
   withQueryContract,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
+import { type PaginationRuntimeLimitBounds, createPaginationParser } from '@modules/pagination'
 import { getPostIdByAnyCached, getTopicIdByAnyCached } from '@services/entity-cache'
 import {
   extractIdentifier,

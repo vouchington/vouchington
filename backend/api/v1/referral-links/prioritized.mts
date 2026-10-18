@@ -8,7 +8,7 @@ import {
   setAnonymousPublicCacheHeaders,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import { defineQueryContract, queryBoolean } from '@modules/pagination'
+import { defineQueryContract, queryBoolean } from '@vouchington/pagination'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 

@@ -2,12 +2,8 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryString,
-  queryUuid,
-} from '@modules/pagination'
+import { defineQueryContract, queryString, queryUuid } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { searchUrls } from '@services/urls'
 import {

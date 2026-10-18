@@ -4,7 +4,7 @@ import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { defineQueryContract, queryEnum, queryNumber, queryUuid } from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryNumber, queryUuid } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   getTrendingPosts,

@@ -4,36 +4,10 @@ import {
   Worker,
   type Worker as GlideWorker,
 } from 'glide-mq'
-import {
-  createRateLimitError,
-  handleBedrockRateLimit,
-  isBedrockRateLimitError,
-  UnrecoverableError,
-  unrecoverable,
-  wrapHttpForRetry,
-} from './index.mts'
+import { createRateLimitError } from '@vouchington/queue-errors'
+import { handleBedrockRateLimit, isBedrockRateLimitError, wrapHttpForRetry } from './index.mts'
 
 describe('queue error adapter', () => {
-  it('keeps GlideMQ unrecoverable identity while delegating terminal errors upstream', () => {
-    expect(UnrecoverableError).toBe(GlideUnrecoverableError)
-
-    const source = new Error('invalid input')
-    const terminal = catchThrown(() => unrecoverable(source, 'terminal'))
-
-    expect(terminal).toBeInstanceOf(GlideUnrecoverableError)
-    expect(terminal).toMatchObject({ message: 'terminal', stack: source.stack })
-
-    const defaulted = catchThrown(() => unrecoverable(new Error('invalid input')))
-    expect(defaulted).toBeInstanceOf(GlideUnrecoverableError)
-    expect(defaulted).toMatchObject({ message: 'invalid input' })
-
-    const plainObject = { message: 'invalid recipient', stack: 'provider stack' }
-    expect(catchThrown(() => unrecoverable(plainObject))).toMatchObject({
-      message: 'invalid recipient',
-      stack: 'provider stack',
-    })
-  })
-
   it('preserves status, statusCode, and AWS metadata precedence for HTTP classification', () => {
     const statusWins = Object.assign(new Error('server error'), {
       status: 503,
@@ -126,7 +100,6 @@ describe('queue error adapter', () => {
     const localControlError = createRateLimitError()
     const controlErrorWorker: Pick<GlideWorker, 'rateLimit'> = {
       rateLimit: async () => {
-        // oxlint-disable-next-line typescript/only-throw-error -- GlideMQ's RateLimitError is a required worker control-flow signal.
         throw localControlError
       },
     }

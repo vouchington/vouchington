@@ -1,4 +1,4 @@
-import { boundRateLimitDeferral } from '@modules/queue-errors'
+import { boundRateLimitDeferral } from '@vouchington/queue-errors'
 import {
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_DISCONNECTS_JOB,
   BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB,

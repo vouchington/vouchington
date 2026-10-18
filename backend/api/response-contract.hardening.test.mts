@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { apiQuery } from './response-contract.mts'
 
 describe('API query marker', () => {

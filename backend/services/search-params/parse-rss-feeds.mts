@@ -7,7 +7,7 @@ import {
   queryNullableBoolean,
   queryString,
   withQueryContract,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import type { ResolvedSearchParams } from './types.mts'
 import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'
 import { extractIdentifier, extractIdentifiers, checkShouldReturnEmpty } from './resolve.mts'

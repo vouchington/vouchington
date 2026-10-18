@@ -1,4 +1,4 @@
-import type { QueryContract, QueryParameterContract } from '@modules/pagination'
+import type { QueryContract, QueryParameterContract } from '@vouchington/pagination'
 import { parseStringArray } from '@ts-shared/utils/query'
 
 /**

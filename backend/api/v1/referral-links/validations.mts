@@ -9,7 +9,8 @@ import {
   updateReferralLinkValidation,
   deleteReferralLinkValidation,
 } from '@services/referral-program-link-validations'
-import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'

@@ -4,7 +4,7 @@ import {
   clampRateLimitDelayMs,
   deferJobForRateLimit,
   throwRateLimited,
-} from '@modules/queue-errors'
+} from '@vouchington/queue-errors'
 import { getHeaderValue, getRetryAfterDurationMs } from '@modules/utils'
 
 export function isOpenAIRateLimitError(error?: unknown): boolean {

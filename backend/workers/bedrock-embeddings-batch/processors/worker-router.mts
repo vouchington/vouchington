@@ -14,7 +14,8 @@ import {
   processPostEmbeddingTriggerRecovery,
 } from '../processors.mts'
 import { Worker, type Job } from 'glide-mq'
-import { handleBedrockRateLimit, UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
+import { handleBedrockRateLimit } from '@modules/queue-errors'
 
 type JobData = Record<string, unknown>
 

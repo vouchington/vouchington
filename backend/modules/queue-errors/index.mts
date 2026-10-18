@@ -1,21 +1,14 @@
 import { UnrecoverableError, Worker, type Worker as GlideWorker } from 'glide-mq'
 import {
   handleRateLimitedError,
-  unrecoverable as markUnrecoverable,
+  throwRateLimited,
   wrapHttpForRetry as wrapUpstreamHttpForRetry,
 } from '@vouchington/queue-errors'
-import { getRetryAfterMs, throwRateLimited } from './rate-limit.mts'
+import { getRetryAfterMs } from './rate-limit.mts'
 
-export { UnrecoverableError }
 export * from './rate-limit.mts'
-export * from './postgres-connection-timeout.mts'
 
 const BEDROCK_COOLDOWN_MS = 60_000
-
-// Throws an UnrecoverableError, skipping remaining retry attempts.
-export function unrecoverable(error: unknown, message?: string): never {
-  return markUnrecoverable(error, message, { UnrecoverableError })
-}
 
 // Classifies an HTTP failure for glide-mq:
 // - a 429 that states its wait (`Retry-After`, or a parsed `retryAfterMs`) requeues the job after
@@ -29,7 +22,8 @@ export function wrapHttpForRetry(error: unknown): never {
   if (isAwsThrottlingError(error)) throw error
   if (getHttpStatus(error) === 429) {
     const retryAfterMs = getRetryAfterMs(error)
-    if (retryAfterMs !== null) throwRateLimited(retryAfterMs, error)
+    if (retryAfterMs !== null)
+      throwRateLimited(retryAfterMs, error, { RateLimitError: Worker.RateLimitError })
   }
   return wrapUpstreamHttpForRetry(error, { getStatus: getHttpStatus, UnrecoverableError })
 }

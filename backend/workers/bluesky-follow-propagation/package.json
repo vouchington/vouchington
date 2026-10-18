@@ -22,9 +22,9 @@
   },
   "scripts": {},
   "dependencies": {
-    "@modules/queue-errors": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",
-    "@services/bluesky-follows": "workspace:^"
+    "@services/bluesky-follows": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3"
   }
 }

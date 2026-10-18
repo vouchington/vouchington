@@ -1,7 +1,7 @@
 import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getPrivateUserByAny } from '@services/users/get'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { getUserImportExportConfig } from './config.mts'
 import {
   importSingleRssFeed,

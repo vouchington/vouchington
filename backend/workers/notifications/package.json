@@ -23,7 +23,6 @@
   "scripts": {},
   "dependencies": {
     "@modules/on-error": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/notifications": "workspace:^",
@@ -32,7 +31,8 @@
     "@services/media-delivery-safety": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/notifications-push": "workspace:^",
-    "@services/users": "workspace:^"
+    "@services/users": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3"
   },
   "devDependencies": {
     "@services/modmail": "workspace:^",

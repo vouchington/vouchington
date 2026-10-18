@@ -7,12 +7,8 @@ import { getTrendingRssFeedsCached } from '@services/entity-fetch/search-caches'
 import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getRssFeedByIdCachedBatch } from '@services/entity-fetch'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryNumber,
-  queryString,
-} from '@modules/pagination'
+import { defineQueryContract, queryNumber, queryString } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { indexById } from '@modules/utils'
 import { parseNumberParam } from '@ts-shared/utils/query'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'

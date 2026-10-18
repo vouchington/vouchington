@@ -1,4 +1,4 @@
-import { clampRateLimitDelayMs, UnrecoverableError } from '@modules/queue-errors'
+import { clampRateLimitDelayMs, UnrecoverableError } from '@vouchington/queue-errors'
 import { getPauseRecheckMs, type BackgroundDomain } from '@queues/background/config'
 import {
   getBackgroundDomainDefinition,

@@ -1,4 +1,5 @@
-import type { QueryContract, PaginationRuntimeLimitBounds } from '@modules/pagination'
+import type { QueryContract } from '@vouchington/pagination'
+import type { PaginationRuntimeLimitBounds } from '@modules/pagination'
 import { getPaginationLimitsForContract } from '@services/pagination'
 export function parseRuntimePagination<T>(
   parser: {

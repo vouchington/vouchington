@@ -16,10 +16,10 @@
   "dependencies": {
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@queues/background": "workspace:^",
     "@services/articles": "workspace:^",
     "@services/users": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3",
     "glide-mq": "^0.18.0"
   }
 }

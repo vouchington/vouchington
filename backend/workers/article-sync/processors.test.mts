@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { getPrivateUserByAny } from '@services/users/get'
 import type { syncArticles } from '@services/articles'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { processArticleSync, publishTerminalStatus } from './processors.mts'
 
 const mockGetPrivateUserByAny = vi.fn<typeof getPrivateUserByAny>()

@@ -1,75 +1,9 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryBoolean,
-  queryCsvArray,
-  queryEnum,
-  queryInteger,
-  queryNullableBoolean,
-  queryNumber,
-  queryString,
-  queryUuid,
-  queryUuidOrUri,
-  withQueryContract,
-} from '../index.mts'
+import { queryCsvArray, queryEnum, queryString } from '@vouchington/pagination'
+import { createPaginationParser } from '../index.mts'
 import { definePaginationFilterContractBuilder } from '../pagination-query-contract-builder.mts'
 
 describe('query contracts', () => {
-  it('builds neutral scalar and CSV array descriptors', () => {
-    expect(queryString()).toEqual({ kind: 'string' })
-    expect(queryUuid()).toEqual({ kind: 'string', format: 'uuid' })
-    expect(queryUuidOrUri()).toEqual({ kind: 'uuid-or-uri' })
-    expect(queryBoolean()).toEqual({ kind: 'boolean' })
-    expect(queryNullableBoolean()).toEqual({ kind: 'nullable-boolean' })
-    expect(queryNumber()).toEqual({ kind: 'number' })
-    expect(queryInteger({ minimum: 0, maximum: 365 })).toEqual({
-      kind: 'integer',
-      minimum: 0,
-      maximum: 365,
-    })
-    expect(queryCsvArray(queryEnum(['one', 'two'] as const))).toEqual({
-      kind: 'csv-array',
-      items: { kind: 'enum', values: ['one', 'two'] },
-      style: 'form',
-      explode: false,
-    })
-    const enumWithDefault = queryEnum(['new', 'top'] as const, { default: 'new' })
-    expectTypeOf(enumWithDefault.default).toEqualTypeOf<'new'>()
-    expect(enumWithDefault).toEqual({ kind: 'enum', values: ['new', 'top'], default: 'new' })
-
-    const described = queryString({ description: 'Search text' })
-    expectTypeOf(described.description).toEqualTypeOf<'Search text'>()
-    expect(described).toEqual({ kind: 'string', description: 'Search text' })
-  })
-
-  it('defines, composes, and attaches query contracts without changing the callable', () => {
-    function double(value: number): number {
-      return value * 2
-    }
-    const callable = withQueryContract(double, defineQueryContract({ query: queryString() }))
-
-    expect(callable).toBe(double)
-    expect(callable(4)).toBe(8)
-    expect(callable.queryContract).toEqual({ query: { kind: 'string' } })
-    const first = defineQueryContract({ after: queryString() })
-    const second = defineQueryContract({ limit: queryInteger({ minimum: 1, maximum: 10 }) })
-
-    const composed = withQueryContract(double, first, second)
-    expect(composed).toBe(double)
-    expect(composed(4)).toBe(8)
-    expectTypeOf(composed.queryContract.after.kind).toEqualTypeOf<'string'>()
-    expectTypeOf(composed.queryContract.limit.minimum).toEqualTypeOf<1>()
-    expectTypeOf(composed.queryContract.limit.maximum).toEqualTypeOf<10>()
-    expect(composed.queryContract).toEqual({
-      after: { kind: 'string' },
-      limit: { kind: 'integer', minimum: 1, maximum: 10 },
-    })
-    expect(() => withQueryContract(double, first, first)).toThrow(
-      'Duplicate query parameter contract: after',
-    )
-  })
-
   it('derives literal cursor, limit, and filter metadata from pagination configuration', () => {
     const parser = createPaginationParser({
       cursor: { type: ['name', 'score'] as const, paramName: 'cursor' },
@@ -156,18 +90,5 @@ describe('query contracts', () => {
     const builder = definePaginationFilterContractBuilder('postTypes', buildContract)
 
     expect(builder).toBe(buildContract)
-  })
-
-  it('rejects malformed descriptor shapes at contract and composition boundaries', () => {
-    const malformed = { queryContract: { limit: { kind: 'integer' } } } as const
-
-    // @ts-expect-error -- integer query descriptors require minimum and maximum bounds
-    const malformedContract = defineQueryContract({ limit: { kind: 'integer' } })
-    expect(malformedContract).toEqual(malformed)
-
-    // @ts-expect-error -- callable composition rejects malformed carrier contracts
-    expect(withQueryContract(() => undefined, malformed).queryContract).toEqual(
-      malformed.queryContract,
-    )
   })
 })

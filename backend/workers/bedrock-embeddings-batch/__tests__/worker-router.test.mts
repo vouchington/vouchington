@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Job, Worker } from 'glide-mq'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { decodeUuidCursor, encodeScopedUuidCursor, isSimpleCursor } from '@modules/pagination'
 import {
   createTestUserDirect,
