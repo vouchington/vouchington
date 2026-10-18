@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { afterEach, describe, expect, it } from 'vitest'
-import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from './config.mts'
+import { PRIORITY_DEFAULT } from './config.mts'
 import { enqueueBulkLanguageDetection, enqueueLanguageDetection } from './enqueues.mts'
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { LanguageDetectionEntityType } from './types.mts'
@@ -50,11 +50,11 @@ describe('language-detection enqueues', () => {
     expect(job.name).toBe(`content-analysis.${entityType}`)
     expect(job.data).toEqual({ id })
     expect(job.opts).toMatchObject({
-      attempts: LANGUAGE_DETECTION_DEFAULTS.attempts,
-      backoff: LANGUAGE_DETECTION_DEFAULTS.backoff,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
       priority: PRIORITY_DEFAULT,
-      removeOnComplete: LANGUAGE_DETECTION_DEFAULTS.removeOnComplete,
-      removeOnFail: LANGUAGE_DETECTION_DEFAULTS.removeOnFail,
+      removeOnComplete: 100,
+      removeOnFail: 100,
       deduplication: {
         id: `content-analysis:language:${entityType}:${id}`,
         mode: 'debounce',

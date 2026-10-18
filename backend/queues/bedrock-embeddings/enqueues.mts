@@ -1,6 +1,6 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import { BEDROCK_EMBEDDINGS_DEFAULTS, PRIORITY_DEFAULT } from './config.mts'
+import { PRIORITY_DEFAULT } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'

@@ -12611,9 +12611,6 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings

@@ -19,7 +19,6 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/pagination": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",

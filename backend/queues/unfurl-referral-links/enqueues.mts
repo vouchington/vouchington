@@ -1,7 +1,7 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER, UNFURL_REFERRAL_LINKS_DEFAULTS } from './config.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
