@@ -13,10 +13,11 @@ import {
   OAuthProtocolError,
   validatePkceVerifier,
   verifyPkce,
+  type TokenResponse,
 } from '@vouchington/oauth-server'
 import { insertOAuthTokenPair } from './token-pairs.mts'
 import type { ApiScope } from '@modules/scopes'
-import type { OAuthClient, OAuthTokenResponse } from './types.mts'
+import type { OAuthClient } from './types.mts'
 
 type AuthorizationCodeRow = {
   id: string
@@ -41,7 +42,7 @@ export async function exchangeOAuthAuthorizationCode(input: {
   codeVerifier: unknown
   redirectUri: string
   resource?: string
-}): Promise<OAuthTokenResponse> {
+}): Promise<TokenResponse> {
   await using query = await beginTransaction()
   const activeParticipantIds = await lockOAuthParticipantUsers(
     await readOAuthAuthorizationCodeParticipantUserIds(input.code, input.clientId, query),
@@ -73,7 +74,7 @@ export async function exchangeOAuthAuthorizationCode(input: {
 async function completeAuthorizationCodeExchange(
   code: AuthorizationCodeRow,
   query: TransactionQuery,
-): Promise<OAuthTokenResponse> {
+): Promise<TokenResponse> {
   const tokens = await issueNewTokenFamily(code, query)
   await markAuthorizationCodeConsumed(code, query)
   return tokens
@@ -155,7 +156,7 @@ function assertCodeExchange(
 async function issueNewTokenFamily(
   code: AuthorizationCodeRow,
   query: TransactionQuery,
-): Promise<OAuthTokenResponse> {
+): Promise<TokenResponse> {
   const familyId = uuidv7()
   const familyExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS)
   await query(

@@ -1,8 +1,11 @@
-import { OAuthProtocolError, requiredFormValue } from '@vouchington/oauth-server'
+import {
+  OAuthProtocolError,
+  requiredFormValue,
+  type TokenResponse,
+} from '@vouchington/oauth-server'
 import {
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,
-  type OAuthTokenResponse,
 } from '@services/oauth-authorization-server'
 
 // RFC 8707 makes `resource` optional at the token endpoint; the service rejects a value that does
@@ -10,7 +13,7 @@ import {
 export async function exchangeOAuthTokenGrant(
   form: URLSearchParams,
   client: { clientId: string; clientSecret?: string },
-): Promise<OAuthTokenResponse> {
+): Promise<TokenResponse> {
   const grantType = form.get('grant_type')
   const resource = form.has('resource') ? { resource: requiredFormValue(form, 'resource') } : {}
   if (grantType === 'authorization_code') {

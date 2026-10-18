@@ -10,12 +10,12 @@ import {
   invalidRequest,
   matchesRegisteredRedirectUri,
   validateAuthorizationRequest,
+  type AuthorizationParameters,
 } from '@vouchington/oauth-server'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
 import { OAUTH_SCOPE_POLICY } from './validation.mts'
 import type {
   OAuthAuthorizationRequestView,
-  OAuthAuthorizationRequestParameters,
   OAuthClient,
   ValidatedOAuthAuthorizationRequest,
 } from './types.mts'
@@ -40,7 +40,7 @@ export async function beginOAuthAuthorizationRequest(
     deviceId: string
     sessionId: string
     userId: string
-  } & OAuthAuthorizationRequestParameters,
+  } & AuthorizationParameters,
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<{ request_id: string }> {
   const validated = await validateOAuthAuthorizationRequest(input, clientIdMetadataDependencies)
@@ -112,7 +112,7 @@ export async function beginValidatedOAuthAuthorizationRequest(
 }
 
 export async function validateOAuthAuthorizationRequest(
-  input: OAuthAuthorizationRequestParameters,
+  input: AuthorizationParameters,
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<ValidatedOAuthAuthorizationRequest> {
   const foundClients: OAuthClient[] = []

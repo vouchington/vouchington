@@ -42,14 +42,6 @@ export type ClientIdMetadataDocument = RegisterOAuthClientInput & {
   jwks_uri?: unknown
 }
 
-export type OAuthTokenResponse = {
-  access_token: string
-  expires_in: number
-  refresh_token: string
-  scope: string
-  token_type: 'Bearer'
-}
-
 export type OAuthAccessPrincipal = {
   oauth_client_id: string
   client_id: string
@@ -69,17 +61,6 @@ export type OAuthAuthorizationRequestView = {
   scopes: ApiScope[]
   sensitive_scopes: ApiScope[]
   expires_at: Date
-}
-
-export type OAuthAuthorizationRequestParameters = {
-  clientId: string
-  codeChallenge: unknown
-  codeChallengeMethod: unknown
-  redirectUri: string
-  resource: unknown
-  responseType: unknown
-  scope: unknown
-  state: unknown
 }
 
 declare const validatedOAuthAuthorizationRequest: unique symbol

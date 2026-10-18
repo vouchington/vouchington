@@ -1,5 +1,4 @@
 import type { AuthorizationRequestRow } from './consent-types.mts'
-import { randomBytes } from 'node:crypto'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { hasEveryScope } from '@modules/scopes'
@@ -12,6 +11,7 @@ import {
 import {
   OAuthProtocolError,
   buildAuthorizationResponseUrl,
+  generateOpaqueToken,
   matchesRegisteredRedirectUri,
 } from '@vouchington/oauth-server'
 import { getOAuthIssuer } from './resources.mts'
@@ -94,7 +94,7 @@ async function issueAuthorizationCode(
   grantId: string,
   query: TransactionQuery,
 ): Promise<string> {
-  const rawCode = `voucha_code_${randomBytes(32).toString('base64url')}`
+  const rawCode = generateOpaqueToken('voucha_code_')
   await insertAuthorizationCode(request, grantId, rawCode, query)
   await query(
     `/* issueAuthorizationCode */ UPDATE oauth_authorization_requests
