@@ -8,6 +8,10 @@ type Alias = Extract<AliasOptions, readonly unknown[]>[number]
 
 const backendApiRequire = createRequire(resolve(process.cwd(), 'backend/api/package.json'))
 
+// Keep the test adapter's in-memory queues in Vitest's resettable module graph. Backend files
+// call vi.resetModules() under isolate:false; an externalized package would retain old workers.
+export const workerRuntimeTestingInline = ['@vouchington/worker-runtime']
+
 export function realGlideMqAlias(): Alias {
   return {
     find: /^glide-mq$/,

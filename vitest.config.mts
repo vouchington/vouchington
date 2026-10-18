@@ -1,7 +1,11 @@
 import { defineConfig } from 'vitest/config'
 import { ciOutputFile, ciReporters } from './test-helpers/vitest-ci-reporters.mts'
 import { effectiveTimeoutCap } from './test-helpers/vitest-effective-timeout-cap.mts'
-import { backendAliases, realGlideMqAlias } from './test-helpers/vitest-config/aliases.mts'
+import {
+  backendAliases,
+  realGlideMqAlias,
+  workerRuntimeTestingInline,
+} from './test-helpers/vitest-config/aliases.mts'
 import { backendCoreProjects } from './test-helpers/vitest-config/backend-core-projects.mts'
 import { backendCredentialedTestProjects } from './test-helpers/vitest-config/backend-credentialed-projects.mts'
 import { backendDataProjects } from './test-helpers/vitest-config/backend-data-projects.mts'
@@ -25,6 +29,7 @@ export default defineConfig({
     alias: backendAliases(),
   },
   test: {
+    server: { deps: { inline: workerRuntimeTestingInline } },
     globals: false,
     environment: 'node',
     pool: 'threads',
