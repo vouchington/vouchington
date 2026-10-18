@@ -21,8 +21,8 @@ describe('migration initializer fault project', () => {
       sequence: { setupFiles: 'list' },
       runner: ordinary?.runner,
       globalSetup: './test-helpers/vitest.setup.data-stores.mts',
-      testTimeout: 15_000,
-      hookTimeout: 15_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     })
     const ordinarySetup = ordinary?.setupFiles
     if (!Array.isArray(ordinarySetup))

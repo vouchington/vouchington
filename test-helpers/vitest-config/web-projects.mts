@@ -61,7 +61,7 @@ export const webProjects: TestProjectConfiguration[] = [
       },
     },
     test: {
-      ...defaultTestBudget,
+      ...fiveSecondTestBudget,
       isolate: true,
       name: 'web',
       include: ['web/**/*.test.ts', 'web/**/*.test.tsx'],

@@ -127,8 +127,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       name: 'backend/data-stores/analytics',
       include: ['backend/data-stores/analytics/**/*.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**', '**/*.mock.test.mts'],
-      testTimeout: 15_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {
@@ -146,8 +146,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         './backend/test-helpers/vitest.setup.analytics-local-env.mts',
         './backend/test-helpers/vitest.setup.valkey-logger.mts',
       ],
-      testTimeout: 15_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
   {

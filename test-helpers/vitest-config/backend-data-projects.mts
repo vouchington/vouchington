@@ -174,6 +174,8 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         './backend/test-helpers/vitest.setup.migration-initializers.mts',
         ...backendMocksProject.test.setupFiles,
       ],
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
 ]
