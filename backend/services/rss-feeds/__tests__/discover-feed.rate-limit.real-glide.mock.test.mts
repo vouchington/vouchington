@@ -172,15 +172,17 @@ describe('RSS import crawl rate-limit deferral', () => {
     let providerCalls = 0
     const worker = new Worker(
       CRAWL_URLS_QUEUE_NAME,
-      (job: Job) =>
-        processCrawlerJob(job, {
+      (job: Job) => {
+        expect(job.name).toBe('crawl.crawl_url')
+        return processCrawlerJob(job, {
           resolveDnsCanary: async () => undefined,
           resolveSafeCrawlerAddresses: async () => [{ address: '93.184.216.34', family: 4 }],
           fetchCrawlerHtml: async () => {
             providerCalls += 1
             throw new CrawlerRateLimitError(pageUrl, 429, 10, 60_000)
           },
-        }),
+        })
+      },
       { ...connection, concurrency: 1, blockTimeout: 1_000, promotionInterval: 50 },
     )
     let ownedJob: Job | null | undefined
