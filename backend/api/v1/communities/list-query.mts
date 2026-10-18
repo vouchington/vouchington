@@ -13,7 +13,7 @@ import {
   queryInteger,
   queryString,
   queryUuid,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 
 export function parseEligiblePostType(
   ctx: Context,

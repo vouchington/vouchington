@@ -6,7 +6,7 @@ import {
 } from '@services/admin-imports'
 import { getPrivateUserByAny } from '@services/users'
 import onError from '@modules/on-error'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { publishImportProgress } from '@data-stores/valkey-pubsub'
 import createHttpError from 'http-errors'
 

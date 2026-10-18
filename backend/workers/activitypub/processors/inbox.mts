@@ -1,4 +1,4 @@
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import {
   enqueueBulkActivityPubInboxDeliveries,
   enqueueDelayedActivityPubInboxDelivery,

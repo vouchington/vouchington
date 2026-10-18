@@ -1,17 +1,8 @@
 import { UnrecoverableError, Worker } from 'glide-mq'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { HttpRateLimitError } from '@modules/on-error/errors'
-import {
-  clampRateLimitDelayMs,
-  createRateLimitError,
-  DEFAULT_RATE_LIMIT_DELAY_MS,
-  deferJobForRateLimit,
-  getRetryAfterMs,
-  MAX_RATE_LIMIT_DELAY_MS,
-  MIN_RATE_LIMIT_DELAY_MS,
-  throwIfRateLimitedResponse,
-  wrapHttpForRetry,
-} from './index.mts'
+import { DEFAULT_RATE_LIMIT_DELAY_MS } from '@vouchington/queue-errors'
+import { getRetryAfterMs, throwIfRateLimitedResponse, wrapHttpForRetry } from './index.mts'
 
 function thrownBy(callback: () => void): unknown {
   try {
@@ -22,9 +13,6 @@ function thrownBy(callback: () => void): unknown {
   throw new Error('Expected the callback to throw')
 }
 
-// Stands in for GlideMQ's DelayedError, which job.moveToDelayed() always rejects with.
-class StubDelayedError extends Error {}
-
 // Shaped like the AWS SDK's deserialized SES failure: HTTP 400 with the code as the error name.
 function sesError(name: string, message: string) {
   return Object.assign(new Error(message), {
@@ -33,59 +21,6 @@ function sesError(name: string, message: string) {
     $metadata: { httpStatusCode: 400 },
   })
 }
-
-describe('clampRateLimitDelayMs', () => {
-  it.each([
-    [undefined, DEFAULT_RATE_LIMIT_DELAY_MS],
-    [null, DEFAULT_RATE_LIMIT_DELAY_MS],
-    [Number.NaN, DEFAULT_RATE_LIMIT_DELAY_MS],
-    [0, MIN_RATE_LIMIT_DELAY_MS],
-    [250, MIN_RATE_LIMIT_DELAY_MS],
-    [30_000, 30_000],
-    [1_500.2, 1_501],
-    [Number.POSITIVE_INFINITY, DEFAULT_RATE_LIMIT_DELAY_MS],
-    [24 * 60 * 60_000, MAX_RATE_LIMIT_DELAY_MS],
-  ])('maps %s to %s', (retryAfterMs, expected) => {
-    expect(clampRateLimitDelayMs(retryAfterMs)).toBe(expected)
-  })
-})
-
-describe('createRateLimitError', () => {
-  it('is the GlideMQ control-flow signal carrying the clamped wait and the cause', () => {
-    const cause = new Error('429 from provider')
-    const error = createRateLimitError(45_000, cause)
-
-    expect(error).toBeInstanceOf(Worker.RateLimitError)
-    expect(error).toMatchObject({ name: 'RateLimitError', delayMs: 45_000, cause })
-    expect(createRateLimitError()).toMatchObject({ delayMs: DEFAULT_RATE_LIMIT_DELAY_MS })
-    expect('cause' in createRateLimitError()).toBe(false)
-  })
-})
-
-describe('deferJobForRateLimit', () => {
-  it.each([
-    '2024-02-29T23:59:59.999Z',
-    '2024-03-01T00:00:00.001Z',
-    '2024-12-31T23:59:59.999Z',
-    '2025-01-01T00:00:00.001Z',
-  ])('parks the job for exactly the clamped wait at %s', async now => {
-    const moveToDelayed = vi
-      .fn<(timestamp: number) => Promise<never>>()
-      .mockImplementation(async timestamp => {
-        throw new StubDelayedError(String(timestamp))
-      })
-    vi.useFakeTimers({ toFake: ['Date'] })
-    try {
-      vi.setSystemTime(new Date(now))
-      await expect(deferJobForRateLimit({ moveToDelayed }, 20_000)).rejects.toBeInstanceOf(
-        StubDelayedError,
-      )
-      expect(moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.parse(now) + 20_000)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-})
 
 describe('getRetryAfterMs', () => {
   it('reads a parsed wait, a fetch Headers bag, and a plain header map', () => {

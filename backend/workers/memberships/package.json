@@ -21,7 +21,6 @@
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/queue-config": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@modules/stripe": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/memberships": "workspace:^",
@@ -31,6 +30,7 @@
     "@services/stripe": "workspace:^",
     "@services/stripe-event-processing": "workspace:^",
     "@services/users": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3",
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {

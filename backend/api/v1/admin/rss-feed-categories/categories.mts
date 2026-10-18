@@ -1,6 +1,7 @@
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import {
   getUnmappedRssFeedItemCategories,
   currentUserCanManageRssFeedCategories,

@@ -11,8 +11,6 @@ export type {
   NameCursor,
 } from './types.mts'
 
-export * from './query-contract.mts'
-
 // Re-export cursor utilities
 export * from './cursors.mts'
 export {

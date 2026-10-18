@@ -26,7 +26,6 @@
     "@data-stores/psql": "workspace:^",
     "@modules/csv": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/article-sync": "workspace:^",
@@ -38,6 +37,7 @@
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"
   },

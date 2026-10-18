@@ -1,6 +1,7 @@
 import { Agent, XRPCError } from '@atproto/api'
 import type { OAuthSession } from '@modules/bluesky-oauth'
-import { getRetryAfterMs, throwRateLimited, wrapHttpForRetry } from '@modules/queue-errors'
+import { throwRateLimited } from '@vouchington/queue-errors'
+import { getRetryAfterMs, wrapHttpForRetry } from '@modules/queue-errors'
 
 // Thin wrappers around @atproto/api's Agent, the only place in this service that talks to a
 // user's PDS. `session` must come from restoreBlueskySession(client, did) (@modules/bluesky-oauth)

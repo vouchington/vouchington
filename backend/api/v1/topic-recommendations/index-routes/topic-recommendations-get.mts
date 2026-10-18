@@ -21,7 +21,7 @@ import {
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../response-contract.mts'
-import { defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 import { topicRecommendationsParser } from './shared.mts'

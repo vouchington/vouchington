@@ -4,7 +4,7 @@ import {
   enqueueBulkAdminTopicImportRows,
 } from '@queues/admin-imports/enqueues'
 import { write } from '@data-stores/psql'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { isUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
 

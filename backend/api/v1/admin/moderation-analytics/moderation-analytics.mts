@@ -4,7 +4,7 @@ import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { getModerationAnalytics } from '@services/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@services/moderation-analytics/types'
 import { isAdminUser } from '@services/users'
-import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../../response-contract.mts'
 

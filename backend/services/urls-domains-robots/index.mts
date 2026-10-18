@@ -1,4 +1,9 @@
-import { parseRobotsTxt } from '@vouchington/robots'
+import {
+  parseRobotsTxt,
+  robotsProductToken,
+  computeCrawlIntervalMs,
+  getCrawlDelayMilliseconds,
+} from '@vouchington/robots'
 import { checkDomainBlacklisted } from './check-domain-blacklisted.mts'
 import { fetchRobotsTxtCached } from './fetch-cache.mts'
 import { fetchRobotsTxtOutcome, type RobotsDependencies } from './fetch-retry.mts'
@@ -43,7 +48,7 @@ export const isUrlCrawlable = async (
     return !(await checkDomainBlacklisted(domain))
   }
   const parser = await getParsedRobots(domain, options?.dependencies)
-  return parser.isAllowed(url, robotsUserAgentToken(userAgent)) ?? false
+  return parser.isAllowed(url, robotsProductToken(userAgent)) ?? false
 }
 
 export async function computeHostnameRateLimitMs(
@@ -52,13 +57,12 @@ export async function computeHostnameRateLimitMs(
   userAgent: string,
   dependencyOverrides: Partial<RobotsDependencies> = {},
 ): Promise<number> {
-  const rpsDelay =
-    requestsPerSecondLimit != null && requestsPerSecondLimit > 0
-      ? Math.ceil(1000 / requestsPerSecondLimit)
-      : 1_000
-  const crawlDelayMs = await getCrawlDelayMs(hostname, userAgent, dependencyOverrides)
-  const MAX_RATE_LIMIT_MS = 60_000
-  return Math.min(MAX_RATE_LIMIT_MS, Math.max(rpsDelay, crawlDelayMs ?? 0))
+  return computeCrawlIntervalMs({
+    requestsPerSecond: requestsPerSecondLimit,
+    crawlDelayMs: await getCrawlDelayMs(hostname, userAgent, dependencyOverrides),
+    defaultIntervalMs: 1_000,
+    maxIntervalMs: 60_000,
+  })
 }
 
 async function getCrawlDelayMs(
@@ -67,14 +71,6 @@ async function getCrawlDelayMs(
   dependencyOverrides: Partial<RobotsDependencies>,
 ): Promise<number | null> {
   const parser = await getParsedRobots(domain, dependencyOverrides)
-  const crawlDelay = parser.getCrawlDelay(robotsUserAgentToken(userAgent))
-  return crawlDelay != null ? Math.ceil(crawlDelay * 1000) : null
-}
-
-/** RFC 9309 product token: the first User-Agent token, without a `/version` suffix. */
-function robotsUserAgentToken(userAgent: string): string {
-  const firstToken = userAgent.trim().split(/[ \t]+/, 1)[0] ?? ''
-  const slashIndex = firstToken.indexOf('/')
-  const token = (slashIndex === -1 ? firstToken : firstToken.slice(0, slashIndex)).trim()
-  return token || '*'
+  const crawlDelay = parser.getCrawlDelay(robotsProductToken(userAgent))
+  return getCrawlDelayMilliseconds(crawlDelay)
 }

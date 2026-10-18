@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import dns from 'node:dns'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { softDeleteRemoteActorForInboxTest, readAllQueueJobs } from '@voucha/test-helpers'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import {

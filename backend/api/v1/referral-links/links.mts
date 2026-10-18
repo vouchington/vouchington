@@ -12,7 +12,8 @@ import {
   deactivateUserReferralLink,
 } from '@services/user-referral-program-links'
 import { assertNotSuspended } from '@services/users'
-import { createPaginationParser, defineQueryContract, queryUuid } from '@modules/pagination'
+import { defineQueryContract, queryUuid } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {

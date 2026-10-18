@@ -1,6 +1,6 @@
 import type { Job } from 'glide-mq'
 import type { ModelProviderError } from '@modules/model-providers/errors'
-import { deferJobForRateLimit, unrecoverable } from '@modules/queue-errors'
+import { deferJobForRateLimit, unrecoverable } from '@vouchington/queue-errors'
 
 /**
  * Decides what a failed model call means for its job. A provider's rate limit or overload parks

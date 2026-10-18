@@ -6,13 +6,8 @@ import {
   listStaffClassifiers,
 } from '@services/classifiers'
 import { isModerationStaff } from '@services/users'
-import {
-  buildPageInfo,
-  createPaginationParser,
-  decodeScopedUuidCursor,
-  defineQueryContract,
-  queryUuid,
-} from '@modules/pagination'
+import { defineQueryContract, queryUuid } from '@vouchington/pagination'
+import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
 import { requireAuthAndRateLimit, validateUUIDParam } from '../../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../../response-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'

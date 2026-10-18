@@ -1,5 +1,5 @@
 import type { Job } from 'glide-mq'
-import { deferPostgresConnectionTimeout } from '@modules/queue-errors'
+import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import type { MembershipsJobs } from '@queues/memberships/types'
 import { reconcileAppleNotification } from '@services/memberships/apple/reconcile-notification'
 import {

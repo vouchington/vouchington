@@ -1,9 +1,5 @@
-import {
-  defineQueryContract,
-  parseBoundedIntegerLimit,
-  queryInteger,
-  queryString,
-} from '@modules/pagination'
+import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
+import { parseBoundedIntegerLimit } from '@modules/pagination'
 import { COMMENT_ANCESTOR_PAGE_MAX_LIMIT } from '@services/comments/ancestor-page'
 import { getPaginationLimits } from '@services/pagination'
 import { prepareQueryForValidation } from './prepare-query.mts'

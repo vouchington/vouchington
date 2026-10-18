@@ -1,12 +1,12 @@
 import {
   defineQueryContract,
-  createPaginationParser,
   queryBoolean,
   queryEnum,
   queryInteger,
   queryNumber,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   VALID_COMMUNITY_NEWS_FEED_TYPES,

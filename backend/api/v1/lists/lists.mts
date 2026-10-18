@@ -1,7 +1,7 @@
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryInteger, queryString } from '@modules/pagination'
+import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'

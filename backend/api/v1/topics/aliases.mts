@@ -21,12 +21,11 @@ import {
 } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
 import {
   createPaginationParser,
   decodeScopedAliasCursor,
   encodeScopedAliasCursor,
-  defineQueryContract,
-  queryString,
 } from '@modules/pagination'
 
 const aliasSearchParser = createPaginationParser({

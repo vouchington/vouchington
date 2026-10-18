@@ -10,13 +10,8 @@ import {
 } from '@services/oauth-authorization-server'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { assertNotSuspended } from '@services/users'
-import {
-  buildPageInfo,
-  createPaginationParser,
-  decodeScopedUuidCursor,
-  defineQueryContract,
-  queryEnum,
-} from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
+import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
 import {
   requireAuthAndRateLimit,
   validateRequestContract,

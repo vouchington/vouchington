@@ -8,7 +8,12 @@ import {
 } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { defineQueryContract, queryBoolean, queryInteger, queryString } from '@modules/pagination'
+import {
+  defineQueryContract,
+  queryBoolean,
+  queryInteger,
+  queryString,
+} from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 import { getListForWrite, searchListItems, currentUserCanViewList } from '@services/lists'

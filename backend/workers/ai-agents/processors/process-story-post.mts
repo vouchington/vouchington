@@ -8,7 +8,7 @@ import { getPostStoryByPostId } from '@services/stories/get-post-stories'
 import { callStoryPostAgent } from '@agents/story-post'
 import { loadServiceModelSelection } from '@services/ai-usage'
 import { updateStoryPostAgentResult } from '@services/posts/update-story-post-agent-result'
-import { unrecoverable } from '@modules/queue-errors'
+import { unrecoverable } from '@vouchington/queue-errors'
 
 // #8773 round-15 finding: shared by processAIAgentWorkerJob's spend-cap gate
 // (backend/workers/ai-agents/workers/core.mts) so a daily-cap breach can tell a story-post job

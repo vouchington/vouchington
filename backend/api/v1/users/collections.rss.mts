@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../response-contract.mts'
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { attachRssFeedProvenance } from '@services/content-provenance'
 import { getUserRssFeedsCollection, getUserRssFeedItemsCollection } from '@services/entity-fetch'
 import { buildRssFeedSidecars, proxyRssFeedCoverArt } from '@services/rss-feeds'

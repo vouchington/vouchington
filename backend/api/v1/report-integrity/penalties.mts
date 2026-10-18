@@ -1,12 +1,8 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryEnum,
-  queryUuid,
-} from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryUuid } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isUUID } from '@modules/utils'
