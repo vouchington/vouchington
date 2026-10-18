@@ -9,6 +9,7 @@ import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
+import { getBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
 
 const ALLOWED_EXTERNAL_SOURCES = new Set(['external:kagi-smallweb', 'external:ses-inbound-s3'])
@@ -129,6 +130,14 @@ describe('BACKFILL_REGISTRY', () => {
       expect(typeof entry.description).toBe('string')
       expect(entry.description.length).toBeGreaterThan(0)
     }
+  })
+
+  it('reports only registered job names for background-cpu entries', () => {
+    expect(
+      BACKFILL_REGISTRY.filter(entry => entry.queue_name === 'background-cpu').flatMap(entry =>
+        getBackgroundCpuJob(entry.job_name) ? [] : [`${entry.id}: ${entry.job_name}`],
+      ),
+    ).toEqual([])
   })
 
   it('has at least one entry', () => {
