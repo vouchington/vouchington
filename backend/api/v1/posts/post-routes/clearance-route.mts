@@ -3,10 +3,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { COMMENT_DESCENDANTS_LIMIT, getCommentDescendantsPage } from '@services/comments'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
-import {
-  getPostByAnyCachedBatch,
-  getPostMetricsByAnyCachedBatch,
-} from '@services/entity-fetch'
+import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
