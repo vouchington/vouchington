@@ -45,18 +45,24 @@ describe('handleOpenAIRateLimit', () => {
 })
 
 describe('deferJobForOpenAIRateLimit', () => {
-  it('parks only the job until the Retry-After has passed', async () => {
+  it.each([
+    '2024-02-29T23:59:59.999Z',
+    '2024-03-01T00:00:00.001Z',
+    '2024-12-31T23:59:59.999Z',
+    '2025-01-01T00:00:00.001Z',
+  ])('parks only the job for exactly Retry-After at %s', async now => {
     const delayed = new Error('delayed')
     const moveToDelayed = vi.fn<(timestamp: number) => Promise<never>>().mockRejectedValue(delayed)
-    const before = Date.now()
-
-    await expect(
-      deferJobForOpenAIRateLimit(rateLimited({ 'retry-after': '20' }), { moveToDelayed }),
-    ).rejects.toBe(delayed)
-
-    const [delayedUntil] = moveToDelayed.mock.calls[0]
-    expect(delayedUntil).toBeGreaterThanOrEqual(before + 20_000)
-    expect(delayedUntil).toBeLessThanOrEqual(Date.now() + 20_000)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(now))
+      await expect(
+        deferJobForOpenAIRateLimit(rateLimited({ 'retry-after': '20' }), { moveToDelayed }),
+      ).rejects.toBe(delayed)
+      expect(moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.parse(now) + 20_000)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('leaves other failures to the queue attempts without touching the job', async () => {
