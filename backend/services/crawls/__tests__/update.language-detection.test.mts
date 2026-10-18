@@ -21,7 +21,10 @@ describe('updateCrawl language detection enqueueing', () => {
 
     const jobs = await readAllQueueJobs(contentAnalysisQueue)
     expect(
-      jobs.some(job => job.name === 'crawl' && (job.data as { id?: string }).id === crawl.id),
+      jobs.some(
+        job =>
+          job.name === 'content-analysis.crawl' && (job.data as { id?: string }).id === crawl.id,
+      ),
     ).toBe(true)
   })
 })

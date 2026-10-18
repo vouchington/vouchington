@@ -22,8 +22,8 @@ describe('enqueueBulkCrawlUrls', () => {
     expect(job).toBeDefined()
     expect(job!.opts).toMatchObject({
       priority: 10,
-      deduplication: { id: 'crawl_url__url-1__row-1__gen-1', mode: 'simple' },
-      ordering: { key: 'hostname-1', rateLimit: { max: 1, duration: 1234 } },
+      deduplication: { id: 'crawl.crawl_url__url-1__row-1__gen-1', mode: 'simple' },
+      ordering: { key: 'crawl:hostname-1', concurrency: 1, rateLimit: { max: 1, duration: 1234 } },
     })
     expect(job!.data).toMatchObject({
       import_row_id: 'row-1',
@@ -44,8 +44,8 @@ describe('enqueueBulkCrawlUrls', () => {
       .map(j => (j.opts as { deduplication?: { id?: string } }).deduplication?.id)
       .toSorted()
     expect(dedupIds).toEqual([
-      'crawl_url_ratelimit__url-ratelimit__1',
-      'crawl_url_ratelimit__url-ratelimit__2',
+      'crawl.crawl_url_ratelimit__url-ratelimit__1',
+      'crawl.crawl_url_ratelimit__url-ratelimit__2',
     ])
   })
 })
