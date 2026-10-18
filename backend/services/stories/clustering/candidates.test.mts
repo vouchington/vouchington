@@ -2,7 +2,7 @@ import { reserveClassifierRun } from '@services/classifier-runs'
 import { updateRssFeedById } from '@services/rss-feeds'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { STORY_CLUSTER_CANDIDATE_LIMIT } from '@voucha/config'
+import { STORY_CLUSTER_CANDIDATE_LIMIT, STORY_WINDOW_DAYS } from '@voucha/config'
 import {
   addRssFeedItemSource,
   deleteTestStory,
@@ -24,6 +24,15 @@ import { createStoryClusteringRunAdapter } from './adapter.mts'
 
 const adapter = createStoryClusteringRunAdapter()
 const DAY_MS = 24 * 60 * 60 * 1000
+const WINDOW_MS = STORY_WINDOW_DAYS * DAY_MS
+const UTC_BOUNDARIES = [
+  new Date('2026-01-31T23:59:59.999Z'),
+  new Date('2026-02-01T00:00:00.000Z'),
+  new Date('2024-02-29T23:59:59.999Z'),
+  new Date('2024-03-01T00:00:00.000Z'),
+  new Date('2025-12-31T23:59:59.999Z'),
+  new Date('2026-01-01T00:00:00.000Z'),
+]
 
 /** What a fresh receipt for the item captured, in the order the run asks, or why it settled. */
 async function captured(item: StoryClusteringItem) {
@@ -110,6 +119,44 @@ describe('story clustering candidate capture (real PG)', () => {
     expect(await captured(item)).toBe('no-work')
   })
 
+  it.each(UTC_BOUNDARIES)(
+    'includes standalone neighbors at both window endpoints but excludes adjacent milliseconds at %s',
+    async publishedAt => {
+      const { unit, near } = makeStoryClusteringVectors()
+      const feed = await createTestRssFeed({})
+      const at = publishedAt.getTime()
+      const lower = await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: near,
+        publishedAt: new Date(at - WINDOW_MS),
+      })
+      const upper = await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: near,
+        publishedAt: new Date(at + WINDOW_MS),
+      })
+      await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: near,
+        publishedAt: new Date(at - WINDOW_MS - 1),
+      })
+      await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: near,
+        publishedAt: new Date(at + WINDOW_MS + 1),
+      })
+      const item = await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: unit,
+        publishedAt,
+      })
+
+      const candidates = await captured(item)
+      expect(candidates).toHaveLength(2)
+      expect(candidates).toEqual(expect.arrayContaining([standalone(lower), standalone(upper)]))
+    },
+  )
+
   it("measures a story's window from the story's own start, so a late member cannot extend it", async () => {
     const { unit, at } = makeStoryClusteringVectors()
     const feed = await createTestRssFeed({})
@@ -130,6 +177,38 @@ describe('story clustering candidate capture (real PG)', () => {
 
     expect(await captured(item)).toBe('no-work')
   })
+
+  it.each(UTC_BOUNDARIES)(
+    'includes the story-start upper endpoint but excludes the next millisecond at %s',
+    async storyStart => {
+      const { unit, near } = makeStoryClusteringVectors()
+      const feed = await createTestRssFeed({})
+      const included = await insertTestStory()
+      const excluded = await insertTestStory()
+      await setStoryPublishedAtForTest(included.id, storyStart)
+      await setStoryPublishedAtForTest(excluded.id, new Date(storyStart.getTime() - 1))
+      const publishedAt = new Date(storyStart.getTime() + WINDOW_MS)
+      const firstMember = await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: near,
+        publishedAt,
+      })
+      const secondMember = await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: near,
+        publishedAt,
+      })
+      await setTestItemStoryId(firstMember.itemId, included.id)
+      await setTestItemStoryId(secondMember.itemId, excluded.id)
+      const item = await createStoryClusteringItem({
+        feedId: feed.id,
+        embedding: unit,
+        publishedAt,
+      })
+
+      expect(await captured(item)).toEqual([{ storyId: included.id }])
+    },
+  )
 
   it('never asks about a story-locked or deleted-story neighbor', async () => {
     const { unit, at } = makeStoryClusteringVectors()
