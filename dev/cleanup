@@ -9,15 +9,17 @@ NC='\033[0m'
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
-usage() { echo "Usage: ./dev/cleanup [--yes|-y]"; }
+usage() { echo "Usage: ./dev/cleanup [--yes|-y] [--background]"; }
 if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
 AUTO_YES=false
+BACKGROUND=false
 for arg in "$@"; do
     case "$arg" in
         --yes|-y)
             if $AUTO_YES; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
             AUTO_YES=true
             ;;
+        --background) BACKGROUND=true ;;
         *) echo "Error: unknown option: $arg" >&2; usage >&2; exit 2 ;;
     esac
 done
@@ -46,23 +48,18 @@ should_scan_orphaned_dbs() {
     dev_db_target_local_or_allowed cleanup
 }
 
+# --background (session start): hold the background flock so ./dev/initialize waits for this run, and
+# skip quietly whenever another resource operation holds the operation lock.
+if $BACKGROUND && [ -z "${VOUCHA_CLEANUP_BACKGROUND_FLOCKED:-}" ]; then
+    worktree_resource_exec_with_background_flock bash "$REPO_ROOT/dev/cleanup" "$@"
+fi
+
 echo -e "${BLUE}=== Voucha Worktree Cleanup ===${NC}\n"
 
 # --- Finished worktrees ---
-# `vouchington worktree reclaim` removes worktrees whose PR is merged or closed at their HEAD (dry
-# run unless --yes). Run it from this checkout, never the one being reclaimed: it skips its caller.
-# The orphan scans below then reclaim the database and Valkey container of any worktree it removed.
-echo -e "${BLUE}Reclaiming finished worktrees...${NC}"
-VOUCHINGTON_CLI="$REPO_ROOT/node_modules/.bin/vouchington"
-RECLAIM_ARGS=(worktree reclaim)
-if $AUTO_YES; then RECLAIM_ARGS+=(--yes); fi
-if [ -x "$VOUCHINGTON_CLI" ]; then
-    (cd "$REPO_ROOT" && "$VOUCHINGTON_CLI" "${RECLAIM_ARGS[@]}") ||
-        echo -e "${YELLOW}Worktree reclaim failed; continuing with orphan cleanup.${NC}"
-else
-    echo -e "${YELLOW}Skipping worktree reclaim: run pnpm install to get vouchington-tooling.${NC}"
-fi
-echo ""
+# shellcheck source=lib/cleanup-reclaim.sh
+source "$REPO_ROOT/dev/lib/cleanup-reclaim.sh"
+cleanup_reclaim_finished_worktrees
 
 refresh_live_worktree_paths() {
     WORKTREE_PATHS=()

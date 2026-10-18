@@ -167,6 +167,6 @@ describe('dev/check-fresh-base', () => {
     let args = ''
     for await (const chunk of child.stdio[3] as NodeJS.ReadableStream) args += String(chunk)
 
-    expect(args).toBe('--yes\n')
+    expect(args).toBe('--yes --background\n')
   })
 })
