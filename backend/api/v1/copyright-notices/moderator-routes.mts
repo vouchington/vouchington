@@ -2,7 +2,7 @@
 import app from '../../app.mts'
 import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryInteger } from '@modules/pagination'
+import { defineQueryContract, queryInteger } from '@vouchington/pagination'
 import { enqueueCreateImageEmbeddingsBatch } from '@queues/bedrock-embeddings-batch/enqueues'
 import onError from '@modules/on-error'
 import { findCopyrightImageSimilarityCandidates } from '@services/bedrock-embeddings-batch/image-similarity'

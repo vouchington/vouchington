@@ -74,6 +74,7 @@ describe('copyright guest lifecycle guards', () => {
     const { notice, owner, receivedAt } = await openNotice()
     const actor = await createTestUserDirect()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: { ...actor, roles: ['moderator'] } as typeof actor,
       noticeId: notice.id,
       expiresAt: new Date('2026-07-03T12:00:00.000Z'),
@@ -163,6 +164,7 @@ describe('copyright guest lifecycle guards', () => {
     const staffRecord = await createTestUserDirect()
     const staff = { ...staffRecord, roles: ['moderator'] as const }
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId: notice.id,
       expiresAt: new Date('2026-07-03T12:00:00.000Z'),

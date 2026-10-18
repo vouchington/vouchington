@@ -59,6 +59,7 @@ export async function requestTestCopyrightInformation(
 ): Promise<{ id: string }> {
   const staff = await createTestCopyrightStaff()
   const capability = await issueCopyrightGuestCapability({
+    issuedAt: new Date(),
     currentUser: staff,
     noticeId,
     expiresAt: new Date(Date.now() + 60 * 60 * 1000),

@@ -71,10 +71,10 @@ function source(option: Option): MergedToolSource<Args> {
       parameters: { type: 'object', properties, required, additionalProperties: false },
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Participate in Community',
       plan: 'plus',
-      requiredScopes: { mcp: ['communities:read', 'communities:write'] },
+      requiredScopes: ['communities:read', 'communities:write'],
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
       api: [endpoints[option]],
       outputSchema,

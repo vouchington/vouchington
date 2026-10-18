@@ -64,10 +64,10 @@ function voteSource(
       },
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Vote',
       plan: 'plus',
-      requiredScopes: { mcp: ['votes:write'] },
+      requiredScopes: ['votes:write'],
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       api: [{ method: isClear ? 'DELETE' : 'PUT', path }],
       outputSchema: OUTPUT_SCHEMA,

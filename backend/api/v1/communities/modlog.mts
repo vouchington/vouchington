@@ -11,7 +11,8 @@ import {
 } from '@services/moderator-actions'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { isModerationStaff } from '@services/users'
-import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const parser = createPaginationParser({

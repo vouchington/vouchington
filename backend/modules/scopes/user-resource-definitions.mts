@@ -5,7 +5,6 @@ const USER_RESOURCE_SCOPES = {
   bookmarks: ['read', 'write'],
   cards: ['read', 'write'],
   communities: ['read', 'write'],
-  'community-moderation': ['read', 'write'],
   'data-points': ['read'],
   disputes: ['read', 'write'],
   'domain-ratings': ['read'],
@@ -40,8 +39,6 @@ const SENSITIVE_DESCRIPTIONS: Record<string, ScopeDescriptionKey> = {
   'financial-profile:write': 'financial_profile_write',
   'spending:read': 'spending_read',
   'spending:write': 'spending_write',
-  'community-moderation:read': 'community_moderation_read',
-  'community-moderation:write': 'community_moderation_write',
   'messages:read': 'messages_read',
   'messages:write': 'messages_write',
 }

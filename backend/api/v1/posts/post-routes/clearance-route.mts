@@ -97,6 +97,7 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     posts: postsPromise.then(posts => {
       const byId = indexById(posts)
       if (!currentUser) return byId
+      const contentEditNow = Date.now()
       return Object.fromEntries(
         Object.entries(byId).map(([id, p]) => {
           const canUpdatePost = currentUserCanUpdatePost(currentUser, p)
@@ -104,7 +105,9 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
             id,
             {
               ...p,
-              ...(canUpdatePost ? { can_edit_content: isPostContentEditable(currentUser, p) } : {}),
+              ...(canUpdatePost
+                ? { can_edit_content: isPostContentEditable(currentUser, p, contentEditNow) }
+                : {}),
               can_delete: currentUserCanDeletePost(currentUser, p, { communityMemberRole }),
               can_lock: currentUserCanLockPost(currentUser, p, { communityMemberRole }),
             },

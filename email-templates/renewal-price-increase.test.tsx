@@ -1,6 +1,6 @@
+import { renderRenewalPriceIncreaseEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderRenewalPriceIncreaseEmail } from './renewal-price-increase-renderer.mts'
 import RenewalPriceIncreaseEmail from './renewal-price-increase.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

@@ -49,14 +49,14 @@ const counterRecommendation = {
   good_faith_misidentification_under_penalty_of_perjury: true,
 } as const
 
-describe('copyright decisions through the registered admin SDK', () => {
+describe('copyright decisions through the registered legal SDK', () => {
   afterAll(() => expectSdkSuccessNames(observedMergedNames, sdkMergedSuccessNames.copyrightFixture))
 
   useCopyrightMcpDecisionTools()
   useCopyrightIntakeEnvironment()
 
   it('rejects a recommended email intake', async () => {
-    const client = await connect(cases[3]!)
+    const client = await connect(cases[6]!)
     try {
       const intake = await createParsedCopyrightEmailIntake()
       await appendCopyrightEmailIntakeRecommendation({
@@ -78,7 +78,7 @@ describe('copyright decisions through the registered admin SDK', () => {
   })
 
   it('admits recommended correspondence', async () => {
-    const client = await connect(cases[3]!)
+    const client = await connect(cases[6]!)
     try {
       const fixture = await createRecommendedMcpCopyrightCorrespondence(counterRecommendation)
       expect(
@@ -95,7 +95,7 @@ describe('copyright decisions through the registered admin SDK', () => {
   })
 
   it('rejects recommended correspondence', async () => {
-    const client = await connect(cases[3]!)
+    const client = await connect(cases[6]!)
     try {
       const fixture = await createRecommendedMcpCopyrightCorrespondence(counterRecommendation)
       expect(
@@ -113,7 +113,7 @@ describe('copyright decisions through the registered admin SDK', () => {
   it('replays an owned failed copyright action', async () => {
     const fixture = await createCopyrightReplayFixture()
     await exhaustCopyrightActionIntent(fixture.intentId)
-    const client = await connect(cases[3]!)
+    const client = await connect(cases[6]!)
     try {
       expect(
         await callAndValidate(client, 'replay_copyright_intent', 'action', {

@@ -16,7 +16,7 @@ export const targets = {
         'backend smoke',
         [
           'if [ -f .env ]; then source .env; fi',
-          'PORT=$(python3 ci/allocate-browser-safe-ports.py 1)',
+          'PORT=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)',
           'export PORT',
           'cd backend',
           './scripts/tests/smoke-test-server.sh && ./scripts/tests/smoke-test-worker.sh',

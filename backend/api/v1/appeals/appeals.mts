@@ -27,7 +27,7 @@ import {
   queryEnum,
   queryInteger,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import { parseAndValidateCaseListQuery } from '../../case-list-query-helpers.mts'
 
 type CreateModerationAppealRequest = {

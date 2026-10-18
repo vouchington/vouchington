@@ -16,9 +16,9 @@ const tool: MergedToolSource<Record<string, never>, ToolResult> = {
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Email Preferences',
-    requiredScopes: { mcp: ['preferences:read'] },
+    requiredScopes: ['preferences:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/email-preferences' }],
     outputSchema: EMAIL_PREFERENCES_RESULT_SCHEMA,

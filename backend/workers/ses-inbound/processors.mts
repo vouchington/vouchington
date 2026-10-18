@@ -1,5 +1,5 @@
 import { recordScheduledJobConfigMissing } from '@modules/on-error'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { SES_INBOUND_RECONCILE_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import {
   enqueueOrRetryBulkSesInboundProcess,

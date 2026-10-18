@@ -106,7 +106,7 @@ describe('POST /api/v1/admin/mcp', () => {
       expect(correlationId).toMatch(UUID_PATTERN)
       expect(await readTestMcpCallAuditEvents(owner.id)).toEqual([
         {
-          surface: 'admin_mcp',
+          audience: 'admin',
           correlation_id: correlationId,
           actor_user_id: owner.id,
           oauth_client_id: clientId,

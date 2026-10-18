@@ -25,7 +25,7 @@
  * file's terminal jobs on a shared queue.
  */
 
-import { getOrCreateQueue } from '../../test-helpers/glide-mq-vitest-internals.mts'
+import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 
 type EnqueuedJobLike = { id: string }
 

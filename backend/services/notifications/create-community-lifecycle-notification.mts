@@ -10,19 +10,25 @@ type CommunityLifecycleNotificationType =
   | 'community_role_change'
   | 'community_ownership_transfer'
 
-export async function createCommunityLifecycleNotification(
-  input: {
-    userId: string
-    communityId: string
-    entityType: CommunityLifecycleNotificationType
-    eventKey: string
-    title: string
-    body: string
-  },
+type CommunityLifecycleNotificationInput = {
+  userId: string
+  communityId: string
+  entityType: CommunityLifecycleNotificationType
+  eventKey: string
+  title: string
+  body: string
+}
+
+/**
+ * Inserts every notification in one statement. Returns only the rows this call created, in no
+ * particular order; an event key that already exists for the user yields nothing.
+ */
+export async function createCommunityLifecycleNotifications(
+  inputs: CommunityLifecycleNotificationInput[],
   options: QueryOptions,
-): Promise<{ userId: string; notificationId: string } | null> {
+): Promise<Array<{ userId: string; notificationId: string }>> {
   const { rows } = await write<{ user_id: string; id: string }>(
-    sql`/* createCommunityLifecycleNotification */
+    sql`/* createCommunityLifecycleNotifications */
       INSERT INTO notifications (
         user_id,
         entity_type,
@@ -30,21 +36,23 @@ export async function createCommunityLifecycleNotification(
         event_key,
         title,
         body
-      ) VALUES (
-        ${input.userId},
-        ${input.entityType},
-        ${input.communityId},
-        ${input.eventKey},
-        ${truncateText(input.title, 300)},
-        ${truncateText(input.body, 1000)}
       )
-      ON CONFLICT DO NOTHING
+      SELECT user_id, entity_type, community_id, event_key, title, body
+      FROM UNNEST(
+        ${inputs.map(input => input.userId)}::uuid[],
+        ${inputs.map(input => input.entityType)}::notification_entity_types[],
+        ${inputs.map(input => input.communityId)}::uuid[],
+        ${inputs.map(input => input.eventKey)}::text[],
+        ${inputs.map(input => truncateText(input.title, 300))}::text[],
+        ${inputs.map(input => truncateText(input.body, 1000))}::text[]
+      ) AS t(user_id, entity_type, community_id, event_key, title, body)
+      ORDER BY user_id ASC, event_key ASC
+      ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING
       RETURNING user_id, id
     `,
     options,
   )
-  const row = rows[0]
-  return row ? { userId: row.user_id, notificationId: row.id } : null
+  return rows.map(row => ({ userId: row.user_id, notificationId: row.id }))
 }
 
 export async function enqueueCommunityLifecycleNotificationPush(

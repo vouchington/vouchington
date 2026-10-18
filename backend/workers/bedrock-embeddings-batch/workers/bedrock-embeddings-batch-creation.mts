@@ -2,7 +2,8 @@ import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-gl
 import { bedrock_embeddings_batch_creation } from '@queues/bedrock-embeddings-batch/queues'
 import type { BedrockEmbeddingsBatchCreationJob } from '@queues/bedrock-embeddings-batch/types'
 import { Worker, type Queue, type Job, type WorkerOptions } from 'glide-mq'
-import { handleBedrockRateLimit, UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
+import { handleBedrockRateLimit } from '@modules/queue-errors'
 import type { BatchCreationDependencies } from '@services/bedrock-embeddings-batch/utils'
 import { processEmbeddingCreationJob } from '../processors/creation.mts'
 

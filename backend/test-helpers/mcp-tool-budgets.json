@@ -1,0 +1,1565 @@
+{
+  "source": "Measured from api-fixtures/v1/mcp.json at B18a catalog generation; per-tool list/core serialized sizes use compact JSON UTF-16 lengths.",
+  "formula": "ceil(measured * 1.015 / 1000) * 1000",
+  "servers": {
+    "user": {
+      "read_my_messages": {
+        "measured": {
+          "list": 4794,
+          "core": 1736
+        },
+        "max": {
+          "list": 5000,
+          "core": 2000
+        }
+      },
+      "manage_my_messages": {
+        "measured": {
+          "list": 4920,
+          "core": 2212
+        },
+        "max": {
+          "list": 5000,
+          "core": 3000
+        }
+      },
+      "read_community": {
+        "measured": {
+          "list": 10623,
+          "core": 4016
+        },
+        "max": {
+          "list": 11000,
+          "core": 5000
+        }
+      },
+      "read_reference_data": {
+        "measured": {
+          "list": 7661,
+          "core": 1986
+        },
+        "max": {
+          "list": 8000,
+          "core": 3000
+        }
+      },
+      "read_topic": {
+        "measured": {
+          "list": 8384,
+          "core": 3226
+        },
+        "max": {
+          "list": 9000,
+          "core": 4000
+        }
+      },
+      "discover_communities": {
+        "measured": {
+          "list": 5589,
+          "core": 1824
+        },
+        "max": {
+          "list": 6000,
+          "core": 2000
+        }
+      },
+      "discover_topics": {
+        "measured": {
+          "list": 5561,
+          "core": 3142
+        },
+        "max": {
+          "list": 6000,
+          "core": 4000
+        }
+      },
+      "discover_rss_feeds": {
+        "measured": {
+          "list": 5455,
+          "core": 2435
+        },
+        "max": {
+          "list": 6000,
+          "core": 3000
+        }
+      },
+      "read_rss_feed": {
+        "measured": {
+          "list": 4494,
+          "core": 1532
+        },
+        "max": {
+          "list": 5000,
+          "core": 2000
+        }
+      },
+      "read_rss_feed_item": {
+        "measured": {
+          "list": 6306,
+          "core": 3582
+        },
+        "max": {
+          "list": 7000,
+          "core": 4000
+        }
+      },
+      "read_feed": {
+        "measured": {
+          "list": 4934,
+          "core": 2941
+        },
+        "max": {
+          "list": 6000,
+          "core": 3000
+        }
+      },
+      "read_posts": {
+        "measured": {
+          "list": 9266,
+          "core": 5165
+        },
+        "max": {
+          "list": 10000,
+          "core": 6000
+        }
+      },
+      "read_hostnames": {
+        "measured": {
+          "list": 3046,
+          "core": 1727
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "read_data_points": {
+        "measured": {
+          "list": 3472,
+          "core": 1538
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "read_users": {
+        "measured": {
+          "list": 3315,
+          "core": 1399
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "read_my_review_disputes": {
+        "measured": {
+          "list": 3307,
+          "core": 1287
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "read_my_moderation_appeals": {
+        "measured": {
+          "list": 3544,
+          "core": 1432
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "read_my_lists": {
+        "measured": {
+          "list": 6028,
+          "core": 2838
+        },
+        "max": {
+          "list": 7000,
+          "core": 3000
+        }
+      },
+      "read_my_profile": {
+        "measured": {
+          "list": 6594,
+          "core": 2004
+        },
+        "max": {
+          "list": 7000,
+          "core": 3000
+        }
+      },
+      "read_my_preferences": {
+        "measured": {
+          "list": 3519,
+          "core": 1004
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "read_my_notifications": {
+        "measured": {
+          "list": 5115,
+          "core": 1224
+        },
+        "max": {
+          "list": 6000,
+          "core": 2000
+        }
+      },
+      "remove_list_content": {
+        "measured": {
+          "list": 1461,
+          "core": 1107
+        },
+        "max": {
+          "list": 2000,
+          "core": 2000
+        }
+      },
+      "remove_referral_link": {
+        "measured": {
+          "list": 2623,
+          "core": 896
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "mark_notifications_read": {
+        "measured": {
+          "list": 1512,
+          "core": 925
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "manage_bookmark": {
+        "measured": {
+          "list": 2299,
+          "core": 1486
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "edit_my_profile": {
+        "measured": {
+          "list": 4728,
+          "core": 2572
+        },
+        "max": {
+          "list": 5000,
+          "core": 3000
+        }
+      },
+      "edit_my_preferences": {
+        "measured": {
+          "list": 5755,
+          "core": 3195
+        },
+        "max": {
+          "list": 6000,
+          "core": 4000
+        }
+      },
+      "create_post": {
+        "measured": {
+          "list": 3533,
+          "core": 1822
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "act_on_post": {
+        "measured": {
+          "list": 6530,
+          "core": 4299
+        },
+        "max": {
+          "list": 7000,
+          "core": 5000
+        }
+      },
+      "delete_post": {
+        "measured": {
+          "list": 623,
+          "core": 327
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "create_topic_recommendation": {
+        "measured": {
+          "list": 4266,
+          "core": 1197
+        },
+        "max": {
+          "list": 5000,
+          "core": 2000
+        }
+      },
+      "vote": {
+        "measured": {
+          "list": 4868,
+          "core": 4363
+        },
+        "max": {
+          "list": 5000,
+          "core": 5000
+        }
+      },
+      "create_community": {
+        "measured": {
+          "list": 2031,
+          "core": 1425
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "participate_in_community": {
+        "measured": {
+          "list": 3360,
+          "core": 1442
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "leave_community": {
+        "measured": {
+          "list": 810,
+          "core": 438
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "apply_to_community": {
+        "measured": {
+          "list": 1497,
+          "core": 871
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "create_content_report": {
+        "measured": {
+          "list": 1682,
+          "core": 844
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "create_review_dispute": {
+        "measured": {
+          "list": 2230,
+          "core": 920
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "create_moderation_appeal": {
+        "measured": {
+          "list": 2384,
+          "core": 972
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "set_rss_feed_item_read": {
+        "measured": {
+          "list": 1034,
+          "core": 650
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "share_rss_feed_item": {
+        "measured": {
+          "list": 1684,
+          "core": 1235
+        },
+        "max": {
+          "list": 2000,
+          "core": 2000
+        }
+      },
+      "submit_rss_feed": {
+        "measured": {
+          "list": 1013,
+          "core": 487
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "start_discussion": {
+        "measured": {
+          "list": 2810,
+          "core": 1041
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "add_entity_relation": {
+        "measured": {
+          "list": 1447,
+          "core": 681
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "remove_entity_relation": {
+        "measured": {
+          "list": 1063,
+          "core": 665
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "withdraw_entity_relation_vote": {
+        "measured": {
+          "list": 740,
+          "core": 408
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "list_my_topic_recommendations": {
+        "measured": {
+          "list": 4631,
+          "core": 895
+        },
+        "max": {
+          "list": 5000,
+          "core": 1000
+        }
+      },
+      "get_my_referral_links": {
+        "measured": {
+          "list": 1886,
+          "core": 567
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "search_web": {
+        "measured": {
+          "list": 1891,
+          "core": 552
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "activate_referral_link": {
+        "measured": {
+          "list": 1870,
+          "core": 353
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "add_list_item": {
+        "measured": {
+          "list": 1371,
+          "core": 578
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "add_my_profile_link": {
+        "measured": {
+          "list": 2289,
+          "core": 1027
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "create_list": {
+        "measured": {
+          "list": 2154,
+          "core": 631
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "create_referral_link": {
+        "measured": {
+          "list": 2176,
+          "core": 661
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "delete_my_profile_link": {
+        "measured": {
+          "list": 647,
+          "core": 340
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "delete_notification": {
+        "measured": {
+          "list": 724,
+          "core": 408
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "get_domain_ratings": {
+        "measured": {
+          "list": 2449,
+          "core": 537
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "get_my_cards": {
+        "measured": {
+          "list": 2279,
+          "core": 262
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "get_my_point_valuations": {
+        "measured": {
+          "list": 1720,
+          "core": 298
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_my_financial_profile": {
+        "measured": {
+          "list": 1969,
+          "core": 255
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_my_rewards_statuses": {
+        "measured": {
+          "list": 1516,
+          "core": 288
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_my_spending": {
+        "measured": {
+          "list": 1878,
+          "core": 279
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_recommended_topics": {
+        "measured": {
+          "list": 1731,
+          "core": 767
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_referral_links": {
+        "measured": {
+          "list": 1428,
+          "core": 519
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_story": {
+        "measured": {
+          "list": 2181,
+          "core": 588
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "manage_my_cards": {
+        "measured": {
+          "list": 3293,
+          "core": 1489
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "manage_my_point_valuations": {
+        "measured": {
+          "list": 2100,
+          "core": 917
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "manage_my_rewards_statuses": {
+        "measured": {
+          "list": 1719,
+          "core": 706
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "manage_my_spending": {
+        "measured": {
+          "list": 2234,
+          "core": 882
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "reorder_my_profile_links": {
+        "measured": {
+          "list": 1877,
+          "core": 597
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "request_referral_link_unfurl": {
+        "measured": {
+          "list": 2000,
+          "core": 456
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "update_list": {
+        "measured": {
+          "list": 2209,
+          "core": 687
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "update_my_financial_profile": {
+        "measured": {
+          "list": 3029,
+          "core": 1648
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "update_referral_link": {
+        "measured": {
+          "list": 1933,
+          "core": 419
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "update_topic_recommendation": {
+        "measured": {
+          "list": 4359,
+          "core": 1290
+        },
+        "max": {
+          "list": 5000,
+          "core": 2000
+        }
+      },
+      "withdraw_topic_recommendation": {
+        "measured": {
+          "list": 791,
+          "core": 449
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      }
+    },
+    "community_moderation": {
+      "read_community_moderation": {
+        "measured": {
+          "list": 40025,
+          "core": 6473
+        },
+        "max": {
+          "list": 41000,
+          "core": 7000
+        }
+      },
+      "add_community_moderation": {
+        "measured": {
+          "list": 12055,
+          "core": 7010
+        },
+        "max": {
+          "list": 13000,
+          "core": 8000
+        }
+      },
+      "update_community_moderation": {
+        "measured": {
+          "list": 14515,
+          "core": 6401
+        },
+        "max": {
+          "list": 15000,
+          "core": 7000
+        }
+      },
+      "remove_community_moderation": {
+        "measured": {
+          "list": 7210,
+          "core": 6123
+        },
+        "max": {
+          "list": 8000,
+          "core": 7000
+        }
+      }
+    },
+    "brand": {},
+    "admin": {
+      "get_editorial_story": {
+        "measured": {
+          "list": 2103,
+          "core": 415
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "add_story_item": {
+        "measured": {
+          "list": 615,
+          "core": 313
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "remove_story_item": {
+        "measured": {
+          "list": 633,
+          "core": 329
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "set_story_official_item": {
+        "measured": {
+          "list": 1267,
+          "core": 315
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "rename_story": {
+        "measured": {
+          "list": 1229,
+          "core": 288
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "import_topics": {
+        "measured": {
+          "list": 868,
+          "core": 252
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "start_article_sync": {
+        "measured": {
+          "list": 526,
+          "core": 196
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "assign_rss_category_to_topic": {
+        "measured": {
+          "list": 696,
+          "core": 353
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "update_crawler": {
+        "measured": {
+          "list": 3744,
+          "core": 883
+        },
+        "max": {
+          "list": 4000,
+          "core": 1000
+        }
+      },
+      "set_referral_program_crawler": {
+        "measured": {
+          "list": 3468,
+          "core": 593
+        },
+        "max": {
+          "list": 4000,
+          "core": 1000
+        }
+      },
+      "list_unmapped_rss_categories": {
+        "measured": {
+          "list": 1178,
+          "core": 335
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "list_user_landing_pages": {
+        "measured": {
+          "list": 1372,
+          "core": 319
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_landing_page_analytics": {
+        "measured": {
+          "list": 5820,
+          "core": 258
+        },
+        "max": {
+          "list": 6000,
+          "core": 1000
+        }
+      },
+      "list_moderation_reports": {
+        "measured": {
+          "list": 20425,
+          "core": 529
+        },
+        "max": {
+          "list": 21000,
+          "core": 1000
+        }
+      },
+      "resolve_moderation_report": {
+        "measured": {
+          "list": 1513,
+          "core": 335
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "rerun_report_judgement": {
+        "measured": {
+          "list": 615,
+          "core": 229
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "list_post_review_queue": {
+        "measured": {
+          "list": 2785,
+          "core": 259
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "set_post_clearance": {
+        "measured": {
+          "list": 854,
+          "core": 448
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "approve_post_clearance": {
+        "measured": {
+          "list": 863,
+          "core": 450
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "list_pending_topic_claims": {
+        "measured": {
+          "list": 1855,
+          "core": 200
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "verify_topic_claim": {
+        "measured": {
+          "list": 1875,
+          "core": 208
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "reject_topic_claim": {
+        "measured": {
+          "list": 1973,
+          "core": 309
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "revoke_topic_claim": {
+        "measured": {
+          "list": 1976,
+          "core": 312
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "search_moderator_actions": {
+        "measured": {
+          "list": 2559,
+          "core": 1618
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "get_moderation_analytics": {
+        "measured": {
+          "list": 4237,
+          "core": 260
+        },
+        "max": {
+          "list": 5000,
+          "core": 1000
+        }
+      },
+      "pause_queue": {
+        "measured": {
+          "list": 818,
+          "core": 483
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "resume_queue": {
+        "measured": {
+          "list": 735,
+          "core": 398
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "retry_failed_queue_jobs": {
+        "measured": {
+          "list": 757,
+          "core": 371
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "update_dynamic_config_namespace": {
+        "measured": {
+          "list": 1903,
+          "core": 385
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "set_rss_category_rejection": {
+        "measured": {
+          "list": 1187,
+          "core": 741
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "read_crawler": {
+        "measured": {
+          "list": 7204,
+          "core": 855
+        },
+        "max": {
+          "list": 8000,
+          "core": 1000
+        }
+      },
+      "read_editorial_job": {
+        "measured": {
+          "list": 2825,
+          "core": 778
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "read_user_moderation": {
+        "measured": {
+          "list": 4505,
+          "core": 1209
+        },
+        "max": {
+          "list": 5000,
+          "core": 2000
+        }
+      },
+      "record_user_moderation": {
+        "measured": {
+          "list": 2265,
+          "core": 1121
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "set_user_suspension": {
+        "measured": {
+          "list": 6403,
+          "core": 986
+        },
+        "max": {
+          "list": 7000,
+          "core": 2000
+        }
+      },
+      "configure_user_vote_weight": {
+        "measured": {
+          "list": 1207,
+          "core": 843
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "read_report_integrity": {
+        "measured": {
+          "list": 3166,
+          "core": 1000
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "review_integrity_flag": {
+        "measured": {
+          "list": 2875,
+          "core": 696
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "apply_integrity_penalty": {
+        "measured": {
+          "list": 3214,
+          "core": 713
+        },
+        "max": {
+          "list": 4000,
+          "core": 1000
+        }
+      },
+      "lift_integrity_penalty": {
+        "measured": {
+          "list": 2271,
+          "core": 646
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "read_vote_integrity": {
+        "measured": {
+          "list": 3429,
+          "core": 1041
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "configure_agent_moderation_vote": {
+        "measured": {
+          "list": 1223,
+          "core": 871
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "read_moderation_appeal": {
+        "measured": {
+          "list": 10715,
+          "core": 815
+        },
+        "max": {
+          "list": 11000,
+          "core": 1000
+        }
+      },
+      "read_review_dispute": {
+        "measured": {
+          "list": 7215,
+          "core": 814
+        },
+        "max": {
+          "list": 8000,
+          "core": 1000
+        }
+      },
+      "draft_review_response": {
+        "measured": {
+          "list": 8331,
+          "core": 741
+        },
+        "max": {
+          "list": 9000,
+          "core": 1000
+        }
+      },
+      "approve_review_response": {
+        "measured": {
+          "list": 8208,
+          "core": 614
+        },
+        "max": {
+          "list": 9000,
+          "core": 1000
+        }
+      },
+      "deliver_review_response": {
+        "measured": {
+          "list": 8207,
+          "core": 614
+        },
+        "max": {
+          "list": 9000,
+          "core": 1000
+        }
+      },
+      "rerun_review_resolution_draft": {
+        "measured": {
+          "list": 1021,
+          "core": 632
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "resolve_review_case": {
+        "measured": {
+          "list": 8609,
+          "core": 1021
+        },
+        "max": {
+          "list": 9000,
+          "core": 2000
+        }
+      },
+      "read_admin_metrics": {
+        "measured": {
+          "list": 6187,
+          "core": 1084
+        },
+        "max": {
+          "list": 7000,
+          "core": 2000
+        }
+      },
+      "read_queue_catalog": {
+        "measured": {
+          "list": 3513,
+          "core": 1114
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      },
+      "run_operational_job": {
+        "measured": {
+          "list": 1035,
+          "core": 694
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "read_dynamic_config": {
+        "measured": {
+          "list": 3858,
+          "core": 1003
+        },
+        "max": {
+          "list": 4000,
+          "core": 2000
+        }
+      }
+    },
+    "legal": {
+      "list_copyright_review_queue": {
+        "measured": {
+          "list": 14766,
+          "core": 300
+        },
+        "max": {
+          "list": 15000,
+          "core": 1000
+        }
+      },
+      "get_copyright_notice": {
+        "measured": {
+          "list": 1959,
+          "core": 233
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "list_repeat_infringer_accounts": {
+        "measured": {
+          "list": 999,
+          "core": 255
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "list_copyright_email_intakes": {
+        "measured": {
+          "list": 1628,
+          "core": 298
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_copyright_email_intake": {
+        "measured": {
+          "list": 1674,
+          "core": 265
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "list_copyright_guest_capabilities": {
+        "measured": {
+          "list": 1388,
+          "core": 338
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "get_copyright_case": {
+        "measured": {
+          "list": 5053,
+          "core": 262
+        },
+        "max": {
+          "list": 6000,
+          "core": 1000
+        }
+      },
+      "review_copyright_form_intake": {
+        "measured": {
+          "list": 1005,
+          "core": 391
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "associate_copyright_email_intake_with_notice": {
+        "measured": {
+          "list": 957,
+          "core": 369
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "replay_copyright_email_intake_reply": {
+        "measured": {
+          "list": 741,
+          "core": 372
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "review_copyright_restriction": {
+        "measured": {
+          "list": 1615,
+          "core": 475
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "review_copyright_counter_notice": {
+        "measured": {
+          "list": 987,
+          "core": 397
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "review_copyright_appeal": {
+        "measured": {
+          "list": 1338,
+          "core": 812
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "assess_copyright_legal_hold": {
+        "measured": {
+          "list": 2292,
+          "core": 936
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      },
+      "resolve_copyright_legal_hold": {
+        "measured": {
+          "list": 1346,
+          "core": 451
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "record_copyright_repeat_infringer_disposition": {
+        "measured": {
+          "list": 1009,
+          "core": 467
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "record_copyright_repeat_infringer_outcome": {
+        "measured": {
+          "list": 1117,
+          "core": 462
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      },
+      "reinstate_copyright_repeat_infringer": {
+        "measured": {
+          "list": 959,
+          "core": 382
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "revoke_copyright_guest_capability": {
+        "measured": {
+          "list": 948,
+          "core": 418
+        },
+        "max": {
+          "list": 1000,
+          "core": 1000
+        }
+      },
+      "review_copyright_email_intake": {
+        "measured": {
+          "list": 5081,
+          "core": 4360
+        },
+        "max": {
+          "list": 6000,
+          "core": 5000
+        }
+      },
+      "review_copyright_email_correspondence": {
+        "measured": {
+          "list": 2171,
+          "core": 1258
+        },
+        "max": {
+          "list": 3000,
+          "core": 2000
+        }
+      },
+      "replay_copyright_intent": {
+        "measured": {
+          "list": 1206,
+          "core": 849
+        },
+        "max": {
+          "list": 2000,
+          "core": 1000
+        }
+      }
+    }
+  }
+}

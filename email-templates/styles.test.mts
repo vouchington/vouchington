@@ -1,14 +1,18 @@
+import {
+  renderCommunityInviteEmail,
+  renderCommunityModerationSummaryEmail,
+  renderDataExportReadyEmail,
+  renderEmailVerificationEmail,
+  renderFollowNewsSourcesEmail,
+  renderFollowTopicsEmail,
+  renderLoginTokenEmail,
+  renderPostReferralLinkEmail,
+  renderWelcomeEmail,
+} from './index.mts'
+
 import { describe, expect, it } from 'vitest'
-import { renderCommunityInviteEmail } from './community-invite-renderer.mts'
-import { renderCommunityModerationSummaryEmail } from './community-moderation-summary-renderer.mts'
-import { renderDataExportReadyEmail } from './data-export-ready-renderer.mts'
-import { renderEmailVerificationEmail } from './email-verification-renderer.mts'
-import { renderFollowNewsSourcesEmail } from './follow-news-sources-renderer.mts'
-import { renderFollowTopicsEmail } from './follow-topics-renderer.mts'
-import { renderLoginTokenEmail } from './login-token-renderer.mts'
-import { renderPostReferralLinkEmail } from './post-referral-link-renderer.mts'
+
 import { COPYRIGHT_YEAR, colors } from './styles.mts'
-import { renderWelcomeEmail } from './welcome-renderer.mts'
 
 const templateDefs = [
   {

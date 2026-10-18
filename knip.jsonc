@@ -13,9 +13,7 @@
         "dev/agent-policy.mts",
         "dev/agent-issue-labels/**/*.mts",
         "dev/otel-register.mts",
-        "test-helpers/glide-mq-vitest-shim.mts",
-        // Reached only through backend-data-stores' string-valued Vitest `runner` config.
-        "test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts",
+        "test-helpers/vitest.runner.backend-data-guards.mts",
         // Copied into owned scratch and loaded by the finite public Vitest CI controls.
         "test-helpers/fixtures/effective-timeout-cap/case.mts",
         "test-helpers/fixtures/effective-timeout-cap/setup.mts",
@@ -183,7 +181,7 @@
         "public/service-worker-push.js",
         // Reached only via the `web-storybook-browser` Vitest project's `setupFiles` string
         // (test-helpers/vitest-config/storybook-browser-project.mts), never a static import;
-        // same pattern as the root workspace's `test-helpers/glide-mq-vitest-shim.mts` entry.
+        // same pattern as the root workspace's string-valued Vitest runner entry.
         "test-helpers/vitest.setup.fake-timer-guard.mts",
       ],
       "ignoreExportsUsedInFile": true,

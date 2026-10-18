@@ -1,11 +1,12 @@
 import { mergeConfig } from 'vitest/config'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import picomatch from 'picomatch'
 import config from '../vitest.config.mts'
 import { backendCoreProjects } from '../test-helpers/vitest-config/backend-core-projects.mts'
 import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
-import { realGlideMqAlias } from '../test-helpers/vitest-config/aliases.mts'
+import { backendAliases, realGlideMqAlias } from '../test-helpers/vitest-config/aliases.mts'
 import { TEST_STATEMENT_TIMEOUT_MS } from '../backend/test-helpers/statement-timeout-constant.mts'
 interface BackendProject {
   extends?: boolean
@@ -52,17 +53,17 @@ describe('backend Vitest project config', () => {
     expect(owners[0]?.test?.setupFiles).toContain(
       './test-helpers/vitest.setup.glide-mq-workers.mts',
     )
+    const setupFiles = owners[0]?.test?.setupFiles ?? []
+    expect(
+      setupFiles.indexOf('./test-helpers/vitest.setup.worker-query-profiles.mts'),
+    ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.glide-mq-workers.mts'))
   })
   it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
-    const runner = './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts'
+    const runner = './test-helpers/vitest.runner.backend-data-guards.mts'
     const projects = config.test?.projects as BackendProject[] | undefined
     const owners = projects?.filter(project => project.test?.runner === runner) ?? []
-    const dataStores = backendProjects().find(
-      project => project.test?.name === 'backend-data-stores',
-    )?.test
-    const capacity = backendProjects().find(
-      project => project.test?.name === 'backend-activitypub-capacity',
-    )?.test
+    const dataStores = backendProjectTest('backend-data-stores')
+    const capacity = backendProjectTest('backend-activitypub-capacity')
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
     expect(dataStores?.runner).toBe(runner)
     expect(capacity?.runner).toBe('./test-helpers/vitest.runner.shared-db-scope-guard.mts')
@@ -116,9 +117,7 @@ describe('backend Vitest project config', () => {
   })
 
   it('serializes the ActivityPub capacity boundary outside the shared backend project', () => {
-    const capacity = backendProjects().find(
-      project => project.test?.name === 'backend-activitypub-capacity',
-    )?.test
+    const capacity = backendProjectTest('backend-activitypub-capacity')
 
     expect(capacity).toMatchObject({ isolate: false })
     expect(capacity).not.toHaveProperty('fileParallelism')
@@ -148,7 +147,9 @@ describe('backend Vitest project config', () => {
 
     expect(project?.extends).toBe(true)
     expect(glideMqAlias).toEqual(realGlideMqAlias())
-    expect(glideMqAlias?.replacement).not.toContain('glide-mq-vitest-shim')
+    expect(backendAliases().find(alias => String(alias.find) === '/^glide-mq$/')?.replacement).toBe(
+      fileURLToPath(import.meta.resolve('@vouchington/worker-runtime/testing')),
+    )
     const capacity = ((config.test?.projects ?? []) as BackendProject[]).find(
       p => p.test?.name === 'backend-embedding-creation-capacity',
     )

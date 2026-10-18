@@ -4,7 +4,7 @@ import {
   queryCsvArray,
   queryString,
   requiredQueryEnum,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import { PUBLIC_LOCALIZATION_CONSUMERS } from '@vouchington/localization'
 import { validateRequestContract } from '../../response-helpers.mts'
 import { queryValues } from '@services/localization/query'

@@ -63,9 +63,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'List My Topic Recommendations',
-    requiredScopes: { mcp: ['topic-recommendations:read'] },
+    requiredScopes: ['topic-recommendations:read'],
     annotations: { readOnlyHint: true },
     // The REST list is every user's queue and documents an untyped body, so the tool owns this
     // schema; each post keeps the schema PATCH /api/v1/topic-recommendations/:id documents.

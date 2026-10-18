@@ -227,7 +227,7 @@ jobs:
     name: Harness dispatch
     needs: [gate, render-prompt]
     if: needs.gate.outputs.should_dispatch == 'true'
-    uses: ./.github/workflows/harness-dispatch.yml
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@e03757214e53bd2adf0888b32d08a3dc762da186 # v0.52.1
     permissions:
       contents: read
     secrets:

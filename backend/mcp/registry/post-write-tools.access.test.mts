@@ -55,7 +55,7 @@ describe('post MCP write guards — real services', () => {
     const user = await caller()
     const calls = [
       ['create_post', input()],
-      ['update_post', { id: crypto.randomUUID(), title: 'Changed' }],
+      ['act_on_post', { option: 'edit', arguments: { id: crypto.randomUUID(), title: 'Changed' } }],
       ['delete_post', { id: crypto.randomUUID() }],
     ] as const
     for (const [name, args] of calls) {

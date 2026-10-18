@@ -1,6 +1,7 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
-import type { QueryContract, PaginationRuntimeLimitBounds } from '@modules/pagination'
+import type { QueryContract } from '@vouchington/pagination'
+import type { PaginationRuntimeLimitBounds } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { validateRequestContract } from './response-helpers.mts'
 

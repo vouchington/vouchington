@@ -17,8 +17,10 @@
 export function childVisibilitySql(parentLinkIdColumn: string, ownerUserIdColumn: string): string {
   return `(
     ${parentLinkIdColumn} IS NULL OR EXISTS (
-      SELECT 1 FROM view_current_paid_memberships membership
-      WHERE membership.user_id = ${ownerUserIdColumn}
+      SELECT 1 FROM memberships selected
+      JOIN view_current_paid_memberships membership ON membership.membership_id = selected.id
+      WHERE selected.user_id = ${ownerUserIdColumn}
+        AND selected.projection_ended_at IS NULL
         AND membership.plan IN ('plus', 'pro')
     )
   )`

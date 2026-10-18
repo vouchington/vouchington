@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { recordAgentResponseUsage } from '@agents/_shared'
 import { ModelProviderError } from '@modules/model-providers/errors'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { processAIAgentWorkerJob } from './core.mts'
 

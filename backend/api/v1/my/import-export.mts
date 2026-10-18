@@ -16,7 +16,7 @@ import {
   userTopicExportExceedsLimit,
 } from '@services/user-import-export/export-topics'
 import { SYNC_EXPORT_TOO_LARGE } from '@modules/on-error/error-codes'
-import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { VALID_FEED_TYPES } from '@services/search-params/parse-rss-feeds'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'

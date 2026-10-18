@@ -1,12 +1,6 @@
 import type { Context } from '@jongleberry/api-server'
-import {
-  createPaginationParser,
-  decodeCursor,
-  defineQueryContract,
-  encodeCursor,
-  queryEnum,
-  queryString,
-} from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryString } from '@vouchington/pagination'
+import { createPaginationParser, decodeCursor, encodeCursor } from '@modules/pagination'
 import { indexById, isUUID } from '@modules/utils'
 import { attachTopicProvenance } from '@services/content-provenance'
 import { getTopicByAnyCachedBatch } from '@services/entity-fetch'

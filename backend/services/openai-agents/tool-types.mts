@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import type { ApiScope } from '@modules/scopes'
+import type { ApiScope, ScopeAudience } from '@modules/scopes'
 
 type ToolSchema = {
   name: string
@@ -31,8 +31,6 @@ export type ToolInvocationContext = {
 // The Responses API function_call_output item a tool's formatResult returns.
 export type ToolCallOutput = { type: 'function_call_output'; call_id: string; output: string }
 
-export type ToolSurface = 'internal' | 'mcp' | 'admin_mcp'
-
 // MCP tool hints. A read tool carries no write hints; the MCP adapter marks every read idempotent.
 export type ReadOnlyToolAnnotations = {
   readOnlyHint: true
@@ -62,21 +60,16 @@ export type ToolMeta = {
   switch?: 'copyright.mcpDecisionTools'
   // The validated rationale of a copyright decision call is encrypted in its MCP audit row.
   auditRationale?: true
-  // Which surfaces this tool is exposed on. Defaults to ['internal'] when absent.
-  surfaces: readonly ToolSurface[]
+  // Exactly one external server audience. Omit for internal-only tools; direct agent use is independent.
+  audience?: Exclude<ScopeAudience, 'api'>
   // Human-readable name that MCP clients display instead of the snake_case tool name.
   title: string
-  // Minimum membership plan required to dispatch this tool on the external user `mcp` surface
-  // (`tools/list`/`tools/call`; see backend/mcp/registry/select.mts#isToolAllowedForPlan).
-  // Default 'free'. Native agents use the same MCP dispatch boundary. This paywall does not gate
-  // direct REST routes or internal-agent calls. Must stay unset (or
-  // 'free') on any tool exposed on `admin_mcp`, including a tool that also carries `mcp` — a
-  // single field cannot express separate per-surface plans, so a mutating tool cannot share the
-  // `mcp` and `admin_mcp` surfaces until the metadata model can.
+  // Minimum membership plan on user and community moderation MCP dispatch.
+  // Direct REST routes and internal-agent calls are independent. Other audiences remain free.
   plan?: 'free' | 'plus' | 'pro'
   annotations: ToolAnnotations
   // Canonical scopes required for an externally callable MCP surface. Internal-only tools need none.
-  requiredScopes?: Partial<Record<'mcp' | 'admin_mcp', readonly ApiScope[]>>
+  requiredScopes?: readonly ApiScope[]
   // Equivalent existing REST endpoint(s), or null if none exist.
   api: readonly ToolApiEndpoint[] | null
   // Narrows `api` to the endpoints a call with these validated arguments exercises, for a tool

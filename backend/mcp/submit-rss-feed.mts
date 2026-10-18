@@ -19,10 +19,10 @@ const source: MergedToolSource<Args, CreateSourceResult> = {
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Submit RSS Feed',
     plan: 'plus',
-    requiredScopes: { mcp: ['rss-feeds:read', 'rss-feeds:write'] },
+    requiredScopes: ['rss-feeds:read', 'rss-feeds:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/rss-feeds' }],
     outputSchema: objectSchema({

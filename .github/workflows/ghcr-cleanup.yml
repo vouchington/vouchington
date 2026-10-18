@@ -6,7 +6,7 @@ name: GHCR Cleanup
 # both deployment and rollback read from ECR, so deleting an old GHCR version cannot affect a
 # running service.
 #
-# See ci/ghcr-package-retention.sh for the retention policy itself.
+# Retention policy is supplied by the published vouchington-tooling script.
 
 on:
   schedule:
@@ -29,13 +29,13 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-slim
-    # 14, not 15: slim enforces a hard 15-minute platform cap, and a job that reaches it is
+    # 11, not 15: slim enforces a hard 15-minute platform cap, and a job that reaches it is
     # killed by the platform rather than cancelled by GitHub, so nothing that runs on
-    # cancellation gets a chance to. The work here is a handful of API calls either way.
+    # cancellation gets a chance to. The package install and registry reads are bounded below.
     timeout-minutes: 11
     permissions:
       contents: read
-      # Deleting a package version requires write, not read.
+      # Write includes the read access required for OCI manifest inspection.
       packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,17 +47,32 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - uses: actions/setup-node@363be39a57dfa5801e05c6e0c549d622a376cf15 # v7
+        timeout-minutes: 1
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+
+      - name: Install published tooling scripts
+        timeout-minutes: 2
+        run: ci/install-vouchington-tooling.sh "$RUNNER_TEMP/vouchington-tooling" package.json
+
       - name: Prune published container package versions
-        timeout-minutes: 10
+        timeout-minutes: 9
         env:
           GH_TOKEN: ${{ github.token }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+          GHCR_OWNER_TYPE: org
+          GHCR_PACKAGES: api worker-cpu worker-io web
+          GHCR_KEEP_MAIN: '30'
+          GHCR_UNMERGED_MIN_AGE_DAYS: '7'
           # A scheduled run prunes. A manual run lists what it would prune unless asked otherwise,
           # so an operator can see the effect before causing it.
           APPLY: ${{ github.event_name == 'schedule' || inputs.apply }}
         run: |
           set -euo pipefail
           if [ "$APPLY" = 'true' ]; then
-            ./ci/ghcr-package-retention.sh --apply
+            bash "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/gha/ghcr-package-retention.sh" --main-history --apply
           else
-            ./ci/ghcr-package-retention.sh --dry-run
+            bash "$RUNNER_TEMP/vouchington-tooling/node_modules/vouchington-tooling/scripts/gha/ghcr-package-retention.sh" --main-history --dry-run
           fi

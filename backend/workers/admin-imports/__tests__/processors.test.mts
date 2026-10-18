@@ -9,7 +9,7 @@ import type {
 import type { getPrivateUserByAny } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import type { publishImportProgress } from '@data-stores/valkey-pubsub'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { processImportRow } from '../processors.mts'
 
 const captureException = sentryCaptureExceptionMock

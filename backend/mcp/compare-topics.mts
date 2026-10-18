@@ -64,9 +64,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Compare Topics',
-    requiredScopes: { mcp: ['topics:read'] },
+    requiredScopes: ['topics:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/topics/compare' }],
     outputSchema: outcomeSchema('success', { topic_a: comparison, topic_b: comparison }),

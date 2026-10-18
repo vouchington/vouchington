@@ -1,8 +1,8 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { DynamicConfig } from '@data-stores/valkey'
 import { dynamicConfigPrimaryValkeyClient } from '@data-stores/valkey/clients'
 import {
   closeScopedDynamicConfigContext,
+  createDynamicConfigForTest,
   createDynamicConfigTestKey,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
@@ -41,7 +41,7 @@ describe('getAiGeneratedConfidenceThreshold', () => {
   })
 
   it('reads an isolated DynamicConfig key directly from primary', async () => {
-    const config = new DynamicConfig({
+    const config = createDynamicConfigForTest({
       key: createDynamicConfigTestKey('moderation-threshold'),
       fieldTypes: { ai_generated_confidence_threshold: 'number' },
       defaultFields: {

@@ -39,7 +39,7 @@ app
       { path: ctx.params },
     )
 
-    await allocateCommunityAgentPromptSlot(currentUser.id, promptId)
+    await allocateCommunityAgentPromptSlot(currentUser.id, prompt)
 
     ctx.setStatus(204)
   })

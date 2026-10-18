@@ -1,24 +1,31 @@
 import { randomUUID } from 'node:crypto'
+import '@data-stores/valkey/dynamic-config'
 import { closeDynamicConfigValkeySubscriptionClient } from 'valkyries'
-import type { DynamicConfig } from '@data-stores/valkey/dynamic-config'
-import { dynamicConfigs } from 'valkyries/dynamic-config'
+// oxlint-disable-next-line no-restricted-imports -- Isolated test keys intentionally bypass the production registry union.
+import { DynamicConfig as RawDynamicConfig, dynamicConfigs } from 'valkyries/dynamic-config'
 
 const TEST_DYNAMIC_CONFIG_PREFIX = 'dynamic-config:test-'
 const TEST_DYNAMIC_CONFIG_KEY_PREFIX = 'test-'
 const TEST_RATE_LIMIT_THRESHOLD = 99_999
 
-type DynamicConfigField = Parameters<DynamicConfig['setFields']>[0][string]
+type DynamicConfigField = Parameters<RawDynamicConfig['setFields']>[0][string]
 
-type DynamicConfigSchema = Pick<DynamicConfig, 'key' | 'fieldTypes' | 'defaultFields'>
+type DynamicConfigSchema = Pick<RawDynamicConfig, 'key' | 'fieldTypes' | 'defaultFields'>
 
-export type TestDynamicConfig = DynamicConfigSchema & Pick<DynamicConfig, 'fields'>
+export type TestDynamicConfig = DynamicConfigSchema & Pick<RawDynamicConfig, 'fields'>
 
-type PersistableTestDynamicConfig = DynamicConfigSchema & Pick<DynamicConfig, 'setFields'>
+type PersistableTestDynamicConfig = DynamicConfigSchema & Pick<RawDynamicConfig, 'setFields'>
 
 export function createDynamicConfigTestKey(prefix = 'config'): string {
   const workerId = process.env.VITEST_WORKER_ID ?? 'worker'
 
   return `${TEST_DYNAMIC_CONFIG_KEY_PREFIX}${workerId}-${prefix}-${randomUUID()}`
+}
+
+export function createDynamicConfigForTest(
+  options: ConstructorParameters<typeof RawDynamicConfig>[0],
+): RawDynamicConfig {
+  return new RawDynamicConfig(options)
 }
 
 export function createDynamicConfigTestBaseline(

@@ -48,7 +48,7 @@ describe('passkey vote-weight dirty markers', () => {
       await recalculateUserVoteWeight(userId)
       expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeInstanceOf(Date)
     } finally {
-      release()
+      await release()
     }
   })
 })

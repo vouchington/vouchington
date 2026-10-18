@@ -73,7 +73,9 @@ describe('ci-local', () => {
       const { stdout } = await execFileAsync('node', [scriptPath, 'backend-smoke', '--dry-run'])
 
       expect(stdout).toContain('if [ -f .env ]; then source .env; fi')
-      expect(stdout).toContain('PORT=$(python3 ci/allocate-browser-safe-ports.py 1)')
+      expect(stdout).toContain(
+        'PORT=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)',
+      )
       expect(stdout).not.toContain('NODE_V8_COVERAGE')
       expect(stdout).toContain('./scripts/tests/smoke-test-server.sh')
       expect(stdout).toContain('./scripts/tests/smoke-test-worker.sh')

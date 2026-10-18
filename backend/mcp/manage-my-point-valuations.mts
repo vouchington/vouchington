@@ -63,10 +63,10 @@ export default createManageEntityTool<AddPointValuationArgs, UpdatePointValuatio
   removeFn: (user, id) => deleteIndividualRewardsProgramPointValuationById(user, user, id),
   entity: 'IndividualRewardsProgramPointValuation',
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Manage My Point Valuations',
     plan: 'plus',
-    requiredScopes: { mcp: ['point-valuations:read', 'point-valuations:write'] },
+    requiredScopes: ['point-valuations:read', 'point-valuations:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [
       { method: 'POST', path: '/api/v1/my/rewards-program-point-valuations' },

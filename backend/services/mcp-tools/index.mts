@@ -11,5 +11,12 @@ export { exceedsMcpAuditBatchLimit, planMcpCalls, type McpCallPlan } from './cla
 export { handleMcpHttpRequest } from './handle-request.mts'
 export { buildMcpContextUser } from './list-tools.mts'
 export { findMcpStepUpScopes } from './resolve-tool-call.mts'
-export { USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG, type McpServerConfig } from './config.mts'
+export {
+  USER_MCP_SERVER_CONFIG,
+  COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
+  ADMIN_MCP_SERVER_CONFIG,
+  LEGAL_MCP_SERVER_CONFIG,
+  MOUNTED_MCP_SERVER_CONFIGS,
+  type McpServerConfig,
+} from './config.mts'
 export type { McpHttpResponse } from './http-response.mts'

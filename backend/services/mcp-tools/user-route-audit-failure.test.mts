@@ -32,9 +32,9 @@ const runTool = {
     return Promise.reject(new Error('fixture failure'))
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: RUN_TOOL,
-    requiredScopes: { mcp: ['topics:read'] },
+    requiredScopes: ['topics:read'],
     annotations: { readOnlyHint: true },
     api: null,
   },

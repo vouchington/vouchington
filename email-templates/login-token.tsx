@@ -1,4 +1,8 @@
 import {
+  type EmailTranslator,
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  resolveEmailLocale,
   Body,
   Button,
   Container,
@@ -8,17 +12,16 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
-import { emailCopy, type EmailTranslator } from './catalog-copy.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
+import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { getLocalizedSignoff } from './locale.mts'
 import { styles } from './styles.mts'
-import type {
-  EmailRenderResultPromise,
-  LoginTokenEmailProps,
-  PreviewableEmailComponent,
-} from './types.mts'
+import type { LoginTokenEmailProps } from './types.mts'
 
 const baseUrl = process.env.SITE_ORIGIN ?? 'https://voucha.ai'
 const loginButtonStyle = { ...styles.button, ...styles.buttonContainer }
@@ -37,7 +40,7 @@ const LoginTokenEmail: PreviewableEmailComponent<LoginTokenEmailComponentProps> 
   baseUrl: url = baseUrl,
   uiLocale,
 }) => {
-  const locale = resolveUiLocale(uiLocale)
+  const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'login-token')
   const expirationLabel = getExpirationLabel(t, expiration)
   const loginUrl = `${url}/login?emailAddress=${encodeURIComponent(emailAddress)}&otp=${encodeURIComponent(token)}`
@@ -105,16 +108,17 @@ function getExpirationLabel(t: EmailTranslator, expiration: string): string {
 }
 
 async function renderLoginTokenEmail(props: LoginTokenEmailProps): EmailRenderResultPromise {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'login-token')
   const expirationLabel = getExpirationLabel(t, props.expiration)
   const loginUrl = `${baseUrl}/login?emailAddress=${encodeURIComponent(props.emailAddress)}&otp=${encodeURIComponent(props.token)}`
 
-  return {
+  return renderTemplateEmail({
     subject: t('subject'),
-    html: await render(<LoginTokenEmail {...props} />, { pretty: true }),
+    element: <LoginTokenEmail {...props} />,
+    pretty: true,
     text: `${t('textGreeting')}\n\n${t('textLinkIntro')}\n\n${loginUrl}\n\n${t('textPasswordIntro')}\n\n${props.token}\n\n${t('textTokenExpires')} ${expirationLabel}.\n${t('ignore')}\n\n${getLocalizedSignoff(locale)}`,
-  }
+  })
 }
 
 const RenderableLoginTokenEmail = Object.assign(LoginTokenEmail, { render: renderLoginTokenEmail })

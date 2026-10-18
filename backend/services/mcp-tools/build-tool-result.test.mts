@@ -74,8 +74,8 @@ const fixture: Tool = {
   function: _currentUser => invoke,
   meta: {
     title: 'Local schema reference fixture',
-    surfaces: ['mcp'],
-    requiredScopes: { mcp: ['topics:read'] },
+    audience: 'user',
+    requiredScopes: ['topics:read'],
     annotations: { readOnlyHint: true },
     api: null,
     outputSchema,
@@ -227,8 +227,8 @@ describe('official SDK against the registered MCP catalogs', () => {
       ...adminMergedGroups,
     ].map(group => group.name)
     const covered = Object.values(sdkMergedSuccessNames).flat()
-    expect(current).toHaveLength(64)
-    expect(covered).toHaveLength(64)
+    expect(current).toHaveLength(65)
+    expect(covered).toHaveLength(65)
     expect([...covered].toSorted()).toEqual([...current].toSorted())
   })
 

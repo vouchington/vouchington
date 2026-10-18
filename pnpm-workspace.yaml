@@ -52,6 +52,8 @@ ignoredOptionalDependencies:
   - sharp
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
+  - '@react-email/render@2.1.1'
+  - 'react-email@6.11.3'
   - '@jongleberry/api-server'
   - '@jongleberry/vurst-ai'
   - '@jongleberry/vurst-ai-darwin-arm64'
@@ -75,6 +77,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/csv'
   - '@vouchington/crawler-html'
   - '@vouchington/embeds'
+  - '@vouchington/email'
   - '@vouchington/domain-verification'
   - '@vouchington/edge'
   - '@vouchington/frontmatter'
@@ -100,7 +103,6 @@ minimumReleaseAgeExclude:
   - '@vouchington/uuid-v7'
   - '@vouchington/worker-runtime'
   - agent-blackboard
-  - auto-harness-client
   - coverage-check
   - eslint-plugin-no-mistakes
   - eslint-plugin-vouchington

@@ -1,7 +1,5 @@
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
-  type PaginationRuntimeLimitBounds,
-  createPaginationParser,
   defineQueryContract,
   queryBoolean,
   queryCsvArray,
@@ -9,7 +7,8 @@ import {
   queryNullableBoolean,
   queryString,
   withQueryContract,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
+import { type PaginationRuntimeLimitBounds, createPaginationParser } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
 import { getTopicIdByAnyCached, getTopicIdsByAnyCachedBatch } from '@services/entity-cache'

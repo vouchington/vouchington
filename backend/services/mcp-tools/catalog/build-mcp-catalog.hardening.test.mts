@@ -2,7 +2,11 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
-import { USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG } from '../config.mts'
+import {
+  ADMIN_MCP_SERVER_CONFIG,
+  COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
+  USER_MCP_SERVER_CONFIG,
+} from '../config.mts'
 import { listMcpToolsForUser } from '../list-tools.mts'
 
 const moderationScopes: ApiScope[] = ['community-moderation:read', 'community-moderation:write']
@@ -19,9 +23,9 @@ const names = [
 ]
 // Pin the exact-grant listing including #208's explicit message grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  '385cf0d134dc9bae33b769a419df6131b7f1e20f6414fde38a31a9051cf24f4b'
-const PRE_MESSAGE_DIGEST = '3ff4ea5e81c320df4c7f875a951fca59d81a4a4c57de7d44dbd802d7a0bd2379'
-const UMBRELLA_ONLY_DIGEST = '2992ea8823835c07779f639996cfc5af83b108c28ce7ee9f0ce1f1160f97806b'
+  '3895064b0e67821a0b3257b9205e9be3c5c5f7331d6af6c0d3c9756c51759cad'
+const PRE_MESSAGE_DIGEST = '740a6e6adc0b04d64bcab0f561aa346bb4f9d8c8f640164c42debb963659574b'
+const UMBRELLA_ONLY_DIGEST = '0d650f2c7524adf2b42052dddf404390d66c1c4d9c56af1aaacb96b025fbd64f'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
@@ -46,16 +50,16 @@ describe('community moderation exact-grant catalog boundaries', () => {
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
   })
 
-  it('has exactly 80 tools when every user tool is authorized', () => {
+  it('has exactly 76 tools when every user tool is authorized', () => {
     const caller = {
       ...plus,
       membership_plan: 'pro' as const,
       roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
     }
-    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(80)
+    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(76)
   })
 
-  it('adds only the free moderation reader to the unchanged Reader grant', () => {
+  it('keeps moderation scopes off the user listing and serves the free reader on its audience', () => {
     const scopes: ApiScope[] = [
       'topics:read',
       'posts:read',
@@ -66,17 +70,19 @@ describe('community moderation exact-grant catalog boundaries', () => {
     ]
     const caller = { ...plus, membership_plan: null }
     const before = listMcpToolsForUser(caller, scopes, USER_MCP_SERVER_CONFIG)
-    const after = listMcpToolsForUser(
+    const userAfter = listMcpToolsForUser(
       caller,
       [...scopes, 'community-moderation:read'],
       USER_MCP_SERVER_CONFIG,
     )
+    const community = listMcpToolsForUser(
+      caller,
+      ['community-moderation:read'],
+      COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
+    )
     expect(before).toHaveLength(9)
-    expect(after).toHaveLength(10)
-    expect(after.filter(tool => tool.name !== names[0])).toEqual(before)
-    expect(after.filter(tool => names.includes(tool.name)).map(tool => tool.name)).toEqual([
-      names[0],
-    ])
+    expect(userAfter).toEqual(before)
+    expect(community.map(tool => tool.name)).toEqual([names[0]])
   })
 
   it('keeps moderator tools off the admin server', () => {

@@ -44,10 +44,10 @@ export const getRssFeedItemFollowContextTool: MergedToolSource<DetailArgs, Follo
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get RSS Feed Item Follow Context',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feed-items:read'] },
+    requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id/follow-context' }],
     outputSchema: foundOrNotFoundSchema({
@@ -95,10 +95,10 @@ export const getRssFeedItemVotesTool: MergedToolSource<VotesArgs, VotesResult> =
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get RSS Feed Item Votes',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feed-items:read'] },
+    requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id/votes' }],
     outputSchema: foundOrNotFoundSchema({

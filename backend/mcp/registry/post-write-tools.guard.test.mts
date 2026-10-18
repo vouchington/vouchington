@@ -12,13 +12,19 @@ import {
   setTestItemStoryId,
   insertTestPostStory,
 } from '@voucha/test-helpers'
-import { callRejectedMcpTool, callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callRejectedMcpTool,
+  callStructuredMcpTool,
+  optionArgs,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import { withConcurrentPostPrivacyChangeForTest } from '@voucha/test-helpers/post-delegated-write-race'
 import { getCommunityMember } from '@services/communities/members/get'
 import { deleteCommunity } from '@services/communities/delete'
 import { getPostByAny } from '@services/posts'
 
 const SCOPES = ['posts:read', 'posts:write'] as const
+const editArgs = (n: string, a: Record<string, unknown>) =>
+  n === 'act_on_post' ? optionArgs('edit', a) : a
 const input = (fields: Record<string, unknown> = {}) => ({
   idempotency_key: crypto.randomUUID(),
   title: crypto.randomUUID(),
@@ -88,13 +94,13 @@ describe('post MCP write guards — real services', () => {
       ),
     ).toMatchObject({ post: { post_type: 'comment', parent_post_id: id } })
   })
-
-  it.each(['update_post', 'delete_post'])(
+  it.each(['act_on_post', 'delete_post'])(
     'refuses missing %s targets before mutation',
     async name => {
-      expect(
-        await callRejectedMcpTool(await caller(), name, { id: crypto.randomUUID() }, SCOPES),
-      ).toContain('Post not found')
+      const args = editArgs(name, { id: crypto.randomUUID() })
+      expect(await callRejectedMcpTool(await caller(), name, args, SCOPES)).toContain(
+        'Post not found',
+      )
     },
   )
   it('fails closed on a malformed comment root instead of authorizing its public parent', async () => {
@@ -200,21 +206,7 @@ describe('post MCP write guards — real services', () => {
     expect(await callStructuredMcpTool(user, 'create_post', args, SCOPES)).toEqual(result)
   })
 
-  it('rejects unsupported image edits instead of reporting success', async () => {
-    expect(
-      await callRejectedMcpTool(
-        await caller(),
-        'update_post',
-        {
-          id: crypto.randomUUID(),
-          images: [],
-        },
-        SCOPES,
-      ),
-    ).toContain('Invalid tool arguments')
-  })
-
-  it.each(['update_post', 'delete_post'])('hides inaccessible foreign %s targets', async name => {
+  it.each(['act_on_post', 'delete_post'])('hides inaccessible foreign %s targets', async name => {
     const [user, author] = await Promise.all([caller(), caller()])
     const id = await insertTestPost({
       title: 'Private',
@@ -225,9 +217,9 @@ describe('post MCP write guards — real services', () => {
       broadcast: 'users',
       clearanceStatus: 'approved',
     })
-    expect(await callRejectedMcpTool(user, name, { id }, SCOPES)).toContain('Post not found')
+    const args = editArgs(name, { id })
+    expect(await callRejectedMcpTool(user, name, args, SCOPES)).toContain('Post not found')
   })
-
   it('rejects recommendation roots and comments in their dedicated workflow', async () => {
     const user = await caller()
     const root = await insertTestPost({
@@ -258,14 +250,19 @@ describe('post MCP write guards — real services', () => {
         ),
       ).toContain('Post not found')
       expect(
-        await callRejectedMcpTool(user, 'update_post', { id, markdown: 'Changed' }, SCOPES),
+        await callRejectedMcpTool(
+          user,
+          'act_on_post',
+          { option: 'edit', arguments: { id, markdown: 'Changed' } },
+          SCOPES,
+        ),
       ).toContain('Post not found')
       expect(await callRejectedMcpTool(user, 'delete_post', { id }, SCOPES)).toContain(
         'Post not found',
       )
     }
   })
-  it.each(['create_post', 'update_post', 'delete_post'])(
+  it.each(['create_post', 'act_on_post', 'delete_post'])(
     'rechecks %s thread access after waiting for a concurrent privacy transaction',
     async name => {
       const [user, author] = await Promise.all([caller(), caller()])
@@ -289,7 +286,10 @@ describe('post MCP write guards — real services', () => {
       const args =
         name === 'create_post'
           ? input({ post_type: 'comment', parent_post_id: comment })
-          : { id: comment, ...(name === 'update_post' ? { markdown: 'Changed' } : {}) }
+          : editArgs(name, {
+              id: comment,
+              ...(name === 'act_on_post' ? { markdown: 'Changed' } : {}),
+            })
       expect(
         await withConcurrentPostPrivacyChangeForTest(root, () =>
           callRejectedMcpTool(user, name, args, SCOPES),

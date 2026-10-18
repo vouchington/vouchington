@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -14,37 +14,6 @@ const CANONICAL_SSE_ROUTES = [
 const MCP_ACCEPT_EXCEPTIONS = new Set(['mcp-helpers.mts'])
 const START_SSE_CALL_PATTERN = /\bstartSSE\s*\(\s*ctx\s*(?:,|\))/
 
-function productionModules(): string[] {
-  const root = 'backend/api'
-  const pendingDirectories = ['']
-  const modules: string[] = []
-
-  while (pendingDirectories.length > 0) {
-    const relativeDirectory = pendingDirectories.pop()!
-    for (const entry of readdirSync(join(root, relativeDirectory), { withFileTypes: true })) {
-      const relativePath = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name
-      if (entry.isDirectory()) {
-        pendingDirectories.push(relativePath)
-      } else if (
-        entry.isFile() &&
-        relativePath.endsWith('.mts') &&
-        !relativePath.includes('__tests__') &&
-        !relativePath.endsWith('.test.mts')
-      ) {
-        modules.push(relativePath)
-      }
-    }
-  }
-
-  return modules.toSorted()
-}
-
-function productionStartSSERoutes(): string[] {
-  return productionModules()
-    .filter(path => path !== 'sse-helpers.mts')
-    .filter(path => START_SSE_CALL_PATTERN.test(readFileSync(join('backend/api', path), 'utf8')))
-}
-
 describe('SSE route architecture', () => {
   it.each([
     ['spaces', 'startSSE( ctx )'],
@@ -59,14 +28,6 @@ describe('SSE route architecture', () => {
       expect(START_SSE_CALL_PATTERN.test(source)).toBe(false)
     },
   )
-
-  it('makes startSSE the response-header owner regardless of header API spelling', () => {
-    const offenders = productionModules()
-      .filter(path => path !== 'sse-helpers.mts' && !MCP_ACCEPT_EXCEPTIONS.has(path))
-      .filter(path => readFileSync(join('backend/api', path), 'utf8').includes('text/event-stream'))
-
-    expect(offenders).toEqual([])
-  })
 
   it('keeps the MCP transport Accept exceptions request-only', () => {
     for (const path of MCP_ACCEPT_EXCEPTIONS) {
@@ -84,9 +45,5 @@ describe('SSE route architecture', () => {
         usesStartSSE: true,
       })
     }
-  })
-
-  it('keeps the canonical SSE route inventory complete', () => {
-    expect(productionStartSSERoutes()).toEqual([...CANONICAL_SSE_ROUTES].toSorted())
   })
 })

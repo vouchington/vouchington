@@ -134,7 +134,9 @@ describe('scheduled-prompts workflow', () => {
     const dispatchJob = workflow.jobs?.['dispatch']
 
     expect(dispatchJob?.needs).toContain('select-prompt')
-    expect(dispatchJob?.uses).toBe('./.github/workflows/harness-dispatch.yml')
+    expect(dispatchJob?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/workflows\/harness-dispatch\.yml@[0-9a-f]{40}$/u,
+    )
     expect(dispatchJob?.secrets).toEqual({ HARNESS_API_KEY: '${{ secrets.HARNESS_API_KEY }}' })
     expect(dispatchJob?.with?.['publish-duplicate-key']).toContain('Automation scheduled:')
     expect(dispatchJob?.with?.['agent-ref']).toBe('${{ github.sha }}')

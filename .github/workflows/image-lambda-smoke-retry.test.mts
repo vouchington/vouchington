@@ -53,7 +53,9 @@ describe('Image lambda smoke port collision recovery', () => {
 
 describe('Image lambda smoke test hardening', () => {
   it('uses HTTP readiness with an allocated port and a cleanup trap', () => {
-    expect(smokeScriptSource).toContain('ci/allocate-browser-safe-ports.py 1')
+    expect(smokeScriptSource).toContain(
+      'node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1',
+    )
     expect(smokeScriptSource).toContain('trap cleanup EXIT INT TERM')
     expect(smokeScriptSource).toContain('http://127.0.0.1:${IMAGE_LAMBDA_PORT}/health')
     expect(smokeScriptSource).toContain('S3_BUCKET_IMAGES=test-images')

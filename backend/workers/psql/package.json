@@ -17,10 +17,10 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@queues/psql": "workspace:^",
     "@services/data-retention": "workspace:^",
     "@services/elections-votes": "workspace:^",
+    "@vouchington/queue-errors": "^0.1.3",
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {

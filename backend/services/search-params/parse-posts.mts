@@ -1,8 +1,6 @@
 import { isUUID } from '@modules/utils'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import {
-  type PaginationRuntimeLimitBounds,
-  createPaginationParser,
   defineQueryContract,
   queryBoolean,
   queryCsvArray,
@@ -10,7 +8,8 @@ import {
   queryUuid,
   queryUuidOrUri,
   withQueryContract,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
+import { type PaginationRuntimeLimitBounds, createPaginationParser } from '@modules/pagination'
 import {
   getUserIdByAnyCached,
   getPostIdByAnyCached,

@@ -11,12 +11,27 @@ jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
     timeout-minutes: 24
+    permissions:
+      contents: read
+      issues: read
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2 # the baseline check diffs a pull request against HEAD^1
         timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
+      - name: Check query-profile baseline issues are open
+        # Pull requests and merge groups run it only when the baseline file changes. Scheduled and
+        # manual runs always run it, so an issue closed elsewhere is still caught.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: node backend/test-helpers/api/request-query-profile-open-issues.mts
+        timeout-minutes: 1
       - name: Build backend email templates
         # Backend resolves the @email-templates/core package through its generated dist export.
         working-directory: email-templates

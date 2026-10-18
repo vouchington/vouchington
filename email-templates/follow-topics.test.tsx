@@ -1,5 +1,5 @@
+import { renderFollowTopicsEmail } from './index.mts'
 import { describe } from 'vitest'
-import { renderFollowTopicsEmail } from './follow-topics-renderer.mts'
 import FollowTopicsEmail from './follow-topics.tsx'
 import { registerRecommendationEmailRenderTests } from './test-helpers/recommendation-email-render-tests.mts'
 

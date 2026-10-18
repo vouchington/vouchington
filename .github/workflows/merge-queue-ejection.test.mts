@@ -79,8 +79,10 @@ describe('merge-queue ejection workflow', () => {
             : { contents: 'read' }
       expect(job.permissions).toEqual(expected)
     }
-    expect(workflow.jobs['comment-session']?.steps?.at(-1)?.uses).toBe(
-      './.github/actions/comment-harness-session',
+    expect(workflow.jobs['comment-session']?.steps?.at(-1)?.uses).toEqual(
+      expect.stringMatching(
+        /^vouchington\/vouchington-tooling\/\.github\/actions\/comment-harness-session@[0-9a-f]{40}$/u,
+      ),
     )
     expect(workflow.jobs['comment-session']?.steps?.at(-1)?.with).toMatchObject({
       target: '${{ github.event.pull_request.number }}',
@@ -90,7 +92,9 @@ describe('merge-queue ejection workflow', () => {
 
   it('dispatches one queue-wide triage session that checks out main, not the ejected head', () => {
     const dispatch = workflow.jobs.dispatch
-    expect(dispatch?.uses).toBe('./.github/workflows/harness-dispatch.yml')
+    expect(dispatch?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/workflows\/harness-dispatch\.yml@[0-9a-f]{40}$/u,
+    )
     expect(dispatch?.with).toMatchObject({
       'agent-ref': '${{ github.sha }}',
       'expected-head-sha': '${{ github.sha }}',

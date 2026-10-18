@@ -21,7 +21,7 @@ import {
   queryEnum,
   queryInteger,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import { parseAndValidateCaseListQuery } from '../../case-list-query-helpers.mts'
 import { filterReviewDisputePostContentForViewer } from '@services/posts/filter-review-dispute-post-content'
 import './disputes-staff.mts'

@@ -2,52 +2,46 @@
   {
     "annotation": "addUrls",
     "reason": "Topic recommendation approval creates a root URL for each proposed hostname",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "allocateCommunityAgentPromptSlot",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "approveApplication",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "reason": "The slot UPDATE runs after FOR UPDATE locks all of the creator's prompts and the slot-count check made under that lock, so concurrent allocations serialize",
+    "permanent": true,
+    "code": "backend/services/community-agent-prompts/allocate.mts:38"
   },
   {
     "annotation": "assertContributionAdmissionCapacity.count",
     "reason": "A preflight check before beforeCommit and execute, then a re-check after the actor row lock must see consumption committed before that lock (admission.mts:70 and :87)",
-    "issue": 3117
-  },
-  {
-    "annotation": "assertImagesReadyForSurface",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
+    "permanent": true,
+    "code": "backend/services/contribution-gating/admission.mts:70"
   },
   {
     "annotation": "assertPostMutationAccess",
     "reason": "Relation creation reloads effective root and privacy after transaction publication locks to reject a concurrent root or visibility change",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "assertReferralProgramExists",
-    "reason": "The create-and-link transaction rechecks the program after inserting the new link-validation row, so it sees the write and rejects a program merged or deleted before the relation is added (backend/services/referral-program-link-validations/create-and-link.mts:76-79, backend/services/topics/validation.mts:126-150)",
-    "issue": 3120
+    "reason": "Two allowed mechanisms: the check at backend/services/referral-program-link-validations/create-and-link.mts:76 runs before slug validation and the insert, so it sets which 4xx a request gets (a bad or duplicate slug with a missing program); the check at backend/services/topics/validation.mts:127-146 runs after the validation-row insert and must see that new row",
+    "permanent": true,
+    "code": "backend/services/referral-program-link-validations/create-and-link.mts:76"
   },
   {
     "annotation": "assertReportablePost",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "assertUrlsHaveNoBlockedHostnames",
     "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
     "reason": "Manual association rechecks link and review state after intake and notice locks to reject a concurrent decision",
-    "issue": 2763
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-manual-association.mts:readIntakeDecision"
   },
   {
     "annotation": "backfillCategoriesForTopicAliases",
@@ -62,12 +56,12 @@
   {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "reason": "Each bounded discovery follows the preceding publication-locked relation deletion and must find only the remaining active rows",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "buildInsertQuery",
     "reason": "Bidirectional relations write forward then reverse under the pair lock so overlapping inputs observe prior resurrection and newly-active state",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "canViewDelegatedPostsBatch",
@@ -80,109 +74,73 @@
     "issue": 3113
   },
   {
-    "annotation": "claimContributionAdmission.abandonExpiredAttempt",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "claimContributionAdmission.claim",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
     "annotation": "claimContributionAdmission.insert",
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:37)",
-    "issue": 3117
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "claimContributionAdmission.liveClaim",
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:85)",
-    "issue": 3117
-  },
-  {
-    "annotation": "claimContributionAdmission.mark",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "claimContributionAdmission.recordAttempt",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "claimContributionAdmission.reservation",
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:48)",
-    "issue": 3117
-  },
-  {
-    "annotation": "countUserMemberCommunities",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "createCommunity",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "createCommunityLifecycleNotification",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
-  },
-  {
-    "annotation": "createCommunityPostReview",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "createCopyrightDeliveryIntent",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "createCopyrightStatementDeliveryInTransaction:activeRecipient",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "createCopyrightStatementDeliveryInTransaction:existing",
     "reason": "Checks distinct deterministic event keys before delivery; absent nonclaimant identities skip this lookup",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "createCopyrightStatementDeliveryInTransaction:recipientLifecycleLock",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "createDeterministicCopyrightCorrespondenceInTransaction",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "createDistribution",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "createEmailVerificationToken",
     "reason": "The token upsert runs after fn_lock_active_user_for_mutation so account deletion cannot race credential creation",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/my/email-address-verification.mts:54"
   },
   {
     "annotation": "createImportBatch",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "createModerationReport",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "createPost",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "createPublicationAliasIdentityStaging",
@@ -202,67 +160,47 @@
   {
     "annotation": "createTotpAuthenticator",
     "reason": "The authenticator insert runs after fn_lock_active_user_for_mutation so account deletion cannot race factor creation",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/totp/create.mts:25"
   },
   {
     "annotation": "currentCopyrightJurisdictionPolicy",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
-  },
-  {
-    "annotation": "currentUserCanChangeParticipantPolicy",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
-  },
-  {
-    "annotation": "currentUserCanManageParticipants",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
+    "issue": 3116
   },
   {
     "annotation": "deletePendingRecommendation",
     "reason": "Pending-review admission is reread under FOR UPDATE before ordered extension and owning-post deletion writes",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "deleteProfileLink",
     "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/my/profile-links.mts:154"
   },
   {
     "annotation": "deleteUserModNote",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "disconnectOAuthAccount",
     "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/my/oauth-account.mts:17"
   },
   {
     "annotation": "ensureConsentVersion",
     "reason": "Recheck the active version FOR UPDATE after the optimistic read, then revoke the old active row before inserting its unique-active replacement",
-    "issue": 3119
-  },
-  {
-    "annotation": "ensureImagePlacementBinding:image",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "ensureImagePlacementBinding:insert",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "ensureImagePlacementBinding:pin",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
+    "permanent": true,
+    "code": "backend/services/user-consents/create.mts:13"
   },
   {
     "annotation": "extendContributionAdmissionReplay",
     "reason": "Each imported topic replays its own committed reservation under that reservation row lock, in per-item order (import-topics.mts:78-92, admission-reservations.mts:80)",
-    "issue": 3117
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
     "annotation": "fencePublicationIdentityBridgeCapture",
@@ -272,42 +210,32 @@
   {
     "annotation": "fetchElectionVoteRowsByUser",
     "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "fetchListById",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "findOpenCaseForEntity",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
-  },
-  {
-    "annotation": "getAdministratorRefundRequestForMembershipKey",
-    "reason": "The transaction first checks idempotency, then rereads after an operation/request insert conflict to hydrate the already-persisted request before comparing its fingerprint (backend/services/memberships/refund-reconciliation/administrator-request.mts:17-25, backend/services/memberships/refund-reconciliation/administrator-request.mts:63-71)",
-    "issue": 3120
+    "issue": 3118
   },
   {
     "annotation": "getAutomodFeedbackContext:agent",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "getBlocklistedDomainKeys",
     "reason": "RSS source validation repeats blocklist fallback across protocol/provider attempts; remaining freshness and sequencing work is tracked in #3121",
-    "issue": 2612
-  },
-  {
-    "annotation": "getCommunityAgentPrompt",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "issue": 3121
   },
   {
     "annotation": "getCommunityById",
@@ -325,49 +253,42 @@
     "issue": 3113
   },
   {
-    "annotation": "getDataRequestById",
-    "reason": "Unresolved in #3120: the second read closes the lost-wakeup window after pub/sub subscribe, and removing it requires a separate SSE race/error-order design (backend/api/v1/users/data-request.mts:117-135). This remains outside the issue's allowed row-lock/write/transaction keep categories.",
-    "issue": 3120
-  },
-  {
     "annotation": "getLandingPageRowForUser",
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/my/landing-pages/reads.mts:14"
   },
   {
     "annotation": "getLatestJudgementForEntity",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "getLocalHostnamePolicies",
     "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "getMembershipPurchaseIntent",
     "reason": "Idempotency is checked before locking and rechecked under the user row lock; the inserted intent is hydrated for admission checks and reread after the external provider launch (backend/services/memberships/purchase-intents.mts:55-140)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/memberships/purchase-intents.mts:55"
   },
   {
     "annotation": "getModeratedCommunityIds",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "getModerationAppealById",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
-  },
-  {
-    "annotation": "getModmailThread",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "issue": 3118
   },
   {
     "annotation": "getOAuthClient",
     "reason": "Authorization rechecks client revocation and owner activity after locking participant users, rejecting changes since initial parameter validation",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/oauth-authorization-server/authorization.mts:73"
   },
   {
     "annotation": "getPostByAny",
@@ -377,7 +298,7 @@
   {
     "annotation": "getPostProvenanceFacts",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "getPrivateUserByAny",
@@ -392,52 +313,52 @@
   {
     "annotation": "getRelatablePostIds",
     "reason": "Relation creation rechecks both participant roles after publication locks to reject visibility changes while waiting",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "getReportJudgementContextsForEntitiesBatch",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "getReportResolutionContext",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "getRetainedPostCategories hashtags",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "getRetainedPostCategories topics",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "getReviewDisputeById",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "getRssFeedById",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "getRssFeedImport",
     "reason": "The user RSS import SSE request polls owned progress until completion or disconnect",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "getRssFeedItemById",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "getTerritorialInformedWindow",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "getTopicAliasesForMergeRevision",
@@ -452,7 +373,7 @@
   {
     "annotation": "getTopicDataPointInsights",
     "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "getTopicsByAnyBatch",
@@ -472,22 +393,23 @@
   {
     "annotation": "getUserTagRelationById",
     "reason": "The committed vote append is followed by a fresh active-tag check before primary stats refresh, preserving concurrent deletion state",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "grantConsent",
     "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/user-consents/create.mts:62"
   },
   {
     "annotation": "insertCopyrightDeliveryRecipient",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "insertRssFeedSettingChange",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "listDescendantPostPublicationSitemapPage",
@@ -517,77 +439,56 @@
   {
     "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
     "reason": "Each separately committed relation-vote append transaction must acquire its own active-user admission fence",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "lockApiKeyOwner",
     "reason": "Read administrator roles after fn_lock_active_user_for_mutation to observe role changes that completed while acquiring the owner lock",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/api-keys/lifetime.mts:8"
   },
   {
     "annotation": "lockAssessmentForm",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "lockBlueskyLinkAuthorization",
     "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/callback-completion.mts:62"
   },
   {
     "annotation": "lockBlueskySessionOwner:did",
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner"
   },
   {
     "annotation": "lockBlueskySessionOwner:user",
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner"
   },
   {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "lockEntityRelationElectionVoteMutations",
     "reason": "Each append transaction acquires sorted advisory vote locks; bidirectional direction ordering prevents inverse-call deadlocks",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
     "reason": "Each bounded stats-update transaction acquires publication locks before relation row locks; committed prior chunks cannot lend their locks",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "lockExistingTopicAliasPublicationScopes",
     "reason": "Each alias claim locks its alias scope before its own row lock and rechecks after it (#3114 question 3)",
     "issue": 3114
-  },
-  {
-    "annotation": "lockImageAssetAdmission:reserve",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "lockImageDeliveryMutation:advisory",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "lockImageDeliveryMutation:findBindings",
-    "reason": "Discovers distinct nonempty post, image or placement domains before acquiring their advisory locks",
-    "issue": 2606
-  },
-  {
-    "annotation": "lockImageDeliveryMutation:lockPlacements",
-    "reason": "Rechecks and row-locks each nonempty placement domain after acquiring its advisory locks",
-    "issue": 2606
-  },
-  {
-    "annotation": "lockImageSurfacePlacements",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
   },
   {
     "annotation": "lockPostPublicationCaptures",
@@ -616,8 +517,9 @@
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
+    "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
+    "permanent": true,
+    "code": "backend/services/users/delete.mts:77"
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",
@@ -625,19 +527,14 @@
     "issue": 3114
   },
   {
-    "annotation": "markImageDeliveryAuthorityStarted",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
     "annotation": "maybeResolveCases",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "openOrGetOpenCase:insert",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "orderPostPublicationRetainedKeyInput",
@@ -655,69 +552,53 @@
     "issue": 3114
   },
   {
-    "annotation": "persistFinalizedContributionResponse",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "prepublishImageSurfaceDenial:current",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "publishFinalizedContributionResponse.lockClaim",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "publishFinalizedContributionResponse.release",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
     "annotation": "readBlueskyLinkAuthorization",
     "reason": "Reread after SDK session persistence claims or rejects the authorization in its own transaction; reuse the pre-write row through route and completion checks",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/bluesky-accounts/link.mts:133"
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
     "reason": "Promotion checks bounded token membership before and after locking to reject concurrent threading",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:references",
     "reason": "Promotion checks bounded token membership before and after locking to reject concurrent threading",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:incoming",
     "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
-    "issue": 2607
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:admitCopyrightEmailIntake"
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:outgoing",
     "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
-    "issue": 2607
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:admitCopyrightEmailIntake"
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
     "reason": "Lock the authorization row before branching on status and writing callback secrets or terminal expiry, preserving exact callback replay",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/oauth/authorization-callback.mts:60"
   },
   {
     "annotation": "recordMcpCallAudit",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "recordModeratorAction",
     "reason": "Moderation report and case steps repeat per entity",
-    "issue": 2609
+    "issue": 3118
   },
   {
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
@@ -727,67 +608,56 @@
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
-  },
-  {
-    "annotation": "redeemInviteCode",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "issue": 3116
   },
   {
     "annotation": "removeEmailAddress",
     "reason": "Lock the active user then email rows before checking last-auth-method and primary-address guards and deleting the target",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/my/email-addresses.mts:78"
   },
   {
     "annotation": "renameTotpAuthenticator",
     "reason": "The authenticator update runs after fn_lock_active_user_for_mutation so account deletion cannot race factor mutation",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/totp/update.mts:13"
   },
   {
     "annotation": "renewContributionAdmissionLease",
     "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
-    "issue": 3117
-  },
-  {
-    "annotation": "replaceMyLandingPageItems",
-    "reason": "Group-member rows must be deleted before their parent landing-page items to satisfy the foreign key (backend/services/my/landing-pages/replace-item-writes.mts:11-19)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/contribution-gating/admission.mts:49-51"
   },
   {
     "annotation": "replaceTopicRecommendationHostnames",
     "reason": "Replacement deletes existing hostname membership before inserting the new sorted set in the same transaction",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "replayClientGeneratedTurn",
-    "reason": "Messaging authorization and lookups repeat per request",
-    "issue": 2615
+    "reason": "The route reads an acknowledged turn before any safety provider is called, and the transaction reads it again after locking the conversation so concurrent retries replay one turn",
+    "permanent": true,
+    "code": "backend/services/conversations-messages/client-generated-chat.mts:54"
   },
   {
     "annotation": "replayFailedCopyrightActionIntent",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "replayFailedCopyrightActionIntent:identity",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "replayFailedCopyrightActionIntent:placementLock",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
-  },
-  {
-    "annotation": "resetPostClearance",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
+    "issue": 3116
   },
   {
     "annotation": "resolveEntityRelationElectionTargetById",
     "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "resolvePublicationPostScopeLiveOwner",
@@ -817,82 +687,53 @@
   {
     "annotation": "revokeAllAuthenticatedSessions",
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-session-revocation.mts:37"
   },
   {
     "annotation": "revokeApiKey",
     "reason": "The key update runs after fn_lock_active_user_for_mutation to serialize revocation with key rotation and account deletion",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/api-keys/revoke.mts:8"
   },
   {
     "annotation": "revokeAuthenticatedSession",
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
-    "issue": 3119
-  },
-  {
-    "annotation": "revokeInvite",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-session-revocation.mts:16"
   },
   {
     "annotation": "rotateApiKey",
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
-    "issue": 3119
-  },
-  {
-    "annotation": "runContributionAdmission.commit",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "runContributionAdmission.lockActor",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "runContributionAdmission.lockReservation",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
-  },
-  {
-    "annotation": "runContributionAdmission.recordAttemptResult",
-    "reason": "Each tool call in a batched MCP request runs its own admission; removed when the profile counts per tool call (#3128)",
-    "issue": 3113
+    "permanent": true,
+    "code": "backend/services/api-keys/rotate.mts:45"
   },
   {
     "annotation": "selectCopyrightStatementFacts",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
+    "issue": 3116
   },
   {
     "annotation": "selectCopyrightTargetPosters",
     "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 2607
-  },
-  {
-    "annotation": "setApplicationQuestions",
-    "reason": "Community lookups repeat after the route preamble",
-    "issue": 2614
+    "issue": 3116
   },
   {
     "annotation": "setMyLandingPageDefault",
     "reason": "The current default must be cleared before setting the selected page because the partial unique index permits only one default per user (backend/services/my/landing-pages/set-default.mts:35-44)",
-    "issue": 3120
-  },
-  {
-    "annotation": "setPostImages",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
+    "permanent": true,
+    "code": "backend/services/my/landing-pages/set-default.mts:35"
   },
   {
     "annotation": "setPrimaryEmailAddress",
     "reason": "After locking the active user, clear the old primary before setting its replacement to satisfy the unique primary-address constraint",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/my/email-addresses.mts:21"
   },
   {
     "annotation": "setRssFeedStateAsCurrentUser:latest",
     "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "issue": 3122
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",
@@ -900,44 +741,25 @@
     "issue": 3114
   },
   {
-    "annotation": "stageImagePlacementDeliveryRecord",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "syncPostImagePlacements:allocate",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "syncPostImagePlacements:createChild",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
-    "annotation": "syncPostImagePlacements:createParent",
-    "reason": "Image delivery and placement locks run once per image or surface",
-    "issue": 2606
-  },
-  {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
     "reason": "Each bounded stats chunk updates locked rows and captures publication transitions in its own transaction",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "updateTopicRecommendation",
     "reason": "The pending-state FOR UPDATE snapshot supplies omitted patch fields before ordered post and extension updates",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "upsertAuthenticatedSession",
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/jwt-session/user-sessions.mts:25"
   },
   {
     "annotation": "upsertEntityRelationElectionVotes",
     "reason": "Sorted bidirectional append transactions acquire admission and advisory locks; overlapping writes must observe the previously appended score",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",
@@ -947,31 +769,36 @@
   {
     "annotation": "upsertUrlHostnames",
     "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "issue": 3121
   },
   {
     "annotation": "upsertUserAgentString",
     "reason": "On a miss INSERT ON CONFLICT may wait for another transaction; the following SELECT needs a new snapshot to see its committed row",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:15"
   },
   {
     "annotation": "upsertUserFinancialProfile",
     "reason": "The owner individual and existing financial-profile row are locked in the transaction before validating currency-dependent patches; the second lock read prevents concurrent updates from validating against stale profile data (backend/services/user-financial-profiles/upsert.mts:17-39)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/user-financial-profiles/upsert.mts:17"
   },
   {
     "annotation": "verifyEmailVerificationToken",
     "reason": "After the active-user lock, consume the valid token before a fresh-snapshot address-ownership check and verified-address insert, preserving code-error precedence",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/my/email-address-verification.mts:93"
   },
   {
     "annotation": "verifyTotpSetup",
     "reason": "After the optimistic code check, lock the active user then update only an unverified factor so concurrent verification returns the existing 422",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/totp/verify-setup.mts:14"
   },
   {
     "annotation": "withMfaLock",
     "reason": "Lock the active user, then passkey rows, then TOTP rows before counting methods and consuming reauthentication to prevent concurrent last-factor deletions",
-    "issue": 3119
+    "permanent": true,
+    "code": "backend/services/mfa/protected-mfa-delete.mts:14"
   }
 ]

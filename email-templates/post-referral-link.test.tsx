@@ -1,5 +1,5 @@
+import { renderPostReferralLinkEmail } from './index.mts'
 import { describe } from 'vitest'
-import { renderPostReferralLinkEmail } from './post-referral-link-renderer.mts'
 import PostReferralLinkEmail from './post-referral-link.tsx'
 import { registerRecommendationEmailRenderTests } from './test-helpers/recommendation-email-render-tests.mts'
 

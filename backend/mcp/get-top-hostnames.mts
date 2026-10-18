@@ -42,9 +42,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Top Hostnames',
-    requiredScopes: { mcp: ['hostnames:read'] },
+    requiredScopes: ['hostnames:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/hostnames/top' }],
     outputSchema: foundOrNotFoundSchema(hostnamesPageProperties()),

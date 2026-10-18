@@ -1,4 +1,7 @@
 import {
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  resolveEmailLocale,
   Body,
   Container,
   Head,
@@ -7,17 +10,16 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
 import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { getLocalizedSignoff } from './locale.mts'
 import { borderRadius, colors, styles } from './styles.mts'
-import type {
-  CommunityInviteEmailProps,
-  EmailRenderResultPromise,
-  PreviewableEmailComponent,
-} from './types.mts'
+import type { CommunityInviteEmailProps } from './types.mts'
 
 const baseUrl = process.env.SITE_ORIGIN ?? 'https://voucha.ai'
 
@@ -44,7 +46,7 @@ const CommunityInviteEmail: PreviewableEmailComponent<CommunityInviteEmailProps>
   uiLocale,
 }) =>
   (() => {
-    const locale = resolveUiLocale(uiLocale)
+    const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
     const t = emailCopy(locale, 'community-invite')
     const vars = { communityName, inviterName }
 
@@ -98,15 +100,16 @@ async function renderCommunityInviteEmail(
   props: CommunityInviteEmailProps,
 ): EmailRenderResultPromise {
   const encodedCode = encodeURIComponent(props.code)
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'community-invite')
   const vars = { communityName: props.communityName, inviterName: props.inviterName }
 
-  return {
+  return renderTemplateEmail({
     subject: t('subject', vars),
-    html: await render(<CommunityInviteEmail {...props} />, { pretty: true }),
+    element: <CommunityInviteEmail {...props} />,
+    pretty: true,
     text: `${t('textBody', vars)}\n\n${t('textButton')} ${baseUrl}/communities/invite/${encodedCode}\n\n${t('textInviteCode')} ${props.code}\n\n${t('ignore')}\n\n${getLocalizedSignoff(locale)}`,
-  }
+  })
 }
 
 const RenderableCommunityInviteEmail = Object.assign(CommunityInviteEmail, {

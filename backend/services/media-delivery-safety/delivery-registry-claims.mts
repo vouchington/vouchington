@@ -27,7 +27,8 @@ export async function claimMediaDeliveryProjection(
         lease_expires_at = clock_timestamp() + ${MEDIA_DELIVERY_CLAIM_TIMEOUT_MS} * interval '1 millisecond',
         attempt_count = attempt_count + 1
       FROM candidate WHERE work.media_delivery_registry_record_id = candidate.media_delivery_registry_record_id
-      RETURNING work.*
+      RETURNING work.media_delivery_registry_record_id, work.generation, work.leased_at,
+        work.attempt_count, work.lease_token
     ), history AS (
       INSERT INTO media_delivery_registry_changes(media_delivery_registry_record_id, generation, change_type, claimed_at, delivery_attempt_count)
       SELECT media_delivery_registry_record_id, generation, 'claimed', leased_at, attempt_count FROM claimed

@@ -13,13 +13,8 @@ import { validateUsername } from '@modules/utils'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
-import {
-  buildPageInfo,
-  createPaginationParser,
-  decodeScopedAliasCursor,
-  defineQueryContract,
-  queryString,
-} from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
+import { buildPageInfo, createPaginationParser, decodeScopedAliasCursor } from '@modules/pagination'
 
 const usersSearchParser = createPaginationParser({
   cursor: { type: 'simple' },

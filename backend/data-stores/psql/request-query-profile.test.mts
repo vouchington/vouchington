@@ -106,7 +106,6 @@ const BASELINE_URL = new URL(
   '../../test-helpers/api/request-query-profile-baseline.json',
   import.meta.url,
 )
-type CommittedEntry = { annotation: string; reason: string; issue: number }
 
 describe('request query profile baseline', () => {
   const baseline = [{ annotation: 'knownRepeat', reason: 'covered by the owning issue', issue: 1 }]
@@ -187,7 +186,7 @@ describe('request query profile baseline', () => {
       })
       res.emit('finish')
     }
-    const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as CommittedEntry[]
+    const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as { annotation: string }[]
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     try {
@@ -255,15 +254,5 @@ describe('request query profile baseline', () => {
     ])
     res.emit('finish')
     expect(takeRequestQueryProfileViolations()).toEqual([])
-  })
-
-  it('keeps every committed entry justified and unique', () => {
-    const entries = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as CommittedEntry[]
-    expect(new Set(entries.map(entry => entry.annotation)).size).toBe(entries.length)
-    const unjustified = entries.filter(
-      ({ annotation, reason, issue }) =>
-        annotation === '' || reason === '' || !Number.isInteger(issue) || issue <= 0,
-    )
-    expect(unjustified).toEqual([])
   })
 })

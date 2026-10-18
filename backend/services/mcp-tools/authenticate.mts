@@ -1,4 +1,4 @@
-import { validateApiKeyForUserMcp } from '@services/api-keys/validate'
+import { validateApiKeyForMcpAudience } from '@services/api-keys/validate'
 import {
   isOAuthAccessToken,
   validateOAuthAccessToken,
@@ -36,7 +36,7 @@ export type McpBearerAuthentication =
       suspended: boolean
     })
 
-// One authenticator for both MCP routes. The token prefix picks the verifier, so an OAuth token is
+// One authenticator for every mounted MCP route. The token prefix picks the verifier, so an OAuth token is
 // only checked against this route's resource. A route that does not accept API keys (the admin
 // route) never looks a non-OAuth credential up, so a leaked or stale key is indistinguishable from
 // any other unrecognized token.
@@ -89,7 +89,13 @@ async function verifyMcpBearerToken(
     }
   }
   if (!config.acceptsApiKeys) return null
-  const { valid, apiKey } = await validateApiKeyForUserMcp(rawToken)
+  if (
+    config.audience !== 'user' &&
+    config.audience !== 'community_moderation' &&
+    config.audience !== 'brand'
+  )
+    return null
+  const { valid, apiKey } = await validateApiKeyForMcpAudience(rawToken, config.audience)
   if (!valid || !apiKey) return null
   return {
     credential: {

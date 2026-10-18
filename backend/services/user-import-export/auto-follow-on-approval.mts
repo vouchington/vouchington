@@ -1,5 +1,5 @@
 import { read, write } from '@data-stores/psql'
-import sql, { type SQLStatement } from 'sql-template-strings'
+import sql from 'sql-template-strings'
 import {
   getEntityRelationMetadataOrThrow,
   type EntityRelationMetadata,
@@ -20,45 +20,13 @@ export async function autoFollowOnRecommendationApproval(
   recommendationPostId: string,
   topicId: string,
 ): Promise<void> {
-  await autoFollowRecommendationRequests({
-    findPendingQuery: sql`/* autoFollowOnRecommendationApproval:findPending */
+  const { rows } = await read(sql`/* autoFollowOnRecommendationApproval:findPending */
       SELECT id, user_id
       FROM user_import_requests
       WHERE topic_recommendation_post_id = ${recommendationPostId}
         AND followed_at IS NULL
-    `,
-    relation: followTopicRelation,
-    objectId: topicId,
-    buildMarkFollowedQuery: requestIds => sql`/* autoFollowOnRecommendationApproval:markFollowed */
-        UPDATE user_import_requests
-        SET topic_id = ${topicId},
-            followed_at = CURRENT_TIMESTAMP
-        WHERE id = ANY(${requestIds})
-      `,
-  })
-}
-
-type PendingImportRequest = {
-  id: string
-  user_id: string
-}
-
-type AutoFollowRecommendationRequestsOptions = {
-  findPendingQuery: SQLStatement
-  relation: EntityRelationMetadata
-  objectId: string
-  buildMarkFollowedQuery: (requestIds: string[]) => SQLStatement
-}
-
-async function autoFollowRecommendationRequests({
-  findPendingQuery,
-  relation,
-  objectId,
-  buildMarkFollowedQuery,
-}: AutoFollowRecommendationRequestsOptions): Promise<void> {
-  const { rows } = await read(findPendingQuery)
+    `)
   const requests = rows as PendingImportRequest[]
-
   if (requests.length === 0) return
 
   try {
@@ -67,22 +35,38 @@ async function autoFollowRecommendationRequests({
       users.flatMap(user => (isPrivateUser(user) ? [[user.id, user] as const] : [])),
     )
     const validRequests = await followRequestsWithBoundedConcurrency(requests, usersById, {
-      relation,
-      objectId,
+      relation: followTopicRelation,
+      objectId: topicId,
     })
 
     if (validRequests.length > 0) {
-      await write(buildMarkFollowedQuery(validRequests.map(request => request.id)))
+      const requestIds = validRequests.map(request => request.id)
+      await write(sql`/* autoFollowOnRecommendationApproval:markFollowed */
+        UPDATE user_import_requests
+        SET topic_id = ${topicId},
+            followed_at = CURRENT_TIMESTAMP
+        WHERE id = ANY(${requestIds})
+      `)
     }
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
+type PendingImportRequest = {
+  id: string
+  user_id: string
+}
+
+type AutoFollowRecommendationTarget = {
+  relation: EntityRelationMetadata
+  objectId: string
+}
+
 function followRequestsWithBoundedConcurrency(
   requests: PendingImportRequest[],
   usersById: Map<string, PrivateUser>,
-  relationTarget: Pick<AutoFollowRecommendationRequestsOptions, 'relation' | 'objectId'>,
+  relationTarget: AutoFollowRecommendationTarget,
 ): Promise<PendingImportRequest[]> {
   const validRequests: PendingImportRequest[] = []
 
@@ -102,7 +86,7 @@ function followRequestsWithBoundedConcurrency(
 async function followRequest(
   request: PendingImportRequest,
   usersById: Map<string, PrivateUser>,
-  { relation, objectId }: Pick<AutoFollowRecommendationRequestsOptions, 'relation' | 'objectId'>,
+  { relation, objectId }: AutoFollowRecommendationTarget,
 ): Promise<PendingImportRequest | null> {
   try {
     const user = usersById.get(request.user_id)

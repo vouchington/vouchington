@@ -128,7 +128,7 @@ binary.
 - [Test Value and Safe Reduction](reference-tests-value-and-reduction.md)
 - [Vitest Mock Typing](reference-tests-vitest-mock-typing.md)
 - [Vitest Projects](reference-tests-vitest-projects.md)
-- [Glide-MQ Testing with TestQueue and TestWorker](testing/backend/glide-mq-testing.md)
+- [Queue testing boundaries](testing/backend/glide-mq-testing.md)
 - [API Fixtures](testing/backend/api-fixtures.md)
 - [Translation catalog and locale checks](reference-tests-translation-catalog-and-locale-checks.md)
 - [Public post eligibility](../overview/architecture/reference-post-lifecycle-public-eligibility.md)

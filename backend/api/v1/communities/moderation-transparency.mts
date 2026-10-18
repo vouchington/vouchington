@@ -8,7 +8,7 @@ import {
   getCommunityModerationTransparency,
   type ModerationAnalyticsRange,
 } from '@services/moderation-analytics'
-import { defineQueryContract, queryEnum, queryString } from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryString } from '@vouchington/pagination'
 import { apiQuery } from '../../response-contract.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 

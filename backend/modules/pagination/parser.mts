@@ -5,6 +5,7 @@
 
 import {
   PaginationParser as PlatformPaginationParser,
+  narrowLimitBounds,
   parseBoundedIntegerLimit as parsePlatformBoundedIntegerLimit,
   type PaginationConfig as PlatformPaginationConfig,
 } from '@vouchington/pagination'
@@ -72,16 +73,7 @@ export class PaginationParser<TConfig extends PaginationConfig> {
     const { after } = this.#core.parse(cursorQuery)
     const result: Record<string, unknown> = {}
     if (after !== undefined) result.after = after
-    const maximum = runtimeBounds
-      ? Math.max(this.#limitBounds.min, Math.min(this.#limitBounds.max, runtimeBounds.max))
-      : this.#limitBounds.max
-    const bounds = runtimeBounds
-      ? {
-          ...this.#limitBounds,
-          max: maximum,
-          default: Math.max(this.#limitBounds.min, Math.min(maximum, runtimeBounds.default)),
-        }
-      : this.#limitBounds
+    const bounds = narrowLimitBounds(this.#limitBounds, runtimeBounds)
     result.limit = parseBoundedIntegerLimit(limit, bounds)
     const filters = this.#filters
     if (!filters) return result as ParsedOptions<TConfig>

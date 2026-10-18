@@ -40,7 +40,7 @@ export type McpCallAuditCredential =
   | { credential: 'api_key'; apiKeyId: string }
 
 export type McpCallAuditContext = {
-  surface: McpServerConfig['surface']
+  audience: McpServerConfig['audience']
   correlationId: string
   actorUserId: string
   credential: McpCallAuditCredential
@@ -53,7 +53,7 @@ export function createMcpCallAuditContext(
   credential: McpCallAuditCredential,
 ): McpCallAuditContext {
   return {
-    surface: config.surface,
+    audience: config.audience,
     correlationId: randomUUID(),
     actorUserId,
     credential:
@@ -77,7 +77,7 @@ export async function recordMcpCallAudit(
   const result = await write(
     `/* recordMcpCallAudit */
     INSERT INTO mcp_call_audit_events
-      (id, surface, correlation_id, actor_user_id, oauth_client_id, api_key_id, resource,
+      (id, audience, correlation_id, actor_user_id, oauth_client_id, api_key_id, resource,
        jsonrpc_method, tool_name, tool_option, outcome, copyright_rationale_ciphertext)
     SELECT event.id, $1, $2::uuid, $3::uuid, subject.oauth_client_id, subject.api_key_id, $4,
       event.jsonrpc_method, event.tool_name, event.tool_option, event.outcome, event.copyright_rationale_ciphertext
@@ -92,7 +92,7 @@ export async function recordMcpCallAudit(
       WITH ORDINALITY AS event(id, jsonrpc_method, tool_name, outcome, copyright_rationale_ciphertext, tool_option, ordinal)
     ORDER BY event.ordinal`,
     [
-      context.surface,
+      context.audience,
       context.correlationId,
       context.actorUserId,
       context.resource,

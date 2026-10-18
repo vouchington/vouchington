@@ -4,6 +4,7 @@ import {
   getEntityRelation,
   getFollowExists,
   insertTestLocalFollow,
+  setTestUserAdminVoteWeight,
 } from '@voucha/test-helpers'
 import { withOnlyOneWritePoolClientAvailable } from '@voucha/test-helpers/write-pool-probe'
 import { withOwnedVouchStats } from '@voucha/test-helpers/user-vouch-vote-stats-admission'
@@ -18,6 +19,8 @@ describe('votes-upsert', () => {
 
   beforeAll(async () => {
     voter = await createTestUser()
+    // Shared-worker recalculation would otherwise apply weight_new_account (0.01).
+    await setTestUserAdminVoteWeight(voter.id, 1)
   })
 
   it('liking a user leaves follow and mute relations alone', async () => {

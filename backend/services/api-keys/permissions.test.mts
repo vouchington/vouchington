@@ -51,7 +51,17 @@ describe('validateApiKeyCreationPermissions', () => {
       'rss keys must use rss:read',
     )
     expect(validateApiKeyCreationPermissions('mcp', ['rss:read'])).toBe(
-      'mcp keys must use user-audience scopes',
+      'mcp keys must use a member audience',
+    )
+  })
+
+  it('accepts community moderation keys while keeping server audiences isolated', () => {
+    expect(validateApiKeyCreationPermissions('mcp', ['community-moderation:read'])).toBeNull()
+    expect(
+      validateApiKeyCreationPermissions('mcp', ['mcp.user:read', 'community-moderation:read']),
+    ).toBe('api key scopes must not mix audiences')
+    expect(validateApiKeyCreationPermissions('mcp', ['copyright-notices:read'])).toBe(
+      'scope is not supported for API keys: copyright-notices:read',
     )
   })
 

@@ -30,10 +30,11 @@ const defaultDependencies: UsageQuotaDependencies = {
   reportError: onError,
 }
 
-// The bucket is the owner and surface, so every credential a user holds draws on one allowance and
-// minting more API keys or OAuth grants does not widen it. It never contains a credential.
+// Every MCP audience draws on the same owner bucket; analytics still distinguishes staff from
+// member requests. REST has its own bucket. Minting credentials never widens an allowance.
 function userBucketId(surface: UsageSurface, userId: string): string {
-  return `${surface}:user:${userId}`
+  const bucket = surface === 'mcp_admin' ? 'mcp_user' : surface
+  return `${bucket}:user:${userId}`
 }
 
 // Anonymous traffic shares one bucket per surface. There is deliberately nothing to tell callers

@@ -115,7 +115,7 @@ runs:
       run: |
         set -euo pipefail
         IMAGE="$IMAGE_REPOSITORY/web:$IMAGE_TAG"
-        PORTS=$(python3 ci/allocate-browser-safe-ports.py 2)
+        PORTS=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 2)
         read -r PORT BACKEND_PORT <<< "$PORTS"
         SMOKE_TMP_DIR=$(mktemp -d "${RUNNER_TEMP}/web-image-smoke.XXXXXX")
         cleanup() {

@@ -1,6 +1,6 @@
 import { syncArticles } from '@services/articles'
 import { getPrivateUserByAny } from '@services/users/get'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 

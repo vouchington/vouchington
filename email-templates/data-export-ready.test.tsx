@@ -1,7 +1,7 @@
+import { renderDataExportReadyEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { emailCopy } from './catalog-copy.mts'
-import { renderDataExportReadyEmail } from './data-export-ready-renderer.mts'
 import DataExportReadyEmail from './data-export-ready.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

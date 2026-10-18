@@ -61,9 +61,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Search Web',
-    requiredScopes: { mcp: ['web-search:read'] },
+    requiredScopes: ['web-search:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/web-search' }],
     outputSchema: foundOrNotFoundSchema({

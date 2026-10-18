@@ -20,10 +20,10 @@ const tool: Tool<NotificationToolArgs, { success: true }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Delete Notification',
     plan: 'plus',
-    requiredScopes: { mcp: ['notifications:read', 'notifications:write'] },
+    requiredScopes: ['notifications:read', 'notifications:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/my/notifications/:id' }],
     outputSchema: successSchema({}),

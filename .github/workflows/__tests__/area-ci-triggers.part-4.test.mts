@@ -46,8 +46,8 @@ describe('Area CI Docker triggers', () => {
     }
   })
 
-  it('routes Docker smoke port allocator inputs through both PR image builds', () => {
-    const smokePortInputs = ['ci/allocate-browser-safe-ports.py']
+  it('routes published Docker smoke port allocator version through both PR image builds', () => {
+    const smokePortInputs = ['pnpm-lock.yaml']
 
     expectPrimaryMatches('build-backend-infra', smokePortInputs)
     expectPrimaryMatches('build-web-infra', smokePortInputs)

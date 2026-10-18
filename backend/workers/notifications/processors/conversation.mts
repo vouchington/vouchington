@@ -1,4 +1,4 @@
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { createDirectMessageNotifications } from '@services/notifications/create-direct-message-notification'
 import { createModmailNotifications } from '@services/notifications/create-modmail-notification'
 import { getConversationNotificationContext } from '@services/notifications/get-conversation-notification-context'

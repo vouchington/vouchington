@@ -100,9 +100,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Profile',
-    requiredScopes: { mcp: ['profile:read'] },
+    requiredScopes: ['profile:read'],
     annotations: { readOnlyHint: true },
     api: [API.cards, API.pointValuations, API.statuses],
     outputSchema: buildOutputSchema(),

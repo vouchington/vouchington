@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { DynamicConfig } from '@data-stores/valkey/dynamic-config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
 import {
   closeScopedDynamicConfigContext,
+  createDynamicConfigForTest,
   createDynamicConfigTestKey,
 } from '@voucha/test-helpers/dynamic-config'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
@@ -19,7 +19,7 @@ describe('PATCH /api/v1/dynamic-config/namespaces/:namespace audit failure', () 
     await request.authenticateAs(developer)
     const requestId = crypto.randomUUID()
     const namespace = createDynamicConfigTestKey('api-audit-failure')
-    const config = new DynamicConfig({
+    const config = createDynamicConfigForTest({
       key: namespace,
       fieldTypes: { enabled: 'boolean' },
       defaultFields: { enabled: false },

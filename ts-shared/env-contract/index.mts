@@ -2,6 +2,7 @@
 
 import {
   envContractsByName as groupEnvContractsByName,
+  envContractManifest,
   envNamesBySensitivity,
   envNamesForSurface as findEnvNamesForSurface,
   groupEnvContracts as group,
@@ -422,13 +423,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
 
 export const ENV_VAR_CONTRACT = normalizeEnvContractGroups(ENV_VAR_CONTRACT_GROUPS)
 
-export const typedEnvContractEntries = ENV_VAR_CONTRACT.map(entry => ({
-  name: entry.name,
-  contractKey: entry.key,
-  sourceOfTruth: entry.sourceOfTruth,
-  sensitivity: entry.sensitivity,
-  runtimeSurfaces: [...entry.surfaces],
-}))
+export const typedEnvContractEntries = envContractManifest(ENV_VAR_CONTRACT)
 
 export const typedEnvVarConstants = {
   ENCRYPTION_KEYS_ENV: 'VOUCHA_STORED_SECRET_ENCRYPTION_KEYS',

@@ -14,7 +14,7 @@ WEB_OUTPUT_LOG="$WEB_DIR/web-output.log"
 # health check passes, but Next.js' server-side fetch throws before it opens a connection.
 # Resolve the allocator from the repo root so the script works from any working directory.
 echo "Selecting web smoke ports..."
-PORTS=$(python3 "$REPO_ROOT/ci/allocate-browser-safe-ports.py" 2) || {
+PORTS=$(python3 "$REPO_ROOT/node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py" 2) || {
   echo "✗ Error: Could not allocate browser-safe ports"
   exit 1
 }

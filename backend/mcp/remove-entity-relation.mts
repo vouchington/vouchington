@@ -33,10 +33,10 @@ const tool: Tool<RemoveEntityRelationArgs, RemoveEntityRelationResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Remove Entity Relation',
     plan: 'plus',
-    requiredScopes: { mcp: ['entity-relations:read', 'entity-relations:write'] },
+    requiredScopes: ['entity-relations:read', 'entity-relations:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/posts/:idOrSlug' }],
     outputSchema: objectSchema({ post_id: text, tag: text, removed: { type: 'boolean' } }),

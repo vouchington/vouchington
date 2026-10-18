@@ -17,7 +17,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
 import { assertWorkflowInvariant } from '../test-helpers/workflow-fixtures.mts'
 
@@ -50,7 +49,6 @@ const credentialedWorkflowText = readFileSync(
   '.github/workflows/tests-playwright-credentialed.yml',
   'utf8',
 )
-const browserSafePortsScript = readFileSync('ci/allocate-browser-safe-ports.py', 'utf8')
 
 // For each trusted job, extract the detect-changes output names it references, excluding
 // well-known outputs that are computed by detect-changes steps instead of path filters.
@@ -210,12 +208,6 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
     expect(credentialedWorkflowText).not.toContain('CSP_ASSET_ORIGIN=http://localhost:$NEXT_PORT')
   })
 
-  it('does not allocate Chromium-restricted ports for browser-facing servers', () => {
-    expect(browserSafePortsScript).toContain('"fetch-forbidden-ports.json"')
-    expect(browserSafePortsScript).not.toContain('--forbidden-ports')
-    expect(FETCH_FORBIDDEN_PORTS).toEqual(expect.arrayContaining([4045, 6667, 10_080]))
-  })
-
   it('installs JavaScript dependencies before allocating ports', () => {
     const install = credentialedWorkflowText.indexOf('- uses: ./.github/actions/setup-backend')
     const allocate = credentialedWorkflowText.indexOf('- name: Allocate ports')
@@ -226,15 +218,15 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
   it('allocates every credentialed Playwright port in one print-and-exit call', () => {
     expect(credentialedWorkflowText.match(/allocate-browser-safe-ports\.py/g)).toHaveLength(1)
     expect(credentialedWorkflowText).toContain(
-      'PORTS=$(python3 ci/allocate-browser-safe-ports.py 4)',
+      'PORTS=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 4)',
     )
     expect(credentialedWorkflowText).toContain(
       'read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT <<< "$PORTS"',
     )
   })
 
-  it('selects every owning suite when shared port allocation inputs change', () => {
-    const allocatorPath = 'ci/allocate-browser-safe-ports.py'
+  it('selects every owning suite when the published allocator version changes', () => {
+    const allocatorInput = 'pnpm-lock.yaml'
 
     for (const filterName of ['backend', 'web-integration']) {
       expect(primaryPathFilters[filterName]).toContain('ts-shared/**')
@@ -243,10 +235,10 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
       expect(primaryPathFilters[filterName]).toContain('ts-shared/utils/**')
     }
     expect(primaryPathFilters['cloudflare-worker']).toEqual(
-      expect.arrayContaining([allocatorPath, 'ts-shared/**']),
+      expect.arrayContaining([allocatorInput, 'ts-shared/**']),
     )
     const allocatorOwningFilters = Object.values(primaryPathFilters).filter(paths =>
-      paths.includes(allocatorPath),
+      paths.includes(allocatorInput),
     )
     expect(allocatorOwningFilters).not.toHaveLength(0)
     expect(primaryPathFilters['runtime-playwright']?.[0]).toContain('ts-shared/utils/**')

@@ -37,6 +37,13 @@ and member modmail, is tracked in
 first. The [scope module](../overview/architecture/backend/README.md) and
 [MCP catalog](../overview/architecture/mcp/catalog.md) own the current contract.
 
+## MCP audience selection
+
+MCP credentials bind to one protected resource, so community moderators and copyright staff use
+the audience that owns their tools. Native agent server selection and credential-picker adoption
+remain dependent client work under [the MCP audience split](https://github.com/vouchington/vouchington/issues/3179).
+The producer lands first; audience routing does not change tool arguments or results.
+
 ## Direct-message MCP consent
 
 Direct-message access uses explicit private-data grants, with localized read and write descriptions

@@ -46761,7 +46761,7 @@
     },
     "GET:/api/v1/scopes": {
       "bodyKind": "content",
-      "hash": "12f97ee203b48e4b93b1b9cef52dd4c63b80e3b00b796d09552a3237c08b6d72",
+      "hash": "aae2e48e686ee27ca7d7a82cb8283b8ea8446f1c56fe7f1655a6d149952596dc",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -46791,6 +46791,18 @@
               {
                 "type": "literal",
                 "value": "api"
+              },
+              {
+                "type": "literal",
+                "value": "brand"
+              },
+              {
+                "type": "literal",
+                "value": "community_moderation"
+              },
+              {
+                "type": "literal",
+                "value": "legal"
               },
               {
                 "type": "literal",

@@ -28,10 +28,10 @@ const tool: Tool<ToolArgs, { success: true }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Withdraw Entity Relation Vote',
     plan: 'plus',
-    requiredScopes: { mcp: ['entity-relations:read', 'entity-relations:write'] },
+    requiredScopes: ['entity-relations:read', 'entity-relations:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/entity-relations/:id/vote' }],
     outputSchema: successSchema({}),

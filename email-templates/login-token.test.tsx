@@ -1,7 +1,7 @@
+import { renderLoginTokenEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { emailCopy } from './catalog-copy.mts'
-import { renderLoginTokenEmail } from './login-token-renderer.mts'
 import LoginTokenEmail from './login-token.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

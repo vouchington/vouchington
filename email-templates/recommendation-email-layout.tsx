@@ -1,4 +1,6 @@
 import {
+  emailOptional,
+  type EmailTranslator,
   Body,
   Button,
   Container,
@@ -8,10 +10,10 @@ import {
   Preview,
   Section,
   Text,
-} from './react-email-runtime.mts'
-import { emailOptional, type EmailTranslator } from './catalog-copy.mts'
+} from '@vouchington/email'
+
 import { MarketingFooter, VouchaHeader } from './components.tsx'
-import type { UiLocale } from './locale.mts'
+import type { UiLocale } from '@ts-shared/languages/ui-locales'
 import { borderRadius, colors, styles } from './styles.mts'
 
 const card = {

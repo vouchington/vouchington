@@ -8,8 +8,7 @@ import { ALL_TOOLS } from './index.mts'
 // built from data stores, with no REST route to charge.
 const NO_REST_TWIN = new Set(['get_domain_ratings', 'read_data_points'])
 
-const isMcpTool = (tool: Tool) =>
-  (tool.meta?.surfaces ?? []).some(surface => surface === 'mcp' || surface === 'admin_mcp')
+const isMcpTool = (tool: Tool) => tool.meta?.audience != null
 const mcpTools = ALL_TOOLS.filter(isMcpTool)
 const sameEndpoint = (a: ToolApiEndpoint, b: ToolApiEndpoint) =>
   a.method === b.method && a.path === b.path
@@ -127,7 +126,7 @@ describe('MCP tools and their REST routes', () => {
         },
         function: () => () => Promise.resolve({}),
         meta: {
-          surfaces: ['mcp'],
+          audience: 'user',
           api: [global, scoped],
           selectApi: (args: Record<string, unknown>) => [args['scope_id'] ? scoped : global],
         },

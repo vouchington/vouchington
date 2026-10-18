@@ -1440,12 +1440,18 @@
     "I173": [["idOrSlug"]],
     "I174": [["noteId", "userId"]],
     "I175": [["community_id", "subject_user_id"]],
-    "I176": [["community_id", "conversationId", "text"]]
+    "I176": [["community_id", "conversationId", "text"]],
+    "I177": [["id", "order_index", "rating", "topic_id"]],
+    "I178": [["id", "topic_id"]],
+    "I179": [
+      ["audience", "id", "recipient_user_ids"],
+      ["audience", "id"]
+    ]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F01",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1458,7 +1464,7 @@
     ],
     "DELETE:/api/v1/report-integrity/penalties/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F02",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1471,7 +1477,7 @@
     ],
     "DELETE:/api/v1/rss-feed-categories/rejections": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F03",
         "inputFields": "I002",
         "requestBodyFields": null,
@@ -1484,7 +1490,7 @@
     ],
     "DELETE:/api/v1/stories/:storyId/items/:itemId": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F04",
         "inputFields": "I003",
         "requestBodyFields": null,
@@ -1497,7 +1503,7 @@
     ],
     "DELETE:/api/v1/users/:userId/suspension": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F05",
         "inputFields": "I004",
         "requestBodyFields": null,
@@ -1510,7 +1516,7 @@
     ],
     "DELETE:/api/v1/users/:userId/vote-weight": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F06",
         "inputFields": "I004",
         "requestBodyFields": null,
@@ -1523,7 +1529,7 @@
     ],
     "DELETE:/api/v1/vote-integrity/penalties/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F02",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1536,7 +1542,7 @@
     ],
     "GET:/api/v1/admin/ai-costs": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F07",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -1549,7 +1555,7 @@
     ],
     "GET:/api/v1/admin/landing-pages/:pageId/analytics": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I006",
         "requestBodyFields": null,
@@ -1562,7 +1568,7 @@
     ],
     "GET:/api/v1/admin/moderation-analytics": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I007",
         "requestBodyFields": null,
@@ -1575,7 +1581,7 @@
     ],
     "GET:/api/v1/admin/modlog": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I008",
         "requestBodyFields": null,
@@ -1588,7 +1594,7 @@
     ],
     "GET:/api/v1/admin/topic-claims": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -1601,7 +1607,7 @@
     ],
     "GET:/api/v1/admin/users/:userId/landing-pages": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I010",
         "requestBodyFields": null,
@@ -1614,7 +1620,7 @@
     ],
     "GET:/api/v1/admin/warnings": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I011",
         "requestBodyFields": null,
@@ -1627,7 +1633,7 @@
     ],
     "GET:/api/v1/appeals": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I012",
         "requestBodyFields": [],
@@ -1638,7 +1644,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F10",
         "inputFields": "I012",
         "requestBodyFields": [],
@@ -1651,7 +1657,7 @@
     ],
     "GET:/api/v1/appeals/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I001",
         "requestBodyFields": [],
@@ -1662,7 +1668,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F10",
         "inputFields": "I013",
         "requestBodyFields": [],
@@ -1675,7 +1681,7 @@
     ],
     "GET:/api/v1/article-syncs/:jobId": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I014",
         "requestBodyFields": null,
@@ -1688,7 +1694,7 @@
     ],
     "GET:/api/v1/copyright-email-intakes/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1701,7 +1707,7 @@
     ],
     "GET:/api/v1/copyright-email-intakes/review-queue": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -1714,7 +1720,7 @@
     ],
     "GET:/api/v1/copyright-notices/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1727,7 +1733,7 @@
     ],
     "GET:/api/v1/copyright-notices/:id/guest-capabilities": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I015",
         "requestBodyFields": null,
@@ -1740,7 +1746,7 @@
     ],
     "GET:/api/v1/copyright-notices/:id/participant": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1753,7 +1759,7 @@
     ],
     "GET:/api/v1/copyright-notices/:id/repeat-infringer-accounts": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1766,7 +1772,7 @@
     ],
     "GET:/api/v1/copyright-notices/review-queue": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F11",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -1779,7 +1785,7 @@
     ],
     "GET:/api/v1/crawlers": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I016",
         "requestBodyFields": null,
@@ -1792,7 +1798,7 @@
     ],
     "GET:/api/v1/crawlers/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -1805,7 +1811,7 @@
     ],
     "GET:/api/v1/disputes": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I012",
         "requestBodyFields": [],
@@ -1816,7 +1822,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F12",
         "inputFields": "I012",
         "requestBodyFields": [],
@@ -1829,7 +1835,7 @@
     ],
     "GET:/api/v1/disputes/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I001",
         "requestBodyFields": [],
@@ -1840,7 +1846,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F12",
         "inputFields": "I017",
         "requestBodyFields": [],
@@ -1853,7 +1859,7 @@
     ],
     "GET:/api/v1/dynamic-config/namespaces": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F13",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -1866,7 +1872,7 @@
     ],
     "GET:/api/v1/dynamic-config/namespaces/:namespace": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F13",
         "inputFields": "I018",
         "requestBodyFields": null,
@@ -1879,7 +1885,7 @@
     ],
     "GET:/api/v1/dynamic-config/namespaces/:namespace/history": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F13",
         "inputFields": "I018",
         "requestBodyFields": null,
@@ -1892,7 +1898,7 @@
     ],
     "GET:/api/v1/growth-metrics": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F07",
         "inputFields": "I007",
         "requestBodyFields": null,
@@ -1905,7 +1911,7 @@
     ],
     "GET:/api/v1/imports/:batchId": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I019",
         "requestBodyFields": null,
@@ -1918,7 +1924,7 @@
     ],
     "GET:/api/v1/mq/backfills": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F13",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -1931,7 +1937,7 @@
     ],
     "GET:/api/v1/mq/queues": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F13",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -1944,7 +1950,7 @@
     ],
     "GET:/api/v1/mq/scheduled-jobs": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F13",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -1957,7 +1963,7 @@
     ],
     "GET:/api/v1/mq/stats": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F07",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -1970,7 +1976,7 @@
     ],
     "GET:/api/v1/posts/review-queue": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -1983,7 +1989,7 @@
     ],
     "GET:/api/v1/report-integrity/flags": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F14",
         "inputFields": "I012",
         "requestBodyFields": null,
@@ -1996,7 +2002,7 @@
     ],
     "GET:/api/v1/report-integrity/penalties": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F14",
         "inputFields": "I020",
         "requestBodyFields": null,
@@ -2009,7 +2015,7 @@
     ],
     "GET:/api/v1/reports": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I021",
         "requestBodyFields": null,
@@ -2022,7 +2028,7 @@
     ],
     "GET:/api/v1/rss-feed-categories": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I012",
         "requestBodyFields": null,
@@ -2035,7 +2041,7 @@
     ],
     "GET:/api/v1/stories/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F08",
         "inputFields": "I022",
         "requestBodyFields": null,
@@ -2046,7 +2052,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F15",
         "inputFields": "I022",
         "requestBodyFields": null,
@@ -2059,7 +2065,7 @@
     ],
     "GET:/api/v1/users/:userId/mod-notes": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I011",
         "requestBodyFields": null,
@@ -2072,7 +2078,7 @@
     ],
     "GET:/api/v1/users/:userId/moderation-context": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F09",
         "inputFields": "I004",
         "requestBodyFields": null,
@@ -2085,7 +2091,7 @@
     ],
     "GET:/api/v1/vote-integrity/flags": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F14",
         "inputFields": "I012",
         "requestBodyFields": null,
@@ -2098,7 +2104,7 @@
     ],
     "GET:/api/v1/vote-integrity/penalties": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F14",
         "inputFields": "I023",
         "requestBodyFields": null,
@@ -2111,7 +2117,7 @@
     ],
     "PATCH:/api/v1/appeals/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F16",
         "inputFields": "I024",
         "requestBodyFields": null,
@@ -2124,7 +2130,7 @@
     ],
     "PATCH:/api/v1/crawlers/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F04",
         "inputFields": "I025",
         "requestBodyFields": null,
@@ -2137,7 +2143,7 @@
     ],
     "PATCH:/api/v1/disputes/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F16",
         "inputFields": "I024",
         "requestBodyFields": null,
@@ -2150,7 +2156,7 @@
     ],
     "PATCH:/api/v1/dynamic-config/namespaces/:namespace": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F17",
         "inputFields": "I026",
         "requestBodyFields": null,
@@ -2163,7 +2169,7 @@
     ],
     "PATCH:/api/v1/report-integrity/flags/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F18",
         "inputFields": "I027",
         "requestBodyFields": null,
@@ -2176,7 +2182,7 @@
     ],
     "PATCH:/api/v1/reports/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F19",
         "inputFields": "I028",
         "requestBodyFields": null,
@@ -2189,7 +2195,7 @@
     ],
     "PATCH:/api/v1/stories/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F04",
         "inputFields": "I029",
         "requestBodyFields": null,
@@ -2202,7 +2208,7 @@
     ],
     "PATCH:/api/v1/vote-integrity/flags/:id": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F18",
         "inputFields": "I027",
         "requestBodyFields": null,
@@ -2215,7 +2221,7 @@
     ],
     "POST:/api/v1/admin/topic-claims/:id/rejection": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F20",
         "inputFields": "I030",
         "requestBodyFields": null,
@@ -2228,7 +2234,7 @@
     ],
     "POST:/api/v1/admin/topic-claims/:id/revocation": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F20",
         "inputFields": "I031",
         "requestBodyFields": null,
@@ -2241,7 +2247,7 @@
     ],
     "POST:/api/v1/admin/topic-claims/:id/verification": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F21",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2254,7 +2260,7 @@
     ],
     "POST:/api/v1/admin/warnings": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F16",
         "inputFields": "I032",
         "requestBodyFields": null,
@@ -2267,7 +2273,7 @@
     ],
     "POST:/api/v1/appeals/:id/approval": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F22",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2280,7 +2286,7 @@
     ],
     "POST:/api/v1/appeals/:id/delivery": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F21",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2293,7 +2299,7 @@
     ],
     "POST:/api/v1/appeals/:id/resolution-drafts": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F23",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2306,7 +2312,7 @@
     ],
     "POST:/api/v1/appeals/:id/resolution": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F24",
         "inputFields": "I033",
         "requestBodyFields": null,
@@ -2319,7 +2325,7 @@
     ],
     "POST:/api/v1/article-syncs": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F03",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -2332,7 +2338,7 @@
     ],
     "POST:/api/v1/copyright-email-intakes/:id/approvals": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F25",
         "inputFields": "I034",
         "requestBodyFields": null,
@@ -2345,7 +2351,7 @@
     ],
     "POST:/api/v1/copyright-email-intakes/:id/correspondence-rejections": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F26",
         "inputFields": "I035",
         "requestBodyFields": null,
@@ -2358,7 +2364,7 @@
     ],
     "POST:/api/v1/copyright-email-intakes/:id/correspondence": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F26",
         "inputFields": "I036",
         "requestBodyFields": null,
@@ -2371,7 +2377,7 @@
     ],
     "POST:/api/v1/copyright-email-intakes/:id/rejections": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F25",
         "inputFields": "I037",
         "requestBodyFields": null,
@@ -2384,7 +2390,7 @@
     ],
     "POST:/api/v1/copyright-email-intakes/:id/reply/replays": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F26",
         "inputFields": "I037",
         "requestBodyFields": null,
@@ -2397,7 +2403,7 @@
     ],
     "POST:/api/v1/copyright-form-intakes/:id/reviews": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F26",
         "inputFields": "I038",
         "requestBodyFields": null,
@@ -2410,7 +2416,7 @@
     ],
     "POST:/api/v1/copyright-legal-hold-assessments/:id/resolutions": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F27",
         "inputFields": "I039",
         "requestBodyFields": null,
@@ -2423,7 +2429,7 @@
     ],
     "POST:/api/v1/copyright-notices/:id/action-intents/:intentId/replays": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F26",
         "inputFields": "I040",
         "requestBodyFields": null,
@@ -2436,7 +2442,7 @@
     ],
     "POST:/api/v1/copyright-notices/:id/delivery-intents/:intentId/replays": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F26",
         "inputFields": "I040",
         "requestBodyFields": null,
@@ -2449,7 +2455,7 @@
     ],
     "POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/revocation": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F28",
         "inputFields": "I041",
         "requestBodyFields": null,
@@ -2462,7 +2468,7 @@
     ],
     "POST:/api/v1/copyright-notices/:id/restrictions/:restrictionId/reviews": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F27",
         "inputFields": "I042",
         "requestBodyFields": null,
@@ -2475,7 +2481,7 @@
     ],
     "POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F25",
         "inputFields": "I043",
         "requestBodyFields": null,
@@ -2488,7 +2494,7 @@
     ],
     "POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F25",
         "inputFields": "I044",
         "requestBodyFields": null,
@@ -2501,7 +2507,7 @@
     ],
     "POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F27",
         "inputFields": "I045",
         "requestBodyFields": null,
@@ -2514,7 +2520,7 @@
     ],
     "POST:/api/v1/copyright-submissions/:id/appeal-reviews": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F27",
         "inputFields": "I046",
         "requestBodyFields": null,
@@ -2527,7 +2533,7 @@
     ],
     "POST:/api/v1/copyright-submissions/:id/counter-notice-reviews": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F25",
         "inputFields": "I038",
         "requestBodyFields": null,
@@ -2540,7 +2546,7 @@
     ],
     "POST:/api/v1/copyright-submissions/:id/legal-hold-assessments": [
       {
-        "surface": "admin_mcp",
+        "audience": "legal",
         "facts": "F27",
         "inputFields": "I047",
         "requestBodyFields": null,
@@ -2553,7 +2559,7 @@
     ],
     "POST:/api/v1/disputes/:id/approval": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F22",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2566,7 +2572,7 @@
     ],
     "POST:/api/v1/disputes/:id/delivery": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F21",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2579,7 +2585,7 @@
     ],
     "POST:/api/v1/disputes/:id/resolution-drafts": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F23",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2592,7 +2598,7 @@
     ],
     "POST:/api/v1/disputes/:id/resolution": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F24",
         "inputFields": "I048",
         "requestBodyFields": null,
@@ -2605,7 +2611,7 @@
     ],
     "POST:/api/v1/imports/topics": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F03",
         "inputFields": "I049",
         "requestBodyFields": null,
@@ -2618,7 +2624,7 @@
     ],
     "POST:/api/v1/mq/backfills/:id/runs": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F29",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2631,7 +2637,7 @@
     ],
     "POST:/api/v1/mq/queues/:name/pause": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F30",
         "inputFields": "I131",
         "requestBodyFields": null,
@@ -2644,7 +2650,7 @@
     ],
     "POST:/api/v1/mq/queues/:name/resume": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F31",
         "inputFields": "I132",
         "requestBodyFields": null,
@@ -2657,7 +2663,7 @@
     ],
     "POST:/api/v1/mq/queues/:name/retry-failed": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F32",
         "inputFields": "I132",
         "requestBodyFields": null,
@@ -2670,7 +2676,7 @@
     ],
     "POST:/api/v1/mq/scheduled-jobs/:id/runs": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F29",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2683,7 +2689,7 @@
     ],
     "POST:/api/v1/posts/:idOrSlug/clearances": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F22",
         "inputFields": "I051",
         "requestBodyFields": ["private_note", "reason_code", "status"],
@@ -2694,7 +2700,7 @@
         "decision": false
       },
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F33",
         "inputFields": "I051",
         "requestBodyFields": ["private_note", "reason_code", "status"],
@@ -2707,7 +2713,7 @@
     ],
     "POST:/api/v1/report-integrity/flags/:id/penalties": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F02",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2720,7 +2726,7 @@
     ],
     "POST:/api/v1/reports/:id/judgements": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F23",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2733,7 +2739,7 @@
     ],
     "POST:/api/v1/rss-feed-categories/assignments": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F04",
         "inputFields": "I052",
         "requestBodyFields": null,
@@ -2746,7 +2752,7 @@
     ],
     "POST:/api/v1/rss-feed-categories/rejections": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F03",
         "inputFields": "I002",
         "requestBodyFields": null,
@@ -2759,7 +2765,7 @@
     ],
     "POST:/api/v1/users/:userId/mod-notes": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F16",
         "inputFields": "I053",
         "requestBodyFields": null,
@@ -2772,7 +2778,7 @@
     ],
     "POST:/api/v1/vote-integrity/flags/:id/penalties": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F02",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2785,7 +2791,7 @@
     ],
     "PUT:/api/v1/agent-moderations/:id/vote": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F01",
         "inputFields": "I054",
         "requestBodyFields": null,
@@ -2798,7 +2804,7 @@
     ],
     "PUT:/api/v1/crawlers/referral-program": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F04",
         "inputFields": "I055",
         "requestBodyFields": null,
@@ -2811,7 +2817,7 @@
     ],
     "PUT:/api/v1/stories/:storyId/items/:itemId": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F03",
         "inputFields": "I003",
         "requestBodyFields": null,
@@ -2824,7 +2830,7 @@
     ],
     "PUT:/api/v1/stories/:storyId/official": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F04",
         "inputFields": "I003",
         "requestBodyFields": null,
@@ -2837,7 +2843,7 @@
     ],
     "PUT:/api/v1/users/:userId/suspension": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F05",
         "inputFields": "I056",
         "requestBodyFields": null,
@@ -2850,7 +2856,7 @@
     ],
     "PUT:/api/v1/users/:userId/vote-weight": [
       {
-        "surface": "admin_mcp",
+        "audience": "admin",
         "facts": "F06",
         "inputFields": "I057",
         "requestBodyFields": null,
@@ -2863,7 +2869,7 @@
     ],
     "DELETE:/api/v1/bookmarks/:entityType/:entityId/:predicate": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F34",
         "inputFields": "I058",
         "requestBodyFields": null,
@@ -2876,7 +2882,7 @@
     ],
     "DELETE:/api/v1/communities/:idOrSlug/members": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F35",
         "inputFields": "I059",
         "requestBodyFields": null,
@@ -2889,7 +2895,7 @@
     ],
     "DELETE:/api/v1/entity-relations/:id/vote": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F36",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -2902,7 +2908,7 @@
     ],
     "DELETE:/api/v1/lists/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F37",
         "inputFields": "I060",
         "requestBodyFields": null,
@@ -2915,7 +2921,7 @@
     ],
     "DELETE:/api/v1/lists/:id/items/posts/:entityId": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F37",
         "inputFields": "I061",
         "requestBodyFields": null,
@@ -2928,7 +2934,7 @@
     ],
     "DELETE:/api/v1/lists/:id/items/rss-feed-items/:entityId": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F37",
         "inputFields": "I061",
         "requestBodyFields": null,
@@ -2941,7 +2947,7 @@
     ],
     "DELETE:/api/v1/my/cards/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F38",
         "inputFields": "I062",
         "requestBodyFields": null,
@@ -2954,7 +2960,7 @@
     ],
     "DELETE:/api/v1/my/notifications/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F39",
         "inputFields": "I063",
         "requestBodyFields": null,
@@ -2967,7 +2973,7 @@
     ],
     "DELETE:/api/v1/my/profile/links/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F40",
         "inputFields": "I064",
         "requestBodyFields": null,
@@ -2980,7 +2986,7 @@
     ],
     "DELETE:/api/v1/my/rewards-program-point-valuations/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F41",
         "inputFields": "I065",
         "requestBodyFields": null,
@@ -2993,7 +2999,7 @@
     ],
     "DELETE:/api/v1/my/rewards-program-statuses/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F42",
         "inputFields": "I066",
         "requestBodyFields": null,
@@ -3006,7 +3012,7 @@
     ],
     "DELETE:/api/v1/my/spending-categories/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F43",
         "inputFields": "I067",
         "requestBodyFields": null,
@@ -3019,7 +3025,7 @@
     ],
     "DELETE:/api/v1/posts/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F44",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -3032,7 +3038,7 @@
     ],
     "DELETE:/api/v1/referral-links/:linkId": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F45",
         "inputFields": "I064",
         "requestBodyFields": null,
@@ -3045,7 +3051,7 @@
     ],
     "DELETE:/api/v1/referral-links/:linkId/activations": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F45",
         "inputFields": "I064",
         "requestBodyFields": null,
@@ -3058,7 +3064,7 @@
     ],
     "DELETE:/api/v1/topic-recommendations/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F46",
         "inputFields": "I001",
         "requestBodyFields": null,
@@ -3071,7 +3077,7 @@
     ],
     "GET:/api/v1/communities": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I068",
         "requestBodyFields": null,
@@ -3084,7 +3090,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I059",
         "requestBodyFields": null,
@@ -3097,7 +3103,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/list-items/counts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I059",
         "requestBodyFields": null,
@@ -3110,7 +3116,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/list-items/domains": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I069",
         "requestBodyFields": null,
@@ -3123,7 +3129,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/list-items/posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I069",
         "requestBodyFields": null,
@@ -3136,7 +3142,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/list-items/rss-feeds": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I069",
         "requestBodyFields": null,
@@ -3149,7 +3155,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/list-items/topics": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I069",
         "requestBodyFields": null,
@@ -3162,7 +3168,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/list-items/urls": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I069",
         "requestBodyFields": null,
@@ -3175,7 +3181,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/members": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I070",
         "requestBodyFields": null,
@@ -3188,7 +3194,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/pinned-posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I059",
         "requestBodyFields": null,
@@ -3201,7 +3207,7 @@
     ],
     "GET:/api/v1/communities/:idOrSlug/posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I071",
         "requestBodyFields": null,
@@ -3214,7 +3220,7 @@
     ],
     "GET:/api/v1/countries": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F48",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3227,7 +3233,7 @@
     ],
     "GET:/api/v1/currencies": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F48",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -3240,7 +3246,7 @@
     ],
     "GET:/api/v1/feeds/posts/:feed_type": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F49",
         "inputFields": "I072",
         "requestBodyFields": null,
@@ -3253,7 +3259,7 @@
     ],
     "GET:/api/v1/feeds/referral_links/:feed_type": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F49",
         "inputFields": "I073",
         "requestBodyFields": null,
@@ -3266,7 +3272,7 @@
     ],
     "GET:/api/v1/feeds/rss_feed_items/:feed_type": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F49",
         "inputFields": "I074",
         "requestBodyFields": null,
@@ -3279,7 +3285,7 @@
     ],
     "GET:/api/v1/hostnames": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F50",
         "inputFields": "I075",
         "requestBodyFields": null,
@@ -3292,7 +3298,7 @@
     ],
     "GET:/api/v1/hostnames/top": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F50",
         "inputFields": "I076",
         "requestBodyFields": null,
@@ -3305,7 +3311,7 @@
     ],
     "GET:/api/v1/lists": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F51",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -3318,7 +3324,7 @@
     ],
     "GET:/api/v1/lists/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F51",
         "inputFields": "I060",
         "requestBodyFields": null,
@@ -3331,7 +3337,7 @@
     ],
     "GET:/api/v1/lists/:id/items": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F51",
         "inputFields": "I077",
         "requestBodyFields": null,
@@ -3344,7 +3350,7 @@
     ],
     "GET:/api/v1/lists/contains": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F51",
         "inputFields": "I078",
         "requestBodyFields": null,
@@ -3357,7 +3363,7 @@
     ],
     "GET:/api/v1/memberships/plans": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F48",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3370,7 +3376,7 @@
     ],
     "GET:/api/v1/my/cards": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F52",
         "inputFields": "I005",
         "requestBodyFields": [],
@@ -3381,7 +3387,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F53",
         "inputFields": "I079",
         "requestBodyFields": [],
@@ -3394,7 +3400,7 @@
     ],
     "GET:/api/v1/my/email-preferences": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F54",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3407,7 +3413,7 @@
     ],
     "GET:/api/v1/my/financial-profile": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F55",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3420,7 +3426,7 @@
     ],
     "GET:/api/v1/my/notifications": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F56",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -3433,7 +3439,7 @@
     ],
     "GET:/api/v1/my/notifications/unread": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F56",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3446,7 +3452,7 @@
     ],
     "GET:/api/v1/my/profile": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F53",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3459,7 +3465,7 @@
     ],
     "GET:/api/v1/my/profile/links": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F53",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3472,7 +3478,7 @@
     ],
     "GET:/api/v1/my/rewards-program-point-valuations": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F57",
         "inputFields": "I005",
         "requestBodyFields": [],
@@ -3483,7 +3489,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F53",
         "inputFields": "I079",
         "requestBodyFields": [],
@@ -3496,7 +3502,7 @@
     ],
     "GET:/api/v1/my/rewards-program-statuses": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F53",
         "inputFields": "I079",
         "requestBodyFields": [],
@@ -3507,7 +3513,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F58",
         "inputFields": "I005",
         "requestBodyFields": [],
@@ -3520,7 +3526,7 @@
     ],
     "GET:/api/v1/my/spending-categories": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F59",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -3533,7 +3539,7 @@
     ],
     "GET:/api/v1/platform-stats": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F48",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -3546,7 +3552,7 @@
     ],
     "GET:/api/v1/posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F15",
         "inputFields": "I080",
         "requestBodyFields": null,
@@ -3559,7 +3565,7 @@
     ],
     "GET:/api/v1/posts/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F15",
         "inputFields": "I081",
         "requestBodyFields": null,
@@ -3572,7 +3578,7 @@
     ],
     "GET:/api/v1/posts/:idOrSlug/ancestors": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F15",
         "inputFields": "I081",
         "requestBodyFields": null,
@@ -3585,7 +3591,7 @@
     ],
     "GET:/api/v1/posts/:idOrSlug/descendants": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F15",
         "inputFields": "I082",
         "requestBodyFields": null,
@@ -3598,7 +3604,7 @@
     ],
     "GET:/api/v1/recommended-topics": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F60",
         "inputFields": "I083",
         "requestBodyFields": null,
@@ -3611,7 +3617,7 @@
     ],
     "GET:/api/v1/referral-links": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F61",
         "inputFields": "I084",
         "requestBodyFields": null,
@@ -3624,7 +3630,7 @@
     ],
     "GET:/api/v1/rss-feed-items": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F62",
         "inputFields": "I085",
         "requestBodyFields": null,
@@ -3637,7 +3643,7 @@
     ],
     "GET:/api/v1/rss-feed-items/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F62",
         "inputFields": "I086",
         "requestBodyFields": null,
@@ -3650,7 +3656,7 @@
     ],
     "GET:/api/v1/rss-feed-items/:id/follow-context": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F62",
         "inputFields": "I086",
         "requestBodyFields": null,
@@ -3663,7 +3669,7 @@
     ],
     "GET:/api/v1/rss-feed-items/:id/votes": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F62",
         "inputFields": "I087",
         "requestBodyFields": null,
@@ -3676,7 +3682,7 @@
     ],
     "GET:/api/v1/rss-feeds": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F63",
         "inputFields": "I088",
         "requestBodyFields": null,
@@ -3689,7 +3695,7 @@
     ],
     "GET:/api/v1/rss-feeds/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F63",
         "inputFields": "I089",
         "requestBodyFields": null,
@@ -3702,7 +3708,7 @@
     ],
     "GET:/api/v1/rss-feeds/:id/crawls": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F63",
         "inputFields": "I090",
         "requestBodyFields": null,
@@ -3715,7 +3721,7 @@
     ],
     "GET:/api/v1/rss-feeds/:id/crawls/:crawlId": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F63",
         "inputFields": "I091",
         "requestBodyFields": null,
@@ -3728,7 +3734,7 @@
     ],
     "GET:/api/v1/rss-feeds/recommended": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F63",
         "inputFields": "I092",
         "requestBodyFields": null,
@@ -3741,7 +3747,7 @@
     ],
     "GET:/api/v1/rss-feeds/trending": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F63",
         "inputFields": "I093",
         "requestBodyFields": null,
@@ -3754,7 +3760,7 @@
     ],
     "GET:/api/v1/topic-recommendations": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F64",
         "inputFields": "I012",
         "requestBodyFields": null,
@@ -3767,7 +3773,7 @@
     ],
     "GET:/api/v1/topics": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F65",
         "inputFields": "I094",
         "requestBodyFields": null,
@@ -3780,7 +3786,7 @@
     ],
     "GET:/api/v1/topics/:id/prioritized-referral-links": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F61",
         "inputFields": "I095",
         "requestBodyFields": null,
@@ -3793,7 +3799,7 @@
     ],
     "GET:/api/v1/topics/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F65",
         "inputFields": "I096",
         "requestBodyFields": null,
@@ -3806,7 +3812,7 @@
     ],
     "GET:/api/v1/topics/:idOrSlug/referral-program": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F65",
         "inputFields": "I095",
         "requestBodyFields": null,
@@ -3819,7 +3825,7 @@
     ],
     "GET:/api/v1/topics/compare": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F65",
         "inputFields": "I097",
         "requestBodyFields": null,
@@ -3832,7 +3838,7 @@
     ],
     "GET:/api/v1/trending-communities": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F47",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -3845,7 +3851,7 @@
     ],
     "GET:/api/v1/trending-posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F15",
         "inputFields": "I098",
         "requestBodyFields": null,
@@ -3858,7 +3864,7 @@
     ],
     "GET:/api/v1/trending-referral-programs": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F65",
         "inputFields": "I005",
         "requestBodyFields": null,
@@ -3871,7 +3877,7 @@
     ],
     "GET:/api/v1/trending-topics": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F65",
         "inputFields": "I099",
         "requestBodyFields": null,
@@ -3884,7 +3890,7 @@
     ],
     "GET:/api/v1/users": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F66",
         "inputFields": "I100",
         "requestBodyFields": null,
@@ -3897,7 +3903,7 @@
     ],
     "GET:/api/v1/users/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F54",
         "inputFields": "I009",
         "requestBodyFields": [],
@@ -3908,7 +3914,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F66",
         "inputFields": "I101",
         "requestBodyFields": [],
@@ -3921,7 +3927,7 @@
     ],
     "GET:/api/v1/web-search": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F67",
         "inputFields": "I102",
         "requestBodyFields": null,
@@ -3934,7 +3940,7 @@
     ],
     "PATCH:/api/v1/lists/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F68",
         "inputFields": "I103",
         "requestBodyFields": null,
@@ -3947,7 +3953,7 @@
     ],
     "PATCH:/api/v1/my/cards/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F38",
         "inputFields": "I062",
         "requestBodyFields": null,
@@ -3960,7 +3966,7 @@
     ],
     "PATCH:/api/v1/my/email-preferences": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F69",
         "inputFields": "I104",
         "requestBodyFields": null,
@@ -3973,7 +3979,7 @@
     ],
     "PATCH:/api/v1/my/identity": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F70",
         "inputFields": "I105",
         "requestBodyFields": null,
@@ -3986,7 +3992,7 @@
     ],
     "PATCH:/api/v1/my/notifications/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F71",
         "inputFields": "I063",
         "requestBodyFields": null,
@@ -3999,7 +4005,7 @@
     ],
     "PATCH:/api/v1/my/profile": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F70",
         "inputFields": "I106",
         "requestBodyFields": null,
@@ -4012,7 +4018,7 @@
     ],
     "PATCH:/api/v1/my/profile/links/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F70",
         "inputFields": "I107",
         "requestBodyFields": null,
@@ -4025,7 +4031,7 @@
     ],
     "PATCH:/api/v1/my/rewards-program-point-valuations/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F41",
         "inputFields": "I065",
         "requestBodyFields": null,
@@ -4038,7 +4044,7 @@
     ],
     "PATCH:/api/v1/my/rewards-program-statuses/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F42",
         "inputFields": "I066",
         "requestBodyFields": null,
@@ -4051,7 +4057,7 @@
     ],
     "PATCH:/api/v1/my/spending-categories/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F43",
         "inputFields": "I067",
         "requestBodyFields": null,
@@ -4064,7 +4070,7 @@
     ],
     "PATCH:/api/v1/posts/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F72",
         "inputFields": "I108",
         "requestBodyFields": ["categories"],
@@ -4075,7 +4081,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F73",
         "inputFields": "I109",
         "requestBodyFields": ["categories"],
@@ -4086,7 +4092,7 @@
         "decision": false
       },
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F74",
         "inputFields": "I110",
         "requestBodyFields": [
@@ -4104,15 +4110,15 @@
           "title"
         ],
         "operation": {
-          "tool": "update_post",
-          "option": null
+          "tool": "act_on_post",
+          "option": "edit"
         },
         "decision": false
       }
     ],
     "PATCH:/api/v1/referral-links/:linkId": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F75",
         "inputFields": "I111",
         "requestBodyFields": null,
@@ -4125,7 +4131,7 @@
     ],
     "PATCH:/api/v1/topic-recommendations/:id": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F76",
         "inputFields": "I112",
         "requestBodyFields": null,
@@ -4138,7 +4144,7 @@
     ],
     "PATCH:/api/v1/users/:idOrSlug": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F69",
         "inputFields": "I113",
         "requestBodyFields": null,
@@ -4151,7 +4157,7 @@
     ],
     "POST:/api/v1/appeals": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F77",
         "inputFields": "I114",
         "requestBodyFields": null,
@@ -4164,7 +4170,7 @@
     ],
     "POST:/api/v1/communities": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F78",
         "inputFields": "I115",
         "requestBodyFields": null,
@@ -4177,7 +4183,7 @@
     ],
     "POST:/api/v1/communities/:idOrSlug/applications": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F78",
         "inputFields": "I116",
         "requestBodyFields": null,
@@ -4190,7 +4196,7 @@
     ],
     "POST:/api/v1/communities/:idOrSlug/members": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F79",
         "inputFields": "I059",
         "requestBodyFields": null,
@@ -4203,7 +4209,7 @@
     ],
     "POST:/api/v1/communities/:idOrSlug/posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F80",
         "inputFields": "I117",
         "requestBodyFields": null,
@@ -4216,7 +4222,7 @@
     ],
     "POST:/api/v1/disputes": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F81",
         "inputFields": "I118",
         "requestBodyFields": null,
@@ -4229,7 +4235,7 @@
     ],
     "POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F72",
         "inputFields": "I108",
         "requestBodyFields": null,
@@ -4242,7 +4248,7 @@
     ],
     "POST:/api/v1/lists": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F82",
         "inputFields": "I119",
         "requestBodyFields": null,
@@ -4255,7 +4261,7 @@
     ],
     "POST:/api/v1/lists/:id/items/posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F82",
         "inputFields": "I061",
         "requestBodyFields": null,
@@ -4268,7 +4274,7 @@
     ],
     "POST:/api/v1/lists/:id/items/rss-feed-items": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F82",
         "inputFields": "I061",
         "requestBodyFields": null,
@@ -4281,7 +4287,7 @@
     ],
     "POST:/api/v1/my/cards": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F38",
         "inputFields": "I062",
         "requestBodyFields": null,
@@ -4294,7 +4300,7 @@
     ],
     "POST:/api/v1/my/notifications/read-all": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F71",
         "inputFields": "I009",
         "requestBodyFields": null,
@@ -4307,7 +4313,7 @@
     ],
     "POST:/api/v1/my/profile/links": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F83",
         "inputFields": "I120",
         "requestBodyFields": null,
@@ -4320,7 +4326,7 @@
     ],
     "POST:/api/v1/my/rewards-program-point-valuations": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F41",
         "inputFields": "I065",
         "requestBodyFields": null,
@@ -4333,7 +4339,7 @@
     ],
     "POST:/api/v1/my/rewards-program-statuses": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F42",
         "inputFields": "I066",
         "requestBodyFields": null,
@@ -4346,7 +4352,7 @@
     ],
     "POST:/api/v1/my/spending-categories": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F43",
         "inputFields": "I067",
         "requestBodyFields": null,
@@ -4359,7 +4365,7 @@
     ],
     "POST:/api/v1/posts": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F80",
         "inputFields": "I117",
         "requestBodyFields": null,
@@ -4372,7 +4378,7 @@
     ],
     "POST:/api/v1/referral-links": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F84",
         "inputFields": "I121",
         "requestBodyFields": null,
@@ -4385,7 +4391,7 @@
     ],
     "POST:/api/v1/referral-links/:linkId/activations": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F84",
         "inputFields": "I064",
         "requestBodyFields": null,
@@ -4398,7 +4404,7 @@
     ],
     "POST:/api/v1/referral-links/:linkId/unfurls": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F85",
         "inputFields": "I064",
         "requestBodyFields": null,
@@ -4411,7 +4417,7 @@
     ],
     "POST:/api/v1/reports": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F86",
         "inputFields": "I122",
         "requestBodyFields": null,
@@ -4424,7 +4430,7 @@
     ],
     "POST:/api/v1/topic-recommendations": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F87",
         "inputFields": "I123",
         "requestBodyFields": null,
@@ -4437,7 +4443,7 @@
     ],
     "PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F34",
         "inputFields": "I058",
         "requestBodyFields": null,
@@ -4450,7 +4456,7 @@
     ],
     "PUT:/api/v1/my/financial-profile": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F88",
         "inputFields": "I124",
         "requestBodyFields": null,
@@ -4463,7 +4469,7 @@
     ],
     "PUT:/api/v1/my/profile/links/order": [
       {
-        "surface": "mcp",
+        "audience": "user",
         "facts": "F40",
         "inputFields": "I125",
         "requestBodyFields": null,
@@ -4480,7 +4486,7 @@
       "pullRequest": 2763,
       "contracts": [
         {
-          "surface": "admin_mcp",
+          "audience": "legal",
           "facts": "F25",
           "inputFields": "I126",
           "requestBodyFields": null,
@@ -4496,7 +4502,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -4512,7 +4518,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -4528,7 +4534,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -4544,7 +4550,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -4560,7 +4566,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -4576,7 +4582,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -4592,7 +4598,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F90",
           "operation": {
             "tool": "set_rss_feed_item_read",
@@ -4608,7 +4614,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F90",
           "operation": {
             "tool": "set_rss_feed_item_read",
@@ -4624,7 +4630,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F91",
           "operation": {
             "tool": "share_rss_feed_item",
@@ -4640,7 +4646,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F91",
           "operation": {
             "tool": "share_rss_feed_item",
@@ -4656,7 +4662,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F92",
           "operation": {
             "tool": "submit_rss_feed",
@@ -4672,7 +4678,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F80",
           "operation": {
             "tool": "start_discussion",
@@ -4688,7 +4694,7 @@
       "pullRequest": 2966,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F80",
           "operation": {
             "tool": "start_discussion",
@@ -4704,7 +4710,7 @@
       "pullRequest": 2923,
       "contracts": [
         {
-          "surface": "admin_mcp",
+          "audience": "admin",
           "facts": "F30",
           "inputFields": "I131",
           "requestBodyFields": ["reason"],
@@ -4720,7 +4726,7 @@
       "pullRequest": 2923,
       "contracts": [
         {
-          "surface": "admin_mcp",
+          "audience": "admin",
           "facts": "F31",
           "inputFields": "I132",
           "requestBodyFields": null,
@@ -4736,7 +4742,7 @@
       "pullRequest": 2923,
       "contracts": [
         {
-          "surface": "admin_mcp",
+          "audience": "admin",
           "facts": "F32",
           "inputFields": "I132",
           "requestBodyFields": null,
@@ -4752,7 +4758,7 @@
       "pullRequest": 2923,
       "contracts": [
         {
-          "surface": "admin_mcp",
+          "audience": "admin",
           "facts": "F13",
           "inputFields": "I133",
           "requestBodyFields": null,
@@ -4768,7 +4774,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I134",
           "requestBodyFields": null,
@@ -4784,7 +4790,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I135",
           "requestBodyFields": null,
@@ -4800,7 +4806,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I136",
           "requestBodyFields": null,
@@ -4816,7 +4822,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I136",
           "requestBodyFields": null,
@@ -4832,7 +4838,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I137",
           "requestBodyFields": null,
@@ -4848,7 +4854,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I166",
           "requestBodyFields": null,
@@ -4864,7 +4870,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I139",
           "requestBodyFields": null,
@@ -4880,7 +4886,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I140",
           "requestBodyFields": null,
@@ -4896,7 +4902,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I136",
           "requestBodyFields": null,
@@ -4912,7 +4918,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I141",
           "requestBodyFields": null,
@@ -4928,7 +4934,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I136",
           "requestBodyFields": null,
@@ -4944,7 +4950,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F93",
           "inputFields": "I136",
           "requestBodyFields": null,
@@ -4960,7 +4966,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I142",
           "requestBodyFields": ["expires_at", "reason", "user_id"],
@@ -4976,7 +4982,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I143",
           "requestBodyFields": ["url_hostname_id"],
@@ -4992,7 +4998,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I144",
           "requestBodyFields": ["post_id"],
@@ -5008,7 +5014,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I145",
           "requestBodyFields": ["rss_feed_id"],
@@ -5024,7 +5030,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I146",
           "requestBodyFields": ["topic_id"],
@@ -5040,7 +5046,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I147",
           "requestBodyFields": ["url_id"],
@@ -5056,7 +5062,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
@@ -5072,7 +5078,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
@@ -5088,7 +5094,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
@@ -5104,7 +5110,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
@@ -5120,7 +5126,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
@@ -5136,7 +5142,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I150",
           "requestBodyFields": ["expires_at", "reason", "restriction_types"],
@@ -5152,7 +5158,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I151",
           "requestBodyFields": ["body", "title"],
@@ -5168,7 +5174,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I152",
           "requestBodyFields": ["publicMessage", "reason", "reportId", "resolveReport", "userId"],
@@ -5184,7 +5190,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I153",
           "requestBodyFields": [
@@ -5213,7 +5219,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I154",
           "requestBodyFields": ["reason", "status"],
@@ -5229,7 +5235,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I155",
           "requestBodyFields": ["should_suppress_community_digests_while_on_vacation"],
@@ -5245,7 +5251,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I156",
           "requestBodyFields": ["assigned_moderator_user_id", "resolved"],
@@ -5261,7 +5267,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I157",
           "requestBodyFields": ["should_allow_data_point_posts", "should_allow_review_posts"],
@@ -5277,7 +5283,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I158",
           "requestBodyFields": ["private_note", "reason", "reason_code", "status"],
@@ -5293,7 +5299,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I159",
           "requestBodyFields": ["status"],
@@ -5309,7 +5315,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I160",
           "requestBodyFields": ["questions"],
@@ -5325,7 +5331,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I161",
           "requestBodyFields": ["ends_at"],
@@ -5341,7 +5347,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I162",
           "requestBodyFields": ["post_ids"],
@@ -5357,7 +5363,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
@@ -5373,7 +5379,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
@@ -5389,7 +5395,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I163",
           "requestBodyFields": null,
@@ -5405,7 +5411,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I163",
           "requestBodyFields": null,
@@ -5421,7 +5427,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I164",
           "requestBodyFields": null,
@@ -5437,7 +5443,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I165",
           "requestBodyFields": null,
@@ -5453,7 +5459,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I165",
           "requestBodyFields": null,
@@ -5469,7 +5475,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I165",
           "requestBodyFields": null,
@@ -5485,7 +5491,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I165",
           "requestBodyFields": null,
@@ -5501,7 +5507,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I165",
           "requestBodyFields": null,
@@ -5517,7 +5523,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I163",
           "requestBodyFields": null,
@@ -5533,7 +5539,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I139",
           "requestBodyFields": null,
@@ -5549,7 +5555,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
@@ -5565,7 +5571,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I148",
           "requestBodyFields": null,
@@ -5581,7 +5587,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
@@ -5597,7 +5603,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I149",
           "requestBodyFields": null,
@@ -5613,7 +5619,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I164",
           "requestBodyFields": null,
@@ -5629,7 +5635,7 @@
       "pullRequest": 2972,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I164",
           "requestBodyFields": null,
@@ -5645,7 +5651,7 @@
       "pullRequest": 3131,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -5661,7 +5667,7 @@
       "pullRequest": 3131,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -5677,7 +5683,7 @@
       "pullRequest": 3131,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -5693,7 +5699,7 @@
       "pullRequest": 3131,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F89",
           "operation": {
             "tool": "vote",
@@ -5709,7 +5715,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F96",
           "operation": {
             "tool": "read_my_messages",
@@ -5725,7 +5731,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F96",
           "operation": {
             "tool": "read_my_messages",
@@ -5741,7 +5747,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F96",
           "operation": {
             "tool": "read_my_messages",
@@ -5757,7 +5763,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F96",
           "operation": {
             "tool": "read_my_messages",
@@ -5773,7 +5779,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F97",
           "operation": {
             "tool": "manage_my_messages",
@@ -5789,7 +5795,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F97",
           "operation": {
             "tool": "manage_my_messages",
@@ -5805,7 +5811,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F97",
           "operation": {
             "tool": "manage_my_messages",
@@ -5821,7 +5827,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F97",
           "operation": {
             "tool": "manage_my_messages",
@@ -5837,7 +5843,7 @@
       "pullRequest": 3181,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F97",
           "operation": {
             "tool": "manage_my_messages",
@@ -5853,7 +5859,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I173",
           "requestBodyFields": null,
@@ -5869,7 +5875,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I173",
           "requestBodyFields": null,
@@ -5885,7 +5891,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I163",
           "requestBodyFields": null,
@@ -5901,7 +5907,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I053",
           "requestBodyFields": ["body", "community_id"],
@@ -5917,7 +5923,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "community_moderation",
           "facts": "F95",
           "inputFields": "I174",
           "requestBodyFields": null,
@@ -5933,7 +5939,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F79",
           "inputFields": "I175",
           "requestBodyFields": ["subject_user_id"],
@@ -5949,7 +5955,7 @@
       "pullRequest": 3171,
       "contracts": [
         {
-          "surface": "mcp",
+          "audience": "user",
           "facts": "F79",
           "inputFields": "I176",
           "requestBodyFields": ["text"],
@@ -5958,6 +5964,118 @@
             "option": "reply_modmail"
           },
           "decision": false
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/ratings": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "add_rating"
+          },
+          "decision": false,
+          "inputFields": "I177",
+          "requestBodyFields": ["order_index", "rating", "topic_id"]
+        }
+      ]
+    },
+    "PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "edit_rating"
+          },
+          "decision": false,
+          "inputFields": "I177",
+          "requestBodyFields": ["order_index", "rating"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:idOrSlug/ratings/:topicId": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "delete_rating"
+          },
+          "decision": false,
+          "inputFields": "I178",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/shares": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "share"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/posts/:idOrSlug/sends": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "send"
+          },
+          "decision": false,
+          "inputFields": "I179",
+          "requestBodyFields": ["audience", "recipient_user_ids"]
+        }
+      ]
+    },
+    "PUT:/api/v1/posts/:id/read": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "read"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "DELETE:/api/v1/posts/:id/read": {
+      "pullRequest": 3130,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F74",
+          "operation": {
+            "tool": "act_on_post",
+            "option": "unread"
+          },
+          "decision": false,
+          "inputFields": "I001",
+          "requestBodyFields": null
         }
       ]
     }

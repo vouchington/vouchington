@@ -32,6 +32,8 @@ import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-r
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
 import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
+import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
+import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-folds.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
@@ -69,6 +71,8 @@ async function main() {
     await seedMediaDeliveryReplay()
     await runMediaDeliveryReplayScenarios()
     await runRoundTripShapeScenarios()
+    await runCommunityRoundTripScenarios()
+    await runImageDeliveryFoldScenarios()
     await runUserProfileRoundTripScenarios()
     await runRelationReadBatchScenarios()
     await runDispatchWorkPlanScenarios()

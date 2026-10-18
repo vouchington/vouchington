@@ -38,9 +38,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Domain Ratings',
-    requiredScopes: { mcp: ['domain-ratings:read'] },
+    requiredScopes: ['domain-ratings:read'],
     annotations: { readOnlyHint: true },
     api: null,
     outputSchema: GET_DOMAIN_RATINGS_OUTPUT_SCHEMA,

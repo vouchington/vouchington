@@ -1,4 +1,8 @@
 import {
+  type EmailTranslator,
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  resolveEmailLocale,
   Body,
   Button,
   Container,
@@ -7,17 +11,16 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
-import { emailCopy, type EmailTranslator } from './catalog-copy.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
+import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { getLocalizedSignoff } from './locale.mts'
 import { styles } from './styles.mts'
-import type {
-  DataExportReadyEmailProps,
-  EmailRenderResultPromise,
-  PreviewableEmailComponent,
-} from './types.mts'
+import type { DataExportReadyEmailProps } from './types.mts'
 
 interface DataExportReadyComponentProps extends DataExportReadyEmailProps {}
 
@@ -31,7 +34,7 @@ const DataExportReadyEmail: PreviewableEmailComponent<DataExportReadyComponentPr
   uiLocale,
 }) =>
   (() => {
-    const locale = resolveUiLocale(uiLocale)
+    const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
     const t = emailCopy(locale, 'data-export-ready')
 
     return (
@@ -80,13 +83,14 @@ DataExportReadyEmail.PreviewProps = {
 async function renderDataExportReadyEmail(
   props: DataExportReadyEmailProps,
 ): EmailRenderResultPromise {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'data-export-ready')
-  return {
+  return renderTemplateEmail({
     subject: t('heading'),
-    html: await render(<DataExportReadyEmail {...props} />, { pretty: true }),
+    element: <DataExportReadyEmail {...props} />,
+    pretty: true,
     text: `${t('textBody')}\n\n${t('textLink')} ${props.downloadUrl}\n\n${t('textExpiry')} ${props.expiresInDays} ${getExpiryUnit(props.expiresInDays, t)}. ${t('timeframe')}\n\n${t('support')}\n\n${getLocalizedSignoff(locale)}`,
-  }
+  })
 }
 
 const RenderableDataExportReadyEmail = Object.assign(DataExportReadyEmail, {

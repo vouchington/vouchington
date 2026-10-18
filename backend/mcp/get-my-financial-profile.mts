@@ -18,9 +18,9 @@ const tool: Tool<
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Financial Profile',
-    requiredScopes: { mcp: ['financial-profile:read'] },
+    requiredScopes: ['financial-profile:read'],
     annotations: { readOnlyHint: true },
     api: [API],
     outputSchema: successResultSchema({

@@ -8,7 +8,7 @@ import { finalizeImageMetadata, markImageUploadFailed } from '@services/images/u
 import { deriveUploadStatus } from '@services/images/get-upload-state'
 import { enqueueOnImageCreated } from '@queues/entity-listeners/enqueues'
 import onError from '@modules/on-error'
-import { unrecoverable } from '@modules/queue-errors'
+import { unrecoverable } from '@vouchington/queue-errors'
 import { imageStatePubSub } from '@data-stores/valkey-pubsub'
 import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import { publishFailedImageState } from './publish-failed-image-state.mts'

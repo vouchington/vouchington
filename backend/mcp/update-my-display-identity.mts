@@ -25,10 +25,10 @@ const tool: MergedToolSource<UpdateMyDisplayIdentityArgs, UpdateMyDisplayIdentit
     parameters: IDENTITY_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update My Display Identity',
     plan: 'plus',
-    requiredScopes: { mcp: ['profile:read', 'profile:write'] },
+    requiredScopes: ['profile:read', 'profile:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/my/identity' }],
     outputSchema: IDENTITY_RESULT_SCHEMA,

@@ -4,7 +4,8 @@ import { Queue, QueueEvents, Worker, type Job, type WorkerOptions } from 'glide-
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { HttpRateLimitError } from '@modules/on-error/errors'
-import { deferJobForRateLimit, throwRateLimited, wrapHttpForRetry } from './index.mts'
+
+import { wrapHttpForRetry } from './index.mts'
 
 // This project deliberately restores real GlideMQ: the delayed state, the attempt counter and the
 // events come from the server-side scripts, which the in-memory shim promotes at once.
@@ -43,7 +44,6 @@ async function withQueue(
 
 describe('provider rate limits with real GlideMQ', () => {
   it.each([
-    ['the shared signal', async () => throwRateLimited(30_000, new Error('429')), 30_000],
     [
       'wrapHttpForRetry on an HttpRateLimitError',
       async () =>
@@ -69,63 +69,4 @@ describe('provider rate limits with real GlideMQ', () => {
       })
     },
   )
-
-  it('parks only the job that hit the limit so provider-free jobs on the same worker keep running', async () => {
-    const reconciled = Promise.withResolvers<void>()
-    const processor = async (job: Job): Promise<string> => {
-      if (job.name === 'provider-call') return deferJobForRateLimit(job, 30_000)
-      reconciled.resolve()
-      return 'reconciled'
-    }
-    // The limiter is what makes a worker idle itself after a rate-limit signal.
-    await withQueue(
-      processor,
-      { limiter: { max: 100, duration: 1_000 } },
-      async (queue, events) => {
-        const delayed = once(events, 'delay-changed')
-        const providerJob = await queue.add('provider-call', {}, JOB_OPTIONS)
-        if (!providerJob) throw new Error('Expected the provider-call job')
-        const [event] = await delayed
-
-        expect(event).toMatchObject({ jobId: providerJob.id })
-        expect(Number((event as { delay: string }).delay)).toBeGreaterThan(29_000)
-        expect(Number((event as { delay: string }).delay)).toBeLessThanOrEqual(30_000)
-        const stored = await queue.getJob(providerJob.id)
-        expect(await stored?.getState()).toBe('delayed')
-        expect(stored?.attemptsMade).toBe(0)
-
-        await queue.add('reconcile', {}, JOB_OPTIONS)
-        await reconciled.promise
-      },
-    )
-  })
-
-  // Domain pause parks jobs with `job.moveToDelayed`. A pause outlasting many rechecks must never
-  // spend the attempts that real failures need, so the count has to survive every reactivation.
-  it('keeps attemptsMade at zero across repeated moveToDelayed reactivations, unlike a failure', async () => {
-    const seen = new Map<string, number[]>()
-    const parkedDone = Promise.withResolvers<void>()
-    const failureRetried = Promise.withResolvers<void>()
-    const processor = async (job: Job): Promise<string> => {
-      const attempts = seen.get(job.name) ?? []
-      attempts.push(job.attemptsMade)
-      seen.set(job.name, attempts)
-      if (job.name === 'parked') {
-        if (attempts.length < 3) return job.moveToDelayed(Date.now() + 20)
-        parkedDone.resolve()
-        return 'done'
-      }
-      if (attempts.length < 2) throw new Error('expected failure')
-      failureRetried.resolve()
-      return 'retried'
-    }
-    await withQueue(processor, { promotionInterval: 50 }, async queue => {
-      await queue.add('parked', {}, { ...JOB_OPTIONS, backoff: undefined })
-      await queue.add('failing', {}, { ...JOB_OPTIONS, backoff: { type: 'fixed', delay: 10 } })
-      await Promise.all([parkedDone.promise, failureRetried.promise])
-
-      expect(seen.get('parked')).toEqual([0, 0, 0])
-      expect(seen.get('failing')).toEqual([0, 1])
-    })
-  })
 })

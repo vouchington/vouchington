@@ -1,6 +1,6 @@
+import { renderCommunityRoleChangeEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderCommunityRoleChangeEmail } from './community-role-change-renderer.mts'
 import CommunityRoleChangeEmail from './community-role-change.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

@@ -1,6 +1,6 @@
 import { writeSync } from 'node:fs'
 import type { QueryExecutor } from '@data-stores/psql'
-import { getUnexpectedAttachedTestWorkerQueueNames } from '../../test-helpers/glide-mq-vitest-internals.mts'
+import { getUnexpectedAttachedTestWorkerQueueNames } from '@vouchington/worker-runtime/testing'
 
 /** Bounded, payload-free evidence from this proof's real executor, never a history poll. */
 export function createCheckpointProofTrace(lockKey: string) {

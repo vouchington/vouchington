@@ -90,10 +90,9 @@ The normal seed keeps the production default-only partition layout. A separate r
 default partition and verifies, per plan mode, that point reads execute only their target leaf.
 Real server controls (cleanup, rollback of a blocked retirement, and the migration runner) run in
 that database; pure unit tests cover only emitted SQL and ordering, not server behavior. A
-migration control fails when a client backend or parallel worker remains after the child process
-group is empty. It waits, inside the control's existing budget, for PostgreSQL to reap that
-child's backend. Autovacuum and other non-client backends are not server clients, and a forced
-drop is not a passing cleanup.
+migration control must distinguish leaked sessions from unrelated server maintenance so that CI
+detects real cleanup failures without rejecting healthy runs. Forced cleanup would hide the leak
+the control is meant to detect.
 
 ## Coverage
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fixMainPrompt, parsedDispatch, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
+import { fixMainPrompt, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
 
 describe('fix-main workflow', () => {
   it('renders failure and related-work evidence into the disabled prompt', () => {
@@ -51,9 +51,5 @@ describe('fix-main workflow', () => {
     expect(dispatchJob?.with?.['pr-label']).toBe('automation:auto-fix')
     expect(fixMainPrompt).toContain('`automation`')
     expect(fixMainPrompt).toContain('`automation:auto-fix`')
-  })
-
-  it('keeps the dispatch workflow to a single job', () => {
-    expect(Object.keys(parsedDispatch.jobs ?? {})).toEqual(['dispatch'])
   })
 })

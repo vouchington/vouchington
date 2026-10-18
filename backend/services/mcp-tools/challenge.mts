@@ -18,7 +18,14 @@ export function buildMcpBearerChallenge(
     ['resource_metadata', getOAuthResourceMetadataUrl(config.audience)],
   ]
   if (challenge.error === 'missing_credential') {
-    parameters.push(['scope', withScopePrerequisites([`mcp.${config.audience}:write`]).join(' ')])
+    const initialWriteScope: Partial<Record<McpServerConfig['audience'], ApiScope>> = {
+      user: 'mcp.user:write',
+      admin: 'mcp.admin:write',
+      community_moderation: 'community-moderation:write',
+      legal: 'copyright-notices:write',
+    }
+    const scope = initialWriteScope[config.audience]
+    if (scope) parameters.push(['scope', withScopePrerequisites([scope]).join(' ')])
   } else if (challenge.error === 'invalid_token') {
     parameters.push(
       ['error', 'invalid_token'],

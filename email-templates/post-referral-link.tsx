@@ -1,5 +1,8 @@
-import { emailCopy, type EmailTranslator } from './catalog-copy.mts'
-import { resolveUiLocale } from './locale.mts'
+import { type EmailTranslator, resolveEmailLocale } from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+import { emailCopy } from './catalog-copy.mts'
+
 import { createRecommendationEmail } from './recommendation-email.tsx'
 import type { PostReferralLinkEmailProps } from './types.mts'
 
@@ -9,7 +12,7 @@ function formatLinkCount(t: EmailTranslator, linkCount?: number): string {
 
 const PostReferralLinkEmail = createRecommendationEmail(
   ({ referralPrograms, uiLocale, ...props }: PostReferralLinkEmailProps) => {
-    const locale = resolveUiLocale(uiLocale)
+    const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
     const t = emailCopy(locale, 'post-referral-link')
     return {
       ...props,

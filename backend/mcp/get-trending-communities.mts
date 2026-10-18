@@ -39,9 +39,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Trending Communities',
-    requiredScopes: { mcp: ['communities:read'] },
+    requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/trending-communities' }],
     outputSchema: foundOrNotFoundSchema(

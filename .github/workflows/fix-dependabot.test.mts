@@ -167,7 +167,9 @@ describe('fix-dependabot workflow', () => {
     expect(renderJob?.outputs?.['source-current']).toContain('steps.source-state.outputs.current')
     expect(renderStep?.if).toBe("steps.source-state.outputs.current == 'true'")
     expect(dispatchJob?.if).toContain("needs.render-prompt.outputs.source-current == 'true'")
-    expect(dispatchJob?.uses).toBe('./.github/workflows/harness-dispatch.yml')
+    expect(dispatchJob?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/workflows\/harness-dispatch\.yml@[0-9a-f]{40}$/u,
+    )
     expect(dispatchJob?.secrets).toEqual({ HARNESS_API_KEY: '${{ secrets.HARNESS_API_KEY }}' })
     expect(dispatchJob?.with?.['agent-ref']).toBe('${{ github.event.workflow_run.head_branch }}')
     expect(dispatchJob?.with?.['expected-head-sha']).toBe(
@@ -220,8 +222,10 @@ describe('fix-dependabot workflow', () => {
 
   it('posts the session link after a successful dispatch', () => {
     const commentJob = parsed.jobs?.['comment-session']
-    const commentStep = commentJob?.steps?.find(
-      step => step.uses === './.github/actions/comment-harness-session',
+    const commentStep = commentJob?.steps?.find(step =>
+      step.uses?.startsWith(
+        'vouchington/vouchington-tooling/.github/actions/comment-harness-session@',
+      ),
     )
 
     expect(commentJob?.needs).toEqual(['triage-and-rerun', 'dispatch'])

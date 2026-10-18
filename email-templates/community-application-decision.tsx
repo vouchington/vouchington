@@ -1,4 +1,7 @@
 import {
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  resolveEmailLocale,
   Body,
   Button,
   Container,
@@ -7,22 +10,21 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
 import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { getLocalizedSignoff } from './locale.mts'
 import { styles } from './styles.mts'
-import type {
-  CommunityApplicationDecisionEmailProps,
-  EmailRenderResultPromise,
-  PreviewableEmailComponent,
-} from './types.mts'
+import type { CommunityApplicationDecisionEmailProps } from './types.mts'
 
 const CommunityApplicationDecisionEmail: PreviewableEmailComponent<
   CommunityApplicationDecisionEmailProps
 > = ({ communityName, communityUrl, status, rejectionReason, uiLocale }) => {
-  const locale = resolveUiLocale(uiLocale)
+  const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'community-application-decision')
   const vars = { communityName }
 
@@ -72,7 +74,7 @@ CommunityApplicationDecisionEmail.PreviewProps = {
 async function renderCommunityApplicationDecisionEmail(
   props: CommunityApplicationDecisionEmailProps,
 ): EmailRenderResultPromise {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'community-application-decision')
   const vars = { communityName: props.communityName }
   const reasonLine =
@@ -80,11 +82,12 @@ async function renderCommunityApplicationDecisionEmail(
       ? `\n\n${t('rejected.reasonLabel')} ${props.rejectionReason}`
       : ''
 
-  return {
+  return renderTemplateEmail({
     subject: t(`${props.status}.subject`, vars),
-    html: await render(<CommunityApplicationDecisionEmail {...props} />, { pretty: true }),
+    element: <CommunityApplicationDecisionEmail {...props} />,
+    pretty: true,
     text: `${t(`${props.status}.textBody`, vars)}${reasonLine}\n\n${t(`${props.status}.textButton`)} ${props.communityUrl}\n\n${getLocalizedSignoff(locale)}`,
-  }
+  })
 }
 
 const RenderableCommunityApplicationDecisionEmail = Object.assign(

@@ -76,6 +76,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       const placement = placements.get(restriction.placement_id)
       if (!placement || placement.deleted) return null
       if (!placement.withheld) {
+        // no-mistakes-disable-next-line query-reached-per-item: preserve existing per-item behavior pending batching review; see #3256
         await publishPlacement(
           {
             placementId: placement.placementId,

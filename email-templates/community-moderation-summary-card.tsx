@@ -1,5 +1,5 @@
-import { Button, Section, Text } from './react-email-runtime.mts'
-import type { EmailTranslator } from './catalog-copy.mts'
+import { type EmailTranslator, Button, Section, Text } from '@vouchington/email'
+
 import { borderRadius, colors, styles } from './styles.mts'
 import type { CommunityModerationSummaryEmailProps } from './types.mts'
 

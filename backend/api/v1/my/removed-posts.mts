@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryBoolean, queryInteger, queryString } from '@modules/pagination'
+import {
+  defineQueryContract,
+  queryBoolean,
+  queryInteger,
+  queryString,
+} from '@vouchington/pagination'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { listUserRemovedPosts } from '@services/communities'
 import { apiQuery, apiResponse } from '../../response-contract.mts'

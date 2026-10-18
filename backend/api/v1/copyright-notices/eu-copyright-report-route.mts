@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryEnum, queryString } from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryString } from '@vouchington/pagination'
 import {
   currentUserCanReviewCopyrightNotices,
   readEuCopyrightTransparencyFigures,

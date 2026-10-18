@@ -1,7 +1,7 @@
 import { read, write } from '@data-stores/psql'
 
 export type TestMcpCallAuditEvent = {
-  surface: string
+  audience: string
   correlation_id: string
   actor_user_id: string
   oauth_client_id: string | null
@@ -21,7 +21,7 @@ export async function readTestMcpCallAuditEvents(
 ): Promise<TestMcpCallAuditEvent[]> {
   const result = await read<TestMcpCallAuditEvent>(
     `/* readTestMcpCallAuditEvents */ SELECT
-       event.surface, event.correlation_id, event.actor_user_id,
+       event.audience, event.correlation_id, event.actor_user_id,
        client.client_id AS oauth_client_id, event.api_key_id, event.resource, event.jsonrpc_method,
        event.tool_name, event.outcome, event.occurred_at
      FROM mcp_call_audit_events AS event

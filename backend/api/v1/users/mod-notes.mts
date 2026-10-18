@@ -17,7 +17,7 @@ import {
 } from '@services/user-mod-notes'
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
-import { defineQueryContract, queryInteger, queryUuid } from '@modules/pagination'
+import { defineQueryContract, queryInteger, queryUuid } from '@vouchington/pagination'
 import { apiQuery } from '../../response-contract.mts'
 
 const MOD_NOTES_LIMIT = { minimum: 1, maximum: 100, default: 20 } as const

@@ -18,7 +18,7 @@ import {
   queryInteger,
   queryNumber,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import {
   assertCreateEntityRelationActionAdmission,
   createEntityRelationAction,

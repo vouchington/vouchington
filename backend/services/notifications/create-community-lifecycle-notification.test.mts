@@ -1,30 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, insertTestCommunity } from '@voucha/test-helpers'
 import {
-  createCommunityLifecycleNotification,
+  createCommunityLifecycleNotifications,
   enqueueCommunityLifecycleNotificationPush,
 } from './create-community-lifecycle-notification.mts'
 import { listNotifications } from './list.mts'
 
-describe('createCommunityLifecycleNotification', () => {
+describe('createCommunityLifecycleNotifications', () => {
   it('persists a structured community target and stable event key', async () => {
     const user = await createTestUserDirect()
     const community = await insertTestCommunity({ createdById: user.id })
     const eventKey = `community-role-change:${community.id}:${user.id}:2026-07-11T00:00:00.000Z`
 
-    const created = await createCommunityLifecycleNotification(
-      {
-        userId: user.id,
-        communityId: community.id,
-        entityType: 'community_role_change',
-        eventKey,
-        title: 'Your role changed',
-        body: 'Your community role changed from member to moderator.',
-      },
+    const [created] = await createCommunityLifecycleNotifications(
+      [
+        {
+          userId: user.id,
+          communityId: community.id,
+          entityType: 'community_role_change',
+          eventKey,
+          title: 'Your role changed',
+          body: 'Your community role changed from member to moderator.',
+        },
+      ],
       {},
     )
 
-    expect(created).not.toBeNull()
+    expect(created).toBeDefined()
     const response = await listNotifications(user.id)
     const notification = response.notifications[created!.notificationId]
     expect(notification).toMatchObject({
@@ -41,18 +43,42 @@ describe('createCommunityLifecycleNotification', () => {
     })
 
     await expect(
-      createCommunityLifecycleNotification(
-        {
-          userId: user.id,
-          communityId: community.id,
-          entityType: 'community_role_change',
-          eventKey,
-          title: 'Duplicate',
-          body: 'Duplicate',
-        },
+      createCommunityLifecycleNotifications(
+        [
+          {
+            userId: user.id,
+            communityId: community.id,
+            entityType: 'community_role_change',
+            eventKey,
+            title: 'Duplicate',
+            body: 'Duplicate',
+          },
+        ],
         {},
       ),
-    ).resolves.toBeNull()
+    ).resolves.toEqual([])
+  })
+
+  it('creates one notification per input and skips only the duplicate event key', async () => {
+    const [first, second] = await Promise.all([createTestUserDirect(), createTestUserDirect()])
+    const community = await insertTestCommunity({ createdById: first!.id })
+    const input = (userId: string, eventKey: string) => ({
+      userId,
+      communityId: community.id,
+      entityType: 'community_ownership_transfer' as const,
+      eventKey,
+      title: 'Ownership changed',
+      body: 'Ownership changed.',
+    })
+    const firstKey = `lifecycle-batch:${community.id}:first`
+    await createCommunityLifecycleNotifications([input(first!.id, firstKey)], {})
+
+    const created = await createCommunityLifecycleNotifications(
+      [input(first!.id, firstKey), input(second!.id, `lifecycle-batch:${community.id}:second`)],
+      {},
+    )
+
+    expect(created.map(row => row.userId)).toEqual([second!.id])
   })
 })
 

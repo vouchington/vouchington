@@ -20,10 +20,10 @@ const tool: MergedToolSource<EmailPreferencesToolArgs, UpdateMyEmailPreferencesR
     parameters: EMAIL_PREFERENCES_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update My Email Preferences',
     plan: 'plus',
-    requiredScopes: { mcp: ['preferences:read', 'preferences:write'] },
+    requiredScopes: ['preferences:read', 'preferences:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/my/email-preferences' }],
     outputSchema: EMAIL_PREFERENCES_RESULT_SCHEMA,

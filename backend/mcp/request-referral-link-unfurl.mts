@@ -19,10 +19,10 @@ const tool: Tool<ReferralLinkIdArgs, { success: true; referral_link: UserReferra
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Request Referral Link Unfurl',
     plan: 'plus',
-    requiredScopes: { mcp: ['referral-links:read', 'referral-links:write'] },
+    requiredScopes: ['referral-links:read', 'referral-links:write'],
     annotations: {
       readOnlyHint: false,
       destructiveHint: false,

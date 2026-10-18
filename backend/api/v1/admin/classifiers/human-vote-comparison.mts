@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { getClassifierHumanVoteComparison } from '@services/classifiers'
 import { isModerationStaff } from '@services/users'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { defineQueryContract, queryString, queryUuid } from '@modules/pagination'
+import { defineQueryContract, queryString, queryUuid } from '@vouchington/pagination'
 import {
   requireAuthAndRateLimit,
   validateRequestContract,

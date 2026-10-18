@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { currentUserCanViewGrowthMetrics, getGrowthMetrics } from '@services/growth-metrics'
 import { parseGrowthMetricsRange } from '@services/growth-metrics/parse-range'
 import type { GrowthRange } from '@services/growth-metrics/types'
-import { defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery, apiResponse } from '../../../response-contract.mts'
 

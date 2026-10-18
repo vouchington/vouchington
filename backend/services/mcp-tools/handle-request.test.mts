@@ -53,7 +53,7 @@ describe('handleMcpHttpRequest', () => {
 
       expect(response.status).toBe(200)
       const json = (await response.json()) as { result?: { instructions?: string } }
-      expect(json.result?.instructions).toBe(MCP_SERVER_INSTRUCTIONS[config.surface])
+      expect(json.result?.instructions).toBe(MCP_SERVER_INSTRUCTIONS[config.audience])
     },
   )
 

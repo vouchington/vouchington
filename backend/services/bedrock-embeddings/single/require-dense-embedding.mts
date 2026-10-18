@@ -1,4 +1,4 @@
-import { unrecoverable } from '@modules/queue-errors'
+import { unrecoverable } from '@vouchington/queue-errors'
 import { EMBEDDING_DIMENSION } from '../config.mts'
 
 export function requireDenseEmbedding(value: unknown): number[] {

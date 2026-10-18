@@ -29,10 +29,10 @@ const getReferralLinkFeedTool: MergedToolSource<ReferralArgs, ReferralResult> = 
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Referral Link Feed',
     plan: 'free',
-    requiredScopes: { mcp: ['feeds:read'] },
+    requiredScopes: ['feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/feeds/referral_links/:feed_type' }],
     outputSchema: foundOrNotFoundSchema({

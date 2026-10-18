@@ -25,7 +25,7 @@ describe('copyright admin decision tool contracts', () => {
     const tools = ALL_TOOLS.filter(tool => tool.meta?.switch === 'copyright.mcpDecisionTools')
     expect(tools.map(tool => tool.schema.name).toSorted()).toEqual(names)
     for (const tool of tools) {
-      expect(tool.meta?.requiredScopes?.admin_mcp).toEqual([
+      expect(tool.meta?.requiredScopes).toEqual([
         'copyright-notices:read',
         'copyright-notices:write',
       ])

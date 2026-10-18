@@ -76,6 +76,7 @@ describe('copyright guest capabilities', () => {
     const staff = await createTestCopyrightStaff()
     const now = new Date('2026-07-02T12:00:00.000Z')
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId: first.notice.id,
       expiresAt,
@@ -121,6 +122,7 @@ describe('copyright guest capabilities', () => {
     const issuer = await createTestCopyrightStaff()
     const revoker = await createTestCopyrightStaff()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: issuer,
       noticeId: notice.id,
       expiresAt,
@@ -151,20 +153,28 @@ describe('copyright guest capabilities', () => {
     const staff = await createTestCopyrightStaff()
     const outsiderRecord = await createTestUserDirect()
     const outsider = { ...outsiderRecord, roles: [] } as typeof outsiderRecord
+    const issuedAt = new Date()
     await expect(
       issueCopyrightGuestCapability({
+        issuedAt,
         currentUser: staff,
         noticeId: notice.id,
-        expiresAt: new Date(Date.now() + copyrightGuestCapabilityMaxLifetimeMs + 60_000),
+        expiresAt: new Date(issuedAt.getTime() + copyrightGuestCapabilityMaxLifetimeMs + 60_000),
       }),
     ).rejects.toMatchObject({ status: 422, message: 'Guest capabilities expire within 30 days' })
     await expect(
-      issueCopyrightGuestCapability({ currentUser: outsider, noticeId: notice.id, expiresAt }),
+      issueCopyrightGuestCapability({
+        issuedAt,
+        currentUser: outsider,
+        noticeId: notice.id,
+        expiresAt,
+      }),
     ).rejects.toMatchObject({ status: 403 })
     const capability = await issueCopyrightGuestCapability({
+      issuedAt,
       currentUser: staff,
       noticeId: notice.id,
-      expiresAt: new Date(Date.now() + copyrightGuestCapabilityMaxLifetimeMs - 60_000),
+      expiresAt: new Date(issuedAt.getTime() + copyrightGuestCapabilityMaxLifetimeMs - 60_000),
     })
     await expect(
       revokeCopyrightGuestCapability({
@@ -179,6 +189,7 @@ describe('copyright guest capabilities', () => {
   it('appends a correction without moving receipt time or inventing a deadline', async () => {
     const { notice, receivedAt } = await openNotice()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: await createTestCopyrightStaff(),
       noticeId: notice.id,
       expiresAt,
@@ -204,9 +215,15 @@ describe('copyright guest capabilities', () => {
     const held = await openNotice()
     const other = await openNotice()
     const staff = await createTestCopyrightStaff()
+    const issueInput = {
+      currentUser: staff,
+      noticeId: held.notice.id,
+      expiresAt,
+      issuedAt: new Date(),
+    }
     const [capability, secondCapability] = await Promise.all([
-      issueCopyrightGuestCapability({ currentUser: staff, noticeId: held.notice.id, expiresAt }),
-      issueCopyrightGuestCapability({ currentUser: staff, noticeId: held.notice.id, expiresAt }),
+      issueCopyrightGuestCapability(issueInput),
+      issueCopyrightGuestCapability(issueInput),
     ])
     const courtFiling = (token: string, now: string) =>
       appendCopyrightGuestFiling({
@@ -248,6 +265,7 @@ describe('copyright guest capabilities', () => {
     const outsiderRecord = await createTestUserDirect()
     const outsider = { ...outsiderRecord, roles: [] } as typeof outsiderRecord
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId: notice.id,
       expiresAt,

@@ -8,7 +8,7 @@ import {
   queryInteger,
   queryString,
   type QueryParameterContract,
-} from './query-contract.mts'
+} from '@vouchington/pagination'
 
 const paginationFilterQueryNames = {
   postTypes: ['post_types'],

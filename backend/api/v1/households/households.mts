@@ -5,7 +5,8 @@ import {
   createHousehold,
   type HouseholdAccess,
 } from '@services/individuals-households'
-import { createPaginationParser, defineQueryContract, queryEnum } from '@modules/pagination'
+import { defineQueryContract, queryEnum } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'

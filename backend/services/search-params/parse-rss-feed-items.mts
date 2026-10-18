@@ -1,6 +1,4 @@
 import {
-  type PaginationRuntimeLimitBounds,
-  createPaginationParser,
   defineQueryContract,
   queryBoolean,
   queryCsvArray,
@@ -9,7 +7,8 @@ import {
   queryString,
   queryUuid,
   withQueryContract,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
+import { type PaginationRuntimeLimitBounds, createPaginationParser } from '@modules/pagination'
 import { VALID_MEDIA_TYPES } from '@modules/pagination/filters'
 import { isUUID } from '@modules/utils'
 import { getTopicIdsByAnyCachedBatch, resolveRssFeedIds } from '@services/entity-cache'

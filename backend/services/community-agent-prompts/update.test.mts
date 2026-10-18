@@ -35,7 +35,7 @@ describe('update', () => {
         createdById: user.id,
         prompt: 'Before',
       })
-      const updated = await updateCommunityAgentPrompt(user, p.id, { prompt: 'After' })
+      const updated = await updateCommunityAgentPrompt(user, p, { prompt: 'After' })
       expect(updated.prompt).toBe('After')
       expect(updated.id).toBe(p.id)
     })
@@ -45,7 +45,7 @@ describe('update', () => {
         communityId: community.id,
         createdById: user.id,
       })
-      const updated = await updateCommunityAgentPrompt(user, p.id, { prompt: '  trimmed  ' })
+      const updated = await updateCommunityAgentPrompt(user, p, { prompt: '  trimmed  ' })
       expect(updated.prompt).toBe('trimmed')
     })
 
@@ -55,34 +55,26 @@ describe('update', () => {
         createdById: user.id,
         prompt: 'Unchanged',
       })
-      const updated = await updateCommunityAgentPrompt(user, p.id, {})
+      const updated = await updateCommunityAgentPrompt(user, p, {})
       expect(updated.prompt).toBe('Unchanged')
     })
 
     it('rejects update by non-creator', async () => {
       await expect(
-        updateCommunityAgentPrompt(other, prompt.id, { prompt: 'Hacked' }),
+        updateCommunityAgentPrompt(other, prompt, { prompt: 'Hacked' }),
       ).rejects.toMatchObject({ status: 403 })
     })
 
     it('rejects empty prompt string', async () => {
       await expect(
-        updateCommunityAgentPrompt(user, prompt.id, { prompt: '   ' }),
+        updateCommunityAgentPrompt(user, prompt, { prompt: '   ' }),
       ).rejects.toMatchObject({ status: 422 })
     })
 
     it('rejects prompt over 10000 characters', async () => {
       await expect(
-        updateCommunityAgentPrompt(user, prompt.id, { prompt: 'x'.repeat(10001) }),
+        updateCommunityAgentPrompt(user, prompt, { prompt: 'x'.repeat(10001) }),
       ).rejects.toMatchObject({ status: 422 })
-    })
-
-    it('rejects update to non-existent prompt', async () => {
-      await expect(
-        updateCommunityAgentPrompt(user, '00000000-0000-0000-0000-000000000000', {
-          prompt: 'test',
-        }),
-      ).rejects.toMatchObject({ status: 404 })
     })
 
     it('rejects updates in archived communities', async () => {
@@ -98,7 +90,7 @@ describe('update', () => {
       await archiveCommunity(archivedCommunity.id, user.id)
 
       await expect(
-        updateCommunityAgentPrompt(user, archivedPrompt.id, { prompt: 'nope' }),
+        updateCommunityAgentPrompt(user, archivedPrompt, { prompt: 'nope' }),
       ).rejects.toMatchObject({ status: 403, message: 'Community is archived' })
     })
   })

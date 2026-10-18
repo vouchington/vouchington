@@ -248,6 +248,7 @@
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.2.1",
+    "@vouchington/pagination": "^0.0.3",
     "@vouchington/rate-limit": "^0.2.0",
     "glide-mq": "^0.18.0",
     "http-errors": "^2.0.1",

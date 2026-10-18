@@ -41,6 +41,7 @@ async function applyLockedCommunityUpdate(
       surface.nextImageId ?? null,
       surface.nextImageId ? input.actorUserId : null,
       input.query,
+      { prepublished: true },
     )
   }
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)

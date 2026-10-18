@@ -14,10 +14,10 @@ const tool: MergedToolSource<UpdateMyBioArgs, UpdateMyBioResult> = {
     parameters: BIO_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update My Bio',
     plan: 'plus',
-    requiredScopes: { mcp: ['profile:read', 'profile:write'] },
+    requiredScopes: ['profile:read', 'profile:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/my/profile' }],
     outputSchema: BIO_RESULT_SCHEMA,

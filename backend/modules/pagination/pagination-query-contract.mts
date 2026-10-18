@@ -6,7 +6,7 @@ import type {
   QueryEnumContract,
   QueryIntegerContract,
   QueryStringContract,
-} from './query-contract.mts'
+} from '@vouchington/pagination'
 
 type ConfiguredValue<TValue, TKey extends PropertyKey, TFallback> =
   TValue extends Record<TKey, infer TResult> ? Exclude<TResult, undefined> : TFallback

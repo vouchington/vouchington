@@ -6,12 +6,8 @@ import { apiQuery, apiResponse } from '../../response-contract.mts'
 import { isAdminUser } from '@services/users'
 import { searchModeratorActions, MODERATOR_ACTION_TYPES } from '@services/moderator-actions'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
-import {
-  createPaginationParser,
-  defineQueryContract,
-  queryEnum,
-  queryUuid,
-} from '@modules/pagination'
+import { defineQueryContract, queryEnum, queryUuid } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 
 const parser = createPaginationParser({
   cursor: { type: 'simple' },

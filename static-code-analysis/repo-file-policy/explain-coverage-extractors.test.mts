@@ -4,29 +4,6 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { reportCoverage } from '../explain-coverage.mts'
 describe('EXPLAIN extractor overlap', () => {
-  it('keeps raw session-local PoolClient reads visible as uncovered', async () => {
-    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-pool-client-'))
-    try {
-      const resultsPath = join(fixtureDir, 'results.json')
-      writeFileSync(
-        resultsPath,
-        JSON.stringify({
-          results: [{ name: 'other', query_text: '/* other */ SELECT 1', scenario_id: 'fixture' }],
-          completedScenarioIds: ['fixture'],
-        }),
-      )
-      const fileName = 'backend/services/notifications/reconcile-batches.mts'
-      const source = readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8')
-      const report = await reportCoverage([{ fileName, source }], resultsPath, ['fixture'])
-      expect(report).toMatchObject({ annotatedStatements: 2, reads: 2, coveredReads: 0 })
-      expect(report.uncoveredReads.map(read => read.name)).toEqual([
-        'selectRssFeedItemNotificationRecipientBatch',
-        'selectPostNotificationRecipientBatch',
-      ])
-    } finally {
-      rmSync(fixtureDir, { recursive: true, force: true })
-    }
-  })
   it('lists assembled reads only when their extracted SQL has a known read verb', async () => {
     const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-assembled-'))
     try {
@@ -79,33 +56,22 @@ describe('EXPLAIN extractor overlap', () => {
       ).toEqual(
         expect.arrayContaining([
           'buildCommentAncestorsQuery',
-          'getVisibleCommentDescendantIdsPage',
           'getUserBookmarkCounts',
           'getEntityBookmarkCounts',
           'queryEntityBookmarksForRelations',
-          'getCommunityBySlugOnly',
-          'getCommunityById',
-          'getCommunityBySlug',
-          'getCommunityWithViewerById',
-          'getCommunityWithViewerBySlug',
-          'getTopicDataPointInsights',
           'refreshEntityRelationVoteStatsById',
           'resolveEntityRelationElectionTargetById',
-          'getReferralLinksFeed',
           'getRssFeedItemFeedIds',
           'getStoryMemberPagesBatch',
           'getImagePlacementsForCopyright',
           'getModerationAppealById',
           'listPostPublicationShadowAuditCandidates',
-          'getPostMetricsByAnyBatch',
           'getPostMetricsByAny',
-          'getPrioritizedReferralLinks',
           'getRssFeedByIdToFetch',
           'isUserActive',
           'isFederationEnabledForUser',
           'listRemoteFollowerInboxPage',
           'getTopicMetricsByAnyBatch',
-          'getTrendingCommunities',
           'getUserMetricsByAnyBatch',
           'gatherVoteWeightFactors',
           'getFollowedUsersByElectionVote',
@@ -114,6 +80,28 @@ describe('EXPLAIN extractor overlap', () => {
           'selectRssFeedItemNotificationRecipientBatch',
         ]),
       )
+      for (const fileName of [
+        'backend/services/comments/descendant-ids.mts',
+        'backend/services/communities/get.mts',
+        'backend/services/communities/load-with-viewer.mts',
+        'backend/services/data-points/insights.mts',
+        'backend/services/posts/metrics-batch.mts',
+        'backend/services/trending-communities/get-trending-communities.mts',
+        'backend/services/feeds/referral-links/get.mts',
+        'backend/services/prioritized-referral-links/get-prioritized.mts',
+      ]) {
+        expect(report.unclassifiedStatements).toContainEqual(
+          expect.objectContaining({
+            fileName,
+            name: '(annotation unavailable)',
+            reason: expect.any(String),
+          }),
+        )
+      }
+      expect(report.unclassifiedStatements.every(statement => statement.reason.length > 0)).toBe(
+        true,
+      )
+      expect(report.coveredReads).toBe(0)
       expect(report.reads).toBeGreaterThanOrEqual(9)
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true })

@@ -1,4 +1,4 @@
-import { getOrCreateQueue } from '../../test-helpers/glide-mq-vitest-internals.mts'
+import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 import { AI_AGENTS_QUEUE_NAME } from '../queues/ai-agents/config.mts'
 import { classifierRunJobId } from '../queues/ai-agents/enqueues/classifier-run.mts'
 import { ai_agents } from '../queues/ai-agents/queues.mts'

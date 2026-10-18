@@ -9,14 +9,14 @@ import { userMergedReadingGroups } from '../mcp/registry/user-merged-reading-too
 import { userMergedParticipationGroups } from '../mcp/registry/user-merged-participation-tools.mts'
 import { userMergedAccountGroups } from '../mcp/registry/user-merged-account-tools.mts'
 import { adminMergedGroups } from '../mcp/registry/admin-merged-tools.mts'
-import { listToolsForSurface, isToolMcpEligible } from '../mcp/registry/select.mts'
+import { listToolsForAudience, isToolMcpEligible } from '../mcp/registry/select.mts'
 import { toolRouteKeys } from '../services/mcp-tools/tool-route-keys.mts'
 import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
 import type { Tool } from '../services/openai-agents/tool-types.mts'
 
-type Surface = 'mcp' | 'admin_mcp'
+type Audience = import('../services/oauth-authorization-server/resources.mts').OAuthResourceAudience
 export type OperationCase = {
-  surface: Surface
+  audience: Audience
   name: string
   option: string | null
   input: Record<string, unknown>
@@ -60,7 +60,7 @@ function mergedUserCases(): OperationCase[] {
     const violation = validateToolArguments(tool.schema.parameters, input)
     if (violation) throw new Error(`${row.target}.${row.option}: ${violation}`)
     return {
-      surface: 'mcp' as const,
+      audience: tool.meta!.audience!,
       name: row.target,
       option: row.option,
       input,
@@ -79,7 +79,7 @@ function mergedAdminCases(): OperationCase[] {
       const violation = validateToolArguments(tool.schema.parameters, input)
       if (violation) throw new Error(`${group.name}.${entry.option}: ${violation}`)
       return {
-        surface: 'admin_mcp' as const,
+        audience: tool.meta!.audience!,
         name: group.name,
         option: entry.option,
         input,
@@ -105,7 +105,7 @@ function communityModerationCases(): OperationCase[] {
           ? ['community-moderation:read']
           : ['community-moderation:read', 'community-moderation:write']
       return {
-        surface: 'mcp' as const,
+        audience: tool.meta!.audience!,
         name: group.name,
         option: entry.option,
         input,
@@ -118,13 +118,13 @@ function communityModerationCases(): OperationCase[] {
   return cases
 }
 
-function singleCases(surface: Surface, mergedNames: ReadonlySet<string>): OperationCase[] {
-  return listToolsForSurface(surface, ALL_TOOLS).flatMap(tool => {
+function singleCases(audience: Audience, mergedNames: ReadonlySet<string>): OperationCase[] {
+  return listToolsForAudience(audience, ALL_TOOLS).flatMap(tool => {
     if (!isToolMcpEligible(tool) || mergedNames.has(tool.schema.name)) return []
     const input = sampleMcpToolArguments(tool)
     return [
       {
-        surface,
+        audience,
         name: tool.schema.name,
         option: null,
         input,
@@ -143,7 +143,7 @@ export function currentOperationCases(): OperationCase[] {
       const violation = validateToolArguments(tool.schema.parameters, input)
       if (violation) throw new Error(`${group.name}.${entry.option}: ${violation}`)
       return {
-        surface: 'mcp' as const,
+        audience: tool.meta!.audience!,
         name: group.name,
         option: entry.option,
         input,
@@ -151,35 +151,33 @@ export function currentOperationCases(): OperationCase[] {
       }
     }),
   )
-  const user = [
+  const mergedNames = new Set([...userMergedNames, ...adminMergedNames])
+  const audiences: Audience[] = ['user', 'community_moderation', 'brand', 'admin', 'legal']
+  const cases = [
     ...mergedUserCases(),
     ...participation,
     ...communityModerationCases(),
-    ...singleCases('mcp', userMergedNames),
+    ...mergedAdminCases(),
+    ...audiences.flatMap(audience => singleCases(audience, mergedNames)),
   ]
-  const admin = [...mergedAdminCases(), ...singleCases('admin_mcp', adminMergedNames)]
-  if (user.length !== 207 || admin.length !== 106)
-    throw new Error(`case count: ${user.length}/${admin.length}`)
   if (
-    new Set(user.map(row => `${row.name}.${row.option ?? ''}`)).size !== 202 ||
-    new Set(admin.map(row => `${row.name}.${row.option ?? ''}`)).size !== 106
+    cases.length !== 320 ||
+    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 315
   )
-    throw new Error('distinct operation inventory drift')
-  for (const [surface, rows] of [
-    ['mcp', user],
-    ['admin_mcp', admin],
-  ] as const) {
-    const actualNames = listToolsForSurface(surface, ALL_TOOLS)
+    throw new Error('current operation inventory drift')
+  for (const audience of audiences) {
+    const rows = cases.filter(row => row.audience === audience)
+    const actualNames = listToolsForAudience(audience, ALL_TOOLS)
       .flatMap(tool => (isToolMcpEligible(tool) ? [tool.schema.name] : []))
       .toSorted()
     const coveredNames = [...new Set(rows.map(row => row.name))].toSorted()
     if (JSON.stringify(actualNames) !== JSON.stringify(coveredNames))
-      throw new Error(`${surface} tool inventory drift`)
+      throw new Error(`${audience} tool inventory drift`)
     for (const row of rows) {
       const tool = ALL_TOOLS.find(candidate => candidate.schema.name === row.name)!
       if ((tool.meta?.auditOption?.(row.input) ?? null) !== row.option)
         throw new Error(`${row.name}.${row.option ?? 'single'} audit option drift`)
     }
   }
-  return [...user, ...admin]
+  return cases
 }

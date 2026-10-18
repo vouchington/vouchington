@@ -27,10 +27,10 @@ const tool: MergedToolSource<
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update My Profile Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['profile:read', 'profile:write'] },
+    requiredScopes: ['profile:read', 'profile:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/my/profile/links/:id' }],
     outputSchema: PROFILE_LINK_RESULT_SCHEMA,

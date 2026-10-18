@@ -17,7 +17,7 @@ import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { entityRelationViewerFor } from '@services/users'
-import { defineQueryContract, queryCsvArray, queryString } from '@modules/pagination'
+import { defineQueryContract, queryCsvArray, queryString } from '@vouchington/pagination'
 import { apiQuery } from '../../response-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 

@@ -1,32 +1,38 @@
+import {
+  renderCommunityApplicationDecisionEmail,
+  renderCommunityInviteEmail,
+  renderCommunityModerationSummaryEmail,
+  renderCommunityOwnershipTransferEmail,
+  renderCommunityRoleChangeEmail,
+  renderDataExportReadyEmail,
+  renderEmailVerificationEmail,
+  renderFollowNewsSourcesEmail,
+  renderFollowTopicsEmail,
+  renderLoginTokenEmail,
+  renderPostReferralLinkEmail,
+  renderRenewalPriceIncreaseEmail,
+  renderWelcomeEmail,
+  renderApiKeyExpiryEmail,
+} from './index.mts'
+
+import type { EmailRenderResultPromise } from '@vouchington/email'
+
 import { describe, expect, it } from 'vitest'
-import { renderApiKeyExpiryEmail } from './api-key-expiry-renderer.mts'
+
 import CommunityApplicationDecisionEmail from './community-application-decision.tsx'
-import { renderCommunityApplicationDecisionEmail } from './community-application-decision-renderer.mts'
 import CommunityInviteEmail from './community-invite.tsx'
-import { renderCommunityInviteEmail } from './community-invite-renderer.mts'
 import CommunityModerationSummaryEmail from './community-moderation-summary.tsx'
-import { renderCommunityModerationSummaryEmail } from './community-moderation-summary-renderer.mts'
 import CommunityOwnershipTransferEmail from './community-ownership-transfer.tsx'
-import { renderCommunityOwnershipTransferEmail } from './community-ownership-transfer-renderer.mts'
 import CommunityRoleChangeEmail from './community-role-change.tsx'
-import { renderCommunityRoleChangeEmail } from './community-role-change-renderer.mts'
 import DataExportReadyEmail from './data-export-ready.tsx'
-import { renderDataExportReadyEmail } from './data-export-ready-renderer.mts'
 import EmailVerificationEmail from './email-verification.tsx'
-import { renderEmailVerificationEmail } from './email-verification-renderer.mts'
 import FollowNewsSourcesEmail from './follow-news-sources.tsx'
-import { renderFollowNewsSourcesEmail } from './follow-news-sources-renderer.mts'
 import FollowTopicsEmail from './follow-topics.tsx'
-import { renderFollowTopicsEmail } from './follow-topics-renderer.mts'
 import LoginTokenEmail from './login-token.tsx'
-import { renderLoginTokenEmail } from './login-token-renderer.mts'
 import PostReferralLinkEmail from './post-referral-link.tsx'
-import { renderPostReferralLinkEmail } from './post-referral-link-renderer.mts'
 import RenewalPriceIncreaseEmail from './renewal-price-increase.tsx'
-import { renderRenewalPriceIncreaseEmail } from './renewal-price-increase-renderer.mts'
-import type { EmailRenderResultPromise } from './types.mts'
+
 import WelcomeEmail from './welcome.tsx'
-import { renderWelcomeEmail } from './welcome-renderer.mts'
 
 const frenchDocuments: ReadonlyArray<readonly [string, () => EmailRenderResultPromise]> = [
   [

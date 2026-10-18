@@ -249,4 +249,24 @@ describe('Community Agent Prompts Routes', () => {
   })
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof createTestMembership)
+  describe('PATCH and DELETE /api/v1/communities/:slug/agent-prompts/:promptId', () => {
+    it('returns 404 for an unknown prompt on update and delete', async () => {
+      const user = await createTestUser()
+      const community = await insertTestCommunity({
+        createdById: user.id,
+        slug: `ap-missing-${createRandomString(8)}`,
+      })
+      await insertTestCommunityMember({ communityId: community.id, userId: user.id, role: 'owner' })
+      const path = `/api/v1/communities/${community.slug}/agent-prompts/${crypto.randomUUID()}`
+
+      const request = createRequest()
+      await request.authenticateAs(user)
+      await request
+        .patch(path)
+        .set('Content-Type', 'application/json')
+        .send({ prompt: 'Nothing to update' })
+        .expect(404)
+      await request.delete(path).expect(404)
+    })
+  })
 })

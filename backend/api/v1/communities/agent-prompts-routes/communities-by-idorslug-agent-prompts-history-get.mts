@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { defineQueryContract, queryUuid } from '@modules/pagination'
+import { defineQueryContract, queryUuid } from '@vouchington/pagination'
 import { loadCommunityWithViewer } from '@services/communities'
 import {
   currentUserCanManageCommunityPrompts,

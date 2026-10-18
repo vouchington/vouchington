@@ -99,6 +99,7 @@ describe.each(switchStates)('claimant misuse ledger with the switch %s', (_state
     const guestNotice = await createSignedInCopyrightForm(1, { claimant })
     const emailNotice = await createSignedInCopyrightForm(1, { claimant })
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId: guestNotice.intake.copyright_notice_id,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),

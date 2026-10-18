@@ -4,7 +4,7 @@ import type http from 'node:http'
 import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
-  type RepeatBaselineEntry,
+  parseRepeatBaseline,
 } from '@data-stores/psql/request-query-profile-baseline'
 import {
   createRequestQueryProfile,
@@ -24,9 +24,11 @@ const scopesGlobal = globalThis as typeof globalThis & {
 scopesGlobal[SCOPES_KEY] ??= new AsyncLocalStorage<RequestScope>()
 const requestScopes = scopesGlobal[SCOPES_KEY]
 
-const BASELINE = JSON.parse(
-  readFileSync(new URL('./request-query-profile-baseline.json', import.meta.url), 'utf8'),
-) as RepeatBaselineEntry[]
+const BASELINE = parseRepeatBaseline(
+  JSON.parse(
+    readFileSync(new URL('./request-query-profile-baseline.json', import.meta.url), 'utf8'),
+  ),
+)
 
 /** Method and path with query string removed and UUID segments folded to `:id`. */
 export function requestProfileRoute(req: http.IncomingMessage): string {

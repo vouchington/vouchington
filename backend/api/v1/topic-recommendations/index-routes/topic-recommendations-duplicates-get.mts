@@ -3,7 +3,7 @@ import { findTopicRecommendationDuplicates } from '@services/topic-recommendatio
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiQuery } from '../../../response-contract.mts'
-import { defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const duplicateRecommendationsQuery = defineQueryContract({

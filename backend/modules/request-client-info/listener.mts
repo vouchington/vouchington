@@ -19,7 +19,13 @@ import { isAuthenticatedOriginRequest } from './authenticated-origin.mts'
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
 const TRUSTED_REQUEST_KINDS = new Set(['bot', 'cache-fill'])
 const GLOBAL_FEATURE_FLAGS_REQUEST_KIND = 'global-feature-flags'
-const EXEMPT_API_PREFIXES = ['/api/v1/mcp', '/api/v1/admin/mcp', '/api/v1/email-unsubscribe']
+const EXEMPT_API_PREFIXES = [
+  '/api/v1/mcp',
+  '/api/v1/admin/mcp',
+  '/api/v1/community-moderation/mcp',
+  '/api/v1/legal/mcp',
+  '/api/v1/email-unsubscribe',
+]
 const NATIVE_BOOTSTRAP_PATHS = new Set([
   '/api/v1/auth/email-address/tokens',
   '/api/v1/auth/email-address/login',

@@ -18,7 +18,7 @@ import { notifications } from '@queues/notifications/queues'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
 import { listAvailableNotificationPushIntents } from '@services/notifications-push'
-import { getOrCreateQueue } from '../../../test-helpers/glide-mq-vitest-internals.mts'
+import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 import {
   processDeliverNotificationPushIntent,
   processReconcileNotificationPushIntents,

@@ -9,7 +9,11 @@ import {
   softDeleteUser,
   getPostDeletedById,
 } from '@voucha/test-helpers'
-import { callStructuredMcpTool, callRejectedMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
+import {
+  callStructuredMcpTool,
+  callRejectedMcpTool,
+  optionArgs,
+} from '@voucha/test-helpers/mcp-tool-contract'
 import {
   withConcurrentActorSuspensionForTest,
   withConcurrentCommunityReviewDisableForTest,
@@ -39,11 +43,8 @@ describe('delegated post mutation contracts and transaction fences', () => {
     expect(
       await callRejectedMcpTool(
         await caller(),
-        'update_post',
-        {
-          id: crypto.randomUUID(),
-          [field as string]: value,
-        },
+        'act_on_post',
+        optionArgs('edit', { id: crypto.randomUUID(), [field as string]: value }),
         SCOPES,
       ),
     ).toContain('Invalid tool arguments')
@@ -85,9 +86,14 @@ describe('delegated post mutation contracts and transaction fences', () => {
         parentId: root,
         clearanceStatus: 'approved',
       })
-      expect(await callRejectedMcpTool(user, 'update_post', { id, ...changes }, SCOPES)).toContain(
-        'Comments inherit their thread audience',
-      )
+      expect(
+        await callRejectedMcpTool(
+          user,
+          'act_on_post',
+          optionArgs('edit', { id, ...changes }),
+          SCOPES,
+        ),
+      ).toContain('Comments inherit their thread audience')
     },
   )
 
@@ -165,7 +171,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
       ).toMatchObject({ success: true, post: { post_type: 'discussion' } })
     },
   )
-  it.each(['create_post', 'update_post', 'delete_post'])(
+  it.each(['create_post', 'act_on_post', 'delete_post'])(
     'refuses %s after community deletion wins the row fence',
     async name => {
       const user = await caller()
@@ -193,7 +199,9 @@ describe('delegated post mutation contracts and transaction fences', () => {
               parent_post_id: root,
               markdown: 'Reply',
             }
-          : { id: root, ...(name === 'update_post' ? { title: 'Changed' } : {}) }
+          : name === 'act_on_post'
+            ? optionArgs('edit', { id: root, title: 'Changed' })
+            : { id: root }
       expect(
         await withConcurrentCommunityDeletionForTest(community.id, () =>
           callRejectedMcpTool(user, name, args, SCOPES),
@@ -237,7 +245,7 @@ describe('delegated post mutation contracts and transaction fences', () => {
 })
 
 describe('delegated actor suspension fences', () => {
-  it.each(['create_post', 'update_post', 'delete_post'] as const)(
+  it.each(['create_post', 'act_on_post', 'delete_post'] as const)(
     '%s refuses suspension committed after preflight',
     async tool => {
       const user = await caller()
@@ -251,8 +259,8 @@ describe('delegated actor suspension fences', () => {
       const args =
         tool === 'create_post'
           ? { idempotency_key: crypto.randomUUID(), title: 'Refused' }
-          : tool === 'update_post'
-            ? { id, title: 'Refused' }
+          : tool === 'act_on_post'
+            ? optionArgs('edit', { id, title: 'Refused' })
             : { id }
       const result = await withConcurrentActorSuspensionForTest(user.id, () =>
         callRejectedMcpTool(user, tool, args, SCOPES),

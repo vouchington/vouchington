@@ -135,11 +135,13 @@ function isUntrustedSchema(
 
 describe('registered admin authored-content contracts', () => {
   it('scans every advertised admin projection for untrusted fields and credential leaks', () => {
-    const tools = ALL_TOOLS.filter(tool => tool.meta?.surfaces.includes('admin_mcp'))
+    const tools = ALL_TOOLS.filter(
+      tool => tool.meta?.audience === 'admin' || tool.meta?.audience === 'legal',
+    )
     expect(tools.length).toBeGreaterThan(0)
     expect(
       tools.flatMap(tool => {
-        const advertised = toolToMcpTool(tool, 'admin_mcp').outputSchema
+        const advertised = toolToMcpTool(tool, tool.meta!.audience!).outputSchema
         const definitions =
           advertised?.['$defs'] && typeof advertised['$defs'] === 'object'
             ? (advertised['$defs'] as Record<string, unknown>)

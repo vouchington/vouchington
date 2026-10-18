@@ -28,7 +28,7 @@ type CatalogTool = {
   api: { method: string; path: string }[] | null
 }
 
-type CatalogServer = { name: string; path: string; surface: string; tools: CatalogTool[] }
+type CatalogServer = { name: string; path: string; audience: string; tools: CatalogTool[] }
 
 type Catalog = { servers: CatalogServer[] }
 
@@ -69,7 +69,7 @@ function toolMarkdown({ tool, plan, roles, api }: CatalogTool): string {
 function serverMarkdown(server: CatalogServer): string {
   return [
     `## \`${server.name}\``,
-    `Endpoint: \`POST ${server.path}\` · Surface: \`${server.surface}\` · Tools: ${server.tools.length}`,
+    `Endpoint: \`POST ${server.path}\` · Audience: \`${server.audience}\` · Tools: ${server.tools.length}`,
     ...server.tools.map(toolMarkdown),
   ].join('\n\n')
 }

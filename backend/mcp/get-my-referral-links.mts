@@ -63,9 +63,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Referral Links',
-    requiredScopes: { mcp: ['referral-links:read'] },
+    requiredScopes: ['referral-links:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/referral-links' }],
     outputSchema: foundOrNotFoundSchema(

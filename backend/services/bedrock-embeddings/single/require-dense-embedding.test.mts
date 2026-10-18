@@ -1,4 +1,4 @@
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { describe, expect, it } from 'vitest'
 import { EMBEDDING_DIMENSION } from '../config.mts'
 import { requireDenseEmbedding } from './require-dense-embedding.mts'

@@ -16,7 +16,7 @@ function fixtureTool(
   return {
     schema: { name, type: 'function', description: null, parameters: null, strict: null },
     function: (_user: unknown) => () => ({}),
-    ...(annotations ? { meta: { surfaces: ['mcp'], title: name, annotations, api } } : {}),
+    ...(annotations ? { meta: { audience: 'user', title: name, annotations, api } } : {}),
   } as unknown as Tool
 }
 
@@ -79,7 +79,7 @@ describe('findApiHintConflicts', () => {
   it('uses explicit staff service semantics rather than inferring them from HTTP methods', () => {
     const audited = fixtureTool('audited_edit', WRITE, ['PUT'])
     const guarded = fixtureTool('guarded_pause', IDEMPOTENT_WRITE, ['POST'])
-    for (const tool of [audited, guarded]) tool.meta!.surfaces = ['admin_mcp']
+    for (const tool of [audited, guarded]) tool.meta!.audience = 'admin'
     expect(findApiHintConflicts([audited, guarded])).toEqual([])
     audited.meta!.annotations = { readOnlyHint: false } as ToolAnnotations
     expect(findApiHintConflicts([audited])).toEqual([

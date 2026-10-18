@@ -29,7 +29,7 @@ function toolCall(args: Record<string, unknown>, id = 1) {
 
 function postAdminMcp(token: string, body: object) {
   return createRequest()
-    .post('/api/v1/admin/mcp')
+    .post('/api/v1/legal/mcp')
     .set('Content-Type', 'application/json')
     .set('Authorization', `Bearer ${token}`)
     .send(body)
@@ -38,13 +38,13 @@ function postAdminMcp(token: string, body: object) {
 async function issueAdmin(scope: string) {
   const user = await createTestUser({ administrator: true })
   const { tokens } = await issueTestOAuthTokensForClient(user, {
-    audience: 'admin',
+    audience: 'legal',
     scope,
   })
   return { user, token: tokens.access_token }
 }
 
-describe('copyright decision tools on POST /api/v1/admin/mcp', () => {
+describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
   useCopyrightMcpDecisionTools(false)
 
   it('hides disabled tools before an OAuth scope challenge, then rechecks availability per request', async () => {

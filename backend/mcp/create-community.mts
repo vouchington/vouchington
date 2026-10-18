@@ -77,10 +77,10 @@ const tool: Tool<Args, Result> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Create Community',
     plan: 'plus',
-    requiredScopes: { mcp: ['communities:read', 'communities:write'] },
+    requiredScopes: ['communities:read', 'communities:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/communities' }],
     outputSchema: successSchema({

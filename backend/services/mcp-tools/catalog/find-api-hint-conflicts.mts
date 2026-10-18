@@ -6,8 +6,8 @@ const IDEMPOTENT_METHODS: ReadonlySet<ToolApiEndpoint['method']> = new Set(['PUT
 
 // A tool's MCP hints must agree with the REST operations it names: a read maps only to GETs, and a
 // user write may claim idempotency with a required UUID admission key, or when every operation is
-// PUT or DELETE. A conservative false hint is always valid. Staff actions declare
-// their service semantics explicitly: history and guarded no-ops do not follow HTTP methods.
+// PUT or DELETE. A conservative false hint is always valid. Staff actions on admin and legal
+// audiences declare service semantics explicitly: history and guarded no-ops do not follow HTTP methods.
 export function findApiHintConflicts(tools: readonly Tool[]): ApiHintConflict[] {
   return tools.flatMap(tool => {
     const meta = tool.meta
@@ -15,7 +15,7 @@ export function findApiHintConflicts(tools: readonly Tool[]): ApiHintConflict[] 
       ? hintConflict(
           meta.annotations,
           meta.api,
-          meta.surfaces.includes('admin_mcp'),
+          meta.audience === 'admin' || meta.audience === 'legal',
           hasRequiredIdempotencyKey(tool) ||
             meta.api.every(route => route.method === 'POST' && route.path === '/api/v1/rss-feeds'),
         )

@@ -43,9 +43,9 @@ function fixtureTool(name: string, scope: string, readOnly: boolean, fails = fal
       return Promise.resolve({ ok: true, echoed: SENSITIVE_RESULT })
     },
     meta: {
-      surfaces: ['admin_mcp'],
+      audience: 'admin',
       title: name,
-      requiredScopes: { admin_mcp: [scope] },
+      requiredScopes: [scope],
       annotations: readOnly
         ? { readOnlyHint: true }
         : { readOnlyHint: false, destructiveHint: false, idempotentHint: true },

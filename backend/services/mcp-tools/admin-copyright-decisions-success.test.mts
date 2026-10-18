@@ -19,7 +19,7 @@ import {
 import { getPrivateUserByAny } from '@services/users/get'
 
 import { callMcpTool } from './call-tool.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 import type { PrivateUser } from '@services/users/types'
 
 const callTestCopyrightWriteTool = (user: PrivateUser, name: string, args: unknown) =>
@@ -28,7 +28,7 @@ const callTestCopyrightWriteTool = (user: PrivateUser, name: string, args: unkno
     args,
     { ...user, membership_plan: null },
     ['copyright-notices:read', 'copyright-notices:write'],
-    ADMIN_MCP_SERVER_CONFIG,
+    LEGAL_MCP_SERVER_CONFIG,
     true,
   )
 
@@ -144,6 +144,7 @@ describe('registered copyright case and capability decisions', () => {
     )
     const admin = await createTestUser({ administrator: true })
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: admin,
       noticeId: restricted.noticeId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),

@@ -23,10 +23,10 @@ const tool: Tool<Args, Result> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Leave Community',
     plan: 'plus',
-    requiredScopes: { mcp: ['communities:read', 'communities:write'] },
+    requiredScopes: ['communities:read', 'communities:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/communities/:idOrSlug/members' }],
     outputSchema: successSchema({ community_id: { type: 'string', format: 'uuid' } }),

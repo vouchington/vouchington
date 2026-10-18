@@ -15,28 +15,17 @@ async function createCommunityPostReviewWithOptions(
   options: QueryOptions,
   categoryVoteState: CategoryVoteState,
 ): Promise<CommunityPostReview> {
-  // Validate post exists, is not deleted, and is scoped to this community.
-  const { rows: postRows } = await read(
-    sql`/* createCommunityPostReview */
-    SELECT privacy, broadcast, deleted_at, community_id FROM posts WHERE id = ${postId}
-    `,
-    options,
-  )
-  assert(postRows[0], 404, 'Post not found')
-  const post = postRows[0]!
-  assert(!post.deleted_at, 404, 'Post not found')
-  assert(post.community_id === communityId, 422, 'Post does not belong to this community')
-  assert(
-    (post.broadcast === 'everyone' && post.privacy === 'public') ||
-      (post.broadcast === 'users' && post.privacy === 'private'),
-    422,
-    'Community posts must be public for everyone or private for signed-in users',
-  )
-
-  const { rows: communityRows } = await read(
-    sql`/* createCommunityPostReview */
+  // The post and the community with the caller's standing arrive in one read; the checks below
+  // keep their order: post first, then community, then membership and visibility.
+  const { rows: loadRows } = await read(
+    sql`/* createCommunityPostReview:load */
     SELECT
-      c.id AS community_id,
+      p.id AS post_id,
+      p.privacy,
+      p.broadcast,
+      p.deleted_at,
+      p.community_id,
+      c.id AS community_id_found,
       c.post_approval_required_at,
       EXISTS (
         SELECT 1
@@ -56,40 +45,47 @@ async function createCommunityPostReviewWithOptions(
         WHERE ur.user_id = ${currentUserId}
           AND urt.slug = 'administrator'
       ) AS current_user_is_admin
-    FROM communities c
+    FROM (SELECT 1) AS anchor
+    LEFT JOIN posts p ON p.id = ${postId}
+    LEFT JOIN communities c ON c.id = ${communityId}
+      AND c.deleted_at IS NULL
     LEFT JOIN community_members cm
       ON cm.community_id = c.id
       AND cm.user_id = ${currentUserId}
       AND cm.removed_at IS NULL
-    WHERE c.id = ${communityId}
-      AND c.deleted_at IS NULL
     `,
     options,
   )
+  const loaded = loadRows[0]!
+  assert(loaded.post_id, 404, 'Post not found')
+  assert(!loaded.deleted_at, 404, 'Post not found')
+  assert(loaded.community_id === communityId, 422, 'Post does not belong to this community')
+  assert(
+    (loaded.broadcast === 'everyone' && loaded.privacy === 'public') ||
+      (loaded.broadcast === 'users' && loaded.privacy === 'private'),
+    422,
+    'Community posts must be public for everyone or private for signed-in users',
+  )
 
-  assert(communityRows.length === 1, 404, 'Community not found')
-  for (const row of communityRows) {
-    assert(!row.archived_at, 403, `Community is archived: ${row.community_id}`)
-    assert(
-      row.member_user_id || row.current_user_is_admin,
-      403,
-      `You are not a member of community: ${row.community_id}`,
-    )
-    assert(
-      row.visibility === 'public' || (post.broadcast === 'users' && post.privacy === 'private'),
-      422,
-      'Private community posts must be private for signed-in users',
-    )
-  }
+  assert(loaded.community_id_found, 404, 'Community not found')
+  assert(!loaded.archived_at, 403, `Community is archived: ${communityId}`)
+  assert(
+    loaded.member_user_id || loaded.current_user_is_admin,
+    403,
+    `You are not a member of community: ${communityId}`,
+  )
+  assert(
+    loaded.visibility === 'public' ||
+      (loaded.broadcast === 'users' && loaded.privacy === 'private'),
+    422,
+    'Private community posts must be private for signed-in users',
+  )
 
   await assertCommunityPostTopicsNotMuted(postId, communityId, options, categoryVoteState)
 
   const now = new Date().toISOString()
   const approvedAt =
-    communityRows[0]!.post_approval_required_at ||
-    communityRows[0]!.raid_mode_post_approval_required
-      ? null
-      : now
+    loaded.post_approval_required_at || loaded.raid_mode_post_approval_required ? null : now
   // reviewed_at must be set whenever approved_at is set (DB check constraint).
   const reviewedAt = approvedAt !== null ? now : null
 
@@ -127,7 +123,7 @@ async function createCommunityPostReviewWithOptions(
     footprint: { priorCommunityId: communityId },
   })
   // An administrator's post skips community moderation, as it skips the other creation checks.
-  if (approvedAt && !communityRows[0]!.current_user_is_admin) {
+  if (approvedAt && !loaded.current_user_is_admin) {
     await requestCommunityModerationRun(options.query as TransactionQuery, postId)
   }
   return rows[0] as CommunityPostReview

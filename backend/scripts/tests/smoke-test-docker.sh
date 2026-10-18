@@ -20,7 +20,7 @@ SERVER_CONTAINER="vouchit-backend-server-$$"
 WORKER_CONTAINER="vouchit-backend-worker-$$"
 # Keep local allocations outside every deterministic runner slice; on a numeric CI runner the
 # allocator instead selects that runner's own slice.
-SMOKE_PORT="${SMOKE_PORT:-$(python3 ci/allocate-browser-safe-ports.py 1)}"
+SMOKE_PORT="${SMOKE_PORT:-$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)}"
 
 cleanup() {
   docker stop "$SERVER_CONTAINER" 2>/dev/null || true

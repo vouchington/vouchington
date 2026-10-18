@@ -14,13 +14,15 @@ export async function issueCopyrightGuestCapability(input: {
   currentUser: PrivateUser
   noticeId: string
   expiresAt: Date
+  issuedAt: Date
 }): Promise<{ id: string; token: string }> {
   assert(
     currentUserCanReviewCopyrightNotices(input.currentUser),
     403,
     'Only copyright staff can issue guest capabilities',
   )
-  const issuedAtMs = Date.now()
+  const issuedAtMs = input.issuedAt.getTime()
+  if (!Number.isFinite(issuedAtMs)) throw new TypeError('issuedAt must be a valid instant')
   assert(
     input.expiresAt.getTime() - issuedAtMs <= copyrightGuestCapabilityMaxLifetimeMs,
     422,

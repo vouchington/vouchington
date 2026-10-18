@@ -80,7 +80,8 @@ export function assertPostUpdatePreflight(
         OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN,
       )
     }
-    assertPostContentEditable(creator, post)
+    const contentEditNow = Date.now()
+    assertPostContentEditable(creator, post, contentEditNow)
   }
 }
 

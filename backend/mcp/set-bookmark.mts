@@ -29,10 +29,10 @@ const tool: MergedToolSource<BookmarkToolArgs, SetBookmarkResult> = {
     parameters: BOOKMARK_TOOL_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Set Bookmark',
     plan: 'plus',
-    requiredScopes: { mcp: ['bookmarks:read', 'bookmarks:write'] },
+    requiredScopes: ['bookmarks:read', 'bookmarks:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'PUT', path: '/api/v1/bookmarks/:entityType/:entityId/:predicate' }],
     outputSchema: successSchema({ bookmark: BOOKMARK_RESULT_SCHEMA }),

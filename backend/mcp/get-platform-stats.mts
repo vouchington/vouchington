@@ -21,9 +21,9 @@ const tool: MergedToolSource<Record<string, never>, ToolResult> = {
     parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Platform Stats',
-    requiredScopes: { mcp: ['reference-data:read'] },
+    requiredScopes: ['reference-data:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/platform-stats' }],
     outputSchema: successSchema(

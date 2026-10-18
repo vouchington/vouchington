@@ -36,9 +36,9 @@ const tool: MergedToolSource<Args, Result> = {
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'List My Review Disputes',
-    requiredScopes: { mcp: ['disputes:read'] },
+    requiredScopes: ['disputes:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/disputes' }],
     outputSchema: foundOrNotFoundSchema({

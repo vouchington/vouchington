@@ -796,6 +796,14 @@
 - `unlisted`
 - `public`
 
+## `mcp_call_audit_event_audiences`
+
+- `user`
+- `community_moderation`
+- `brand`
+- `admin`
+- `legal`
+
 ## `mcp_call_audit_event_outcomes`
 
 - `accepted`
@@ -809,11 +817,6 @@
 - `scopes_undeclared`
 - `insufficient_scope`
 - `rate_limited`
-
-## `mcp_call_audit_event_surfaces`
-
-- `mcp`
-- `admin_mcp`
 
 ## `media_delivery_desired_states`
 

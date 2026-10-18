@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
-import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
+import {
+  ADMIN_MCP_SERVER_CONFIG,
+  USER_MCP_SERVER_CONFIG,
+  ALL_MCP_SERVER_CONFIGS,
+} from './config.mts'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 const admin = { id: 'admin-tools-contract', roles: ['administrator'], membership_plan: null }
 const allScopes = Object.keys(SCOPE_DEFINITIONS).filter(
@@ -15,7 +19,7 @@ describe('admin tool authorization contract', () => {
       listMcpToolsForUser(admin, allScopes, USER_MCP_SERVER_CONFIG).map(tool => tool.name),
     )
     const tools = ALL_TOOLS.filter(
-      tool => tool.meta?.surfaces.length === 1 && tool.meta.surfaces[0] === 'admin_mcp',
+      tool => tool.meta?.audience === 'admin' || tool.meta?.audience === 'legal',
     )
     for (const tool of tools) {
       expect(userNames.has(tool.schema.name)).toBe(false)
@@ -24,7 +28,7 @@ describe('admin tool authorization contract', () => {
           tool.schema.name,
           { ...admin, roles: ['staff'] },
           allScopes,
-          ADMIN_MCP_SERVER_CONFIG,
+          ALL_MCP_SERVER_CONFIGS.find(config => config.audience === tool.meta?.audience)!,
         ).status,
       ).toBe('role_denied')
       expect(tool.meta?.outputSchema).toMatchObject({ type: 'object' })

@@ -24,7 +24,8 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import { apiQuery } from '../../response-contract.mts'
-import { createPaginationParser, defineQueryContract, queryString } from '@modules/pagination'
+import { defineQueryContract, queryString } from '@vouchington/pagination'
+import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const topHostnamesParser = createPaginationParser({

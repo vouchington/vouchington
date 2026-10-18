@@ -4,7 +4,7 @@ import { createServer, connect, type Server, type Socket } from 'node:net'
 import { Queue, QueueEvents, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { deferPostgresConnectionTimeout } from '@modules/queue-errors'
+import { deferPostgresConnectionTimeout } from '@vouchington/queue-errors'
 import { createTestPostgresConnectionWaitPool } from '@voucha/test-helpers/postgres-connection-wait'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())

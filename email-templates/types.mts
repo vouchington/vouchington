@@ -1,21 +1,6 @@
-import type { ReactElement } from 'react'
+import type { LocalizedEmailProps } from '@vouchington/email'
+
 import type { Money } from '@ts-shared/money'
-
-export type EmailRenderResult = {
-  subject: string
-  html: string
-  text: string
-}
-
-export type EmailRenderResultPromise = Promise<EmailRenderResult>
-
-export type PreviewableEmailComponent<TProps> = ((props: TProps) => ReactElement) & {
-  PreviewProps?: TProps
-}
-
-export type LocalizedEmailProps = {
-  uiLocale?: string | null
-}
 
 export type ApiKeyExpiryEmailProps = LocalizedEmailProps & {
   label: string

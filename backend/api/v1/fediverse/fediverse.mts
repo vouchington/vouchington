@@ -16,7 +16,7 @@ import {
   queryEnum,
   queryInteger,
   queryString,
-} from '@modules/pagination'
+} from '@vouchington/pagination'
 import { apiQuery } from '../../response-contract.mts'
 
 const fediverseSearchQuery = defineQueryContract({
