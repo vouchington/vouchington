@@ -1,5 +1,5 @@
 import type { QueryExecutor } from '../backend/data-stores/psql/types.mts'
-import type { SharedDbScopeEvent } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
+import type { SharedDbScopeEvent } from './vitest-shared-db-scope-observer.mts'
 import { expect } from 'vitest'
 import { ownedKeysetReadPolicy } from './vitest-owned-keyset-read-policy.mts'
 

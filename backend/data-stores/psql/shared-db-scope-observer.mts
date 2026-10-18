@@ -1,10 +1,7 @@
-import {
-  createSharedDbScopeObserver,
-  type SharedDbScopeEvent as PlatformScopeEvent,
-} from '@vouchington/postgres/query-telemetry'
+import { createSharedDbScopeObserver } from '@vouchington/postgres/query-telemetry'
 
 /** Explicit SQL-backed service calls whose shared tests must use an owned bound or keyset. */
-export const sharedDbScopeTables = {
+const sharedDbScopeTables = {
   listCopyrightStaffQueue: 'copyright_notices',
   readCopyrightReviewTargetBreaches: 'copyright_notices',
   selectCopyrightRetentionErasureCandidates: 'copyright_notices',
@@ -39,11 +36,6 @@ export const sharedDbScopeTables = {
 } as const
 
 export type SharedDbScopeOperation = keyof typeof sharedDbScopeTables
-export type SharedDbScopeEvent = PlatformScopeEvent<
-  SharedDbScopeOperation,
-  (typeof sharedDbScopeTables)[SharedDbScopeOperation]
->
-export type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 
 const scopeObserver = createSharedDbScopeObserver({
   tables: sharedDbScopeTables,
