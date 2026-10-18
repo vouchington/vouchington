@@ -84,7 +84,7 @@ export async function callReceiptedAgentModel<Output>(
       },
     })
   } catch (err) {
-    // These two provider codes are only constructed by request validation and missing Anthropic
+    // These two provider codes are only constructed by request validation and missing provider
     // credentials, before an SDK call. A post-dispatch 4xx can lack billed flags too, so never
     // infer an unbilled attempt from those flags alone.
     const rejectedBeforeDispatch =

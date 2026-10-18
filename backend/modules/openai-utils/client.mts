@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { getLongRunningExternalFetch } from '@modules/utils'
+import { MissingModelClientCredentialError } from './missing-client-credential.mts'
 
 let client: OpenAI | undefined
 
@@ -7,7 +8,7 @@ function getClient(): OpenAI {
   if (!client) {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim()
     if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not set')
+      throw new MissingModelClientCredentialError('OpenAI')
     }
     client = new OpenAI({ apiKey: OPENAI_API_KEY, fetch: getLongRunningExternalFetch() })
   }

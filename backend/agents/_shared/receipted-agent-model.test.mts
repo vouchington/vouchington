@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { getOpenAIResponseAttemptHooks } from '@modules/openai-utils/create-response'
 import { resolveAnthropicCredentials } from '@modules/model-providers/anthropic-client'
 import { ModelProviderError } from '@modules/model-providers/errors'
 import { assertSupportedRequest } from '@modules/model-providers/generate'
+import { callOpenAIJson } from '@modules/model-providers/openai-generate'
 import { spendCapConfig } from '@services/ai-usage/spend-cap-config'
 import { getAgentCallReceipt } from '@services/ai-usage/agent-call-receipts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -156,4 +157,67 @@ describe('paid agent receipt after provider validation', () => {
       restoreAdmission()
     }
   })
+
+  it.each(['direct', 'openrouter'] as const)(
+    'releases a missing %s client credential without dispatching a request',
+    async transport => {
+      await spendCapConfig.waitForInitialization()
+      const restoreAdmission = overrideDynamicConfigFieldsForTest(spendCapConfig, {
+        enabled: false,
+      })
+      vi.stubEnv('OPENAI_API_KEY', '')
+      vi.stubEnv('OPENROUTER_API_KEY', '')
+      const operationId = randomUUID()
+      const params = {
+        agentSlug: 'story-post',
+        operationId,
+        promptVersion: 'story-post-test-v1',
+        selection: TEST_OPENAI_SELECTION,
+        input: 'One fixed story prompt',
+        safetyIdentifier: operationId,
+      }
+      try {
+        await expect(
+          callReceiptedAgentModel({
+            ...params,
+            callModel: () =>
+              callOpenAIJson(TEST_OPENAI_SELECTION.model, transport, {
+                instructions: 'Return a title.',
+                input: params.input,
+                schemaName: 'title',
+                schema: {
+                  type: 'object',
+                  properties: { title: { type: 'string' } },
+                  required: ['title'],
+                  additionalProperties: false,
+                },
+                parse: value => value as { title: string },
+                maxOutputTokens: 100,
+              }),
+          }),
+        ).rejects.toMatchObject({
+          name: 'ModelProviderError',
+          code: 'client-unavailable',
+          retryClass: 'permanent',
+          ambiguousBilled: false,
+          billedResponse: undefined,
+          cause: { name: 'MissingModelClientCredentialError' },
+        })
+        await expect(
+          getAgentCallReceipt(agentCallOperationKey(params.agentSlug, operationId)),
+        ).resolves.toBeUndefined()
+
+        const output = { title: 'Allowed after credentials are corrected' }
+        await expect(
+          callReceiptedAgentModel({
+            ...params,
+            callModel: () => Promise.resolve(makeModelCallResult(output)),
+          }),
+        ).resolves.toMatchObject({ output })
+      } finally {
+        vi.unstubAllEnvs()
+        restoreAdmission()
+      }
+    },
+  )
 })

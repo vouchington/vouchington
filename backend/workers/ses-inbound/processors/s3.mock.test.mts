@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Worker } from 'glide-mq'
+import { UnrecoverableError, Worker } from 'glide-mq'
 import { CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { loadSesInboundObjectAndHash, moveSesInboundObjectToFailed } from './s3.mts'
 
@@ -78,6 +78,50 @@ describe('loadSesInboundObjectAndHash', () => {
       delayMs: 17_000,
       cause: error,
     })
+  })
+
+  it.each([
+    Object.assign(new Error('Request timeout'), {
+      name: 'RequestTimeout',
+      $fault: 'client',
+      $metadata: { httpStatusCode: 400 },
+    }),
+    Object.assign(new Error('Retryable S3 failure'), {
+      name: 'S3TransientError',
+      $fault: 'client',
+      $retryable: {},
+      $metadata: { httpStatusCode: 400 },
+    }),
+  ])('preserves Smithy retryable S3 client errors after SDK retries: $name', async error => {
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toBe(error)
+  })
+
+  it('routes a throttling 400 with Retry-After through the queue HTTP classifier', async () => {
+    const error = Object.assign(new Error('S3 request throttled'), {
+      name: 'Throttling',
+      $fault: 'client',
+      $retryable: { throttling: true },
+      $metadata: { httpStatusCode: 400 },
+      $response: { headers: { 'retry-after': '17' } },
+    })
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toBe(error)
+  })
+
+  it('still makes a permanent S3 client error unrecoverable', async () => {
+    const error = Object.assign(new Error('Access denied'), {
+      name: 'AccessDenied',
+      $fault: 'client',
+      $metadata: { httpStatusCode: 400 },
+    })
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    await expect(loadSesInboundObjectAndHash('copyright-incoming/abc')).rejects.toBeInstanceOf(
+      UnrecoverableError,
+    )
   })
 
   it('defers a failed-object move when deletion is throttled after the copy', async () => {
