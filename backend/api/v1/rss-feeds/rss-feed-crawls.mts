@@ -15,7 +15,8 @@ import {
 } from '@services/rss-feeds/authorization'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { createPaginationParser } from '@modules/pagination'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 
 const rssFeedCrawlsParser = createPaginationParser({

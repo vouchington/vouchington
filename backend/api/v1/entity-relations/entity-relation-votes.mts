@@ -28,9 +28,9 @@ import {
   apiNoContent,
   apiNoRequestBody,
   apiOpenApiNoContent,
-  apiQuery,
   apiRequestContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 
 // These routes name a relation by bare id. The resolver returns the one concrete election it

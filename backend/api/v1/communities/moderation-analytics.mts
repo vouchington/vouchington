@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { loadCommunityWithViewer } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'

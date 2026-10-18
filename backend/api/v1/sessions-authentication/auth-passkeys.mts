@@ -10,7 +10,8 @@ import {
   verifyPasskeyRegistration,
 } from '@services/passkeys'
 import { deletePasskeyWithMfaProtection } from '@services/mfa'
-import { apiQuery, apiRequestContract } from '../../response-contract.mts'
+import { apiRequestContract } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import { deleteMfaFactor, listMfaFactors, renameMfaFactor } from './passkey-totp-route-helpers.mts'
 

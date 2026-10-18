@@ -20,7 +20,8 @@ import {
   parseJsonBody,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { getHostnameElectionVotesByUser } from '@services/elections-votes/hostname'
 import {
   getHostnameElectionByIdCachedBatch,

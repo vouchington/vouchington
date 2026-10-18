@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiHeaders, apiResponse } from '../../response-contract.mts'
+import { apiHeaders, apiResponse } from '@vouchington/utils/api-response-contract'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import { currentUserCanRefundMembership } from '@services/memberships/authorization'
 import { startAdministratorRefundReconciliation } from '@services/memberships'

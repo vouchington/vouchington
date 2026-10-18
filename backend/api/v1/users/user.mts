@@ -21,10 +21,10 @@ import renderMarkdown from '@services/markdown'
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
-  apiQuery,
   apiRequestContract,
   apiResponse,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { userProfileQueryContract } from './user-profile-query-helpers.mts'
 import {

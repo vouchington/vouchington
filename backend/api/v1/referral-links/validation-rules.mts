@@ -14,7 +14,7 @@ import {
 } from '@services/referral-program-link-validations'
 import { createPaginationParser } from '@modules/pagination'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type CreateReferralLinkValidationRuleBody = {

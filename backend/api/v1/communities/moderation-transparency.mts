@@ -9,7 +9,7 @@ import {
   type ModerationAnalyticsRange,
 } from '@services/moderation-analytics'
 import { defineQueryContract, queryEnum, queryString } from '@vouchington/pagination'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 
 const RANGE_VALUES = ['today', '7d', '30d', '90d', 'all'] as const

@@ -10,7 +10,7 @@ import {
 } from '@services/entity-fetch'
 import { indexById } from '@modules/utils'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 

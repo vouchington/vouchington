@@ -6,7 +6,7 @@ import {
   apiNoRequestBody,
   apiOpenApiNoContent,
   apiRequestContract,
-} from '../../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
 
 const postVoteHandler = createVoteHandler(postVoteOptions)
 

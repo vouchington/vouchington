@@ -16,7 +16,7 @@ import {
   reorderCuratedItems,
 } from '@services/curated-aside-items'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 
 const ALLOWED_ASIDE_TYPES = ['topic', 'source', 'community'] as const

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { defineQueryContract, queryString } from '@vouchington/pagination'
-import { apiQuery } from './response-contract.mts'
+import { apiQuery } from './api-query-contract.mts'
 
 describe('API query marker', () => {
   it('is a runtime no-op for a structurally valid query contract', () => {

@@ -6,7 +6,8 @@ import type { ModerationAnalyticsRange } from '@services/moderation-analytics/ty
 import { isAdminUser } from '@services/users'
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../../api-query-contract.mts'
 
 const RANGE_VALUES = [
   'today',

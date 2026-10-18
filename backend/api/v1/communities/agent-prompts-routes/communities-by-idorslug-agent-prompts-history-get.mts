@@ -6,7 +6,7 @@ import {
   listCommunityAgentPromptHistory,
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 const historyQuery = defineQueryContract({ promptId: queryUuid(), before: queryUuid() })

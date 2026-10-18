@@ -2,7 +2,7 @@ import app from '../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, parseJsonBody, validateRequestContract } from '../response-helpers.mts'
 import type { ApiUuidContract } from '../request-contract-types.mts'
-import { apiResponse } from '../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 import {
   recordMediaRevealAndGetExposureState,
   getExposureState,

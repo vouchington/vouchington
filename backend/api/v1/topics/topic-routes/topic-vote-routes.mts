@@ -5,7 +5,7 @@ import {
   apiNoRequestBody,
   apiOpenApiNoContent,
   apiRequestContract,
-} from '../../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 
 const topicVoteHandler = createVoteHandler(topicVoteOptions)

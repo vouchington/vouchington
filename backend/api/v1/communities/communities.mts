@@ -34,7 +34,7 @@ import {
   parseEligiblePostType,
   communitiesQuery,
 } from './list-query.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { parseStringArray } from '@ts-shared/utils/query'
 

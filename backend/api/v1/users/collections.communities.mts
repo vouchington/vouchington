@@ -7,7 +7,7 @@ import {
   getUserMemberCommunitiesCollection,
 } from '@services/entity-fetch'
 import { attachCommunityProvenance } from '@services/content-provenance'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {

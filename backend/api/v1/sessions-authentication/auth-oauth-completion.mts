@@ -5,7 +5,7 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
-import { apiNoContent, apiRequest, apiResponse } from '../../response-contract.mts'
+import { apiNoContent, apiRequest, apiResponse } from '@vouchington/utils/api-response-contract'
 import { COOKIE_OPTIONS, setAuthenticationCookies } from '@modules/api-utils'
 import {
   acknowledgeOAuthAuthorizationCompletion,

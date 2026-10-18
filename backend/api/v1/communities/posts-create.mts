@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiHeaders } from '../../response-contract.mts'
+import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import {
   communityAllowsPostType,
   getCommunityOrThrow,

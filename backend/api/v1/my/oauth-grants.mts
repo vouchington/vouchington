@@ -5,7 +5,8 @@ import { listUserOAuthGrants, revokeUserOAuthGrant } from '@services/oauth-autho
 import { assertNotSuspended } from '@services/users'
 import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const oauthGrantsParser = createPaginationParser({

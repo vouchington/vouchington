@@ -8,7 +8,8 @@ import {
 } from '@vouchington/pagination'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { listUserRemovedPosts } from '@services/communities'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 
 // The handler reads these leniently: a `limit` that is not a positive integer falls back to 25, a
 // larger one is clamped to 100, a repeated `after` is ignored, and only `include_platform=true`

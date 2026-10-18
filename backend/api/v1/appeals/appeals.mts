@@ -20,7 +20,8 @@ import {
 } from '@services/moderation-appeals'
 import { isModerationStaff } from '@services/users'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import {
   defineQueryContract,
   queryBoolean,

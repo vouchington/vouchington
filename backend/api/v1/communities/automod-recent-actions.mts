@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'

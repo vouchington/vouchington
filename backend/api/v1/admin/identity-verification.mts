@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { grantIdentityVerificationAttempt } from '@services/identity-verification'
 import { assertNotSuspended, isAdminUser } from '@services/users'
-import { apiRequest } from '../../response-contract.mts'
+import { apiRequest } from '@vouchington/utils/api-response-contract'
 import {
   requireAuthAndRateLimit,
   validateRequestContract,

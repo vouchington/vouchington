@@ -1,4 +1,4 @@
-import { apiSseFrame } from '../response-contract.mts'
+import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PassThrough } from 'node:stream'
 import { acquireDuringSSECycle, pipeChannelToSSE, watchForAbortBeforeSSE } from '../sse-helpers.mts'

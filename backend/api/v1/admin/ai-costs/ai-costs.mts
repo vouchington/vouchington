@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { currentUserCanViewAiCosts, getCommunityAiCostTotals } from '@services/ai-usage'
 import { requireAuthAndRateLimit } from '../../../response-helpers.mts'
 import { aiCostTotalsParser as parser } from '@services/ai-usage/query-parser'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
 app.route('/api/v1/admin/ai-costs').get(async (ctx: Context) => {

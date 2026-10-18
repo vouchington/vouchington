@@ -3,7 +3,10 @@ import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
 import { COMMUNITY_MODERATION_MCP_SERVER_CONFIG } from '@services/mcp-tools'
 import { dispatchMcpRequest, rejectMcpMethod } from '../../mcp-helpers.mts'
-import { apiOpenApiHttpResponse, apiRequestContract } from '../../response-contract.mts'
+import {
+  apiOpenApiHttpResponse,
+  apiRequestContract,
+} from '@vouchington/utils/api-response-contract'
 
 // Community moderators and owners authenticate with a resource-bound OAuth token or MCP API key.
 app.route('/api/v1/community-moderation/mcp').post(async (ctx: Context) => {

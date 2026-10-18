@@ -2,7 +2,7 @@ import { clampAnonLimit } from '@services/pagination'
 import type { Context } from '@jongleberry/api-server'
 
 import app from '../../app.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { attachTopicProvenance } from '@services/content-provenance'
 import { getUserTopicsCollectionPage } from '@services/entity-fetch'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'

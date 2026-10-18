@@ -4,7 +4,7 @@ import {
   apiNoRequestBody,
   apiOpenApiNoContent,
   apiRequestContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
 import { hostnameVoteOptions } from '@services/elections-votes/hostname/vote-handler-options'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 

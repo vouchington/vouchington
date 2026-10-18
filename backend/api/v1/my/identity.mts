@@ -7,7 +7,7 @@ import { updateUserFields } from '@services/users/update-fields'
 import type { OAuthProvider } from '@services/oauth'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 
 type UpdateIdentityRequest = {
   username?: string

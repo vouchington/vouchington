@@ -3,7 +3,7 @@
 // `@services/copyright-notices/territorial-http-input` run first so each rejection keeps its
 // field-named message. `cf_turnstile_response` is optional because an App Attest caller sends none;
 // an explicit `null` is a malformed token and is rejected.
-import type { ApiArrayContract } from '../../response-contract.mts'
+import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 import type { CopyrightNoticeTargetRequest } from './request-types.mts'
 
 type TerritorialPostTargetRequest = Extract<CopyrightNoticeTargetRequest, { surface: 'post-image' }>

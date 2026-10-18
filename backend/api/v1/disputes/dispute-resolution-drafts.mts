@@ -1,7 +1,7 @@
 import { rerunReviewDisputeResolutionDraft } from '@services/review-disputes/rerun-resolution-draft'
 import type { Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 import {
   requireAuthAndRateLimit,
   validateRequestContract,

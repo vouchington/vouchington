@@ -1,4 +1,4 @@
-import { STATUS_CODES, type IncomingMessage, type ServerResponse } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { verifyDeviceJwt, type DeviceTokenPayload } from '@ts-shared/session-jwt'
 import { v7 } from 'uuid'
 import { createApp, type Application, type ApplicationOptions } from '@jongleberry/api-server'
@@ -12,23 +12,9 @@ import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
 import { VOUCHA_API_SECURITY_HEADERS } from './security-header-helpers.mts'
 import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
-import {
-  getErrorResponseCode,
-  getErrorResponseMessage,
-  getErrorResponseStack,
-  getErrorStatus,
-  normalizeErrorForLogging,
-} from './error-response.mts'
+import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/utils/api-errors'
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
-
-export {
-  getErrorResponseCode,
-  getErrorResponseMessage,
-  getErrorResponseStack,
-  getErrorStatus,
-  normalizeErrorForLogging,
-} from './error-response.mts'
 
 const cfWorkerSecret = process.env.CF_WORKER_SECRET
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
@@ -108,27 +94,15 @@ app.on('error', (err: Error) => onError(normalizeErrorForLogging(err)))
 
 app.errorHandler((ctx, error: unknown) => {
   if (ctx.res.headersSent) return
-  const status = getErrorStatus(error)
   const env = process.env.NODE_ENV ?? 'development'
   const rawRequestId = ctx.req.headers['x-request-id']
   const requestId = Array.isArray(rawRequestId) ? rawRequestId[0] : rawRequestId
-  ctx.setStatus(status)
-  if (env === 'production' && status >= 500) {
-    ctx.json({
-      message: STATUS_CODES[status] ?? 'Internal Server Error',
-      code: 'INTERNAL_ERROR',
-      ...(requestId ? { request_id: requestId } : {}),
-    })
-    return
-  }
-  const message = getErrorResponseMessage(error, status)
-  const code = getErrorResponseCode(error, status)
-  ctx.json({
-    message,
-    ...(code ? { code } : {}),
-    ...(requestId ? { request_id: requestId } : {}),
-    ...(env !== 'production' ? { stack: getErrorResponseStack(error) } : {}),
+  const { status, body } = buildApiErrorEnvelope(error, {
+    exposeDetails: env !== 'production',
+    requestId,
   })
+  ctx.setStatus(status)
+  ctx.json(body)
 })
 
 app.notFoundHandler(ctx => {

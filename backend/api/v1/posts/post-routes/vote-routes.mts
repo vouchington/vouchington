@@ -11,7 +11,7 @@ import { isAdminUser } from '@services/users'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 
 const postVotesParser = createPaginationParser({

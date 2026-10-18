@@ -1,4 +1,4 @@
-import { apiSseFrame } from '../../../response-contract.mts'
+import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import { aggregateQueueStats, getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
 import type { Context } from '@jongleberry/api-server'
 import onError from '@modules/on-error'

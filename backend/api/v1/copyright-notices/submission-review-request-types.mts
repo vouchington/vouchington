@@ -1,5 +1,5 @@
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-import type { ApiArrayContract } from '../../response-contract.mts'
+import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 
 // Closed request bodies for the staff submission review routes. The generated request contract is
 // the shape and drift guard; the route-level parsers in `@services/copyright-notices` and

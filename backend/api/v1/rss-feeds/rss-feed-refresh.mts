@@ -11,7 +11,8 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
-import { apiQuery, apiRequestContract } from '../../response-contract.mts'
+import { apiRequestContract } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 
 const refreshRssFeedQueryContract = defineQueryContract({ force: queryBoolean() })
 

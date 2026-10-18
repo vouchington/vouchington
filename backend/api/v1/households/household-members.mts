@@ -3,7 +3,7 @@ import app from '../../app.mts'
 import { createPaginationParser } from '@modules/pagination'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import {
   getHouseholdMemberships,

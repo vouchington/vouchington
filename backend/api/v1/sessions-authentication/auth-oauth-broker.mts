@@ -4,7 +4,7 @@ import {
   parseJsonBody,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import { apiRequest, apiResponse } from '../../response-contract.mts'
+import { apiRequest, apiResponse } from '@vouchington/utils/api-response-contract'
 import { COOKIE_OPTIONS, getExpectedOrigin } from '@modules/api-utils'
 import {
   assertBrokerOAuthProvider,

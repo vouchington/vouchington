@@ -12,7 +12,7 @@ import {
   type TopHashtagMapping,
 } from '@services/topics'
 import app from '../../../app.mts'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 import { requireAuth } from '../../../response-helpers.mts'
 

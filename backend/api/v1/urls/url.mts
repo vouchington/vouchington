@@ -20,7 +20,7 @@ import {
 import { getMembershipByUserId } from '@services/memberships'
 import { getRssFeedByUrlId } from '@services/rss-feeds'
 import { isReferralLinkUrlId } from '@services/user-referral-program-links'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 
 app.route('/api/v1/urls/:id').get(async ctx => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/urls/:id')

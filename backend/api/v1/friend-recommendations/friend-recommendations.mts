@@ -9,7 +9,8 @@ import {
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { indexById } from '@modules/utils'
 import { createPaginationParser } from '@modules/pagination'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const parser = createPaginationParser({

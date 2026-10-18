@@ -8,7 +8,7 @@ import {
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { createPaginationParser } from '@modules/pagination'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 /** Closed empty request body: a household is created without client-supplied fields. */

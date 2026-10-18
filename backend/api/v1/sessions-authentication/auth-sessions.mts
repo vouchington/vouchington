@@ -11,7 +11,7 @@ import { isUUIDv7 } from '@ts-shared/session-jwt'
 import { assertNotSuspended } from '@services/users/suspension'
 import { getDeviceContext } from './device-context.mts'
 import type { Context } from '@jongleberry/api-server'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,

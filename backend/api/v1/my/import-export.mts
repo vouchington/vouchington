@@ -19,7 +19,8 @@ import { SYNC_EXPORT_TOO_LARGE } from '@modules/on-error/error-codes'
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { VALID_FEED_TYPES } from '@services/search-params/parse-rss-feeds'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 
 const SYNC_EXPORT_TOO_LARGE_ERROR =
   'Export is too large for a synchronous download. Ask an administrator to adjust user-import-export-config.sync_export_max_items or retry after reducing followed items.'

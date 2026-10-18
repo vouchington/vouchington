@@ -31,7 +31,7 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { parseUpdateRssFeedBody } from '@services/rss-feeds/request-body'
-import { apiRequestContract } from '../../response-contract.mts'
+import { apiRequestContract } from '@vouchington/utils/api-response-contract'
 type UpdateRssFeedBody = {
   rss_feed_url?: string
   topic_id?: string

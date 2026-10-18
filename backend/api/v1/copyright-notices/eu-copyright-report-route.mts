@@ -11,7 +11,8 @@ import { assertNotSuspended } from '@services/users'
 import { Readable } from 'node:stream'
 import app from '../../app.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 
 const formats = ['json', 'csv_notices', 'csv_complaints'] as const

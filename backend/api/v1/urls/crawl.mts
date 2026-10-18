@@ -11,7 +11,7 @@ import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames
 import { buildSideloadImageUrl } from '@ts-shared/url-signing'
 import { getImageOrigin } from '@modules/utils/image-origin'
 import { getSigningKeys } from '@services/rss-feed-items/signing-keys'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 
 app.route('/api/v1/urls/:id/crawls/:crawlId').get(async ctx => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/urls/:id/crawls/:crawlId')

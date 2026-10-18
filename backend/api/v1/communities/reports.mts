@@ -23,7 +23,7 @@ import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations/chec
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { createPaginationParser } from '@modules/pagination'
 import { parseReportCursor } from '@services/moderation-reports/cursor'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   communityModeratorVisibleReportSort,

@@ -10,7 +10,7 @@ import { requireAuthAndRateLimit, validateRequestContract } from '../../response
 import { readArticleSyncJob } from '@queues/article-sync/enqueues'
 import { articleSyncPubSub, type ArticleSyncStatus } from '@data-stores/valkey-pubsub'
 import { startSSE, pipeChannelToSSE, watchForAbortBeforeSSE } from '../../sse-helpers.mts'
-import { apiResponse, apiSseFrame } from '../../response-contract.mts'
+import { apiResponse, apiSseFrame } from '@vouchington/utils/api-response-contract'
 
 /**
  * POST /api/v1/article-syncs — Enqueue an article sync job.

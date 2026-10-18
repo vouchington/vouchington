@@ -1,4 +1,4 @@
-import { apiSseFrame } from '../../../response-contract.mts'
+import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImportProgressChunk, ImportProgressSubscription } from '@data-stores/valkey-pubsub'
 import { pipeImportProgressToSSE, pipeUserRssFeedImportProgressToSSE } from './stream-helpers.mts'

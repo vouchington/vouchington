@@ -1,5 +1,5 @@
 import type { PassThrough } from 'node:stream'
-import type { ApiSseEvent } from '../../../response-contract.mts'
+import type { ApiSseEvent } from '@vouchington/utils/api-response-contract'
 import type { Context } from '@jongleberry/api-server'
 import type { ChannelPubSub } from '@data-stores/valkey-pubsub'
 import type { PrivateUser } from '@services/users/types'

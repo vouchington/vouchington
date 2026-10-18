@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { listScopeCatalog } from '@modules/scopes'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 
 // GET /api/v1/scopes — the canonical scope catalogue that API-key and OAuth app pickers render.

@@ -14,7 +14,8 @@ import {
   type ModerationReportResolutionStatus,
 } from '@services/moderation-reports'
 import { isModerationStaff } from '@services/users'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import {
   parseReportCursorQueryParams,
   parseReportListFilters,

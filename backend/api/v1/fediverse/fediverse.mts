@@ -17,7 +17,7 @@ import {
   queryInteger,
   queryString,
 } from '@vouchington/pagination'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 
 const fediverseSearchQuery = defineQueryContract({
   q: queryString(),

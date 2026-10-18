@@ -1,5 +1,5 @@
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-import type { ApiArrayContract } from '../../response-contract.mts'
+import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 import type { CopyrightNoticeTargetRequest } from './request-types.mts'
 
 // Closed request bodies for the staff email-intake decision routes. The generated request

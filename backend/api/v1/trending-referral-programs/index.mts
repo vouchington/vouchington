@@ -7,7 +7,7 @@ import { getTrendingReferralPrograms } from '@services/trending-referral-program
 import { createPaginationParser } from '@modules/pagination'
 
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const trendingReferralProgramsParser = createPaginationParser({

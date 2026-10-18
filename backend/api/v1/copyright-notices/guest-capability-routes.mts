@@ -17,7 +17,7 @@ import {
   validateUUIDParam,
 } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiHeaders, apiNoRequestBody, apiResponse } from '../../response-contract.mts'
+import { apiHeaders, apiNoRequestBody, apiResponse } from '@vouchington/utils/api-response-contract'
 import type {
   CopyrightGuestCapabilityIssueRequest,
   CopyrightGuestFilingRequest,

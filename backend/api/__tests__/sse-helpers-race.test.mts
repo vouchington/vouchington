@@ -1,4 +1,4 @@
-import { apiSseFrame } from '../response-contract.mts'
+import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import { PassThrough } from 'node:stream'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
 import { describe, expect, it, vi } from 'vitest'

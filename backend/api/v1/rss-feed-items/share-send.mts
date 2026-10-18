@@ -16,7 +16,7 @@ import {
   apiRequestContract,
   apiResponse,
   type ApiArrayContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 
 type SendFollowersRequestContract =

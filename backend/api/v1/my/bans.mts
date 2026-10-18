@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { listUserActiveCommunityBans } from '@services/communities'
 

@@ -18,7 +18,7 @@ import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { entityRelationViewerFor } from '@services/users'
 import { defineQueryContract, queryCsvArray, queryString } from '@vouchington/pagination'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const compareTopicsQueryContract = defineQueryContract({ slugs: queryCsvArray(queryString()) })

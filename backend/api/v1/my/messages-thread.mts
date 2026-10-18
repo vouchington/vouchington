@@ -6,7 +6,7 @@ import {
   sendMyConversationMessage,
   listMyConversationParticipants,
 } from '@services/messaging/my-message-commands'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { simplePaginationParser } from '@modules/pagination'
 type SendMessageRequest = { text: string }
 
