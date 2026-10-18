@@ -53,21 +53,24 @@ export async function getRemovedTablePresence(tableNames: string[]): Promise<Rel
 export async function getCuratedAsideForeignKeys(): Promise<ForeignKey[]> {
   const { rows } = await read<ForeignKey>(
     `/* getCuratedAsideForeignKeys */
-      SELECT key_column.column_name, target.table_name AS target_table, reference.delete_rule
-      FROM information_schema.table_constraints constraint_definition
-      JOIN information_schema.key_column_usage key_column
-        ON key_column.constraint_schema = constraint_definition.constraint_schema
-       AND key_column.constraint_name = constraint_definition.constraint_name
-      JOIN information_schema.constraint_column_usage target
-        ON target.constraint_schema = constraint_definition.constraint_schema
-       AND target.constraint_name = constraint_definition.constraint_name
-      JOIN information_schema.referential_constraints reference
-        ON reference.constraint_schema = constraint_definition.constraint_schema
-       AND reference.constraint_name = constraint_definition.constraint_name
-      WHERE constraint_definition.constraint_schema = 'public'
-        AND constraint_definition.table_name = 'curated_aside_items'
-        AND constraint_definition.constraint_type = 'FOREIGN KEY'
-      ORDER BY key_column.column_name`,
+      SELECT column_definition.attname::text AS column_name,
+        target.relname::text AS target_table,
+        CASE foreign_key.confdeltype
+          WHEN 'a' THEN 'NO ACTION'
+          WHEN 'r' THEN 'RESTRICT'
+          WHEN 'c' THEN 'CASCADE'
+          WHEN 'n' THEN 'SET NULL'
+          WHEN 'd' THEN 'SET DEFAULT'
+        END AS delete_rule
+      FROM pg_constraint foreign_key
+      CROSS JOIN LATERAL unnest(foreign_key.conkey) AS source_column(attnum)
+      JOIN pg_attribute column_definition
+        ON column_definition.attrelid = foreign_key.conrelid
+       AND column_definition.attnum = source_column.attnum
+      JOIN pg_class target ON target.oid = foreign_key.confrelid
+      WHERE foreign_key.conrelid = 'public.curated_aside_items'::regclass
+        AND foreign_key.contype = 'f'
+      ORDER BY column_definition.attname`,
   )
   return rows
 }
