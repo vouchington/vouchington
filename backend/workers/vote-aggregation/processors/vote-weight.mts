@@ -6,7 +6,6 @@ import { dispatchVoteWeightAgeMilestones } from '@services/vote-weight/dispatch-
 import { dispatchVoteWeightMembershipExpirations } from '@services/vote-weight/dispatch-membership-expirations'
 import { dispatchVoteWeightFamilySourceChanges } from '@services/vote-weight/dispatch-family-source-changes'
 import { dispatchVoteWeightDirtyMarkers } from '@services/vote-weight/dispatch-dirty-markers'
-import { completeVoteWeightDispatch } from '@services/vote-weight/dispatch-cursor'
 import {
   enqueueBulkElectionUpdateReplay,
   enqueueRecalculateVoteWeightEvents,
@@ -100,9 +99,7 @@ async function dispatchPage<T>(
     if (!page.continuation)
       throw new Error(`${dispatcher} reported more work without a continuation`)
     await enqueueContinuation(page.continuation)
-    return
   }
-  await completeVoteWeightDispatch(dispatcher, page.window)
 }
 
 export async function processVoteWeightDirtyMarkers(

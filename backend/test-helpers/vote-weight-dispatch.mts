@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { safeUsername } from './data.mts'
 import { v7 } from 'uuid'
-import { read, write, beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createTestUserDirect } from './entities/users.mts'
 import { createTestUserWithId } from './entities/users-direct.mts'
@@ -117,40 +117,6 @@ export async function supersedeVoteWeightFamilyObservation(sourceId: string): Pr
     FROM newer_observation
     WHERE source_state.membership_source_id = ${sourceId}`)
   if (rowCount !== 1) throw new Error('Vote-weight family observation was not superseded')
-}
-
-export async function getVoteWeightDispatchCursorForTest(
-  dispatcher: string,
-): Promise<string | null> {
-  const { rows } = await read<{ at: string | null }>(sql`/* getVoteWeightDispatchCursorForTest */
-    SELECT changes_through_at::text AS at FROM vote_weight_recalculation_cursors
-    WHERE dispatcher = ${dispatcher}`)
-  return rows[0]?.at ?? null
-}
-
-export async function withVoteWeightDispatchCursorForTest(
-  dispatcher: string,
-  run: (previousThroughAt: string | null, query: QueryExecutor) => Promise<void>,
-): Promise<void> {
-  await using transaction = await beginTransaction()
-  await transaction(sql`/* withVoteWeightDispatchCursorForTest */
-    INSERT INTO vote_weight_recalculation_cursors (dispatcher)
-    VALUES (${dispatcher}) ON CONFLICT DO NOTHING`)
-  const { rows } = await transaction<{
-    at: string | null
-  }>(sql`/* withVoteWeightDispatchCursorForTest */
-    SELECT changes_through_at::text AS at FROM vote_weight_recalculation_cursors
-    WHERE dispatcher = ${dispatcher} FOR UPDATE`)
-  await run(rows[0]?.at ?? null, transaction)
-}
-
-export async function readVoteWeightDispatchCursorForTest(
-  dispatcher: string,
-  query: QueryExecutor,
-) {
-  const { rows } = await query<{ at: string | null }>(sql`/* readVoteWeightDispatchCursorForTest */
-    SELECT changes_through_at::text AS at FROM vote_weight_recalculation_cursors WHERE dispatcher = ${dispatcher}`)
-  return rows[0]?.at ?? null
 }
 
 export async function addVoteWeightSharedFamilyRecipient(sourceId: string, userId: string) {

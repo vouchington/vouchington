@@ -2,7 +2,6 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { kagiSmallWebImportConfig } from './import-config.mts'
 import { describe, it, expect } from 'vitest'
 import { processFeedEntry } from './process-feed-entry.mts'
-import { createHash } from 'node:crypto'
 import { dispatchKagiSmallWeb, dispatchKagiSmallWebPage } from './sync.mts'
 import {
   KAGI_SMALLWEB_PROCESS_FEED_JOB,
@@ -137,17 +136,11 @@ describe('dispatchKagiSmallWebPage', () => {
         .filter(job => job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name)
         .map(job => (job.data as KagiFeedJobData).feedUrl)
         .filter(url => urls.has(url))
-    const continuationId = (cursor: string) =>
-      `kagi_smallweb_sync__${createHash('sha256').update(cursor).digest('hex')}`
-
     const first = await dispatchKagiSmallWebPage(entries)
-    expect(first).toEqual({ enqueued: 1, total: 5, hasMore: true })
+    expect(first).toEqual({ enqueued: 1, total: 5, hasMore: true, nextCursor: sorted[1]!.feedUrl })
     expect(await enqueuedUrls()).toEqual([sorted[0]!.feedUrl])
-    const firstContinuation = await kagiSmallWeb.getJob(continuationId(sorted[1]!.feedUrl))
-    expect(firstContinuation?.data).toEqual({ cursor: sorted[1]!.feedUrl })
-
     const second = await dispatchKagiSmallWebPage(entries, sorted[1]!.feedUrl)
-    expect(second).toEqual({ enqueued: 2, total: 3, hasMore: true })
+    expect(second).toEqual({ enqueued: 2, total: 3, hasMore: true, nextCursor: sorted[3]!.feedUrl })
 
     const last = await dispatchKagiSmallWebPage(entries, sorted[3]!.feedUrl)
     expect(last).toEqual({ enqueued: 1, total: 1 })
@@ -155,7 +148,5 @@ describe('dispatchKagiSmallWebPage', () => {
     expect((await enqueuedUrls()).toSorted()).toEqual(
       sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
     )
-    await firstContinuation?.remove()
-    await (await kagiSmallWeb.getJob(continuationId(sorted[3]!.feedUrl)))?.remove()
   })
 })

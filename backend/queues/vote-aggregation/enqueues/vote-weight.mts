@@ -132,12 +132,17 @@ export function enqueueRecalculateVoteWeightDispatcher(
 export function enqueueUserElectionFanOut(
   userId: string,
   cursor: UserElectionFanOutCursor | null = null,
+  options: Partial<JobOptions> = {},
 ): EnqueueReturnType {
   return enqueueUserElectionFanOutJob(
     { userId, cursor },
-    cursor
-      ? { jobId: `userElectionFanOut__${userId}__${cursor.lane}__${cursor.afterId}` }
-      : undefined,
+    {
+      ...options,
+      ...(cursor
+        ? { jobId: `userElectionFanOut__${userId}__${cursor.lane}__${cursor.afterId}` }
+        : {}),
+      ...options,
+    },
   )
 }
 

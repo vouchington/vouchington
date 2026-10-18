@@ -4,6 +4,7 @@ import {
   fetchRssFeed,
   getRssFeedsToFetch,
   getTierSlaMs,
+  type RssFeedDispatchCursor,
   type RssFeedCrawlTier,
 } from '@services/rss-feeds'
 
@@ -22,14 +23,17 @@ type FetchRssFeedDependencies = {
  */
 export async function processRssFeedsDispatcher(
   dependencies?: Partial<RssFeedsDispatcherDependencies>,
-): Promise<{ count: number }> {
+  page?: { cursor?: RssFeedDispatchCursor; asOf: Date; limit: number },
+): Promise<{ count: number; nextCursor?: RssFeedDispatchCursor }> {
   const deps = {
     enqueueBulkFetchRssFeeds,
     getRssFeedsToFetch,
     getTierSlaMs,
     ...dependencies,
   }
-  const feeds = await deps.getRssFeedsToFetch()
+  const feeds = await deps.getRssFeedsToFetch(
+    page ? { limit: page.limit, cursor: page.cursor, asOf: page.asOf } : {},
+  )
   if (feeds.length === 0) return { count: 0 }
 
   // Group feeds by (tier, ttl) so each group shares one priority value and TTL.
@@ -58,7 +62,13 @@ export async function processRssFeedsDispatcher(
     ),
   )
 
-  return { count: feeds.length }
+  const last = feeds.at(-1)
+  return {
+    count: feeds.length,
+    ...(page && feeds.length === page.limit && last
+      ? { nextCursor: { lane: last.dispatch_lane, afterId: last.id } }
+      : {}),
+  }
 }
 
 /**

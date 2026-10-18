@@ -1049,11 +1049,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       "data": {},
       "name": "rss-feeds.dispatchRssFeeds",
       "opts": {
-        "attempts": 3,
+        "attempts": 2147483647,
         "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
+          "delay": 1000,
+          "type": "paged-dispatch-rss",
         },
         "ordering": {
           "concurrency": 1,
@@ -1284,11 +1283,10 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       "data": {},
       "name": "kagi-smallweb.sync",
       "opts": {
-        "attempts": 3,
+        "attempts": 2147483647,
         "backoff": {
-          "delay": 30000,
-          "jitter": 0.5,
-          "type": "exponential",
+          "delay": 1000,
+          "type": "paged-dispatch-kagi",
         },
         "ordering": {
           "concurrency": 1,

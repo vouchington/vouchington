@@ -1,3 +1,6 @@
+import { onEnqueueAdmission } from '@data-stores/valkey-glide-mq/glide-mq-admission'
+import type { Job } from 'glide-mq'
+import { getSharedBackgroundWorker } from '../../../test-helpers/shared-background-worker.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
@@ -15,7 +18,7 @@ import {
   getBulkEnqueuedJobIds,
   type ElectionUpdatePage,
 } from './enqueue-election-updates.mts'
-import { voteWeightWorkConfig } from './work-limits.mts'
+import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 
 const ELECTION_JOB_NAME = 'vote-aggregation.processUpdateElectionVoteStats'
 const randomHex = () => randomBytes(4).toString('hex')
@@ -52,10 +55,20 @@ describe('enqueueElectionUpdatesForUser', () => {
     const postId = await createPost(user!.id)
     await insertPostElectionVote(user!.id, postId, 1)
 
-    const page = await enqueueElectionUpdatesForUser(user!.id)
-
-    expect(page.jobIds).toHaveLength(1)
-    expect(page.nextCursor).toBeNull()
+    const admitted: string[] = []
+    const off = onEnqueueAdmission(event => {
+      if (event.jobName === ELECTION_JOB_NAME)
+        for (const input of event.inputs) {
+          const id = (input as { electionId?: string }).electionId
+          if (id === postId) admitted.push(id)
+        }
+    })
+    try {
+      await expect(enqueueElectionUpdatesForUser(user!.id)).resolves.toBeUndefined()
+      expect(admitted).toEqual([postId])
+    } finally {
+      off()
+    }
   })
 
   it('continues a longer history through a fan-out job from the last row of the page', async () => {
@@ -63,25 +76,41 @@ describe('enqueueElectionUpdatesForUser', () => {
     const postIds = await Promise.all([1, 2, 3].map(() => createPost(user!.id)))
     for (const postId of postIds) await insertPostElectionVote(user!.id, postId, 1)
 
-    const restore = overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, {
-      election_fan_out_page_size: 2,
+    const admitted: string[] = []
+    const off = onEnqueueAdmission(event => {
+      if (event.jobName === ELECTION_JOB_NAME)
+        for (const input of event.inputs) {
+          const id = (input as { electionId?: string }).electionId
+          if (id && postIds.includes(id)) admitted.push(id)
+        }
+    })
+    const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      elections_page_size: 2,
     })
     try {
-      // The test queue runs the continuation (and its own continuation) before its enqueue resolves.
-      const page = await enqueueElectionUpdatesForUser(user!.id)
-      expect(page.jobIds).toHaveLength(2)
-      expect(page.nextCursor).toMatchObject({ lane: 1 })
+      const completed = Promise.withResolvers<void>()
+      const worker = getSharedBackgroundWorker()
+      const onCompleted = (job: Job) => {
+        if (
+          job.name === 'vote-aggregation.enqueueUserElectionUpdates' &&
+          job.data.userId === user!.id &&
+          (job.returnvalue as ElectionUpdatePage | undefined)?.nextCursor === null
+        )
+          completed.resolve()
+      }
+      worker.on('completed', onCompleted)
+      try {
+        await expect(enqueueElectionUpdatesForUser(user!.id)).resolves.toBeUndefined()
+        await completed.promise
+      } finally {
+        worker.off('completed', onCompleted)
+      }
     } finally {
       restore()
+      off()
     }
 
-    for (const postId of postIds) {
-      const jobs = await voteAggregation.searchJobs({
-        name: ELECTION_JOB_NAME,
-        data: { electionId: postId },
-      })
-      expect(jobs).toHaveLength(1)
-    }
+    expect(admitted.toSorted()).toEqual(postIds.toSorted())
   })
 })
 
@@ -175,8 +204,8 @@ describe('enqueueElectionUpdatePageForUser', () => {
     for (const target of targets) await insertUserVouchElectionVote(voter!.id, target!.id, 1)
     const expected = [...postIds, ...targets.map(target => target!.id)].toSorted()
 
-    const restore = overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, {
-      election_fan_out_page_size: pageSize,
+    const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      elections_page_size: pageSize,
     })
     const pages: ElectionUpdatePage[] = []
     try {
@@ -208,8 +237,8 @@ describe('enqueueElectionUpdatePageForUser', () => {
     const postIds = await Promise.all([1, 2].map(() => createPost(voter!.id)))
     for (const postId of postIds) await insertPostElectionVote(voter!.id, postId, 1)
 
-    const restore = overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, {
-      election_fan_out_page_size: 2,
+    const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      elections_page_size: 2,
     })
     try {
       const first = await enqueueElectionUpdatePageForUser(voter!.id, null)

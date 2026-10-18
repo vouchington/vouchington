@@ -1,3 +1,6 @@
+import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import { background } from '@queues/background/queues'
+import { enqueueUserElectionFanOut } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { backgroundHandler } from '@queues/background/enqueues/define-handler'
 import {
   VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
@@ -16,7 +19,7 @@ import {
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
   VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { enqueueElectionUpdatesForUser } from '@services/vote-weight/enqueue-election-updates'
+import { enqueueElectionUpdatePageForUser } from '@services/vote-weight/enqueue-election-updates'
 import { processElection } from './processors/elections.mts'
 import {
   processBackfillReportIntegrity,
@@ -60,7 +63,26 @@ export const voteAggregationHandlers = [
   ),
   // One bounded page of the user's votes becomes election recomputes; a full page continues.
   backgroundHandler(VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB, job =>
-    enqueueElectionUpdatesForUser(job.data.userId, job.data.cursor),
+    processPagedDispatcher(job, {
+      dispatcher: 'elections',
+      cursorKey: 'lane,id',
+      target: background,
+      targetName: 'background',
+      readAndDispatch: async pageSize => {
+        const result = await enqueueElectionUpdatePageForUser(
+          job.data.userId,
+          job.data.cursor,
+          pageSize,
+        )
+        return {
+          result,
+          ...(result.nextCursor
+            ? { next: { userId: job.data.userId, cursor: result.nextCursor } }
+            : {}),
+        }
+      },
+      enqueueNext: (data, options) => enqueueUserElectionFanOut(data.userId, data.cursor, options),
+    }),
   ),
   backgroundHandler(VOTE_AGGREGATION_VOTE_INTEGRITY_JOB, job =>
     processVoteIntegrityCheck(job.data),

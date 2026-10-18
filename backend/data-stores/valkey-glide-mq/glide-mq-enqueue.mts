@@ -1,3 +1,8 @@
+import {
+  checkpointPagedDispatchFences,
+  pagedDispatchRowOptions,
+} from './paged-dispatch-context.mts'
+import { enqueueBulkRows } from './glide-mq-paged-bulk-recovery.mts'
 import onError from '@modules/on-error'
 import { publishEnqueueAdmission } from './glide-mq-admission.mts'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
@@ -6,7 +11,10 @@ import { retryTransientEnqueue } from './glide-mq-retry.mts'
 import { assertQueuePriority, type QueuePriorityKind } from './queue-priority.mts'
 
 type AddQueue = Pick<Queue, 'add'> & { readonly priorityKind: QueuePriorityKind }
-type AddBulkQueue = Pick<Queue, 'addBulk'> & { readonly priorityKind: QueuePriorityKind }
+type AddBulkQueue = Pick<Queue, 'addBulk'> & {
+  readonly priorityKind: QueuePriorityKind
+  readonly name?: string
+}
 
 type ErrorWithReportingContext = Error & {
   extra?: Record<string, unknown> | null
@@ -55,6 +63,8 @@ type CreateBulkEnqueueFunctionOptions<
     context: EnqueueErrorContext<TCallContext>,
   ) => Error
   retry?: boolean
+  /** Isolated real queues in tests may override the production queue namespace. */
+  queuePrefix?: string
   trackJobEnqueue?: typeof trackJobEnqueue
 }
 
@@ -113,7 +123,12 @@ export function createBulkEnqueueFunction<
     const jobs = inputs.map((input, index) => {
       const job = options.buildJob(input, index)
       const kind = options.queue.priorityKind
-      const opts = mergeJobOptions(kind, options.defaults, job.opts, perCallOpts)
+      const opts = pagedDispatchRowOptions(
+        options.queueName,
+        options.jobName,
+        job.data,
+        mergeJobOptions(kind, options.defaults, job.opts, perCallOpts),
+      )
       assertQueuePriority(options.queueName, kind, opts.priority ?? (kind === 'none' ? 0 : 10))
       return {
         name: options.jobName,
@@ -121,11 +136,13 @@ export function createBulkEnqueueFunction<
         opts,
       }
     })
-
-    const promise =
-      options.retry !== false
-        ? retryTransientEnqueue(() => options.queue.addBulk(jobs))
-        : options.queue.addBulk(jobs)
+    const add = () =>
+      enqueueBulkRows(options.queue, options.queueName, jobs, {
+        prefix: options.queuePrefix,
+        retry: options.retry,
+      })
+    const checkpoint = checkpointPagedDispatchFences()
+    const promise = checkpoint ? checkpoint.then(add) : add()
     reportRejectedEnqueue(promise, options, inputs.length, callContext)
     publishEnqueueAdmission({
       queue: options.queue,

@@ -1,113 +1,57 @@
-import { randomUUID } from 'node:crypto'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readAllQueueJobs } from '@voucha/test-helpers'
-import { NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB } from '@queues/background/enqueues/notifications-jobs'
-import { notifications } from '@queues/notifications/queues'
-import type {
-  enqueueBulkDeliverNotificationPushIntents,
-  enqueueContinueReconcilePostNotifications,
-  enqueueContinueReconcileRssFeedItemNotifications,
-} from '@queues/notifications/enqueues'
-import type { reconcileNotificationsForPost } from '@services/notifications/reconcile-post'
-import type { reconcileNotificationsForRssFeedItem } from '@services/notifications/reconcile-rss-feed-item'
+import { describe, expect, it } from 'vitest'
+import { bookmarkEntity } from '../../services/bookmarks/upsert.mts'
+import { listNotifications } from '@services/notifications/list'
 import {
-  processReconcilePostNotifications,
-  processReconcileRssFeedItemNotifications,
-} from './processors.mts'
+  createRandomString,
+  createTestUser,
+  insertTestPost,
+  setEntityRelationCreatedAt,
+} from '@voucha/test-helpers'
+import { processReconcilePostNotifications } from './processors.mts'
 
-const mockReconcilePost = vi.fn<typeof reconcileNotificationsForPost>()
-const mockReconcileRssFeedItem = vi.fn<typeof reconcileNotificationsForRssFeedItem>()
-const mockEnqueuePushes = vi.fn<typeof enqueueBulkDeliverNotificationPushIntents>()
-const mockContinuePost = vi.fn<typeof enqueueContinueReconcilePostNotifications>()
-const mockContinueRssFeedItem = vi.fn<typeof enqueueContinueReconcileRssFeedItemNotifications>()
-
-describe('notification reconcile page continuation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('passes the cursor to the post reconcile and queues the next page after a full page', async () => {
-    mockReconcilePost.mockResolvedValue({
-      created: 2,
-      pruned: 0,
-      nextAfterUserId: 'user-2',
-    })
-
-    await runPost({ postId: 'post-1', afterUserId: 'user-0' })
-
-    expect(mockReconcilePost).toHaveBeenCalledWith(
-      'post-1',
-      expect.objectContaining({ afterUserId: 'user-0' }),
+describe('notification reconcile recipient pages', () => {
+  it('returns a unique recipient cursor and persists each page idempotently', async () => {
+    const author = await createTestUser()
+    const recipients = await Promise.all([createTestUser(), createTestUser()])
+    const createdAt = new Date('2040-01-01T00:00:00Z')
+    await Promise.all(
+      recipients.map(async user => {
+        await bookmarkEntity(user, 'user', { id: author.id }, 'subscribe')
+        await setEntityRelationCreatedAt(
+          'relation__user__subscribe__user',
+          user.id,
+          author.id,
+          new Date(createdAt.getTime() - 1000),
+        )
+      }),
     )
-    expect(mockContinuePost).toHaveBeenCalledExactlyOnceWith({
-      postId: 'post-1',
-      afterUserId: 'user-2',
+    const suffix = createRandomString(10)
+    const postId = await insertTestPost({
+      createdById: author.id,
+      title: `page ${suffix}`,
+      slug: `page-${suffix}`,
+      markdown: 'Recipient page boundary',
+      createdAt,
     })
-  })
-
-  it('queues no continuation after the last post page', async () => {
-    mockReconcilePost.mockResolvedValue({ created: 1, pruned: 0 })
-
-    await runPost({ postId: 'post-1', afterUserId: 'user-2' })
-
-    expect(mockContinuePost).not.toHaveBeenCalled()
-  })
-
-  it('queues the next RSS feed item page only after a full page', async () => {
-    mockReconcileRssFeedItem.mockResolvedValueOnce({
-      created: 2,
-      pruned: 0,
-      nextAfterUserId: 'user-8',
+    const first = await processReconcilePostNotifications({ postId, pageSize: 1 })
+    expect(first.nextAfterUserId).toBe(recipients.map(user => user.id).toSorted()[0])
+    const repeated = await processReconcilePostNotifications({ postId, pageSize: 1 })
+    expect(repeated).toMatchObject({ created: 0, nextAfterUserId: first.nextAfterUserId })
+    const second = await processReconcilePostNotifications({
+      postId,
+      pageSize: 1,
+      afterUserId: first.nextAfterUserId,
     })
-    mockReconcileRssFeedItem.mockResolvedValueOnce({ created: 0, pruned: 1 })
-
-    await runRssFeedItem({ rssFeedItemId: 'item-1' })
-    await runRssFeedItem({ rssFeedItemId: 'item-1', afterUserId: 'user-8' })
-
-    expect(mockContinueRssFeedItem).toHaveBeenCalledExactlyOnceWith({
-      rssFeedItemId: 'item-1',
-      afterUserId: 'user-8',
+    expect(second.nextAfterUserId).toBe(recipients.map(user => user.id).toSorted()[1])
+    const final = await processReconcilePostNotifications({
+      postId,
+      pageSize: 1,
+      afterUserId: second.nextAfterUserId,
     })
-  })
-
-  it('queues the next RSS feed item page on the real queue when only the reconcile is injected', async () => {
-    const rssFeedItemId = randomUUID()
-    const afterUserId = randomUUID()
-    mockReconcileRssFeedItem.mockResolvedValueOnce({
-      created: 2,
-      pruned: 0,
-      nextAfterUserId: afterUserId,
-    })
-
-    await processReconcileRssFeedItemNotifications(
-      { rssFeedItemId },
-      { reconcileNotificationsForRssFeedItem: mockReconcileRssFeedItem },
+    expect(final.nextAfterUserId).toBeUndefined()
+    const ids = await Promise.all(
+      recipients.map(async user => (await listNotifications(user.id)).results.map(row => row.id)),
     )
-
-    const jobs = await readAllQueueJobs(notifications)
-    expect(
-      jobs.some(
-        job =>
-          job.name === NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB.name &&
-          (job.data as { rssFeedItemId?: string }).rssFeedItemId === rssFeedItemId &&
-          (job.data as { afterUserId?: string }).afterUserId === afterUserId,
-      ),
-    ).toBe(true)
+    expect(ids.map(rows => rows.length)).toEqual([1, 1])
   })
 })
-
-function runPost(data: { postId: string; afterUserId?: string }) {
-  return processReconcilePostNotifications(data, {
-    enqueueBulkDeliverNotificationPushIntents: mockEnqueuePushes,
-    enqueueContinueReconcilePostNotifications: mockContinuePost,
-    reconcileNotificationsForPost: mockReconcilePost,
-  })
-}
-
-function runRssFeedItem(data: { rssFeedItemId: string; afterUserId?: string }) {
-  return processReconcileRssFeedItemNotifications(data, {
-    enqueueBulkDeliverNotificationPushIntents: mockEnqueuePushes,
-    enqueueContinueReconcileRssFeedItemNotifications: mockContinueRssFeedItem,
-    reconcileNotificationsForRssFeedItem: mockReconcileRssFeedItem,
-  })
-}

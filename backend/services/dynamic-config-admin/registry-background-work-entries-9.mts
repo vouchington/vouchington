@@ -61,9 +61,12 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Vote weight dispatch',
     maxValues: voteWeightWorkMaxValues,
     descriptions: {
-      window_overlap_seconds: 'Seconds re-read before the committed vote-weight dispatch cursor.',
+      age_milestones_lookback_seconds: 'Age milestone signal lookback; raise after an outage.',
+      membership_expirations_lookback_seconds:
+        'Membership expiration signal lookback; raise after an outage.',
+      family_source_changes_lookback_seconds:
+        'Family source signal lookback; raise after an outage.',
       dispatch_batch_size: 'Users per vote weight dispatcher page.',
-      election_fan_out_page_size: 'Votes per user election fan-out page after a weight change.',
     },
   }),
   'crawl-boilerplate-removal-work-config': defineBoundedWorkNamespace({

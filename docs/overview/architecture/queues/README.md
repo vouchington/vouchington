@@ -69,25 +69,24 @@ flowchart LR
 ## Vote-weight recovery
 
 Account age milestones, membership expirations, and family-source changes have separate indexed
-windows and durable positions. They enqueue the same idempotent recalculation from current facts;
+lookback windows. They enqueue the same idempotent recalculation from current facts;
 expiration also includes direct memberships, whose recalculated weight may stay unchanged.
 Family changes read each timestamp independently, including rejected provider evidence of any kind.
 A bounded continuation preserves the original window and each unfinished branch's keyset. Its
 stable identity prevents a retried parent from multiplying the remaining page chain.
 Rejected evidence resolves durable lineage owners even after newer observations or retired
 projections replace the rejected entitlement; its recipient keyset handles shared family sources. The
-position advances with compare-and-set only after all child enqueues succeed. An overlap covers
-ordinary dispatch races while event-keyed job ids identify repeated reads of the same trigger. Family windows stop before open writer transactions because transaction timestamps
-can precede commit by more than the overlap. The writer must expose activity for every connected
-role that can update family sources; dispatch refuses to advance without that visibility.
+lookback deliberately re-reads recent changes while event-keyed job ids identify repeated triggers.
+Operators expand the relevant DynamicConfig lookback after an outage; the next sweep recovers that
+window without a relational checkpoint. Continuations retain their fixed window in job data.
 
 OAuth linking, family mutations, passkey mutations and role grants leave a durable dirty marker in their transaction. This
-protects changes that commit beyond the overlap or coalesce with an active event job. A separate
+protects changes that commit beyond a dispatch window or coalesce with an active event job. A separate
 indexed recovery pass selects unrecalculated live accounts without administrator overrides. Successful
 recalculation removes them from that set, so this pass needs no persisted timestamp cursor.
 
-Source writers enqueue after commit. Operator backfills replay the full signal history through
-bounded pages, independently of the scheduled overlap. The age backfill also recalculates every
+Source writers enqueue after commit. Operator backfills use the configured signal lookbacks through
+bounded pages. The age backfill also recalculates every
 eligible live user, recovering current weights even when the original membership signal has ended.
 Replaying an event can reactivate its retained completed or failed queue record; a waiting or
 running record keeps its claim. Election replay has its own

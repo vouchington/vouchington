@@ -1,3 +1,4 @@
+import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { randomUUID } from 'node:crypto'
 import { Queue, type Job, type JobOptions } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
@@ -23,7 +24,6 @@ import { caches } from '@services/entity-cache/caches'
 import { getPostElectionById } from '@services/elections-votes/post/get-election'
 import { adminSetVoteWeight } from '@services/vote-weight/admin-set'
 import { gatherVoteWeightFactors } from '@services/vote-weight/gather-factors'
-import { voteWeightWorkConfig } from '@services/vote-weight/work-limits'
 import { getVoteIntegrityFlags } from '@services/vote-integrity/get-flags'
 import { VELOCITY_SPIKE_THRESHOLD } from '@services/vote-integrity/config'
 import { MASS_REPORT_THRESHOLD } from '@services/report-integrity/config'
@@ -162,8 +162,8 @@ describe('vote-aggregation domain through the production background worker', () 
     const voter = await createTestUser()
     const posts = await Promise.all([1, 2].map(() => createTestPost({ user: voter })))
     for (const post of posts) await insertPostElectionVote(voter.id, post.id, 1)
-    const restore = overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, {
-      election_fan_out_page_size: 1,
+    const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      elections_page_size: 1,
     })
     try {
       await runJobs([

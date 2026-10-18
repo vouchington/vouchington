@@ -11,14 +11,12 @@ import { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import { isFederationEnabledForUser } from '@services/users'
 import {
   enqueueBulkDeliverActivity,
-  enqueueDistributeActivity,
   type DeliverActivityData,
   type DistributeActivityData,
 } from '@queues/activitypub/enqueues/delivery'
 
 type DistributeActivityDependencies = {
   enqueueBulkDeliverActivity: typeof enqueueBulkDeliverActivity
-  enqueueDistributeActivity: typeof enqueueDistributeActivity
   isFederationEnabledForUser: typeof isFederationEnabledForUser
   prepareActivityDistributionPage: typeof prepareActivityDistributionPage
   commitActivityDistributionPage: typeof commitActivityDistributionPage
@@ -47,10 +45,10 @@ function isUndoMissingOriginalActivityId(
 export async function distributeActivity(
   data: DistributeActivityData,
   dependencies?: Partial<DistributeActivityDependencies>,
+  pageSize?: number,
 ) {
   const deps = {
     enqueueBulkDeliverActivity,
-    enqueueDistributeActivity,
     isFederationEnabledForUser,
     prepareActivityDistributionPage,
     commitActivityDistributionPage,
@@ -83,7 +81,12 @@ export async function distributeActivity(
     return { enqueued: 0 }
   }
 
-  const page = await deps.prepareActivityDistributionPage(data.activityId, data.sourceUserId)
+  const page = await deps.prepareActivityDistributionPage(
+    data.activityId,
+    data.sourceUserId,
+    {},
+    pageSize,
+  )
   if (page.status === 'completed') return { enqueued: 0, completed: true }
   if (page.status === 'busy') {
     return { enqueued: 0, busy: true, retryAfterMs: page.retryAfterMs }
@@ -108,11 +111,13 @@ export async function distributeActivity(
     page.leaseToken,
   )
   if (!committed) {
-    await deps.enqueueDistributeActivity(data)
     return { enqueued: page.inboxUrls.length, completed: false, stale: true }
   }
-  if (page.hasMore) await deps.enqueueDistributeActivity(data)
-  return { enqueued: page.inboxUrls.length, completed }
+  return {
+    enqueued: page.inboxUrls.length,
+    completed,
+    ...(!completed ? { cursor: page.nextRemoteActorId ?? undefined } : {}),
+  }
 }
 
 // Delivers one previously-built activity to one follower inbox (Phase C4). Drops the job (does

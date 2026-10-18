@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { readAllQueueJobs } from '../../../test-helpers/queue-jobs.mts'
 import {
   enqueueBulkDeliverActivity,
@@ -34,7 +35,7 @@ describe('ActivityPub delivery enqueues', () => {
       name: 'activitypub.distributeActivity',
       data,
       opts: {
-        priority: 10,
+        priority: PRIORITY_DISPATCH,
         ordering: { key: 'activitypub', concurrency: 10 },
       },
     })
@@ -54,7 +55,7 @@ describe('ActivityPub delivery enqueues', () => {
     expect(jobs).toHaveLength(2)
     for (const job of jobs) {
       expect(job.opts).toMatchObject({
-        priority: 10,
+        priority: PRIORITY_DISPATCH,
         ordering: { key: 'activitypub', concurrency: 10 },
       })
       expect(job.opts.deduplication).toBeUndefined()

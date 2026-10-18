@@ -21,8 +21,13 @@ export type RssFeedToFetch = {
   priority_group: 1 | 2
 }
 
+export type RssFeedDispatchCursor = { lane: number; afterId: string }
+export type RssFeedDispatchCandidate = RssFeedToFetch & { dispatch_lane: number }
+
 type GetRssFeedsToFetchOptions = {
   limit?: number
+  cursor?: RssFeedDispatchCursor
+  asOf?: Date
 }
 
 const FEED_COLUMNS = `
@@ -45,7 +50,11 @@ const FEED_JOINS = `
     JOIN urls ON urls.id = rss_feeds.rss_feed_url_id
     JOIN url_hostnames ON url_hostnames.id = urls.hostname_id`
 
-async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
+async function getRssFeedsTiered(
+  limit: number,
+  asOf: Date,
+  cursor?: RssFeedDispatchCursor,
+): Promise<RssFeedDispatchCandidate[]> {
   const tier1_sla_ms = crawlConfig.getTierSlaMs(1)
   const tier2_sla_ms = crawlConfig.getTierSlaMs(2)
   const tier3_sla_ms = crawlConfig.getTierSlaMs(3)
@@ -55,7 +64,6 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
   const tierExpr = `COALESCE(t.crawl_tier, 5)`
   const scoreExpr = `COALESCE(t.crawl_score, 0)`
 
-  // SLA deadline expression: NOW() - (tier_sla_ms * INTERVAL '1 millisecond')
   // Cast params to BIGINT so PostgreSQL accepts numeric * interval without a type error.
   const slaCaseExpr = `CASE ${tierExpr}
         WHEN 1 THEN $1::BIGINT
@@ -65,7 +73,7 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
         ELSE $5::BIGINT
       END * INTERVAL '1 millisecond'`
 
-  const isDueExpr = `(rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - (${slaCaseExpr}))`
+  const isDueExpr = `(rss_feeds.last_fetched_at IS NULL OR rss_feeds.last_fetched_at <= $7::timestamptz - (${slaCaseExpr}))`
 
   const enabledWhere = `rss_feeds.deleted_at IS NULL
       AND rss_feeds.is_enabled = TRUE`
@@ -75,27 +83,27 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       SELECT${FEED_COLUMNS},
         ${scoreExpr} AS crawl_score,
         ${tierExpr} AS crawl_tier,
-        CASE WHEN ${isDueExpr} THEN 1 ELSE 2 END AS priority_group,
-        CASE WHEN ${isDueExpr} THEN NULL::TIMESTAMPTZ
-          ELSE rss_feeds.last_fetched_at + (${slaCaseExpr}) END AS deadline_at
+        CASE WHEN ${isDueExpr} THEN 1 ELSE 2 END AS priority_group
       FROM rss_feeds${FEED_JOINS}
       LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
       WHERE ${enabledWhere}
         AND (${isDueExpr}
-          OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($1::BIGINT * INTERVAL '1 millisecond'))
+          OR rss_feeds.last_fetched_at <= $7::timestamptz - ($1::BIGINT * INTERVAL '1 millisecond'))
+    ), ranked AS (
+      SELECT *, CASE WHEN priority_group = 1 THEN crawl_tier ELSE crawl_tier + 5 END AS dispatch_lane
+      FROM candidates
     )
     SELECT
       id, url, url_hostname_id, crawlable, title,
       declared_language, last_modified_at, etag, last_fetched_at, feed_type,
       feed_ignore_robots_txt, hostname_ignore_robots_txt,
       feed_unreliable_status_codes, hostname_unreliable_status_codes,
-      crawl_score, crawl_tier, priority_group
-    FROM candidates
-    ORDER BY
-      priority_group ASC,
-      deadline_at ASC NULLS FIRST,
-      crawl_score DESC,
-      id ASC
+      crawl_score, crawl_tier, priority_group, dispatch_lane
+    FROM ranked
+    WHERE ($8::int IS NULL OR (dispatch_lane, id) > ($8::int, $9::uuid))
+    -- Due tiers precede every backfill tier. Within a lane only the immutable id is a cursor:
+    -- deadline and crawl_score can change between continuation jobs.
+    ORDER BY dispatch_lane ASC, id ASC
     LIMIT $6`
 
   const params: unknown[] = [
@@ -105,18 +113,23 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
     tier4_sla_ms,
     tier5_sla_ms,
     limit,
+    asOf,
+    cursor?.lane ?? null,
+    cursor?.afterId ?? null,
   ]
 
-  const { rows } = await read<RssFeedToFetch>(query, params)
+  const { rows } = await read<RssFeedDispatchCandidate>(query, params)
   return rows
 }
 
-export function getRssFeedsToFetch({ limit }: GetRssFeedsToFetchOptions = {}): Promise<
-  RssFeedToFetch[]
-> {
+export function getRssFeedsToFetch({
+  limit,
+  cursor,
+  asOf = new Date(),
+}: GetRssFeedsToFetchOptions = {}): Promise<RssFeedDispatchCandidate[]> {
   const capacityBudget = crawlConfig.getCrawlCapacityBudget()
-  const budget = limit === undefined ? capacityBudget : Math.min(limit, capacityBudget)
-  return getRssFeedsTiered(budget)
+  const budget = Math.min(limit ?? capacityBudget, capacityBudget)
+  return getRssFeedsTiered(budget, asOf, cursor)
 }
 
 type GetRssFeedByIdToFetchOptions = {

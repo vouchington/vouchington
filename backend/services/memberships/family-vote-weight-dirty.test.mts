@@ -44,7 +44,6 @@ describe('family vote-weight dirty markers', () => {
         async uncommittedAt => {
           const before = await dispatchVoteWeightFamilySourceChanges({
             window: {
-              previousThroughAt: null,
               windowStart: new Date(uncommittedAt.getTime() - 1).toISOString(),
               windowEnd: new Date(uncommittedAt.getTime() + 1).toISOString(),
             },
@@ -55,7 +54,6 @@ describe('family vote-weight dirty markers', () => {
       )
       const missed = await dispatchVoteWeightFamilySourceChanges({
         window: {
-          previousThroughAt: updatedAt.toISOString(),
           windowStart: new Date(updatedAt.getTime() + 121_000).toISOString(),
           windowEnd: new Date(updatedAt.getTime() + 122_000).toISOString(),
         },

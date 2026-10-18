@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
@@ -48,6 +49,7 @@ function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: n
       {},
       {
         priority: defaultPriority,
+        ...(jobName === 'crawl_hostnames_dispatcher' ? pagedDispatchJobOptions('hostnames') : {}),
         ...(jobName === 'crawl_tier1_dispatcher' ||
         jobName === 'crawl_tier2_dispatcher' ||
         jobName === 'crawl_hostnames_dispatcher'

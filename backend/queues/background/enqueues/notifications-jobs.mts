@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundJob } from './define-job.mts'
 import {
@@ -29,12 +30,17 @@ const DISPATCH = { priority: PRIORITY_DISPATCH } as const
 
 export const NOTIFICATIONS_RECONCILE_POST_JOB = defineBackgroundJob<ReconcilePostNotificationsData>(
   DOMAIN,
-  { name: 'processReconcilePostNotifications', ...TASK },
+  {
+    name: 'processReconcilePostNotifications',
+    ...DISPATCH,
+    ...pagedDispatchJobOptions('notifications'),
+  },
 )
 export const NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB =
   defineBackgroundJob<ReconcileRssFeedItemNotificationsData>(DOMAIN, {
     name: 'processReconcileRssFeedItemNotifications',
-    ...TASK,
+    ...DISPATCH,
+    ...pagedDispatchJobOptions('notifications'),
   })
 export const NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB =
   defineBackgroundJob<DeliverNotificationPushData>(DOMAIN, {

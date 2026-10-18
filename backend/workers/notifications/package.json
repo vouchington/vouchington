@@ -22,6 +22,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/emails": "workspace:^",
@@ -35,6 +36,7 @@
     "@vouchington/queue-errors": "^0.1.3"
   },
   "devDependencies": {
+    "@services/bookmarks": "workspace:^",
     "@services/modmail": "workspace:^",
     "@types/web-push": "^3.6.4",
     "@voucha/test-helpers": "workspace:^",

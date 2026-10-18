@@ -169,7 +169,7 @@ describe('BACKFILL_REGISTRY', () => {
     if (isDeduplicatedEnqueue(enqueued)) return
     await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
       name: `vote-aggregation.${jobName}`,
-      data: { fullReplay: true },
+      data: {},
     })
   })
 

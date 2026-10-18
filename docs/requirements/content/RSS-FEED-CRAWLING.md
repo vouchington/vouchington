@@ -16,6 +16,14 @@ read from the view SQL and the `rss-feed-crawl-config` DynamicConfig key.
   decided by the shared current-paid-memberships view so tier selection cannot fan out demand.
 - **New feeds default to the lowest tier** and are still dispatched, so a fresh feed is never missed
   before the next view refresh.
+- **Paged dispatch gives due feeds capacity before backfill.** A run freezes its eligibility time
+  and walks due tiers before backfill tiers, using the immutable feed ID within each lane. Mutable
+  deadlines and scores do not form continuation keys. A view refresh can move a feed between lanes
+  during a stalled run; the next scheduled run reconsiders it. The run budget survives continuation.
+- **A failed crawl remains eligible on a fresh sweep.** Retained failed jobs can be replaced
+  when a dispatcher needs the same feed again. Reactivation conditionally removes that terminal
+  record through GlideMQ; a concurrent retry wins and leaves the live job intact. The original
+  page's admission fence still prevents replay from admitting the feed twice.
 - **Explicit refreshes are never dropped** behind a queued normal fetch: requested and forced
   fetches carry their own dedup behavior.
 - **Conditional GET is withheld when no replayable crawl body remains**, because a 304 would

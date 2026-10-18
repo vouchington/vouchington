@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import type { getRssFeedsToFetch, getTierSlaMs, RssFeedToFetch } from '@services/rss-feeds'
+import type {
+  getRssFeedsToFetch,
+  getTierSlaMs,
+  RssFeedDispatchCandidate,
+} from '@services/rss-feeds'
 import { TIER_PRIORITY } from '@queues/rss-feeds/config'
 import { processFetchRssFeed, processRssFeedsDispatcher } from '../processors.mts'
 
@@ -22,7 +26,9 @@ function makeRssFeedToFetch(overrides: {
   crawl_tier?: number
   crawl_score?: number
   priority_group?: 1 | 2
-}): RssFeedToFetch {
+}): RssFeedDispatchCandidate {
+  const crawlTier = overrides.crawl_tier ?? 5
+  const priorityGroup = overrides.priority_group ?? 1
   return {
     id: overrides.id ?? 'feed-id',
     url: 'https://example.com/feed.xml',
@@ -35,8 +41,9 @@ function makeRssFeedToFetch(overrides: {
     last_fetched_at: null,
     feed_type: 'article' as const,
     crawl_score: overrides.crawl_score ?? 0,
-    crawl_tier: overrides.crawl_tier ?? 5,
-    priority_group: (overrides.priority_group ?? 1) as 1 | 2,
+    crawl_tier: crawlTier,
+    priority_group: priorityGroup,
+    dispatch_lane: priorityGroup === 1 ? crawlTier : crawlTier + 5,
     feed_ignore_robots_txt: null,
     hostname_ignore_robots_txt: null,
     feed_unreliable_status_codes: null,
@@ -67,7 +74,7 @@ describe('processRssFeedsDispatcher', () => {
 
     await runDispatcher()
 
-    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith()
+    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith({})
     expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-tier1'], {
       priority: TIER_PRIORITY[1],
       ttl: TIER_SLA[1],

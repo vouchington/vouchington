@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { kagiSmallWebImportConfig } from './import-config.mts'
 import { FEED_LIST_SOURCES } from './sources.mts'
-import { createHash } from 'node:crypto'
-import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { forgetFeedListValidators } from './fetch-feed-list.mts'
 import { dispatchKagiSmallWeb } from './sync.mts'
 
@@ -131,7 +129,7 @@ describe('dispatchKagiSmallWeb page retries', () => {
     await expect(dispatchKagiSmallWeb()).rejects.toThrow('more pages follow')
   })
 
-  it('reads the lists again after the continuation is refused, and then admits it', async () => {
+  it('reads the lists again until the caller commits validators after continuation admission', async () => {
     overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {
       enabled: true,
       candidate_batch_size: 1,
@@ -146,10 +144,8 @@ describe('dispatchKagiSmallWeb page retries', () => {
             headers: { ETag: `"${url}"` },
           }),
     )
-    const refused = vi.spyOn(kagiSmallWeb, 'add').mockRejectedValue(new Error('queue unavailable'))
-
-    await expect(dispatchKagiSmallWeb()).rejects.toThrow('queue unavailable')
-    refused.mockRestore()
+    const first = await dispatchKagiSmallWeb()
+    expect(first).toMatchObject({ hasMore: true, nextCursor: feedUrl('d'), total: 2 })
     fetchSpy.mockClear()
 
     const retried = await dispatchKagiSmallWeb()
@@ -158,10 +154,12 @@ describe('dispatchKagiSmallWeb page retries', () => {
     for (const call of fetchSpy.mock.calls) {
       expect(call[1].headers).not.toHaveProperty('If-None-Match')
     }
-    const hash = createHash('sha256').update(feedUrl('d')).digest('hex')
-    const continuation = await kagiSmallWeb.getJob(`kagi_smallweb_sync__${hash}`)
-    expect(continuation?.data).toEqual({ cursor: feedUrl('d') })
-    await continuation?.remove()
+    await retried.commitValidators!()
+    fetchSpy.mockClear()
+    expect(await dispatchKagiSmallWeb()).toMatchObject({ skipped: true, total: 0 })
+    for (const call of fetchSpy.mock.calls) {
+      expect(call[1].headers).toHaveProperty('If-None-Match')
+    }
     await forgetFeedListValidators(names)
   })
 })

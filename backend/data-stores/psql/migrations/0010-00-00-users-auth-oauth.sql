@@ -112,35 +112,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-DO $$ BEGIN
-  CREATE TYPE vote_weight_recalculation_dispatchers AS ENUM (
-    'age_milestones', 'membership_expirations', 'family_source_changes'
-  );
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS vote_weight_recalculation_cursors (
-  dispatcher vote_weight_recalculation_dispatchers PRIMARY KEY,
-  changes_through_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_vote_weight_recalculation_cursors_updated_at
-BEFORE UPDATE ON vote_weight_recalculation_cursors
-FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-COMMENT ON TABLE vote_weight_recalculation_cursors IS 'One durable high-water mark for each vote-weight signal dispatcher.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-COMMENT ON COLUMN vote_weight_recalculation_cursors.dispatcher IS 'The finite vote-weight signal dispatcher advanced by this cursor.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-COMMENT ON COLUMN vote_weight_recalculation_cursors.changes_through_at IS 'Latest completed sweep boundary; NULL means the dispatcher has not advanced.';
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-COMMENT ON COLUMN vote_weight_recalculation_cursors.updated_at IS 'When this cursor row was last updated.';
-
 -- ============================================================================
 -- users
 -- ============================================================================

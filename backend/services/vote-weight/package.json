@@ -22,6 +22,7 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",

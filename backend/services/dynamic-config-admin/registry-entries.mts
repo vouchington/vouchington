@@ -1,3 +1,4 @@
+import { pagedDispatchRegistryEntry } from './registry-paged-dispatch-entry.mts'
 import { REGISTRY_ORDER } from '@voucha/config/dynamic-config-registry-order'
 import { paginationRegistryEntries } from './registry-pagination-entries.mts'
 import { backgroundWorkRegistryEntries9 } from './registry-background-work-entries-9.mts'
@@ -21,6 +22,7 @@ import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-ent
 import type { DynamicConfigRegistryEntry } from './types.mts'
 
 const unorderedRegistryEntries = [
+  pagedDispatchRegistryEntry,
   ...paginationRegistryEntries,
   ...backgroundWorkEntries1,
   ...backgroundWorkEntries2,

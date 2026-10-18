@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
@@ -31,6 +32,7 @@ export const KAGI_SMALLWEB_SYNC_JOB = defineBackgroundJob<KagiSyncData>(KAGI_SMA
   name: 'sync',
   priority: PRIORITY_DISPATCH,
   ...DEFAULTS,
+  ...pagedDispatchJobOptions('kagi'),
 })
 export const KAGI_SMALLWEB_PROCESS_FEED_JOB = defineBackgroundJob<KagiFeedJobData>(
   KAGI_SMALLWEB_DOMAIN,

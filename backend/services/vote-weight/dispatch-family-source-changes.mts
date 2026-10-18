@@ -6,7 +6,7 @@ import type {
   VoteWeightFamilySourceChangesData,
   VoteWeightTimestampKeyset,
 } from '@queues/vote-aggregation/enqueues/types-dispatch'
-import { beginVoteWeightDispatch } from './dispatch-cursor.mts'
+import { getVoteWeightDispatchWindow } from './dispatch-window.mts'
 import { findRejectedEvidenceEvents } from './dispatch-rejected-evidence.mts'
 import { getVoteWeightDispatchBatchSize } from './work-limits.mts'
 
@@ -17,11 +17,7 @@ type Row = { at: string; id: string; user_id: string | null; changed_at_epoch_ms
 export async function dispatchVoteWeightFamilySourceChanges(
   data: VoteWeightFamilySourceChangesData = {},
 ): Promise<VoteWeightDispatchPage<VoteWeightFamilySourceChangesData>> {
-  const window =
-    data.window ??
-    (await beginVoteWeightDispatch('family_source_changes', new Date(), {
-      fullReplay: data.fullReplay,
-    }))
+  const window = data.window ?? getVoteWeightDispatchWindow('family_source_changes')
   const cap = getVoteWeightDispatchBatchSize()
   const branches = { ...data.branches }
   const events = []

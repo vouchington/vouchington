@@ -1,10 +1,10 @@
-import pMap from 'p-map'
 import type { Job, Queue } from 'glide-mq'
+import pMap from 'p-map'
+import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { createRetryingCommandClient } from './glide-mq-command-client.mts'
+import { acquireTerminalJobRemoval } from './terminal-job-removal.mts'
 
-type JobLookupQueue = Pick<Queue, 'getJob'>
-
-/** Lookups in flight at once, whatever the size of the recovery page. */
-const LOOKUP_CONCURRENCY = 25
+type JobLookupQueue = Pick<Queue, 'name'>
 
 /**
  * Adds `inputs` through `enqueueBulk`, then adds again the ones whose custom job id was held only
@@ -16,12 +16,11 @@ const LOOKUP_CONCURRENCY = 25
  * the failed set whatever `removeOnFail` says. A durable dispatcher that re-adds an attempt whose
  * token did not change would then be skipped on every pass.
  *
- * A skipped id is released only when its record is completed or failed, or already gone (including
- * trimmed by retention between the lookup and the state read). A waiting, prioritized, delayed, or
- * active job is the canonical delivery of that attempt, including a retry backing off or a
- * deliberately delayed successor, so it is never touched. The durable source row, not the queue,
- * decides which attempts to dispatch; the caller's recovery page bounds how many ids are looked up,
- * and a bounded number of lookups run at once.
+ * A skipped id is released only when its record is completed or failed, or already gone. WATCH on
+ * the native job hash fences the state check and native removal against a concurrent retry or
+ * re-admission. A conflict skips this pass; the durable source will offer the row again. A waiting,
+ * prioritized, delayed, or active job is the canonical delivery and is never touched. The caller's
+ * recovery page bounds the sequential lookups on one dedicated command connection.
  */
 export async function enqueueBulkReactivatingFinished<
   TInput,
@@ -29,39 +28,56 @@ export async function enqueueBulkReactivatingFinished<
 >(options: {
   queue: JobLookupQueue
   inputs: TInput[]
-  jobIdOf: (input: TInput) => string
+  jobIdOf: (input: TInput) => string | undefined
   enqueueBulk: (inputs: TInput[]) => Promise<TJob[]>
+  /** Isolated real queues in tests may override the production queue namespace. */
+  prefix?: string
 }): Promise<TJob[]> {
   const { queue, inputs, jobIdOf, enqueueBulk } = options
   const added = await enqueueBulk(inputs)
   const addedIds = new Set(added.map(job => job.id))
-  const skipped = inputs.filter(input => !addedIds.has(jobIdOf(input)))
+  const skipped = inputs
+    .map(input => ({ input, jobId: jobIdOf(input) }))
+    .filter((entry): entry is { input: TInput; jobId: string } =>
+      entry.jobId === undefined ? false : !addedIds.has(entry.jobId),
+    )
   if (skipped.length === 0) return added
 
-  const released = await releaseFinishedJobIds(queue, skipped.map(jobIdOf))
-  const reactivated = skipped.filter(input => released.has(jobIdOf(input)))
+  const released = await releaseFinishedJobIds(
+    queue.name,
+    options.prefix ?? workerQueuePrefix ?? 'glide',
+    skipped.map(entry => entry.jobId),
+  )
+  const reactivated = skipped.flatMap(entry => (released.has(entry.jobId) ? [entry.input] : []))
   if (reactivated.length === 0) return added
   return [...added, ...(await enqueueBulk(reactivated))]
 }
 
 async function releaseFinishedJobIds(
-  queue: JobLookupQueue,
+  queueName: string,
+  prefix: string,
   jobIds: string[],
 ): Promise<Set<string>> {
   const released = new Set<string>()
-  await pMap(
-    jobIds,
-    async jobId => {
-      const job = await queue.getJob(jobId, { excludeData: true })
-      if (job) {
-        const state = await job.getState()
-        if (state === 'completed' || state === 'failed') await job.remove()
-        // GlideMQ reports `unknown` when retention trimmed the record between the two reads.
-        else if (state !== 'unknown') return
-      }
-      released.add(jobId)
-    },
-    { concurrency: LOOKUP_CONCURRENCY },
-  )
+  const namespace = `${prefix}:{${queueName}}`
+  const dedicated = createRetryingCommandClient('terminal-job-reactivation')
+  const client = dedicated.client
+  try {
+    await pMap(
+      jobIds,
+      async jobId => {
+        const claim = await acquireTerminalJobRemoval(client, namespace, jobId)
+        if (claim.state === 'terminal') {
+          if (await claim.remove()) released.add(jobId)
+        } else {
+          if (claim.state === 'missing') released.add(jobId)
+          await claim.release()
+        }
+      },
+      { concurrency: 1 },
+    )
+  } finally {
+    await dedicated.close()
+  }
   return released
 }

@@ -22,6 +22,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/activitypub-inbox-storage-policy": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
     "@modules/queue-errors": "workspace:^",
@@ -35,7 +36,6 @@
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/http-signatures": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/entity-relations": "workspace:^",

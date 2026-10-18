@@ -76,7 +76,6 @@ describe('dispatchVoteWeightFamilySourceChanges', () => {
       new Date(base.getTime() + 4_000).toISOString(),
     )
     const window = {
-      previousThroughAt: null,
       windowStart: base.toISOString(),
       windowEnd: new Date(base.getTime() + 5_000).toISOString(),
     }
@@ -141,7 +140,6 @@ describe('dispatchVoteWeightFamilySourceChanges', () => {
     const secondSourceId = await addVoteWeightSharedFamilyRecipient(family.sourceId, secondUser.id)
     await rejectVoteWeightEvidenceExact(family.evidenceId, base.toISOString())
     const window = {
-      previousThroughAt: null,
       windowStart: base.toISOString(),
       windowEnd: new Date(base.getTime() + 1).toISOString(),
     }

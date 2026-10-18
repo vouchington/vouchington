@@ -24,9 +24,9 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
       },
       20,
     )
-    if (rows.length !== 6 || rows.filter(row => row.range === 0).length !== 3)
+    if (rows.length !== 20 || rows.filter(row => row.is_due).length !== 6)
       throw new Error(
-        'Expected three never-swept and three overdue hostnames, excluding 2000 recent sweeps',
+        'Expected one immutable-id page containing the six due hosts before recent sweeps',
       )
   })
   await runAndCapture('crawl-hostnames-due-capped', async () => {
@@ -34,27 +34,43 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
       { sweepStartedAt, rangeLimit: 2, afterBucketDays: 1, bucketDays: 7 },
       1,
     )
-    if (rows.length !== 1 || rows[0]?.range !== 0)
+    if (rows.length !== 1 || !rows[0]?.is_due)
       throw new Error('Expected a single never-swept candidate at the run cap')
   })
 }
 
 registerScenarioContract('crawl-hostname-threshold-seek', {
   expectations: [
-    { kind: 'usesIndexes', indexes: ['idx_url_hostnames__crawl_due'], noSort: true },
+    {
+      kind: 'usesIndexes',
+      indexes: [
+        'idx_url_hostnames__crawl_due',
+        'idx_url_hostnames__age_threshold_days_id_crawlable',
+      ],
+      anyOf: true,
+      noSort: true,
+    },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 2 },
   ],
 })
 registerScenarioContract('crawl-hostnames-due', {
   expectations: [
-    { kind: 'usesIndexes', indexes: ['idx_url_hostnames__crawl_due'], noSort: true },
-    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 8 },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_url_hostnames__age_threshold_days_id_crawlable'],
+      noSort: true,
+    },
+    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 20 },
   ],
 })
 
 registerScenarioContract('crawl-hostnames-due-capped', {
   expectations: [
-    { kind: 'usesIndexes', indexes: ['idx_url_hostnames__crawl_due'], noSort: true },
+    {
+      kind: 'usesIndexes',
+      indexes: ['idx_url_hostnames__age_threshold_days_id_crawlable'],
+      noSort: true,
+    },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3 },
   ],
 })

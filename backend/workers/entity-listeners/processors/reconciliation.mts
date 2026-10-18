@@ -1,11 +1,9 @@
 import { repairReconciledBloomKeys } from '@services/entity-listener-reconciliation/bloom-repair'
 import { getEntityReconciliationLimits } from '@services/entity-listener-reconciliation/work-limits'
 import {
-  advanceEntityReconciliationCheckpoint,
   getEntityReconciliationWindow,
   streamEntityReconciliationCandidateBatches,
 } from '@services/entity-listener-reconciliation'
-import { getEntityListenerReconciliationIntervalSeconds } from '@queues/entity-listeners/config'
 import type {
   ReconcileEntityData,
   EntityReconciliationDispatchData,
@@ -48,7 +46,7 @@ export async function reconcileEntities(
 ) {
   const window = data.window
     ? { start: new Date(data.window.start), end: new Date(data.window.end) }
-    : await getEntityReconciliationWindow(getEntityListenerReconciliationIntervalSeconds())
+    : getEntityReconciliationWindow()
   const fixedWindow = {
     start: window.start.toISOString(),
     end: window.end.toISOString(),
@@ -67,7 +65,7 @@ export async function reconcileEntities(
       hasMore = result.hasMore
     },
   })
-  return reconcileEntityBatches(batches, window.end, undefined, {
+  return reconcileEntityBatches(batches, undefined, {
     hasMore: () => hasMore,
     initialAfter: data.after,
     onMore: after => saveProgress({ window: fixedWindow, ...(after && { after }) }),
@@ -75,16 +73,13 @@ export async function reconcileEntities(
 }
 
 type ReconcileEntityBatchDependencies = {
-  advanceCheckpoint: typeof advanceEntityReconciliationCheckpoint
   reconcileEntity: (data: ReconcileEntityData) => Promise<void>
 }
 
 /** @internal Exported for the reconciliation tests. */
 export async function reconcileEntityBatches(
   batches: AsyncIterable<ReconcileEntityData[]>,
-  completedThrough: Date,
   dependencies: ReconcileEntityBatchDependencies = {
-    advanceCheckpoint: advanceEntityReconciliationCheckpoint,
     reconcileEntity,
   },
   options: {
@@ -113,7 +108,6 @@ export async function reconcileEntityBatches(
   }
   const hasMore = options.hasMore()
   if (hasMore) await options.onMore(after)
-  else await dependencies.advanceCheckpoint(completedThrough)
   return { reconciled, hasMore }
 }
 

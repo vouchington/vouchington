@@ -46,7 +46,10 @@ export function enqueueKagiSmallWebSync(options?: KagiSmallWebSyncOptions): Enqu
 
 // A continuation carries the last feed URL of the page before it. Its job id is a digest of that
 // cursor, so a retried sync cannot enqueue a second continuation, and a finished record releases it.
-export function enqueueKagiSmallWebSyncContinuation(cursor: string): EnqueueReturnType {
+export function enqueueKagiSmallWebSyncContinuation(
+  cursor: string,
+  options: Partial<JobOptions> = {},
+): EnqueueReturnType {
   return enqueueKagiSmallWebSyncJob(
     { cursor },
     {
@@ -54,6 +57,7 @@ export function enqueueKagiSmallWebSyncContinuation(cursor: string): EnqueueRetu
       ordering: KAGI_SMALLWEB_ORDERING.dispatcher,
       removeOnComplete: true,
       removeOnFail: true,
+      ...options,
     },
   )
 }

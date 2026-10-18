@@ -1,4 +1,5 @@
 export const REGISTRY_ORDER = [
+  'paged-dispatch-work-config',
   'feature-flags',
   'membership-billing',
   'request-client-info',

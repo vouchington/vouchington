@@ -21,13 +21,7 @@ import {
 } from '@data-stores/valkey-core/glide-mq-registry'
 import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
 import { getTestWorkerProcessorDecorator } from './test-worker-processor-decorator.mts'
-
-/**
- * A job's `stalledCount` never resets, so the (maxStalledCount + 1)th stall fails it permanently
- * regardless of `attempts`. glide-mq's default of 1 lets one rolling deploy plus one slow
- * heartbeat fail a job; 2 survives that without hiding a job that keeps stalling.
- */
-const DEFAULT_MAX_STALLED_COUNT = 2
+import { DEFAULT_MAX_STALLED_COUNT } from './worker-stall-budget.mts'
 
 type SharedQueueOptions = Pick<QueueOptions, 'deadLetterQueue' | 'compression' | 'serializer'>
 type SharedWorkerOptions = Omit<WorkerOptions, 'connection' | 'commandClient' | 'client'> & {

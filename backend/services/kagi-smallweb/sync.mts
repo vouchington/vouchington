@@ -3,10 +3,7 @@ import { fetchFeedList, forgetFeedListValidators } from './fetch-feed-list.mts'
 import { parseFeedList, type ParsedFeedEntry } from './parse.mts'
 import { getExistingRssFeedUrls } from './get-existing-feed-urls.mts'
 import { getKagiCandidateBatchSize, isKagiSmallWebImportEnabled } from './import-config.mts'
-import {
-  enqueueBulkProcessKagiFeeds,
-  enqueueKagiSmallWebSyncContinuation,
-} from '@queues/kagi-smallweb/enqueues'
+import { enqueueBulkProcessKagiFeeds } from '@queues/kagi-smallweb/enqueues'
 import onError from '@modules/on-error'
 
 export type DispatchKagiSmallWebResult = {
@@ -17,6 +14,8 @@ export type DispatchKagiSmallWebResult = {
   total: number
   /** True when a continuation was enqueued for the entries after this page. */
   hasMore?: true
+  nextCursor?: string
+  commitValidators?: () => Promise<void>
 }
 
 /**
@@ -24,7 +23,10 @@ export type DispatchKagiSmallWebResult = {
  * since the last sync; a continuation reads every list again and resumes after `cursor`, the last
  * feed URL of the page before it. Entries are ordered by feed URL so the cursor is a stable keyset.
  */
-export async function dispatchKagiSmallWeb(cursor?: string): Promise<DispatchKagiSmallWebResult> {
+export async function dispatchKagiSmallWeb(
+  cursor?: string,
+  pageSize = getKagiCandidateBatchSize(),
+): Promise<DispatchKagiSmallWebResult> {
   if (!isKagiSmallWebImportEnabled()) {
     return { disabled: true, enqueued: 0, total: 0 }
   }
@@ -62,9 +64,15 @@ export async function dispatchKagiSmallWeb(cursor?: string): Promise<DispatchKag
     const allEntries = changedResponses.flatMap(r => parseFeedList(r!.read!.text, r!.source.type))
     const result = await dispatchKagiSmallWebPage(allEntries, cursor, {
       incomplete: Boolean(failure),
+      pageSize,
     })
-    // Only now are the lists known to be handled, so only now may a later root read skip them.
-    await Promise.all(changedResponses.map(r => r!.read!.commitValidators()))
+    const commitValidators = async () => {
+      await Promise.all(changedResponses.map(r => r!.read!.commitValidators()))
+    }
+    // A root may commit its snapshot validators only after its continuation is durably admitted.
+    // Later list changes (including URLs below this cursor) still differ from that snapshot.
+    if (result.hasMore) return { ...result, commitValidators }
+    await commitValidators()
     return result
   } catch (err) {
     // A continuation that fails must make the next root read the lists again. A root commits
@@ -80,7 +88,7 @@ export async function dispatchKagiSmallWeb(cursor?: string): Promise<DispatchKag
 export async function dispatchKagiSmallWebPage(
   allEntries: readonly ParsedFeedEntry[],
   cursor?: string,
-  options: { incomplete?: boolean } = {},
+  options: { incomplete?: boolean; pageSize?: number } = {},
 ): Promise<DispatchKagiSmallWebResult> {
   const unique = new Map<string, ParsedFeedEntry>()
   for (const entry of allEntries) {
@@ -88,7 +96,7 @@ export async function dispatchKagiSmallWebPage(
   }
   const remaining = [...unique.values()].toSorted((a, b) => (a.feedUrl < b.feedUrl ? -1 : 1))
 
-  const pageSize = getKagiCandidateBatchSize()
+  const pageSize = options.pageSize ?? getKagiCandidateBatchSize()
   if (options.incomplete && remaining.length > pageSize) {
     throw new Error('A Kagi Small Web list is unavailable and more pages follow; retrying the page')
   }
@@ -101,7 +109,10 @@ export async function dispatchKagiSmallWebPage(
   }
 
   const hasMore = remaining.length > page.length
-  if (hasMore) await enqueueKagiSmallWebSyncContinuation(page.at(-1)!.feedUrl)
 
-  return { enqueued: newEntries.length, total: remaining.length, ...(hasMore && { hasMore }) }
+  return {
+    enqueued: newEntries.length,
+    total: remaining.length,
+    ...(hasMore && { hasMore, nextCursor: page.at(-1)!.feedUrl }),
+  }
 }

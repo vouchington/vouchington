@@ -5,19 +5,23 @@ export const voteWeightWorkConfig = new DynamicConfig({
   key: 'vote-weight-work-config',
   fieldTypes: {
     dispatch_batch_size: 'number',
-    election_fan_out_page_size: 'number',
-    window_overlap_seconds: 'number',
+    age_milestones_lookback_seconds: 'number',
+    membership_expirations_lookback_seconds: 'number',
+    family_source_changes_lookback_seconds: 'number',
   },
+  // Overlap the daily schedules so a missed run does not create a recovery gap.
   defaultFields: {
     dispatch_batch_size: 500,
-    election_fan_out_page_size: 500,
-    window_overlap_seconds: 120,
+    age_milestones_lookback_seconds: 259200,
+    membership_expirations_lookback_seconds: 259200,
+    family_source_changes_lookback_seconds: 259200,
   },
 })
 export const voteWeightWorkMaxValues = {
-  window_overlap_seconds: 3600,
+  age_milestones_lookback_seconds: 31536000,
+  membership_expirations_lookback_seconds: 31536000,
+  family_source_changes_lookback_seconds: 31536000,
   dispatch_batch_size: 5000,
-  election_fan_out_page_size: 5000,
 }
 export function getVoteWeightDispatchBatchSize(): number {
   return getBoundedPositiveIntegerField(voteWeightWorkConfig, 'dispatch_batch_size', {
@@ -25,17 +29,12 @@ export function getVoteWeightDispatchBatchSize(): number {
     maxValue: 5000,
   })
 }
-/** Votes of one user turned into election recomputes by a single fan-out job. */
-export function getVoteWeightElectionFanOutPageSize(): number {
-  return getBoundedPositiveIntegerField(voteWeightWorkConfig, 'election_fan_out_page_size', {
-    defaultValue: 500,
-    maxValue: 5000,
-  })
-}
-
-export function getVoteWeightWindowOverlapSeconds(): number {
-  return getBoundedPositiveIntegerField(voteWeightWorkConfig, 'window_overlap_seconds', {
-    defaultValue: 120,
-    maxValue: 3600,
+export function getVoteWeightLookbackSeconds(
+  signal: 'age_milestones' | 'membership_expirations' | 'family_source_changes',
+): number {
+  const field = `${signal}_lookback_seconds` as const
+  return getBoundedPositiveIntegerField(voteWeightWorkConfig, field, {
+    defaultValue: 259200,
+    maxValue: voteWeightWorkMaxValues[field],
   })
 }

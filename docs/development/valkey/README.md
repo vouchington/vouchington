@@ -4,7 +4,9 @@ Voucha's Valkey layer is a thin facade over [`valkyries`](https://github.com/jon
 split into per-concern pnpm packages (`valkey-core`, `valkey-pubsub`, `valkey-rate-limiter`,
 `valkey-glide-mq`, and `valkey` for cache, Bloom, dynamic config, and the rest) so the workspace
 graph enforces which concern each consumer may touch. Every package depends only on `valkey-core`
-(star layering, cycle-free); consumers of pubsub, rate limiting, or queues must declare the matching
+(star layering, cycle-free). The registered-key DynamicConfig facade lives in that shared leaf,
+so queue infrastructure can use configuration without importing general cache and Bloom glue.
+The general `valkey` facade re-exports it for service consumers. Consumers of pubsub, rate limiting, or queues must declare the matching
 package. `valkyries` owns the reusable primitives; Voucha keeps application glue: session state,
 the GlideMQ factory and registry, cache metric forwarding to analytics, and error handling through
 `@modules/on-error`. Read primitive API details in the upstream `valkyries` docs.

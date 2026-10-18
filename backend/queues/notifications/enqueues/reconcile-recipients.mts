@@ -1,3 +1,4 @@
+import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
@@ -58,11 +59,13 @@ export function enqueueBulkReconcilePostNotifications(postIds: string[]): Enqueu
 
 /** Queues the next recipient page of one post's reconciliation, after the last user of this page. */
 export function enqueueContinueReconcilePostNotifications(
-  data: Required<ReconcilePostData>,
+  data: ReconcilePostData,
+  options: Partial<JobOptions> = {},
 ): EnqueueReturnType {
   return enqueueReconcilePostContinuationJob(data, {
     ...CONTINUATION,
     jobId: `notifications__reconcile-post__${data.postId}__${data.afterUserId}`,
+    ...options,
   })
 }
 
@@ -76,10 +79,12 @@ export function enqueueBulkReconcileRssFeedItemNotifications(
 
 /** Queues the next recipient page of one RSS feed item's reconciliation. */
 export function enqueueContinueReconcileRssFeedItemNotifications(
-  data: Required<ReconcileRssFeedItemData>,
+  data: ReconcileRssFeedItemData,
+  options: Partial<JobOptions> = {},
 ): EnqueueReturnType {
   return enqueueReconcileRssFeedItemContinuationJob(data, {
     ...CONTINUATION,
     jobId: `notifications__reconcile-rss-feed-item__${data.rssFeedItemId}__${data.afterUserId}`,
+    ...options,
   })
 }

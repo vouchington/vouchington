@@ -61,10 +61,13 @@ export const enqueueBulkFetchRssFeeds = (
   },
 ): EnqueueReturnType => {
   const { ttl, priority, skipDeduplication, deduplicationScope } = opts ?? {}
-  return enqueueBulkFetchRssFeedJobs(
-    rssFeedIds.map(rssFeedId => ({ rssFeedId, ttl, skipDeduplication, deduplicationScope })),
-    priority === undefined ? {} : { priority },
-  )
+  const inputs = rssFeedIds.map(rssFeedId => ({
+    rssFeedId,
+    ttl,
+    skipDeduplication,
+    deduplicationScope,
+  }))
+  return enqueueBulkFetchRssFeedJobs(inputs, priority === undefined ? {} : { priority })
 }
 
 export function enqueueDispatchRssFeeds(): EnqueueReturnType {

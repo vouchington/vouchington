@@ -1,7 +1,6 @@
 /** Exact database timestamp strings preserve microseconds across queue continuations. */
 export type VoteWeightDispatchWindow = {
-  previousThroughAt: string | null
-  windowStart: string | null
+  windowStart: string
   windowEnd: string
 }
 export type VoteWeightTimestampKeyset = { at: string; id: string }
@@ -10,19 +9,15 @@ export type VoteWeightRejectedEvidenceKeyset = VoteWeightTimestampKeyset & {
   afterSourceId?: string
 }
 export type VoteWeightAgeMilestonesData = {
-  /** Operator backfills scan all eligible users; scheduled runs resume the durable cursor. */
-  fullReplay?: boolean
   window?: VoteWeightDispatchWindow
   milestoneIndex?: number
   afterId?: string
 }
 export type VoteWeightMembershipExpirationsData = {
-  fullReplay?: boolean
   window?: VoteWeightDispatchWindow
   after?: VoteWeightTimestampKeyset
 }
 export type VoteWeightFamilySourceChangesData = {
-  fullReplay?: boolean
   window?: VoteWeightDispatchWindow
   branches?: Partial<
     Record<
