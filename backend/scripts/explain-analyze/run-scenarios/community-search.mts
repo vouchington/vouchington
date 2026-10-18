@@ -63,9 +63,10 @@ export async function runCommunitySearchScenarios() {
       { kind: 'custom', name: 'searchCommunitiesEligibility' },
       // GIN returns 262 matching candidates; the custom gate caps them at ceil(262 * 1.2) = 315.
       { kind: 'custom', name: 'communityTextCandidates' },
-      // Candidate read + 262 keyed lookups to order matches + 52 page/key lookups = 576;
-      // ceil(576 * 1.2) = 692. Post-view stats are skipped for this search.
-      { kind: 'maxProcessedRows', relation: 'communities', max: 692 },
+      // Candidate read + 262 keyed lookups to order matches + 52 page/key lookups + 1,052
+      // correlated post-metric community-key reads = 1,628; ceil(1,628 * 1.2) = 1,954.
+      // Text search skips count-index ordering, but still hydrates the selected page's metrics.
+      { kind: 'maxProcessedRows', relation: 'communities', max: 1954 },
     ],
   })
   await runAndCapture(

@@ -42,6 +42,12 @@ regressions remain distinguishable from batching and cursor failures.
   first post batch because a fresh database plans the retained-identity trigger against empty-table
   statistics.
 - Seeding is idempotent (`ON CONFLICT DO NOTHING`); CI uses a fresh database per job.
+- A fixture restored after a captured write needs fresh statistics for its participating relations
+  before replay: bulk-seed statistics may no longer describe those rows. The hostname invalidation
+  fixture owns this refresh so initial seeding and restoration use the same preparation.
+- Bounded-claim fixtures need a ready backlog large enough to distinguish an ordered index page
+  from scanning all eligible work. A small eligible queue can legitimately favor a bitmap scan
+  and sort even with accurate statistics; that choice does not establish unbounded backlog work.
 
 ## Loader decisions
 

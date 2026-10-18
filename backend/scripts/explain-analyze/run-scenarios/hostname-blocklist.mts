@@ -24,7 +24,8 @@ export async function runHostnameBlocklistScenario(): Promise<void> {
   await runAndCapture(
     'hostname-cache-invalidation-claim',
     async () => {
-      // Capture the production claim over 20k work rows without doing real cache work.
+      // A large ready backlog makes this a bounded-scan test; scanning a small eligible queue
+      // can legitimately cost less than an ordered index page. Keep future work in the fixture.
       const claimed = await drainHostnameCacheInvalidationWork({ evict: async () => {} })
       if (claimed !== 500)
         throw new Error(`Expected one full cache-invalidation page; got ${claimed}`)
