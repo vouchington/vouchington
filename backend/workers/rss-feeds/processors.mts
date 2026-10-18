@@ -4,6 +4,7 @@ import {
   fetchRssFeed,
   getRssFeedsToFetch,
   getTierSlaMs,
+  type RssFeedDispatchCursor,
   type RssFeedCrawlTier,
 } from '@services/rss-feeds'
 
@@ -22,8 +23,8 @@ type FetchRssFeedDependencies = {
  */
 export async function processRssFeedsDispatcher(
   dependencies?: Partial<RssFeedsDispatcherDependencies>,
-  page?: { afterId?: string; limit: number },
-): Promise<{ count: number; nextAfterId?: string }> {
+  page?: { cursor?: RssFeedDispatchCursor; asOf: Date; limit: number },
+): Promise<{ count: number; nextCursor?: RssFeedDispatchCursor }> {
   const deps = {
     enqueueBulkFetchRssFeeds,
     getRssFeedsToFetch,
@@ -31,7 +32,7 @@ export async function processRssFeedsDispatcher(
     ...dependencies,
   }
   const feeds = await deps.getRssFeedsToFetch(
-    page ? { limit: page.limit, afterId: page.afterId } : {},
+    page ? { limit: page.limit, cursor: page.cursor, asOf: page.asOf } : {},
   )
   if (feeds.length === 0) return { count: 0 }
 
@@ -61,9 +62,12 @@ export async function processRssFeedsDispatcher(
     ),
   )
 
+  const last = feeds.at(-1)
   return {
     count: feeds.length,
-    ...(page && feeds.length === page.limit ? { nextAfterId: feeds.at(-1)!.id } : {}),
+    ...(page && feeds.length === page.limit && last
+      ? { nextCursor: { lane: last.dispatch_lane, afterId: last.id } }
+      : {}),
   }
 }
 

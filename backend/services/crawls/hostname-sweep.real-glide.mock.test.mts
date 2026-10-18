@@ -29,7 +29,7 @@ const sweepStartedAt = '2099-01-15T00:00:00.000Z'
 describe('hostname sweep selection and completion', () => {
   afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
 
-  it('keeps a one-row dispatch when a shared-band url-less hostname already exists', async () => {
+  it('caps an oversized dispatcher page despite a shared-band url-less hostname', async () => {
     const bucket = await acquireTestHostnameSweepBucket()
     onTestFinished(() => bucket.release())
     expect(bucket.bucketDays).toBeLessThan(29000)
@@ -59,6 +59,7 @@ describe('hostname sweep selection and completion', () => {
           bucketDays: bucket.bucketDays,
         },
         async () => {},
+        500,
       ),
     ).toEqual({ count: 1, hasMore: true })
   })
@@ -71,9 +72,13 @@ describe('hostname sweep selection and completion', () => {
     })
     const saved: CrawlHostnameDispatchCursor[] = []
     expect(
-      await dispatchCrawlHostnames(undefined, async cursor => {
-        saved.push(cursor)
-      }),
+      await dispatchCrawlHostnames(
+        undefined,
+        async cursor => {
+          saved.push(cursor)
+        },
+        500,
+      ),
     ).toEqual({ count: 0, hasMore: true })
     expect(saved.at(-1)?.bucketDays).toBeDefined()
     expect(saved.at(-1)?.afterId).toBeUndefined()

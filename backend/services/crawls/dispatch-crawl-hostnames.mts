@@ -13,6 +13,7 @@ export const dispatchCrawlHostnames = async (
   pageSize?: number,
 ) => {
   const limits = getCrawlHostnameDispatchLimits()
+  const maxRows = Math.min(pageSize ?? limits.maxRows, limits.maxRows)
   let cursor: CrawlHostnameDispatchCursor = saved ?? {
     sweepStartedAt: new Date().toISOString(),
     rangeLimit: limits.batchSize,
@@ -21,11 +22,11 @@ export const dispatchCrawlHostnames = async (
   await saveProgress?.(cursor)
   let count = 0
   let probes = 0
-  while (count + probes < (pageSize ?? limits.maxRows)) {
+  while (count + probes < maxRows) {
     // oxlint-disable-next-line no-await-in-loop -- each page advances the retained index position after its enqueue succeeds
     const page = await dispatchHostnamePage(
       cursor,
-      Math.min(cursor.rangeLimit, limits.batchSize, (pageSize ?? limits.maxRows) - count - probes),
+      Math.min(cursor.rangeLimit, limits.batchSize, maxRows - count - probes),
       saveProgress,
     )
     cursor = page.cursor

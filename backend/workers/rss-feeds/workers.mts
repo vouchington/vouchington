@@ -18,26 +18,32 @@ export const rssFeedsHandlers = [
     if (!Number.isSafeInteger(remainingBudget) || remainingBudget < 0) {
       throw new TypeError('RSS dispatcher remaining budget must be a nonnegative safe integer')
     }
-    if (job.data.remainingBudget === undefined) {
-      await job.updateData({ ...job.data, remainingBudget })
+    const asOf = job.data.asOf ?? new Date().toISOString()
+    const asOfDate = new Date(asOf)
+    if (Number.isNaN(asOfDate.valueOf())) {
+      throw new TypeError('RSS dispatcher asOf must be a valid timestamp')
+    }
+    if (job.data.remainingBudget === undefined || job.data.asOf === undefined) {
+      await job.updateData({ ...job.data, remainingBudget, asOf })
     }
     if (remainingBudget === 0) return { count: 0 }
     return processPagedDispatcher(job, {
       dispatcher: 'rss',
-      cursorKey: 'id',
+      cursorKey: 'lane,id',
       target: background,
       targetName: 'background',
       readAndDispatch: async pageSize => {
-        const limit = Math.min(pageSize, remainingBudget)
+        const limit = Math.min(pageSize, remainingBudget, getCrawlCapacityBudget())
         const result = await processRssFeedsDispatcher(undefined, {
-          afterId: job.data.afterId,
+          cursor: job.data.cursor,
+          asOf: asOfDate,
           limit,
         })
         const nextBudget = remainingBudget - result.count
         return {
           result,
-          ...(result.nextAfterId && nextBudget > 0
-            ? { next: { afterId: result.nextAfterId, remainingBudget: nextBudget } }
+          ...(result.nextCursor && nextBudget > 0
+            ? { next: { cursor: result.nextCursor, asOf, remainingBudget: nextBudget } }
             : {}),
         }
       },
