@@ -87,7 +87,7 @@ export async function withScheduledRunLease(
     throw new Error('Unknown scheduled lease admission result')
   if (decision === 3) {
     try {
-      await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
+      await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'deferred_admitted', 1)
     } catch (err) {
       try {
         onError(err instanceof Error ? err : new Error(String(err)))
@@ -95,7 +95,7 @@ export async function withScheduledRunLease(
         console.error('scheduled_overlap_metric_reporting_failed', err)
       }
     }
-    console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
+    console.info('deferred_admitted', { queue, scheduler, jobId: job.id })
     // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
     // Keep its saved cursor by delaying it until the current holder finishes.
     await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))

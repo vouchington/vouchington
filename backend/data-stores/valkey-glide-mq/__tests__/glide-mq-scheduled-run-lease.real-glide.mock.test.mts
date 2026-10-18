@@ -216,8 +216,11 @@ describe('scheduled run lease recovery', () => {
       await oldDelayedAgain.promise
       expect(seenPages).toEqual([])
       expect(
-        Number(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap')),
+        Number(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'deferred_admitted')),
       ).toBeGreaterThan(0)
+      expect(
+        await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap'),
+      ).toBeNull()
       releaseNew.resolve()
       await oldCompleted.promise
       expect(seenPages).toEqual([2])
