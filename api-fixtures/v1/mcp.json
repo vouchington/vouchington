@@ -20653,6 +20653,9 @@
                                   "current_report_count": {
                                     "type": "number"
                                   },
+                                  "id": {
+                                    "type": "string"
+                                  },
                                   "internal_response": {
                                     "$ref": "#/$defs/S3"
                                   },
@@ -20672,6 +20675,7 @@
                                 },
                                 "required": [
                                   "current_report_count",
+                                  "id",
                                   "internal_response",
                                   "is_stale",
                                   "judged_report_count",
@@ -26621,6 +26625,9 @@
                                                   "current_report_count": {
                                                     "type": "number"
                                                   },
+                                                  "id": {
+                                                    "type": "string"
+                                                  },
                                                   "internal_response": {
                                                     "type": "string"
                                                   },
@@ -26659,6 +26666,7 @@
                                                 },
                                                 "required": [
                                                   "current_report_count",
+                                                  "id",
                                                   "internal_response",
                                                   "is_stale",
                                                   "judged_report_count",
@@ -27343,6 +27351,9 @@
                                             "current_report_count": {
                                               "type": "number"
                                             },
+                                            "id": {
+                                              "type": "string"
+                                            },
                                             "internal_response": {
                                               "type": "string"
                                             },
@@ -27376,6 +27387,7 @@
                                           },
                                           "required": [
                                             "current_report_count",
+                                            "id",
                                             "internal_response",
                                             "is_stale",
                                             "judged_report_count",
@@ -28207,6 +28219,9 @@
                                       "current_report_count": {
                                         "type": "number"
                                       },
+                                      "id": {
+                                        "type": "string"
+                                      },
                                       "internal_response": {
                                         "type": "string"
                                       },
@@ -28240,6 +28255,7 @@
                                     },
                                     "required": [
                                       "current_report_count",
+                                      "id",
                                       "internal_response",
                                       "is_stale",
                                       "judged_report_count",
