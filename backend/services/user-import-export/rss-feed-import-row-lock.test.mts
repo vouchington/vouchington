@@ -9,6 +9,7 @@ import {
 import {
   getRssFeedImportRowIds,
   getRssFeedImportSerializationPoolForTest,
+  observeRssFeedImportRowLockForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
 import { importSingleRssFeed } from './import-rss-feeds.mts'
 import {
@@ -19,6 +20,27 @@ import {
 import { RssFeedImportRowBusyError, withRssFeedImportRowLock } from './rss-feed-import-row-lock.mts'
 
 describe('RSS feed import row serialization', () => {
+  it('reports a lost lock connection and reacquires the same row on a fresh session', async () => {
+    const rowId = randomUUID()
+    const observer = observeRssFeedImportRowLockForTest(rowId)
+
+    try {
+      await expect(
+        withRssFeedImportRowLock(rowId, async () => {
+          await observer.terminateAndWait()
+          return 'operation completed'
+        }),
+      ).rejects.toMatchObject({
+        message: expect.stringMatching(/connection|terminated|server|socket/i),
+      })
+      await expect(withRssFeedImportRowLock(rowId, async () => 'reacquired')).resolves.toBe(
+        'reacquired',
+      )
+    } finally {
+      observer.close()
+    }
+  })
+
   it('blocks only the claimed row and processes it once released', async () => {
     const user = await createTestUser()
     const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [

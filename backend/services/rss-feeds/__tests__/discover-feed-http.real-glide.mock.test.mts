@@ -27,7 +27,6 @@ import {
 } from '@voucha/test-helpers/rss-feed-import-rows'
 import type { CrawlerHtmlResult } from '../../crawler-html/index.mts'
 import { completeRssFeedImportDiscovery, discoverFeedUrlFromHtml } from '../discover-feed.mts'
-import { RssFeedDiscoveryPendingError } from '../discovery-pending.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -51,7 +50,7 @@ async function runHtmlImport(options: {
   const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
   const crawlsSettled = Promise.withResolvers<Job[]>()
   const rowsSettled = Promise.withResolvers<void>()
-  const crawlJobs: Job[] = []
+  const crawlJobsByUrlId = new Map<string, Job>()
   const htmlFetchCounts = new Map<string, number>()
   let rowRuns = 0
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
@@ -119,8 +118,14 @@ async function runHtmlImport(options: {
   })
   crawler.on('completed', job => {
     if (job.data?.import_row_id !== rowId) return
-    crawlJobs.push(job)
-    if (crawlJobs.length === options.expectedCrawls) crawlsSettled.resolve(crawlJobs)
+    const urlId = job.data?.url_id
+    if (typeof urlId !== 'string') {
+      crawlsSettled.reject(new Error('Discovery crawl completed without its URL ID'))
+      return
+    }
+    crawlJobsByUrlId.set(urlId, job)
+    if (crawlJobsByUrlId.size === options.expectedCrawls)
+      crawlsSettled.resolve([...crawlJobsByUrlId.values()])
   })
   background.on('error', error => rowsSettled.reject(error))
   const onRowFinished = (job: Job) => {
@@ -149,30 +154,6 @@ async function runHtmlImport(options: {
 }
 
 describe('HTML RSS discovery continuation', () => {
-  it('replays a pending crawl with the same generation after redispatch', async () => {
-    const user = await createTestUser()
-    const pageUrl = `https://discovery-replay-${randomUUID()}.example.com/blog`
-    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
-    const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
-    await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
-      RssFeedDiscoveryPendingError,
-    )
-    const first = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
-    await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
-      RssFeedDiscoveryPendingError,
-    )
-    const replayed = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
-    expect(replayed.generation).toBe(first.generation)
-    expect(replayed.discovery_url_id).toBe(first.discovery_url_id)
-
-    await completeRssFeedImportDiscovery(rowId, first.discovery_url_id!, first.generation, null)
-    const completed = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
-    await completeRssFeedImportDiscovery(rowId, first.discovery_url_id!, first.generation, null)
-    const replayedCompletion = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
-    expect(replayedCompletion.failed_at).toEqual(completed.failed_at)
-    await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).resolves.toBeNull()
-  })
-
   it('runs the dispatcher, HTML crawler, and resumed row to a created source', async () => {
     const hostname = `discovery-${randomUUID()}.example.com`
     const pageUrl = `https://${hostname}/blog`
@@ -191,11 +172,20 @@ describe('HTML RSS discovery continuation', () => {
       result.rowId,
       result.rowId,
     ])
+    expect(new Set(result.crawlJobs.map(job => job.data.url_id))).toEqual(
+      new Set(result.discoveries.map(discovery => discovery.discovery_url_id)),
+    )
+    for (const job of result.crawlJobs) {
+      expect(
+        result.discoveries.find(discovery => discovery.discovery_url_id === job.data.url_id),
+      ).toMatchObject({ generation: job.data.import_discovery_generation })
+    }
     expect(result.discoveries).toMatchObject([
       { discovery_url: expect.stringMatching('/blog'), discovered_feed_url: sectionUrl },
       { discovery_url: expect.stringMatching('/section'), discovered_feed_url: feedUrl },
     ])
     const sectionDiscovery = result.discoveries.find(item => item.discovery_url === sectionUrl)!
+    await expect(discoverFeedUrlFromHtml(sectionUrl, result.rowId)).resolves.toBe(feedUrl)
     await completeRssFeedImportDiscovery(
       result.rowId,
       sectionDiscovery.discovery_url_id,

@@ -1,6 +1,74 @@
-import { jobSerializationPool, write } from '@data-stores/psql'
+import { jobSerializationPool, write, type PoolClient } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
+import { getTestPostgresAdvisoryLockHolderProcessId } from './postgres-lock-wait.mts'
+
+const RSS_FEED_IMPORT_ROW_LOCK_NAMESPACE = 0x5252
+
+type ObservedSerializationClient = {
+  client: PoolClient
+  processId: Promise<number | null>
+  disconnected: Promise<Error>
+  onError: (error: Error) => void
+}
+
+/** Captures and can terminate only the serialization client locking this owned row. */
+export function observeRssFeedImportRowLockForTest(rowId: string): {
+  terminateAndWait(): Promise<Error>
+  close(): void
+} {
+  const clients: ObservedSerializationClient[] = []
+  const onAcquire = (client: PoolClient) => {
+    const disconnected = Promise.withResolvers<Error>()
+    const onError = (error: Error) => disconnected.resolve(error)
+    client.once('error', onError)
+    clients.push({
+      client,
+      processId: client
+        .query<{ process_id: number }>(
+          '/* observeRssFeedImportRowLockForTest:pid */ SELECT pg_backend_pid()::integer AS process_id',
+        )
+        .then(result => {
+          const processId = result.rows[0]?.process_id
+          return processId ?? null
+        })
+        .catch(() => null),
+      disconnected: disconnected.promise,
+      onError,
+    })
+  }
+  jobSerializationPool.on('acquire', onAcquire)
+
+  return {
+    async terminateAndWait() {
+      const { rows: databaseRows } = await write<{ name: string }>(
+        '/* observeRssFeedImportRowLockForTest:database */ SELECT current_database() AS name',
+      )
+      const database = databaseRows[0]?.name
+      if (!database) throw new Error('PostgreSQL did not return the current database name')
+      const processId = await getTestPostgresAdvisoryLockHolderProcessId({
+        namespace: RSS_FEED_IMPORT_ROW_LOCK_NAMESPACE,
+        key: `${database}:${rowId}`,
+      })
+      const observed = await Promise.all(
+        clients.map(async candidate => ({ ...candidate, processId: await candidate.processId })),
+      )
+      const client = observed.find(candidate => candidate.processId === processId)
+      if (!client) throw new Error('Could not observe the RSS row-lock connection')
+      const termination = await write<{ terminated: boolean }>(
+        '/* observeRssFeedImportRowLockForTest:terminate */ SELECT pg_terminate_backend($1) AS terminated',
+        [processId],
+      )
+      if (!termination.rows[0]?.terminated)
+        throw new Error('PostgreSQL did not terminate the RSS row-lock connection')
+      return client.disconnected
+    },
+    close() {
+      jobSerializationPool.removeListener('acquire', onAcquire)
+      for (const { client, onError } of clients) client.removeListener('error', onError)
+    },
+  }
+}
 
 /** Pool occupancy for the RSS import row-lock concurrency regression. */
 export function getRssFeedImportSerializationPoolForTest(): { capacity: number; idle: number } {
