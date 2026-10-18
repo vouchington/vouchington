@@ -57,6 +57,61 @@ describe('backend credentialed test workflow', () => {
     expect(projectFlags.toSorted()).toEqual([...backendCredentialedProjectNames].toSorted())
   })
 
+  it('retains separate best-effort JUnit reports after each provider batch', () => {
+    const parsed = load(workflow) as {
+      jobs: Record<
+        string,
+        {
+          steps: Array<{
+            name?: string
+            if?: string
+            env?: Record<string, string>
+            uses?: string
+            with?: Record<string, unknown>
+            'continue-on-error'?: boolean
+          }>
+        }
+      >
+    }
+    const steps = parsed.jobs['backend-credentialed-tests']!.steps
+    const reports = [
+      {
+        run: 'Run backend credentialed tests',
+        upload: 'Upload backend credentialed JUnit report',
+        artifact: 'backend-credentialed-junit',
+        path: 'backend-credentialed-test-report.junit.xml',
+        condition: '${{ !cancelled() }}',
+      },
+      {
+        run: 'Run Anthropic credentialed tests',
+        upload: 'Upload Anthropic credentialed JUnit report',
+        artifact: 'backend-credentialed-anthropic-junit',
+        path: 'backend-credentialed-anthropic-test-report.junit.xml',
+        condition: "${{ !cancelled() && steps.anthropic-tests.outcome != 'skipped' }}",
+      },
+    ]
+
+    for (const { run, upload, artifact, path, condition } of reports) {
+      const runIndex = steps.findIndex(step => step.name === run)
+      const uploadIndex = steps.findIndex(step => step.name === upload)
+      expect(runIndex).toBeGreaterThanOrEqual(0)
+      expect(uploadIndex).toBe(runIndex + 1)
+      expect(steps[runIndex]?.env?.VITEST_JUNIT_OUTPUT_FILE).toBe(path)
+      expect(steps[uploadIndex]).toMatchObject({
+        if: condition,
+        'continue-on-error': true,
+        with: {
+          overwrite: true,
+          name: artifact,
+          path,
+          'retention-days': 1,
+          'if-no-files-found': 'warn',
+        },
+      })
+      expect(steps[uploadIndex]?.uses).toMatch(/^actions\/upload-artifact@[0-9a-f]{40}$/u)
+    }
+  })
+
   it('passes the repository diagnostics opt-in to both credentialed test steps', () => {
     const parsed = load(workflow) as {
       jobs: Record<

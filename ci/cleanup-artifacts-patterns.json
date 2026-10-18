@@ -12,6 +12,8 @@
     "backend-file-progress-shard-*",
     "retained-relation-bootstrap-*",
     "backend-modules-junit",
+    "backend-credentialed-junit",
+    "backend-credentialed-anthropic-junit",
     "tooling-junit",
     "ts-shared-junit",
     "web-test-report-shard-*",
