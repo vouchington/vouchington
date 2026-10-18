@@ -43,7 +43,6 @@ describe('datastore workflow diagnostics opt-in', () => {
   it.each([
     ['tests-web-api.yml', 'web-api-tests', 'Run web API tests'],
     ['tests-web-integration.yml', 'web-integration-tests', 'Run web integration tests'],
-    ['tests-postgres-schema.yml', 'postgres-schema-tests', 'Run PostgreSQL schema tests'],
   ])(
     '%s forwards the repository opt-in without enabling diagnostics by default',
     (file, jobId, name) => {

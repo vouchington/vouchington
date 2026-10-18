@@ -74,7 +74,7 @@ jobs:
         timeout-minutes: 4
         env:
           VITEST_CI_REPORTERS: run
-          VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
+          VITEST_DIAGNOSTICS: '1'
           VITEST_JUNIT_OUTPUT_FILE: postgres-schema-test-report.junit.xml
         run: |
           VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity
