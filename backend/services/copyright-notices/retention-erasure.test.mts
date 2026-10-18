@@ -59,6 +59,15 @@ describe('copyright evidence retention sweep', () => {
       ),
     ).toBe(true)
     await completeAgentCallReceipt(receiptKey, 'encrypted private guidance fixture')
+    const pendingReceiptKey = createHash('sha256').update(randomUUID()).digest('hex')
+    expect(
+      await reserveAgentCallReceipt(
+        pendingReceiptKey,
+        'copyright-submission-guidance',
+        'b'.repeat(64),
+        counterSubmissionId,
+      ),
+    ).toBe(true)
     const noticeIds = cases.map(entry => entry.noticeId)
     const administratorLift = await createRetentionAdministratorLiftCase()
     const coverageNoticeIds = [...noticeIds, administratorLift.noticeId]
@@ -87,6 +96,12 @@ describe('copyright evidence retention sweep', () => {
     await expect(getAgentCallReceipt(receiptKey)).resolves.toMatchObject({
       result_ciphertext: 'erased',
     })
+    await expect(getAgentCallReceipt(pendingReceiptKey)).resolves.toMatchObject({
+      result_ciphertext: 'erased',
+    })
+    await expect(
+      completeAgentCallReceipt(pendingReceiptKey, 'late private guidance fixture'),
+    ).rejects.toThrow('could not be completed')
     const lateReceiptKey = createHash('sha256').update(randomUUID()).digest('hex')
     await expect(
       reserveAgentCallReceipt(

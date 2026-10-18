@@ -121,8 +121,7 @@ export async function eraseCopyrightRetentionCase(
   await transaction(sql`/* eraseCopyrightAgentCallReceipts */
     UPDATE ai_agent_call_receipts SET result_ciphertext = 'erased'
     WHERE copyright_notice_submission_id IN
-      (SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId})
-      AND result_ciphertext IS NOT NULL`)
+      (SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId})`)
   await transaction(sql`/* deleteCopyrightRetentionStorageObjects */
     DELETE FROM copyright_notice_storage_objects
     WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)
