@@ -1,12 +1,12 @@
 import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
 import { toolToMcpTool } from '@voucha/mcp/registry/adapters'
-import { isToolMcpEligible, listToolsForSurface } from '@voucha/mcp/registry/select'
+import { isToolMcpEligible, listToolsForAudience } from '@voucha/mcp/registry/select'
 import { describe, expect, it } from 'vitest'
 import type { McpServerConfig } from '../config.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
 import { findCatalogContractViolations } from './check-catalog-contracts.mts'
 
-type FixtureMeta = Partial<ToolMeta> & Pick<ToolMeta, 'surfaces'>
+type FixtureMeta = Partial<ToolMeta>
 
 function fixtureTool(name: string, meta: FixtureMeta, roles?: Tool['roles']): Tool {
   return {
@@ -32,61 +32,76 @@ function fixtureTool(name: string, meta: FixtureMeta, roles?: Tool['roles']): To
 function fixtureRegistry(): Tool[] {
   return [
     fixtureTool('user_read', {
-      surfaces: ['mcp'],
-      requiredScopes: { mcp: ['topics:read'] },
+      audience: 'user',
+      requiredScopes: ['topics:read'],
       api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
     }),
+    fixtureTool('community_read', {
+      audience: 'community_moderation',
+      plan: 'plus',
+      requiredScopes: ['community-moderation:read'],
+    }),
     fixtureTool(
-      'admin_decision',
+      'admin_other',
+      { audience: 'admin', requiredScopes: ['moderation:read'] },
+      { administrator: true },
+    ),
+    fixtureTool(
+      'legal_decision',
       {
-        surfaces: ['admin_mcp'],
-        requiredScopes: { admin_mcp: ['mcp.admin:read'] },
+        audience: 'legal',
+        requiredScopes: ['copyright-notices:read'],
         switch: 'copyright.mcpDecisionTools',
       },
       { administrator: true },
     ),
-    fixtureTool(
-      'admin_other',
-      {
-        surfaces: ['admin_mcp'],
-        requiredScopes: { admin_mcp: ['mcp.admin:read'] },
-      },
-      { administrator: true },
-    ),
-    fixtureTool('internal_only', { surfaces: ['internal'] }),
+    fixtureTool('internal_only', { requiredScopes: ['topics:read'] }),
   ]
 }
 
 function fixtureList(tools: readonly Tool[]) {
   return (_user: unknown, _scopes: unknown, config: McpServerConfig, copyrightEnabled: boolean) =>
-    listToolsForSurface(config.surface, tools)
+    listToolsForAudience(config.audience, tools)
       .filter(tool => isToolMcpEligible(tool))
       .filter(tool => copyrightEnabled || tool.meta?.switch !== 'copyright.mcpDecisionTools')
-      .map(tool => toolToMcpTool(tool, config.surface))
+      .map(tool => toolToMcpTool(tool, config.audience))
 }
 
 describe('MCP catalog contracts with a tiny registry', () => {
-  it('builds both server catalogs with paths, roles, REST hints, schema and title', () => {
+  it('builds all five audience catalogs, including the unmounted empty brand audience', () => {
     const catalog = buildMcpCatalog(fixtureRegistry())
-    expect(catalog.servers.map(server => [server.name, server.path])).toEqual([
-      ['voucha-user-mcp', '/api/v1/mcp'],
-      ['voucha-admin-mcp', '/api/v1/admin/mcp'],
+
+    expect(catalog.servers.map(server => [server.audience, server.name, server.path])).toEqual([
+      ['user', 'voucha-user-mcp', '/api/v1/mcp'],
+      [
+        'community_moderation',
+        'voucha-community-moderation-mcp',
+        '/api/v1/community-moderation/mcp',
+      ],
+      ['brand', 'voucha-brand-mcp', '/api/v1/brand/mcp'],
+      ['admin', 'voucha-admin-mcp', '/api/v1/admin/mcp'],
+      ['legal', 'voucha-legal-mcp', '/api/v1/legal/mcp'],
     ])
-    expect(catalog.servers[0]?.tools.map(({ tool }) => tool.name)).toEqual(['user_read'])
+    expect(catalog.servers.map(server => server.tools.map(({ tool }) => tool.name))).toEqual([
+      ['user_read'],
+      ['community_read'],
+      [],
+      ['admin_other'],
+      ['legal_decision'],
+    ])
     expect(catalog.servers[0]?.tools[0]).toMatchObject({
       plan: 'free',
       roles: null,
       api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
       tool: { title: 'user_read', outputSchema: { type: 'object' } },
     })
-    expect(catalog.servers[1]?.tools.map(({ tool }) => tool.name)).toEqual([
-      'admin_decision',
-      'admin_other',
-    ])
-    expect(catalog.servers[1]?.tools[0]).toMatchObject({ roles: ['administrator'] })
+    expect(catalog.servers[1]?.tools[0]).toMatchObject({ plan: 'plus' })
+    expect(catalog.servers[3]?.tools[0]).toMatchObject({ roles: ['administrator'] })
+    expect(catalog.servers[3]?.tools[0]).not.toHaveProperty('plan')
+    expect(catalog.servers[4]?.tools[0]).not.toHaveProperty('plan')
   })
 
-  it('accepts a matching tools/list boundary and copyright switch', () => {
+  it('accepts a matching tools/list boundary and copyright switch on legal', () => {
     const tools = fixtureRegistry()
     expect(findCatalogContractViolations(tools, fixtureList(tools), 1)).toEqual([])
   })
@@ -138,19 +153,18 @@ describe('MCP catalog contracts with a tiny registry', () => {
 
   it('rejects an unscoped tool leaking into tools/list', () => {
     const tools = fixtureRegistry()
-    tools.push(fixtureTool('unscoped', { surfaces: ['mcp'] }))
+    tools.push(fixtureTool('unscoped', { audience: 'user' }))
     expect(findCatalogContractViolations(tools, fixtureList(tools), 1)).toContain(
       'voucha-user-mcp catalog differs from tools/list',
     )
   })
 
   it('rejects a missing exposed registry', () => {
-    expect(findCatalogContractViolations([], fixtureList([]), 0)).toContain(
-      'No MCP tools are exposed',
-    )
+    const emptyList = (_user: unknown, _scopes: unknown, _config: McpServerConfig) => []
+    expect(findCatalogContractViolations([], emptyList, 0)).toContain('No MCP tools are exposed')
   })
 
-  it('rejects a decision tool missing from the enabled admin list', () => {
+  it('rejects a decision tool missing from the enabled legal list', () => {
     const tools = fixtureRegistry()
     const list = fixtureList(tools)
     const missingDecision = (
@@ -158,7 +172,7 @@ describe('MCP catalog contracts with a tiny registry', () => {
       scopes: unknown,
       config: McpServerConfig,
       enabled: boolean,
-    ) => list(user, scopes, config, enabled).filter(tool => tool.name !== 'admin_decision')
+    ) => list(user, scopes, config, enabled).filter(tool => tool.name !== 'legal_decision')
     expect(findCatalogContractViolations(tools, missingDecision, 1)).toContain(
       'Enabled copyright decision tools differ from registry order',
     )

@@ -7,7 +7,7 @@ function fixtureTool(name: string, description: string | null, meta?: Partial<To
   return {
     schema: { name, type: 'function', description, parameters: null, strict: null },
     function: (_user: unknown) => () => ({}),
-    ...(meta ? { meta: { surfaces: ['internal'], api: null, ...meta } } : {}),
+    ...(meta ? { meta: { api: null, ...meta } } : {}),
   } as unknown as Tool
 }
 
@@ -15,15 +15,15 @@ describe('renderCatalogTable', () => {
   it('renders every tool with titles, escaped descriptions, plans, deduplicated scopes and hints', () => {
     const table = renderCatalogTable([
       fixtureTool('piped', 'Compare a | b\n  side by side', {
-        surfaces: ['internal', 'mcp'],
+        audience: 'user',
         title: 'Piped',
-        requiredScopes: { mcp: ['topics:read', 'posts:read'], admin_mcp: ['topics:read'] },
+        requiredScopes: ['topics:read', 'posts:read'],
         annotations: { readOnlyHint: true },
       }),
       fixtureTool('mutating', 'mutating description', {
-        surfaces: ['internal', 'mcp'],
+        audience: 'user',
         title: 'Mutating',
-        requiredScopes: { mcp: undefined },
+        requiredScopes: [],
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
         api: [
           { method: 'POST', path: '/api/v1/cards' },
@@ -39,10 +39,10 @@ describe('renderCatalogTable', () => {
 
     expect(table).toBe(
       [
-        '| Tool | Title | Description | Surfaces | Plan | Required scopes | Hints | REST Equivalent |',
+        '| Tool | Title | Description | Audience | Plan | Required scopes | Hints | REST Equivalent |',
         '| ---- | ----- | ----------- | -------- | ---- | --------------- | ----- | --------------- |',
-        '| `piped` | Piped | Compare a \\| b side by side | internal, mcp | free | topics:read, posts:read | read-only | — |',
-        '| `mutating` | Mutating | mutating description | internal, mcp | free | — | write, destructive | `POST /api/v1/cards`, `DELETE /api/v1/cards/:id` |',
+        '| `piped` | Piped | Compare a \\| b side by side | user | free | topics:read, posts:read | read-only | — |',
+        '| `mutating` | Mutating | mutating description | user | free | — | write, destructive | `POST /api/v1/cards`, `DELETE /api/v1/cards/:id` |',
         '| `upsert` | Upsert | upsert description | internal | — | — | write, idempotent | — |',
         '| `bare` | — | — | internal | — | — | — | — |',
       ].join('\n'),

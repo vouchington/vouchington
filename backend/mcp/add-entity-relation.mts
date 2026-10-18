@@ -97,10 +97,10 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
     strict: true,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Add Entity Relation',
     plan: 'plus',
-    requiredScopes: { mcp: ['entity-relations:read', 'entity-relations:write'] },
+    requiredScopes: ['entity-relations:read', 'entity-relations:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: Object.values(ENDPOINTS),
     selectApi: selectApiByArgument('action', ENDPOINTS),

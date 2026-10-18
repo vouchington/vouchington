@@ -60,10 +60,10 @@ const tool: Tool<Args, Result> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Report Content',
     plan: 'plus',
-    requiredScopes: { mcp: ['reports:write'] },
+    requiredScopes: ['reports:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/reports' }],
     outputSchema: successSchema({

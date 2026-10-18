@@ -132,9 +132,9 @@ describe('post and story read tool output schemas', () => {
     ['read_posts', getPostDescendantsTool],
     ['get_story', getStoryTool],
   ] as const)('reads with the posts:read scope and declares %s read-only', (_name, tool) => {
-    expect(tool.meta?.requiredScopes).toEqual({ mcp: ['posts:read'] })
+    expect(tool.meta?.requiredScopes).toEqual(['posts:read'])
     expect(tool.meta?.annotations).toEqual({ readOnlyHint: true })
-    expect(tool.meta?.surfaces).toEqual(['internal', 'mcp'])
+    expect(tool.meta?.audience).toBe('user')
     expect(tool.meta?.title).toBeTruthy()
   })
 })

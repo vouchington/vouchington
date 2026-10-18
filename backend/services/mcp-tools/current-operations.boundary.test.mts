@@ -26,7 +26,7 @@ import { chargeMcpToolCalls } from '../../api/mcp-route-rate-limit-helpers.mts'
 import { callMcpTool } from './call-tool.mts'
 import { planMcpCalls } from './classify-calls.mts'
 import { createMcpCallAuditContext, recordMcpCallAudit } from './audit.mts'
-import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
+import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { currentOperationCases, type OperationCase } from '@voucha/test-helpers/mcp-operation-cases'
 
 const CASES = currentOperationCases()
@@ -48,7 +48,7 @@ function call(row: OperationCase, input: Record<string, unknown>, id: number) {
   return { jsonrpc: '2.0', id, method: 'tools/call', params: { name: row.name, arguments: input } }
 }
 function selectedConfig(row: OperationCase) {
-  return row.surface === 'mcp' ? USER_MCP_SERVER_CONFIG : ADMIN_MCP_SERVER_CONFIG
+  return ALL_MCP_SERVER_CONFIGS.find(config => config.audience === row.audience)!
 }
 function counter(routeKey: string, identities: RateLimitIdentities) {
   const category = getRouteConfig(routeKey).category
@@ -84,7 +84,7 @@ async function persistAndCheck(
   )
   expect(rows).toEqual([
     expect.objectContaining({
-      surface: row.surface,
+      audience: row.audience,
       actor_user_id: actor.user.id,
       ...actor.identity,
       jsonrpc_method: 'tools/call',
@@ -127,9 +127,11 @@ describe('every current MCP operation: planning, real route charge, and durable 
     await closeScopedDynamicConfigContext([routeRateLimitConfig])
   })
 
-  it.each(CASES)('$surface $name $option: accepted, denied, malformed', async row => {
+  it.each(CASES)('$audience $name $option: accepted, denied, malformed', async row => {
     const actor =
-      row.surface === 'admin_mcp' ? adminActor : userActors[CASES.indexOf(row) % userActors.length]!
+      row.audience === 'admin' || row.audience === 'legal'
+        ? adminActor
+        : userActors[CASES.indexOf(row) % userActors.length]!
     const config = selectedConfig(row)
     const scopes = row.scopes ?? ALL_SCOPES
     const identities = {

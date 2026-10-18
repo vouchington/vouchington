@@ -10,9 +10,9 @@ export default createGetMyEntityListTool<{ after?: string; limit?: number }>({
   },
   listFn: (user, args) => getHouseholdSpendingCategoriesByUserId(user, user, args),
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Spending',
-    requiredScopes: { mcp: ['spending:read'] },
+    requiredScopes: ['spending:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/spending-categories' }],
   },

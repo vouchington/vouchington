@@ -11,10 +11,11 @@ import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
+import type { OAuthResourceAudience } from '@services/oauth-authorization-server/resources'
 import { listMcpToolsForUser } from './list-tools.mts'
-import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
+import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 type BaselineRecord = {
-  surface: 'mcp' | 'admin_mcp'
+  audience: OAuthResourceAudience
   method: string
   path: string
   facts: {
@@ -124,57 +125,49 @@ function restBodyFields(schema: unknown, seen = new Set<string>()): string[] | n
   const branchFields = branches.flatMap(branch => restBodyFields(branch, seen) ?? [])
   return sorted([...new Set([...own, ...branchFields])])
 }
-function facts(source: RouteSource, surface: 'mcp' | 'admin_mcp') {
+function facts(source: RouteSource, audience: OAuthResourceAudience) {
   const roles = source.roles
   return {
-    scopes: sorted([...(source.meta?.requiredScopes?.[surface] ?? [])]),
+    scopes: sorted([...(source.meta?.requiredScopes ?? [])]),
     roles:
       roles === undefined || roles.user === true
         ? null
         : sorted(Object.keys(roles).filter(role => roles[role] === true)),
-    plan: surface === 'mcp' ? (source.meta?.plan ?? 'free') : null,
+    plan:
+      audience === 'user' || audience === 'community_moderation'
+        ? (source.meta?.plan ?? 'free')
+        : null,
     annotations: source.meta?.annotations?.readOnlyHint
       ? { ...source.meta.annotations, idempotentHint: true }
       : (source.meta?.annotations ?? {}),
   }
 }
-function currentRecords(): Array<{
-  surface: 'mcp' | 'admin_mcp'
-  method: string
-  path: string
-  facts: ReturnType<typeof facts>
-  inputFields: string[][]
-  restRequestSchemaFields: string[] | null
-  publicName: string
-  option: string | null
-  decision: boolean
-}> {
-  return sourceEntries.flatMap(({ publicName, option, source }) =>
-    (source.meta?.surfaces ?? []).flatMap(surface => {
-      if (surface !== 'mcp' && surface !== 'admin_mcp') return []
-      return (source.meta?.api ?? []).map(({ method, path }) => {
-        const normalizedPath = normalizePath(path)
-        const operation = requestContracts.operations[`${method}:${normalizedPath}`]
-        return {
-          surface,
-          method,
-          path: normalizedPath,
-          facts: facts(source, surface),
-          inputFields: inputFields(source.schema.parameters),
-          restRequestSchemaFields: restBodyFields(operation?.body),
-          publicName,
-          option,
-          decision: source.meta?.switch === 'copyright.mcpDecisionTools',
-        }
-      })
-    }),
-  )
+function currentRecords() {
+  return sourceEntries.flatMap(({ publicName, option, source }) => {
+    const audience = source.meta?.audience
+    if (!audience) return []
+    return (source.meta?.api ?? []).map(({ method, path }) => {
+      const normalizedPath = normalizePath(path)
+      const operation = requestContracts.operations[`${method}:${normalizedPath}`]
+      return {
+        audience,
+        method,
+        path: normalizedPath,
+        facts: facts(source, audience),
+        inputFields: inputFields(source.schema.parameters),
+        restRequestSchemaFields: restBodyFields(operation?.body),
+        publicName,
+        option,
+        decision: source.meta?.switch === 'copyright.mcpDecisionTools',
+      }
+    })
+  })
 }
 const sameContract = (left: BaselineRecord, right: ReturnType<typeof currentRecords>[number]) =>
   left.operation.tool === right.publicName &&
   left.operation.option === right.option &&
   left.decision === right.decision &&
-  left.surface === right.surface &&
+  left.audience === right.audience &&
   left.method === right.method &&
   left.path === right.path &&
   isDeepStrictEqual(left.facts, right.facts) &&
@@ -184,21 +177,24 @@ describe('MCP route completeness from baseline facts', () => {
   it('requires PR provenance for each explicitly added route contract', () => {
     for (const addition of Object.values(baselineData.additions)) {
       expect(Number.isInteger(addition.pullRequest) && addition.pullRequest > 0).toBe(true)
-      expect(addition.contracts.length).toBeGreaterThan(0)
+      expect(addition.contracts).not.toEqual([])
     }
   })
 
   it('subtracts only copyright decision options when the switch is off', () => {
-    const roles = [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))]
-    const user = { id: 'route-completeness', roles, membership_plan: 'pro' as const }
+    const user = {
+      id: 'route-completeness',
+      roles: ['administrator'],
+      membership_plan: 'pro' as const,
+    }
     const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
-    for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
-      const off = listMcpToolsForUser(user, scopes, config, false)
-      const on = listMcpToolsForUser(user, scopes, config, true)
+    for (const config of ALL_MCP_SERVER_CONFIGS) {
+      const listing = (enabled: boolean) => listMcpToolsForUser(user, scopes, config, enabled)
+      const [off, on] = [listing(false), listing(true)]
       const switched = [
         ...new Set(
           expectedRecords
-            .filter(record => record.surface === config.surface && record.decision)
+            .filter(record => record.audience === config.audience && record.decision)
             .map(record => record.operation.tool),
         ),
       ]
@@ -209,15 +205,14 @@ describe('MCP route completeness from baseline facts', () => {
           .map(tool => tool.name)
           .toSorted(),
       ).toEqual(switched.toSorted())
-      for (const entry of sourceEntries.filter(entry =>
-        entry.source.meta?.surfaces.includes(config.surface),
+      for (const entry of sourceEntries.filter(
+        entry => entry.source.meta?.audience === config.audience,
       )) {
         const published = on.find(tool => tool.name === entry.publicName)
         expect(published).toBeDefined()
-        expect(published!['_meta']!['voucha/requiredScopes'].toSorted()).toEqual(
-          facts(entry.source, config.surface).scopes,
-        )
-        expect(published!.annotations).toEqual(facts(entry.source, config.surface).annotations)
+        const expected = facts(entry.source, config.audience)
+        expect(published!['_meta']!['voucha/requiredScopes'].toSorted()).toEqual(expected.scopes)
+        expect(published!.annotations).toEqual(expected.annotations)
       }
     }
   })
@@ -234,7 +229,7 @@ describe('MCP route completeness from baseline facts', () => {
               expected,
               candidates: current.filter(
                 actual =>
-                  expected.surface === actual.surface &&
+                  expected.audience === actual.audience &&
                   expected.method === actual.method &&
                   expected.path === actual.path,
               ),
@@ -247,7 +242,7 @@ describe('MCP route completeness from baseline facts', () => {
     for (const entries of matches)
       for (const actual of entries) {
         const key = JSON.stringify([
-          actual.surface,
+          actual.audience,
           actual.publicName,
           actual.option,
           actual.method,
@@ -266,7 +261,7 @@ describe('MCP route completeness from baseline facts', () => {
     for (const expected of baselineRecords.filter(record => record.requestBodyFields !== null)) {
       const actual = current.find(
         record =>
-          record.surface === expected.surface &&
+          record.audience === expected.audience &&
           record.method === expected.method &&
           record.path === expected.path,
       )
@@ -290,8 +285,8 @@ describe('MCP route completeness from baseline facts', () => {
 
   it('has no duplicate contracts across the baseline, additions, or current source', () => {
     const identity = (
-      entry: Pick<BaselineRecord, 'surface' | 'method' | 'path' | 'facts' | 'inputFields'>,
-    ) => JSON.stringify([entry.surface, entry.method, entry.path, entry.facts, entry.inputFields])
+      entry: Pick<BaselineRecord, 'audience' | 'method' | 'path' | 'facts' | 'inputFields'>,
+    ) => JSON.stringify([entry.audience, entry.method, entry.path, entry.facts, entry.inputFields])
     const baselineKeys = expectedRecords.map(identity)
     const currentKeys = currentRecords().map(identity)
     expect(new Set(baselineKeys).size).toBe(baselineKeys.length)

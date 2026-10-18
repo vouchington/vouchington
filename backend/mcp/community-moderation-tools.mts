@@ -49,14 +49,12 @@ export const communityModerationGroups = definitions.map(definition => ({
         source: {
           schema: { description: `${route.method} ${route.path}`, parameters },
           meta: {
-            surfaces: ['mcp'] as const,
+            audience: 'community_moderation' as const,
             title: route.option.replaceAll('_', ' '),
             plan: definition.plus ? ('plus' as const) : ('free' as const),
-            requiredScopes: {
-              mcp: definition.plus
-                ? (['community-moderation:read', 'community-moderation:write'] as const)
-                : (['community-moderation:read'] as const),
-            },
+            requiredScopes: definition.plus
+              ? (['community-moderation:read', 'community-moderation:write'] as const)
+              : (['community-moderation:read'] as const),
             annotations: definition.plus
               ? {
                   readOnlyHint: false as const,

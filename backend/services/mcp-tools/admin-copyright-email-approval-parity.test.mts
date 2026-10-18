@@ -25,7 +25,7 @@ import {
   recordThreadedCopyrightEmail,
 } from '@voucha/test-helpers/services/copyright-notices/email-thread-cases'
 import { callMcpTool } from './call-tool.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 
 type Outcome = { status: number; message?: string; noticeId?: string }
 type Approve = (intakeId: string, body: Record<string, unknown>) => Promise<Outcome>
@@ -55,7 +55,7 @@ async function mcpSurface(): Promise<Approve> {
       { option: 'approve', arguments: { intake_id: intakeId, ...body } },
       { ...admin, membership_plan: null },
       ['copyright-notices:read', 'copyright-notices:write'],
-      ADMIN_MCP_SERVER_CONFIG,
+      LEGAL_MCP_SERVER_CONFIG,
       true,
     )
     if (!result.isError) {
@@ -93,7 +93,7 @@ async function associateSurface(
     { intake_id: intakeId, copyright_notice_id: noticeId },
     { ...admin, membership_plan: null },
     ['copyright-notices:read', 'copyright-notices:write'],
-    ADMIN_MCP_SERVER_CONFIG,
+    LEGAL_MCP_SERVER_CONFIG,
     true,
   )
   if (!response.isError) return { status: 201, body: response.structuredContent ?? {} }
@@ -280,7 +280,7 @@ describe('copyright email approval parity between REST and MCP', () => {
         { option: 'approve', arguments: { intake_id: intake.id, ...body } },
         { ...admin, membership_plan: null },
         ['copyright-notices:read', 'copyright-notices:write'],
-        ADMIN_MCP_SERVER_CONFIG,
+        LEGAL_MCP_SERVER_CONFIG,
         false,
       ),
     ).rejects.toMatchObject({ code: ErrorCode.MethodNotFound })

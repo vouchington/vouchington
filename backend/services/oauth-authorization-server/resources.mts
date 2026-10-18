@@ -1,7 +1,7 @@
 import { listScopesForAudience, type ApiScope } from '@modules/scopes'
 import { getSiteOrigin } from '@modules/utils'
 
-export type OAuthResourceAudience = 'admin' | 'user'
+export type OAuthResourceAudience = 'admin' | 'brand' | 'community_moderation' | 'legal' | 'user'
 
 export type OAuthProtectedResource = {
   audience: OAuthResourceAudience
@@ -10,6 +10,9 @@ export type OAuthProtectedResource = {
 
 export const OAUTH_PROTECTED_RESOURCE_PATHS = {
   admin: '/api/v1/admin/mcp',
+  brand: '/api/v1/brand/mcp',
+  community_moderation: '/api/v1/community-moderation/mcp',
+  legal: '/api/v1/legal/mcp',
   user: '/api/v1/mcp',
 } as const satisfies Record<OAuthResourceAudience, string>
 

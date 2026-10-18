@@ -30,10 +30,10 @@ const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Add List Item',
     plan: 'plus',
-    requiredScopes: { mcp: ['lists:read', 'lists:write'] },
+    requiredScopes: ['lists:read', 'lists:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: Object.values(ENDPOINTS),
     selectApi: selectApiByArgument('item_type', ENDPOINTS),

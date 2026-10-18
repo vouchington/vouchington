@@ -13,9 +13,9 @@ function makeToolWithAnnotations(annotations: ToolAnnotations): Tool {
     },
     function: (_user: unknown) => () => Promise.resolve({}),
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Test Tool',
-      requiredScopes: { mcp: ['topics:read'] },
+      requiredScopes: ['topics:read'],
       annotations,
       api: null,
     },

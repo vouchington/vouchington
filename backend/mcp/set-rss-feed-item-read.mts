@@ -17,10 +17,10 @@ function source(read: boolean): MergedToolSource<{ rss_feed_item_id: string }, {
       },
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Set RSS Feed Item Read State',
       plan: 'plus',
-      requiredScopes: { mcp: ['rss-feed-items:read', 'rss-feed-items:write'] },
+      requiredScopes: ['rss-feed-items:read', 'rss-feed-items:write'],
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       api: [{ method: read ? 'PUT' : 'DELETE', path: '/api/v1/rss-feed-items/:id/read' }],
       outputSchema: successSchema({}),

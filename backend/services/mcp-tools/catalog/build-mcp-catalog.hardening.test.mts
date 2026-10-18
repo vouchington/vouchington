@@ -2,7 +2,11 @@ import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
-import { USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG } from '../config.mts'
+import {
+  ADMIN_MCP_SERVER_CONFIG,
+  COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
+  USER_MCP_SERVER_CONFIG,
+} from '../config.mts'
 import { listMcpToolsForUser } from '../list-tools.mts'
 
 const moderationScopes: ApiScope[] = ['community-moderation:read', 'community-moderation:write']
@@ -46,16 +50,16 @@ describe('community moderation exact-grant catalog boundaries', () => {
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
   })
 
-  it('has exactly 80 tools when every user tool is authorized', () => {
+  it('has exactly 76 tools when every user tool is authorized', () => {
     const caller = {
       ...plus,
       membership_plan: 'pro' as const,
       roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
     }
-    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(80)
+    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(76)
   })
 
-  it('adds only the free moderation reader to the unchanged Reader grant', () => {
+  it('keeps moderation scopes off the user listing and serves the free reader on its audience', () => {
     const scopes: ApiScope[] = [
       'topics:read',
       'posts:read',
@@ -66,17 +70,19 @@ describe('community moderation exact-grant catalog boundaries', () => {
     ]
     const caller = { ...plus, membership_plan: null }
     const before = listMcpToolsForUser(caller, scopes, USER_MCP_SERVER_CONFIG)
-    const after = listMcpToolsForUser(
+    const userAfter = listMcpToolsForUser(
       caller,
       [...scopes, 'community-moderation:read'],
       USER_MCP_SERVER_CONFIG,
     )
+    const community = listMcpToolsForUser(
+      caller,
+      ['community-moderation:read'],
+      COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
+    )
     expect(before).toHaveLength(9)
-    expect(after).toHaveLength(10)
-    expect(after.filter(tool => tool.name !== names[0])).toEqual(before)
-    expect(after.filter(tool => names.includes(tool.name)).map(tool => tool.name)).toEqual([
-      names[0],
-    ])
+    expect(userAfter).toEqual(before)
+    expect(community.map(tool => tool.name)).toEqual([names[0]])
   })
 
   it('keeps moderator tools off the admin server', () => {

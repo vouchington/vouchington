@@ -31,9 +31,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Lists Containing',
-    requiredScopes: { mcp: ['lists:read'] },
+    requiredScopes: ['lists:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/lists/contains' }],
     outputSchema: foundOrNotFoundSchema({

@@ -24,6 +24,18 @@ describe('OAuth discovery documents', () => {
       '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
       buildOAuthProtectedResourceMetadata('admin'),
     ],
+    [
+      '/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp',
+      buildOAuthProtectedResourceMetadata('community_moderation'),
+    ],
+    [
+      '/.well-known/oauth-protected-resource/api/v1/brand/mcp',
+      buildOAuthProtectedResourceMetadata('brand'),
+    ],
+    [
+      '/.well-known/oauth-protected-resource/api/v1/legal/mcp',
+      buildOAuthProtectedResourceMetadata('legal'),
+    ],
   ])('serves %s anonymously as cacheable JSON', async (path, document) => {
     const response = await createRequest().get(path).expect(200)
 
@@ -33,7 +45,7 @@ describe('OAuth discovery documents', () => {
     expect(response.body).toEqual(document)
   })
 
-  it('has no root protected-resource document because two resources share this origin', async () => {
+  it('has no root protected-resource document because resources share this origin', async () => {
     await createRequest().get('/.well-known/oauth-protected-resource').expect(404)
   })
 

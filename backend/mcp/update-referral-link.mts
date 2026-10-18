@@ -33,10 +33,10 @@ const tool: Tool<UpdateReferralLinkArgs, { success: true; referral_link: UserRef
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update Referral Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['referral-links:read', 'referral-links:write'] },
+    requiredScopes: ['referral-links:read', 'referral-links:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/referral-links/:linkId' }],
     outputSchema: REFERRAL_LINK_RESULT_SCHEMA,

@@ -55,10 +55,10 @@ export const getTrendingRssFeedsTool: MergedToolSource<
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Trending RSS Feeds',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feeds:read'] },
+    requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/trending' }],
     outputSchema: foundOrNotFoundSchema({
@@ -97,10 +97,10 @@ export const getRecommendedRssFeedsTool: MergedToolSource<
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Recommended RSS Feeds',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feeds:read'] },
+    requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/recommended' }],
     outputSchema: foundOrNotFoundSchema({

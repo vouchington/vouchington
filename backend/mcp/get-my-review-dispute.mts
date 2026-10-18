@@ -22,9 +22,9 @@ const tool: MergedToolSource<Args, Result> = {
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Get My Review Dispute',
-    requiredScopes: { mcp: ['disputes:read'] },
+    requiredScopes: ['disputes:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/disputes/:id' }],
     outputSchema: successSchema({ dispute: DISPUTE_SCHEMA }),

@@ -32,8 +32,8 @@ const fixture = {
       provenance: getRequestContentProvenance(),
     }),
   meta: {
-    surfaces: ['mcp', 'admin_mcp'],
-    requiredScopes: { mcp: ['topics:read'], admin_mcp: ['mcp.admin:read'] },
+    audience: 'user',
+    requiredScopes: ['topics:read'],
     api: null,
   },
 } as unknown as Tool
@@ -46,9 +46,14 @@ const ADMIN_ROUTE = {
 } as const
 const ROUTES = [USER_ROUTE, ADMIN_ROUTE] as const
 
-function installOriginFixture(): void {
+function installOriginFixture(
+  audience: 'user' | 'admin' = 'user',
+  scope: string = 'topics:read',
+): void {
   const mutableTools = ALL_TOOLS as Tool[]
   beforeEach(() => {
+    fixture.meta!.audience = audience
+    fixture.meta!.requiredScopes = [scope as import('@modules/scopes').ApiScope]
     mutableTools.push(fixture)
   })
   afterEach(() => {
@@ -79,7 +84,7 @@ describe.each(ROUTES)('POST $path request origin', ({ path, audience, scope }) =
     admin = await createTestUser({ administrator: true })
   })
 
-  installOriginFixture()
+  installOriginFixture(audience, scope)
 
   it('records the OAuth client that the access token was issued to', async () => {
     const approved = await createTestApprovedOAuthAuthorization(admin, { audience, scope })

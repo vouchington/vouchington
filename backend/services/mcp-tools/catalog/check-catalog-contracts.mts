@@ -2,12 +2,8 @@ import { isDeepStrictEqual } from 'node:util'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { McpToolShape } from '@voucha/mcp/registry/adapters'
-import { isToolMcpEligible, listToolsForSurface } from '@voucha/mcp/registry/select'
-import {
-  ADMIN_MCP_SERVER_CONFIG,
-  USER_MCP_SERVER_CONFIG,
-  type McpServerConfig,
-} from '../config.mts'
+import { isToolMcpEligible, listToolsForAudience } from '@voucha/mcp/registry/select'
+import { ALL_MCP_SERVER_CONFIGS, type McpServerConfig } from '../config.mts'
 import { buildMcpCatalog } from './build-mcp-catalog.mts'
 import { findApiHintConflicts } from './find-api-hint-conflicts.mts'
 
@@ -35,9 +31,9 @@ export function findCatalogContractViolations(
   }
   const scopes = Object.keys(SCOPE_DEFINITIONS) as ApiScope[]
 
-  for (const config of [USER_MCP_SERVER_CONFIG, ADMIN_MCP_SERVER_CONFIG]) {
+  for (const config of ALL_MCP_SERVER_CONFIGS) {
     const listed = listTools(caller, scopes, config, true)
-    const registered = listToolsForSurface(config.surface, tools).flatMap(tool =>
+    const registered = listToolsForAudience(config.audience, tools).flatMap(tool =>
       isToolMcpEligible(tool) ? [tool.schema.name] : [],
     )
     const catalogTools = catalogByName.get(config.serverName)?.tools.map(entry => entry.tool)
@@ -52,10 +48,13 @@ export function findCatalogContractViolations(
       errors.push(`${config.serverName} catalog differs from tools/list`)
   }
 
-  const enabled = listTools(caller, scopes, ADMIN_MCP_SERVER_CONFIG, true)
-  const disabled = listTools(caller, scopes, ADMIN_MCP_SERVER_CONFIG, false)
+  const legalConfig = ALL_MCP_SERVER_CONFIGS.find(config => config.audience === 'legal')!
+  const enabled = listTools(caller, scopes, legalConfig, true)
+  const disabled = listTools(caller, scopes, legalConfig, false)
   const decisions = tools.flatMap(tool =>
-    tool.meta?.switch === 'copyright.mcpDecisionTools' ? [tool.schema.name] : [],
+    tool.meta?.audience === 'legal' && tool.meta.switch === 'copyright.mcpDecisionTools'
+      ? [tool.schema.name]
+      : [],
   )
   const decisionNames = new Set(decisions)
   if (decisions.length !== expectedCopyrightDecisionCount)
@@ -78,9 +77,7 @@ export function findCatalogContractViolations(
     errors.push('Disabling copyright decision tools changed other admin tools')
 
   for (const { tool, conflict } of findApiHintConflicts(tools)) errors.push(`${tool}: ${conflict}`)
-  const exposed = tools.filter(tool =>
-    (tool.meta?.surfaces ?? []).some(surface => surface === 'mcp' || surface === 'admin_mcp'),
-  )
+  const exposed = tools.filter(tool => tool.meta?.audience !== undefined)
   if (exposed.length === 0) errors.push('No MCP tools are exposed')
   for (const tool of exposed.filter(tool => !tool.meta?.outputSchema))
     errors.push(`${tool.schema.name}: missing registry output schema`)

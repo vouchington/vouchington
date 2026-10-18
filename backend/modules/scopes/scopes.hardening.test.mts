@@ -8,7 +8,7 @@ describe('community moderation exact grants', () => {
 
     expect(SCOPE_DEFINITIONS[read]).toMatchObject({
       action: 'read',
-      audience: 'user',
+      audience: 'community_moderation',
       descriptionKey: 'community_moderation_read',
       requiresExactGrant: true,
       resource: 'community-moderation',
@@ -17,7 +17,7 @@ describe('community moderation exact grants', () => {
     expect(SCOPE_DEFINITIONS[read]).not.toHaveProperty('requires')
     expect(SCOPE_DEFINITIONS[write]).toMatchObject({
       action: 'write',
-      audience: 'user',
+      audience: 'community_moderation',
       descriptionKey: 'community_moderation_write',
       requires: read,
       requiresExactGrant: true,

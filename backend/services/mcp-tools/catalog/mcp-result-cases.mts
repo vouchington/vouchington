@@ -8,7 +8,7 @@ export function buildMcpResultFixtures(
   catalog: McpCatalog,
   cases: readonly McpResultFixtureCase[],
 ) {
-  const tools = catalog.servers.find(server => server.surface === 'mcp')?.tools ?? []
+  const tools = catalog.servers.find(server => server.audience === 'user')?.tools ?? []
   const toolsByName = new Map(tools.map(entry => [entry.tool.name, entry.tool]))
   const seen = new Set<string>()
   for (const fixture of cases) {

@@ -22,9 +22,9 @@ const tool: MergedToolSource<Args, Result> = {
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Get My Moderation Appeal',
-    requiredScopes: { mcp: ['appeals:read'] },
+    requiredScopes: ['appeals:read'],
     suspendedAccess: true,
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/appeals/:id' }],

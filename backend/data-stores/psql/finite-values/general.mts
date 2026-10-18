@@ -46,7 +46,7 @@ export const GENERAL_FINITE_VALUES = {
     'insufficient_scope',
     'rate_limited',
   ],
-  mcp_call_audit_event_surfaces: ['mcp', 'admin_mcp'],
+  mcp_call_audit_event_audiences: ['user', 'community_moderation', 'brand', 'admin', 'legal'],
   media_delivery_desired_states: ['allow', 'withheld'],
   media_placement_retirement_reasons: ['asset_deleted', 'owner_removed'],
   membership_google_play_recovery_sweeps: ['notifications', 'active_sources', 'acknowledgements'],

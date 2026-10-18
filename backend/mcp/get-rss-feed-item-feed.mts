@@ -40,10 +40,10 @@ const getRssFeedItemFeedTool: MergedToolSource<ItemArgs, FeedResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get RSS Feed Item Feed',
     plan: 'free',
-    requiredScopes: { mcp: ['feeds:read'] },
+    requiredScopes: ['feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/feeds/rss_feed_items/:feed_type' }],
     outputSchema: foundOrNotFoundSchema({

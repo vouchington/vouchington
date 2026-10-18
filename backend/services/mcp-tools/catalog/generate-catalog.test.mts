@@ -33,10 +33,10 @@ const tools: readonly Tool[] = [
     },
     function: (_user: unknown) => () => ({}),
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Tiny Read',
       api: null,
-      requiredScopes: { mcp: ['topics:read'] },
+      requiredScopes: ['topics:read'],
       annotations: { readOnlyHint: true },
       outputSchema: { type: 'object', properties: {}, additionalProperties: false },
     },

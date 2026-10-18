@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { SCOPE_DEFINITIONS, withScopePrerequisites, type ApiScope } from '@modules/scopes'
 import { adminMergedGroups, replacedAdminToolNames } from '@voucha/mcp/registry/admin-merged-tools'
 import { ALL_TOOLS, getRegisteredToolByName } from '@voucha/mcp/registry/index'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { ADMIN_MCP_SERVER_CONFIG, ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { planMcpCalls } from './classify-calls.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { toRouteKey } from './tool-route-keys.mts'
@@ -72,9 +72,7 @@ const incompatible = cases.flatMap(entry => {
   return sibling ? [{ target: entry.target, option: entry.option, args: sibling.args }] : []
 })
 const scopes = withScopePrerequisites([
-  ...new Set(
-    cases.flatMap(entry => getRegisteredToolByName(entry.target)!.meta!.requiredScopes!.admin_mcp!),
-  ),
+  ...new Set(cases.flatMap(entry => getRegisteredToolByName(entry.target)!.meta!.requiredScopes!)),
 ])
 const administrator = {
   id: UUID,
@@ -88,6 +86,10 @@ const call = (target: string, option: string, args: object) => ({
   method: 'tools/call',
   params: { name: target, arguments: { option, arguments: args } },
 })
+const configFor = (name: string) =>
+  ALL_MCP_SERVER_CONFIGS.find(
+    config => config.audience === getRegisteredToolByName(name)?.meta?.audience,
+  )!
 const planned = (
   target: string,
   option: string,
@@ -95,7 +97,7 @@ const planned = (
   user = administrator,
   granted: readonly ApiScope[] = scopes,
   enabled = true,
-) => planMcpCalls(call(target, option, args), user, granted, ADMIN_MCP_SERVER_CONFIG, enabled)
+) => planMcpCalls(call(target, option, args), user, granted, configFor(target), enabled)
 
 function invalid(target: string, input: Record<string, unknown>) {
   const tool = getRegisteredToolByName(target)
@@ -105,7 +107,7 @@ function invalid(target: string, input: Record<string, unknown>) {
     { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: target, arguments: input } },
     administrator,
     scopes,
-    ADMIN_MCP_SERVER_CONFIG,
+    configFor(target),
     true,
   )
   const selected = tool!.meta?.auditOption?.(input) ?? null
@@ -121,9 +123,9 @@ function invalid(target: string, input: Record<string, unknown>) {
 }
 
 describe('all merged admin MCP options', () => {
-  it('registers 75 admin tools and drops every replaced name', () => {
-    const adminTools = ALL_TOOLS.filter(tool => tool.meta?.surfaces.includes('admin_mcp'))
-    expect(adminTools).toHaveLength(75)
+  it('registers 53 admin tools and drops every replaced name', () => {
+    const adminTools = ALL_TOOLS.filter(tool => tool.meta?.audience === 'admin')
+    expect(adminTools).toHaveLength(53)
     expect(adminMergedGroups).toHaveLength(27)
     expect(replacedAdminToolNames.size).toBe(58)
     for (const name of replacedAdminToolNames) expect(getRegisteredToolByName(name)).toBeUndefined()
@@ -136,7 +138,7 @@ describe('all merged admin MCP options', () => {
     ) as ApiScope[]
     const listed = listMcpToolsForUser(administrator, allAdminScopes, ADMIN_MCP_SERVER_CONFIG, true)
     expect(listed.map(tool => tool.name).toSorted()).toEqual(
-      ALL_TOOLS.filter(tool => tool.meta?.surfaces.includes('admin_mcp'))
+      ALL_TOOLS.filter(tool => tool.meta?.audience === 'admin')
         .map(tool => tool.schema.name)
         .toSorted(),
     )

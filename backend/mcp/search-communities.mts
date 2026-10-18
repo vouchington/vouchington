@@ -64,9 +64,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Search Communities',
-    requiredScopes: { mcp: ['communities:read'] },
+    requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities' }],
     outputSchema: foundOrNotFoundSchema({

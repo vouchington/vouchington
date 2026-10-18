@@ -57,10 +57,10 @@ const tool: Tool<
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update Topic Recommendation',
     plan: 'plus',
-    requiredScopes: { mcp: ['topic-recommendations:read', 'topic-recommendations:write'] },
+    requiredScopes: ['topic-recommendations:read', 'topic-recommendations:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/topic-recommendations/:id' }],
     outputSchema: TOPIC_RECOMMENDATION_RESULT_SCHEMA,

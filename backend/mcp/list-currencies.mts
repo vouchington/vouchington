@@ -38,9 +38,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'List Currencies',
-    requiredScopes: { mcp: ['reference-data:read'] },
+    requiredScopes: ['reference-data:read'],
     annotations: { readOnlyHint: true },
     api: [API],
     outputSchema: foundOrNotFoundSchema(pageProperties(CURRENCY_SCHEMA)),

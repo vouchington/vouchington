@@ -51,9 +51,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Topic Insights',
-    requiredScopes: { mcp: ['data-points:read'] },
+    requiredScopes: ['data-points:read'],
     annotations: { readOnlyHint: true },
     api: null,
     outputSchema: outcomeSchema('success', {

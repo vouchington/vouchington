@@ -1,4 +1,4 @@
-import { listToolsForSurface, isToolMcpEligible } from '@voucha/mcp/registry/select'
+import { listToolsForAudience, isToolMcpEligible } from '@voucha/mcp/registry/select'
 import { toolToMcpTool, type McpToolShape } from '@voucha/mcp/registry/adapters'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { McpServerConfig } from './config.mts'
@@ -53,14 +53,14 @@ export function listMcpToolsForUser(
   copyrightDecisionToolsEnabled = false,
 ): McpToolShape[] {
   const tools: McpToolShape[] = []
-  for (const tool of listToolsForSurface(config.surface, ALL_TOOLS)) {
+  for (const tool of listToolsForAudience(config.audience, ALL_TOOLS)) {
     if (!isToolMcpEligible(tool)) continue
     if (
       authorizeMcpTool(tool, user, permissions, config, copyrightDecisionToolsEnabled).status !==
       'allowed'
     )
       continue
-    tools.push(toolToMcpTool(tool, config.surface))
+    tools.push(toolToMcpTool(tool, config.audience))
   }
   return tools
 }

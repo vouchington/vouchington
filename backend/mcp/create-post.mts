@@ -58,10 +58,10 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Create Post or Comment',
     plan: 'plus',
-    requiredScopes: { mcp: POST_WRITE_SCOPES },
+    requiredScopes: POST_WRITE_SCOPES,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [
       { method: 'POST', path: '/api/v1/posts' },

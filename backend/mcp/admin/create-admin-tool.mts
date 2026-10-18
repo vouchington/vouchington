@@ -32,6 +32,8 @@ type AdminToolConfig<TArgs> = {
 }
 
 export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TArgs> {
+  const audience = SCOPE_DEFINITIONS[config.scope].audience
+  assert(audience === 'admin' || audience === 'legal', 500, 'Staff tool scope required')
   const prerequisite = SCOPE_DEFINITIONS[config.scope].requires
   return {
     schema: {
@@ -44,10 +46,8 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
     roles: { administrator: true, user: false },
     meta: {
       title: config.name[0]!.toUpperCase() + config.name.slice(1).replaceAll('_', ' '),
-      surfaces: ['admin_mcp'],
-      requiredScopes: {
-        admin_mcp: prerequisite ? [prerequisite as ApiScope, config.scope] : [config.scope],
-      },
+      audience,
+      requiredScopes: prerequisite ? [prerequisite as ApiScope, config.scope] : [config.scope],
       annotations: config.annotations,
       api: Array.isArray(config.api) ? [...config.api] : [config.api],
       ...(config.selectApi ? { selectApi: config.selectApi } : {}),

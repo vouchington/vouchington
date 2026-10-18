@@ -60,9 +60,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Community List Items',
-    requiredScopes: { mcp: ['communities:read'] },
+    requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: Object.values(ENDPOINTS),
     selectApi: selectApiByArgument('item_type', ENDPOINTS),

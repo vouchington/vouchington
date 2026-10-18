@@ -12,6 +12,9 @@ const OAUTH_DISCOVERY_GET_INGRESS_PATHS = new Set([
   '/.well-known/oauth-authorization-server',
   '/.well-known/oauth-protected-resource/api/v1/mcp',
   '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+  '/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp',
+  '/.well-known/oauth-protected-resource/api/v1/brand/mcp',
+  '/.well-known/oauth-protected-resource/api/v1/legal/mcp',
 ])
 const ACTIVITYPUB_ACTOR_PATH_RE =
   /^\/ap\/users\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/

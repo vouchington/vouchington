@@ -3004,9 +3004,16 @@
         "copyright_notice": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "jurisdiction": { "type": "string", "enum": ["us_dmca", "eu_dsa", "uk"] },
-            "received_at": { "type": "string" }
+            "id": {
+              "type": "string"
+            },
+            "jurisdiction": {
+              "type": "string",
+              "enum": ["us_dmca", "eu_dsa", "uk"]
+            },
+            "received_at": {
+              "type": "string"
+            }
           },
           "required": ["id", "jurisdiction", "received_at"],
           "type": "object"
@@ -9258,13 +9265,21 @@
       "properties": {
         "copyright_email_intake": {
           "additionalProperties": false,
-          "properties": { "id": { "type": "string" } },
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
           "required": ["id"],
           "type": "object"
         },
         "copyright_notice": {
           "additionalProperties": false,
-          "properties": { "id": { "type": "string" } },
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
           "required": ["id"],
           "type": "object"
         }
@@ -13962,18 +13977,84 @@
     "CreatedCommunityInvite": {
       "additionalProperties": false,
       "properties": {
-        "__entity_type": { "const": "community_invite" },
-        "accepted_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "accepted_by_id": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "code": { "type": "string" },
-        "community_id": { "type": "string" },
-        "created_at": { "type": "string" },
-        "declined_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "id": { "type": "string" },
-        "invited_by_id": { "type": "string" },
-        "invited_email": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "invited_user_id": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "revoked_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+        "__entity_type": {
+          "const": "community_invite"
+        },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "accepted_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "declined_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "invited_by_id": {
+          "type": "string"
+        },
+        "invited_email": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "invited_user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
       },
       "required": [
         "__entity_type",
@@ -32646,7 +32727,7 @@
       "type": "string"
     },
     "ScopeAudience": {
-      "enum": ["admin", "api", "user"],
+      "enum": ["admin", "api", "brand", "community_moderation", "legal", "user"],
       "type": "string"
     },
     "ScopeCatalogEntry": {
@@ -41223,7 +41304,12 @@
     },
     "GET:/api/v1/copyright-notices/:id/association-target": {
       "path": {
-        "properties": { "id": { "type": "string", "format": "uuid" } },
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
         "required": ["id"],
         "type": "object"
       }
@@ -46640,6 +46726,9 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/community-moderation/mcp": {
+      "body": {}
+    },
     "POST:/api/v1/conversations": {
       "body": {
         "$ref": "#/components/schemas/CreateChatConversationRequest"
@@ -46730,13 +46819,20 @@
       "body": {
         "additionalProperties": false,
         "properties": {
-          "copyright_notice_id": { "type": "string", "format": "uuid" }
+          "copyright_notice_id": {
+            "type": "string",
+            "format": "uuid"
+          }
         },
         "required": ["copyright_notice_id"],
         "type": "object"
       },
       "path": {
-        "properties": { "id": { "type": "string" } },
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
         "required": ["id"],
         "type": "object"
       }
@@ -47590,6 +47686,9 @@
         "required": ["landingPageId"],
         "type": "object"
       }
+    },
+    "POST:/api/v1/legal/mcp": {
+      "body": {}
     },
     "POST:/api/v1/lists": {
       "body": {
@@ -49347,8 +49446,13 @@
       "properties": {
         "conversation": {
           "allOf": [
-            { "$ref": "#/components/schemas/DirectConversation" },
-            { "type": "object", "required": ["participant_add_policy"] }
+            {
+              "$ref": "#/components/schemas/DirectConversation"
+            },
+            {
+              "type": "object",
+              "required": ["participant_add_policy"]
+            }
           ]
         }
       },
@@ -49512,7 +49616,9 @@
     "POST:/api/v1/communities/:idOrSlug/invites": {
       "type": "object",
       "properties": {
-        "community_invite": { "$ref": "#/components/schemas/CreatedCommunityInvite" }
+        "community_invite": {
+          "$ref": "#/components/schemas/CreatedCommunityInvite"
+        }
       },
       "required": ["community_invite"],
       "additionalProperties": false
@@ -49520,7 +49626,9 @@
     "POST:/api/v1/communities/invite-redemptions": {
       "type": "object",
       "properties": {
-        "community_invite": { "$ref": "#/components/schemas/CommunityInvite" }
+        "community_invite": {
+          "$ref": "#/components/schemas/CommunityInvite"
+        }
       },
       "required": ["community_invite"],
       "additionalProperties": false

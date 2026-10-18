@@ -25,8 +25,8 @@ function fixtureTool(name: string, meta: Record<string, unknown>) {
     // Arity 1 keeps the fixture MCP-eligible, so the planned charge is what's under test.
     function: (_currentUser: unknown) => () => Promise.resolve({ success: true }),
     meta: {
-      surfaces: ['admin_mcp'],
-      requiredScopes: { admin_mcp: ['mcp.admin:read'] },
+      audience: 'admin',
+      requiredScopes: ['mcp.admin:read'],
       api: null,
       ...meta,
     },
@@ -49,7 +49,7 @@ const FIXTURES = [
     selectApi: (args: Record<string, unknown>) => (args.note === 'remove' ? [REMOVE] : []),
   }),
   fixtureTool('charge_write_only', {
-    requiredScopes: { admin_mcp: ['mcp.admin:write'] },
+    requiredScopes: ['mcp.admin:write'],
     api: [{ method: 'POST', path: '/api/v1/things' }],
   }),
 ]

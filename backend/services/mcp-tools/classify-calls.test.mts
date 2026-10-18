@@ -29,19 +29,19 @@ function fixtureTool(name: string, meta: Record<string, unknown>, roles?: Record
     },
     // Arity 1 keeps the fixture MCP-eligible, so authorization is what's under test.
     function: (_currentUser: unknown) => () => Promise.resolve({ success: true }),
-    meta: { surfaces: ['admin_mcp'], api: null, ...meta },
+    meta: { audience: 'admin', api: null, ...meta },
   } as unknown as Tool
 }
 
 const FIXTURES = [
-  fixtureTool('classify_read', { requiredScopes: { admin_mcp: ['mcp.admin:read'] } }),
-  fixtureTool('classify_write', { requiredScopes: { admin_mcp: ['mcp.admin:write'] } }),
+  fixtureTool('classify_read', { requiredScopes: ['mcp.admin:read'] }),
+  fixtureTool('classify_write', { requiredScopes: ['mcp.admin:write'] }),
   fixtureTool(
     'classify_moderator_only',
-    { requiredScopes: { admin_mcp: ['mcp.admin:read'] } },
+    { requiredScopes: ['mcp.admin:read'] },
     { moderator: true },
   ),
-  fixtureTool('classify_plus', { plan: 'plus', requiredScopes: { admin_mcp: ['mcp.admin:read'] } }),
+  fixtureTool('classify_plus', { plan: 'plus', requiredScopes: ['mcp.admin:read'] }),
   fixtureTool('classify_undeclared', {}),
 ]
 

@@ -40,10 +40,10 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Create Referral Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['referral-links:read', 'referral-links:write'] },
+    requiredScopes: ['referral-links:read', 'referral-links:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/referral-links' }],
     outputSchema: REFERRAL_LINK_RESULT_SCHEMA,

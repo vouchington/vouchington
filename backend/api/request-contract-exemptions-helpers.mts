@@ -1,19 +1,26 @@
 export type RequestContractExemptionReason = 'no-input' | 'protocol-parser' | 'fixed-status'
 
-// Audited route-specific reasons from #298. The API v1 cap of 56 was approved after the
-// option-B stop condition in issue #298.
+// Audited route-specific reasons from #298; B18a adds fixed-status GET/DELETE routes
+// for the community moderation and legal MCP audiences.
 export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContractExemptionReason>> =
   {
     'DELETE:/api/v1/admin/mcp': 'fixed-status',
+    'DELETE:/api/v1/community-moderation/mcp': 'fixed-status',
+    'DELETE:/api/v1/legal/mcp': 'fixed-status',
     'DELETE:/api/v1/auth/bluesky/link': 'no-input',
     'DELETE:/api/v1/mcp': 'fixed-status',
     'GET:/.well-known/nodeinfo': 'no-input',
     'GET:/.well-known/oauth-authorization-server': 'no-input',
     'GET:/.well-known/oauth-protected-resource/api/v1/admin/mcp': 'no-input',
+    'GET:/.well-known/oauth-protected-resource/api/v1/brand/mcp': 'no-input',
+    'GET:/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp': 'no-input',
+    'GET:/.well-known/oauth-protected-resource/api/v1/legal/mcp': 'no-input',
     'GET:/.well-known/oauth-protected-resource/api/v1/mcp': 'no-input',
     'GET:/.well-known/webfinger': 'protocol-parser',
     'GET:/ap/users/:userId': 'protocol-parser',
     'GET:/api/v1/admin/mcp': 'fixed-status',
+    'GET:/api/v1/community-moderation/mcp': 'fixed-status',
+    'GET:/api/v1/legal/mcp': 'fixed-status',
     'GET:/api/v1/admin/postgresql/stream': 'no-input',
     'GET:/api/v1/admin/topic-claims': 'no-input',
     'GET:/api/v1/admin/valkey/stream': 'no-input',

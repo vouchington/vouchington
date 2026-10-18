@@ -25,7 +25,10 @@ export function validateApiKeyScopeSet(
   const matchesType =
     type === 'rss'
       ? result.scopes.length === 1 && result.scopes[0] === 'rss:read'
-      : result.audiences.length === 1 && result.audiences[0] === 'user'
+      : result.audiences.length === 1 &&
+        (result.audiences[0] === 'user' ||
+          result.audiences[0] === 'community_moderation' ||
+          result.audiences[0] === 'brand')
   if (!matchesType) return { valid: false, code: 'scope-type-mismatch' }
   return { valid: true, permissions: result.scopes }
 }
@@ -61,9 +64,7 @@ function apiKeyScopeValidationError(
     case 'mixed-audiences':
       return 'api key scopes must not mix audiences'
     case 'scope-type-mismatch':
-      return type === 'rss'
-        ? 'rss keys must use rss:read'
-        : 'mcp keys must use user-audience scopes'
+      return type === 'rss' ? 'rss keys must use rss:read' : 'mcp keys must use a member audience'
     case 'unknown-scope':
       return `unknown or noncanonical scope: ${result.scope}`
     case 'unsupported-surface':

@@ -1,0 +1,354 @@
+{
+  "formula": "ceil(measured * 1.015 / 1000) * 1000",
+  "source": "Compact JSON UTF-16 sizes measured from the generated api-fixtures/v1/mcp.json catalog; count is exact.",
+  "servers": {
+    "user": {
+      "all": {
+        "on": {
+          "count": 76,
+          "list": 241000,
+          "core": 101000,
+          "output": 225000
+        }
+      },
+      "Reader": {
+        "on": {
+          "count": 9,
+          "list": 55000,
+          "core": 25000,
+          "output": 53000
+        }
+      },
+      "Plus": {
+        "on": {
+          "count": 70,
+          "list": 222000,
+          "core": 110000,
+          "output": 240000
+        }
+      },
+      "Reviewer": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityFree": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityPlus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalRead": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalWrite": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      }
+    },
+    "community_moderation": {
+      "all": {
+        "on": {
+          "count": 4,
+          "list": 75000,
+          "core": 27000,
+          "output": 73000
+        }
+      },
+      "Reader": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Plus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Reviewer": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityFree": {
+        "on": {
+          "count": 1,
+          "list": 41000,
+          "core": 7000,
+          "output": 41000
+        }
+      },
+      "CommunityPlus": {
+        "on": {
+          "count": 4,
+          "list": 75000,
+          "core": 27000,
+          "output": 73000
+        }
+      },
+      "LegalRead": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalWrite": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      }
+    },
+    "brand": {
+      "all": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Reader": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Plus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Reviewer": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityFree": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityPlus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalRead": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalWrite": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      }
+    },
+    "admin": {
+      "all": {
+        "on": {
+          "count": 53,
+          "list": 181000,
+          "core": 33000,
+          "output": 171000
+        }
+      },
+      "Reader": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Plus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Reviewer": {
+        "on": {
+          "count": 8,
+          "list": 56000,
+          "core": 6000,
+          "output": 54000
+        }
+      },
+      "CommunityFree": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityPlus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalRead": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalWrite": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      }
+    },
+    "legal": {
+      "all": {
+        "on": {
+          "count": 22,
+          "list": 52000,
+          "core": 15000,
+          "output": 47000
+        },
+        "off": {
+          "count": 7,
+          "list": 28000,
+          "core": 2000,
+          "output": 27000
+        }
+      },
+      "Reader": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Plus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "Reviewer": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityFree": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "CommunityPlus": {
+        "on": {
+          "count": 0,
+          "list": 1000,
+          "core": 1000,
+          "output": 1000
+        }
+      },
+      "LegalRead": {
+        "on": {
+          "count": 7,
+          "list": 28000,
+          "core": 2000,
+          "output": 27000
+        },
+        "off": {
+          "count": 7,
+          "list": 28000,
+          "core": 2000,
+          "output": 27000
+        }
+      },
+      "LegalWrite": {
+        "on": {
+          "count": 22,
+          "list": 52000,
+          "core": 15000,
+          "output": 47000
+        },
+        "off": {
+          "count": 7,
+          "list": 28000,
+          "core": 2000,
+          "output": 27000
+        }
+      }
+    }
+  }
+}

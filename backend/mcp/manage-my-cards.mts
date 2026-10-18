@@ -59,10 +59,10 @@ export default createManageEntityTool({
   removeFn: (user, id) => deleteIndividualCardById(user, user, id),
   entity: 'IndividualCard',
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Manage My Cards',
     plan: 'plus',
-    requiredScopes: { mcp: ['cards:read', 'cards:write'] },
+    requiredScopes: ['cards:read', 'cards:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [
       { method: 'POST', path: '/api/v1/my/cards' },

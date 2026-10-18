@@ -70,9 +70,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Search Data Points',
-    requiredScopes: { mcp: ['data-points:read'] },
+    requiredScopes: ['data-points:read'],
     annotations: { readOnlyHint: true },
     api: null,
     // `structured_data` is stored JSON whose fields vary by vertical, so it stays an open object.

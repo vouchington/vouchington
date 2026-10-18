@@ -16,10 +16,10 @@ const tool: Tool<ReorderMyProfileLinksArgs, { success: true; results: ProfileLin
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Reorder My Profile Links',
     plan: 'plus',
-    requiredScopes: { mcp: ['profile:read', 'profile:write'] },
+    requiredScopes: ['profile:read', 'profile:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'PUT', path: '/api/v1/my/profile/links/order' }],
     outputSchema: PROFILE_LINKS_RESULT_SCHEMA,

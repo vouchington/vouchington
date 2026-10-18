@@ -29,10 +29,10 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Edit or Archive Own Post',
     plan: 'plus',
-    requiredScopes: { mcp: POST_WRITE_SCOPES },
+    requiredScopes: POST_WRITE_SCOPES,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/posts/:idOrSlug' }],
     outputSchema: POST_WRITE_RESULT_SCHEMA,

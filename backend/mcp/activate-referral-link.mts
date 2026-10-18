@@ -22,10 +22,10 @@ const tool: Tool<ReferralLinkIdArgs, { success: true; referral_link: UserReferra
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Activate Referral Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['referral-links:read', 'referral-links:write'] },
+    requiredScopes: ['referral-links:read', 'referral-links:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/referral-links/:linkId/activations' }],
     outputSchema: REFERRAL_LINK_RESULT_SCHEMA,

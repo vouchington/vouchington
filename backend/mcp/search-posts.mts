@@ -83,9 +83,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Search Posts',
-    requiredScopes: { mcp: ['posts:read'] },
+    requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts' }],
     outputSchema: OUTPUT_SCHEMA,

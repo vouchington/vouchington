@@ -4,7 +4,7 @@ import {
   getToolRequiredScopes,
   isToolAllowedForPlan,
   isToolMcpEligible,
-  listToolsForSurface,
+  listToolsForAudience,
 } from '@voucha/mcp/registry/select'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { hasEveryScope, withScopePrerequisites, type ApiScope } from '@modules/scopes'
@@ -48,7 +48,7 @@ export function authorizeMcpTool(
   if (tool.meta?.switch === 'copyright.mcpDecisionTools' && !copyrightDecisionToolsEnabled) {
     return { status: 'not_found' }
   }
-  const requiredScopes = getToolRequiredScopes(tool, config.surface)
+  const requiredScopes = getToolRequiredScopes(tool, config.audience)
   if (requiredScopes == null) return { status: 'scopes_undeclared' }
   if (!hasEveryScope(grantedScopes, requiredScopes)) {
     return { status: 'insufficient_scope', requiredScopes }
@@ -63,7 +63,7 @@ export function resolveMcpToolCall(
   config: McpServerConfig,
   copyrightDecisionToolsEnabled = false,
 ): McpToolCallResolution {
-  const tool = listToolsForSurface(config.surface, ALL_TOOLS).find(
+  const tool = listToolsForAudience(config.audience, ALL_TOOLS).find(
     candidate => candidate.schema.name === toolName,
   )
   if (!tool || !isToolMcpEligible(tool)) return { status: 'not_found' }

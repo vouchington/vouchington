@@ -8,7 +8,7 @@ import { userMergedAccountGroups } from './user-merged-account-tools.mts'
 import { userMergedParticipationGroups } from './user-merged-participation-tools.mts'
 import { userMergedReadingGroups } from './user-merged-reading-tools.mts'
 import { communityModerationGroups } from '../community-moderation-tools.mts'
-import { getToolRequiredScopes, isToolMcpEligible, listToolsForSurface } from './select.mts'
+import { getToolRequiredScopes, isToolMcpEligible, listToolsForAudience } from './select.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { SCOPE_DEFINITIONS } from '@modules/scopes'
 
@@ -144,134 +144,78 @@ describe('tool registry', () => {
     expect(new Set(names).size).toBe(names.length)
   })
 
-  it('every mcp/admin_mcp tool is arity-1 (not curried)', () => {
-    const nonEligible = ALL_TOOLS.filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      return (surfaces.has('mcp') || surfaces.has('admin_mcp')) && !isToolMcpEligible(tool)
+  it('every exposed tool is arity-1 with explicit API and audience-correct scopes', () => {
+    const invalid = ALL_TOOLS.filter(tool => {
+      const audience = tool.meta?.audience
+      if (audience == null) return false
+      return (
+        !isToolMcpEligible(tool) ||
+        !('api' in tool.meta!) ||
+        getToolRequiredScopes(tool, audience) == null
+      )
     })
-    expect(nonEligible.map(t => t.schema.name)).toEqual([])
-  })
-
-  it('every mcp/admin_mcp tool has explicit api field', () => {
-    const missing = ALL_TOOLS.filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      if (!surfaces.has('mcp') && !surfaces.has('admin_mcp')) {
-        return false
-      }
-      return tool.meta == null || !('api' in tool.meta)
-    })
-    expect(missing.map(t => t.schema.name)).toEqual([])
-  })
-
-  it('every MCP surface tool declares canonical, surface-correct scopes', () => {
-    const missing = ALL_TOOLS.flatMap(tool => {
-      const surfaces = tool.meta?.surfaces ?? ['internal']
-      return surfaces
-        .filter(
-          (surface): surface is 'mcp' | 'admin_mcp' => surface === 'mcp' || surface === 'admin_mcp',
-        )
-        .filter(surface => getToolRequiredScopes(tool, surface) == null)
-        .map(surface => `${tool.schema.name}:${surface}`)
-    })
-    expect(missing).toEqual([])
+    expect(invalid.map(tool => tool.schema.name)).toEqual([])
   })
 
   it('declares prerequisites for each MCP write scope', () => {
-    const missing = ALL_TOOLS.flatMap(tool =>
-      (tool.meta?.surfaces ?? ['internal'])
-        .filter(
-          (surface): surface is 'mcp' | 'admin_mcp' => surface === 'mcp' || surface === 'admin_mcp',
-        )
-        .flatMap(surface => {
-          const scopes = getToolRequiredScopes(tool, surface) ?? []
-          return scopes.flatMap(scope => {
-            const prerequisite = SCOPE_DEFINITIONS[scope].requires
-            return prerequisite != null && !scopes.includes(prerequisite as typeof scope)
-              ? [`${tool.schema.name}:${scope}:${prerequisite}`]
-              : []
-          })
-        }),
-    )
-
+    const missing = ALL_TOOLS.flatMap(tool => {
+      const audience = tool.meta?.audience
+      if (audience == null) return []
+      const scopes = getToolRequiredScopes(tool, audience) ?? []
+      return scopes.flatMap(scope => {
+        const prerequisite = SCOPE_DEFINITIONS[scope].requires
+        return prerequisite != null && !scopes.includes(prerequisite as typeof scope)
+          ? [`${tool.schema.name}:${scope}:${prerequisite}`]
+          : []
+      })
+    })
     expect(missing).toEqual([])
   })
 
-  it('every user-mcp mutating tool declares a plus or pro plan', () => {
+  it('user and community mutations declare a paid plan', () => {
     const missing = ALL_TOOLS.filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      if (!surfaces.has('mcp')) return false
-      // Treat every tool without an explicit read-only hint as a mutation.
-      if (tool.meta?.annotations?.readOnlyHint === true) return false
+      if (!['user', 'community_moderation'].includes(tool.meta?.audience ?? '')) return false
+      if (tool.meta?.annotations.readOnlyHint === true) return false
       return tool.meta?.plan !== 'plus' && tool.meta?.plan !== 'pro'
     })
-    expect(missing.map(t => t.schema.name)).toEqual([])
+    expect(missing.map(tool => tool.schema.name)).toEqual([])
   })
 
-  it('user-mcp reads and every admin-only mcp tool declare no paid plan', () => {
+  it('reads and staff tools declare no paid plan', () => {
     const gated = ALL_TOOLS.filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      const isUserMcpRead = surfaces.has('mcp') && tool.meta?.annotations?.readOnlyHint === true
-      const isAdminMcp = surfaces.has('admin_mcp')
-      if (!isUserMcpRead && !isAdminMcp) return false
-      return tool.meta?.plan != null && tool.meta.plan !== 'free'
+      if (tool.meta?.audience == null) return false
+      if (
+        ['user', 'community_moderation'].includes(tool.meta.audience) &&
+        !tool.meta.annotations.readOnlyHint
+      )
+        return false
+      return tool.meta.plan != null && tool.meta.plan !== 'free'
     })
-    expect(gated.map(t => t.schema.name)).toEqual([])
-  })
-
-  it('rejects a mutating tool that shares the user and admin MCP surfaces', () => {
-    // One meta.plan cannot express "plus on mcp, free on admin_mcp" for a shared mutation.
-    const sharedMutation: Tool = {
-      schema: {
-        name: 'shared_mutation_fixture',
-        type: 'function',
-        parameters: null,
-        strict: null,
-      },
-      function: (_user: unknown) => () => Promise.resolve({}),
-      meta: {
-        surfaces: ['mcp', 'admin_mcp'],
-        annotations: { destructiveHint: true },
-        api: null,
-      },
-    } as unknown as Tool
-
-    const violating = [...ALL_TOOLS, sharedMutation].filter(tool => {
-      const surfaces = new Set(tool.meta?.surfaces ?? ['internal'])
-      const isMutation = tool.meta?.annotations?.readOnlyHint !== true
-      return isMutation && surfaces.has('mcp') && surfaces.has('admin_mcp')
-    })
-
-    expect(violating.map(t => t.schema.name)).toEqual(['shared_mutation_fixture'])
+    expect(gated.map(tool => tool.schema.name)).toEqual([])
   })
 
   it('rejects scopes declared for the opposite MCP audience', () => {
     const tool: Tool = {
-      schema: {
-        name: 'admin_scope_on_user_surface',
-        type: 'function',
-        parameters: null,
-        strict: null,
-      },
+      schema: { name: 'wrong_audience', type: 'function', parameters: null, strict: null },
       function: () => () => Promise.resolve({}),
       meta: {
-        surfaces: ['mcp'],
-        title: 'Admin Scope on User Surface',
-        requiredScopes: { mcp: ['mcp.admin:read'] },
+        audience: 'user',
+        title: 'Wrong audience',
+        requiredScopes: ['mcp.admin:read'],
         annotations: { readOnlyHint: true },
         api: null,
       },
     }
-
-    expect(getToolRequiredScopes(tool, 'mcp')).toBeNull()
+    expect(getToolRequiredScopes(tool, 'user')).toBeNull()
+    expect(getToolRequiredScopes(tool, 'admin')).toBeNull()
   })
 
   it('curried tools are internal-only', () => {
-    const wronglySurfaced = ALL_TOOLS.filter(tool => {
-      if (tool.function.length <= 1) return false
-      const surfaces = tool.meta?.surfaces ?? ['internal']
-      return surfaces.length !== 1 || surfaces[0] !== 'internal'
-    })
-    expect(wronglySurfaced.map(t => t.schema.name)).toEqual([])
+    expect(
+      ALL_TOOLS.filter(tool => tool.function.length > 1 && tool.meta?.audience != null).map(
+        tool => tool.schema.name,
+      ),
+    ).toEqual([])
   })
 
   it('getRegisteredToolByName returns correct tool', () => {
@@ -283,18 +227,9 @@ describe('tool registry', () => {
     expect(getRegisteredToolByName('nonexistent_tool')).toBeUndefined()
   })
 
-  it('does not expose a client tool surface', () => {
-    const surfaces = ALL_TOOLS.flatMap(tool => tool.meta?.surfaces ?? [])
-    expect(surfaces).not.toContain('client')
-  })
-
-  it('listToolsForSurface filters correctly', () => {
-    const internalTools = listToolsForSurface('internal', ALL_TOOLS)
-    expect(internalTools.map(tool => tool.schema.name)).not.toContain('add_entity_relation')
-    expect(internalTools.map(tool => tool.schema.name)).toEqual(
-      ALL_TOOLS.filter(tool => tool.meta?.surfaces?.includes('internal')).map(
-        tool => tool.schema.name,
-      ),
+  it('selects only tools assigned to the requested audience', () => {
+    expect(listToolsForAudience('user', ALL_TOOLS)).toEqual(
+      ALL_TOOLS.filter(tool => tool.meta?.audience === 'user'),
     )
   })
 })

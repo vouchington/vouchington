@@ -24,9 +24,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Community Pinned Posts',
-    requiredScopes: { mcp: ['communities:read'] },
+    requiredScopes: ['communities:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/communities/:idOrSlug/pinned-posts' }],
     outputSchema: foundOrNotFoundSchema({

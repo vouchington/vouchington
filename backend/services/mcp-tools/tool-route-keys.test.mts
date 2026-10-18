@@ -5,7 +5,7 @@ import { toolRouteKeys, toRouteKey } from './tool-route-keys.mts'
 const CREATE: ToolApiEndpoint = { method: 'POST', path: '/api/v1/things' }
 const REMOVE: ToolApiEndpoint = { method: 'DELETE', path: '/api/v1/things/:id' }
 const metaOf = (extra: Partial<ToolMeta>): ToolMeta =>
-  ({ surfaces: ['mcp'], ...extra }) as unknown as ToolMeta
+  ({ audience: 'user', ...extra }) as unknown as ToolMeta
 
 describe('toRouteKey', () => {
   it.each([

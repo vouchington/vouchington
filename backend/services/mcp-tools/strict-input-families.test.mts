@@ -5,7 +5,7 @@ import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { createTestUser } from '@voucha/test-helpers'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
+import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 import { callMcpTool } from './call-tool.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
@@ -77,9 +77,9 @@ describe('unknown MCP arguments fail before dispatch across tool families', () =
       expect(validateToolArguments(tool.schema.parameters, args)).toBeNull()
       const invoke = vi.spyOn(tool, 'function')
       try {
-        const config = tool.meta?.surfaces.includes('admin_mcp')
-          ? ADMIN_MCP_SERVER_CONFIG
-          : USER_MCP_SERVER_CONFIG
+        const config = ALL_MCP_SERVER_CONFIGS.find(
+          config => config.audience === tool.meta?.audience,
+        )!
         await expect(
           callMcpTool(
             name,

@@ -99,7 +99,7 @@ describe('usage quota', () => {
     })
   })
 
-  it('draws every credential of one user on one allowance, per surface', async () => {
+  it('shares one MCP allowance across credentials and staff audiences, separately from REST', async () => {
     const userId = randomUUID()
     await settleUsage(settlement(apiKeyIdentity(userId), 200))
     await settleUsage(
@@ -113,6 +113,9 @@ describe('usage quota', () => {
       limited: true,
     })
     await expect(checkUsageQuota('mcp_admin', userId, QUOTA)).resolves.toMatchObject({
+      limited: true,
+    })
+    await expect(checkUsageQuota('rest_user', userId, QUOTA)).resolves.toMatchObject({
       limited: false,
     })
     await expect(checkUsageQuota('mcp_user', randomUUID(), QUOTA)).resolves.toMatchObject({

@@ -50,7 +50,7 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
 
   const server = new Server(
     { name: ctx.config.serverName, version: '1.0.0' },
-    { capabilities: { tools: {} }, instructions: MCP_SERVER_INSTRUCTIONS[ctx.config.surface] },
+    { capabilities: { tools: {} }, instructions: MCP_SERVER_INSTRUCTIONS[ctx.config.audience] },
   )
   const pendingToolCalls = new Set<Promise<unknown>>()
 

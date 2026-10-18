@@ -36,9 +36,9 @@ const tool: MergedToolSource<Args, Result> = {
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'List My Moderation Appeals',
-    requiredScopes: { mcp: ['appeals:read'] },
+    requiredScopes: ['appeals:read'],
     suspendedAccess: true,
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/appeals' }],

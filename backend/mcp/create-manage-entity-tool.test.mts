@@ -125,9 +125,9 @@ describe('createManageEntityTool', () => {
         removeFn: () => Promise.resolve(null),
         entity: 'IndividualCard',
         meta: {
-          surfaces: ['mcp'],
+          audience: 'user',
           title: 'Test Manage Entities',
-          requiredScopes: { mcp: ['cards:read', 'cards:write'] },
+          requiredScopes: ['cards:read', 'cards:write'],
           annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
           api,
         },

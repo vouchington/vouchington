@@ -74,8 +74,8 @@ const fixture: Tool = {
   function: _currentUser => invoke,
   meta: {
     title: 'Local schema reference fixture',
-    surfaces: ['mcp'],
-    requiredScopes: { mcp: ['topics:read'] },
+    audience: 'user',
+    requiredScopes: ['topics:read'],
     annotations: { readOnlyHint: true },
     api: null,
     outputSchema,

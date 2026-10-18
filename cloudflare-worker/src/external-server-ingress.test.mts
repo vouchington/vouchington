@@ -46,6 +46,9 @@ describe('external server-to-server ingress routing', () => {
       '/.well-known/oauth-authorization-server',
       '/.well-known/oauth-protected-resource/api/v1/mcp',
       '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/brand/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/legal/mcp',
     ]) {
       expect(isExternalServerToServerIngress('GET', path)).toBe(true)
       expect(isExternalServerToServerIngress('GET', `${path}/`)).toBe(true)

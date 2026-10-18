@@ -70,6 +70,9 @@ describe('isBasicAuthExemptRequest', () => {
       '/.well-known/oauth-authorization-server',
       '/.well-known/oauth-protected-resource/api/v1/mcp',
       '/.well-known/oauth-protected-resource/api/v1/admin/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/brand/mcp',
+      '/.well-known/oauth-protected-resource/api/v1/legal/mcp',
     ]) {
       expect(isBasicAuthExemptRequest('GET', path)).toBe(true)
       expect(isBasicAuthExemptRequest('POST', path)).toBe(false)
@@ -93,4 +96,13 @@ describe('isBasicAuthExemptRequest', () => {
       expect(path.length > 1 && path.endsWith('/')).toBe(false)
     }
   })
+  it.each(['/api/v1/community-moderation/mcp', '/api/v1/legal/mcp'])(
+    'allows only POST MCP transport at %s',
+    path => {
+      expect(isBasicAuthExemptRequest('POST', path)).toBe(true)
+      expect(isBasicAuthExemptRequest('GET', path)).toBe(false)
+      expect(isBasicAuthExemptRequest('DELETE', path)).toBe(false)
+      expect(isBasicAuthExemptRequest('POST', `${path}/other`)).toBe(false)
+    },
+  )
 })

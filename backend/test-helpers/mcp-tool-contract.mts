@@ -5,7 +5,7 @@ import {
 import { expect } from 'vitest'
 import type { ApiScope } from '../modules/scopes/index.mts'
 import { callMcpTool } from '../services/mcp-tools/call-tool.mts'
-import { USER_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
+import { ALL_MCP_SERVER_CONFIGS } from '../services/mcp-tools/config.mts'
 import type { BasicUser } from '../services/users/types.mts'
 import { getRegisteredToolByName } from '../mcp/registry/index.mts'
 
@@ -40,7 +40,7 @@ export const expectMcpToolFunctionThrows = (
   ).rejects.toMatchObject(expected)
 
 /**
- * Calls a user-surface MCP tool through the real call path and expects it to be refused. Arguments
+ * Calls an audience-bound MCP tool through the real call path and expects it to be refused. Arguments
  * the tool's schema rejects throw an invalid-params error; a tool that throws itself becomes an
  * error result. Returns the message either way, so a test can tell which refused it.
  */
@@ -51,7 +51,7 @@ export async function callRejectedMcpTool(
   scopes: readonly ApiScope[],
 ): Promise<string> {
   const outcome = await runWithCredentialRequestContext(MCP_API_KEY_ORIGIN, () =>
-    callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
+    callMcpTool(name, args, caller, scopes, mcpConfigForTool(name)),
   ).then(
     result => result,
     (err: unknown) => err,
@@ -64,7 +64,7 @@ export async function callRejectedMcpTool(
 }
 
 /**
- * Calls a user-surface MCP tool through the real call path, which checks the result against the
+ * Calls an audience-bound MCP tool through the real call path, which checks the result against the
  * tool's published output schema. A result the schema rejects becomes an error result, so this
  * fails the test instead of returning. It also pins the text block to the structured content. The
  * call is an MCP API key one unless `origin` names the credential, such as an OAuth client.
@@ -77,7 +77,7 @@ export async function callStructuredMcpTool(
   origin: CredentialRequestOrigin = MCP_API_KEY_ORIGIN,
 ): Promise<Record<string, unknown>> {
   const result = await runWithCredentialRequestContext(origin, () =>
-    callMcpTool(name, args, caller, scopes, USER_MCP_SERVER_CONFIG),
+    callMcpTool(name, args, caller, scopes, mcpConfigForTool(name)),
   )
   expect(result.isError).toBeUndefined()
   const [block] = result.content as [{ type: 'text'; text: string }]
@@ -88,4 +88,11 @@ export async function callStructuredMcpTool(
 /** The closed arguments envelope used by merged tool calls. */
 export function optionArgs(option: string, args: Record<string, unknown> = {}) {
   return { option, arguments: args }
+}
+
+function mcpConfigForTool(name: string) {
+  const audience = getRegisteredToolByName(name)?.meta?.audience
+  const config = ALL_MCP_SERVER_CONFIGS.find(config => config.audience === audience)
+  if (!config) throw new Error(`No MCP audience for test tool: ${name}`)
+  return config
 }

@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { isToolAllowedForPlan, listToolsForSurface, isToolMcpEligible } from './select.mts'
+import { isToolAllowedForPlan, listToolsForAudience, isToolMcpEligible } from './select.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
-function makeTool(plan?: 'free' | 'plus' | 'pro', surfaces?: string[]): Tool {
+function makeTool(
+  plan?: 'free' | 'plus' | 'pro',
+  audience?: NonNullable<Tool['meta']>['audience'],
+): Tool {
   return {
     schema: { name: 'test_tool', type: 'function', parameters: null, strict: null },
     function: (_user: unknown) => () => Promise.resolve({}),
     meta: {
       plan,
-      surfaces: (surfaces ?? ['internal']) as NonNullable<Tool['meta']>['surfaces'],
+      audience,
       annotations: { readOnlyHint: true },
       api: null,
     },
@@ -66,7 +69,7 @@ describe('isToolAllowedForPlan', () => {
       function: (_user: unknown) => () => Promise.resolve({}),
       meta: {
         plan: 'enterprise' as unknown as 'pro',
-        surfaces: ['mcp'] as NonNullable<Tool['meta']>['surfaces'],
+        audience: 'user' as NonNullable<Tool['meta']>['audience'],
         annotations: { readOnlyHint: true },
         api: null,
       },
@@ -75,26 +78,25 @@ describe('isToolAllowedForPlan', () => {
   })
 })
 
-describe('listToolsForSurface', () => {
-  it('returns tools that include the given surface', () => {
-    const internal = makeTool(undefined, ['internal'])
-    const mcp = makeTool(undefined, ['mcp'])
-    const both = makeTool(undefined, ['internal', 'mcp'])
-
-    const result = listToolsForSurface('mcp', [internal, mcp, both])
-    expect(result).toContain(mcp)
-    expect(result).toContain(both)
-    expect(result).not.toContain(internal)
+describe('listToolsForAudience', () => {
+  it('selects exactly one server audience and excludes internal-only tools', () => {
+    const internal = makeTool()
+    const user = makeTool(undefined, 'user')
+    const admin = makeTool(undefined, 'admin')
+    const community = makeTool(undefined, 'community_moderation')
+    const brand = makeTool(undefined, 'brand')
+    const legal = makeTool(undefined, 'legal')
+    const tools = [internal, user, admin, community, brand, legal]
+    expect(listToolsForAudience('user', tools)).toEqual([user])
+    expect(listToolsForAudience('admin', tools)).toEqual([admin])
+    expect(listToolsForAudience('community_moderation', tools)).toEqual([community])
+    expect(listToolsForAudience('brand', tools)).toEqual([brand])
+    expect(listToolsForAudience('legal', tools)).toEqual([legal])
   })
 
-  it('defaults to internal surface when meta is absent', () => {
-    const toolNoMeta = {
-      schema: { name: 'no_meta', type: 'function', parameters: null, strict: null },
-      function: () => () => Promise.resolve({}),
-    } as unknown as Tool
-
-    const result = listToolsForSurface('internal', [toolNoMeta])
-    expect(result).toContain(toolNoMeta)
+  it('excludes tools without metadata from server discovery', () => {
+    const toolNoMeta = { schema: { name: 'no_meta' } } as Tool
+    expect(listToolsForAudience('user', [toolNoMeta])).toEqual([])
   })
 })
 

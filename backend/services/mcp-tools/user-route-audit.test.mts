@@ -54,10 +54,10 @@ function fixtureTool(
       return Promise.resolve({ ok: true, echoed: SENSITIVE_RESULT })
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: name,
       ...(options.plan ? { plan: options.plan } : {}),
-      requiredScopes: { mcp: [scope] },
+      requiredScopes: [scope],
       annotations: { readOnlyHint: true },
       api: null,
     },
@@ -112,7 +112,7 @@ describe('user MCP call audit', () => {
         expect(invoked).toHaveBeenCalledExactlyOnceWith(READ_TOOL, { note: PRIVATE_ARGUMENT })
         expect(await readTestMcpCallAuditEvents(user.id)).toEqual([
           expect.objectContaining({
-            surface: 'mcp',
+            audience: 'user',
             correlation_id: response.headers['x-correlation-id'],
             ...identity,
             actor_user_id: user.id,

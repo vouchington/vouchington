@@ -87,10 +87,10 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Update My Financial Profile',
     plan: 'plus',
-    requiredScopes: { mcp: ['financial-profile:read', 'financial-profile:write'] },
+    requiredScopes: ['financial-profile:read', 'financial-profile:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'PUT', path: '/api/v1/my/financial-profile' }],
     outputSchema: OUTPUT_SCHEMA,

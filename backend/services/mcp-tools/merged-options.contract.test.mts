@@ -58,11 +58,11 @@ describe('all merged user MCP options', () => {
   it.each(GROUPS)('preserves declared metadata for $target', group => {
     const tool = getRegisteredToolByName(group.target)
     expect(tool).toBeDefined()
-    expect(tool!.meta?.requiredScopes?.mcp).toEqual(group.scopes)
+    expect(tool!.meta?.requiredScopes).toEqual(group.scopes)
     expect(tool!.meta?.plan ?? 'free').toBe(group.plan)
     expect(tool!.meta?.annotations).toEqual(group.annotations)
     expect(tool!.roles === undefined || tool!.roles.user === true).toBe(true)
-    expect(tool!.meta?.surfaces).toContain('mcp')
+    expect(tool!.meta?.audience).toBe('user')
   })
 
   it.each(CASES)('audits and charges only $target.$option', ({ target, option, args, routes }) => {

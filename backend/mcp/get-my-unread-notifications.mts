@@ -19,9 +19,9 @@ const tool: MergedToolSource<Record<string, never>, ToolResult> = {
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Unread Notifications',
-    requiredScopes: { mcp: ['notifications:read'] },
+    requiredScopes: ['notifications:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/notifications/unread' }],
     outputSchema: successSchema({

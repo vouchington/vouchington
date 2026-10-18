@@ -5,7 +5,7 @@ import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { PrivateUser } from '@services/users/types'
 import { callMcpTool } from './call-tool.mts'
-import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
+import { LEGAL_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { authorizeMcpTool } from './resolve-tool-call.mts'
 
@@ -26,7 +26,7 @@ function fixtureTool(
     },
     // Arity 1 keeps the fixture MCP-eligible, so authorization is what's under test.
     function: (_currentUser: unknown) => () => Promise.resolve({ success: true }),
-    meta: { surfaces: ['mcp'], api: null, ...meta },
+    meta: { audience: 'user', api: null, ...meta },
   } as unknown as Tool
 }
 
@@ -40,14 +40,14 @@ describe('authorizeMcpTool', () => {
   it('checks role, then plan, then scopes', () => {
     const staffPlusTool = fixtureTool(
       'staff_plus_fixture',
-      { plan: 'plus', requiredScopes: { mcp: ['cards:write'] } },
+      { plan: 'plus', requiredScopes: ['cards:write'] },
       { administrator: true },
     )
     const plusTool = fixtureTool('plus_fixture', {
       plan: 'plus',
-      requiredScopes: { mcp: ['cards:write'] },
+      requiredScopes: ['cards:write'],
     })
-    const scopedTool = fixtureTool('scoped_fixture', { requiredScopes: { mcp: ['cards:write'] } })
+    const scopedTool = fixtureTool('scoped_fixture', { requiredScopes: ['cards:write'] })
 
     const authorize = (tool: Tool, scopes: Parameters<typeof authorizeMcpTool>[2]) =>
       authorizeMcpTool(tool, user, scopes, USER_MCP_SERVER_CONFIG)
@@ -68,12 +68,12 @@ describe('authorizeMcpTool', () => {
     const suspended = { ...user, suspended: true, membership_plan: 'plus' as const }
     const closed = fixtureTool(
       'suspended_closed_fixture',
-      { plan: 'plus', requiredScopes: { mcp: ['cards:write'] } },
+      { plan: 'plus', requiredScopes: ['cards:write'] },
       { administrator: true },
     )
     const open = fixtureTool('suspended_open_fixture', {
       suspendedAccess: true,
-      requiredScopes: { mcp: ['cards:write'] },
+      requiredScopes: ['cards:write'],
     })
 
     expect(authorizeMcpTool(closed, suspended, ['cards:write'], USER_MCP_SERVER_CONFIG)).toEqual({
@@ -97,15 +97,15 @@ describe('authorizeMcpTool', () => {
     const appealWrite = fixtureTool('appeal_write_fixture', {
       suspendedAccess: true,
       plan: 'plus',
-      requiredScopes: { mcp: ['appeals:write'] },
+      requiredScopes: ['appeals:write'],
     })
     const appealRead = fixtureTool('appeal_read_fixture', {
       suspendedAccess: true,
-      requiredScopes: { mcp: ['appeals:read'] },
+      requiredScopes: ['appeals:read'],
     })
     const messages = fixtureTool('message_read_fixture', {
       suspendedAccess: 'free',
-      requiredScopes: { mcp: ['messages:read'] },
+      requiredScopes: ['messages:read'],
     })
     expect(
       authorizeMcpTool(appealWrite, suspended, ['appeals:write'], USER_MCP_SERVER_CONFIG),
@@ -122,16 +122,16 @@ describe('authorizeMcpTool', () => {
     const tool = fixtureTool(
       'copyright_gate_fixture',
       {
-        surfaces: ['admin_mcp'],
+        audience: 'legal',
         plan: 'pro',
         switch: 'copyright.mcpDecisionTools',
-        requiredScopes: { admin_mcp: ['copyright-notices:write'] },
+        requiredScopes: ['copyright-notices:write'],
       },
       { administrator: true },
     )
     const staff = { ...user, roles: ['administrator'], membership_plan: 'pro' as const }
     const exact = ['copyright-notices:read', 'copyright-notices:write'] as const
-    expect(authorizeMcpTool(tool, user, exact, ADMIN_MCP_SERVER_CONFIG, false)).toEqual({
+    expect(authorizeMcpTool(tool, user, exact, LEGAL_MCP_SERVER_CONFIG, false)).toEqual({
       status: 'role_denied',
     })
     expect(
@@ -139,14 +139,14 @@ describe('authorizeMcpTool', () => {
         tool,
         { ...staff, membership_plan: null },
         exact,
-        ADMIN_MCP_SERVER_CONFIG,
+        LEGAL_MCP_SERVER_CONFIG,
         false,
       ),
     ).toEqual({ status: 'plan_denied' })
-    expect(authorizeMcpTool(tool, staff, exact, ADMIN_MCP_SERVER_CONFIG, false)).toEqual({
+    expect(authorizeMcpTool(tool, staff, exact, LEGAL_MCP_SERVER_CONFIG, false)).toEqual({
       status: 'not_found',
     })
-    expect(authorizeMcpTool(tool, staff, [], ADMIN_MCP_SERVER_CONFIG, false)).toEqual({
+    expect(authorizeMcpTool(tool, staff, [], LEGAL_MCP_SERVER_CONFIG, false)).toEqual({
       status: 'not_found',
     })
     expect(
@@ -154,11 +154,11 @@ describe('authorizeMcpTool', () => {
         tool,
         staff,
         ['mcp.admin:read', 'mcp.admin:write'],
-        ADMIN_MCP_SERVER_CONFIG,
+        LEGAL_MCP_SERVER_CONFIG,
         true,
       ),
     ).toEqual({ status: 'insufficient_scope', requiredScopes: ['copyright-notices:write'] })
-    expect(authorizeMcpTool(tool, staff, exact, ADMIN_MCP_SERVER_CONFIG, true)).toEqual({
+    expect(authorizeMcpTool(tool, staff, exact, LEGAL_MCP_SERVER_CONFIG, true)).toEqual({
       status: 'allowed',
       tool,
     })

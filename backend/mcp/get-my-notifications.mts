@@ -37,9 +37,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Notifications',
-    requiredScopes: { mcp: ['notifications:read'] },
+    requiredScopes: ['notifications:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/notifications' }],
     outputSchema: foundOrNotFoundSchema({

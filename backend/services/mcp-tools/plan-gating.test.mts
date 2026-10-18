@@ -185,11 +185,11 @@ describe('pro plan gating (synthetic fixture)', () => {
       // fixture is not silently dropped as "curried" before the plan check ever runs.
       function: (_currentUser: unknown) => () => Promise.resolve({ success: true }),
       meta: {
-        surfaces: ['mcp'],
+        audience: 'user',
         plan: 'pro',
         // Reuses a real user-audience scope so getToolRequiredScopes resolves it; both test users
         // are granted this scope below so the plan is what's under test, not the scope check.
-        requiredScopes: { mcp: ['cards:read'] },
+        requiredScopes: ['cards:read'],
         annotations: { destructiveHint: true },
         api: null,
       },

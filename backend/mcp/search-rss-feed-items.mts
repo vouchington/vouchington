@@ -45,7 +45,6 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal'],
     title: 'Search RSS Feed Items',
     annotations: { readOnlyHint: true },
     api: null,
