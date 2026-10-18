@@ -28,6 +28,7 @@ async function start(
     teeFailure?: boolean
     scaledDeadline?: boolean
     mirrorDelay?: number
+    cancelMirror?: boolean
     canonicalDelay?: number
   } = {},
 ) {
@@ -35,6 +36,7 @@ async function start(
   directories.push(dir)
   const docker = join(dir, 'docker')
   const calls = join(dir, 'calls.jsonl')
+  const pids = join(dir, 'pull-pids')
   const output = join(dir, 'output')
   const envFile = join(dir, 'environment')
   await writeFile(output, '')
@@ -46,7 +48,9 @@ const fs = require('node:fs');
 const args = process.argv.slice(2);
 fs.appendFileSync(process.env.CALLS, JSON.stringify(args) + '\\n');
 if (args[0] === 'pull') {
+  fs.appendFileSync(process.env.PULL_PIDS, process.pid + '\\n');
   if (args[1].startsWith('mirror.gcr.io/')) {
+    if (process.env.CANCEL_MIRROR === '1') process.kill(-Number(process.env.ACQUISITION_GROUP), 'SIGTERM');
     if (process.env.MIRROR_ERROR) console.error(process.env.MIRROR_ERROR);
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(process.env.MIRROR_DELAY));
     process.exit(Number(process.env.MIRROR_EXIT));
@@ -65,9 +69,17 @@ if (args[0] === 'port') console.log('127.0.0.1:32123');
     await writeFile(
       timeout,
       `#!/usr/bin/env bash
+if [ "$1" = '--foreground' ]; then
+  shift 4
+  exec /usr/bin/timeout --foreground --signal=USR1 --kill-after=0.1s 1s "$@"
+fi
 if [ "$1" = '--kill-after=2s' ] && [ "$2" = '50s' ]; then
   shift 2
-  exec /usr/bin/timeout --kill-after=0.1s 2s "$@"
+  exec /usr/bin/timeout --kill-after=0.1s 2s bash -c '
+    read -r pid comm state parent ACQUISITION_GROUP rest < /proc/self/stat
+    export ACQUISITION_GROUP
+    exec "$@"
+  ' _ "$@"
 fi
 exec /usr/bin/timeout "$@"
 `,
@@ -90,6 +102,8 @@ exec /usr/bin/timeout "$@"
       GITHUB_OUTPUT: output,
       RUNNER_TEMP: dir,
       CALLS: calls,
+      PULL_PIDS: pids,
+      CANCEL_MIRROR: options.cancelMirror ? '1' : '0',
       MIRROR_ERROR: options.error ?? '',
       MIRROR_EXIT: String(options.mirrorExit ?? 0),
       CANONICAL_EXIT: String(options.canonicalExit ?? 0),
@@ -113,6 +127,7 @@ exec /usr/bin/timeout "$@"
   return {
     ...result,
     calls: recorded,
+    pullPids: (await readFile(pids, 'utf8')).trim().split('\n').map(Number),
     output: await readFile(output, 'utf8'),
     environment: await readFile(envFile, 'utf8'),
   }
@@ -176,9 +191,9 @@ describe('Valkey image acquisition and single container start', () => {
     expect(result.output).toBe('')
   })
 
-  it('does not classify a pull deadline exit as missing content', async () => {
-    const result = await start({ error: missingContent, mirrorExit: 124 })
-    expect(result.code).toBe(124)
+  it.each([124, 137])('does not classify Docker exit %s as our deadline', async mirrorExit => {
+    const result = await start({ error: missingContent, mirrorExit })
+    expect(result.code).toBe(mirrorExit)
     expect(result.calls).toEqual([['pull', image]])
   })
 
@@ -216,7 +231,29 @@ describe('Valkey image acquisition and single container start', () => {
     expect(result.calls.filter(call => call[0] === 'run')).toHaveLength(1)
     expect(result.output).toBe('')
   })
-
+  it('cancels the acquisition group without fallback or an orphaned pull', async () => {
+    const result = await start({ scaledDeadline: true, cancelMirror: true, mirrorDelay: 2300 })
+    for (const pid of result.pullPids)
+      await expect(exec('bash', ['-c', 'kill -0 "$1"', 'kill-check', String(pid)])).rejects.toThrow(
+        'No such process',
+      )
+    expect(result.code).not.toBe(0)
+    expect(result.calls).toEqual([['pull', image]])
+    expect(result.output).toBe('')
+  })
+  it('recovers a stalled mirror once before the shared acquisition deadline', async () => {
+    const result = await start({ scaledDeadline: true, mirrorDelay: 2300 })
+    for (const pid of result.pullPids)
+      await expect(exec('bash', ['-c', 'kill -0 "$1"', 'kill-check', String(pid)])).rejects.toThrow(
+        'No such process',
+      )
+    expect(result.code).toBe(0)
+    expect(result.calls.filter(call => call[0] === 'pull')).toEqual([
+      ['pull', image],
+      ['pull', canonical],
+    ])
+    expect(result.calls.filter(call => call[0] === 'run')).toHaveLength(1)
+  })
   it('allows a fallback only within the remaining shared acquisition budget', async () => {
     const result = await start({
       error: missingContent,
@@ -234,17 +271,20 @@ describe('Valkey image acquisition and single container start', () => {
     expect(result.output).toBe('')
     expect(result.environment).toBe('')
   })
-
-  it('does not admit fallback or container startup after acquisition budget exhaustion', async () => {
+  it('never starts a container when both registry attempts exhaust the acquisition budget', async () => {
     const result = await start({
       error: missingContent,
       mirrorExit: 1,
       scaledDeadline: true,
       mirrorDelay: 2300,
+      canonicalDelay: 2300,
     })
     expect(result.code).toBe(124)
     expect(result.stderr).toContain(missingContent)
-    expect(result.calls).toEqual([['pull', image]])
+    expect(result.calls).toEqual([
+      ['pull', image],
+      ['pull', canonical],
+    ])
     expect(result.output).toBe('')
     expect(result.environment).toBe('')
   })
