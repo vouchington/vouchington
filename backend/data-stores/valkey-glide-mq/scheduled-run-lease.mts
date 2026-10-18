@@ -34,23 +34,29 @@ export async function withScheduledRunLease(
     console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
     return null
   }
-  const previous = await workerQueueCommandClient.get(previousKey)
-  const previousJobId = previous === null ? null : decodeGlideString(previous)
-  if (previousJobId !== null && previousJobId !== job.id)
-    console.warn('overlap_lease_expired', {
-      queue,
-      scheduler,
-      jobId: job.id,
-      previousJobId,
-    })
-  await workerQueueCommandClient.set(previousKey, job.id, {
-    expiry: { type: TimeUnit.Milliseconds, count: Math.max(ttl * 2, (interval ?? ttl) * 2) },
-  })
-  return async () => {
+  const release = async () => {
     await workerQueueCommandClient.invokeScript(releaseScript, {
       keys: [key, previousKey],
       args: [job.id],
     })
+  }
+  try {
+    const previous = await workerQueueCommandClient.get(previousKey)
+    const previousJobId = previous === null ? null : decodeGlideString(previous)
+    if (previousJobId !== null && previousJobId !== job.id)
+      console.warn('overlap_lease_expired', {
+        queue,
+        scheduler,
+        jobId: job.id,
+        previousJobId,
+      })
+    await workerQueueCommandClient.set(previousKey, job.id, {
+      expiry: { type: TimeUnit.Milliseconds, count: Math.max(ttl * 2, (interval ?? ttl) * 2) },
+    })
+    return release
+  } catch (err) {
+    await release()
+    throw err
   }
 }
 

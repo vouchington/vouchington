@@ -156,6 +156,32 @@ describe('GlideMQ runtime guards', () => {
     }
   })
 
+  it('releases an acquired lease if previous-run bookkeeping fails', async () => {
+    const name = `lease-bookkeeping-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const job = await queue.add('work', {}, { jobId: 'scheduled-root' })
+    if (!job) throw new Error('Expected a scheduled root')
+    Object.assign(job, { schedulerName: 'repeat' })
+    const leaseKey = `${base}:run:repeat`
+    const previousKey = `${leaseKey}:previous`
+    try {
+      // GET against a hash is a real Valkey bookkeeping failure after SET NX succeeds.
+      await workerQueueCommandClient.hset(previousKey, { invalid: 'previous-run' })
+      await expect(withScheduledRunLease(name, job, { lockDuration: 20000 })).rejects.toThrow(
+        /WRONGTYPE/,
+      )
+      expect(await workerQueueCommandClient.get(leaseKey)).toBeNull()
+      const releaseRetry = await withScheduledRunLease(name, job, { lockDuration: 20000 })
+      expect(releaseRetry).not.toBeNull()
+      await releaseRetry?.()
+    } finally {
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([leaseKey, previousKey])
+      await queue.close()
+    }
+  })
+
   it('skips a second scheduled root while the first lease is live', async () => {
     const name = `live-lease-${crypto.randomUUID()}`
     const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
