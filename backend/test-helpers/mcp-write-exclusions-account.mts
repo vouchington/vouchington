@@ -134,4 +134,15 @@ export const accountExclusions = [
     'Invitations are not in scope; join_community covers public communities',
     ['POST /communities/:idOrSlug/invites', 'POST /communities/invite-redemptions'],
   ),
+  ...exclusions(
+    'recorded-no-tool',
+    'First-party AI chat transcript sync; external agents keep their own transcripts (#208)',
+    [
+      'POST /conversations',
+      'POST /conversations/:conversationId/client-generated-chat',
+      'PATCH /my/conversations/:conversationId',
+      'DELETE /my/conversations/:conversationId',
+      'POST /my/conversations/:conversationId/title',
+    ],
+  ),
 ]
