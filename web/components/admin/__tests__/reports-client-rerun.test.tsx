@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockNav,
@@ -10,6 +10,10 @@ import {
 
 import { ReportsClient } from '../reports-client'
 import { makeReportsResponse } from '@/test-helpers/admin-reports'
+import {
+  makeCluster,
+  makeClusteredReportsResponse,
+} from '@/test-helpers/components/reports-client-clustered-fixtures'
 
 describe('ReportsClient re-run judgement button', () => {
   beforeEach(() => mockNav.reset())
@@ -24,6 +28,24 @@ describe('ReportsClient re-run judgement button', () => {
     )
 
     expect(screen.getByRole('button', { name: /re-run ai judgement/i })).toBeVisible()
+  })
+
+  it.each([
+    { status: 'reviewed' as const, is_system_generated: false },
+    { status: 'pending' as const, is_system_generated: true },
+  ])('does not poll an ineligible report without a judgement', overrides => {
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeReportsResponse({ ...overrides, judgement: null })}
+      />,
+    )
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      '',
+      expect.any(Function),
+    )
   })
 
   it('calls rerunReportJudgement and shows a success toast on success', async () => {
@@ -63,6 +85,7 @@ describe('ReportsClient re-run judgement button', () => {
       false,
       expect.any(Function),
       expect.any(String),
+      expect.any(Function),
     )
     fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
     await waitFor(() =>
@@ -70,6 +93,7 @@ describe('ReportsClient re-run judgement button', () => {
         true,
         expect.any(Function),
         expect.any(String),
+        expect.any(Function),
       ),
     )
     rerender(
@@ -84,6 +108,7 @@ describe('ReportsClient re-run judgement button', () => {
       false,
       expect.any(Function),
       expect.any(String),
+      expect.any(Function),
     )
   })
 
@@ -106,5 +131,42 @@ describe('ReportsClient re-run judgement button', () => {
       ),
     )
     expect(screen.getByText('Reported post')).toBeVisible()
+  })
+
+  it('re-enables a clustered rerun after its saved result times out', async () => {
+    const judgement = {
+      id: '00000000-0000-7000-8000-000000000001',
+      recommended_action: 'remove' as const,
+      public_response: 'Saved response',
+      internal_response: 'Saved rationale',
+      is_stale: false,
+      judged_report_count: 1,
+      current_report_count: 1,
+    }
+    const cluster = makeCluster()
+    const data = makeClusteredReportsResponse()
+    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={{
+          ...data,
+          results: [
+            { ...cluster, reports: cluster.reports.map(report => ({ ...report, judgement })) },
+          ],
+        }}
+      />,
+    )
+    const button = screen.getAllByRole('button', { name: /re-run judgement/i })[0]!
+    fireEvent.click(button)
+    await waitFor(() => expect(button).toBeDisabled())
+    const onTimeout = mockUsePendingAiRefresh.mock.lastCall?.[3] as
+      | ((keys: string[]) => void)
+      | undefined
+
+    await act(async () => onTimeout?.([`rerun:${cluster.reports[0]!.id}:${judgement.id}`]))
+
+    await waitFor(() => expect(button).toBeEnabled())
+    expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()
   })
 })

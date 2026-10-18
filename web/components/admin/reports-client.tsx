@@ -122,6 +122,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [rerunningId, setRerunningId] = useState<string | null>(null)
   const [rerunBefore, setRerunBefore] = useState<Record<string, string | null>>({})
+  const [rerunTimedOut, setRerunTimedOut] = useState(false)
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [bulkAction, setBulkAction] = useState<ModerationBulkAction | null>(null)
   const [bulkMessage, setBulkMessage] = useState<string | null>(null)
@@ -133,15 +134,21 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   )
   const isEmpty = reports.length === 0
   const pendingJudgement =
-    viewerTier === 'staff' && (reports as AdminModerationReport[]).some(report => !report.judgement)
+    viewerTier === 'staff' &&
+    (reports as AdminModerationReport[]).some(
+      report => isOrdinaryPendingReport(report) && !report.judgement,
+    )
   const pendingRerunEntities = new Set<string>()
+  const pendingRerunKeys: string[] = []
   if (viewerTier === 'staff') {
     for (const report of reports as AdminModerationReport[]) {
       if (
         Object.hasOwn(rerunBefore, report.id) &&
         (report.judgement?.id ?? null) === rerunBefore[report.id]
-      )
+      ) {
         pendingRerunEntities.add(`${report.entity_type}:${report.entity_id}`)
+        pendingRerunKeys.push(`rerun:${report.id}:${rerunBefore[report.id] ?? 'new'}`)
+      }
     }
   }
   const pendingRerun = pendingRerunEntities.size > 0
@@ -149,11 +156,23 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     pendingJudgement || pendingRerun,
     () => router.refresh(),
     [
-      ...(reports as AdminModerationReport[]).flatMap(report =>
-        report.judgement ? [] : [report.id],
+      ...(viewerTier === 'staff' ? (reports as AdminModerationReport[]) : []).flatMap(report =>
+        isOrdinaryPendingReport(report) && !report.judgement ? [report.id] : [],
       ),
-      ...Object.entries(rerunBefore).map(([id, before]) => `${id}:${before ?? 'new'}`),
+      ...pendingRerunKeys,
     ].join('|'),
+    expiredKeys => {
+      const expired = new Set(expiredKeys)
+      if (![...expired].some(key => key.startsWith('rerun:'))) return
+      setRerunBefore(current =>
+        Object.fromEntries(
+          Object.entries(current).filter(
+            ([id, before]) => !expired.has(`rerun:${id}:${before ?? 'new'}`),
+          ),
+        ),
+      )
+      setRerunTimedOut(true)
+    },
   )
   const hotkeyItems =
     viewerTier === 'staff'
@@ -216,6 +235,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   function handleRerun(reportId: string) {
     const target = (reports as AdminModerationReport[]).find(report => report.id === reportId)
     if (target && pendingRerunEntities.has(`${target.entity_type}:${target.entity_id}`)) return
+    setRerunTimedOut(false)
     setRerunningId(reportId)
     // Wrap the entire async sequence so controls stay disabled until both the POST
     // and the follow-up router.refresh() transition complete (web/AGENTS.md rule 29).
@@ -311,7 +331,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
           ? ` from ${reporterCount} reporter${reporterCount === 1 ? '' : 's'}`
           : null}
       </p>
-      {pollingTimedOut && (
+      {(pollingTimedOut || rerunTimedOut) && (
         <output className='block text-sm text-muted-foreground'>
           AI judgement is taking longer than expected. Refresh this page to check again.
         </output>
