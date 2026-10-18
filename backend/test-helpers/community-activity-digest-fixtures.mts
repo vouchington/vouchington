@@ -6,12 +6,12 @@ import { createCommunityActivityDigestBatch } from '../services/notifications/co
 
 type DigestInput = { windowStart: Date; windowEnd: Date }
 
-export async function runDigestBatchForUser(userId: string, input: DigestInput) {
+export async function runDigestBatchForUser(userId: string, input: DigestInput, businessNow: Date) {
   return createCommunityActivityDigestBatch({
     ...input,
     afterUserId: beforeDigestUserId(userId),
     throughUserId: userId,
-    now: new Date(),
+    now: businessNow,
   })
 }
 
@@ -98,6 +98,7 @@ export async function runGlobalDigestBatchForTest(
   ownerId: string,
   foreignId: string,
   input: DigestInput,
+  businessNow: Date,
 ) {
   let afterUserId = beforeDigestUserId(ownerId)
   const created: Array<{ userId: string; notificationId: string }> = []
@@ -105,7 +106,7 @@ export async function runGlobalDigestBatchForTest(
     const result = await createCommunityActivityDigestBatch({
       ...input,
       afterUserId,
-      now: new Date(),
+      now: businessNow,
     })
     created.push(...result.created)
     if (result.nextUserId === null) break
