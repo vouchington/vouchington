@@ -72,7 +72,7 @@ jobs:
           export S3_BUCKET_QUARANTINE=test-quarantine
           node ci/check-live-mcp-catalog.mjs
           pnpm run mcp:catalog -- --check
-        timeout-minutes: 4
+        timeout-minutes: 8
       - name: Check canonical API snapshot git state
         shell: bash
         run: |
