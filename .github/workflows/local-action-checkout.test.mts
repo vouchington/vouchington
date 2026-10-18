@@ -13,7 +13,8 @@ type Document = { jobs?: Record<string, { steps?: WorkflowStep[] }> }
 // Only a checkout of this repository into the workspace root fills the workspace; a `path:` or a
 // foreign `repository:` leaves `./.github/actions` unresolved.
 function populatesWorkspaceRoot(step: WorkflowStep): boolean {
-  if (!step.uses?.startsWith('actions/checkout@')) return false
+  // A conditional checkout may be skipped while a later local action still runs.
+  if (!step.uses?.startsWith('actions/checkout@') || step.if !== undefined) return false
   const { path, repository } = step.with ?? {}
   const rootPath = path === undefined || path === '.' || path === './'
   const ownRepository =
@@ -66,6 +67,11 @@ describe('local composite actions require a checkout', () => {
         jobs: { a: { steps: [checkout(extra), local] } },
       }).length
 
+    expect(
+      localActionBeforeCheckoutViolations('wf', {
+        jobs: { a: { steps: [{ ...checkout({}), if: "github.event_name == 'push'" }, local] } },
+      }),
+    ).toHaveLength(1)
     expect(violationCount({ path: 'candidate' })).toBe(1)
     expect(violationCount({ repository: 'other/repo' })).toBe(1)
     expect(violationCount({ path: '.', repository: '${{ github.repository }}' })).toBe(0)

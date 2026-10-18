@@ -32,20 +32,31 @@ type Document = {
 
 function isHubImage(reference: string): boolean {
   const image = reference.replace(/^["']|["'),;]+$/gu, '')
-  if (image === '' || image === 'scratch' || /\$|\{\{/u.test(image)) return false
-  const [first = ''] = image.split('/')
-  if (!image.includes('/')) return true
+  if (image === '' || image === 'scratch') return false
+  // Only the part before a variable is knowable; a wholly dynamic reference or registry is not.
+  const dynamicAt = image.search(/\$|\{\{/u)
+  const known = dynamicAt === -1 ? image : image.slice(0, dynamicAt)
+  if (known === '') return false
+  if (dynamicAt !== -1 && !known.includes('/') && image.slice(dynamicAt).includes('/')) return false
+  const [first = ''] = known.split('/')
+  if (!known.includes('/')) return true
   if (HUB_HOSTS.includes(first)) return true
   return !(first.includes('.') || first.includes(':') || first === 'localhost')
 }
 
+const GLOBAL_VALUE_OPTIONS = new Set(
+  '--config --context -c --host -H --log-level -l --tlscacert --tlscert --tlskey'.split(' '),
+)
+
 function dockerCommandImages(script: string): string[] {
   const logical = script.replace(/\\\r?\n/gu, ' ')
-  return [
-    ...logical.matchAll(/\bdocker\s+(?:(?:container|image)\s+)?(?:run|pull|create)\b([^\n;&|]*)/gu),
-  ].flatMap(([, rest]) => {
-    const tokens = rest!.match(/(?:[^\s"']|"[^"]*"|'[^']*')+/gu) ?? []
-    for (let i = 0; i < tokens.length; i++) {
+  return [...logical.matchAll(/\bdocker\s+([^\n;&|]*)/gu)].flatMap(([, command]) => {
+    const tokens = command!.match(/(?:[^\s"']|"[^"]*"|'[^']*')+/gu) ?? []
+    let i = 0
+    while (tokens[i]?.startsWith('-')) i += GLOBAL_VALUE_OPTIONS.has(tokens[i]!) ? 2 : 1
+    if (tokens[i] === 'container' || tokens[i] === 'image') i++
+    if (!['run', 'pull', 'create'].includes(tokens[i] ?? '')) return []
+    for (i++; i < tokens.length; i++) {
       const token = tokens[i]!
       if (!token.startsWith('-')) return [token]
       if (VALUE_FLAGS.has(token)) i++
@@ -105,10 +116,12 @@ function dockerfileViolations(path: string, source: string): string[] {
 const isDockerfilePath = (path: string): boolean =>
   /(?:^|\/)(?:Dockerfile(?:\.[^/]+)?|[^/]+\.Dockerfile)$/u.test(path)
 
-function dockerfilePaths(): string[] {
-  const tracked = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 1 << 28 })
-  return tracked.split('\0').filter(isDockerfilePath)
-}
+const trackedFiles = (): string[] =>
+  execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 1 << 28 })
+    .split('\0')
+    .filter(Boolean)
+
+const dockerfilePaths = (): string[] => trackedFiles().filter(isDockerfilePath)
 
 describe('Docker Hub images come through mirror.gcr.io', () => {
   it('flags Docker Hub references in every workflow image position', () => {
@@ -124,6 +137,9 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
             { run: 'docker image pull ubuntu' },
             { run: 'docker container create --name y busybox' },
             { run: 'docker run --platform "$PLATFORM" ubuntu' },
+            { run: 'docker --context default pull alpine' },
+            { run: 'docker --config "$DIR" image pull busybox' },
+            { run: 'docker pull node:${{ matrix.version }}' },
             { run: 'docker pull --platform=linux/arm64 debian' },
             {
               uses: 'docker/setup-buildx-action',
@@ -143,15 +159,22 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
       'ubuntu must come from mirror.gcr.io/',
       'busybox must come from mirror.gcr.io/',
       'ubuntu must come from mirror.gcr.io/',
+      'alpine must come from mirror.gcr.io/',
+      'busybox must come from mirror.gcr.io/',
+      'node:${{ must come from mirror.gcr.io/',
       'debian must come from mirror.gcr.io/',
       'moby/buildkit must come from mirror.gcr.io/',
     ])
     expect(
       dockerfileViolations(
         'Dockerfile',
-        '# syntax=docker/dockerfile\nFROM node AS a\nFROM a AS b\n',
+        '# syntax=docker/dockerfile\nFROM node AS a\nFROM a AS b\nFROM node:${NODE_VERSION}\n',
       ),
-    ).toEqual(['Dockerfile: # syntax=docker/dockerfile', 'Dockerfile: FROM node'])
+    ).toEqual([
+      'Dockerfile: # syntax=docker/dockerfile',
+      'Dockerfile: FROM node',
+      'Dockerfile: FROM node:${NODE_VERSION}',
+    ])
   })
 
   it('matches Dockerfile names at any depth and ignores lookalikes', () => {
@@ -159,6 +182,9 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
     const skipped = ['x/NotDockerfile', 'x/Dockerfile/readme']
     const matches = [...names, ...skipped].filter(isDockerfilePath)
     expect(matches).toEqual(names)
+    expect(
+      /^\.github\/actions\/(?:.+\/)?action\.ya?ml$/u.test('.github/actions/a/b/action.yaml'),
+    ).toBe(true)
   })
 
   it('allows the mirror, other registries, variables, scratch, and earlier stages', () => {
@@ -188,6 +214,8 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
           'FROM --platform=linux/arm64 base AS next',
           'FROM gcr.io/distroless/nodejs26 AS runtime',
           'FROM scratch',
+          'FROM ${REGISTRY}/library/node',
+          'FROM mirror.gcr.io/library/node:${NODE_VERSION}',
         ].join('\n'),
       ),
     ).toEqual([])
@@ -196,10 +224,7 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
   it('uses the mirror in every workflow, composite action, and Dockerfile', () => {
     const yamlPaths = [
       ...readdirSync('.github/workflows').map(file => `.github/workflows/${file}`),
-      ...readdirSync('.github/actions').flatMap(name => [
-        `.github/actions/${name}/action.yml`,
-        `.github/actions/${name}/action.yaml`,
-      ]),
+      ...trackedFiles().filter(path => /^\.github\/actions\/(?:.+\/)?action\.ya?ml$/u.test(path)),
     ].filter(path => /\.ya?ml$/u.test(path) && existsSync(path))
     const violations = [
       ...yamlPaths.flatMap(path =>

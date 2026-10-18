@@ -12,7 +12,8 @@ function draftTriggerViolations(path: string, document: { on?: unknown }): strin
   const trigger = document.on
   if (trigger === null || typeof trigger !== 'object' || Array.isArray(trigger)) return []
   return Object.entries(trigger).flatMap(([event, config]) => {
-    const types = (config as { types?: unknown } | null)?.types
+    const declared = (config as { types?: unknown } | null)?.types
+    const types = typeof declared === 'string' ? [declared] : declared
     if (!Array.isArray(types)) return []
     return types
       .filter((type): type is string => DRAFT_ACTIVITY_TYPES.includes(type as string))
@@ -34,6 +35,9 @@ describe('draft transition triggers', () => {
       'wf: pull_request subscribes to ready_for_review',
       'wf: pull_request_target subscribes to converted_to_draft',
     ])
+    expect(
+      draftTriggerViolations('wf', { on: { pull_request: { types: 'ready_for_review' } } }),
+    ).toEqual(['wf: pull_request subscribes to ready_for_review'])
     expect(
       draftTriggerViolations('wf', { on: { pull_request: { types: ['opened', 'synchronize'] } } }),
     ).toEqual([])
