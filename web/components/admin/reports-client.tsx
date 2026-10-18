@@ -30,6 +30,7 @@ import { buildReportBulkOperations, countReporters } from './reports-bulk-operat
 import { isOrdinaryPendingReport } from './report-action-eligibility'
 import { ReportsPagination, ReportsSortSelect } from './reports-navigation'
 import { ReportsTableHeader } from './reports-table-header'
+import { useReportsAiPolling } from './use-reports-ai-polling'
 
 export type {
   AdminModerationReport,
@@ -43,7 +44,6 @@ import type {
   MemberModerationReportsResponse,
 } from './reports-client-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
 
 type ReportsClientProps = (
   | {
@@ -121,8 +121,6 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   const [resolvedIds, setResolvedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [rerunningId, setRerunningId] = useState<string | null>(null)
-  const [rerunBefore, setRerunBefore] = useState<Record<string, string | null>>({})
-  const [rerunTimedOut, setRerunTimedOut] = useState(false)
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [bulkAction, setBulkAction] = useState<ModerationBulkAction | null>(null)
   const [bulkMessage, setBulkMessage] = useState<string | null>(null)
@@ -133,47 +131,11 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     [data.results, resolvedIds],
   )
   const isEmpty = reports.length === 0
-  const pendingJudgement =
-    viewerTier === 'staff' &&
-    (reports as AdminModerationReport[]).some(
-      report => isOrdinaryPendingReport(report) && !report.judgement,
+  const { pendingRerunEntities, pollingTimedOut, rerunTimedOut, clearRerunTimeout, markRerun } =
+    useReportsAiPolling(
+      viewerTier === 'staff' ? (reports as AdminModerationReport[]) : [],
+      viewerTier === 'staff',
     )
-  const pendingRerunEntities = new Set<string>()
-  const pendingRerunKeys: string[] = []
-  if (viewerTier === 'staff') {
-    for (const report of reports as AdminModerationReport[]) {
-      if (
-        Object.hasOwn(rerunBefore, report.id) &&
-        (report.judgement?.id ?? null) === rerunBefore[report.id]
-      ) {
-        pendingRerunEntities.add(`${report.entity_type}:${report.entity_id}`)
-        pendingRerunKeys.push(`rerun:${report.id}:${rerunBefore[report.id] ?? 'new'}`)
-      }
-    }
-  }
-  const pendingRerun = pendingRerunEntities.size > 0
-  const pollingTimedOut = usePendingAiRefresh(
-    pendingJudgement || pendingRerun,
-    () => router.refresh(),
-    [
-      ...(viewerTier === 'staff' ? (reports as AdminModerationReport[]) : []).flatMap(report =>
-        isOrdinaryPendingReport(report) && !report.judgement ? [report.id] : [],
-      ),
-      ...pendingRerunKeys,
-    ].join('|'),
-    expiredKeys => {
-      const expired = new Set(expiredKeys)
-      if (![...expired].some(key => key.startsWith('rerun:'))) return
-      setRerunBefore(current =>
-        Object.fromEntries(
-          Object.entries(current).filter(
-            ([id, before]) => !expired.has(`rerun:${id}:${before ?? 'new'}`),
-          ),
-        ),
-      )
-      setRerunTimedOut(true)
-    },
-  )
   const hotkeyItems =
     viewerTier === 'staff'
       ? (reports as AdminModerationReport[]).map(report => ({
@@ -235,7 +197,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   function handleRerun(reportId: string) {
     const target = (reports as AdminModerationReport[]).find(report => report.id === reportId)
     if (target && pendingRerunEntities.has(`${target.entity_type}:${target.entity_id}`)) return
-    setRerunTimedOut(false)
+    clearRerunTimeout()
     setRerunningId(reportId)
     // Wrap the entire async sequence so controls stay disabled until both the POST
     // and the follow-up router.refresh() transition complete (web/AGENTS.md rule 29).
@@ -243,7 +205,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
       try {
         const before = (reports as AdminModerationReport[]).find(report => report.id === reportId)
         await rerunReportJudgement(reportId)
-        setRerunBefore(current => ({ ...current, [reportId]: before?.judgement?.id ?? null }))
+        markRerun(reportId, before?.judgement?.id ?? null)
         onSuccess(t('extracted.admin.reportsClient.judgementReRunQueued_ac6c0160'))
         // Note: because the rerun is async (202), the new judgement may not be
         // immediately visible until the background worker completes.
