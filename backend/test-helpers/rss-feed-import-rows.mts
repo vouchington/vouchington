@@ -1,9 +1,9 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /** The row ids of a user RSS feed import, in input order. */
 export async function getRssFeedImportRowIds(importId: string): Promise<string[]> {
-  const { rows } = await read(
+  const { rows } = await write(
     sql`/* getRssFeedImportRowIds */
       SELECT id
       FROM user_rss_feed_import_rows
@@ -30,8 +30,10 @@ export async function getRssFeedImportDiscoveryForTest(rowId: string): Promise<{
     discovery_crawl_id: string | null
   }>(
     sql`/* getRssFeedImportDiscoveryForTest */
-      SELECT discovered_feed_url, discovery_crawl_id
-      FROM user_rss_feed_import_rows WHERE id = ${rowId}`,
+      SELECT discovered.url AS discovered_feed_url, import_row.discovery_crawl_id
+      FROM user_rss_feed_import_rows import_row
+      LEFT JOIN urls discovered ON discovered.id = import_row.discovered_feed_url_id
+      WHERE import_row.id = ${rowId}`,
   )
   if (!rows[0]) throw new Error(`Import row ${rowId} not found`)
   return rows[0]
