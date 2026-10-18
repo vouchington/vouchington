@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { buildRateLimitKeys, resolveRateLimitIdentities } from './identity.mts'
+import { buildRateLimitKeys as buildPublishedRateLimitKeys } from '@vouchington/rate-limit'
+import { getRateLimitKeyDimensions, resolveRateLimitIdentities } from './identity.mts'
 import { getRouteConfig } from './config.mts'
 import type { RateLimitIdentities } from './types.mts'
+
+const buildRateLimitKeys = (routeKey: string, identities: RateLimitIdentities) =>
+  buildPublishedRateLimitKeys(routeKey, getRateLimitKeyDimensions(identities), {
+    hashedDimensions: new Set(['email']),
+  })
 
 describe('buildRateLimitKeys', () => {
   it('includes IP key when IP is present', () => {

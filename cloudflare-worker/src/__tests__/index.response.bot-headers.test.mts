@@ -112,7 +112,7 @@ describe('worker fetch handler — bot headers, rate limiting, noindex, and cach
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
-      RATE_LIMITER_BOT_GET_HEAD: { limit: () => ({ success: false }) },
+      RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
     }
 
     const response = await worker.fetch(
@@ -136,9 +136,9 @@ describe('worker fetch handler — bot headers, rate limiting, noindex, and cach
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       // Pre-cache limiter configured but should be skipped for unknown bots
-      RATE_LIMITER_GET_HEAD: { limit: () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
       // Bot limiter allows through
-      RATE_LIMITER_BOT_GET_HEAD: { limit: () => ({ success: true }) },
+      RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: true }) },
     }
 
     const response = await worker.fetch(

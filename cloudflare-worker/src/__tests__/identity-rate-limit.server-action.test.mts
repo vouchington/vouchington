@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { checkIdentityRateLimit } from '../identity-rate-limit.mts'
+import { checkEdgeBuckets } from '@vouchington/rate-limit/edge'
+import { getIdentityRateLimitBuckets } from '../identity-rate-limit.mts'
+
+const checkConfiguredIdentityBuckets = (input: Parameters<typeof getIdentityRateLimitBuckets>[0]) =>
+  checkEdgeBuckets(getIdentityRateLimitBuckets(input), input.ip)
 
 const baseInput = {
   method: 'GET',
@@ -9,14 +13,14 @@ const baseInput = {
   botTier: null,
 } as const
 
-describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-action routing', () => {
+describe('checkConfiguredIdentityBuckets — HEAD normalization, blocking, and server-action routing', () => {
   it('normalizes HEAD to GET key', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -33,10 +37,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('uses the API bucket for mixed-case API paths', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -51,10 +55,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   })
 
   it('blocks when rate limit is exceeded', async () => {
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
       },
       ...baseInput,
@@ -64,10 +68,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   })
 
   it('blocks when ip is null and binding is configured', async () => {
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: () => ({ success: true }),
+          limit: async () => ({ success: true }),
         },
       },
       ...baseInput,
@@ -78,7 +82,7 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   })
 
   it('returns true when ip is null and no bindings are configured', async () => {
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {},
       ...baseInput,
       ip: null,
@@ -90,10 +94,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('uses web area for non-API paths', async () => {
     const keys: string[] = []
 
-    await checkIdentityRateLimit({
+    await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -112,10 +116,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('does not use premium binding for pro membership claims at the edge', async () => {
     const keys: string[] = []
 
-    await checkIdentityRateLimit({
+    await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -130,13 +134,13 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('uses mutating binding (not server-action) for POST without next-action', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -154,13 +158,13 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('ignores server-action classification on GET (defensive — server actions are always POST)', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -178,13 +182,13 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('ignores server-action classification on non-POST mutating methods (server actions are always POST)', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -203,10 +207,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('server-action POST falls back to mutating bucket when RATE_LIMITER_SERVER_ACTION is absent', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -225,7 +229,7 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('keeps API spoof and web Server Action mutation namespaces independent', async () => {
     const keys: string[] = []
     const limiter = {
-      limit: ({ key }: { key: string }) => {
+      limit: async ({ key }: { key: string }) => {
         keys.push(key)
         return { success: true }
       },
@@ -235,14 +239,14 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
       RATE_LIMITER_SERVER_ACTION: limiter,
     }
 
-    await checkIdentityRateLimit({
+    await checkConfiguredIdentityBuckets({
       env,
       ...baseInput,
       method: 'POST',
       pathname: '/api/v1/staging-rate-limit-canary',
       isServerAction: false,
     })
-    await checkIdentityRateLimit({
+    await checkConfiguredIdentityBuckets({
       env,
       ...baseInput,
       method: 'POST',
@@ -260,10 +264,10 @@ describe('checkIdentityRateLimit — HEAD normalization, blocking, and server-ac
   it('applies normal pre-cache limit for known bots', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: false }
           },

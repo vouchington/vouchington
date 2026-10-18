@@ -1,5 +1,6 @@
 import { API_ROUTE_RE } from './routing.mts'
 import { isActivityPubInboxDeliveryRequest } from './activitypub-inbox-rate-limit.mts'
+import { buildEdgeRateLimitKey, type EdgeBucket } from '@vouchington/rate-limit/edge'
 import type { BotTier } from './bot-tier.mts'
 import type { Env } from './types.mts'
 
@@ -39,12 +40,12 @@ const buildIdentityRateLimitKey = (
   ip: string,
 ): string => {
   const area = API_ROUTE_RE.test(pathname) ? 'api' : 'web'
-  return `${tier}:${area}:${methodClass}:${ip}`
+  return buildEdgeRateLimitKey(tier, area, methodClass, ip)
 }
 
-export const checkIdentityRateLimit = async (input: IdentityRateLimitInput): Promise<boolean> => {
+export function getIdentityRateLimitBuckets(input: IdentityRateLimitInput): EdgeBucket[] {
   if (input.isFullyCachedRoute || isActivityPubInboxDeliveryRequest(input.method, input.pathname)) {
-    return true
+    return []
   }
 
   const methodClass = getMethodClass(input.method)
@@ -55,7 +56,7 @@ export const checkIdentityRateLimit = async (input: IdentityRateLimitInput): Pro
   // Mutating requests still use the normal anonymous/server-action pre-cache
   // buckets because there is no cache hit path to protect from quota usage.
   if (input.botTier === 'unknown' && isGetOrHead) {
-    return true
+    return []
   }
 
   // The edge cannot check Valkey-backed revocation, so it must not grant higher
@@ -69,44 +70,23 @@ export const checkIdentityRateLimit = async (input: IdentityRateLimitInput): Pro
     : (input.env.RATE_LIMITER_ANON_MUTATING ?? input.env.RATE_LIMITER_MUTATING)
 
   const serverActionBinding = isServerActionRequest ? input.env.RATE_LIMITER_SERVER_ACTION : null
-  if (!genericBinding && !serverActionBinding) {
-    return true
-  }
-
-  // Defence-in-depth guard: index.mts already returns 400 before calling checkIdentityRateLimit
-  // when a binding is configured and ip is null.
-  if (!input.ip) {
-    return false
-  }
-
-  if (genericBinding) {
-    const genericResult = await genericBinding.limit({
-      key: buildIdentityRateLimitKey('anon', input.pathname, methodClass, input.ip),
-    })
-    if (!genericResult.success) return false
-  }
-
-  if (!serverActionBinding) return true
-
-  const serverActionResult = await serverActionBinding.limit({
-    key: buildIdentityRateLimitKey('server-action', input.pathname, methodClass, input.ip),
-  })
-  return serverActionResult.success
+  return [
+    {
+      binding: genericBinding,
+      key: ip => buildIdentityRateLimitKey('anon', input.pathname, methodClass, ip),
+    },
+    {
+      binding: serverActionBinding,
+      key: ip => buildIdentityRateLimitKey('server-action', input.pathname, methodClass, ip),
+    },
+  ]
 }
 
-export const checkServerActionRateLimit = async (
-  input: ServerActionRateLimitInput,
-): Promise<boolean> => {
-  if (input.method !== 'POST' || !input.env.RATE_LIMITER_SERVER_ACTION) {
-    return true
-  }
-
-  if (!input.ip) {
-    return false
-  }
-
-  const result = await input.env.RATE_LIMITER_SERVER_ACTION.limit({
-    key: buildIdentityRateLimitKey('server-action', input.pathname, 'MUTATING', input.ip),
-  })
-  return result.success
+export function getServerActionRateLimitBuckets(input: ServerActionRateLimitInput): EdgeBucket[] {
+  return [
+    {
+      binding: input.method === 'POST' ? input.env.RATE_LIMITER_SERVER_ACTION : null,
+      key: ip => buildIdentityRateLimitKey('server-action', input.pathname, 'MUTATING', ip),
+    },
+  ]
 }

@@ -165,7 +165,7 @@ describe('geo-blocking', () => {
       ...baseEnv,
       GEO_BLOCKED_COUNTRIES: 'CN',
       RATE_LIMITER_GET_HEAD: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           rateLimiterCalls.push(key)
           return { success: true }
         },
@@ -191,7 +191,7 @@ describe('geo-blocking', () => {
       BASIC_AUTH_CREDENTIALS: 'staging:password',
       GEO_BLOCKED_COUNTRIES: 'CN',
       RATE_LIMITER_GET_HEAD: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           rateLimiterCalls.push(key)
           return { success: false }
         },

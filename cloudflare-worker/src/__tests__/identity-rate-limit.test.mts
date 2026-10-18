@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { checkIdentityRateLimit } from '../identity-rate-limit.mts'
+import { checkEdgeBuckets } from '@vouchington/rate-limit/edge'
+import { getIdentityRateLimitBuckets } from '../identity-rate-limit.mts'
+
+const checkConfiguredIdentityBuckets = (input: Parameters<typeof getIdentityRateLimitBuckets>[0]) =>
+  checkEdgeBuckets(getIdentityRateLimitBuckets(input), input.ip)
 
 const baseInput = {
   method: 'GET',
@@ -9,11 +13,11 @@ const baseInput = {
   botTier: null,
 } as const
 
-describe('checkIdentityRateLimit', () => {
+describe('checkConfiguredIdentityBuckets', () => {
   it('skips limiting for fully cached routes', async () => {
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: { limit: () => ({ success: false }) },
+        RATE_LIMITER_ANON_GET_HEAD: { limit: async () => ({ success: false }) },
       },
       ...baseInput,
       isFullyCachedRoute: true,
@@ -23,9 +27,9 @@ describe('checkIdentityRateLimit', () => {
   })
 
   it('skips pre-cache limiting for unknown bot GET requests', async () => {
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
-        RATE_LIMITER_ANON_GET_HEAD: { limit: () => ({ success: false }) },
+        RATE_LIMITER_ANON_GET_HEAD: { limit: async () => ({ success: false }) },
       },
       ...baseInput,
       botTier: 'unknown',
@@ -37,10 +41,10 @@ describe('checkIdentityRateLimit', () => {
   it('applies anonymous pre-cache limiting to unknown bot POST requests', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: false }
           },
@@ -56,7 +60,7 @@ describe('checkIdentityRateLimit', () => {
   })
 
   it('returns true when no bindings are configured', async () => {
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {},
       ...baseInput,
     })
@@ -67,10 +71,10 @@ describe('checkIdentityRateLimit', () => {
   it('uses anon binding for unauthenticated request', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -86,10 +90,10 @@ describe('checkIdentityRateLimit', () => {
   it('uses anon binding even when authenticated claims would otherwise be auth tier', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -105,10 +109,10 @@ describe('checkIdentityRateLimit', () => {
   it('uses anon binding even when authenticated claims would otherwise be premium tier', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -124,10 +128,10 @@ describe('checkIdentityRateLimit', () => {
   it('does not use premium binding for admin role claims at the edge', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -143,10 +147,10 @@ describe('checkIdentityRateLimit', () => {
   it('falls back to shared GET/HEAD binding when tier-specific binding is absent', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -163,10 +167,10 @@ describe('checkIdentityRateLimit', () => {
   it('falls back to shared mutating binding for POST when tier-specific binding is absent', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -183,10 +187,10 @@ describe('checkIdentityRateLimit', () => {
   it('uses mutating binding for POST requests', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       env: {
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -204,7 +208,7 @@ describe('checkIdentityRateLimit', () => {
     const keys: string[] = []
     const env = {
       RATE_LIMITER_ANON_MUTATING: {
-        limit: ({ key }: { key: string }) => {
+        limit: async ({ key }: { key: string }) => {
           keys.push(key)
           return { success: true }
         },
@@ -212,7 +216,7 @@ describe('checkIdentityRateLimit', () => {
     }
 
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
-      await checkIdentityRateLimit({ ...baseInput, env, method })
+      await checkConfiguredIdentityBuckets({ ...baseInput, env, method })
     }
 
     expect(keys).toEqual(Array(4).fill('anon:api:MUTATING:1.2.3.4'))

@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { checkServerActionRateLimit } from '../identity-rate-limit.mts'
+import { checkEdgeBuckets } from '@vouchington/rate-limit/edge'
+import { getServerActionRateLimitBuckets } from '../identity-rate-limit.mts'
 import { getServerActionRateLimitRejection } from '../identity-rate-limit-rejection.mts'
+
+const checkConfiguredServerActionBuckets = (
+  input: Parameters<typeof getServerActionRateLimitBuckets>[0],
+) => checkEdgeBuckets(getServerActionRateLimitBuckets(input), input.ip)
 
 describe('server-action-only identity rate-limit rejection', () => {
   it('allows non-POST requests before checking the server-action binding', async () => {
-    const allowed = await checkServerActionRateLimit({
+    const allowed = await checkConfiguredServerActionBuckets({
       env: {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
       },
       method: 'GET',
@@ -19,10 +24,10 @@ describe('server-action-only identity rate-limit rejection', () => {
   })
 
   it('blocks when the server-action binding is configured but the IP is absent', async () => {
-    const allowed = await checkServerActionRateLimit({
+    const allowed = await checkConfiguredServerActionBuckets({
       env: {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: true }),
+          limit: async () => ({ success: true }),
         },
       },
       method: 'POST',
@@ -37,7 +42,7 @@ describe('server-action-only identity rate-limit rejection', () => {
     const response = await getServerActionRateLimitRejection(
       {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: true }),
+          limit: async () => ({ success: true }),
         },
       },
       'POST',
@@ -52,7 +57,7 @@ describe('server-action-only identity rate-limit rejection', () => {
     const response = await getServerActionRateLimitRejection(
       {
         RATE_LIMITER_SERVER_ACTION: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
       },
       'POST',

@@ -1,4 +1,5 @@
 import type { Application, Context } from '@jongleberry/api-server'
+import { installRouteRateLimit, type RouteRateLimitExtras } from '@vouchington/rate-limit'
 import {
   checkRouteRateLimit,
   isRouteRateLimitEnabled,
@@ -6,99 +7,63 @@ import {
 } from '@services/route-rate-limits'
 import { meterRestUsage } from '../rest-usage-meter.mts'
 
-interface RouteRateLimitExtras {
-  email?: string
-  deviceToken?: string
-  sessionToken?: string
-  identityMode?: 'ip-only'
-}
+export default function applyRateLimitContext(app: Application): void {
+  installRouteRateLimit(app, {
+    isEnabled: isRouteRateLimitEnabled,
+    message: 'Rate limit exceeded. Please try again later.',
+    async resolveIdentities(ctx, _routeKey, extras) {
+      // Pre-compute session data once so identity resolution does not trigger a
+      // second JWT/Valkey check. Route rate limiting uses signed session claims
+      // and does not load the private user record on the hot path.
+      if (extras?.identityMode === 'ip-only') {
+        return { identities: { ip: ctx.ip ?? 'unknown' }, subject: null }
+      }
 
-type RouteRateLimitResult = Awaited<ReturnType<typeof checkRouteRateLimit>>
+      const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(ctx, extras)
+      const deviceClass =
+        deviceData && 'dc' in deviceData && deviceData.dc === 'attested' ? 'attested' : undefined
 
-// The limiter step's outcome, held until settleRouteRateLimit applies it. `null` means the
-// limiter is disabled, so nothing is applied or metered.
-export type RouteRateLimitCheck = { result: RouteRateLimitResult; userId: string | null } | null
+      const identities = await resolveRateLimitIdentities({
+        ip: ctx.ip ?? 'unknown',
+        deviceClass,
+        getSessionTokenData: () =>
+          Promise.resolve({
+            did: sessionData.did ?? undefined,
+            sid: sessionData.sid ?? undefined,
+            uid: sessionData.uid ?? undefined,
+            tt: 'tt' in sessionData ? sessionData.tt : undefined,
+          }),
+      })
 
-declare module '@jongleberry/api-server' {
-  interface Context {
-    applyRouteRateLimit(routeKey: string, extras?: RouteRateLimitExtras): Promise<void>
-    // Limiter step: needs session-token data only (no PostgreSQL), so it can overlap the user
-    // fetch. It charges the limiter but sets no headers and throws no 429.
-    prepareRouteRateLimit(
-      routeKey: string,
-      extras?: RouteRateLimitExtras,
-    ): Promise<RouteRateLimitCheck>
-    // Applies the limiter headers/429, then meters usage (which reuses `ctx.currentUser`).
-    settleRouteRateLimit(routeKey: string, check: RouteRateLimitCheck): Promise<void>
-  }
-}
+      if (typeof extras?.email === 'string') identities.email = extras.email
 
-const extensions = {
-  async applyRouteRateLimit(
-    this: Context,
-    routeKey: string,
-    extras?: RouteRateLimitExtras,
-  ): Promise<void> {
-    await this.settleRouteRateLimit(routeKey, await this.prepareRouteRateLimit(routeKey, extras))
-  },
-
-  async settleRouteRateLimit(
-    this: Context,
-    routeKey: string,
-    check: RouteRateLimitCheck,
-  ): Promise<void> {
-    if (!check) return
-    applyRateLimitResult(this, check.result)
-    await meterRestUsage(this, routeKey, check.userId)
-  },
-
-  async prepareRouteRateLimit(
-    this: Context,
-    routeKey: string,
-    extras?: RouteRateLimitExtras,
-  ): Promise<RouteRateLimitCheck> {
-    if (!isRouteRateLimitEnabled()) return null
-
-    // Pre-compute session data once so identity resolution does not trigger a
-    // second JWT/Valkey check. Route rate limiting uses signed session claims
-    // and does not load the private user record on the hot path.
-    if (extras?.identityMode === 'ip-only') {
-      const result = await checkRouteRateLimit(routeKey, { ip: this.ip ?? 'unknown' }, null)
-      return { result, userId: null }
-    }
-
-    const { sessionData, deviceData } = await resolveRouteRateLimitTokenData(this, extras)
-    const deviceClass =
-      deviceData && 'dc' in deviceData && deviceData.dc === 'attested' ? 'attested' : undefined
-
-    const identities = await resolveRateLimitIdentities({
-      ip: this.ip ?? 'unknown',
-      deviceClass,
-      getSessionTokenData: () =>
-        Promise.resolve({
-          did: sessionData.did ?? undefined,
-          sid: sessionData.sid ?? undefined,
-          uid: sessionData.uid ?? undefined,
-          tt: 'tt' in sessionData ? sessionData.tt : undefined,
-        }),
-    })
-
-    if (extras?.email) identities.email = extras.email
-
-    const result = await checkRouteRateLimit(routeKey, identities, null)
-    return { result, userId: sessionData.uid ?? null }
-  },
-}
-
-function applyRateLimitResult(ctx: Context, result: RouteRateLimitResult): void {
-  if (result.limit > 0) {
-    ctx.set('X-RateLimit-Limit', String(result.limit))
-    ctx.set('X-RateLimit-Remaining', String(result.remaining))
-  }
-  if (result.limited) {
-    ctx.set('Retry-After', String(result.retryAfterSeconds))
-    ctx.throw(429, 'Rate limit exceeded. Please try again later.')
-  }
+      return {
+        identities: {
+          ...identities,
+          userTrustTier: identities.userTrustTier?.toString(),
+        },
+        subject: sessionData.uid ?? null,
+      }
+    },
+    check(routeKey, identities) {
+      const userTrustTier = identities.userTrustTier
+      return checkRouteRateLimit(
+        routeKey,
+        {
+          ip: identities.ip,
+          deviceId: identities.deviceId,
+          sessionId: identities.sessionId,
+          userId: identities.userId,
+          userTrustTier: userTrustTier === undefined ? undefined : Number(userTrustTier),
+          apiKeyId: identities.apiKeyId,
+          email: identities.email,
+          deviceClass: identities.deviceClass === 'attested' ? 'attested' : undefined,
+        },
+        null,
+      )
+    },
+    onSettled: meterRestUsage,
+  })
 }
 
 async function resolveRouteRateLimitTokenData(ctx: Context, extras?: RouteRateLimitExtras) {
@@ -110,8 +75,8 @@ async function resolveRouteRateLimitTokenData(ctx: Context, extras?: RouteRateLi
     return { sessionData, deviceData }
   }
 
-  const deviceToken = extras.deviceToken
-  const sessionToken = extras.sessionToken
+  const deviceToken = typeof extras?.deviceToken === 'string' ? extras.deviceToken : undefined
+  const sessionToken = typeof extras?.sessionToken === 'string' ? extras.sessionToken : undefined
   const deviceData = deviceToken ? await ctx.getDeviceTokenData(deviceToken) : undefined
 
   if (deviceToken && sessionToken) {
@@ -126,8 +91,4 @@ async function resolveRouteRateLimitTokenData(ctx: Context, extras?: RouteRateLi
     },
     deviceData,
   }
-}
-
-export default function applyRateLimitContext(app: Application): void {
-  app.extend(extensions)
 }

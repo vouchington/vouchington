@@ -7,6 +7,8 @@
 Per-route rate limiting with composite identity tracking across IP, device, session, user, and API key dimensions. Applied at the route handler level via `ctx.applyRouteRateLimit()`.
 Standard required-auth helpers apply the per-route limit before returning `401 Unauthorized` for
 anonymous requests, so logged-out traffic cannot bypass route quotas.
+`@vouchington/rate-limit` owns charging, key construction, and context settlement; Voucha injects
+route categories, identity selection, thresholds, and fail-closed decisions.
 
 ### Identity Dimensions
 

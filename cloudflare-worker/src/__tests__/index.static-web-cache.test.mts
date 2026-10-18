@@ -75,7 +75,7 @@ describe('worker fetch handler — static web cache', () => {
       WEB_ORIGIN: 'https://web.example.com',
       CACHED_STATIC_PATHS: '/about',
       RATE_LIMITER_GET_HEAD: {
-        limit: () => ({ success: true }),
+        limit: async () => ({ success: true }),
       },
     }
 

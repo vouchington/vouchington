@@ -35,7 +35,7 @@ describe('rate limiting', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_GET_HEAD: {
-        limit: () => ({ success: false }),
+        limit: async () => ({ success: false }),
       },
     }
 
@@ -69,7 +69,7 @@ describe('rate limiting', () => {
       WEB_ORIGIN: 'https://web.example.com',
       SENTRY_WEB_DSN,
       RATE_LIMITER_MUTATING: {
-        limit: () => ({ success: false }),
+        limit: async () => ({ success: false }),
       },
     }
 
@@ -97,7 +97,7 @@ describe('rate limiting', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_MUTATING: {
-        limit: () => ({ success: true }),
+        limit: async () => ({ success: true }),
       },
     }
 
@@ -206,7 +206,7 @@ describe('rate limiting', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_GET_HEAD: {
-        limit: () => ({ success: true }),
+        limit: async () => ({ success: true }),
       },
     }
 
@@ -239,7 +239,7 @@ describe('rate limiting', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
       RATE_LIMITER_GET_HEAD: {
-        limit: () => ({ success: true }),
+        limit: async () => ({ success: true }),
       },
     }
 

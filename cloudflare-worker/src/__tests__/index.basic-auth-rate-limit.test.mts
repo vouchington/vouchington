@@ -35,7 +35,7 @@ describe('staging basic auth rate limiting', () => {
       ...baseEnv,
       BASIC_AUTH_CREDENTIALS: CREDS,
       RATE_LIMITER_GET_HEAD: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           rateLimiterCalls.push(key)
           return { success: false }
         },
@@ -60,7 +60,7 @@ describe('staging basic auth rate limiting', () => {
       ...baseEnv,
       BASIC_AUTH_CREDENTIALS: CREDS,
       RATE_LIMITER_GET_HEAD: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           rateLimiterCalls.push(key)
           return { success: false }
         },
@@ -88,7 +88,7 @@ describe('staging basic auth rate limiting', () => {
       ...baseEnv,
       BASIC_AUTH_CREDENTIALS: CREDS,
       RATE_LIMITER_GET_HEAD: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           rateLimiterCalls.push(key)
           return { success: true }
         },
@@ -114,7 +114,7 @@ describe('staging basic auth rate limiting', () => {
       ...baseEnv,
       BASIC_AUTH_CREDENTIALS: CREDS,
       RATE_LIMITER_GET_HEAD: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           rateLimiterCalls.push(key)
           return { success: false }
         },
@@ -140,7 +140,7 @@ describe('staging basic auth rate limiting', () => {
   it('preserves the server-action limiter after valid basic auth consumes the generic bucket', async () => {
     const rateLimiterCalls: string[] = []
     const limiter = {
-      limit: ({ key }: { key: string }) => {
+      limit: async ({ key }: { key: string }) => {
         rateLimiterCalls.push(key)
         return { success: true }
       },

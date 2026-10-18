@@ -1293,6 +1293,9 @@ importers:
       '@vouchington/localization':
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.0)
+      '@vouchington/rate-limit':
+        specifier: ^0.2.0
+        version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -7302,6 +7305,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      '@vouchington/rate-limit':
+        specifier: ^0.2.0
+        version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.8.2)
       oxfmt:
         specifier: ^0.73.0
         version: 0.73.0
@@ -9640,6 +9646,9 @@ importers:
       '@ts-shared/session-jwt':
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt
+      '@vouchington/rate-limit':
+        specifier: ^0.2.0
+        version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -11708,6 +11717,9 @@ importers:
       '@vouchington/postgres':
         specifier: ^0.0.16
         version: 0.0.16
+      '@vouchington/rate-limit':
+        specifier: ^0.2.0
+        version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -13796,6 +13808,9 @@ importers:
       '@vouchington/edge':
         specifier: ^0.2.0
         version: 0.2.0(@cloudflare/workers-types@5.20261014.1)
+      '@vouchington/rate-limit':
+        specifier: ^0.2.0
+        version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.8.2)
       '@vouchington/utils':
         specifier: ^0.7.4
         version: 0.7.4
@@ -19296,6 +19311,13 @@ packages:
     peerDependencies:
       glide-mq: ^0.18.0
 
+  '@vouchington/rate-limit@0.2.0':
+    resolution: {integrity: sha512-mZO4KkzGDtupTALZe7qAUdfaPNn6Z33KWv5T2nzcbQ+4pbAUnTCjvVjmUIoTVxADMJanIji1CbE3b9K9ynECKQ==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      '@jongleberry/api-server': ^3.0.1
+      valkyries: ^0.8.2
+
   '@vouchington/request-contract-validation@0.0.3':
     resolution: {integrity: sha512-5Fgx4idFm6PMIFcPKfIGA9ectghUc7Ul952v2yjAeeJNf9R2WF/DBTjlb+Z25MXHVc+Yyp+Arrqe1y+/szOqtA==}
     engines: {node: '>=24.0.0'}
@@ -22987,6 +23009,10 @@ packages:
 
   valkyries@0.10.0:
     resolution: {integrity: sha512-pEqZ/wTEPTA++kjZyPsSHscbN+t1eCPMYHgKYi5rqENxJAWzt9iO85LWPWE8X/Jg+CKGKIWgDC5esKDNf7GUtQ==}
+    engines: {node: '>=24.0.0'}
+
+  valkyries@0.8.2:
+    resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -28209,6 +28235,16 @@ snapshots:
     dependencies:
       glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
+  '@vouchington/rate-limit@0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)':
+    dependencies:
+      '@jongleberry/api-server': 3.0.1
+      valkyries: 0.10.0
+
+  '@vouchington/rate-limit@0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.8.2)':
+    dependencies:
+      '@jongleberry/api-server': 3.0.1
+      valkyries: 0.8.2
+
   '@vouchington/request-contract-validation@0.0.3':
     dependencies:
       ajv: 8.20.0
@@ -32266,6 +32302,10 @@ snapshots:
   validator@13.15.35: {}
 
   valkyries@0.10.0:
+    dependencies:
+      '@valkey/valkey-glide': 2.5.3
+
+  valkyries@0.8.2:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 
