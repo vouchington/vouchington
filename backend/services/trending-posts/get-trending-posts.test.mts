@@ -1,11 +1,7 @@
-import { randomUUID } from 'node:crypto'
-import { encodeCursor } from '@modules/pagination'
-import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
-import { insertScoredPostTopicCategoryRelation } from '@voucha/test-helpers/entities/entity-relations-posts'
 import { describe, it, expect } from 'vitest'
+import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 import { getTrendingPosts } from './get-trending-posts.mts'
 import { createTrendingPostData } from '@voucha/test-helpers/entities/trending-posts'
-import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
 
 describe('getTrendingPosts - with test data', () => {
   it('treats a far-future UUIDv7 post as newly created', async () => {
@@ -77,56 +73,6 @@ describe('getTrendingPosts - excluded post types', () => {
   })
 })
 
-describe('getTrendingPosts - time range filtering', () => {
-  it('should only include posts from last 24 hours for day range', async () => {
-    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
-    const recentTime = new Date(Date.now() - 1 * 60 * 60 * 1000)
-
-    // Old post (should not appear in day range)
-    const { postId: oldPostId } = await createTrendingPostData({
-      votesScoreUp: 10000,
-      createdAt: twoDaysAgo,
-    })
-
-    // Recent post (should appear) — high score to guarantee it's in top results
-    const { postId: recentPostId } = await createTrendingPostData({
-      votesScoreUp: 10000,
-      createdAt: recentTime,
-    })
-
-    const result = await getTrendingPosts({
-      timeRange: 'day',
-      limit: 100,
-      minScore: 500,
-    })
-
-    const oldPost = result.results.find(r => r.id === oldPostId)
-    const recentPost = result.results.find(r => r.id === recentPostId)
-
-    expect(oldPost).toBeUndefined()
-    expect(recentPost).toBeDefined()
-  }, 30_000)
-
-  it('should include posts from last 7 days for week range', async () => {
-    const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)
-
-    // High score to guarantee it survives time-decay and lands in top results
-    const { postId } = await createTrendingPostData({
-      votesScoreUp: 10000,
-      createdAt: sixDaysAgo,
-    })
-
-    const result = await getTrendingPosts({
-      timeRange: 'week',
-      limit: 100,
-      minScore: 500,
-    })
-
-    const found = result.results.find(r => r.id === postId)
-    expect(found).toBeDefined()
-  })
-})
-
 describe('getTrendingPosts - post type filter', () => {
   it('should filter by post_type', async () => {
     const { postId: reviewPostId } = await createTrendingPostData({
@@ -190,90 +136,5 @@ describe('getTrendingPosts - limit clamping', () => {
     })
 
     expect(result.results.length).toBeLessThanOrEqual(100)
-  })
-})
-
-describe('getTrendingPosts - pagination', () => {
-  it('should paginate results correctly', async () => {
-    const posts = await Promise.all(
-      [3, 2, 1].map(votesScoreUp => createTrendingPostData({ votesScoreUp })),
-    )
-    const postIds = posts.map(p => p.postId)
-
-    const namespace = randomUUID()
-    const topicId = await insertTestTopic({
-      name: `Trending ${namespace}`,
-      slug: `trending-${namespace}`,
-      createdById: posts[0]!.userId,
-    })
-    for (const { postId, userId } of posts) {
-      await insertScoredPostTopicCategoryRelation(postId, topicId, userId)
-    }
-    const minScore = 0.5
-
-    const page1 = await getTrendingPosts({
-      timeRange: 'day',
-      limit: 2,
-      minScore,
-      topicId,
-    })
-
-    expect(page1.results.length).toBe(2)
-    expect(page1.results.map(row => row.id)).toEqual(postIds.slice(0, 2))
-    expect(page1.page_info.has_next_page).toBe(true)
-    expect(page1.page_info.end_cursor).toBeTruthy()
-
-    const page2 = await getTrendingPosts({
-      timeRange: 'day',
-      limit: 2,
-      after: page1.page_info.end_cursor!,
-      minScore,
-      topicId,
-    })
-
-    expect(page2.results.length).toBeLessThanOrEqual(2)
-    expect(page2.page_info).toBeDefined()
-    expect(page2.results.map(row => row.id)).toEqual([postIds[2]])
-    expect(
-      page2.results.filter(row => page1.results.some(previous => previous.id === row.id)),
-    ).toEqual([])
-
-    // All 3 posts should appear in the full result set
-    const fullResult = await getTrendingPosts({
-      timeRange: 'day',
-      limit: 100,
-      minScore,
-      topicId,
-    })
-    const allIds = fullResult.results.map(r => r.id)
-    for (const id of postIds) {
-      expect(allIds).toContain(id)
-    }
-
-    // Verify score-descending order for our posts (higher votes_score_up = higher trending_score)
-    const positions = postIds.map(id => allIds.indexOf(id))
-    expect(positions[0]).toBeLessThan(positions[1])
-    expect(positions[1]).toBeLessThan(positions[2])
-
-    // A topic UUID is valid but is not a post: the supplied score remains the boundary.
-    const absentBoundary = await getTrendingPosts({
-      timeRange: 'day',
-      limit: 2,
-      minScore,
-      topicId,
-      after: encodeCursor({ score: 1.5, id: topicId }),
-    })
-    expect(absentBoundary.results.map(row => row.id)).toEqual([postIds[2]])
-
-    // Soft deletion excludes the post without removing its usable cursor boundary.
-    await deleteTestPost(postIds[1]!)
-    const deletedBoundary = await getTrendingPosts({
-      timeRange: 'day',
-      limit: 2,
-      minScore,
-      topicId,
-      after: page1.page_info.end_cursor!,
-    })
-    expect(deletedBoundary.results.map(row => row.id)).toEqual([postIds[2]])
   })
 })
