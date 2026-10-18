@@ -174,8 +174,9 @@ jobs:
               done
             } 2>&1 | tr '\n' ' ' | prefix_lines "$pressure_prefix"
           }
-          # Runs once, shortly before the step timeout kills this shell. The test run is then
-          # hung, so the log names the files it never finished and the largest processes.
+          # Runs once, shortly before the step timeout kills this shell. The run is then
+          # stuck or only slow; the log names unfinished files with their running time, the
+          # slowest finished files, and the largest processes.
           dump_deadline_state() {
             printf '[backend-unit-deadline] step deadline in 60s\n'
             node ci/backend-unit-unfinished-files.mts "$VITEST_FILE_PROGRESS_FILE" || true

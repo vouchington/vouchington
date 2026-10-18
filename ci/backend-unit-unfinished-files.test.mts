@@ -6,8 +6,9 @@ import { describe, expect, it } from 'vitest'
 import { formatBackendUnitFileProgress } from '../test-helpers/vitest-file-progress-reporter.mts'
 import { formatDeadlineReport, unfinishedFiles } from './backend-unit-unfinished-files.mts'
 
-const start = (id: string) => formatBackendUnitFileProgress('start', id)
-const finish = (id: string) => formatBackendUnitFileProgress('finish', id, 'passed')
+const start = (id: string, at?: number) => formatBackendUnitFileProgress('start', id, undefined, at)
+const finish = (id: string, at?: number) =>
+  formatBackendUnitFileProgress('finish', id, 'passed', at)
 
 describe('backend-unit deadline report', () => {
   it('lists files that started and never finished, including odd characters', () => {
@@ -24,6 +25,23 @@ describe('backend-unit deadline report', () => {
     expect(formatDeadlineReport(progress)).toBe(
       '[backend-unit-deadline] 1 test file(s) started and not finished\n' +
         '[backend-unit-deadline] unfinished b "quoted".test.mts\n',
+    )
+  })
+
+  it('reports how long unfinished files ran and which finished files were slowest', () => {
+    const progress = [
+      start('slow.test.mts', 1_000),
+      start('fast.test.mts', 2_000),
+      finish('fast.test.mts', 3_000),
+      finish('slow.test.mts', 241_000),
+      start('inflight.test.mts', 250_000),
+    ].join('')
+
+    expect(formatDeadlineReport(progress, 'deadline', 262_000)).toBe(
+      '[deadline] 1 test file(s) started and not finished\n' +
+        '[deadline] unfinished inflight.test.mts (running 12s)\n' +
+        '[deadline] slowest finished 240s slow.test.mts\n' +
+        '[deadline] slowest finished 1s fast.test.mts\n',
     )
   })
 
