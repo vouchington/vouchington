@@ -120,15 +120,15 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
     const document: Document = {
       jobs: {
         build: {
-          container: 'node:26',
-          services: { db: { image: 'pgvector/pgvector:pg18' }, ok: { image: 'ghcr.io/o/i:1' } },
+          container: 'node',
+          services: { db: { image: 'pgvector/pgvector' }, ok: { image: 'ghcr.io/o/i' } },
           steps: [
-            { run: 'docker run -d --name x -e A=b -p 127.0.0.1::80 otel/collector:1' },
-            { run: 'docker pull \\\n  docker.io/library/redis:8' },
-            { uses: 'docker://alpine:3', with: {} },
+            { run: 'docker run -d --name x -e A=b -p 127.0.0.1::80 otel/collector' },
+            { run: 'docker pull \\\n  docker.io/library/redis' },
+            { uses: 'docker://alpine', with: {} },
             {
-              uses: 'docker/setup-buildx-action@v3',
-              with: { 'driver-opts': 'image=moby/buildkit:1' },
+              uses: 'docker/setup-buildx-action',
+              with: { 'driver-opts': 'image=moby/buildkit' },
             },
           ],
         },
@@ -136,31 +136,31 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
     }
 
     expect(workflowImageViolations('wf', document).map(entry => entry.split(': ')[1])).toEqual([
-      'node:26 must come from mirror.gcr.io/',
-      'pgvector/pgvector:pg18 must come from mirror.gcr.io/',
-      'otel/collector:1 must come from mirror.gcr.io/',
-      'docker.io/library/redis:8 must come from mirror.gcr.io/',
-      'alpine:3 must come from mirror.gcr.io/',
-      'moby/buildkit:1 must come from mirror.gcr.io/',
+      'node must come from mirror.gcr.io/',
+      'pgvector/pgvector must come from mirror.gcr.io/',
+      'otel/collector must come from mirror.gcr.io/',
+      'docker.io/library/redis must come from mirror.gcr.io/',
+      'alpine must come from mirror.gcr.io/',
+      'moby/buildkit must come from mirror.gcr.io/',
     ])
     expect(
       dockerfileViolations(
         'Dockerfile',
-        '# syntax=docker/dockerfile:1\nFROM node:26 AS a\nFROM a AS b\n',
+        '# syntax=docker/dockerfile\nFROM node AS a\nFROM a AS b\n',
       ),
-    ).toEqual(['Dockerfile: # syntax=docker/dockerfile:1', 'Dockerfile: FROM node:26'])
+    ).toEqual(['Dockerfile: # syntax=docker/dockerfile', 'Dockerfile: FROM node'])
   })
 
   it('allows the mirror, other registries, variables, scratch, and earlier stages', () => {
     const document: Document = {
       jobs: {
         build: {
-          services: { db: { image: 'mirror.gcr.io/pgvector/pgvector:pg18@sha256:abc' } },
+          services: { db: { image: 'mirror.gcr.io/pgvector/pgvector' } },
           steps: [
             { run: 'CID=$(docker run -d -p "$PORT:3000" -e A "$IMAGE")' },
-            { run: 'docker run --rm public.ecr.aws/x/y:1 && docker pull ghcr.io/o/i:2' },
+            { run: 'docker run --rm public.ecr.aws/x/y && docker pull ghcr.io/o/i' },
             { run: 'docker pull "$reference"' },
-            { with: { 'driver-opts': 'image=mirror.gcr.io/moby/buildkit:1' } },
+            { with: { 'driver-opts': 'image=mirror.gcr.io/moby/buildkit' } },
           ],
         },
       },
@@ -171,8 +171,8 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
       dockerfileViolations(
         'Dockerfile',
         [
-          '# syntax=mirror.gcr.io/docker/dockerfile:1',
-          'FROM mirror.gcr.io/library/node:26 AS base',
+          '# syntax=mirror.gcr.io/docker/dockerfile',
+          'FROM mirror.gcr.io/library/node AS base',
           'FROM --platform=linux/arm64 base AS next',
           'FROM gcr.io/distroless/nodejs26 AS runtime',
           'FROM scratch',
