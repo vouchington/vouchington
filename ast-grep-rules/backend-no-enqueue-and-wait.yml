@@ -43,6 +43,17 @@ rule:
       has:
         field: name
         regex: ^enqueue\w*AndWait$
+    - kind: variable_declarator
+      all:
+        - has:
+            field: name
+            kind: identifier
+            regex: ^enqueue\w*AndWait$
+        - has:
+            field: value
+            any:
+              - kind: arrow_function
+              - kind: function_expression
     - kind: call_expression
       has:
         field: function
@@ -54,6 +65,16 @@ rule:
               field: property
               regex: ^enqueue\w*AndWait$
 examples:
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      export const enqueueReviewAndWait = async (id: string) => {
+        await queue.add('review', { id })
+      }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const enqueueReviewAndWait = function (id: string) {}
+    isValid: false
   - file: backend/services/example/rerun.mts
     code: |
       await dependencies['enqueueReviewAndWait'](id)
