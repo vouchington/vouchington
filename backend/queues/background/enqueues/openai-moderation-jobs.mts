@@ -34,20 +34,22 @@ export const OPENAI_MODERATION_BACKFILL_IMAGES_JOB =
     priority: PRIORITY_DISPATCH,
     attempts: 1,
   })
-export const OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB = defineBackgroundJob<
-  Record<string, never>
->(OPENAI_MODERATION_DOMAIN, {
-  name: 'reconcile_image_quarantines',
-  priority: PRIORITY_DISPATCH,
-  attempts: 1,
-})
-export const OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB = defineBackgroundJob<
-  Record<string, never>
->(OPENAI_MODERATION_DOMAIN, {
-  name: 'reconcile_post_moderation',
-  priority: PRIORITY_DISPATCH,
-  attempts: 1,
-})
+export const OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB = defineBackgroundJob(
+  OPENAI_MODERATION_DOMAIN,
+  {
+    name: 'reconcile_image_quarantines',
+    priority: PRIORITY_DISPATCH,
+    attempts: 1,
+  },
+)
+export const OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB = defineBackgroundJob(
+  OPENAI_MODERATION_DOMAIN,
+  {
+    name: 'reconcile_post_moderation',
+    priority: PRIORITY_DISPATCH,
+    attempts: 1,
+  },
+)
 
 export const OPENAI_MODERATION_JOBS = [
   OPENAI_MODERATION_POST_JOB,

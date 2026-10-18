@@ -62,15 +62,12 @@ export const IMPORT_RECOVERY_STALE_MS = 15 * 60 * 1000
 export const IMPORT_RECOVERY_CRON = '*/5 * * * *'
 
 /** Re-dispatches imports whose dispatcher failed every attempt; see `recoverStalledImports`. */
-export const IMPORTS_RECOVER_STALLED_JOB = defineBackgroundJob<Record<string, never>>(
-  IMPORTS_DOMAIN,
-  {
-    name: 'recoverStalledImports',
-    priority: PRIORITY_DISPATCH,
-    backoff: ADMIN_BACKOFF,
-    ...DEFAULTS,
-  },
-)
+export const IMPORTS_RECOVER_STALLED_JOB = defineBackgroundJob(IMPORTS_DOMAIN, {
+  name: 'recoverStalledImports',
+  priority: PRIORITY_DISPATCH,
+  backoff: ADMIN_BACKOFF,
+  ...DEFAULTS,
+})
 
 export const IMPORTS_JOBS = [
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,

@@ -19,7 +19,7 @@ const DEFAULTS = {
   removeOnFail: 100,
 } as const
 
-export const URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB = defineBackgroundJob<Record<string, never>>(
+export const URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB = defineBackgroundJob(
   URLS_DOMAINS_BLACKLIST_DOMAIN,
   { name: 'processBlacklistDispatcher', priority: PRIORITY_DISPATCH, ...DEFAULTS },
 )
@@ -32,13 +32,14 @@ export const URLS_DOMAINS_BLACKLIST_SOURCE_SYNC_JOB = defineBackgroundJob<{
 })
 
 // A sweep, so it runs at dispatcher priority, one drain at a time in its own namespaced lane.
-export const URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB = defineBackgroundJob<
-  Record<string, never>
->(URLS_DOMAINS_BLACKLIST_DOMAIN, {
-  name: 'drainHostnameCacheInvalidationWork',
-  priority: PRIORITY_DISPATCH,
-  ...DEFAULTS,
-})
+export const URLS_DOMAINS_BLACKLIST_CACHE_INVALIDATION_JOB = defineBackgroundJob(
+  URLS_DOMAINS_BLACKLIST_DOMAIN,
+  {
+    name: 'drainHostnameCacheInvalidationWork',
+    priority: PRIORITY_DISPATCH,
+    ...DEFAULTS,
+  },
+)
 
 export const URLS_DOMAINS_BLACKLIST_JOBS = [
   URLS_DOMAINS_BLACKLIST_DISPATCHER_JOB,

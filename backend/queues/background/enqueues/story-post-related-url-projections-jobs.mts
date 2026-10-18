@@ -9,9 +9,10 @@ export const STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN = defineBackgroundDomain(
   workerConcurrency: 2,
 })
 
-export const STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB = defineBackgroundJob<
-  Record<string, never>
->(STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN, { name: 'reconcile', priority: PRIORITY_DISPATCH })
+export const STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB = defineBackgroundJob(
+  STORY_POST_RELATED_URL_PROJECTIONS_DOMAIN,
+  { name: 'reconcile', priority: PRIORITY_DISPATCH },
+)
 
 export const STORY_POST_RELATED_URL_PROJECTIONS_JOBS = [
   STORY_POST_RELATED_URL_PROJECTIONS_RECONCILE_JOB,

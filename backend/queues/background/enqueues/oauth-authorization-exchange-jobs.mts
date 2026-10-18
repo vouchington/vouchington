@@ -30,7 +30,7 @@ export const OAUTH_AUTHORIZATION_EXCHANGE_JOB =
     removeOnFail: 100,
   })
 
-export const OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB = defineBackgroundJob<Record<string, never>>(
+export const OAUTH_AUTHORIZATION_EXCHANGE_DISPATCH_JOB = defineBackgroundJob(
   OAUTH_AUTHORIZATION_EXCHANGE_DOMAIN,
   {
     name: 'dispatchOAuthAuthorizationExchanges',

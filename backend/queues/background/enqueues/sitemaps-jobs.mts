@@ -34,32 +34,31 @@ export const SITEMAPS_POST_TYPE_INDEX_JOB = defineBackgroundJob<{ postType: Post
   SITEMAPS_DOMAIN,
   { name: 'processUpdatePostTypeIndex', priority: PRIORITY_TASK, ...DEFAULTS },
 )
-export const SITEMAPS_POSTS_INDEX_JOB = defineBackgroundJob<Record<string, never>>(
-  SITEMAPS_DOMAIN,
-  {
-    name: 'processUpdatePostsIndex',
-    priority: PRIORITY_TASK,
-    ...DEFAULTS,
-  },
-)
+export const SITEMAPS_POSTS_INDEX_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
+  name: 'processUpdatePostsIndex',
+  priority: PRIORITY_TASK,
+  ...DEFAULTS,
+})
 export const SITEMAPS_FAMILY_JOB = defineBackgroundJob<{ family: string }>(SITEMAPS_DOMAIN, {
   name: 'processUpdateFamilySitemap',
   priority: PRIORITY_TASK,
   ...DEFAULTS,
 })
-export const SITEMAPS_ROOT_INDEX_JOB = defineBackgroundJob<Record<string, never>>(SITEMAPS_DOMAIN, {
+export const SITEMAPS_ROOT_INDEX_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
   name: 'processUpdateRootIndex',
   priority: PRIORITY_TASK,
   ...DEFAULTS,
 })
-export const SITEMAPS_NIGHTLY_BACKFILL_JOB = defineBackgroundJob<Record<string, never>>(
-  SITEMAPS_DOMAIN,
-  { name: 'processNightlyBackfillWeekDispatcher', priority: PRIORITY_DISPATCH, ...DEFAULTS },
-)
-export const SITEMAPS_WEEKLY_BACKFILL_JOB = defineBackgroundJob<Record<string, never>>(
-  SITEMAPS_DOMAIN,
-  { name: 'processWeeklyBackfillMonthDispatcher', priority: PRIORITY_DISPATCH, ...DEFAULTS },
-)
+export const SITEMAPS_NIGHTLY_BACKFILL_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
+  name: 'processNightlyBackfillWeekDispatcher',
+  priority: PRIORITY_DISPATCH,
+  ...DEFAULTS,
+})
+export const SITEMAPS_WEEKLY_BACKFILL_JOB = defineBackgroundJob(SITEMAPS_DOMAIN, {
+  name: 'processWeeklyBackfillMonthDispatcher',
+  priority: PRIORITY_DISPATCH,
+  ...DEFAULTS,
+})
 export const SITEMAPS_MONTHLY_BACKFILL_JOB = defineBackgroundJob<SitemapArchiveBackfillData>(
   SITEMAPS_DOMAIN,
   { name: 'processMonthlyBackfillArchiveDispatcher', priority: PRIORITY_DISPATCH, ...DEFAULTS },
