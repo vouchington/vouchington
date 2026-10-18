@@ -54,6 +54,7 @@ describe('no-mistakes forbidden-calls config', () => {
     }
 
     expect(rules.map(candidate => candidate.name)).toEqual([
+      'Only canonical API routes may start an SSE response',
       'Durable app-owned IDs in creation paths use UUIDv7',
       'Vitest tests do not invoke real timers',
       'Playwright tests do not invoke fixed sleeps',
@@ -70,6 +71,7 @@ describe('no-mistakes forbidden-calls config', () => {
     expect(
       rules.filter(candidate => candidate.exclude !== undefined).map(candidate => candidate.name),
     ).toEqual([
+      'Only canonical API routes may start an SSE response',
       'Vitest tests do not poll or wait on timers',
       'Test helpers and vitest setup do not invoke real timers or polls',
       'Vitest tests do not assert benchmarks',
