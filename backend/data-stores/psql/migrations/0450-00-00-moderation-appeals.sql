@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS moderation_appeals (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
+  ai_draft_request_token uuid NOT NULL DEFAULT uuidv7() UNIQUE,
+  ai_draft_run_id text,
 
   -- Human-owned outbound message
   public_response text,
@@ -318,6 +320,8 @@ COMMENT ON COLUMN moderation_appeals.ai_public_response IS 'AI-drafted public re
 COMMENT ON COLUMN moderation_appeals.ai_internal_response IS 'AI-drafted internal reasoning for moderators.';
 COMMENT ON COLUMN moderation_appeals.model IS 'OpenAI model used for the AI draft.';
 COMMENT ON COLUMN moderation_appeals.ai_drafted_at IS 'When the AI agent drafted the recommended_action and responses.';
+COMMENT ON COLUMN moderation_appeals.ai_draft_request_token IS 'Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.';
+COMMENT ON COLUMN moderation_appeals.ai_draft_run_id IS 'Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.';
 COMMENT ON COLUMN moderation_appeals.public_response IS 'Human-owned public message. The ONLY field ever delivered to the appellant.';
 COMMENT ON COLUMN moderation_appeals.internal_notes IS 'Internal moderator notes, never shared with the appellant.';
 COMMENT ON COLUMN moderation_appeals.drafted_at IS 'When the moderator first seeded public_response from the AI draft.';

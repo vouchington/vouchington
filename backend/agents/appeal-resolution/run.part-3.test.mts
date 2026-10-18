@@ -9,6 +9,7 @@ import {
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import type { PrivateUser } from '@services/users/types'
 import { runAppealResolutionAgent } from './run.mts'
+import { appealResolutionRunInputForTest } from '@voucha/test-helpers/appeal-resolution-run'
 import { TEST_MODEL_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
 import type { AgentModelCaller } from '@agents/_shared'
 
@@ -43,7 +44,7 @@ describe('runAppealResolutionAgent terminal lifecycle', () => {
     const callModel = vi.fn<AgentModelCaller<never>>()
 
     await runAppealResolutionAgent(
-      { appealId: appeal.id, rerunById: staff.id },
+      await appealResolutionRunInputForTest(appeal.id, staff.id),
       TEST_MODEL_SELECTION,
       callModel,
     )

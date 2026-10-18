@@ -20,6 +20,8 @@ function makeAppeal(overrides: Partial<ModerationAppealResponse> = {}): Moderati
     ai_internal_response: 'AI internal notes',
     model: 'gpt-4o',
     ai_drafted_at: new Date(),
+    ai_draft_run_id: 'appeal_resolution_00000000-0000-7000-8000-000000000201',
+    ai_draft_requested_run_id: 'appeal_resolution_00000000-0000-7000-8000-000000000202',
     public_response: 'Final public response',
     internal_notes: 'Private staff notes',
     drafted_at: new Date(),
@@ -74,6 +76,8 @@ describe('redactModerationAppeal', () => {
       'ai_internal_response',
       'model',
       'ai_drafted_at',
+      'ai_draft_run_id',
+      'ai_draft_requested_run_id',
       'internal_notes',
       'drafted_at',
       'edited_at',
@@ -98,6 +102,8 @@ describe('redactModerationAppeal', () => {
     expect('ai_internal_response' in redacted).toBe(false)
     expect('model' in redacted).toBe(false)
     expect('ai_drafted_at' in redacted).toBe(false)
+    expect('ai_draft_run_id' in redacted).toBe(false)
+    expect('ai_draft_requested_run_id' in redacted).toBe(false)
     expect('internal_notes' in redacted).toBe(false)
     expect('edited_by_id' in redacted).toBe(false)
     expect('approved_by_id' in redacted).toBe(false)

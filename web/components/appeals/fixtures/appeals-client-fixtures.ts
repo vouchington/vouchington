@@ -20,6 +20,8 @@ export function makeAppeal(overrides: Partial<ModerationAppeal> = {}): Moderatio
     sent_at: null,
     resolved_at: null,
     resolution_action: null,
+    ai_draft_requested_run_id: 'appeal_resolution_00000000-0000-7000-8000-000000000001',
+    ai_draft_run_id: null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     target_context: {

@@ -104,13 +104,14 @@ app.route('/api/v1/appeals/:id/resolution-drafts').post(async (ctx: Context) => 
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'POST:/api/v1/appeals/:id/resolution-drafts', { path: ctx.params })
 
-  await rerunModerationAppealResolutionDraft(currentUser.id, id)
+  const runId = await rerunModerationAppealResolutionDraft(currentUser.id, id)
 
   ctx.setStatus(202)
   ctx.json(
     apiResponse('POST:/api/v1/appeals/:id/resolution-drafts#staff', {
       queued: true,
       rerun_by_id: currentUser.id,
+      run_id: runId,
     }),
   )
 })

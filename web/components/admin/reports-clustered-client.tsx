@@ -281,6 +281,7 @@ export function ClusteredReportsClient({
         canBulkRemove={canBulkRemove && isPendingFilter}
         disabled={disabled}
         loadingDuplicateId={loadingDuplicateId}
+        pendingRerunEntities={pendingRerunEntities}
         onRemove={duplicate => handleRemoveDuplicateCluster(duplicate)}
         uiLocale={uiLocale}
       />

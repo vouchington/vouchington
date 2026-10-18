@@ -10,7 +10,9 @@ export async function processAppealResolution(
   await runAppealResolutionAgent(
     {
       appealId: job.data.appeal_id,
+      requestToken: job.data.ai_draft_request_token,
       rerunById: job.data.rerun_by_id ?? null,
+      runId: job.id,
     },
     await loadServiceModelSelection('appeal-resolution'),
     callModel,

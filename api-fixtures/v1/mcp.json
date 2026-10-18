@@ -38775,38 +38775,20 @@
               }
             },
             "outputSchema": {
-              "type": "object",
-              "anyOf": [
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "queued": {
-                      "const": true
-                    },
-                    "rerun_by_id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["queued", "rerun_by_id"],
-                  "type": "object"
+              "additionalProperties": false,
+              "properties": {
+                "queued": {
+                  "const": true
                 },
-                {
-                  "additionalProperties": false,
-                  "properties": {
-                    "queued": {
-                      "const": true
-                    },
-                    "rerun_by_id": {
-                      "type": "string"
-                    },
-                    "run_id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["queued", "rerun_by_id", "run_id"],
-                  "type": "object"
+                "rerun_by_id": {
+                  "type": "string"
+                },
+                "run_id": {
+                  "type": "string"
                 }
-              ]
+              },
+              "required": ["queued", "rerun_by_id", "run_id"],
+              "type": "object"
             },
             "annotations": {
               "readOnlyHint": false,

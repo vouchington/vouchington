@@ -70,8 +70,8 @@ keep the item pending and read the authorized resource until the saved recommend
 visible; the enqueue response itself carries no model result. Staff report judgement reruns compare
 the persisted judgement identity because a completed rerun may produce the same text. Web implements
 this separation for moderation appeals, disputes, reports, copyright review, and copyright email
-intake. Staff dispute reruns use opaque request-derived run IDs that remain unique across queue
-restarts. The staff resource exposes the current requested run and the run that saved its draft;
+intake. Staff appeal and dispute reruns use opaque request-derived run IDs that remain unique across
+queue restarts. Each staff resource exposes the current requested run and the run that saved its draft;
 clients continue polling within the original deadline until those IDs match, even when another
 staff request supersedes theirs. A prior job cannot overwrite the newer request's draft. Staff
 dispute reconciliation and report lists read the primary; queued report reruns are serialized per

@@ -14,6 +14,7 @@ export function DuplicateClusterList({
   canBulkRemove,
   disabled,
   loadingDuplicateId,
+  pendingRerunEntities,
   onRemove,
   uiLocale,
 }: {
@@ -21,6 +22,7 @@ export function DuplicateClusterList({
   canBulkRemove: boolean
   disabled: boolean
   loadingDuplicateId: string | null
+  pendingRerunEntities: ReadonlySet<string>
   onRemove: (duplicate: AdminModerationReportDuplicateCluster) => void
   uiLocale: string
 }) {
@@ -36,7 +38,12 @@ export function DuplicateClusterList({
           key={duplicate.id}
           duplicate={duplicate}
           canRemove={canBulkRemove}
-          disabled={disabled}
+          disabled={
+            disabled ||
+            duplicate.clusters.some(cluster =>
+              pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`),
+            )
+          }
           loading={loadingDuplicateId === duplicate.id}
           onRemove={() => onRemove(duplicate)}
           uiLocale={uiLocale}

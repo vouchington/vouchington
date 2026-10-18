@@ -74,18 +74,20 @@ function getAuthoritativeModerationAppealClient(appealId: string): Promise<Moder
     .then(response => response.appeal)
 }
 
-export function hasUpdatedAppealDraftLifecycle(
-  before: ModerationAppeal,
-  refreshed: ModerationAppeal,
-): boolean {
+export function isAppealDraftReconciliationComplete(refreshed: ModerationAppeal): boolean {
   return (
-    refreshed.ai_drafted_at !== null &&
-    refreshed.ai_drafted_at !== before.ai_drafted_at &&
-    refreshed.latest_lifecycle_change_id !== before.latest_lifecycle_change_id
+    refreshed.status === 'resolved' ||
+    refreshed.approved_at !== null ||
+    refreshed.sent_at !== null ||
+    refreshed.resolved_at !== null ||
+    (typeof refreshed.ai_draft_requested_run_id === 'string' &&
+      refreshed.ai_draft_run_id === refreshed.ai_draft_requested_run_id)
   )
 }
 
-export function enqueueAppealAIDraftRerun(appealId: string): Promise<void> {
+export function enqueueAppealAIDraftRerun(
+  appealId: string,
+): Promise<{ queued: true; rerun_by_id: string; run_id: string }> {
   return clientApi.post(`/api/v1/appeals/${appealId}/resolution-drafts`, {})
 }
 
@@ -100,7 +102,7 @@ async function pollForUpdatedAppealDraft(
   attempt = 0,
 ): Promise<ModerationAppeal> {
   const refreshed = await getAuthoritativeModerationAppealClient(appeal.id)
-  if (hasUpdatedAppealDraftLifecycle(appeal, refreshed)) return refreshed
+  if (isAppealDraftReconciliationComplete(refreshed)) return refreshed
   if (attempt + 1 === RERUN_POLL_ATTEMPTS) {
     throw new AppealDraftReconciliationTimeoutError(
       'The AI draft is still processing. Refresh to check again.',

@@ -1972,7 +1972,9 @@
         },
         "updated_at": "2026-06-02T12:00:00.000Z",
         "user_suspension_id": null,
-        "user_warning_id": "warning-2"
+        "user_warning_id": "warning-2",
+        "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+        "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
       }
     ],
     "page_info": {
@@ -2013,7 +2015,9 @@
       "status": "pending",
       "updated_at": "2026-06-01T12:05:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.approval.default": {
@@ -2048,7 +2052,9 @@
       "status": "pending",
       "updated_at": "2026-06-01T12:10:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.delivery.default": {
@@ -2083,7 +2089,9 @@
       "status": "pending",
       "updated_at": "2026-06-01T12:15:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution.accept": {
@@ -2118,7 +2126,9 @@
       "status": "resolved",
       "updated_at": "2026-06-01T12:20:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution.reduce": {
@@ -2153,7 +2163,9 @@
       "status": "resolved",
       "updated_at": "2026-06-01T12:20:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution.deny": {
@@ -2188,12 +2200,15 @@
       "status": "dismissed",
       "updated_at": "2026-06-01T12:20:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution-drafts.default": {
     "queued": true,
-    "rerun_by_id": "admin-1"
+    "rerun_by_id": "admin-1",
+    "run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
   },
   "native.moderation.report-judgement.default": {
     "queued": true,
@@ -2260,7 +2275,9 @@
         },
         "updated_at": "2026-06-01T12:00:00.000Z",
         "user_suspension_id": null,
-        "user_warning_id": null
+        "user_warning_id": null,
+        "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+        "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
       }
     ],
     "page_info": {
@@ -3454,7 +3471,9 @@
       },
       "updated_at": "2026-06-01T12:00:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "web.admin.mq.queues.domains.default": {

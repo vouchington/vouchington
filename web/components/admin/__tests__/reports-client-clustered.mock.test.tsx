@@ -203,6 +203,21 @@ describe('ReportsClient clustered staff reports', () => {
 
     expect(screen.queryByRole('button', { name: /remove all/i })).not.toBeInTheDocument()
   })
+
+  it('disables duplicate removal while a cluster judgement rerun is pending', async () => {
+    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
+    renderStaffReports(
+      makeClusteredReportsResponse({ duplicatePostIds: ['post-1', 'post-2', 'post-3'] }),
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: /re-run judgement/i })[0]!)
+
+    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByRole('button', { name: /remove all/i })).toBeDisabled())
+    fireEvent.click(screen.getByRole('button', { name: /remove all/i }))
+    expect(screen.queryByRole('button', { name: /remove posts/i })).not.toBeInTheDocument()
+    expect(mockDeletePost).not.toHaveBeenCalled()
+  })
 })
 
 function renderStaffReports(

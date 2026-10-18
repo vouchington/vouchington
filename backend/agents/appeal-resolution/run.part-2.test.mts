@@ -4,18 +4,52 @@ import {
   createTestUser,
   insertTestPost,
   markPostFlaggedForModeration,
+  suspendTestUserGetId,
   findAiUsageRecordForPost,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
+import { getModerationAppealById } from '@services/moderation-appeals/get'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent } from './run.mts'
+import { appealResolutionRunInputForTest } from '@voucha/test-helpers/appeal-resolution-run'
 import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
 import type { Response } from 'openai/resources/responses/responses'
-import { TEST_OPENAI_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
+import {
+  makeAgentModelCaller,
+  TEST_MODEL_SELECTION,
+  TEST_OPENAI_SELECTION,
+} from '@voucha/test-helpers/agents/model-call-result'
 import type { AgentModelCaller } from '@agents/_shared'
 
 describe('runAppealResolutionAgent', () => {
+  it('calls the model for a suspension appeal and includes suspension context', async () => {
+    const suspendedUser = await createTestUser()
+    await suspendTestUserGetId(suspendedUser.id, 'Test suspension reason')
+    const input = parseCreateModerationAppealInput({
+      target_type: 'suspension',
+      appeal_reason: `Suspension appeal reason ${randomUUID()}`,
+    })
+    const { appeal } = await createModerationAppeal(suspendedUser, WEB_PROVENANCE, input)
+    const callModel = makeAgentModelCaller({
+      recommended_action: 'deny',
+      public_response: 'The suspension stands.',
+      internal_response: 'User violated platform rules.',
+    })
+
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
+
+    expect(callModel).toHaveBeenCalledOnce()
+    const updated = await getModerationAppealById(appeal.id)
+    expect(updated!.ai_drafted_at).not.toBeNull()
+    expect(updated!.recommended_action).toBe('deny')
+    expect(callModel.mock.calls[0][0]).toContain('Platform suspension')
+  })
+
   it('records a ledger row from an incomplete response before the error propagates', async () => {
     const author = await createTestUser()
     const postId = await insertTestPost({
@@ -50,7 +84,11 @@ describe('runAppealResolutionAgent', () => {
     )
 
     await expect(
-      runAppealResolutionAgent({ appealId: appeal.id }, TEST_OPENAI_SELECTION, callModel),
+      runAppealResolutionAgent(
+        await appealResolutionRunInputForTest(appeal.id),
+        TEST_OPENAI_SELECTION,
+        callModel,
+      ),
     ).rejects.toThrow('OpenAI response incomplete: max_output_tokens')
 
     await expect(findAiUsageRecordForPost(postId, 'appeal-resolution')).resolves.toMatchObject({

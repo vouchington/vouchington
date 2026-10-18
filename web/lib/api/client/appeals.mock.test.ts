@@ -124,10 +124,14 @@ describe('appeals client api helpers', () => {
       const before = makeAppeal({
         ai_drafted_at: '2026-01-01T00:00:00.000Z',
         latest_lifecycle_change_id: 'change-1',
+        ai_draft_requested_run_id: 'appeal_resolution_request-1',
+        ai_draft_run_id: null,
       })
       const refreshed = makeAppeal({
         ai_drafted_at: '2026-01-01T00:01:00.000Z',
         latest_lifecycle_change_id: 'change-2',
+        ai_draft_requested_run_id: 'appeal_resolution_request-1',
+        ai_draft_run_id: 'appeal_resolution_request-1',
       })
       mockGet.mockResolvedValueOnce({ appeal: refreshed })
 
@@ -140,9 +144,14 @@ describe('appeals client api helpers', () => {
     })
 
     it('exposes enqueue separately from reconciliation', async () => {
-      mockPost.mockResolvedValueOnce(undefined)
+      const admission = {
+        queued: true as const,
+        rerun_by_id: 'staff-1',
+        run_id: 'appeal_resolution_00000000-0000-7000-8000-000000000101',
+      }
+      mockPost.mockResolvedValueOnce(admission)
 
-      await expect(enqueueAppealAIDraftRerun('appeal-1')).resolves.toBeUndefined()
+      await expect(enqueueAppealAIDraftRerun('appeal-1')).resolves.toEqual(admission)
 
       expect(mockPost).toHaveBeenCalledWith('/api/v1/appeals/appeal-1/resolution-drafts', {})
       expect(mockGet).not.toHaveBeenCalled()
@@ -152,12 +161,20 @@ describe('appeals client api helpers', () => {
       const before = makeAppeal({
         ai_drafted_at: '2026-01-01T00:00:00.000Z',
         latest_lifecycle_change_id: 'change-1',
+        ai_draft_requested_run_id: 'appeal_resolution_request-1',
+        ai_draft_run_id: null,
       })
       const refreshed = makeAppeal({
         ai_drafted_at: '2026-01-01T00:01:00.000Z',
         latest_lifecycle_change_id: 'change-2',
+        ai_draft_requested_run_id: 'appeal_resolution_request-1',
+        ai_draft_run_id: 'appeal_resolution_request-1',
       })
-      mockPost.mockResolvedValueOnce(undefined)
+      mockPost.mockResolvedValueOnce({
+        queued: true,
+        rerun_by_id: 'staff-1',
+        run_id: 'appeal_resolution_request-1',
+      })
       mockGet.mockResolvedValueOnce({ appeal: refreshed })
 
       await enqueueAppealAIDraftRerun(before.id)
@@ -174,10 +191,14 @@ describe('appeals client api helpers', () => {
       const before = makeAppeal({
         ai_drafted_at: '2026-01-01T00:00:00.000Z',
         latest_lifecycle_change_id: 'change-1',
+        ai_draft_requested_run_id: 'appeal_resolution_current',
+        ai_draft_run_id: null,
       })
       const refreshed = makeAppeal({
-        ai_drafted_at: '2026-01-01T00:01:00.000Z',
-        latest_lifecycle_change_id: 'change-2',
+        ai_drafted_at: '2025-12-31T00:00:00.000Z',
+        latest_lifecycle_change_id: 'change-1',
+        ai_draft_requested_run_id: 'appeal_resolution_current',
+        ai_draft_run_id: 'appeal_resolution_current',
       })
       mockGet.mockResolvedValueOnce({ appeal: before }).mockResolvedValueOnce({ appeal: refreshed })
 
@@ -188,13 +209,20 @@ describe('appeals client api helpers', () => {
       expect(mockGet).toHaveBeenCalledTimes(2)
     })
 
-    it('marks an unchanged lifecycle after the final poll as a terminal timeout', async () => {
+    it('keeps the existing bounded deadline while a newer request supersedes this rerun', async () => {
       vi.useFakeTimers()
       const before = makeAppeal({
         ai_drafted_at: '2026-01-01T00:00:00.000Z',
         latest_lifecycle_change_id: 'change-1',
+        ai_draft_requested_run_id: 'appeal_resolution_request-1',
+        ai_draft_run_id: null,
       })
-      mockGet.mockResolvedValue({ appeal: before })
+      mockGet.mockResolvedValue({
+        appeal: makeAppeal({
+          ai_draft_requested_run_id: 'appeal_resolution_request-2',
+          ai_draft_run_id: 'appeal_resolution_request-1',
+        }),
+      })
 
       const capturedError = reconcileAppealAIDraft(before).catch((err: unknown) => err)
       await vi.advanceTimersByTimeAsync(57_000)
@@ -202,6 +230,52 @@ describe('appeals client api helpers', () => {
       await expect(capturedError).resolves.toBeInstanceOf(AppealDraftReconciliationTimeoutError)
       expect(mockGet).toHaveBeenCalledTimes(20)
     })
+
+    it('does not treat an earlier saved run as completion after a newer request supersedes it', async () => {
+      const before = makeAppeal({
+        ai_draft_requested_run_id: 'appeal_resolution_request-1',
+        ai_draft_run_id: null,
+      })
+      const earlier = makeAppeal({
+        ai_draft_requested_run_id: 'appeal_resolution_request-2',
+        ai_draft_run_id: 'appeal_resolution_request-1',
+      })
+      vi.useFakeTimers()
+      mockGet.mockResolvedValueOnce({ appeal: earlier }).mockResolvedValueOnce({
+        appeal: makeAppeal({
+          ai_draft_requested_run_id: 'appeal_resolution_request-2',
+          ai_draft_run_id: 'appeal_resolution_request-2',
+        }),
+      })
+
+      const result = reconcileAppealAIDraft(before)
+      await vi.advanceTimersByTimeAsync(3000)
+
+      await expect(result).resolves.toMatchObject({
+        appeal: { ai_draft_run_id: 'appeal_resolution_request-2' },
+      })
+      expect(mockGet).toHaveBeenCalledTimes(2)
+    })
+
+    it.each([
+      ['approval', { approved_at: '2026-01-02T00:00:00Z' }],
+      ['delivery', { sent_at: '2026-01-03T00:00:00Z' }],
+      ['resolution', { status: 'resolved' as const, resolved_at: '2026-01-04T00:00:00Z' }],
+    ])(
+      'applies authoritative terminal %s while the current AI request is pending',
+      async (_name, terminal) => {
+        const before = makeAppeal({ ai_draft_requested_run_id: 'appeal_resolution_request-1' })
+        const approved = makeAppeal({
+          ...terminal,
+          ai_draft_requested_run_id: 'appeal_resolution_request-2',
+          ai_draft_run_id: null,
+        })
+        mockGet.mockResolvedValueOnce({ appeal: approved })
+
+        await expect(reconcileAppealAIDraft(before)).resolves.toEqual({ appeal: approved })
+        expect(mockGet).toHaveBeenCalledTimes(1)
+      },
+    )
 
     it('exposes the single-appeal read through the client boundary', async () => {
       const appeal = makeAppeal()

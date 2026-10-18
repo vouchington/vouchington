@@ -9183,9 +9183,12 @@
         },
         "rerun_by_id": {
           "type": "string"
+        },
+        "run_id": {
+          "type": "string"
         }
       },
-      "required": ["queued", "rerun_by_id"],
+      "required": ["queued", "rerun_by_id", "run_id"],
       "type": "object"
     },
     "POST:/api/v1/article-syncs": {
@@ -24215,6 +24218,19 @@
               "type": "string"
             }
           ]
+        },
+        "ai_draft_run_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "ai_draft_requested_run_id": {
+          "type": "string"
         }
       },
       "required": [
@@ -24247,7 +24263,9 @@
         "status",
         "updated_at",
         "user_suspension_id",
-        "user_warning_id"
+        "user_warning_id",
+        "ai_draft_run_id",
+        "ai_draft_requested_run_id"
       ],
       "type": "object"
     },

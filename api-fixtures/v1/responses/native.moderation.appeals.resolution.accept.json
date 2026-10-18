@@ -1,5 +1,7 @@
 {
   "appeal": {
+    "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+    "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
     "ai_drafted_at": "2026-06-01T12:00:00.000Z",
     "ai_internal_response": "Partial reduction recommended.",
     "ai_public_response": "We reviewed your appeal.",

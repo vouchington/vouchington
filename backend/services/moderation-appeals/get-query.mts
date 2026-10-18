@@ -9,7 +9,9 @@ export const APPEAL_SELECT = sql`
     ELSE 'resolved'
   END AS status,
   ma.recommended_action, ma.ai_public_response, ma.ai_internal_response,
-  ma.model, ma.ai_drafted_at, ma.public_response, ma.internal_notes, ma.drafted_at, ma.edited_at, ma.edited_by_id,
+  ma.model, ma.ai_drafted_at, ma.ai_draft_run_id,
+  ('appeal_resolution_' || ma.ai_draft_request_token::text) AS ai_draft_requested_run_id,
+  ma.public_response, ma.internal_notes, ma.drafted_at, ma.edited_at, ma.edited_by_id,
   ma.approved_at, ma.approved_by_id, ma.sent_at, ma.resolved_at, ma.resolved_by_id,
   ma.resolution_action, ma.latest_lifecycle_change_id, ma.updated_at,
   uuid_extract_timestamp(ma.id) AS created_at,

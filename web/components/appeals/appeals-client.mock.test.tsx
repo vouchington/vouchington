@@ -109,7 +109,11 @@ describe('AppealsClient — rendering and staff actions', () => {
       ai_drafted_at: '2026-01-01T00:00:00.000Z',
       latest_lifecycle_change_id: 'change-1',
     })
-    h.mockEnqueueAppealAIDraftRerun.mockResolvedValueOnce(undefined)
+    h.mockEnqueueAppealAIDraftRerun.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'staff-1',
+      run_id: 'appeal_resolution_request-1',
+    })
     h.mockReconcileAppealAIDraft.mockResolvedValueOnce({
       appeal: makeAppeal({
         ai_drafted_at: '2026-01-01T00:01:00.000Z',
@@ -129,7 +133,11 @@ describe('AppealsClient — rendering and staff actions', () => {
     const secondAppeal = makeAppeal({ id: 'appeal-2' })
     const firstReconciliation = Promise.withResolvers<{ appeal: ReturnType<typeof makeAppeal> }>()
     const secondReconciliation = Promise.withResolvers<{ appeal: ReturnType<typeof makeAppeal> }>()
-    h.mockEnqueueAppealAIDraftRerun.mockResolvedValue(undefined)
+    h.mockEnqueueAppealAIDraftRerun.mockResolvedValue({
+      queued: true,
+      rerun_by_id: 'staff-1',
+      run_id: 'appeal_resolution_request-1',
+    })
     h.mockReconcileAppealAIDraft.mockImplementation(appeal =>
       appeal.id === firstAppeal.id ? firstReconciliation.promise : secondReconciliation.promise,
     )
@@ -162,7 +170,11 @@ describe('AppealsClient — rendering and staff actions', () => {
       ai_drafted_at: '2026-01-01T00:00:00.000Z',
       latest_lifecycle_change_id: 'change-1',
     })
-    h.mockEnqueueAppealAIDraftRerun.mockResolvedValueOnce(undefined)
+    h.mockEnqueueAppealAIDraftRerun.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'staff-1',
+      run_id: 'appeal_resolution_request-1',
+    })
     h.mockReconcileAppealAIDraft.mockResolvedValueOnce({
       appeal: makeAppeal({
         ai_drafted_at: '2026-01-01T00:01:00.000Z',
@@ -193,7 +205,11 @@ describe('AppealsClient — rendering and staff actions', () => {
       ai_drafted_at: '2026-01-01T00:00:00.000Z',
       latest_lifecycle_change_id: 'change-1',
     })
-    h.mockEnqueueAppealAIDraftRerun.mockResolvedValueOnce(undefined)
+    h.mockEnqueueAppealAIDraftRerun.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'staff-1',
+      run_id: 'appeal_resolution_request-1',
+    })
     h.mockReconcileAppealAIDraft
       .mockRejectedValueOnce(new Error('read failed'))
       .mockRejectedValueOnce(new h.AppealDraftReconciliationTimeoutError('timed out'))

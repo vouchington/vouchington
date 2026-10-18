@@ -4,6 +4,7 @@ import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst
 import {
   getModerationAppealByIdFromPrimary,
   createModerationAppealDraft,
+  isCurrentModerationAppealDraftRequest,
 } from '@services/moderation-appeals'
 import { getUserWarningById } from '@services/user-warnings'
 import { getCommunityBanById } from '@services/communities/bans/get'
@@ -16,6 +17,8 @@ export type { AppealModelCaller } from './model.mts'
 
 export interface AppealModelInput {
   appealId: string
+  requestToken: string
+  runId: string
   rerunById?: string | null
 }
 
@@ -30,7 +33,7 @@ export async function runAppealResolutionAgent(
   selection: ModelSelection,
   callModel: AppealModelCaller = callAppealModel,
 ): Promise<void> {
-  const { appealId, rerunById } = input
+  const { appealId, requestToken, rerunById, runId } = input
 
   const appeal = await getModerationAppealByIdFromPrimary(appealId)
   if (!appeal) {
@@ -39,6 +42,8 @@ export async function runAppealResolutionAgent(
   }
 
   if (appeal.approved_at != null || appeal.sent_at != null || appeal.resolved_at != null) return
+
+  if (!(await isCurrentModerationAppealDraftRequest(appealId, requestToken))) return
 
   // Manual reruns bypass only existing-draft idempotency.
   if (!rerunById && appeal.ai_drafted_at != null) return
@@ -103,6 +108,8 @@ export async function runAppealResolutionAgent(
 
   await createModerationAppealDraft({
     appealId,
+    requestToken,
+    runId,
     recommendedAction: result.output.recommended_action,
     aiPublicResponse: result.output.public_response,
     aiInternalResponse: result.output.internal_response,

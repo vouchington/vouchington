@@ -7,15 +7,18 @@ import type { AppealResolutionJobData } from '../types.mts'
 
 function buildAppealResolutionJob(
   appealId: string,
+  requestToken: string,
   rerunById?: string | null,
 ): { data: AppealResolutionJobData; opts: JobOptions } {
   const isManualRerun = rerunById != null
   return {
     data: {
       appeal_id: appealId,
+      ai_draft_request_token: requestToken,
       rerun_by_id: rerunById ?? null,
     } satisfies AppealResolutionJobData,
     opts: {
+      jobId: `appeal_resolution_${requestToken}`,
       attempts: AI_AGENTS_DEFAULTS.attempts,
       backoff: AI_AGENTS_DEFAULTS.backoff,
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
@@ -23,12 +26,14 @@ function buildAppealResolutionJob(
       priority: AGENT_PRIORITY['appeal-resolution'],
       // Manual reruns coalesce with each other, but never with automatic work: an automatic
       // retry may correctly no-op after persisting its draft while a later staff rerun must run.
-      deduplication: {
-        id: isManualRerun
-          ? `appeal_resolution_manual_${appealId}`
-          : `appeal_resolution_automatic_${appealId}`,
-        mode: 'simple' as const,
-      },
+      ...(isManualRerun
+        ? {}
+        : {
+            deduplication: {
+              id: `appeal_resolution_automatic_${appealId}`,
+              mode: 'simple' as const,
+            },
+          }),
       // Both lanes share one per-appeal ordering group, so the manual generation waits for an
       // automatic retry rather than executing beside it.
       ordering: {
@@ -43,8 +48,12 @@ function buildAppealResolutionJob(
  * Enqueues an appeal-resolution agent run for the given appeal.
  * Fire-and-forget — errors are swallowed via onError.
  */
-export function enqueueAppealResolution(appealId: string, rerunById?: string | null): void {
-  const { data, opts } = buildAppealResolutionJob(appealId, rerunById)
+export function enqueueAppealResolution(
+  appealId: string,
+  requestToken: string,
+  rerunById?: string | null,
+): void {
+  const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
   ai_agents.add('appeal-resolution', data, opts).catch(onError)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
 }
@@ -55,9 +64,12 @@ export function enqueueAppealResolution(appealId: string, rerunById?: string | n
  */
 export async function enqueueAppealResolutionQueued(
   appealId: string,
+  requestToken: string,
   rerunById?: string | null,
-): Promise<void> {
-  const { data, opts } = buildAppealResolutionJob(appealId, rerunById)
-  await ai_agents.add('appeal-resolution', data, opts)
+): Promise<string> {
+  const { data, opts } = buildAppealResolutionJob(appealId, requestToken, rerunById)
+  const job = await ai_agents.add('appeal-resolution', data, opts)
+  if (!job) throw new Error('Appeal resolution rerun was not admitted to the queue')
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'appeal-resolution')
+  return job.id
 }

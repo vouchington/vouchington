@@ -16,31 +16,31 @@ describe('enqueueAppealResolution', () => {
     )
   })
 
-  it('coalesces manual reruns without swallowing them into automatic work', async () => {
+  it('admits each manual request after automatic work with its own durable run ID', async () => {
     const appealId = randomUUID()
+    const automaticToken = randomUUID()
+    const firstManualToken = randomUUID()
+    const secondManualToken = randomUUID()
     appealIds.push(appealId)
 
-    await Promise.all([
-      enqueueAppealResolutionQueued(appealId),
-      enqueueAppealResolutionQueued(appealId, randomUUID()),
-      enqueueAppealResolutionQueued(appealId, randomUUID()),
+    const runIds = await Promise.all([
+      enqueueAppealResolutionQueued(appealId, automaticToken),
+      enqueueAppealResolutionQueued(appealId, firstManualToken, randomUUID()),
+      enqueueAppealResolutionQueued(appealId, secondManualToken, randomUUID()),
+    ])
+    expect(runIds).toEqual([
+      `appeal_resolution_${automaticToken}`,
+      `appeal_resolution_${firstManualToken}`,
+      `appeal_resolution_${secondManualToken}`,
     ])
 
     const jobs = (await getAppealResolutionJobs()).filter(
       candidate => candidate.data.appeal_id === appealId,
     )
-    expect(jobs).toHaveLength(2)
-    expect(jobs.map(job => job.opts.deduplication)).toEqual(
-      expect.arrayContaining([
-        { id: `appeal_resolution_automatic_${appealId}`, mode: 'simple' },
-        { id: `appeal_resolution_manual_${appealId}`, mode: 'simple' },
-      ]),
-    )
-    expect(jobs.filter(job => job.data.rerun_by_id !== null)).toHaveLength(1)
-    expect(jobs.map(job => job.opts.ordering)).toEqual([
-      { key: `appeal_resolution_${appealId}`, concurrency: 1 },
-      { key: `appeal_resolution_${appealId}`, concurrency: 1 },
-    ])
+    expect(jobs).toHaveLength(3)
+    expect(jobs.filter(job => job.data.rerun_by_id !== null)).toHaveLength(2)
+    expect(jobs.filter(job => job.opts.deduplication)).toHaveLength(1)
+    expect(jobs.every(job => job.opts.ordering?.key === `appeal_resolution_${appealId}`)).toBe(true)
   })
 })
 
