@@ -20,9 +20,12 @@ export const getUrlHostnameByAny = async (id: string): Promise<ViewHostname | nu
   if (isUUID(normalized)) return getUrlHostnameById(normalized)
   if (isHostname(normalized)) {
     const { rows } = await read<ViewHostname>(sql`/* getUrlHostnameByAny */
-      SELECT * FROM view_url_hostnames
-      WHERE hostname = ${normalized}
-      LIMIT 1
+      WITH selected AS MATERIALIZED (
+        SELECT id FROM url_hostnames WHERE hostname = ${normalized} LIMIT 1
+      )
+      SELECT hostname.*
+      FROM selected
+      JOIN view_url_hostnames hostname ON hostname.id = selected.id
     `)
     return rows[0] || null
   }
