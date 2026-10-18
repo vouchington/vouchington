@@ -107,7 +107,10 @@ app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   const canLock = currentUserCanLockPost(currentUser, post, { communityMemberRole })
 
   const postResponse: Record<string, unknown> = { ...maskedPost }
-  if (canUpdatePost) postResponse.can_edit_content = isPostContentEditable(currentUser!, post)
+  if (canUpdatePost) {
+    const contentEditNow = Date.now()
+    postResponse.can_edit_content = isPostContentEditable(currentUser!, post, contentEditNow)
+  }
   if (canDelete) postResponse.can_delete = true
   if (canUnpublishFromCommunity) {
     const review = await getCommunityPostReview(post.community_id!, post.id)
