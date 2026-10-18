@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS user_import_requests (
   entity_type import_entity_types NOT NULL,
   topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   rss_feed_id UUID REFERENCES rss_feeds(id) ON DELETE CASCADE,
+  rss_feed_import_row_id UUID,
   topic_recommendation_post_id UUID REFERENCES post_topic_recommendations(post_id) ON DELETE CASCADE,
   input_value TEXT NOT NULL,
   followed_at TIMESTAMPTZ,
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS user_import_requests (
     (
       entity_type = 'topic'
       AND rss_feed_id IS NULL
+      AND rss_feed_import_row_id IS NULL
       AND (
         topic_id IS NOT NULL
         OR topic_recommendation_post_id IS NOT NULL
@@ -64,11 +66,17 @@ ON user_import_requests (user_id, topic_recommendation_post_id)
 WHERE topic_recommendation_post_id IS NOT NULL;
 COMMENT ON INDEX idx_user_import_requests__user_topic_recommendation IS 'Makes one missing-topic audit durable per user and recommendation across exact import retries.';
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_import_requests__rss_feed_import_row_id
+ON user_import_requests (rss_feed_import_row_id)
+WHERE rss_feed_import_row_id IS NOT NULL;
+COMMENT ON INDEX idx_user_import_requests__rss_feed_import_row_id IS 'Keeps one RSS import audit per durable import row even when a lost advisory session allows overlapping attempts.';
+
 COMMENT ON TABLE user_import_requests IS 'Tracks user import requests so imported or later-approved entities can be followed for the requesting user.';
 COMMENT ON COLUMN user_import_requests.user_id IS 'The user who submitted the import request.';
 COMMENT ON COLUMN user_import_requests.entity_type IS 'The imported entity family.';
 COMMENT ON COLUMN user_import_requests.topic_id IS 'Topic followed directly or after recommendation approval.';
 COMMENT ON COLUMN user_import_requests.rss_feed_id IS 'RSS feed followed directly or after recommendation approval.';
+COMMENT ON COLUMN user_import_requests.rss_feed_import_row_id IS 'Durable RSS import row whose follow this audit records.';
 COMMENT ON COLUMN user_import_requests.topic_recommendation_post_id IS 'Pending topic recommendation created by the import request.';
 COMMENT ON COLUMN user_import_requests.input_value IS 'Trimmed user-provided import value.';
 COMMENT ON COLUMN user_import_requests.followed_at IS 'When the user was linked to the imported entity.';
@@ -171,6 +179,13 @@ EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__batch_id__row_index
 ON user_rss_feed_import_rows (batch_id, row_index);
+
+ALTER TABLE user_import_requests
+  ADD CONSTRAINT user_import_requests_rss_feed_import_row_id_fkey
+  FOREIGN KEY (rss_feed_import_row_id)
+  REFERENCES user_rss_feed_import_rows(id) ON DELETE SET NULL NOT VALID;
+ALTER TABLE user_import_requests
+  VALIDATE CONSTRAINT user_import_requests_rss_feed_import_row_id_fkey;
 
 
 CREATE TABLE IF NOT EXISTS user_rss_feed_import_row_discoveries (

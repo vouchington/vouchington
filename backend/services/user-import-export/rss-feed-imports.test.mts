@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   getFirstRssFeedImportRowId,
@@ -20,6 +19,21 @@ import {
   updateRssFeedImportRowCompleted,
   updateRssFeedImportRowFailed,
 } from './rss-feed-import-row-updates.mts'
+
+const validFeedResponse = () => ({
+  response: new Response(
+    '<rss version="2.0"><channel><title>Imported feed</title></channel></rss>',
+    { headers: { 'content-type': 'application/rss+xml' } },
+  ),
+  responseSignal: new AbortController().signal,
+})
+
+const invalidFeedResponse = () => ({
+  response: new Response('not an RSS document', {
+    headers: { 'content-type': 'application/rss+xml' },
+  }),
+  responseSignal: new AbortController().signal,
+})
 
 describe('RSS feed import batches', () => {
   let user: PrivateUser
@@ -118,34 +132,23 @@ describe('RSS feed import batches', () => {
 
   it('records a source_created row for a newly created feed', async () => {
     const rssFeedUrl = `https://new-import-${Date.now()}.example.com/feed.xml`
-    const rssFeed = await insertTestRssFeedDirect({})
-    const createSourceFromUrlImpl = vi.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
-      status: 'created',
-      topic_slug: 'new-import',
-      topic_id: randomUUID(),
-      rss_feed_id: rssFeed.id,
-    })
+    const fetchUrl = vi.fn<() => Promise<ReturnType<typeof validFeedResponse>>>(async () =>
+      validFeedResponse(),
+    )
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await processRssFeedImportRow(
       created.import.id,
       await getFirstRssFeedImportRowId(created.import.id),
-      {
-        createSourceFromUrlImpl,
-      },
+      { crawlerRssOptions: { dependencies: { fetchUrl } } },
     )
 
-    expect(createSourceFromUrlImpl).toHaveBeenCalledWith(
-      expect.objectContaining({ id: user.id }),
-      WEB_PROVENANCE,
-      rssFeedUrl,
-      expect.any(Object),
-    )
+    expect(fetchUrl).toHaveBeenCalledWith(expect.objectContaining({ url: rssFeedUrl }))
     const status = await getRssFeedImport(user.id, created.import.id)
     expect(status?.rows[0]).toMatchObject({
       input: rssFeedUrl,
       status: 'source_created',
-      entity_id: rssFeed.id,
+      entity_id: expect.any(String),
     })
   })
 
@@ -170,11 +173,11 @@ describe('RSS feed import batches', () => {
     })
   })
 
-  it('keeps transient failures pending until the final attempt', async () => {
+  it('keeps invalid feed content pending before the final attempt', async () => {
     const rssFeedUrl = `https://retry-import-${Date.now()}.example.com/feed.xml`
-    const createSourceFromUrlImpl = vi
-      .fn<(...args: any[]) => Promise<any>>()
-      .mockRejectedValueOnce(new Error('temporary failure'))
+    const fetchUrl = vi.fn<() => Promise<ReturnType<typeof validFeedResponse>>>(async () =>
+      invalidFeedResponse(),
+    )
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await expect(
@@ -183,54 +186,46 @@ describe('RSS feed import batches', () => {
         await getFirstRssFeedImportRowId(created.import.id),
         {
           isFinalAttempt: false,
-          createSourceFromUrlImpl,
+          crawlerRssOptions: { dependencies: { fetchUrl } },
         },
       ),
-    ).rejects.toThrow('temporary failure')
+    ).rejects.toMatchObject({ status: 422 })
 
+    expect(fetchUrl).toHaveBeenCalledOnce()
     const status = await getRssFeedImport(user.id, created.import.id)
     expect(status?.import.pending_rows).toBe(1)
     expect(status?.rows[0]).toMatchObject({
       status: 'pending',
-      error_code: 'IMPORT_FAILED',
+      error_code: 'INVALID_FEED_CONTENT',
     })
   })
 
-  it('does not reprocess terminal failed rows', async () => {
+  it('does not reprocess terminal invalid-feed rows', async () => {
     const rssFeedUrl = `https://terminal-failure-import-${Date.now()}.example.com/feed.xml`
-    const createSourceFromUrlImpl = vi
-      .fn<(...args: any[]) => Promise<any>>()
-      .mockRejectedValueOnce(new Error('terminal failure'))
+    let serveValidFeed = false
+    const fetchUrl = vi.fn<() => Promise<ReturnType<typeof validFeedResponse>>>(async () =>
+      serveValidFeed ? validFeedResponse() : invalidFeedResponse(),
+    )
     const created = await submitRssFeedImport(user, WEB_PROVENANCE, [rssFeedUrl])
 
     await expect(
       processRssFeedImportRow(
         created.import.id,
         await getFirstRssFeedImportRowId(created.import.id),
-        {
-          createSourceFromUrlImpl,
-        },
+        { crawlerRssOptions: { dependencies: { fetchUrl } } },
       ),
-    ).rejects.toThrow('terminal failure')
+    ).rejects.toMatchObject({ status: 422 })
 
-    const rssFeed = await insertTestRssFeedDirect({})
-    createSourceFromUrlImpl.mockResolvedValueOnce({
-      status: 'created',
-      topic_slug: 'terminal-failure-import',
-      topic_id: randomUUID(),
-      rss_feed_id: rssFeed.id,
-    })
+    serveValidFeed = true
 
     await processRssFeedImportRow(
       created.import.id,
       await getFirstRssFeedImportRowId(created.import.id),
-      {
-        createSourceFromUrlImpl,
-      },
+      { crawlerRssOptions: { dependencies: { fetchUrl } } },
     )
 
     const status = await getRssFeedImport(user.id, created.import.id)
-    expect(createSourceFromUrlImpl).toHaveBeenCalledTimes(1)
+    expect(fetchUrl).toHaveBeenCalledOnce()
     expect(status?.import).toMatchObject({
       completed_rows: 0,
       failed_rows: 1,
@@ -238,7 +233,7 @@ describe('RSS feed import batches', () => {
     })
     expect(status?.rows[0]).toMatchObject({
       status: 'error',
-      error_code: 'IMPORT_FAILED',
+      error_code: 'INVALID_FEED_CONTENT',
     })
   })
 

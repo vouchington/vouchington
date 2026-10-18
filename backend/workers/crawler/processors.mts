@@ -1,8 +1,12 @@
 import type { CrawlerJobs } from '@queues/crawler/types'
 import type { CrawlUrlOptions } from '@services/crawls/crawl-url/types'
 import { crawlUrl } from '@services/crawls/crawl-url'
-import type { Job } from 'glide-mq'
-import { buildCrawlerJobResult, handleCrawlerProcessorError } from './processors/outcomes.mts'
+import { UnrecoverableError, type Job } from 'glide-mq'
+import {
+  buildCrawlerJobResult,
+  handleCrawlerProcessorError,
+  MAX_RATE_LIMIT_RETRIES,
+} from './processors/outcomes.mts'
 import { completeRssFeedImportDiscovery } from '@services/rss-feeds/discover-feed'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import { normalizeDomainRateLimitMs } from '@services/crawls/domain-rate-limit'
@@ -66,10 +70,24 @@ export async function processCrawlerJob(
       } catch (err) {
         // Keep the import's simple-dedup job alive through provider 429s. A replacement job
         // would release this generation's base ID while its delayed result is still pending.
-        if (importRowId && importDiscoveryGeneration && err instanceof CrawlerRateLimitError)
+        if (importRowId && importDiscoveryGeneration && err instanceof CrawlerRateLimitError) {
+          if (rateLimitRetryCount >= MAX_RATE_LIMIT_RETRIES) {
+            await completeRssFeedImportDiscovery(
+              importRowId,
+              urlId,
+              importDiscoveryGeneration,
+              null,
+            )
+            throw new UnrecoverableError(`RSS discovery crawl ${urlId} exceeded rate-limit retries`)
+          }
+          await job.updateData({
+            ...job.data,
+            rate_limit_retry_count: rateLimitRetryCount + 1,
+          })
           return job.moveToDelayed(
             Date.now() + normalizeDomainRateLimitMs(err.retryAfterMs ?? undefined),
           )
+        }
         try {
           return await handleCrawlerProcessorError(urlId, rateLimitRetryCount, err, {
             crawlTimeoutMs,

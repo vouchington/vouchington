@@ -16,6 +16,7 @@ import {
 import type { PrivateUser } from '@services/users/types'
 import { createTopicRecommendation } from '@services/topic-recommendations'
 import { importSingleRssFeed, importTopics } from './index.mts'
+import { createRssFeedImportRowForTest } from '@voucha/test-helpers/rss-feed-import-rows'
 import { autoFollowOnRecommendationApproval } from './auto-follow-on-approval.mts'
 
 const eligibleForTopicRecommendations = () => ({
@@ -198,7 +199,8 @@ describe('user import requests', () => {
       rssFeedUrl,
     })
 
-    const result = await importSingleRssFeed(user, WEB_PROVENANCE, rssFeedUrl)
+    const importRowId = await createRssFeedImportRowForTest(user.id, rssFeedUrl)
+    const result = await importSingleRssFeed(user, WEB_PROVENANCE, rssFeedUrl, { importRowId })
 
     expect(result).toMatchObject({
       input: rssFeedUrl,

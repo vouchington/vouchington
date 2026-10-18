@@ -8,7 +8,7 @@ import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import type { CrawlBasic } from '@services/crawls/types'
 
-const MAX_RATE_LIMIT_RETRIES = 3
+export const MAX_RATE_LIMIT_RETRIES = 3
 
 export async function handleCrawlerProcessorError(
   urlId: string,

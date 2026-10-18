@@ -35,10 +35,9 @@ const followRssFeedRelation = getEntityRelationMetadataOrThrow({
 })
 
 export type ImportSingleRssFeedOptions = {
-  importRowId?: string
+  importRowId: string
   assertRssFeedLimit?: () => Promise<void>
   follow?: boolean
-  createSourceFromUrlImpl?: typeof createSourceFromUrl
   crawlerRssOptions?: CreateSourceOptions['crawlerRssOptions']
   /** One deadline for the feed's network work; see `createSourceFromUrl`. */
   signal?: AbortSignal
@@ -51,11 +50,10 @@ export async function importSingleRssFeed(
   {
     assertRssFeedLimit,
     follow = true,
-    createSourceFromUrlImpl,
     crawlerRssOptions,
     signal,
     importRowId,
-  }: ImportSingleRssFeedOptions = {},
+  }: ImportSingleRssFeedOptions,
 ): Promise<ImportRssFeedResult> {
   const validation = validateRssFeedUrl(rawUrl)
   if (!validation.valid) {
@@ -88,7 +86,7 @@ export async function importSingleRssFeed(
       await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
         { id: existingFeed.feed.id },
       ])
-      await recordRssFeedImportRequest(currentUser.id, rawUrl, existingFeed.feed.id)
+      await recordRssFeedImportRequest(currentUser.id, rawUrl, existingFeed.feed.id, importRowId)
       return {
         input: rawUrl,
         status: 'followed',
@@ -104,20 +102,15 @@ export async function importSingleRssFeed(
   }
 
   // No existing feed — create a new source (topic + rss_feed) directly
-  const sourceResult = await (createSourceFromUrlImpl ?? createSourceFromUrl)(
-    currentUser,
-    provenance,
-    canonicalUrl,
-    {
-      assertContributionLimit: assertRssFeedLimit,
-      follow,
-      signal,
-      importRowId,
-      crawlerRssOptions,
-    },
-  )
+  const sourceResult = await createSourceFromUrl(currentUser, provenance, canonicalUrl, {
+    assertContributionLimit: assertRssFeedLimit,
+    follow,
+    signal,
+    importRowId,
+    crawlerRssOptions,
+  })
   if (follow) {
-    await recordRssFeedImportRequest(currentUser.id, rawUrl, sourceResult.rss_feed_id)
+    await recordRssFeedImportRequest(currentUser.id, rawUrl, sourceResult.rss_feed_id, importRowId)
   }
 
   return {
@@ -153,10 +146,11 @@ async function isUserFollowingRssFeed(userId: string, rssFeedId: string): Promis
   return rows.length > 0
 }
 
-async function recordRssFeedImportRequest(
+export async function recordRssFeedImportRequest(
   userId: string,
   inputValue: string,
   rssFeedId: string,
+  importRowId: string,
 ): Promise<void> {
   await write(
     sql`/* recordRssFeedImportRequest */
@@ -164,6 +158,7 @@ async function recordRssFeedImportRequest(
         user_id,
         entity_type,
         rss_feed_id,
+        rss_feed_import_row_id,
         followed_at,
         input_value
       )
@@ -171,9 +166,13 @@ async function recordRssFeedImportRequest(
         ${userId},
         'rss_feed',
         ${rssFeedId},
+        ${importRowId},
         CURRENT_TIMESTAMP,
         ${inputValue.trim()}
       )
+      ON CONFLICT (rss_feed_import_row_id)
+      WHERE rss_feed_import_row_id IS NOT NULL
+      DO NOTHING
     `,
   )
 }

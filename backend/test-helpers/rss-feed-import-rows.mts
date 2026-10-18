@@ -70,14 +70,12 @@ export function observeRssFeedImportRowLockForTest(rowId: string): {
   }
 }
 
-/** Pool occupancy for the RSS import row-lock concurrency regression. */
 export function getRssFeedImportSerializationPoolForTest(): { capacity: number; idle: number } {
   const capacity = jobSerializationPool.options.max
   if (capacity === undefined) throw new Error('RSS import serialization pool has no maximum')
   return { capacity, idle: jobSerializationPool.idleCount }
 }
 
-/** The row ids of a user RSS feed import, in input order. */
 export async function getRssFeedImportRowIds(importId: string): Promise<string[]> {
   const { rows } = await write(
     sql`/* getRssFeedImportRowIds */
@@ -90,11 +88,43 @@ export async function getRssFeedImportRowIds(importId: string): Promise<string[]
   return (rows as Array<{ id: string }>).map(row => row.id)
 }
 
-/** The first row id of a user RSS feed import. */
 export async function getFirstRssFeedImportRowId(importId: string): Promise<string> {
   const [rowId] = await getRssFeedImportRowIds(importId)
   if (!rowId) throw new Error(`Import ${importId} has no rows`)
   return rowId
+}
+
+export async function createRssFeedImportRowForTest(
+  userId: string,
+  inputUrl: string,
+): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* createRssFeedImportRowForTest */
+    WITH import_batch AS (
+      INSERT INTO user_rss_feed_import_batches (user_id, created_via, total_rows)
+      VALUES (${userId}, 'web', 1)
+      RETURNING id
+    )
+    INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
+    SELECT import_batch.id, 0, ${inputUrl.trim()} FROM import_batch
+    RETURNING id
+  `)
+  const rowId = rows[0]?.id
+  if (!rowId) throw new Error('Could not create RSS import row fixture')
+  return rowId
+}
+
+export async function deleteOwnedRssFeedImportRowForTest(
+  userId: string,
+  rowId: string,
+): Promise<void> {
+  const { rows } = await write<{ id: string }>(sql`/* deleteOwnedRssFeedImportRowForTest */
+    DELETE FROM user_rss_feed_import_rows import_row
+    USING user_rss_feed_import_batches import_batch
+    WHERE import_row.id = ${rowId}
+      AND import_row.batch_id = import_batch.id AND import_batch.user_id = ${userId}
+    RETURNING import_row.id
+  `)
+  if (!rows[0]) throw new Error('Could not delete owned RSS import row fixture')
 }
 
 export async function getRssFeedImportDiscoveriesForTest(rowId: string): Promise<
@@ -128,7 +158,6 @@ export async function getRssFeedImportDiscoveriesForTest(rowId: string): Promise
   return rows
 }
 
-/** Creates a minimal owned import row with a pending discovery for a real crawler-worker test. */
 export async function createPendingRssFeedImportDiscoveryForTest(
   userId: string,
   inputUrl: string,

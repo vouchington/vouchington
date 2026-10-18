@@ -7,6 +7,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import {
+  createRssFeedImportRowForTest,
   getRssFeedImportRowIds,
   getRssFeedImportSerializationPoolForTest,
   observeRssFeedImportRowLockForTest,
@@ -82,14 +83,18 @@ describe('RSS feed import row serialization', () => {
     const allAcquired = Promise.withResolvers<void>()
     const proceed = Promise.withResolvers<void>()
     let acquired = 0
-    const imports = users.map(user =>
-      withRssFeedImportRowLock(randomUUID(), async () => {
+    const imports = users.map(async user => {
+      const importRowId = await createRssFeedImportRowForTest(user.id, rssFeedUrl)
+      return withRssFeedImportRowLock(importRowId, async () => {
         acquired += 1
         if (acquired === capacity) allAcquired.resolve()
         await proceed.promise
-        return importSingleRssFeed(user, WEB_PROVENANCE, rssFeedUrl, { follow: false })
-      }),
-    )
+        return importSingleRssFeed(user, WEB_PROVENANCE, rssFeedUrl, {
+          follow: false,
+          importRowId,
+        })
+      })
+    })
 
     try {
       await allAcquired.promise

@@ -48,7 +48,7 @@ export async function processRssFeedImportRow(
     isFinalAttempt?: boolean
     /** The feed's time budget; defaults to `rss_feed_import_budget_ms`. */
     budgetMs?: number
-  } & Pick<ImportSingleRssFeedOptions, 'createSourceFromUrlImpl' | 'crawlerRssOptions'> = {},
+  } & Pick<ImportSingleRssFeedOptions, 'crawlerRssOptions'> = {},
 ): Promise<void> {
   return withRssFeedImportRowLock(rowId, () =>
     processLockedRssFeedImportRow(importId, rowId, options),
@@ -61,7 +61,7 @@ async function processLockedRssFeedImportRow(
   options: {
     isFinalAttempt?: boolean
     budgetMs?: number
-  } & Pick<ImportSingleRssFeedOptions, 'createSourceFromUrlImpl' | 'crawlerRssOptions'>,
+  } & Pick<ImportSingleRssFeedOptions, 'crawlerRssOptions'>,
 ): Promise<void> {
   const { isFinalAttempt = true } = options
   const rowWithBatch = await getRssFeedImportRowWithBatch(rowId)
@@ -94,7 +94,6 @@ async function processLockedRssFeedImportRow(
     const result = await importSingleRssFeed(user, getBatchProvenance(batch), row.input_url, {
       assertRssFeedLimit: () => assertWithinRssFeedImportDailyLimit(user, membershipPlan, row.id),
       follow: batch.should_follow_imported_feeds,
-      createSourceFromUrlImpl: options.createSourceFromUrlImpl,
       crawlerRssOptions: options.crawlerRssOptions,
       importRowId: row.id,
       // One deadline covers Web Risk and both protocol attempts. Running out is a plain error, so

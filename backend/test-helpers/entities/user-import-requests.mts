@@ -3,20 +3,20 @@ import sql from 'sql-template-strings'
 
 type TopicImportRequestForTest = {
   topic_id: string | null
-  rss_feed_id: string | null
   topic_recommendation_post_id: string | null
   followed_at: Date | null
   input_value: string
 }
 
 type RssFeedImportRequestForTest = {
+  id: string
   topic_id: string | null
   rss_feed_id: string | null
+  rss_feed_import_row_id: string | null
   followed_at: Date | null
   input_value: string
 }
 
-/** Expires one actor/key-scoped topic-import attempt without touching shared test rows. */
 export async function expireTopicImportAttemptForTest(
   userId: string,
   idempotencyKey: string,
@@ -66,14 +66,24 @@ export async function getRssFeedImportRequestForTest(
   userId: string,
   rssFeedId: string,
 ): Promise<RssFeedImportRequestForTest | null> {
-  const { rows } = await read(sql`/* getRssFeedImportRequestForTest */
-    SELECT topic_id, rss_feed_id, followed_at, input_value
+  const { rows } = await write<RssFeedImportRequestForTest>(sql`/* getRssFeedImportRequestForTest */
+    SELECT id, topic_id, rss_feed_id, rss_feed_import_row_id, followed_at, input_value
     FROM user_import_requests
-    WHERE user_id = ${userId}
-      AND rss_feed_id = ${rssFeedId}
+    WHERE user_id = ${userId} AND rss_feed_id = ${rssFeedId}
     LIMIT 1
   `)
-  return (rows[0] as RssFeedImportRequestForTest | undefined) ?? null
+  return rows[0] ?? null
+}
+
+export async function getRssFeedImportRequestCountForRowForTest(rowId: string): Promise<number> {
+  const { rows } = await write<{
+    count: string
+  }>(sql`/* getRssFeedImportRequestCountForRowForTest */
+    SELECT COUNT(*)::text AS count
+    FROM user_import_requests
+    WHERE rss_feed_import_row_id = ${rowId}
+  `)
+  return Number(rows[0]?.count ?? 0)
 }
 
 export async function getTopicImportRequestForTest(
