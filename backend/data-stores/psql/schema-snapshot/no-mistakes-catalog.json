@@ -137377,9 +137377,9 @@
           "nullable": true,
           "ordinalPosition": 15
         },
-        "discovered_feed_url": {
-          "comment": "External feed URL found in the completed HTML crawl.",
-          "dataType": "text",
+        "discovered_feed_url_id": {
+          "comment": "URL registry row for the feed found in the completed HTML crawl.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -137518,6 +137518,14 @@
           "referencedTable": "user_rss_feed_import_batches",
           "validated": true
         },
+        "user_rss_feed_import_rows_discovered_feed_url_id_fkey": {
+          "columns": ["discovered_feed_url_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        },
         "user_rss_feed_import_rows_discovery_crawl_id_fkey": {
           "columns": ["discovery_crawl_id"],
           "onDelete": "SET NULL",
@@ -137571,6 +137579,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_rss_feed_import_rows__discovered_feed_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_rows__discovered_feed_url_id ON public.user_rss_feed_import_rows USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "discovered_feed_url_id",
+              "descending": false,
+              "expression": "discovered_feed_url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(discovered_feed_url_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
