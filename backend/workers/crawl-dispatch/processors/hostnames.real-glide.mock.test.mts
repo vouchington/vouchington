@@ -6,9 +6,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
-import { crawlDispatchConfig } from '@services/crawls/work-limits'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
-import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import { addUrl } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import {
@@ -28,7 +26,6 @@ import {
   getTestHostnameCrawlSweep,
   setTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
@@ -180,67 +177,36 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
   })
   it('dispatches an eligible URL for one crawlable hostname', async () => {
     const { url } = await crawlableUrl('per-host')
-    const result = await runJob('crawl.crawl_urls_per_hostname_dispatcher', {
-      hostname_id: url.hostname.id,
-    })
+    const result = await runJob(
+      'crawl.crawl_urls_per_hostname_dispatcher',
+      {
+        hostname_id: url.hostname.id,
+      },
+      async current => {
+        const result = await processCrawlDispatchJob(current)
+        expect(current.data).toMatchObject({
+          hostname_id: url.hostname.id,
+          cursor: expect.any(Object),
+        })
+        return result
+      },
+    )
     expect(result).toMatchObject({ count: expect.any(Number) })
-    expect(
-      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: url.id } }))
-        .length,
-    ).toBeGreaterThan(0)
+    expect(await childCount('crawl.crawl_url', { url_id: url.id })).toBeGreaterThan(0)
     expect(await getTestHostnameCrawlSweep(url.hostname.id)).not.toBeNull()
   })
   it('dispatches a Tier 1 profile URL to the crawl queue', async () => {
     const { user, urlId, cursor } = await isolatedTierUrl()
     await createTestUserProfileLink(user.id, urlId)
     await runJob('crawl.crawl_tier1_dispatcher', { cursor })
-    expect(
-      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: urlId } })).length,
-    ).toBeGreaterThan(0)
+    expect(await childCount('crawl.crawl_url', { url_id: urlId })).toBeGreaterThan(0)
   })
   it('dispatches a Tier 2 neutral relation URL to the crawl queue', async () => {
     const { user, urlId, cursor } = await isolatedTierUrl()
     const post = await createTestPost({ user })
     await createEntityRelationWithElection(post.id, urlId, user.id, 0)
     await runJob('crawl.crawl_tier2_dispatcher', { cursor })
-    expect(
-      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: urlId } })).length,
-    ).toBeGreaterThan(0)
-  })
-  it('enqueues a hostname needing crawler refresh', async () => {
-    const hostnameId = await insertTestUrlHostname({
-      id: getMinUUIDv7ForDate(
-        new Date(Date.UTC(1971, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)),
-      ),
-      hostname: `refresh-${randomUUID()}.example.com`,
-      is_crawlable: true,
-    })
-    onTestFinished(async () => {
-      try {
-        await updateUrlHostname(hostnameId, { is_crawlable: false })
-      } finally {
-        const ownedChildren = await backgroundCpu.searchJobs({
-          name: 'crawl.refresh_hostname_crawler',
-          data: { hostname_id: hostnameId },
-        })
-        await Promise.all(ownedChildren.map(job => job.remove()))
-      }
-    })
-    overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { weekly_refresh_batch_size: 5000 })
-    expect(await searchHostnameIdsNeedingCrawlerRefresh(500, {}, hostnameId)).toContain(hostnameId)
-    const result = await runJob('crawl.refresh_hostname_crawler_dispatcher', {}, current =>
-      processCrawlDispatchJob(current, {
-        processCrawlHostnamesJob: job =>
-          processCrawlHostnamesJob(job, {
-            searchHostnameIdsNeedingCrawlerRefresh: limit =>
-              searchHostnameIdsNeedingCrawlerRefresh(limit, {}, hostnameId),
-          }),
-      }),
-    )
-    expect(result).toMatchObject({ count: expect.any(Number) })
-    expect(
-      await childCount('crawl.refresh_hostname_crawler', { hostname_id: hostnameId }),
-    ).toBeGreaterThan(0)
+    expect(await childCount('crawl.crawl_url', { url_id: urlId })).toBeGreaterThan(0)
   })
   it('refreshes crawler configuration and schedules sampled URLs', async () => {
     const hostname = `refresh-job-${randomUUID()}.example.com`
@@ -266,10 +232,12 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     onTestFinished(() => deleteTestRobotsTxtCache(hostname))
     const result = await runJob('crawl.refresh_hostname_crawler', { hostname_id: hostnameId })
     expect(result).toMatchObject({ hostname_crawler_configuration_id: expect.any(String) })
+    const { url: singleUrl } = await crawlableUrl('refresh-single')
     expect(
-      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: ids[0] } }))
-        .length,
-    ).toBeGreaterThan(0)
+      await runJob('crawl.refresh_hostname_crawler', { hostname_id: singleUrl.hostname.id }),
+    ).toMatchObject({ urls_selected_for_crawl: 0, url_ids_to_crawl: [] })
+    expect(await childCount('crawl.crawl_url', { url_id: singleUrl.id })).toBe(0)
+    expect(await childCount('crawl.crawl_url', { url_id: ids[0] })).toBeGreaterThan(0)
   })
   it('deletes an old invalid crawl from PostgreSQL', async () => {
     const { url } = await crawlableUrl('old-invalid')

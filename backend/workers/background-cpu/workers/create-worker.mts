@@ -1,3 +1,8 @@
+import { pagedDispatchBackoffStrategies } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import {
+  PAGED_DISPATCHER_MAX_STALLED_COUNT,
+  withPagedDispatcherStallBudget,
+} from '@data-stores/valkey-glide-mq/worker-stall-budget'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError from '@modules/on-error'
 import { getWorkerConcurrency } from '@modules/queue-config'
@@ -27,13 +32,19 @@ export function createBackgroundCpuWorker(options: BackgroundCpuWorkerOptions) {
   const processor = createBackgroundCpuProcessor(
     buildCpuHandlerMap(options.handlers, options.domains),
   )
-  const worker = createWorker(BACKGROUND_CPU_QUEUE_NAME, processor, {
-    dedicatedCommandClient: true,
-    ...(options.prefix ? { prefix: options.prefix } : {}),
-    concurrency:
-      options.concurrency ??
-      getWorkerConcurrency('background-cpu', { baseline, max: baseline * 4 }),
-  })
+  const worker = createWorker(
+    BACKGROUND_CPU_QUEUE_NAME,
+    withPagedDispatcherStallBudget(BACKGROUND_CPU_QUEUE_NAME, processor, options.prefix),
+    {
+      dedicatedCommandClient: true,
+      backoffStrategies: pagedDispatchBackoffStrategies(),
+      maxStalledCount: PAGED_DISPATCHER_MAX_STALLED_COUNT,
+      ...(options.prefix ? { prefix: options.prefix } : {}),
+      concurrency:
+        options.concurrency ??
+        getWorkerConcurrency('background-cpu', { baseline, max: baseline * 4 }),
+    },
+  )
   closePauseWatcherWithWorker(worker)
   return worker
 }

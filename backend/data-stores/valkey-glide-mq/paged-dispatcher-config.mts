@@ -22,7 +22,7 @@ const defaultFields = {
   activitypub_page_size: 500,
   activitypub_backoff_ms: 300000,
   background_max_depth: 10000,
-  'crawl-dispatch_max_depth': 10000,
+  'background-cpu_max_depth': 10000,
 }
 export const pagedDispatchMaxValues = Object.fromEntries(
   Object.keys(defaultFields).map(key => [

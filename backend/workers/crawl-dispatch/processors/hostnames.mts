@@ -1,5 +1,5 @@
 import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
-import { backgroundCpu as crawlDispatchQueue } from '@queues/background-cpu/queues'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { getWeeklyHostnameRefreshLimits } from '@services/crawls/work-limits'
 import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
@@ -124,7 +124,7 @@ export async function processCrawlHostnamesJob(
       return processPagedDispatcher<{ cursor?: CrawlHostnameDispatchCursor }, unknown>(job, {
         dispatcher: 'hostnames',
         cursorKey: 'id',
-        target: crawlDispatchQueue,
+        target: backgroundCpu,
         targetName: 'background-cpu',
         readAndDispatch: async pageSize => {
           const cursor = job.data?.cursor ?? {
@@ -144,7 +144,7 @@ export async function processCrawlHostnamesJob(
           return { result, ...(result.hasMore ? { next: { cursor: nextCursor } } : {}) }
         },
         enqueueNext: createEnqueueFunction({
-          queue: crawlDispatchQueue,
+          queue: backgroundCpu,
           queueName: 'background-cpu',
           jobName: 'crawl.crawl_hostnames_dispatcher',
           defaults: { priority: 100 },
