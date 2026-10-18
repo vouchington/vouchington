@@ -20,6 +20,7 @@ import {
   unregisterGlideMQInstance,
 } from '@data-stores/valkey-core/glide-mq-registry'
 import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
+import { getTestWorkerProcessorDecorator } from './test-worker-processor-decorator.mts'
 
 /**
  * A job's `stalledCount` never resets, so the (maxStalledCount + 1)th stall fails it permanently
@@ -120,13 +121,26 @@ function buildWorker<D, R>(
   const dedicated = dedicatedCommandClient
     ? createRetryingCommandClient('worker-queue-dedicated')
     : undefined
-  const worker = new Worker<D, R>(name, processor, {
+  const workerOptions = {
     connection: workerQueueConnection,
     ...options,
     prefix: options.prefix ?? workerQueuePrefix,
     maxStalledCount: options.maxStalledCount ?? DEFAULT_MAX_STALLED_COUNT,
     commandClient: dedicated?.client ?? workerQueueCommandClient,
-  })
+  }
+  const processorDecorator = getTestWorkerProcessorDecorator()
+  if (processorDecorator) {
+    const callerWrapProcessor = (
+      workerOptions as typeof workerOptions & {
+        wrapProcessor?: (processor: unknown, queueName: string) => unknown
+      }
+    ).wrapProcessor
+    Object.assign(workerOptions, {
+      wrapProcessor: (processor: unknown, queueName: string) =>
+        processorDecorator(callerWrapProcessor?.(processor, queueName) ?? processor, queueName),
+    })
+  }
+  const worker = new Worker<D, R>(name, processor, workerOptions)
   if (dedicated) closeCommandClientWithWorker(worker, dedicated)
   registerGlideMQInstance(worker)
   return worker

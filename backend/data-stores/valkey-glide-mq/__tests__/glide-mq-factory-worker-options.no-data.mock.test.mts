@@ -33,12 +33,13 @@ function lastWorkerOptions(): CapturedWorkerOptions {
 }
 
 async function importFactory() {
-  const [factory, { workerQueueCommandClient }, registry] = await Promise.all([
+  const [factory, { workerQueueCommandClient }, registry, testDecorator] = await Promise.all([
     import('../glide-mq-factory.mts'),
     import('../glide-mq-shared-client.mts'),
     import('@data-stores/valkey-core/glide-mq-registry'),
+    import('../test-worker-processor-decorator.mts'),
   ])
-  return { ...factory, workerQueueCommandClient, ...registry }
+  return { ...factory, workerQueueCommandClient, ...registry, ...testDecorator }
 }
 
 describe('createWorker stall budget', () => {
@@ -71,6 +72,30 @@ describe('createWorker stall budget', () => {
       maxStalledCount: 2,
       batch: { size: 3, timeout: 100 },
     })
+  })
+
+  it('injects the configured test processor decorator into app-created workers', async () => {
+    const { createWorker, setTestWorkerProcessorDecorator } = await importFactory()
+    const decorated = vi.fn((processor: unknown) => processor)
+    const callerWrapped = vi.fn((processor: unknown) => processor)
+    const decorator = (processor: unknown, queueName: string) => {
+      expect(queueName).toBe('profiled-queue')
+      return decorated(processor)
+    }
+    setTestWorkerProcessorDecorator(decorator)
+    const options: Parameters<typeof createWorker>[2] & {
+      wrapProcessor: (processor: unknown, queueName: string) => unknown
+    } = { wrapProcessor: callerWrapped }
+
+    createWorker('profiled-queue', processor, options)
+
+    const wrapProcessor = lastWorkerOptions().wrapProcessor as
+      | ((processor: unknown, queueName: string) => unknown)
+      | undefined
+    const original = vi.fn()
+    expect(wrapProcessor?.(original, 'profiled-queue')).toBe(original)
+    expect(callerWrapped).toHaveBeenCalledWith(original, 'profiled-queue')
+    expect(decorated).toHaveBeenCalledWith(original)
   })
 })
 

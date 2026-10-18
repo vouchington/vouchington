@@ -3,7 +3,7 @@ import {
   observeElectionTerminalSource,
   observeElectionQueueTerminals,
 } from './election-vote-stats-events.mts'
-import { createTestQueueTerminalSource } from './glide-mq-vitest-terminal-source.mts'
+import { createTestQueueTerminalSource } from './election-terminal-source.mts'
 import { TestQueue } from 'glide-mq/testing'
 import { workerQueueConnection, workerQueuePrefix } from '../data-stores/valkey-glide-mq/index.mts'
 import { entitiesListeners } from '../queues/entity-listeners/queues.mts'

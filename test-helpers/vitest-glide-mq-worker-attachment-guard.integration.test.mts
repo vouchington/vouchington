@@ -13,11 +13,10 @@ const vitestCliPath = join(
   'vitest.mjs',
 )
 const glideMqTestingPath = fileURLToPath(import.meta.resolve('glide-mq/testing'))
-const internalsPath = join(repoRoot, 'test-helpers/glide-mq-vitest-internals.mts')
-const guardRunnerPath = join(
-  repoRoot,
-  'test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts',
+const workerRuntimeTestingPath = fileURLToPath(
+  import.meta.resolve('@vouchington/worker-runtime/testing'),
 )
+const guardRunnerPath = join(repoRoot, 'test-helpers/vitest.runner.backend-data-guards.mts')
 const testDirs: string[] = []
 
 type FixtureFile = { name: string; source: string }
@@ -44,7 +43,7 @@ async function makeFixture(files: FixtureFile[]): Promise<string> {
   await writeFile(
     baselineSetupPath,
     `import { TestWorker } from ${JSON.stringify(glideMqTestingPath)}
-import { getOrCreateQueue } from ${JSON.stringify(internalsPath)}
+import { getOrCreateQueue } from ${JSON.stringify(workerRuntimeTestingPath)}
 new TestWorker(getOrCreateQueue('intentional-worker'), () => undefined)
 `,
   )
@@ -93,7 +92,7 @@ function fixtureTestSource(
 ): string {
   return `import { afterAll, beforeAll, it } from 'vitest'
 import { TestWorker } from ${JSON.stringify(glideMqTestingPath)}
-import { getOrCreateQueue } from ${JSON.stringify(internalsPath)}
+import { getOrCreateQueue } from ${JSON.stringify(workerRuntimeTestingPath)}
 const workers = []
 ${
   createAtTopLevel

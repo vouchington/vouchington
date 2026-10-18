@@ -1,7 +1,10 @@
 import { describe, expect, it, onTestFinished, vi, type MockInstance } from 'vitest'
 import { TestQueue, type TestJob } from 'glide-mq/testing'
-import { Queue, Worker } from './glide-mq-vitest-shim.mts'
-import { wrapTestWorkerProcessor, DEFAULT_FLUSH_TIMEOUT_MS } from './glide-mq-vitest-flush.mts'
+import { Queue, DEFAULT_FLUSH_TIMEOUT_MS } from '@vouchington/worker-runtime/testing'
+import {
+  RequestQueryProfileWorker as Worker,
+  wrapRequestQueryProfileProcessor,
+} from './request-query-profile-worker.mts'
 import {
   createRequestQueryProfile,
   recordRequestQueryTiming,
@@ -154,11 +157,11 @@ describe('owned worker query profiles', () => {
     expect(job).not.toBeNull()
     // The positive sibling is a real public SDK receipt; no fake job ids or private registry reads.
     let started = false
-    const processor = wrapTestWorkerProcessor(() => {
+    const processor = wrapRequestQueryProfileProcessor(() => {
       started = true
       return 1
     }, queue.name)
-    expect(() => processor([job, null])).toThrow('every batch member identity')
+    await expect(processor([job, null])).rejects.toThrow('every batch member identity')
     expect(started).toBe(false)
   })
 

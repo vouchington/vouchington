@@ -169,6 +169,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       setupFiles: [
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
+        './test-helpers/vitest.setup.worker-query-profiles.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
       ],

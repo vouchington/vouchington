@@ -16,8 +16,8 @@ export function realGlideMqAlias(): Alias {
 }
 
 export function backendAliases({
-  useGlideMqShim = true,
-}: { useGlideMqShim?: boolean } = {}): Alias[] {
+  useWorkerRuntimeTestAdapter = true,
+}: { useWorkerRuntimeTestAdapter?: boolean } = {}): Alias[] {
   const aliases: Alias[] = [
     {
       find: /^cloudflare:workers$/,
@@ -95,10 +95,10 @@ export function backendAliases({
     },
   ]
 
-  if (useGlideMqShim) {
+  if (useWorkerRuntimeTestAdapter) {
     aliases.push({
       find: /^glide-mq$/,
-      replacement: resolve(process.cwd(), 'test-helpers/glide-mq-vitest-shim.mts'),
+      replacement: backendApiRequire.resolve('@vouchington/worker-runtime/testing'),
     })
   }
 

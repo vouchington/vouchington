@@ -1,4 +1,4 @@
-import { getOrCreateQueue } from '../../test-helpers/glide-mq-vitest-internals.mts'
+import { getOrCreateQueue } from '@vouchington/worker-runtime/testing'
 
 /**
  * Forgets deduplication keys in a shared queue without touching any job, so a test that pinned the

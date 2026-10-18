@@ -17,6 +17,7 @@ const backendDataStoreTestDefaults = {
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
     './test-helpers/vitest.setup.shared-db-scope-guard.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
+    './test-helpers/vitest.setup.worker-query-profiles.mts',
     './test-helpers/vitest.setup.glide-mq-workers.mts',
     './backend/test-helpers/vitest.setup.aws-mocks.mts',
     './backend/test-helpers/vitest.setup.s3-offline.mts',
@@ -56,6 +57,7 @@ const backendMocksProject = {
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
       './test-helpers/vitest.setup.shared-db-scope-guard.mts',
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
+      './test-helpers/vitest.setup.worker-query-profiles.mts',
       './test-helpers/vitest.setup.glide-mq-workers.mts',
       './backend/test-helpers/vitest.setup.aws-mocks.mts',
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
@@ -72,7 +74,7 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     test: {
       ...backendDataStoreTestDefaults,
       name: 'backend-data-stores',
-      runner: './test-helpers/vitest.runner.glide-mq-worker-attachment-guard.mts',
+      runner: './test-helpers/vitest.runner.backend-data-guards.mts',
       include: [
         'backend/{agents,api,data-stores,entrypoints,md,queues,rss,scripts,service-registrations,services,sitemaps,mcp,worker-runtime,workers}/**/*.test.mts',
         'backend/test-helpers/election-vote-stats.test.mts',

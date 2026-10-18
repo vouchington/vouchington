@@ -88,7 +88,7 @@ export default defineConfig({
       {
         extends: true,
         resolve: {
-          alias: [realGlideMqAlias(), ...backendAliases({ useGlideMqShim: false })],
+          alias: [realGlideMqAlias(), ...backendAliases({ useWorkerRuntimeTestAdapter: false })],
         },
         test: {
           pool: 'forks',
@@ -107,7 +107,7 @@ export default defineConfig({
       {
         extends: true,
         resolve: {
-          alias: [realGlideMqAlias(), ...backendAliases({ useGlideMqShim: false })],
+          alias: [realGlideMqAlias(), ...backendAliases({ useWorkerRuntimeTestAdapter: false })],
         },
         test: {
           name: 'backend-embedding-creation-capacity',
