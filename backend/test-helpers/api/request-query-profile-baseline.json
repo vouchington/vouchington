@@ -99,25 +99,10 @@
     "code": "backend/services/copyright-notices/email-promotion.mts:345"
   },
   {
-    "annotation": "createDistribution",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
     "annotation": "createEmailVerificationToken",
     "reason": "The token upsert runs after fn_lock_active_user_for_mutation so account deletion cannot race credential creation",
     "permanent": true,
     "code": "backend/services/my/email-address-verification.mts:54"
-  },
-  {
-    "annotation": "createImportBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
-    "annotation": "createPost",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
   },
   {
     "annotation": "createPublicationAliasIdentityStaging",
@@ -180,11 +165,6 @@
     "issue": 3121
   },
   {
-    "annotation": "fetchListById",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
     "reason": "The form review reads the switch-on time before its transaction and enforcement rereads it after that transaction commits, so a switch-off or flip in between stops automation instead of enforcing on the earlier answer",
     "permanent": true,
@@ -245,11 +225,6 @@
     "issue": 3113
   },
   {
-    "annotation": "getPostProvenanceFacts",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
     "annotation": "getPrivateUserByAny",
     "reason": "Authenticated self reads and same-phase mutation inputs reuse rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside fresh report authorization after CAPTCHA/admission, post-body target resolution and postwrite reloads",
     "issue": 3113
@@ -271,11 +246,6 @@
   },
   {
     "annotation": "getRetainedPostCategories topics",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
-    "annotation": "getRssFeedById",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 3122
   },
@@ -335,11 +305,6 @@
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt recipient and the claimant decision recipient commit separately",
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:356"
-  },
-  {
-    "annotation": "insertRssFeedSettingChange",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
   },
   {
     "annotation": "listDescendantPostPublicationSitemapPage",
@@ -638,11 +603,6 @@
     "reason": "After locking the active user, clear the old primary before setting its replacement to satisfy the unique primary-address constraint",
     "permanent": true,
     "code": "backend/services/my/email-addresses.mts:21"
-  },
-  {
-    "annotation": "setRssFeedStateAsCurrentUser:latest",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",

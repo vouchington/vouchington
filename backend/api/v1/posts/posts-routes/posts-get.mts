@@ -82,10 +82,16 @@ app.route('/api/v1/posts').get(async (ctx: Context) => {
   const postIds = result.results.map((r: { id: string }) => r.id)
   const postsAndRootsPromise = getPostsWithRootsByAnyCached(postIds)
   const rawPostsPromise = postsAndRootsPromise.then(result => result.posts)
-  const postsPromise = rawPostsPromise.then(posts => labelAndMaskPosts(posts, currentUser))
-  const postsWithRootsPromise = Promise.all([postsAndRootsPromise, postsPromise]).then(
-    async ([{ roots }, posts]) => [...posts, ...(await labelAndMaskPosts(roots, currentUser))],
-  )
+  // Page posts and their roots are labelled together in one read of the provenance facts.
+  const labelledPostsPromise = postsAndRootsPromise.then(async ({ posts, roots }) => {
+    const labelled = await labelAndMaskPosts([...posts, ...roots], currentUser)
+    return { posts: labelled.slice(0, posts.length), rootPosts: labelled.slice(posts.length) }
+  })
+  const postsPromise = labelledPostsPromise.then(({ posts }) => posts)
+  const postsWithRootsPromise = labelledPostsPromise.then(({ posts, rootPosts }) => [
+    ...posts,
+    ...rootPosts,
+  ])
   if (!currentUser) {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }

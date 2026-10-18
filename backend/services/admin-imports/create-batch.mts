@@ -28,7 +28,7 @@ export async function createImportBatch(
 
   return runWithTransaction(options.query, async query => {
     const { rows: batchRows } = await write(
-      sql`/* createImportBatch */
+      sql`/* createImportBatch:batch */
       INSERT INTO admin_import_batches (
         import_type,
         created_by_id,
@@ -56,7 +56,7 @@ export async function createImportBatch(
       const chunkIndices = chunk.map((_, j) => i + j)
       // oxlint-disable-next-line no-await-in-loop -- transaction-scoped chunks insert row indexes in deterministic batch order
       const { rows: chunkRows } = await write(
-        sql`/* createImportBatch */
+        sql`/* createImportBatch:rows */
         INSERT INTO admin_import_rows (batch_id, row_index, input_data)
         SELECT ${batch.id}, row_index, input_data
         FROM UNNEST(

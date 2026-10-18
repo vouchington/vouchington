@@ -12,4 +12,5 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'conversation-participant-add-read',
   'community-invite-redeem',
   'community-application-questions',
+  'rss-feed-state-changes',
 ] as const

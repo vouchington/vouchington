@@ -93,6 +93,16 @@ describe('POST /api/v1/lists/:id/import', () => {
       .expect(403)
   })
 
+  it('returns 404 for an unknown list', async () => {
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request
+      .post('/api/v1/lists/00000000-0000-7000-8000-000000000000/import')
+      .set('Content-Type', 'application/json')
+      .send({ community_slug: communitySlug })
+      .expect(404)
+  })
+
   it('returns 422 when community_slug is missing', async () => {
     const request = createRequest()
     await request.authenticateAs(user)

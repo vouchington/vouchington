@@ -43,6 +43,7 @@ import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-disp
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
+import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 
 async function main() {
   prepareOutputDir()
@@ -80,6 +81,7 @@ async function main() {
     await runRelationReadBatchScenarios()
     await runDispatchWorkPlanScenarios()
     await runModerationReportContextScenarios()
+    await runRssFeedStateChangeScenarios()
     // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
     await seedVoteWeightDispatch()
     await runVoteWeightDispatchScenarios()
