@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -185,7 +184,7 @@ async function fixture(
   statements: string[],
   sources?: Record<string, string>,
 ): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), 'view-required-predicates-'))
+  const directory = await budget.createRoot('view-required-predicates-')
   directories.push(directory)
   const fixtureSources = sources ?? {
     [runtimePath]: `import { read } from '@data-stores/psql'\nexport async function run() {\n${statements
