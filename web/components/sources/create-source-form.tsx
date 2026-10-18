@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { createSource } from '@/lib/api/client'
+import { waitForSourceImport } from '@/lib/api/client/source-import'
 import { importRssFeeds } from '@/lib/api/client/import-export'
 import { streamImportProgress, type ImportProgress } from '@/lib/api/client/import-stream'
 import { ApiError } from '@/lib/api/error'
@@ -41,9 +42,13 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
 
     try {
       if (parsedUrls.length === 1) {
+        abortControllerRef.current?.abort()
+        const controller = new AbortController()
+        abortControllerRef.current = controller
         const result = await createSource({ rss_feed_url: parsedUrls[0]!, follow: true })
+        const slug = await waitForSourceImport(result, controller.signal)
         onSuccess?.()
-        push(topicHref({ topic_type: 'rss_feed', slug: result.topic_slug }))
+        push(topicHref({ topic_type: 'rss_feed', slug }))
       } else {
         abortControllerRef.current?.abort()
         const controller = new AbortController()
@@ -82,6 +87,7 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
         }
       }
     } catch (err) {
+      if (abortControllerRef.current?.signal.aborted) return
       /* c8 ignore next 2 -- error path requires injecting a submission failure */
       setError(
         err instanceof ApiError

@@ -132,6 +132,11 @@ CREATE TABLE IF NOT EXISTS user_rss_feed_import_rows (
   batch_id UUID NOT NULL REFERENCES user_rss_feed_import_batches(id) ON DELETE CASCADE,
   row_index INT NOT NULL CHECK (row_index >= 0),
   input_url TEXT NOT NULL,
+  discovery_url_id UUID REFERENCES urls(id) ON DELETE SET NULL,
+  discovery_generation UUID,
+  discovery_crawl_id UUID REFERENCES crawls(id) ON DELETE SET NULL,
+  discovered_feed_url TEXT,
+  discovery_failed_at TIMESTAMPTZ,
   outcome user_rss_feed_import_row_outcomes,
   rss_feed_id UUID REFERENCES rss_feeds(id) ON DELETE SET NULL,
   completed_at TIMESTAMPTZ,
@@ -171,6 +176,18 @@ EXECUTE FUNCTION fn_reject_terminal_lifecycle('completed_at', 'failed_at');
 
 CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__batch_id__row_index
 ON user_rss_feed_import_rows (batch_id, row_index);
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__discovery_url_id
+ON user_rss_feed_import_rows (discovery_url_id) WHERE discovery_url_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_rss_feed_import_rows__discovery_crawl_id
+ON user_rss_feed_import_rows (discovery_crawl_id) WHERE discovery_crawl_id IS NOT NULL;
+
+COMMENT ON COLUMN user_rss_feed_import_rows.discovery_url_id IS 'HTML page URL whose crawl is pending for feed discovery.';
+COMMENT ON COLUMN user_rss_feed_import_rows.discovery_generation IS 'Per-attempt fence that rejects stale crawl outcomes after recovery or another HTML page.';
+COMMENT ON COLUMN user_rss_feed_import_rows.discovery_crawl_id IS 'Completed crawl used to resolve the feed link.';
+COMMENT ON COLUMN user_rss_feed_import_rows.discovered_feed_url IS 'External feed URL found in the completed HTML crawl.';
+COMMENT ON COLUMN user_rss_feed_import_rows.discovery_failed_at IS 'Time the HTML crawl completed without a usable feed link.';
 
 COMMENT ON TABLE user_rss_feed_import_batches IS 'Tracks user-submitted RSS feed import batches processed asynchronously.';
 COMMENT ON COLUMN user_rss_feed_import_batches.user_id IS 'The user who submitted the RSS feed import.';

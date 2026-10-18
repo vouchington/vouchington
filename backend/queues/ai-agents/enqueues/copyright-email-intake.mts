@@ -35,14 +35,14 @@ type RecoveryDependencies = {
     retry(): Promise<void>
     remove(): Promise<void>
   } | null>
-  enqueue: typeof enqueueCopyrightEmailIntakeAndWait
+  enqueue: typeof enqueueCopyrightEmailIntake
 }
 
 export async function enqueueOrRetryCopyrightEmailIntake(
   intakeId: string,
   dependencies: RecoveryDependencies = {
     getJob: (...args) => ai_agents.getJob(...args),
-    enqueue: enqueueCopyrightEmailIntakeAndWait,
+    enqueue: enqueueCopyrightEmailIntake,
   },
 ): Promise<void> {
   const retained = await dependencies.getJob(jobIdFor(intakeId), { excludeData: true })
@@ -59,7 +59,7 @@ export async function enqueueOrRetryCopyrightEmailIntake(
   await dependencies.enqueue(intakeId)
 }
 
-export async function enqueueCopyrightEmailIntakeAndWait(intakeId: string): Promise<void> {
+export async function enqueueCopyrightEmailIntake(intakeId: string): Promise<void> {
   const { data, opts } = buildCopyrightEmailIntakeJob(intakeId)
   await ai_agents.add('copyright-email-intake', data, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'copyright-email-intake')

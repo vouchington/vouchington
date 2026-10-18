@@ -50,7 +50,7 @@ function buildReportJudgementJob(
  * Awaitable variant for manual staff-triggered re-runs: propagates enqueue failures so the
  * caller can surface an error instead of falsely reporting the job as queued.
  */
-export async function enqueueReportJudgementAndWait(
+export async function enqueueReportJudgement(
   entityType: string,
   entityId: string,
   triggeringReportId: string,

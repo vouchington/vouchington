@@ -2,6 +2,7 @@
 
 import { ApiError } from '../error'
 import { parseErrorResponseBody } from '../error-helpers'
+import type { RssFeedImportStatus } from './import-export'
 
 export interface ImportProgress {
   batchId: string
@@ -23,6 +24,7 @@ export async function streamImportProgress(
   importId: string,
   onProgress: (progress: ImportProgress) => void,
   signal?: AbortSignal,
+  onCompleted?: (status: RssFeedImportStatus) => void,
 ): Promise<void> {
   const fetchProgress = async () => {
     const response = await fetch(`/api/v1/my/import/rss-feeds/${encodeURIComponent(importId)}`, {
@@ -39,16 +41,7 @@ export async function streamImportProgress(
       )
     }
 
-    const body = (await response.json()) as {
-      import: {
-        id: string
-        completed_rows: number
-        failed_rows: number
-        total_rows: number
-        pending_rows: number
-        completed_at: string | null
-      }
-    }
+    const body = (await response.json()) as RssFeedImportStatus
     const progress = {
       batchId: body.import.id,
       completed: body.import.completed_rows,
@@ -57,6 +50,7 @@ export async function streamImportProgress(
       done: body.import.pending_rows === 0 || body.import.completed_at !== null,
     }
     onProgress(progress)
+    if (progress.done) onCompleted?.(body)
     return progress.done
   }
 

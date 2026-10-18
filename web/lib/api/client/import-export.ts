@@ -28,8 +28,9 @@ export interface ImportResult {
     | 'recommendation_created'
     | 'already_following'
     | 'error'
-  error?: string
+  error_code?: string
   entity_id?: string
+  topic_slug?: string
   recommendation_post_id?: string
 }
 

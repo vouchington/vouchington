@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
@@ -14,7 +14,8 @@ export const getCrawlById = async (
     throw createError(422, `Invalid crawl ID or URL ID: ${crawlId}, ${urlId}`)
   }
 
-  const { rows } = await read<Omit<CrawlBasic, '__entity_type'>>(
+  const query = options.readOnly === false ? write : read
+  const { rows } = await query<Omit<CrawlBasic, '__entity_type'>>(
     `/* getCrawlById */
     SELECT ${crawlBasicColumns}
     FROM crawls

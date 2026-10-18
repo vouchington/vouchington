@@ -53,7 +53,7 @@ export function enqueueAppealResolution(appealId: string, rerunById?: string | n
  * Awaitable variant for manual staff-triggered re-runs: propagates enqueue failures so the
  * caller can surface an error instead of falsely reporting the job as queued.
  */
-export async function enqueueAppealResolutionAndWait(
+export async function enqueueAppealResolutionQueued(
   appealId: string,
   rerunById?: string | null,
 ): Promise<void> {

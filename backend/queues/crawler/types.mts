@@ -1,6 +1,9 @@
 export type CrawlerJobs = 'crawl_url'
 
 export type EnqueueCrawlerJobOptions = {
+  /** Import row resumed after the persisted HTML crawl outcome. */
+  importRowId?: string
+  importDiscoveryGeneration?: string
   delay?: number
   priority?: number
   /** Hostname ID used as the ordering key for per-domain rate limiting */
@@ -25,8 +28,6 @@ export type EnqueueCrawlerJobOptions = {
   skipEmbedResolution?: boolean
   /** Suppress URL-created side effects for redirect target URLs */
   skipCreatedEventsForRedirects?: boolean
-  /** Retain completed job results for a synchronous waiter */
-  waitForResult?: boolean
 }
 
 export type EnqueueCrawlUrlEntry = {

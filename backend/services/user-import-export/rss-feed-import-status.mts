@@ -17,6 +17,7 @@ type StatusRow = UserRssFeedImportBatchRow &
   Pick<UserRssFeedImportRow, 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'> & {
     row_id: string | null
     cursor_found: boolean | null
+    topic_slug: string | null
   }
 
 function importRowCursorScope(importId: string): string {
@@ -63,7 +64,7 @@ export async function getRssFeedImport(
   const query = sql`/* getRssFeedImport */
     SELECT batch.id, batch.total_rows, batch.completed_rows, batch.failed_rows,
       batch.completed_at, batch.created_at, page.id AS row_id, page.input_url, page.outcome,
-      page.error_message, page.rss_feed_id,
+      page.error_message, page.rss_feed_id, page.topic_slug,
       EXISTS (
         SELECT 1 FROM user_rss_feed_import_rows cursor_row
         WHERE cursor_row.id = ${afterRowId}::uuid
@@ -72,8 +73,11 @@ export async function getRssFeedImport(
     FROM user_rss_feed_import_batches batch
     LEFT JOIN LATERAL (
       SELECT import_row.id, import_row.row_index, import_row.input_url, import_row.outcome,
-        import_row.error_message, import_row.rss_feed_id
+        import_row.error_message, import_row.rss_feed_id, topic.slug AS topic_slug
       FROM user_rss_feed_import_rows import_row
+      LEFT JOIN rss_feeds feed ON feed.id = import_row.rss_feed_id
+      LEFT JOIN topics topic ON topic.id = feed.topic_id
+        AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
       WHERE import_row.batch_id = batch.id`
   if (afterRowId) {
     query.append(sql`

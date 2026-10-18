@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  enqueueCopyrightFormScreeningAndWait,
+  enqueueCopyrightFormScreening,
   enqueueOrRetryCopyrightFormScreening,
 } from './copyright-form-screening.mts'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
@@ -15,7 +15,7 @@ describe('copyright form screening enqueue recovery', () => {
     const submissionId = crypto.randomUUID()
     const jobId = `copyright_form_screening_${submissionId}`
     try {
-      await enqueueCopyrightFormScreeningAndWait(submissionId)
+      await enqueueCopyrightFormScreening(submissionId)
       // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
       // Valkey deduplication or ordering. Real coalescing stays in the real-glide file.
       await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({

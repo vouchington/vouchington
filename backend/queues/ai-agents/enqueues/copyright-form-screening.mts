@@ -5,7 +5,7 @@ import { ai_agents } from '../queues.mts'
 
 const jobIdFor = (submissionId: string) => `copyright_form_screening_${submissionId}`
 
-export async function enqueueCopyrightFormScreeningAndWait(submissionId: string): Promise<void> {
+export async function enqueueCopyrightFormScreening(submissionId: string): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
     jobId: jobIdFor(submissionId),
@@ -29,10 +29,10 @@ export async function enqueueOrRetryCopyrightFormScreening(
       retry(): Promise<void>
       remove(): Promise<void>
     } | null>
-    enqueue: typeof enqueueCopyrightFormScreeningAndWait
+    enqueue: typeof enqueueCopyrightFormScreening
   } = {
     getJob: (...args) => ai_agents.getJob(...args),
-    enqueue: enqueueCopyrightFormScreeningAndWait,
+    enqueue: enqueueCopyrightFormScreening,
   },
 ): Promise<void> {
   const retained = await dependencies.getJob(jobIdFor(submissionId), { excludeData: true })

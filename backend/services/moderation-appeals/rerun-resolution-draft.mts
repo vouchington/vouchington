@@ -14,11 +14,11 @@ export async function rerunModerationAppealResolutionDraft(
     'Only unapproved, unsent pending appeals can rerun resolution drafts',
   )
 
-  const { enqueueAppealResolutionAndWait } =
+  const { enqueueAppealResolutionQueued } =
     await import('@queues/ai-agents/enqueues/appeal-resolution')
   await recordStaffOperation(
     staffUserId,
     { actionType: 'appeal_resolution_draft_rerun', moderationAppealId: appealId },
-    () => enqueueAppealResolutionAndWait(appealId, staffUserId),
+    () => enqueueAppealResolutionQueued(appealId, staffUserId),
   )
 }

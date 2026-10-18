@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import { CRAWL_URLS_QUEUE_NAME } from '@queues/crawler/config'
-import { enqueueCrawlUrlAndWait } from '@queues/crawler/enqueues'
+import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { crawlUrls } from '@queues/crawler/queues'
 import { insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
 import { handleCrawlerProcessorError } from '../processors/outcomes.mts'
@@ -25,6 +25,7 @@ describe('crawler rate-limit replacements with real GlideMQ', () => {
     const { urlId, url } = await createCrawlerUrlFixture('chain')
     const crawlResult = { url_id: urlId, crawl_id: randomUUID(), response_status_code: 200 }
     const retryCounts: number[] = []
+    const completed = Promise.withResolvers<void>()
     const worker = new Worker(
       CRAWL_URLS_QUEUE_NAME,
       async (job: Job) => {
@@ -35,11 +36,14 @@ describe('crawler rate-limit replacements with real GlideMQ', () => {
             urlId,
             retryCount,
             new CrawlerRateLimitError(url, 429, 10, RETRY_AFTER_MS),
-            { waitForResult: true },
+            {},
           )
         } catch (err) {
           // The circuit breaker tripped: the last replacement is allowed to finish the crawl.
-          if (err instanceof CrawlerRateLimitError) return crawlResult
+          if (err instanceof CrawlerRateLimitError) {
+            completed.resolve()
+            return crawlResult
+          }
           throw err
         }
       },
@@ -54,15 +58,15 @@ describe('crawler rate-limit replacements with real GlideMQ', () => {
     try {
       await worker.waitUntilReady()
 
-      const result = await enqueueCrawlUrlAndWait({ urlId }, { waitTimeoutMs: 20_000 })
-
-      expect(result).toEqual(crawlResult)
+      await enqueueBulkCrawlUrls([{ urlId }])
+      await completed.promise
       expect(retryCounts).toEqual([0, 1, 2, 3])
       const jobs = await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })
       const dedupIds = jobs
         .flatMap(job => job.opts.deduplication?.id ?? [])
         .toSorted((a, b) => a.localeCompare(b))
       expect(dedupIds).toEqual([
+        `crawl_url__${urlId}`,
         `crawl_url_ratelimit__${urlId}__1`,
         `crawl_url_ratelimit__${urlId}__2`,
         `crawl_url_ratelimit__${urlId}__3`,

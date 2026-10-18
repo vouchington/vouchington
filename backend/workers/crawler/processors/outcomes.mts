@@ -25,7 +25,8 @@ export async function handleCrawlerProcessorError(
     skipChunks?: boolean
     skipEmbedResolution?: boolean
     skipCreatedEventsForRedirects?: boolean
-    waitForResult?: boolean
+    importRowId?: string
+    importDiscoveryGeneration?: string
   } = {},
 ): Promise<unknown> {
   // Rate-limit errors: never flood the domain with replacement jobs
@@ -52,7 +53,8 @@ export async function handleCrawlerProcessorError(
               skipChunks: options.skipChunks,
               skipEmbedResolution: options.skipEmbedResolution,
               skipCreatedEventsForRedirects: options.skipCreatedEventsForRedirects,
-              waitForResult: options.waitForResult,
+              importRowId: options.importRowId,
+              importDiscoveryGeneration: options.importDiscoveryGeneration,
             },
             rateLimitRetryCount: rateLimitRetryCount + 1,
           },

@@ -14,11 +14,11 @@ export async function rerunReviewDisputeResolutionDraft(
     'Only unapproved, unsent pending disputes can rerun resolution drafts',
   )
 
-  const { enqueueDisputeResolutionAndWait } =
+  const { enqueueDisputeResolutionQueued } =
     await import('@queues/ai-agents/enqueues/dispute-resolution')
   await recordStaffOperation(
     staffUserId,
     { actionType: 'dispute_resolution_draft_rerun', reviewDisputeId: disputeId },
-    () => enqueueDisputeResolutionAndWait(disputeId, staffUserId),
+    () => enqueueDisputeResolutionQueued(disputeId, staffUserId),
   )
 }

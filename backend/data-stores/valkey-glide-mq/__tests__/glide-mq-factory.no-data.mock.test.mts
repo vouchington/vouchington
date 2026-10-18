@@ -23,7 +23,6 @@ const {
   queue.prototype.close = vi.fn<typeof import('glide-mq').Queue.prototype.close>()
   queue.prototype.add = vi.fn<typeof import('glide-mq').Queue.prototype.add>()
   queue.prototype.addBulk = vi.fn<typeof import('glide-mq').Queue.prototype.addBulk>()
-  queue.prototype.addAndWait = vi.fn<typeof import('glide-mq').Queue.prototype.addAndWait>()
   queue.prototype.upsertJobScheduler =
     vi.fn<typeof import('glide-mq').Queue.prototype.upsertJobScheduler>()
   const flowProducer = vi.fn<FlowProducerConstructor>() as Mock<FlowProducerConstructor> &

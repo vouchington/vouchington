@@ -5,9 +5,7 @@ import { ai_agents } from '../queues.mts'
 
 const jobIdFor = (submissionId: string) => `copyright_appeal_recommendation_${submissionId}`
 
-export async function enqueueCopyrightAppealRecommendationAndWait(
-  submissionId: string,
-): Promise<void> {
+export async function enqueueCopyrightAppealRecommendation(submissionId: string): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
     jobId: jobIdFor(submissionId),
@@ -31,10 +29,10 @@ export async function enqueueOrRetryCopyrightAppealRecommendation(
       retry(): Promise<void>
       remove(): Promise<void>
     } | null>
-    enqueue: typeof enqueueCopyrightAppealRecommendationAndWait
+    enqueue: typeof enqueueCopyrightAppealRecommendation
   } = {
     getJob: (...args) => ai_agents.getJob(...args),
-    enqueue: enqueueCopyrightAppealRecommendationAndWait,
+    enqueue: enqueueCopyrightAppealRecommendation,
   },
 ): Promise<void> {
   const retained = await dependencies.getJob(jobIdFor(submissionId), { excludeData: true })

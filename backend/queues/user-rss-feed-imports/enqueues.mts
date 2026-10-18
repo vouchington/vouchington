@@ -78,6 +78,16 @@ export const enqueueBulkUserRssFeedImportRows = createBackgroundBulkEnqueue(
   }),
 )
 
+const enqueueRowContinuation = createBackgroundEnqueue(IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB)
+
+/** The crawler resumes a row after its result is durable. Recovery may enqueue it again. */
+export function enqueueUserRssFeedImportRowContinuation(
+  importId: string,
+  rowId: string,
+): EnqueueReturnType {
+  return enqueueRowContinuation({ importId, rowId })
+}
+
 const enqueueRecovery = createBackgroundEnqueue(IMPORTS_RECOVER_STALLED_JOB)
 
 /** Runs one sweep that re-dispatches imports left without a dispatcher. */

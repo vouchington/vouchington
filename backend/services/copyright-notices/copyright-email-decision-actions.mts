@@ -1,7 +1,7 @@
 import onError from '@modules/on-error'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
-import { enqueueCopyrightSubmissionGuidanceAndWait } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
+import { enqueueCopyrightSubmissionGuidance } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 import { assertCopyrightIntakeEnabled } from './activation.mts'
 import { parseCopyrightNoticeForm } from './http-input.mts'
 import { resolveCopyrightImagePlacement } from './placement-resolution.mts'
@@ -65,7 +65,7 @@ export async function admitCopyrightEmailCorrespondenceDecision(
     (input.kind === 'counter_notice' || input.kind === 'court_or_ccb_hold')
   ) {
     try {
-      await enqueueCopyrightSubmissionGuidanceAndWait(admitted.submissionId)
+      await enqueueCopyrightSubmissionGuidance(admitted.submissionId)
     } catch (err) {
       onError(
         err instanceof Error

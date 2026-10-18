@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ai_agents } from '../queues.mts'
-import { enqueueAppealResolutionAndWait } from './appeal-resolution.mts'
+import { enqueueAppealResolutionQueued } from './appeal-resolution.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
-describe('enqueueAppealResolutionAndWait', () => {
+describe('enqueueAppealResolution', () => {
   const appealIds: string[] = []
 
   afterEach(async () => {
@@ -21,9 +21,9 @@ describe('enqueueAppealResolutionAndWait', () => {
     appealIds.push(appealId)
 
     await Promise.all([
-      enqueueAppealResolutionAndWait(appealId),
-      enqueueAppealResolutionAndWait(appealId, randomUUID()),
-      enqueueAppealResolutionAndWait(appealId, randomUUID()),
+      enqueueAppealResolutionQueued(appealId),
+      enqueueAppealResolutionQueued(appealId, randomUUID()),
+      enqueueAppealResolutionQueued(appealId, randomUUID()),
     ])
 
     const jobs = (await getAppealResolutionJobs()).filter(
