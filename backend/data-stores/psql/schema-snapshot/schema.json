@@ -5147,6 +5147,7 @@
     },
     "ai_agent_call_receipts": {
       "checkConstraints": {
+        "ai_agent_call_receipts_check": "CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::text, 'copyright-appeal-recommendation'::text])) = (copyright_notice_submission_id IS NOT NULL)))",
         "ai_agent_call_receipts_operation_key_check": "CHECK ((char_length(operation_key) = 64))",
         "ai_agent_call_receipts_request_sha256_check": "CHECK ((char_length(request_sha256) = 64))",
         "ai_agent_call_receipts_result_ciphertext_check": "CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))"
@@ -5163,6 +5164,17 @@
           "ordinalPosition": 3,
           "type": "text"
         },
+        "copyright_notice_submission_id": {
+          "collation": null,
+          "comment": "Retention owner for copyright guidance and appeal results; null for other agents.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
         "created_at": {
           "collation": null,
           "comment": "Creation time derived from the UUIDv7 receipt identity.",
@@ -5171,7 +5183,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -5215,12 +5227,22 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "text"
         }
       },
       "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "ai_agent_call_receipts_copyright_notice_submission_id_fkey": {
+          "columns": ["copyright_notice_submission_id"],
+          "definition": "FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        }
+      },
       "growth": "unbounded",
       "indexes": {
         "ai_agent_call_receipts_operation_key_key": {
@@ -5261,6 +5283,26 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__copyright_submission": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__copyright_submission ON public.ai_agent_call_receipts USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_submission_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },

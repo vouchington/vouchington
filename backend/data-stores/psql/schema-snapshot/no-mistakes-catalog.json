@@ -5326,6 +5326,10 @@
     },
     "ai_agent_call_receipts": {
       "checkConstraints": {
+        "ai_agent_call_receipts_check": {
+          "definition": "CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::text, 'copyright-appeal-recommendation'::text])) = (copyright_notice_submission_id IS NOT NULL)))",
+          "validated": true
+        },
         "ai_agent_call_receipts_operation_key_check": {
           "definition": "CHECK ((char_length(operation_key) = 64))",
           "validated": true
@@ -5350,6 +5354,16 @@
           "nullable": false,
           "ordinalPosition": 3
         },
+        "copyright_notice_submission_id": {
+          "comment": "Retention owner for copyright guidance and appeal results; null for other agents.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
         "created_at": {
           "comment": "Creation time derived from the UUIDv7 receipt identity.",
           "dataType": "timestamp with time zone",
@@ -5358,7 +5372,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "id": {
           "comment": "UUIDv7 receipt identity and creation order.",
@@ -5398,11 +5412,20 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         }
       },
       "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
-      "foreignKeys": {},
+      "foreignKeys": {
+        "ai_agent_call_receipts_copyright_notice_submission_id_fkey": {
+          "columns": ["copyright_notice_submission_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        }
+      },
       "indexes": {
         "ai_agent_call_receipts_operation_key_key": {
           "accessMethod": "btree",
@@ -5448,6 +5471,29 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__copyright_submission": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__copyright_submission ON public.ai_agent_call_receipts USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "copyright_notice_submission_id",
+              "descending": false,
+              "expression": "copyright_notice_submission_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(copyright_notice_submission_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
