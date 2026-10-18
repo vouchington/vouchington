@@ -25,33 +25,34 @@ import { buildCommunityActivityDigestBody } from './community-activity-digest-bo
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 
 describe('community activity digest', () => {
-  it(
-    'dispatches the previous closed Monday-to-Monday UTC window',
-    withTestDigestClock(() => {
-      expect(getCommunityActivityDigestDispatchData(new Date('2026-07-15T18:42:00Z'))).toEqual({
-        windowStart: '2026-07-06T00:00:00.000Z',
-        windowEnd: '2026-07-13T00:00:00.000Z',
-      })
-    }),
-  )
+  it('dispatches the previous closed Monday-to-Monday UTC window', () => {
+    expect(getCommunityActivityDigestDispatchData(new Date('2026-07-15T18:42:00Z'))).toEqual({
+      windowStart: '2026-07-06T00:00:00.000Z',
+      windowEnd: '2026-07-13T00:00:00.000Z',
+    })
+  })
 
   it(
     'skips recipients with no activity in the window',
-    withTestDigestClock(async () => {
+    withTestDigestClock(async now => {
       const owner = await createTestUserDirect()
       const community = await insertTestCommunity({ createdById: owner.id })
       await insertTestCommunityMember({
         communityId: community.id,
         userId: owner.id,
         role: 'owner',
-        createdAt: new Date(),
+        createdAt: now,
       })
-      const future = new Date(Date.now() + 86_400_000)
+      const future = new Date(now.getTime() + 86_400_000)
 
-      const result = await runDigestBatchForUser(owner.id, {
-        windowStart: future,
-        windowEnd: new Date(future.getTime() + 3_600_000),
-      })
+      const result = await runDigestBatchForUser(
+        owner.id,
+        {
+          windowStart: future,
+          windowEnd: new Date(future.getTime() + 3_600_000),
+        },
+        now,
+      )
 
       expect(result.created).not.toContainEqual(expect.objectContaining({ userId: owner.id }))
       expect((await listNotifications(owner.id)).results).toHaveLength(0)
@@ -60,11 +61,10 @@ describe('community activity digest', () => {
 
   it(
     'combines active communities and excludes inactive communities from every aggregate',
-    withTestDigestClock(async () => {
+    withTestDigestClock(async now => {
       const owner = await createTestUserDirect()
       const active = await insertTestCommunity({ createdById: owner.id })
       const inactive = await insertTestCommunity({ createdById: owner.id })
-      const now = new Date()
       const start = new Date(now.getTime() - 3_600_000)
       const end = new Date(now.getTime() + 3_600_000)
       await insertTestCommunityMember({
@@ -80,7 +80,11 @@ describe('community activity digest', () => {
         createdAt: new Date(start.getTime() - 86_400_000),
       })
 
-      const result = await runDigestBatchForUser(owner.id, { windowStart: start, windowEnd: end })
+      const result = await runDigestBatchForUser(
+        owner.id,
+        { windowStart: start, windowEnd: end },
+        now,
+      )
       const own = result.created.filter(item => item.userId === owner.id)
       expect(own).toHaveLength(1)
       const notification = (await listNotifications(owner.id)).notifications[own[0]!.notificationId]
@@ -91,10 +95,9 @@ describe('community activity digest', () => {
 
   it(
     'returns an existing unpushed row on retry and never recreates a dismissed digest',
-    withTestDigestClock(async () => {
+    withTestDigestClock(async now => {
       const owner = await createTestUserDirect()
       const community = await insertTestCommunity({ createdById: owner.id })
-      const now = new Date()
       const input = {
         windowStart: new Date(now.getTime() - 3_600_000),
         windowEnd: new Date(now.getTime() + 3_600_000),
@@ -106,13 +109,13 @@ describe('community activity digest', () => {
         createdAt: now,
       })
 
-      const first = await runDigestBatchForUser(owner.id, input)
+      const first = await runDigestBatchForUser(owner.id, input, now)
       const firstRow = first.created.find(item => item.userId === owner.id)!
       await deleteTestNotificationPushIntent(owner.id, firstRow.notificationId)
       await expect(
         getTestNotificationPushIntent(owner.id, firstRow.notificationId),
       ).resolves.toBeUndefined()
-      const retry = await runDigestBatchForUser(owner.id, input)
+      const retry = await runDigestBatchForUser(owner.id, input, now)
       expect(retry.created.find(item => item.userId === owner.id)).toEqual(firstRow)
       await expect(
         getTestNotificationPushIntent(owner.id, firstRow.notificationId),
@@ -120,7 +123,7 @@ describe('community activity digest', () => {
       expect((await listNotifications(owner.id)).results).toHaveLength(1)
 
       await deleteNotification(owner.id, firstRow.notificationId)
-      const afterDismissal = await runDigestBatchForUser(owner.id, input)
+      const afterDismissal = await runDigestBatchForUser(owner.id, input, now)
       expect(afterDismissal.created).not.toContainEqual(
         expect.objectContaining({ userId: owner.id }),
       )
@@ -130,10 +133,9 @@ describe('community activity digest', () => {
 
   it(
     'counts post types and selects an older discussion with direct replies in the window',
-    withTestDigestClock(async () => {
+    withTestDigestClock(async now => {
       const owner = await createTestUserDirect()
       const community = await insertTestCommunity({ createdById: owner.id })
-      const now = new Date()
       const start = new Date(now.getTime() - 3_600_000)
       const end = new Date(now.getTime() + 3_600_000)
       await insertTestCommunityMember({
@@ -144,7 +146,11 @@ describe('community activity digest', () => {
       })
       await insertDigestPostTypeFixtures(owner.id, community.id, start, now)
 
-      const result = await runDigestBatchForUser(owner.id, { windowStart: start, windowEnd: end })
+      const result = await runDigestBatchForUser(
+        owner.id,
+        { windowStart: start, windowEnd: end },
+        now,
+      )
       const row = result.created.find(item => item.userId === owner.id)!
       const notification = (await listNotifications(owner.id)).notifications[row.notificationId]
       expect(notification?.body).toContain('0 discussions, 1 reviews, 1 data points, 1 comments')
@@ -152,26 +158,23 @@ describe('community activity digest', () => {
     }),
   )
 
-  it(
-    'omits an unavailable top discussion and caps the body at the notification limit',
-    withTestDigestClock(() => {
-      const body = buildCommunityActivityDigestBody({
-        community_count: 1,
-        joins: 0,
-        departures: 0,
-        discussions: 0,
-        reviews: 0,
-        data_points: 0,
-        comments: 1,
-        active_posters: 1,
-        active_members: 1,
-        moderation_workload: 0,
-        top_discussion: null,
-      })
-      expect(body).not.toContain('top discussion')
-      expect(body.length).toBeLessThanOrEqual(1000)
-    }),
-  )
+  it('omits an unavailable top discussion and caps the body at the notification limit', () => {
+    const body = buildCommunityActivityDigestBody({
+      community_count: 1,
+      joins: 0,
+      departures: 0,
+      discussions: 0,
+      reviews: 0,
+      data_points: 0,
+      comments: 1,
+      active_posters: 1,
+      active_members: 1,
+      moderation_workload: 0,
+      top_discussion: null,
+    })
+    expect(body).not.toContain('top discussion')
+    expect(body.length).toBeLessThanOrEqual(1000)
+  })
 
   it.each([
     { role: 'owner', suppress: true, expired: false, delivered: false },
@@ -181,16 +184,18 @@ describe('community activity digest', () => {
   ] as const)(
     'role=$role suppress=$suppress expired=$expired delivers=$delivered',
     withTestDigestClock(
-      async (options: {
-        role: 'owner' | 'moderator'
-        suppress: boolean
-        expired: boolean
-        delivered: boolean
-      }) => {
+      async (
+        now,
+        options: {
+          role: 'owner' | 'moderator'
+          suppress: boolean
+          expired: boolean
+          delivered: boolean
+        },
+      ) => {
         const { role, suppress, expired, delivered } = options
         const owner = await createTestUserDirect()
         const community = await insertTestCommunity({ createdById: owner.id })
-        const now = new Date()
         const start = new Date(now.getTime() - 3_600_000)
         const end = new Date(now.getTime() + 3_600_000)
         await insertTestCommunityMember({
@@ -209,7 +214,11 @@ describe('community activity digest', () => {
           endsAt: expired ? new Date(now.getTime() - 3_600_000).toISOString() : null,
         })
 
-        const result = await runDigestBatchForUser(owner.id, { windowStart: start, windowEnd: end })
+        const result = await runDigestBatchForUser(
+          owner.id,
+          { windowStart: start, windowEnd: end },
+          now,
+        )
         expect(result.created.some(item => item.userId === owner.id)).toBe(delivered)
       },
     ),
@@ -217,8 +226,7 @@ describe('community activity digest', () => {
 
   it(
     'excludes archived, removed, deleted, and site-suspended recipients',
-    withTestDigestClock(async () => {
-      const now = new Date()
+    withTestDigestClock(async now => {
       const input = {
         windowStart: new Date(now.getTime() - 3_600_000),
         windowEnd: new Date(now.getTime() + 3_600_000),
@@ -243,7 +251,7 @@ describe('community activity digest', () => {
       await suspendTestUser(users[3]!.id)
 
       for (const user of users) {
-        const result = await runDigestBatchForUser(user!.id, input)
+        const result = await runDigestBatchForUser(user!.id, input, now)
         expect(result.created).not.toContainEqual(expect.objectContaining({ userId: user!.id }))
       }
     }),
@@ -251,10 +259,9 @@ describe('community activity digest', () => {
 
   it(
     'includes pending moderation workload without using it as the activity gate',
-    withTestDigestClock(async () => {
+    withTestDigestClock(async now => {
       const owner = await createTestUserDirect()
       const community = await insertTestCommunity({ createdById: owner.id })
-      const now = new Date()
       const start = new Date(now.getTime() - 3_600_000)
       const end = new Date(now.getTime() + 3_600_000)
       await insertTestCommunityMember({
@@ -277,7 +284,11 @@ describe('community activity digest', () => {
         submittedById: owner.id,
       })
 
-      const result = await runDigestBatchForUser(owner.id, { windowStart: start, windowEnd: end })
+      const result = await runDigestBatchForUser(
+        owner.id,
+        { windowStart: start, windowEnd: end },
+        now,
+      )
       const row = result.created.find(item => item.userId === owner.id)!
       expect((await listNotifications(owner.id)).notifications[row.notificationId]?.body).toContain(
         '1 items awaiting moderation',
