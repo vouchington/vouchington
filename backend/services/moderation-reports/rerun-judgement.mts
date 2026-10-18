@@ -4,7 +4,7 @@ import { enqueueReportJudgement } from '@queues/ai-agents/enqueues/report-judgem
 import { getModerationReportById } from './get-by-id.mts'
 
 export async function rerunReportJudgement(staffUserId: string, id: string): Promise<void> {
-  const report = await getModerationReportById(id)
+  const report = await getModerationReportById(id, { primary: true })
   assert(report, 404, 'Report not found')
   await recordStaffOperation(
     staffUserId,

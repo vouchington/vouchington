@@ -41,20 +41,23 @@ export function CopyrightStaffQueue({
     for (const notice of page.copyright_notices) noticeById.set(notice.id, notice)
   }
   const notices = [...noticeById.values()]
-  const pendingNoticeIds = notices.flatMap(notice =>
-    (notice.form_review &&
-      !notice.form_review.review &&
-      (!notice.form_review.screening || notice.form_review.screening.state === 'pending')) ||
-    notice.appeals.some(appeal => appeal.recommendation === null) ||
-    notice.counter_notices.some(counter => counter.guidance === null) ||
-    notice.legal_holds.some(hold => hold.guidance === null)
-      ? [notice.id]
-      : [],
-  )
+  const pendingSubmissionKeys = notices.flatMap(notice => {
+    const keys: string[] = []
+    const form = notice.form_review
+    if (form && !form.review && (!form.screening || form.screening.state === 'pending'))
+      keys.push(`form:${form.intake_id}`)
+    for (const appeal of notice.appeals)
+      if (appeal.recommendation === null) keys.push(`appeal:${appeal.submission_id}`)
+    for (const counter of notice.counter_notices)
+      if (counter.guidance === null) keys.push(`counter:${counter.submission_id}`)
+    for (const hold of notice.legal_holds)
+      if (hold.guidance === null) keys.push(`hold:${hold.submission_id}`)
+    return keys
+  })
   const refreshTimedOut = usePendingAiRefresh(
-    pendingNoticeIds.length > 0,
+    pendingSubmissionKeys.length > 0,
     () => refreshLoadedPages?.(() => listCopyrightReviewQueue()),
-    pendingNoticeIds.join('|'),
+    pendingSubmissionKeys.join('|'),
   )
   const [rationale, setRationale] = useState('')
   const [pending, startTransition] = useTransition()

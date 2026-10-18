@@ -34,8 +34,52 @@ describe('copyright staff queue AI polling eligibility', () => {
       expect(vi.mocked(usePendingAiRefresh)).toHaveBeenCalledWith(
         !reviewed,
         expect.any(Function),
-        reviewed ? '' : notice.id,
+        reviewed ? '' : 'form:intake-1',
       )
     },
   )
+
+  it('gives each pending child its own refresh deadline key', () => {
+    const notice = makeCopyrightStaffQueueItem({
+      appeals: [
+        { submission_id: 'appeal-1', reason: 'First appeal', target_ids: [], recommendation: null },
+      ],
+    })
+    const pageInfo = { has_next_page: false, start_cursor: null, end_cursor: null }
+    const { rerender } = render(
+      <CopyrightStaffQueue data={{ copyright_notices: [notice], page_info: pageInfo }} />,
+    )
+    expect(vi.mocked(usePendingAiRefresh)).toHaveBeenLastCalledWith(
+      true,
+      expect.any(Function),
+      'appeal:appeal-1',
+    )
+
+    rerender(
+      <CopyrightStaffQueue
+        data={{
+          copyright_notices: [
+            {
+              ...notice,
+              counter_notices: [
+                {
+                  submission_id: 'counter-2',
+                  received_at: '2026-01-02T00:00:00Z',
+                  target_ids: [],
+                  statement: {},
+                  guidance: null,
+                },
+              ],
+            },
+          ],
+          page_info: pageInfo,
+        }}
+      />,
+    )
+    expect(vi.mocked(usePendingAiRefresh)).toHaveBeenLastCalledWith(
+      true,
+      expect.any(Function),
+      'appeal:appeal-1|counter:counter-2',
+    )
+  })
 })
