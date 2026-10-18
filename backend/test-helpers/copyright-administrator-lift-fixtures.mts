@@ -8,7 +8,7 @@ import { createTestCopyrightImageFixture } from './copyright-surface-target-fixt
 import { resolveCopyrightImagePlacement } from '../services/copyright-notices/placement-resolution.mts'
 import { appendCopyrightSubmissionAssessment } from '../services/copyright-notices/compliance.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../services/copyright-notices/restrictions.mts'
-import { createCopyrightStatementDeliveryInTransaction } from '../services/copyright-notices/statement-delivery.mts'
+import { createCopyrightStatementDeliveriesInTransaction } from '../services/copyright-notices/statement-delivery.mts'
 import { copyrightActionDeliveryFacts } from '../services/copyright-notices/action-delivery-facts.mts'
 import { applyCopyrightConfirmationConsequencesInTransaction } from '../services/copyright-notices/staydown-registration.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from '../services/copyright-notices/restoration-reversal.mts'
@@ -109,17 +109,19 @@ export async function createTestLiftClaimantReceipt(
   claimantUserId?: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  await createCopyrightStatementDeliveryInTransaction(
-    {
-      noticeId,
-      recipientUserId: claimantUserId ?? null,
-      recipientRole: 'claimant',
-      recipientEmail: claimantEmail,
-      deliveryKind: 'claimant_receipt',
-      correspondenceKind: 'receipt',
-      key: `copyright-lift-fixture-receipt:${noticeId}`,
-      text: 'We received your copyright notice.',
-    },
+  await createCopyrightStatementDeliveriesInTransaction(
+    [
+      {
+        noticeId,
+        recipientUserId: claimantUserId ?? null,
+        recipientRole: 'claimant',
+        recipientEmail: claimantEmail,
+        deliveryKind: 'claimant_receipt',
+        correspondenceKind: 'receipt',
+        key: `copyright-lift-fixture-receipt:${noticeId}`,
+        text: 'We received your copyright notice.',
+      },
+    ],
     transaction,
   )
   await transaction.commit()

@@ -39,9 +39,9 @@
   },
   {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
-    "reason": "Manual association rechecks link and review state after intake and notice locks to reject a concurrent decision",
+    "reason": "Manual association rereads link and review state after the intake row lock and again after the notice row lock, so a link or review committed while it waited rejects the association",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-manual-association.mts:readIntakeDecision"
+    "code": "backend/services/copyright-notices/email-manual-association.mts:52"
   },
   {
     "annotation": "backfillCategoriesForTopicAliases",
@@ -92,29 +92,16 @@
     "code": "backend/services/user-import-export/import-topics.mts:78-92"
   },
   {
-    "annotation": "createCopyrightDeliveryIntent",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "annotation": "createCopyrightDeliveryIntents",
+    "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt intents and the restriction-notice intents commit separately",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:356"
   },
   {
-    "annotation": "createCopyrightStatementDeliveryInTransaction:activeRecipient",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
-  },
-  {
-    "annotation": "createCopyrightStatementDeliveryInTransaction:existing",
-    "reason": "Checks distinct deterministic event keys before delivery; absent nonclaimant identities skip this lookup",
-    "issue": 3116
-  },
-  {
-    "annotation": "createCopyrightStatementDeliveryInTransaction:recipientLifecycleLock",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
-  },
-  {
-    "annotation": "createDeterministicCopyrightCorrespondenceInTransaction",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "annotation": "createDeterministicCopyrightCorrespondencesInTransaction",
+    "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt message and the restriction-notice messages commit separately",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:345"
   },
   {
     "annotation": "createDistribution",
@@ -162,11 +149,6 @@
     "reason": "The authenticator insert runs after fn_lock_active_user_for_mutation so account deletion cannot race factor creation",
     "permanent": true,
     "code": "backend/services/totp/create.mts:25"
-  },
-  {
-    "annotation": "currentCopyrightJurisdictionPolicy",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
   },
   {
     "annotation": "deletePendingRecommendation",
@@ -219,8 +201,9 @@
   },
   {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "reason": "The form review reads the switch-on time before its transaction and enforcement rereads it after that transaction commits, so a switch-off or flip in between stops automation instead of enforcing on the earlier answer",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/form-reviews.mts:20"
   },
   {
     "annotation": "findOpenCaseForEntity",
@@ -356,11 +339,6 @@
     "issue": 3122
   },
   {
-    "annotation": "getTerritorialInformedWindow",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
-  },
-  {
     "annotation": "getTopicAliasesForMergeRevision",
     "reason": "The destination aliases are re-read after the alias move and source-slug alias writes, so the after snapshot must see them",
     "issue": 3114
@@ -402,9 +380,10 @@
     "code": "backend/services/user-consents/create.mts:62"
   },
   {
-    "annotation": "insertCopyrightDeliveryRecipient",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "annotation": "insertCopyrightDeliveryRecipients",
+    "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt recipient and the claimant decision recipient commit separately",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:356"
   },
   {
     "annotation": "insertRssFeedSettingChange",
@@ -449,8 +428,9 @@
   },
   {
     "annotation": "lockAssessmentForm",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "reason": "The assessment is appended in its own transaction and each owed target is restricted in its own later transaction, and each takes the form review fence for its own transaction",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/compliance.mts:14"
   },
   {
     "annotation": "lockBlueskyLinkAuthorization",
@@ -472,8 +452,9 @@
   },
   {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "reason": "Recording a disposition locks the notice owners before taking the incident row lock, then the incident resync recomputes the owner set after the disposition insert so an owner added since the first lock is locked too",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138"
   },
   {
     "annotation": "lockEntityRelationElectionVoteMutations",
@@ -559,30 +540,33 @@
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
-    "reason": "Promotion checks bounded token membership before and after locking to reject concurrent threading",
-    "issue": 3116
+    "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:74"
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:references",
-    "reason": "Promotion checks bounded token membership before and after locking to reject concurrent threading",
-    "issue": 3116
+    "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/email-promotion.mts:74"
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:incoming",
-    "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
+    "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:admitCopyrightEmailIntake"
+    "code": "backend/services/copyright-notices/email-promotion.mts:65"
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:outgoing",
-    "reason": "Promotion rereads the bounded ancestry graph after locking intakes to reject concurrently added edges",
+    "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:admitCopyrightEmailIntake"
+    "code": "backend/services/copyright-notices/email-promotion.mts:65"
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "reason": "Each owed target is restricted in its own transaction, and the next owed target is read only after that commit so a concurrent restriction or superseding decision settles it",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/enforce-assessment.mts:32"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
@@ -607,8 +591,9 @@
   },
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
+    "reason": "The complaint row is rechecked after the placement advisory locks and the notice row lock to reject a decision superseded while it waited",
+    "permanent": true,
+    "code": "backend/services/copyright-notices/territorial-redress.mts:54"
   },
   {
     "annotation": "removeEmailAddress",
@@ -638,21 +623,6 @@
     "reason": "The route reads an acknowledged turn before any safety provider is called, and the transaction reads it again after locking the conversation so concurrent retries replay one turn",
     "permanent": true,
     "code": "backend/services/conversations-messages/client-generated-chat.mts:54"
-  },
-  {
-    "annotation": "replayFailedCopyrightActionIntent",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
-  },
-  {
-    "annotation": "replayFailedCopyrightActionIntent:identity",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
-  },
-  {
-    "annotation": "replayFailedCopyrightActionIntent:placementLock",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
   },
   {
     "annotation": "resolveEntityRelationElectionTargetById",
@@ -707,16 +677,6 @@
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
     "permanent": true,
     "code": "backend/services/api-keys/rotate.mts:45"
-  },
-  {
-    "annotation": "selectCopyrightStatementFacts",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
-  },
-  {
-    "annotation": "selectCopyrightTargetPosters",
-    "reason": "Copyright delivery steps run once per recipient or target",
-    "issue": 3116
   },
   {
     "annotation": "setMyLandingPageDefault",

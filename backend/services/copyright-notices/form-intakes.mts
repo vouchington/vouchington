@@ -5,7 +5,6 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
-import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
 import { createCopyrightFormReceiptInTransaction } from './form-intake-receipt.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 import {
@@ -144,24 +143,10 @@ export async function createCopyrightFormIntake(
       noticeId: notice.id,
       submissionId: submission.id,
       claimantEmail: input.request.claimantEmail,
+      claimantUserId: input.currentUser?.id ?? null,
     },
     transaction,
   )
-  if (input.currentUser) {
-    await createCopyrightDeliveryIntent(
-      {
-        noticeId: notice.id,
-        submissionId: submission.id,
-        correspondenceId: null,
-        recipientUserId: input.currentUser.id,
-        recipientRole: 'claimant',
-        deliveryKind: 'claimant_receipt',
-        channel: 'in_app',
-        idempotencyKey: `copyright-notice:${notice.id}:claimant-in-app-receipt`,
-      },
-      transaction,
-    )
-  }
   await transaction.commit()
   return { intake, isDuplicate: false }
 }

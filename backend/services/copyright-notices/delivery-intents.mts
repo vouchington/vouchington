@@ -4,11 +4,15 @@ import { beginTransaction, read, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
+import {
+  createCopyrightDeliveryIntents,
+  insertCopyrightDeliveryRecipients,
+  type CopyrightDeliveryIntentInput,
+} from './delivery-intent-batch.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type {
   CopyrightDeliveryIntentRecord,
   CopyrightDeliveryRecipientRecord,
-  CopyrightNoticeDeliveryKind,
 } from './delivery-types.mts'
 import {
   queryCopyrightSweepIdPage,
@@ -27,23 +31,12 @@ export type ClaimedCopyrightDeliveryIntent = CopyrightDeliveryIntentRecord & {
 }
 
 export async function createCopyrightDeliveryIntent(
-  input: {
-    noticeId: string
-    submissionId: string | null
-    correspondenceId: string | null
-    recipientUserId: string | null
-    recipientRole: 'claimant' | 'poster' | 'informed_owner' | 'correspondent'
-    deliveryKind: CopyrightNoticeDeliveryKind
-    channel: CopyrightDeliveryIntentRecord['channel']
-    idempotencyKey: string
-    recipientEmail?: string
-    targetPath?: string
-  },
+  input: CopyrightDeliveryIntentInput,
   transaction?: TransactionQuery,
 ): Promise<CopyrightDeliveryIntentRecord> {
-  if (transaction) return insertCopyrightDeliveryIntent(input, transaction)
+  if (transaction) return (await createCopyrightDeliveryIntents([input], transaction))[0]!
   await using owned = await beginTransaction()
-  const intent = await insertCopyrightDeliveryIntent(input, owned)
+  const intent = (await createCopyrightDeliveryIntents([input], owned))[0]!
   await owned.commit()
   return intent
 }
@@ -171,90 +164,13 @@ export async function markCopyrightDeliveryIntentBouncedBySesMessageId(input: {
   return rowCount ?? 0
 }
 
-async function insertCopyrightDeliveryIntent(
-  input: Parameters<typeof createCopyrightDeliveryIntent>[0],
-  transaction: TransactionQuery,
-): Promise<CopyrightDeliveryIntentRecord> {
-  assert(
-    !['poster', 'informed_owner'].includes(input.recipientRole) || input.recipientUserId,
-    422,
-    'Poster delivery requires a user recipient',
-  )
-  assert(
-    input.recipientRole !== 'correspondent' || (!input.recipientUserId && input.recipientEmail),
-    422,
-    'Correspondent delivery requires an external email recipient',
-  )
-  assert(
-    (input.recipientRole === 'informed_owner') === Boolean(input.targetPath),
-    422,
-    'Informed owner delivery requires a community path',
-  )
-  const { rows } =
-    await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent */
-    INSERT INTO copyright_notice_delivery_work_items (
-      copyright_notice_id, copyright_notice_submission_id, copyright_notice_correspondence_message_id,
-      recipient_user_id, recipient_role, delivery_kind, target_path, channel, idempotency_key
-    ) SELECT ${input.noticeId}, ${input.submissionId}, ${input.correspondenceId},
-      ${input.recipientUserId}, ${input.recipientRole}, ${input.deliveryKind}, ${input.targetPath ?? null}, ${input.channel}, ${input.idempotencyKey}
-    WHERE EXISTS (SELECT 1 FROM copyright_notices WHERE id = ${input.noticeId})
-      AND (${input.submissionId}::uuid IS NULL OR EXISTS (
-        SELECT 1 FROM copyright_notice_submissions
-        WHERE id = ${input.submissionId} AND copyright_notice_id = ${input.noticeId}
-      ))
-      AND (${input.correspondenceId}::uuid IS NULL OR EXISTS (
-        SELECT 1 FROM copyright_notice_correspondence_messages
-        WHERE id = ${input.correspondenceId} AND copyright_notice_id = ${input.noticeId}
-      ))
-    ON CONFLICT (idempotency_key) DO NOTHING
-    RETURNING id, lease_token, copyright_notice_id, copyright_notice_submission_id,
-      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
-      channel, state, amazon_ses_message_id, attempt_count
-  `)
-  const intent = rows[0]
-  if (intent) {
-    await insertCopyrightDeliveryRecipient(input.recipientEmail, intent.id, transaction)
-    return intent
-  }
-  const { rows: existingRows } =
-    await transaction<CopyrightDeliveryIntentRecord>(sql`/* createCopyrightDeliveryIntent:existing */
-    SELECT id, lease_token, copyright_notice_id, copyright_notice_submission_id,
-      copyright_notice_correspondence_message_id, recipient_user_id, recipient_role, delivery_kind, target_path,
-      channel, state, amazon_ses_message_id, attempt_count
-    FROM copyright_notice_delivery_work_items
-    WHERE idempotency_key = ${input.idempotencyKey}
-  `)
-  const existing = existingRows[0]
-  assert(existing, 404, 'Copyright notice was not found')
-  assert(
-    existing.copyright_notice_id === input.noticeId &&
-      existing.copyright_notice_submission_id === input.submissionId &&
-      existing.copyright_notice_correspondence_message_id === input.correspondenceId &&
-      existing.recipient_user_id === input.recipientUserId &&
-      existing.recipient_role === input.recipientRole &&
-      existing.delivery_kind === input.deliveryKind &&
-      existing.target_path === (input.targetPath ?? null) &&
-      existing.channel === input.channel,
-    409,
-    'Copyright delivery idempotency key was reused',
-  )
-  return existing
-}
-
 export async function insertCopyrightDeliveryRecipient(
   recipientEmail: string | undefined,
   intentId: string,
   transaction: TransactionQuery,
 ): Promise<void> {
   if (!recipientEmail) return
-  assert(recipientEmail.trim().length > 0, 422, 'Copyright email recipient is required')
-  await transaction(sql`/* insertCopyrightDeliveryRecipient */
-    INSERT INTO copyright_notice_delivery_recipients (
-      copyright_notice_delivery_work_item_id, email_ciphertext
-    ) VALUES (
-      ${intentId}, ${encryptSecret(recipientEmail.trim(), `copyright-delivery-recipient:${intentId}`)}
-    ) ON CONFLICT (copyright_notice_delivery_work_item_id) DO NOTHING
-  `)
+  await insertCopyrightDeliveryRecipients([{ recipientEmail, intentId }], transaction)
 }
 
 export async function getCopyrightDeliveryRecipient(

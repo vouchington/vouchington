@@ -34,7 +34,6 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'comment-tree-best',
   'comment-tree-new',
   'conversation-messages',
-  'copyright-statement-facts',
   'direct-message-inbox-page',
   'community-activity-digest-aggregation',
   'community-activity-digest-recipients',

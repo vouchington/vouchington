@@ -5,7 +5,11 @@ import type { PrivateUser } from '@services/users/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { currentUserCanReviewCopyrightNotices } from './authorization.mts'
-import { createCopyrightReviewOutcomeNoticesInTransaction } from './review-outcome-notices.mts'
+import {
+  buildCopyrightReviewOutcomeDeliveries,
+  type ReviewOutcomeNoticeInput,
+} from './review-outcome-notices.mts'
+import { createCopyrightStatementDeliveriesInTransaction } from './statement-delivery.mts'
 import { recordClaimantMisuseEvent } from './claimant-misuse-ledger.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
 import { createCounterNoticeForwardingInTransaction } from './counter-notice-forwarding.mts'
@@ -134,6 +138,7 @@ export async function reviewCopyrightAppeal(
   const reviewedAt = new Date()
   const reviewIds: string[] = []
   const reversalRestrictionIds: string[] = []
+  const firstReviews: ReviewOutcomeNoticeInput[] = []
   const restrictionsById = new Map(restrictionRows.map(row => [row.id, row]))
   const reviewerId = input.currentUser.id
   for (const decision of input.decisions) {
@@ -162,19 +167,17 @@ export async function reviewCopyrightAppeal(
     `)
     assert(rows[0], 500, 'Copyright appeal review was not recorded')
     if (restriction.human_reviewed_at === null) {
-      // oxlint-disable-next-line no-await-in-loop -- notices follow each first human review in the same transaction.
-      await createCopyrightReviewOutcomeNoticesInTransaction(
-        {
-          noticeId: appeal.copyright_notice_id,
-          restrictionId: decision.restrictionId,
-          action: decision.action,
-        },
-        transaction,
-      )
+      firstReviews.push({
+        noticeId: appeal.copyright_notice_id,
+        restrictionId: decision.restrictionId,
+        action: decision.action,
+      })
     }
     reviewIds.push(rows[0].id)
     if (decision.action === 'reverse') reversalRestrictionIds.push(decision.restrictionId)
   }
+  // ast-grep-ignore: no-three-sequential-awaits -- the delivery build takes the notice lock before the consequences write incident and staydown rows from the reviewed restrictions, and the lifecycle event follows both in that lock order
+  const noticeDeliveries = await buildCopyrightReviewOutcomeDeliveries(firstReviews, transaction)
   const staydownImageIds = await applyCopyrightConfirmationConsequencesInTransaction(
     appeal.copyright_notice_id,
     transaction,
@@ -183,21 +186,25 @@ export async function reviewCopyrightAppeal(
     INSERT INTO copyright_notice_lifecycle_changes (copyright_notice_id, change_type, changed_by_id, copyright_notice_submission_id)
     VALUES (${appeal.copyright_notice_id}, 'appeal_reviewed', ${input.currentUser.id}, ${input.submissionId})
   `)
-  if (appeal.submitted_by_id)
-    await createCopyrightDeliveryIntent(
-      {
-        noticeId: appeal.copyright_notice_id,
-        submissionId: input.submissionId,
-        correspondenceId: null,
-        recipientUserId: appeal.submitted_by_id,
-        recipientRole: 'poster',
-        deliveryKind: 'status_update',
-        channel: 'in_app',
-        idempotencyKey: `copyright-appeal-review:${input.submissionId}:poster-outcome`,
-      },
-      transaction,
-    )
-  else
+  await createCopyrightStatementDeliveriesInTransaction(
+    noticeDeliveries,
+    transaction,
+    appeal.submitted_by_id
+      ? [
+          {
+            noticeId: appeal.copyright_notice_id,
+            submissionId: input.submissionId,
+            correspondenceId: null,
+            recipientUserId: appeal.submitted_by_id,
+            recipientRole: 'poster',
+            deliveryKind: 'status_update',
+            channel: 'in_app',
+            idempotencyKey: `copyright-appeal-review:${input.submissionId}:poster-outcome`,
+          },
+        ]
+      : [],
+  )
+  if (!appeal.submitted_by_id)
     await createEmailSubmitterOutcomeInTransaction(
       {
         noticeId: appeal.copyright_notice_id,
