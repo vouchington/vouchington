@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Worker } from 'glide-mq'
-import { UnrecoverableError } from '@modules/queue-errors'
+import { UnrecoverableError } from '@vouchington/queue-errors'
 import { withBedrockRateLimit } from './bedrock-rate.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())

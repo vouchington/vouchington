@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { UnrecoverableError as GlideUnrecoverableError } from 'glide-mq'
-import {
-  isBedrockRateLimitError,
-  wrapHttpForRetry,
-} from './index.mts'
+import { isBedrockRateLimitError, wrapHttpForRetry } from './index.mts'
 
 describe('queue error adapter', () => {
   it('preserves status, statusCode, and AWS metadata precedence for HTTP classification', () => {

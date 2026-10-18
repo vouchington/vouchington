@@ -1,11 +1,14 @@
-import { isBedrockRateLimitError, throwRateLimited, wrapHttpForRetry } from '@modules/queue-errors'
+import { isBedrockRateLimitError, wrapHttpForRetry } from '@modules/queue-errors'
+import { throwRateLimited } from '@vouchington/queue-errors'
+import { Worker } from 'glide-mq'
 
 /** Convert Bedrock throttling to a job-scoped deferral; never idle the whole CPU worker. */
 export async function withBedrockRateLimit<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run()
   } catch (err) {
-    if (isBedrockRateLimitError(err)) throwRateLimited(60_000, err)
+    if (isBedrockRateLimitError(err))
+      throwRateLimited(60_000, err, { RateLimitError: Worker.RateLimitError })
     return wrapHttpForRetry(err)
   }
 }
