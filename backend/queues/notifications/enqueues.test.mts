@@ -13,6 +13,7 @@ import {
   enqueueSweepCopyrightEvidenceRetention,
 } from './enqueues.mts'
 import { notifications } from './queues.mts'
+import { PRIORITY_DISPATCH } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('copyright and media-delivery notification enqueue wiring', () => {
@@ -161,14 +162,14 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     expect(continuation).toHaveLength(1)
     expect(continuation[0]?.id).toBe(`notifications__reconcile-post__${postId}__${afterUserId}`)
     expect(continuation[0]?.opts).toMatchObject({
-      priority: 100,
+      priority: PRIORITY_DISPATCH,
       removeOnComplete: true,
       removeOnFail: true,
     })
     expect(
       jobs.find(job => (job.data as { afterUserId?: string }).afterUserId === undefined)?.opts,
     ).toMatchObject({
-      priority: 10,
+      priority: PRIORITY_DISPATCH,
     })
   })
 
@@ -182,6 +183,6 @@ describe('copyright and media-delivery notification enqueue wiring', () => {
     )
     expect(job?.name).toBe('notifications.processReconcileRssFeedItemNotifications')
     expect(job?.data).toEqual({ rssFeedItemId, afterUserId })
-    expect(job?.opts).toMatchObject({ priority: 100 })
+    expect(job?.opts).toMatchObject({ priority: PRIORITY_DISPATCH })
   })
 })
