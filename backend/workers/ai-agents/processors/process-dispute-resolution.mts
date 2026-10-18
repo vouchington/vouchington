@@ -12,6 +12,7 @@ export async function processDisputeResolution(
     {
       disputeId: job.data.dispute_id,
       rerunById: job.data.rerun_by_id ?? null,
+      runId: job.id,
     },
     await loadServiceModelSelection('dispute-resolution'),
     callModel,

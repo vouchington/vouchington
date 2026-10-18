@@ -79,12 +79,13 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
     const before = makeDispute({ ai_drafted_at: null, ai_public_response: null })
     const after = makeDispute({
       ai_drafted_at: '2026-01-02T00:00:00Z',
+      ai_draft_run_id: 'job-1',
       ai_public_response: 'Reviewed draft response',
     })
-    let completeAdmission!: () => void
+    let completeAdmission!: (value: { queued: true; run_id: string }) => void
     h.mockRerunDisputeAI.mockImplementationOnce(
       () =>
-        new Promise<void>(resolve => {
+        new Promise<{ queued: true; run_id: string }>(resolve => {
           completeAdmission = resolve
         }),
     )
@@ -98,9 +99,55 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
 
     fireEvent.click(screen.getByTitle('Re-run AI'))
     expect(h.mockReconcileDisputeAIDraft).not.toHaveBeenCalled()
-    completeAdmission()
+    completeAdmission({ queued: true, run_id: 'job-1' })
     await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledWith(before))
     expect(await screen.findByText('Reviewed draft response')).toBeVisible()
+  })
+
+  it('keeps a manual rerun pending when a different job writes a newer draft', async () => {
+    const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'manual-job' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        ai_drafted_at: '2026-01-02T00:00:00Z',
+        ai_draft_run_id: 'automatic-job',
+        ai_public_response: 'Different job draft',
+      }),
+    )
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
+    expect(screen.queryByText('Different job draft')).not.toBeInTheDocument()
+    expect(screen.getByTitle('Re-run AI')).toBeDisabled()
+  })
+
+  it('keeps a successfully admitted rerun pending if its first primary read fails', async () => {
+    const error = new Error('Primary read failed')
+    const consoleError = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'manual-job' })
+    h.mockReconcileDisputeAIDraft.mockRejectedValueOnce(error)
+    try {
+      render(
+        <DisputesClient
+          viewerTier='staff'
+          data={makeDisputesData()}
+        />,
+      )
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+      await waitFor(() =>
+        expect(consoleError).toHaveBeenCalledWith('Could not refresh queued dispute draft', error),
+      )
+      expect(h.mockOnError).not.toHaveBeenCalled()
+      expect(screen.getByTitle('Re-run AI')).toBeDisabled()
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it.each([

@@ -14,6 +14,7 @@ export type ReviewDisputePostContent = {
 }
 
 export type ReviewDisputeResponse = ReviewDispute & {
+  ai_draft_run_id?: string | null
   post_content: ReviewDisputePostContent | null
   staff_context?: {
     disputant: ReviewDisputeActorSummary

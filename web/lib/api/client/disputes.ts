@@ -67,7 +67,7 @@ export function dismissDispute(disputeId: string): Promise<{ dispute: ReviewDisp
   return clientApi.post(`/api/v1/disputes/${disputeId}/resolution`, { action: 'dismiss' })
 }
 
-export function rerunDisputeAI(disputeId: string): Promise<void> {
+export function rerunDisputeAI(disputeId: string): Promise<{ queued: true; run_id: string }> {
   return clientApi.post(`/api/v1/disputes/${disputeId}/resolution-drafts`, {})
 }
 

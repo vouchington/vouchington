@@ -2266,6 +2266,7 @@
         "claim_text": "Native review dispute",
         "created_at": "2026-06-01T11:45:00.000Z",
         "ai_drafted_at": null,
+        "ai_draft_run_id": null,
         "ai_internal_response": null,
         "ai_public_response": null,
         "approved_at": null,

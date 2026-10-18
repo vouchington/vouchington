@@ -1,5 +1,6 @@
 {
   "dispute": {
+    "ai_draft_run_id": null,
     "ai_drafted_at": null,
     "ai_internal_response": null,
     "ai_public_response": null,

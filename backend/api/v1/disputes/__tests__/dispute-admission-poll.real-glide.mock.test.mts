@@ -53,7 +53,7 @@ describe('dispute resolution queue admission and result polling', () => {
     const request = createRequest()
     await request.authenticateAs(staff)
     const rerun = await request.post(`/api/v1/disputes/${dispute.id}/resolution-drafts`).expect(202)
-    expect(rerun.body).toMatchObject({ queued: true })
+    expect(rerun.body).toMatchObject({ queued: true, run_id: expect.any(String) })
     const path = `/api/v1/disputes/${dispute.id}`
     expect((await request.get(path).expect(200)).body.dispute).toMatchObject({
       status: 'pending',
@@ -69,6 +69,7 @@ describe('dispute resolution queue admission and result polling', () => {
         candidate.data.rerun_by_id === staff.id,
     )
     expect(job).toBeDefined()
+    expect(rerun.body.run_id).toBe(job?.id)
     try {
       const callModel = makeAgentModelCaller({
         recommended_action: 'no_action',
@@ -81,6 +82,7 @@ describe('dispute resolution queue admission and result polling', () => {
         recommended_action: 'no_action',
         public_response: 'We reviewed the disputed review.',
         ai_drafted_at: expect.any(String),
+        ai_draft_run_id: rerun.body.run_id,
       })
       expect(callModel).toHaveBeenCalledOnce()
     } finally {

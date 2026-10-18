@@ -9,28 +9,47 @@ export function usePendingAiRefresh(
   pending: boolean,
   refresh: () => void | Promise<void>,
   pendingKey: string | null = null,
-  onTimeout?: () => void,
+  onTimeout?: (expiredKeys: readonly string[]) => void,
 ): boolean {
   const latestRefresh = useRef(refresh)
   const latestTimeout = useRef(onTimeout)
-  const pendingToken = useMemo(
-    () => (pending ? Symbol(`pending-ai-refresh:${pendingKey ?? ''}`) : null),
+  const deadlines = useRef(new Map<string, number>())
+  const expired = useRef(new Set<string>())
+  const [expiredVisible, setExpiredVisible] = useState<ReadonlySet<string>>(() => new Set())
+  const pendingKeys = useMemo(
+    () => (pending ? (pendingKey ? pendingKey.split('|') : ['pending']) : []),
     [pending, pendingKey],
   )
-  const [timedOutToken, setTimedOutToken] = useState<symbol | null>(null)
   useEffect(() => {
     latestRefresh.current = refresh
     latestTimeout.current = onTimeout
   }, [refresh, onTimeout])
   useEffect(() => {
-    if (!pending) return
+    const visible = new Set(pendingKeys)
+    for (const key of deadlines.current.keys()) {
+      if (!visible.has(key)) deadlines.current.delete(key)
+    }
+    for (const key of expired.current) {
+      if (!visible.has(key)) expired.current.delete(key)
+    }
+    for (const key of pendingKeys) {
+      if (!deadlines.current.has(key))
+        deadlines.current.set(key, Date.now() + MAX_PENDING_REFRESH_MS)
+    }
+    if (pendingKeys.length === 0) return
     let inFlight = false
-    const deadline = Date.now() + MAX_PENDING_REFRESH_MS
     const interval = window.setInterval(() => {
-      if (Date.now() >= deadline) {
+      const now = Date.now()
+      const newlyExpired = pendingKeys.filter(
+        key => now >= deadlines.current.get(key)! && !expired.current.has(key),
+      )
+      if (newlyExpired.length > 0) {
+        for (const key of newlyExpired) expired.current.add(key)
+        setExpiredVisible(new Set(expired.current))
+        latestTimeout.current?.(newlyExpired)
+      }
+      if (pendingKeys.every(key => now >= deadlines.current.get(key)!)) {
         window.clearInterval(interval)
-        setTimedOutToken(pendingToken)
-        latestTimeout.current?.()
         return
       }
       if (inFlight) return
@@ -45,6 +64,6 @@ export function usePendingAiRefresh(
         })
     }, 5000)
     return () => window.clearInterval(interval)
-  }, [pending, pendingToken])
-  return pending && timedOutToken === pendingToken
+  }, [pendingKeys])
+  return pendingKeys.some(key => expiredVisible.has(key))
 }

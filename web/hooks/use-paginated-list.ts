@@ -183,7 +183,11 @@ export function usePaginatedList<T extends PaginatedData>(
     )
     setListState(prev =>
       prev.queryToken === currentQueryToken
-        ? { ...prev, pages: deduplicatePages(refreshed), fetchError: null }
+        ? {
+            ...prev,
+            pages: deduplicatePages([...refreshed, ...prev.pages.slice(pages.length)]),
+            fetchError: null,
+          }
         : prev,
     )
   }

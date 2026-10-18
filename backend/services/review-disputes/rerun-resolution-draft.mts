@@ -5,7 +5,7 @@ import { getReviewDisputeByIdFromPrimary } from './get.mts'
 export async function rerunReviewDisputeResolutionDraft(
   staffUserId: string,
   disputeId: string,
-): Promise<void> {
+): Promise<string> {
   const dispute = await getReviewDisputeByIdFromPrimary(disputeId)
   assert(dispute, 404, 'Appeal not found')
   assert(
@@ -16,7 +16,7 @@ export async function rerunReviewDisputeResolutionDraft(
 
   const { enqueueDisputeResolutionQueued } =
     await import('@queues/ai-agents/enqueues/dispute-resolution')
-  await recordStaffOperation(
+  return recordStaffOperation(
     staffUserId,
     { actionType: 'dispute_resolution_draft_rerun', reviewDisputeId: disputeId },
     () => enqueueDisputeResolutionQueued(disputeId, staffUserId),

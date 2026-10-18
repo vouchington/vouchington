@@ -9,6 +9,7 @@ export interface AiDraftInput {
   aiPublicResponse: string
   aiInternalResponse: string
   model: string
+  runId?: string
 }
 
 export async function createReviewDisputeDraft(input: AiDraftInput): Promise<ReviewDispute> {
@@ -56,7 +57,7 @@ export async function createReviewDisputeDraft(input: AiDraftInput): Promise<Rev
         updated.id,
         'ai_draft',
         NULL,
-        ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction })}::jsonb
+        ${JSON.stringify({ model: input.model, recommended_action: input.recommendedAction, run_id: input.runId ?? null })}::jsonb
       FROM updated
       CROSS JOIN lifecycle_change_id
     )

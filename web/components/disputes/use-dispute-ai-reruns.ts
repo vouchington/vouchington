@@ -8,7 +8,7 @@ import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ReviewDispute } from '@/types/review-disputes'
 import type { DisputesClientAction } from './disputes-client-state'
 
-type PendingRerun = { before: ReviewDispute; expiresAt: number }
+type PendingRerun = { before: ReviewDispute; runId: string; expiresAt: number }
 
 export function useDisputeAiReruns(
   disputes: ReviewDispute[],
@@ -20,41 +20,47 @@ export function useDisputeAiReruns(
   )
   const pendingRerunIds = new Set(pendingReruns.keys())
 
-  function clearPendingRerun(id: string, before: ReviewDispute) {
+  function clearPendingRerun(id: string, runId: string) {
     setPendingReruns(current => {
-      if (current.get(id)?.before !== before) return current
+      if (current.get(id)?.runId !== runId) return current
       const next = new Map(current)
       next.delete(id)
       return next
     })
   }
 
-  function applySavedDraft(before: ReviewDispute, saved: ReviewDispute) {
-    if (!saved.ai_drafted_at || saved.ai_drafted_at === before.ai_drafted_at) return
+  function applySavedDraft(before: ReviewDispute, runId: string, saved: ReviewDispute) {
+    if (saved.ai_draft_run_id !== runId) return
     dispatch({ type: 'update_dispute', dispute: saved })
-    clearPendingRerun(before.id, before)
+    clearPendingRerun(before.id, runId)
   }
 
   usePendingAiRefresh(
     pendingRerunIds.size > 0,
     async () => {
       await Promise.all(
-        [...pendingReruns].map(async ([id, { before, expiresAt }]) => {
+        [...pendingReruns].map(async ([id, { before, runId, expiresAt }]) => {
           if (Date.now() >= expiresAt) {
-            clearPendingRerun(id, before)
+            clearPendingRerun(id, runId)
             onError(new Error('The AI draft is still processing. Refresh to check again.'), {
               fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
               tags: { form: 'dispute-rerun' },
             })
             return
           }
-          applySavedDraft(before, await reconcileDisputeAIDraft(before))
+          applySavedDraft(before, runId, await reconcileDisputeAIDraft(before))
         }),
       )
     },
     [...pendingReruns].map(([id, { expiresAt }]) => `${id}:${expiresAt}`).join('|'),
-    () => {
-      setPendingReruns(new Map())
+    expiredKeys => {
+      const expiredSet = new Set(expiredKeys)
+      setPendingReruns(
+        current =>
+          new Map(
+            [...current].filter(([id, rerun]) => !expiredSet.has(`${id}:${rerun.expiresAt}`)),
+          ),
+      )
       onError(new Error('The AI draft is still processing. Refresh to check again.'), {
         fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
         tags: { form: 'dispute-rerun' },
@@ -67,11 +73,16 @@ export function useDisputeAiReruns(
     try {
       const before = disputes.find(dispute => dispute.id === id)
       if (!before) throw new Error(`Could not find dispute ${id}`)
-      await rerunDisputeAI(id)
+      const { run_id: runId } = await rerunDisputeAI(id)
       setPendingReruns(current =>
-        new Map(current).set(id, { before, expiresAt: Date.now() + 60_000 }),
+        new Map(current).set(id, { before, runId, expiresAt: Date.now() + 60_000 }),
       )
-      applySavedDraft(before, await reconcileDisputeAIDraft(before))
+      try {
+        applySavedDraft(before, runId, await reconcileDisputeAIDraft(before))
+      } catch (err) {
+        // Admission succeeded; the installed pending rerun will retry the primary read.
+        console.error('Could not refresh queued dispute draft', err)
+      }
     } catch (err) {
       onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),

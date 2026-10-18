@@ -89,7 +89,7 @@ describe('DisputesClient — rendering and staff actions', () => {
   })
 
   it('calls rerunDisputeAI when Re-run AI is clicked', async () => {
-    h.mockRerunDisputeAI.mockResolvedValueOnce(undefined)
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'job-1' })
     render(
       <DisputesClient
         viewerTier='staff'

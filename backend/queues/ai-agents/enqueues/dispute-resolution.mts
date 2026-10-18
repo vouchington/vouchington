@@ -51,8 +51,10 @@ export function enqueueDisputeResolution(disputeId: string, rerunById?: string |
 export async function enqueueDisputeResolutionQueued(
   disputeId: string,
   rerunById?: string | null,
-): Promise<void> {
+): Promise<string> {
   const { data, opts } = buildDisputeResolutionJob(disputeId, rerunById)
-  await ai_agents.add('dispute-resolution', data, opts)
+  const job = await ai_agents.add('dispute-resolution', data, opts)
+  if (!job) throw new Error('Dispute resolution rerun was not admitted to the queue')
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'dispute-resolution')
+  return job.id
 }

@@ -11,6 +11,7 @@ export type { DisputeModelCaller } from './model.mts'
 export interface DisputeModelInput {
   disputeId: string
   rerunById?: string | null
+  runId?: string
 }
 
 /**
@@ -24,7 +25,7 @@ export async function runDisputeResolutionAgent(
   selection: ModelSelection,
   callModel: DisputeModelCaller = callDisputeModel,
 ): Promise<void> {
-  const { disputeId, rerunById } = input
+  const { disputeId, rerunById, runId } = input
 
   const dispute = await getReviewDisputeById(disputeId)
   if (!dispute) {
@@ -93,5 +94,6 @@ export async function runDisputeResolutionAgent(
     aiPublicResponse: result.output.public_response,
     aiInternalResponse: result.output.internal_response,
     model: result.model,
+    runId,
   })
 }

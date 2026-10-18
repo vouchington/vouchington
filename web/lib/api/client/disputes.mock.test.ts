@@ -121,8 +121,8 @@ describe('disputes client api helpers', () => {
 
   describe('rerunDisputeAI', () => {
     it('calls POST /api/v1/disputes/:id/resolution-drafts', async () => {
-      mockPost.mockResolvedValueOnce(undefined)
-      await rerunDisputeAI('dispute-1')
+      mockPost.mockResolvedValueOnce({ queued: true, run_id: 'job-1' })
+      await expect(rerunDisputeAI('dispute-1')).resolves.toMatchObject({ run_id: 'job-1' })
       expect(mockPost).toHaveBeenCalledWith('/api/v1/disputes/dispute-1/resolution-drafts', {})
     })
   })

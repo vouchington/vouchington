@@ -9,7 +9,8 @@ const defaultBody = responseBody('native.moderation.disputes.default') as {
 const pendingDispute = defaultBody.disputes[0]!
 
 function disputeBody(overrides: Record<string, unknown> = {}) {
-  return { dispute: { ...pendingDispute, ...overrides } }
+  const { ai_draft_run_id: _runId, ...dispute } = pendingDispute
+  return { dispute: { ...dispute, ...overrides } }
 }
 
 const disputeRoute = {
@@ -33,7 +34,7 @@ export const nativeModerationDisputeApiFixtureCases = [
     method: 'GET',
     path: `/api/v1/disputes/${disputeId}`,
     route: disputeRoute,
-    body: disputeBody(),
+    body: disputeBody({ ai_draft_run_id: null }),
     migratedFrom: ['backend/api/v1/disputes/disputes.mts'],
   }),
   fixtureCase({
@@ -135,7 +136,7 @@ export const nativeModerationDisputeApiFixtureCases = [
       routeTemplate: '/api/v1/disputes/:id/resolution-drafts',
       pathParams: { id: disputeId },
     },
-    body: { queued: true, rerun_by_id: 'staff-1' },
+    body: { queued: true, rerun_by_id: 'staff-1', run_id: 'dispute-rerun-job-1' },
     status: 202,
     migratedFrom: ['backend/api/v1/disputes/disputes.mts'],
   }),

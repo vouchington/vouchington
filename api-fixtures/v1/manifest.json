@@ -19047,7 +19047,7 @@
     },
     "GET:/api/v1/disputes#staff": {
       "bodyKind": "content",
-      "hash": "c2fb7e843803f003e553c4d68e7fd2e7b8177041bb50b3d2d17019c509345cea",
+      "hash": "57113580d37d4a9e2280f616969d131157a9bb68142dd9e404bbb72521378668",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -19057,6 +19057,20 @@
           "ReviewDispute": {
             "additionalProperties": false,
             "properties": {
+              "ai_draft_run_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "ai_drafted_at": {
                 "required": true,
                 "schema": {
@@ -20033,7 +20047,7 @@
     },
     "GET:/api/v1/disputes/:id#staff": {
       "bodyKind": "content",
-      "hash": "ff3e92da79d3ba5049858e4848887465bf5ec57d4935194321555698f764643e",
+      "hash": "7cdd505554cae0dacb6ea364410a907cbcf948bd63971d765a39d1df2bd2ff84",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -20043,6 +20057,20 @@
           "ReviewDispute": {
             "additionalProperties": false,
             "properties": {
+              "ai_draft_run_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "ai_drafted_at": {
                 "required": true,
                 "schema": {
@@ -82493,7 +82521,7 @@
     },
     "POST:/api/v1/disputes/:id/resolution-drafts#staff": {
       "bodyKind": "content",
-      "hash": "a258c49cc3ce25e47176b80b7cd63640324c9898070986281c0ea65c563d1041",
+      "hash": "14d7e80f81876656d9f7f19526e30caad0bb43a94bf51fc78c7b3ed2311460b3",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "POST",
@@ -82511,6 +82539,12 @@
               }
             },
             "rerun_by_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "run_id": {
               "required": true,
               "schema": {
                 "type": "string"
@@ -97223,7 +97257,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "90957b80cf790b6f4bd843985d63abcc42ab84dda6ceba6343f391632cd1ff88",
+        "hash": "d3401dc73b6a9fdd36536e8f7c6c3fc526e94c806c8f304a972f1104c3bf3fb8",
         "key": "native.moderation.disputes.default"
       },
       "route": {
@@ -97244,7 +97278,7 @@
       "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
       "path": "/api/v1/disputes/00000000-0000-7000-8000-000000000201",
       "responseSchema": {
-        "hash": "bc6d86d33506ec2b71542d6525c0745cd400169a511fb2d6a89830735d52e198",
+        "hash": "8aacd514f803f3e65966e1b793f1bad4ffe37080529a6a52a4f92e2f5bf4a269",
         "key": "native.moderation.disputes.detail.default"
       },
       "route": {
@@ -97475,7 +97509,7 @@
       "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
       "path": "/api/v1/disputes/00000000-0000-7000-8000-000000000201/resolution-drafts",
       "responseSchema": {
-        "hash": "20e75d65b89e7e2ed3b08b4f223f47570b26efc7cbb151bbc40d4261fde3c2c6",
+        "hash": "dcdd714dddfac7e1552b4392112159658c36250bab5a33f8c6ec1705762646ee",
         "key": "native.moderation.disputes.resolution-drafts.default"
       },
       "route": {
