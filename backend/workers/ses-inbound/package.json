@@ -18,6 +18,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/ses-inbound": "workspace:^",

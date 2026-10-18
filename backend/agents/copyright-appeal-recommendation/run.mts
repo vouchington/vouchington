@@ -27,6 +27,7 @@ export async function runCopyrightAppealRecommendationAgent(
   const { output, model } = await callReceiptedAgentModel({
     agentSlug: 'copyright-appeal-recommendation',
     operationId,
+    copyrightNoticeSubmissionId: submissionId,
     selection,
     input,
     safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),

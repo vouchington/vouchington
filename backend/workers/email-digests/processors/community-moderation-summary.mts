@@ -2,6 +2,7 @@ import type { ProcessSendCommunityModerationSummaryEmailVariables } from '@queue
 import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderCommunityModerationSummaryEmail } from '@email-templates/core'
 import { getMarketingPostalAddress } from '@modules/utils'
+import { isAwsThrottlingError } from '@modules/queue-errors'
 import { sendClassifiedEmail } from '@services/email-classification'
 import { createEmailUnsubscribeUrl } from '@services/users'
 import {
@@ -13,6 +14,7 @@ import {
   isModerationEmailsEnabled,
   formatLocalDate,
   markModerationEmailSent,
+  resetRejectedModerationEmailSend,
   releaseUnsentModerationEmailClaim,
 } from '@services/communities/moderation-summary-emails'
 import { resolveEmailRecipient } from '@workers/emails/processors/recipient'
@@ -65,11 +67,20 @@ export const processSendCommunityModerationSummaryEmail = async (
   if (input.userId && input.trackingKey) {
     if (!(await markModerationEmailSent(input.userId, input.trackingKey))) return null
   }
-  return sendClassifiedEmail('processSendCommunityModerationSummaryEmail', {
-    to: emailAddress,
-    subject,
-    html,
-    text,
-    userId: input.userId,
-  })
+  try {
+    return await sendClassifiedEmail('processSendCommunityModerationSummaryEmail', {
+      to: emailAddress,
+      subject,
+      html,
+      text,
+      userId: input.userId,
+    })
+  } catch (err) {
+    // SES sending-rate rejection is definitive: no mail was accepted. Unknown outcomes keep the
+    // mark so a retry cannot duplicate a summary that may have been delivered.
+    if (input.userId && input.trackingKey && isAwsThrottlingError(err)) {
+      await resetRejectedModerationEmailSend(input.userId, input.trackingKey)
+    }
+    throw err
+  }
 }

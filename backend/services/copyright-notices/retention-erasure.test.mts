@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
+import {
+  getAgentCallReceipt,
+  reserveAgentCallReceipt,
+  completeAgentCallReceipt,
+} from '@services/ai-usage/agent-call-receipts'
 import {
   readCopyrightThreadTokenById,
   readCopyrightThreadTokenForIntake,
@@ -41,7 +46,19 @@ describe('copyright evidence retention sweep', () => {
   it('overwrites the personal data of an eligible case and deletes every object version', async () => {
     await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
     const cases = await Promise.all([createRetentionEmailCase(), createRetentionFormCase()])
-    await addTestCopyrightSubmissionGuidanceForRetentionCase(cases[1]!.noticeId)
+    const { counterSubmissionId } = await addTestCopyrightSubmissionGuidanceForRetentionCase(
+      cases[1]!.noticeId,
+    )
+    const receiptKey = createHash('sha256').update(randomUUID()).digest('hex')
+    expect(
+      await reserveAgentCallReceipt(
+        receiptKey,
+        'copyright-submission-guidance',
+        'a'.repeat(64),
+        counterSubmissionId,
+      ),
+    ).toBe(true)
+    await completeAgentCallReceipt(receiptKey, 'encrypted private guidance fixture')
     const noticeIds = cases.map(entry => entry.noticeId)
     const administratorLift = await createRetentionAdministratorLiftCase()
     const coverageNoticeIds = [...noticeIds, administratorLift.noticeId]
@@ -67,6 +84,9 @@ describe('copyright evidence retention sweep', () => {
     })
 
     expect(result).toEqual({ erased: 3, ineligible: 0, failed: [] })
+    await expect(getAgentCallReceipt(receiptKey)).resolves.toMatchObject({
+      result_ciphertext: 'erased',
+    })
     await expect(readCopyrightStaffQueueCursorRows(noticeIds)).resolves.toEqual([])
     for (const [index, entry] of cases.entries()) {
       for (const key of entry.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)

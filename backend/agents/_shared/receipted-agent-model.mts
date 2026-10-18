@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { unrecoverable } from '@modules/queue-errors'
+import { unrecoverable } from '@vouchington/queue-errors'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import type { ModelCallResult } from '@modules/model-providers/types'
 import {
@@ -18,6 +18,13 @@ type ReceiptedCall<Output> = {
   callModel: AgentModelCaller<Output>
   communityId?: string | null
   postId?: string | null
+  copyrightNoticeSubmissionId?: string
+}
+
+export function agentCallOperationKey(agentSlug: string, operationId: string): string {
+  return createHash('sha256')
+    .update(JSON.stringify([agentSlug, operationId]))
+    .digest('hex')
 }
 
 /** A missing result means dispatch might have been billed. Never automatically send it again. */
@@ -25,9 +32,7 @@ export async function callReceiptedAgentModel<Output>(
   params: ReceiptedCall<Output>,
 ): Promise<ModelCallResult<Output>> {
   const { agentSlug, operationId, selection, input, safetyIdentifier, callModel } = params
-  const key = createHash('sha256')
-    .update(JSON.stringify([agentSlug, operationId]))
-    .digest('hex')
+  const key = agentCallOperationKey(agentSlug, operationId)
   const requestSha256 = createHash('sha256')
     .update(JSON.stringify([selection, input]))
     .digest('hex')
@@ -39,6 +44,9 @@ export async function callReceiptedAgentModel<Output>(
     }
     if (!existing.result_ciphertext) {
       unrecoverable(new Error(`Paid ${agentSlug} call ${key} has an uncertain receipt`))
+    }
+    if (existing.result_ciphertext === 'erased') {
+      unrecoverable(new Error(`Paid ${agentSlug} call ${key} was erased by retention`))
     }
     return JSON.parse(decryptSecret(existing.result_ciphertext, purpose)) as ModelCallResult<Output>
   }
@@ -53,7 +61,14 @@ export async function callReceiptedAgentModel<Output>(
     postId: params.postId,
     // The spend-cap check runs first, so a rejected admission does not consume this receipt.
     beforeDispatch: async () => {
-      if (!(await reserveAgentCallReceipt(key, agentSlug, requestSha256))) {
+      if (
+        !(await reserveAgentCallReceipt(
+          key,
+          agentSlug,
+          requestSha256,
+          params.copyrightNoticeSubmissionId,
+        ))
+      ) {
         unrecoverable(new Error(`Paid ${agentSlug} call ${key} is already reserved`))
       }
     },

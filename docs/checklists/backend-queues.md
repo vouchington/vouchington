@@ -72,6 +72,8 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
 - **Record the intent before an effect.** A paid or otherwise non-idempotent external call needs a
   durable receipt before dispatch. A retry must reuse its recorded result or a provider-supported
   idempotency key; an ambiguous billed attempt must not be sent again blindly.
+- **Mark moderation summaries before SES.** A definitive sending-rate rejection clears that mark
+  for a queue retry; an unknown send outcome keeps it to prevent duplicate mail.
 - **When merging,** namespace job names, deduplication IDs, job IDs, scheduler IDs, and ordering
   keys by domain, and size the worker for the combined load. A job that already needs an ordering
   key keeps it, namespaced, and gives up any domain-wide group cap.

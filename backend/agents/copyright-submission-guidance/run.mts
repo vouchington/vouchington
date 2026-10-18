@@ -32,6 +32,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   const { output: guidance, model } = await callReceiptedAgentModel({
     agentSlug: 'copyright-submission-guidance',
     operationId,
+    copyrightNoticeSubmissionId: submissionId,
     selection,
     input: modelInput,
     safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),

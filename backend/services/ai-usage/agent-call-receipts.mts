@@ -15,10 +15,11 @@ export async function reserveAgentCallReceipt(
   key: string,
   agentSlug: string,
   requestSha256: string,
+  copyrightNoticeSubmissionId?: string,
 ): Promise<boolean> {
   const { rows } = await write(sql`/* reserveAgentCallReceipt */
-    INSERT INTO ai_agent_call_receipts (operation_key, agent_slug, request_sha256)
-    VALUES (${key}, ${agentSlug}, ${requestSha256})
+    INSERT INTO ai_agent_call_receipts (operation_key, agent_slug, request_sha256, copyright_notice_submission_id)
+    VALUES (${key}, ${agentSlug}, ${requestSha256}, ${copyrightNoticeSubmissionId ?? null})
     ON CONFLICT DO NOTHING
     RETURNING id
   `)
