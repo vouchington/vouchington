@@ -1,11 +1,22 @@
+import { createHash } from 'node:crypto'
 import type { EnqueueReturnType } from '@voucha/types'
-import { createBackgroundEnqueue } from '@queues/background/enqueues'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   VOTE_AGGREGATION_AGE_MILESTONES_JOB,
   VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
   VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
+import type {
+  VoteWeightAgeMilestonesData,
+  VoteWeightMembershipExpirationsData,
+  VoteWeightFamilySourceChangesData,
+  VoteWeightDirtyMarkersData,
+  VoteWeightDispatchWindow,
+  VoteWeightRejectedEvidenceKeyset,
+} from '@queues/background/enqueues/vote-weight-dispatch-types'
+import { voteAggregation } from '../queues.mts'
 
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
 
@@ -33,10 +44,90 @@ const enqueueFamilySourceChangesJob = createBackgroundEnqueue(
 )
 const enqueueDirtyMarkersJob = createBackgroundEnqueue(VOTE_AGGREGATION_DIRTY_MARKERS_JOB)
 
+/** A cursor owns one page. Include the exact window so later sweeps can revisit the same row. */
+function continuationJobId(dispatcher: string, state: unknown): string {
+  const hash = createHash('sha256').update(JSON.stringify(state)).digest('hex')
+  return `voteWeightDispatch__${dispatcher}__${hash}`
+}
+
+function windowState(window: VoteWeightDispatchWindow | undefined) {
+  return window ? [window.previousThroughAt, window.windowStart, window.windowEnd] : null
+}
+
+function keysetState(keyset: VoteWeightRejectedEvidenceKeyset | null | undefined) {
+  if (keyset === undefined) return 'unstarted'
+  return keyset ? [keyset.at, keyset.id, keyset.afterSourceId ?? null] : null
+}
+
+function ageJobId(data: VoteWeightAgeMilestonesData): string {
+  return continuationJobId('age', [
+    data.fullReplay ?? false,
+    windowState(data.window),
+    data.milestoneIndex ?? null,
+    data.afterId ?? null,
+  ])
+}
+
+function expirationJobId(data: VoteWeightMembershipExpirationsData): string {
+  return continuationJobId('expiry', [
+    data.fullReplay ?? false,
+    windowState(data.window),
+    keysetState(data.after),
+  ])
+}
+
+function familyJobId(data: VoteWeightFamilySourceChangesData): string {
+  return continuationJobId('family', [
+    data.fullReplay ?? false,
+    windowState(data.window),
+    keysetState(data.branches?.updated_at),
+    keysetState(data.branches?.effective_at),
+    keysetState(data.branches?.expires_at),
+    keysetState(data.branches?.rejected_at),
+  ])
+}
+
+function dirtyJobId(data: VoteWeightDirtyMarkersData): string {
+  return continuationJobId('dirty', data.afterId)
+}
+
+const enqueueBulkAgeContinuations = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_AGE_MILESTONES_JOB,
+  (data: VoteWeightAgeMilestonesData) => ({ data, opts: { jobId: ageJobId(data) } }),
+)
+const enqueueBulkExpirationContinuations = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
+  (data: VoteWeightMembershipExpirationsData) => ({ data, opts: { jobId: expirationJobId(data) } }),
+)
+const enqueueBulkFamilyContinuations = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  (data: VoteWeightFamilySourceChangesData) => ({ data, opts: { jobId: familyJobId(data) } }),
+)
+const enqueueBulkDirtyContinuations = createBackgroundBulkEnqueue(
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
+  (data: VoteWeightDirtyMarkersData) => ({ data, opts: { jobId: dirtyJobId(data) } }),
+)
+
+async function enqueueContinuation<T>(
+  data: T,
+  jobId: string,
+  enqueueBulk: (inputs: T[]) => Promise<Array<{ id: string }>>,
+) {
+  const jobs = await enqueueBulkReactivatingFinished({
+    queue: voteAggregation,
+    inputs: [data],
+    jobIdOf: () => jobId,
+    enqueueBulk,
+  })
+  return jobs[0] ?? null
+}
+
 export function enqueueVoteWeightAgeMilestones(
   data: Parameters<typeof enqueueAgeMilestonesJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
+  if (data.window && (data.milestoneIndex !== undefined || data.afterId !== undefined))
+    return enqueueContinuation(data, ageJobId(data), enqueueBulkAgeContinuations)
   return enqueueAgeMilestonesJob(data, buildBackfillDispatcherJobOptions(options))
 }
 
@@ -44,6 +135,8 @@ export function enqueueVoteWeightMembershipExpirations(
   data: Parameters<typeof enqueueMembershipExpirationsJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
+  if (data.window && data.after)
+    return enqueueContinuation(data, expirationJobId(data), enqueueBulkExpirationContinuations)
   return enqueueMembershipExpirationsJob(data, buildBackfillDispatcherJobOptions(options))
 }
 
@@ -51,6 +144,8 @@ export function enqueueVoteWeightFamilySourceChanges(
   data: Parameters<typeof enqueueFamilySourceChangesJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
+  if (data.window && data.branches)
+    return enqueueContinuation(data, familyJobId(data), enqueueBulkFamilyContinuations)
   return enqueueFamilySourceChangesJob(data, buildBackfillDispatcherJobOptions(options))
 }
 
@@ -58,5 +153,7 @@ export function enqueueVoteWeightDirtyMarkers(
   data: Parameters<typeof enqueueDirtyMarkersJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
+  if (data.afterId)
+    return enqueueContinuation(data, dirtyJobId(data), enqueueBulkDirtyContinuations)
   return enqueueDirtyMarkersJob(data, buildBackfillDispatcherJobOptions(options))
 }

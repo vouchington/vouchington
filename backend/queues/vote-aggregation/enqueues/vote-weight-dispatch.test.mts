@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { isDeduplicatedEnqueue, readEnqueuedJob } from '@voucha/test-helpers'
+import { holdBackgroundDomain } from '../../../../test-helpers/shared-background-worker.mts'
+import { runInsideTestWorkerProcessor as withoutFlush } from '../../../../test-helpers/glide-mq-vitest-flush.mts'
 import { voteAggregation } from '../queues.mts'
 import {
   enqueueVoteWeightAgeMilestones,
@@ -15,6 +17,18 @@ const window = {
   windowEnd: '2026-01-02T00:00:00.000000Z',
 }
 
+async function admitSameAndDistinct<T>(
+  enqueue: (data: T) => Promise<unknown>,
+  data: T,
+  distinctData: T,
+) {
+  return {
+    first: await enqueue(data),
+    duplicate: await enqueue(data),
+    distinct: await enqueue(distinctData),
+  }
+}
+
 const dispatchers = [
   {
     name: 'age milestones',
@@ -25,6 +39,13 @@ const dispatchers = [
       enqueueVoteWeightAgeMilestones({ fullReplay: true, window, afterId: randomUUID() }),
     rootData: { fullReplay: true },
     continuationData: { fullReplay: true, window },
+    admissions: () => {
+      const data = { fullReplay: true, window, afterId: randomUUID() }
+      return admitSameAndDistinct(enqueueVoteWeightAgeMilestones, data, {
+        ...data,
+        afterId: randomUUID(),
+      })
+    },
   },
   {
     name: 'membership expirations',
@@ -39,6 +60,13 @@ const dispatchers = [
       }),
     rootData: { fullReplay: true },
     continuationData: { fullReplay: true, window },
+    admissions: () => {
+      const data = { fullReplay: true, window, after: { at: window.windowStart, id: randomUUID() } }
+      return admitSameAndDistinct(enqueueVoteWeightMembershipExpirations, data, {
+        ...data,
+        after: { ...data.after, id: randomUUID() },
+      })
+    },
   },
   {
     name: 'family source changes',
@@ -53,6 +81,18 @@ const dispatchers = [
       }),
     rootData: { fullReplay: true },
     continuationData: { fullReplay: true, window },
+    admissions: () => {
+      const id = randomUUID()
+      const data = {
+        fullReplay: true,
+        window,
+        branches: { rejected_at: { at: window.windowStart, id, afterSourceId: randomUUID() } },
+      }
+      return admitSameAndDistinct(enqueueVoteWeightFamilySourceChanges, data, {
+        ...data,
+        branches: { rejected_at: { ...data.branches.rejected_at, afterSourceId: randomUUID() } },
+      })
+    },
   },
   {
     name: 'dirty markers',
@@ -61,6 +101,10 @@ const dispatchers = [
     continuation: () => enqueueVoteWeightDirtyMarkers({ afterId: randomUUID() }),
     rootData: {},
     continuationData: { afterId: expect.any(String) },
+    admissions: () => {
+      const data = { afterId: randomUUID() }
+      return admitSameAndDistinct(enqueueVoteWeightDirtyMarkers, data, { afterId: randomUUID() })
+    },
   },
 ]
 
@@ -92,4 +136,63 @@ describe('vote-weight dispatcher admission', () => {
       }
     },
   )
+
+  it.each(dispatchers)(
+    '$name admits one live continuation per complete cursor state',
+    async dispatcher => {
+      const release = holdBackgroundDomain('vote-aggregation')
+      const admittedJobs: Array<{ remove: () => Promise<unknown> }> = []
+      try {
+        const { first, duplicate, distinct } = await withoutFlush(dispatcher.admissions)
+        const admitted = await readEnqueuedJob(voteAggregation, first)
+        admittedJobs.push(admitted)
+        expect(isDeduplicatedEnqueue(duplicate)).toBe(true)
+        expect((await voteAggregation.getJob(admitted.id))?.timestamp).toBe(admitted.timestamp)
+        const other = await readEnqueuedJob(voteAggregation, distinct)
+        admittedJobs.push(other)
+        expect(other.id).not.toBe(admitted.id)
+      } finally {
+        try {
+          await Promise.all(admittedJobs.map(job => job.remove()))
+        } finally {
+          release()
+        }
+      }
+    },
+  )
+
+  it('distinguishes unstarted and completed family branches', async () => {
+    const release = holdBackgroundDomain('vote-aggregation')
+    const admittedJobs: Array<{ remove: () => Promise<unknown> }> = []
+    try {
+      const unstarted = await readEnqueuedJob(
+        voteAggregation,
+        await withoutFlush(() => enqueueVoteWeightFamilySourceChanges({ window, branches: {} })),
+      )
+      admittedJobs.push(unstarted)
+      const completed = await readEnqueuedJob(
+        voteAggregation,
+        await withoutFlush(() =>
+          enqueueVoteWeightFamilySourceChanges({ window, branches: { rejected_at: null } }),
+        ),
+      )
+      admittedJobs.push(completed)
+      expect(completed.id).not.toBe(unstarted.id)
+    } finally {
+      try {
+        await Promise.all(admittedJobs.map(job => job.remove()))
+      } finally {
+        release()
+      }
+    }
+  })
+
+  it('reactivates a finished continuation with the same stable id', async () => {
+    const data = { afterId: `ffffffff-ffff-4fff-8fff-${randomUUID().slice(24)}` }
+    const first = await readEnqueuedJob(voteAggregation, await enqueueVoteWeightDirtyMarkers(data))
+    await expect((await voteAggregation.getJob(first.id))?.getState()).resolves.toBe('completed')
+
+    const replay = await readEnqueuedJob(voteAggregation, await enqueueVoteWeightDirtyMarkers(data))
+    expect(replay.id).toBe(first.id)
+  })
 })
