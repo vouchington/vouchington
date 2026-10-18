@@ -31,7 +31,7 @@
   },
   {
     "annotation": "assertReferralProgramExists",
-    "reason": "The create-and-link transaction rechecks the program after inserting the new link-validation row, so it sees the write and rejects a program merged or deleted before the relation is added (backend/services/referral-program-link-validations/create-and-link.mts:76-79, backend/services/topics/validation.mts:126-150)",
+    "reason": "The program is checked at backend/services/referral-program-link-validations/create-and-link.mts:76 before slug validation and the validation-row insert, then again at backend/services/topics/validation.mts:127-146 after the insert, which must see the new validation row and lock-time program state; dropping the first check would change which 4xx a bad or duplicate slug with a missing program returns",
     "issue": 3120
   },
   {
@@ -291,7 +291,7 @@
   },
   {
     "annotation": "getAdministratorRefundRequestForMembershipKey",
-    "reason": "The transaction first checks idempotency, then rereads after an operation/request insert conflict to hydrate the already-persisted request before comparing its fingerprint (backend/services/memberships/refund-reconciliation/administrator-request.mts:17-25, backend/services/memberships/refund-reconciliation/administrator-request.mts:63-71)",
+    "reason": "The transaction first checks idempotency, then rereads after an operation/request insert conflict to hydrate the already-persisted request before comparing its fingerprint (backend/services/memberships/refund-reconciliation/administrator-request.mts:18-22, backend/services/memberships/refund-reconciliation/administrator-request.mts:83-89)",
     "issue": 3120
   },
   {
@@ -323,11 +323,6 @@
     "annotation": "getCommunityWithViewerById",
     "reason": "Community post creation reloads community and membership after admission begins its write transaction; delegated creation also holds lifecycle and membership locks",
     "issue": 3113
-  },
-  {
-    "annotation": "getDataRequestById",
-    "reason": "Unresolved in #3120: the second read closes the lost-wakeup window after pub/sub subscribe, and removing it requires a separate SSE race/error-order design (backend/api/v1/users/data-request.mts:117-135). This remains outside the issue's allowed row-lock/write/transaction keep categories.",
-    "issue": 3120
   },
   {
     "annotation": "getLandingPageRowForUser",
@@ -748,11 +743,6 @@
     "annotation": "renewContributionAdmissionLease",
     "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
     "issue": 3117
-  },
-  {
-    "annotation": "replaceMyLandingPageItems",
-    "reason": "Group-member rows must be deleted before their parent landing-page items to satisfy the foreign key (backend/services/my/landing-pages/replace-item-writes.mts:11-19)",
-    "issue": 3120
   },
   {
     "annotation": "replaceTopicRecommendationHostnames",

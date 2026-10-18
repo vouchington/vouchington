@@ -8,12 +8,8 @@ export async function replaceLandingPageItemRows(
   itemRows: ReturnType<typeof buildLandingPageInsertRows>['itemRows'],
   groupMemberRows: ReturnType<typeof buildLandingPageInsertRows>['groupMemberRows'],
 ): Promise<void> {
-  await query(sql`/* replaceMyLandingPageItems */
-      DELETE FROM user_landing_page_group_members
-      WHERE landing_page_item_id IN (
-        SELECT id FROM user_landing_page_items WHERE landing_page_id = ${pageId}
-      )
-    `)
+  // user_landing_page_group_members.landing_page_item_id is ON DELETE CASCADE, so deleting the
+  // items removes their group members in the same statement.
   await query(
     sql`/* replaceMyLandingPageItems */ DELETE FROM user_landing_page_items WHERE landing_page_id = ${pageId}`,
   )
