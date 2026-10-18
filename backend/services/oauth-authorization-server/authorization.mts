@@ -22,6 +22,7 @@ import type {
 import { getOAuthClientDisplayName } from './known-clients.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 import { findOAuthProtectedResource } from './resources.mts'
+import { toProtocolOAuthClient } from './protocol-client.mts'
 
 type AuthorizationRequestRow = {
   id: string
@@ -123,16 +124,7 @@ export async function validateOAuthAuthorizationRequest(
       findClient: async clientId => {
         const client = await getOAuthClientForAuthorization(clientId, clientIdMetadataDependencies)
         if (client) foundClients.push(client)
-        return (
-          client && {
-            clientId: client.client_id,
-            clientName: client.client_name,
-            redirectUris: client.redirect_uris,
-            scopes: client.scopes,
-            tokenEndpointAuthMethod: client.token_endpoint_auth_method,
-            clientSecretHash: client.client_secret_hash,
-          }
-        )
+        return toProtocolOAuthClient(client)
       },
     },
   })

@@ -15,6 +15,7 @@ import {
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
 import type { OAuthClient } from './types.mts'
+import { toProtocolOAuthClient } from './protocol-client.mts'
 
 export async function registerOAuthClient(
   input: unknown,
@@ -43,19 +44,7 @@ export async function insertOAuthClient(
     defaultAuthMethod: 'none',
     hashSecret: (_purpose, secret) => hashToken(OAUTH_SECRET_PURPOSES.clientSecret, secret),
     registry: {
-      findClient: async clientId => {
-        const client = await getOAuthClient(clientId, query)
-        return (
-          client && {
-            clientId: client.client_id,
-            clientName: client.client_name,
-            redirectUris: client.redirect_uris,
-            scopes: client.scopes,
-            tokenEndpointAuthMethod: client.token_endpoint_auth_method,
-            clientSecretHash: client.client_secret_hash,
-          }
-        )
-      },
+      findClient: async clientId => toProtocolOAuthClient(await getOAuthClient(clientId, query)),
       createClient: async (client: NewOAuthClient) => {
         insertedClient = await persistRegisteredClient(client, ownerUserId, query)
       },

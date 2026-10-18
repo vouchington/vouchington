@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
   clientSecretMatchesStoredHash,
   getTestOAuthClientStorage,
@@ -11,8 +12,11 @@ import {
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   assertScopeSubset,
+  beginValidatedOAuthAuthorizationRequest,
+  createOwnedOAuthApp,
   parseOAuthScopes,
   registerOAuthClient,
+  updateOwnedOAuthApp,
   validateOAuthAuthorizationRequest,
 } from './index.mts'
 
@@ -115,6 +119,37 @@ describe('OAuth client and authorization validation', () => {
         scope: TEST_OAUTH_SCOPE,
         state: randomBytes(16).toString('base64url'),
       }),
+    ).rejects.toMatchObject({ code: 'invalid_request' })
+  })
+
+  it('rechecks a validated redirect URI after its owner removes it', async () => {
+    const owner = await createTestUserDirect()
+    const redirectUri = randomTestOAuthRedirectUri()
+    const issued = await createOwnedOAuthApp(owner.id, {
+      client_name: 'Redirect replacement client',
+      redirect_uris: [redirectUri],
+      scopes: ['mcp.user:read'],
+    })
+    const verifier = randomBytes(32).toString('base64url')
+    const validated = await validateOAuthAuthorizationRequest({
+      clientId: issued.oauth_app.client_id,
+      codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
+      codeChallengeMethod: 'S256',
+      redirectUri,
+      resource: TEST_OAUTH_RESOURCE,
+      responseType: 'code',
+      scope: 'mcp.user:read',
+      state: randomBytes(16).toString('base64url'),
+    })
+    await updateOwnedOAuthApp(owner.id, issued.oauth_app.id, {
+      redirect_uris: [randomTestOAuthRedirectUri()],
+    })
+
+    await expect(
+      beginValidatedOAuthAuthorizationRequest(
+        { userId: owner.id, deviceId: crypto.randomUUID(), sessionId: crypto.randomUUID() },
+        validated,
+      ),
     ).rejects.toMatchObject({ code: 'invalid_request' })
   })
 
