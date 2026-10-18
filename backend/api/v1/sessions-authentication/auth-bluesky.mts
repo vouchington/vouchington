@@ -172,6 +172,7 @@ app.route('/api/v1/auth/bluesky/link-completions').post(async (ctx: Context) => 
     body.flow_id,
     body.completion_token,
     body.completion_proof_verifier,
+    () => new Date(),
   )
   ctx.setStatus(204)
 })
