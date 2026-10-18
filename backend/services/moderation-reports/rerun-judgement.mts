@@ -1,6 +1,5 @@
 import assert from 'http-assert'
 import { recordStaffOperation } from '@services/moderator-actions/operation'
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 import { enqueueReportJudgementAndWait } from '@queues/ai-agents/enqueues/report-judgement'
 import { getModerationReportById } from './get-by-id.mts'
 

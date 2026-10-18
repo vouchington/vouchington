@@ -7,7 +7,6 @@ import {
   readRetainedFailedSesInboundProcessJobs,
   type RetryableSesInboundJob,
 } from '@queues/ses-inbound/enqueues'
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 import { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import { createCopyrightEmailIntake, recordCopyrightEmailParse } from '@services/copyright-notices'
 import {

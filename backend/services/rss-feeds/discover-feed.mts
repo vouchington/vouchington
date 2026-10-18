@@ -1,4 +1,3 @@
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #2853
 import { enqueueCrawlUrlAndWait } from '@queues/crawler/enqueues'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import { getLatestHtmlSnapshotCrawlBefore } from '@services/crawls/get-latest-html-snapshot-before'

@@ -1,7 +1,6 @@
 import onError from '@modules/on-error'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 import { enqueueCopyrightSubmissionGuidanceAndWait } from '@queues/ai-agents/enqueues/copyright-submission-guidance'
 import { assertCopyrightIntakeEnabled } from './activation.mts'
 import { parseCopyrightNoticeForm } from './http-input.mts'

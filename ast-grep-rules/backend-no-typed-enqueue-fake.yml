@@ -19,6 +19,7 @@ rule:
         - has:
             field: type_arguments
             has:
+              stopBy: end
               any:
                 - kind: type_query
                   regex: ^typeof\s+(.*\.)?enqueue[A-Z]
@@ -37,6 +38,10 @@ rule:
             kind: unary_expression
             regex: ^typeof\s+import\(.*\)\.enqueue[A-Z]
 examples:
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const enqueue = vi.fn<NonNullable<Deps['enqueueContinuation']>>()
+    isValid: false
   - file: backend/workers/example/processors.test.mts
     code: |
       const enqueue = vi.fn<typeof import('@queues/example/enqueues').enqueueFoo>()

@@ -15,9 +15,7 @@ import {
   parseCopyrightNoticeForm,
 } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 import { enqueueCopyrightFormScreeningAndWait } from '@queues/ai-agents/enqueues/copyright-form-screening'
-// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 import { enqueueCopyrightAppealRecommendationAndWait } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
 import {
   getOptionalAuthAndRateLimit,

@@ -24,7 +24,7 @@ rule:
       has:
         field: index
         kind: string
-        regex: ^['"](addAndWait|waitUntilFinished)['"]$
+        regex: ^['"](addAndWait|waitUntilFinished|enqueue\w*AndWait)['"]$
     - kind: pair_pattern
       has:
         field: key
@@ -32,9 +32,13 @@ rule:
     - kind: shorthand_property_identifier_pattern
       regex: ^(addAndWait|waitUntilFinished)$
     - kind: import_specifier
-      has:
-        field: name
-        regex: ^enqueue\w*AndWait$
+      all:
+        - has:
+            field: name
+            regex: ^enqueue\w*AndWait$
+        - has:
+            field: alias
+            kind: identifier
     - kind: function_declaration
       has:
         field: name
@@ -50,6 +54,10 @@ rule:
               field: property
               regex: ^enqueue\w*AndWait$
 examples:
+  - file: backend/services/example/rerun.mts
+    code: |
+      await dependencies['enqueueReviewAndWait'](id)
+    isValid: false
   - file: backend/services/example/rerun.mts
     code: |
       await queue['addAndWait']('judge', data)
