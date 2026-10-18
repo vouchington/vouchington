@@ -1,6 +1,6 @@
 import { activityPubInboxConfig } from '@services/ap-inbox-activities/config'
 import { DATA_RETENTION_MAX_VALUES, dataRetentionConfig } from '@services/data-retention/config'
-import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import {
   RSS_FEED_CRAWL_MAX_VALUES,
   RSS_FEED_CRAWL_MIN_VALUES,

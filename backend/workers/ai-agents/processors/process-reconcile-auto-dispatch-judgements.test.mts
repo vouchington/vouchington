@@ -3,7 +3,7 @@ import {
   overrideDynamicConfigFieldsForTest,
   closeScopedDynamicConfigContext,
 } from '@voucha/test-helpers/dynamic-config'
-import { moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import { processReconcileAutoDispatchJudgements } from './process-reconcile-auto-dispatch-judgements.mts'
 
 describe('processReconcileAutoDispatchJudgements', () => {

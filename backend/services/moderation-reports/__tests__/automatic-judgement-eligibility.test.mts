@@ -6,7 +6,7 @@ import {
   insertTestPost,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
-import { moderationAiConfig } from '../../moderation/ai-config.mts'
+import { moderationAiConfig } from '@services/moderation-ai-config'
 import { listModerationReports } from '../get.mts'
 import { listClusteredModerationReports } from '../clustered.mts'
 import { listRedactedModerationReports } from '../redaction.mts'

@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { moderationAiConfig } from '../moderation/ai-config.mts'
+import { moderationAiConfig } from '@services/moderation-ai-config'
 import { reportTargetContentSql, reportTargetLabelSql } from './target-content.mts'
 
 export type { ModerationReportTargetContent } from './target-content.mts'

@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
-import { moderationAiConfig } from '@services/moderation'
+import { moderationAiConfig } from '@services/moderation-ai-config'
 import { runReportJudgementAgent } from './run.mts'
 import {
   makeAgentModelCaller,

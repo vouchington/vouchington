@@ -11,7 +11,8 @@ import {
   type ReportJudgementContext,
 } from '@services/moderation-reports'
 import onError from '@modules/on-error'
-import { fetchEntityContent, moderationAiConfig } from '@services/moderation'
+import { fetchEntityContent } from '@services/moderation'
+import { moderationAiConfig } from '@services/moderation-ai-config'
 import { callJudgementModel, type JudgementModelCaller } from './model.mts'
 
 interface JudgementInput {

@@ -31,6 +31,7 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
+    "@services/moderation-ai-config": "workspace:^",
     "@services/moderation-cases": "workspace:^",
     "@services/moderation-training": "workspace:^",
     "@services/moderator-actions": "workspace:^",

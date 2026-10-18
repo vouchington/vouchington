@@ -1,6 +1,6 @@
 import type { Job } from 'glide-mq'
 import type { AutoDispatchJudgementJobData } from '@queues/ai-agents/types'
-import { moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import {
   getReportJudgementContextForEntity,
   getJudgementById,

@@ -1,7 +1,7 @@
 import { callAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
-import { moderationAiConfig } from '@services/moderation'
+import { moderationAiConfig } from '@services/moderation-ai-config'
 import {
   getReviewDisputeByIdFromPrimary,
   createReviewDisputeDraft,

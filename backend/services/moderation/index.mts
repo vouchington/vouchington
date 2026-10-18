@@ -1,4 +1,3 @@
-export * from './ai-config.mts'
 export * from './fetch-entity.mts'
 export * from './config.mts'
 export * from './community-agent-entitlements.mts'
