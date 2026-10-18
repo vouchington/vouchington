@@ -141,10 +141,16 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
   try {
     let request: UserDataRequest
     if (requestIdParam) {
-      // Subscribe BEFORE the one read: a completion is caught by either the read or the
-      // subscription, so no second read is needed. The read stays ahead of the SSE response, so a
-      // missing or not-visible request is still a 404 (the finally below closes the subscription).
-      subscription = await dataRequestPubSub.subscribe(requestIdParam)
+      // Subscribe BEFORE the one read so a completion is caught by the read or the subscription.
+      // The read stays ahead of SSE, so a missing request is a 404 even when pub/sub is down.
+      try {
+        subscription = await dataRequestPubSub.subscribe(requestIdParam)
+      } catch (err) {
+        const visible = await getDataRequestById(user.id, currentUser.id, requestIdParam)
+        ctx.assert(visible, 404, 'No data request found')
+        throw err
+      }
+      if (abortBeforeSSE.wasAborted()) return
       const found = await getDataRequestById(user.id, currentUser.id, requestIdParam)
       ctx.assert(found, 404, 'No data request found')
       request = found
@@ -154,6 +160,7 @@ app.route('/api/v1/users/:idOrSlug/data-request/stream').get(async (ctx: Context
       const latest = await getLatestDataRequest(user.id, currentUser.id)
       ctx.assert(latest, 404, 'No data request found')
       subscription = await dataRequestPubSub.subscribe(latest.id)
+      if (abortBeforeSSE.wasAborted()) return
       request = (await getDataRequestById(user.id, currentUser.id, latest.id)) ?? latest
     }
 
