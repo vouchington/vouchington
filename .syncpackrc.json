@@ -122,12 +122,6 @@
       "snapTo": ["@backend/worker-runtime"]
     },
     {
-      "label": "Dynamic-config consumers must share the producer-compatible valkyries major for error-class identity.",
-      "dependencies": ["valkyries"],
-      "packages": ["@services/dynamic-config-admin", "@voucha/api", "@voucha/mcp"],
-      "pinVersion": "^0.9.0"
-    },
-    {
       "label": "Every other external dependency uses one version across all workspaces (Syncpack's default highest-semver policy)",
       "dependencies": ["**"]
     }

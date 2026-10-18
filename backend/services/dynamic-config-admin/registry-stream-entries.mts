@@ -22,8 +22,8 @@ export const streamDynamicConfigRegistryEntries = [
       },
       weekly_refresh_max_rows_per_run: {
         description: 'Maximum weekly hostname refresh rows before retained-job continuation.',
-        min_value: 1,
-        max_value: 50000,
+        minValue: 1,
+        maxValue: 50000,
         integer: true,
       },
       hostname_batch_size: {
@@ -63,8 +63,8 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       retry_crawl_url_count: {
         description: 'Maximum alternative URL candidates considered for one hostname.',
-        min_value: 1,
-        max_value: 20,
+        minValue: 1,
+        maxValue: 20,
         integer: true,
       },
     },
@@ -151,14 +151,14 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       lookback_seconds: {
         description: 'Fixed source lookback; raise after an outage.',
-        min_value: 1,
-        max_value: 31536000,
+        minValue: 1,
+        maxValue: 31536000,
         integer: true,
       },
       replica_margin_seconds: {
         description: 'Replica visibility safety margin.',
-        min_value: 1,
-        max_value: 3600,
+        minValue: 1,
+        maxValue: 3600,
         integer: true,
       },
       batch_size: {
