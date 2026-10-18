@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SqsMessage } from '@backend/worker-runtime'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,

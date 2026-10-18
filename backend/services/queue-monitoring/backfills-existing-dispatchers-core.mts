@@ -26,8 +26,8 @@ import {
 export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   {
     id: 'bedrock-embedding-reconciliation',
-    queue_name: 'bedrock-embeddings-batch',
-    job_name: 'reconcile_existing',
+    queue_name: 'background-cpu',
+    job_name: 'bedrock-embeddings.reconcile_existing',
     description: 'Start all four embedding copy and downstream delivery reconciliation roots',
     source_table: 'topics, posts, rss_feed_items',
     trigger: enqueueAllEmbeddingReconciliationRoots,
@@ -45,8 +45,8 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'crawl-hostnames-dispatch',
-    queue_name: 'crawl-dispatch',
-    job_name: 'crawl_hostnames_dispatcher',
+    queue_name: 'background-cpu',
+    job_name: 'crawl.crawl_hostnames_dispatcher',
     description: 'Dispatch hostname crawl jobs from the hostnames source of truth',
     source_table: 'url_hostnames',
     trigger: createBackfillDispatcherTrigger(
@@ -56,16 +56,16 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'crawl-tier1-dispatch',
-    queue_name: 'crawl-dispatch',
-    job_name: 'crawl_tier1_dispatcher',
+    queue_name: 'background-cpu',
+    job_name: 'crawl.crawl_tier1_dispatcher',
     description: 'Dispatch tier-1 hostname crawl jobs from the hostnames source of truth',
     source_table: 'urls',
     trigger: createBackfillDispatcherTrigger('crawl-tier1-dispatch', enqueueCrawlTier1Dispatcher),
   },
   {
     id: 'crawl-tier2-dispatch',
-    queue_name: 'crawl-dispatch',
-    job_name: 'crawl_tier2_dispatcher',
+    queue_name: 'background-cpu',
+    job_name: 'crawl.crawl_tier2_dispatcher',
     description: 'Dispatch tier-2 hostname crawl jobs from the hostnames source of truth',
     source_table: 'urls',
     trigger: createBackfillDispatcherTrigger('crawl-tier2-dispatch', enqueueCrawlTier2Dispatcher),
@@ -105,8 +105,8 @@ export const EXISTING_CORE_DISPATCHER_BACKFILLS: BackfillEntry[] = [
   },
   {
     id: 'bedrock-embeddings-poll-dispatch',
-    queue_name: 'bedrock-embeddings-batch',
-    job_name: 'poll_dispatcher',
+    queue_name: 'background-cpu',
+    job_name: 'bedrock-embeddings.poll_dispatcher',
     description: 'Dispatch polling jobs for pending Bedrock batches',
     source_table: 'bedrock_embedding_batches',
     trigger: createBackfillDispatcherTrigger(

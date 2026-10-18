@@ -1,6 +1,5 @@
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
-import type { CrawlReferralLinksJobs } from '@queues/crawl-referral-links/types'
 import { dispatchReferralLinkCrawls } from '@services/crawler-referral-links'
 import { getCrawlerForReferralProgram } from '@services/crawlers'
 import { crawlUrl } from '@services/crawls/crawl-url'
@@ -13,14 +12,14 @@ import {
 } from './processors/outcomes.mts'
 
 export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
-  if (job.name === 'enqueueCrawlReferralLinksDispatcher')
+  if (job.name === 'crawl.enqueueCrawlReferralLinksDispatcher')
     return enqueueCrawlReferralLinksDispatcher()
-  if (job.name === 'crawl_referral_links_dispatcher')
+  if (job.name === 'crawl.crawl_referral_links_dispatcher')
     return processRetainedSweep(job, save =>
       dispatchReferralLinkCrawls({ ...job.data, saveProgress: save }),
     )
-  switch (job.name as CrawlReferralLinksJobs) {
-    case 'crawl_referral_link': {
+  switch (job.name) {
+    case 'crawl.crawl_referral_link': {
       const { linkId, urlId, referralProgramId } = job.data ?? {}
       if (!linkId) throw new Error('Crawl referral link job .linkId is required')
       if (!urlId) throw new Error('Crawl referral link job .urlId is required')

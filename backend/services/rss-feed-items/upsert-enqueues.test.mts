@@ -1,14 +1,11 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { ai_agents } from '@queues/ai-agents/queues'
-import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-embeddings/queues'
-import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
 import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from '@queues/content-analysis/config'
-import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { notifications } from '@queues/notifications/queues'
 import { enqueueRssFeedItemPostUpsertJobsWithCompletion } from './upsert-enqueues.mts'
 import { rssFeedItemsWorkConfig } from './work-limits.mts'
-import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import {
   BEDROCK_BATCH_MAX_VALUES,
   bedrockEmbeddingsBatchConfig,
@@ -27,7 +24,6 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
   })
 
   beforeEach(async () => {
-    await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
     restoreBacklogThreshold = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       backlog_threshold: BEDROCK_BATCH_MAX_VALUES.backlog_threshold,
     })
@@ -36,7 +32,6 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
   afterEach(async () => {
     restoreBacklogThreshold?.()
     restoreBacklogThreshold = undefined
-    await getQueueBacklogDepthCached(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME, 0)
   })
 
   afterAll(async () => {
@@ -76,8 +71,8 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
     await languageDetectionEnqueue
     const [embeddingJobs, aiAgentJobs, notificationJobs, languageDetectionJobs] = await Promise.all(
       [
-        bedrock_embeddings_nova_multimodal_v1_single.searchJobs({
-          name: 'rss_feed_item',
+        backgroundCpu.searchJobs({
+          name: 'bedrock-embeddings.rss_feed_item',
           data: { rss_feed_item_id: itemId },
         }),
         ai_agents.searchJobs({
@@ -88,7 +83,10 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
           name: 'notifications.processReconcileRssFeedItemNotifications',
           data: { rssFeedItemId: itemId },
         }),
-        contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
+        backgroundCpu.searchJobs({
+          name: 'content-analysis.rss_feed_item',
+          data: { id: itemId },
+        }),
       ],
     )
     expect({
@@ -115,7 +113,10 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: itemId },
       }),
-      contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: itemId } }),
+      backgroundCpu.searchJobs({
+        name: 'content-analysis.rss_feed_item',
+        data: { id: itemId },
+      }),
     ])
     expect({
       languageDetection: languageDetectionJobs.length > 0,
@@ -142,7 +143,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
       await languageDetectionEnqueue
 
       for (const row of rows) {
-        const jobs = await contentAnalysisQueue.searchJobs({
+        const jobs = await backgroundCpu.searchJobs({
           name: 'rss_feed_item',
           data: { id: row.id },
         })
@@ -187,7 +188,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: skippedItemId },
       }),
-      contentAnalysisQueue.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),
+      backgroundCpu.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),
     ])
     expect({
       languageDetection: languageDetectionJobs.length > 0,

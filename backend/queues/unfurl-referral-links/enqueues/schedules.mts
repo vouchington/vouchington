@@ -3,34 +3,28 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import type { UnfurlReferralLinksJobs } from '../types.mts'
-import { unfurlReferralLinksQueue } from '../queues.mts'
-import {
-  PRIORITY_DISPATCHER,
-  UNFURL_REFERRAL_LINKS_DEFAULTS,
-  UNFURL_REFERRAL_LINKS_QUEUE_NAME,
-} from '../config.mts'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { PRIORITY_DISPATCHER } from '../config.mts'
 import { enqueueUnfurlReferralLinksDispatcher } from '../enqueues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(UNFURL_REFERRAL_LINKS_QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QUEUE_NAME, [
   {
-    schedulerId: 'unfurl_referral_links_dispatcher',
+    schedulerId: 'crawl:unfurl-referral-links-dispatcher',
     repeat: { pattern: '0 * * * *' },
     template: {
-      name: 'enqueueUnfurlReferralLinksDispatcher' as UnfurlReferralLinksJobs,
+      name: 'crawl.enqueueUnfurlReferralLinksDispatcher',
       data: {},
       opts: {
-        attempts: UNFURL_REFERRAL_LINKS_DEFAULTS.attempts,
-        backoff: UNFURL_REFERRAL_LINKS_DEFAULTS.backoff,
-        removeOnComplete: UNFURL_REFERRAL_LINKS_DEFAULTS.removeOnComplete,
-        removeOnFail: UNFURL_REFERRAL_LINKS_DEFAULTS.removeOnFail,
+        ...requireBackgroundCpuJob('crawl.enqueueUnfurlReferralLinksDispatcher').options,
         priority: PRIORITY_DISPATCHER,
       } satisfies JobOptions,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'unfurl_referral_links_dispatcher',
+        id: 'crawl:unfurl-referral-links-dispatcher',
         schedule: '0 * * * *',
         description: 'Self-heal requested-but-not-completed Amex referral link unfurls (hourly)',
         trigger: enqueueUnfurlReferralLinksDispatcher,
@@ -40,5 +34,5 @@ export const scheduledJobManifest = defineScheduledJobManifest(UNFURL_REFERRAL_L
 ])
 
 export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(unfurlReferralLinksQueue, scheduledJobManifest)
+  await upsertScheduledJobManifest(backgroundCpu, scheduledJobManifest)
 }

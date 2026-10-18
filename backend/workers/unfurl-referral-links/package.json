@@ -19,6 +19,7 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",

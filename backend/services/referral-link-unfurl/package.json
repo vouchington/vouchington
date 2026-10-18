@@ -25,6 +25,7 @@
     "@modules/membership-helpers": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/unfurl-referral-links": "workspace:^",
     "@services/browser-crawl": "workspace:^",
     "@services/memberships": "workspace:^",

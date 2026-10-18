@@ -8,7 +8,7 @@ import {
 } from '@data-stores/valkey-glide-mq'
 import type { AIAgentJobData } from '@queues/ai-agents/types'
 import { spendCapRecheckDeduplicationId } from '@queues/ai-agents/enqueues/spend-cap-recheck'
-import { spendCapRechecks } from '@queues/ai-agents/queues'
+import { backgroundCpu as spendCapRechecks } from '@queues/background-cpu/queues'
 import {
   processSpendCapRecheckJob,
   registerSpendCapRecheck,
@@ -65,7 +65,14 @@ describe('daily AI spend-cap coordination with real GlideMQ', () => {
       const coordinators = await spendCapRechecks.getJobs('waiting')
       await Promise.all(
         coordinators
-          .filter(candidate => candidate.data.day === day)
+          .filter(
+            candidate =>
+              candidate.name === 'ai-spend-cap.recheck' &&
+              typeof candidate.data === 'object' &&
+              candidate.data !== null &&
+              'day' in candidate.data &&
+              candidate.data.day === day,
+          )
           .map(candidate => candidate.remove()),
       )
       await workerQueueCommandClient.unlink([registryKey])

@@ -1,8 +1,10 @@
-import { getWeeklyHostnameRefreshBatchSize } from '@services/crawls/work-limits'
-import type { CrawlHostnamesJobs } from '@queues/crawl-dispatch/types'
+import { getWeeklyHostnameRefreshLimits } from '@services/crawls/work-limits'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
-import { refreshHostnameCrawler } from '@services/crawlers/refresh'
+import {
+  refreshHostnameCrawler,
+  type HostnameCrawlerRefreshCursor,
+} from '@services/crawlers/refresh'
 import { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostnames'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
 import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
@@ -55,20 +57,34 @@ const processCrawlCleanup = async (dependencies?: Partial<CrawlHostnamesProcesso
   }
 }
 
-const processRefreshHostnameCrawlerDispatcher = (
-  dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
-): Promise<string[]> => {
-  const deps = getDependencies(dependencies)
-  return deps.searchHostnameIdsNeedingCrawlerRefresh(getWeeklyHostnameRefreshBatchSize())
-}
-
-async function processRefreshHostnameCrawlerDispatcherJob(
-  dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
-): Promise<number> {
-  const deps = getDependencies(dependencies)
-  const hostnameIds = await processRefreshHostnameCrawlerDispatcher(deps)
-  await deps.enqueueBulkRefreshHostnameCrawler(hostnameIds)
-  return hostnameIds.length
+async function dispatchWeeklyHostnameCrawlerRefresh(
+  saved: HostnameCrawlerRefreshCursor | undefined,
+  saveProgress: (cursor: HostnameCrawlerRefreshCursor) => Promise<void>,
+  dependencies: CrawlHostnamesProcessorDependencies,
+): Promise<{ count: number; hasMore: boolean }> {
+  const limits = getWeeklyHostnameRefreshLimits()
+  let cursor = saved ?? { sweepStartedAt: new Date().toISOString() }
+  await saveProgress(cursor)
+  let count = 0
+  while (count < limits.maxRows) {
+    const pageSize = Math.min(limits.batchSize, limits.maxRows - count)
+    // oxlint-disable-next-line no-await-in-loop -- each page advances the retained cursor after its enqueue succeeds
+    const ids = await dependencies.searchHostnameIdsNeedingCrawlerRefresh(
+      pageSize,
+      {},
+      undefined,
+      cursor,
+    )
+    if (ids.length === 0) return { count, hasMore: false }
+    // oxlint-disable-next-line no-await-in-loop -- enqueue must commit before the retained cursor advances
+    await dependencies.enqueueBulkRefreshHostnameCrawler(ids)
+    count += ids.length
+    cursor.afterId = ids.at(-1)!
+    // oxlint-disable-next-line no-await-in-loop -- retained state must survive a worker restart
+    await saveProgress(cursor)
+    if (ids.length < pageSize) return { count, hasMore: false }
+  }
+  return { count, hasMore: true }
 }
 
 async function processRefreshHostnameCrawler(
@@ -94,18 +110,18 @@ export async function processCrawlHostnamesJob(
   const deps = getDependencies(dependencies)
   const deduplicationId =
     typeof job.data?.deduplication_id === 'string' ? job.data.deduplication_id : undefined
-  switch (job.name as CrawlHostnamesJobs) {
-    case 'enqueueCrawlHostnamesDispatcher':
+  switch (job.name) {
+    case 'crawl.enqueueCrawlHostnamesDispatcher':
       return enqueueCrawlHostnamesDispatcher(deduplicationId ? { deduplicationId } : undefined)
-    case 'enqueueCrawlTier1Dispatcher':
+    case 'crawl.enqueueCrawlTier1Dispatcher':
       return enqueueCrawlTier1Dispatcher(deduplicationId ? { deduplicationId } : undefined)
-    case 'enqueueCrawlTier2Dispatcher':
+    case 'crawl.enqueueCrawlTier2Dispatcher':
       return enqueueCrawlTier2Dispatcher(deduplicationId ? { deduplicationId } : undefined)
-    case 'crawl_hostnames_dispatcher':
+    case 'crawl.crawl_hostnames_dispatcher':
       return processRetainedSweep(job, save =>
         deps.dispatchCrawlHostnames(job.data?.cursor, cursor => save({ cursor })),
       )
-    case 'crawl_urls_per_hostname_dispatcher': {
+    case 'crawl.crawl_urls_per_hostname_dispatcher': {
       const hostnameId = job.data?.hostname_id
       if (!hostnameId)
         throw new Error('Crawl URLs per hostname dispatcher job .hostname_id is required')
@@ -115,19 +131,25 @@ export async function processCrawlHostnamesJob(
         ),
       )
     }
-    case 'crawl_tier1_dispatcher':
+    case 'crawl.crawl_tier1_dispatcher':
       return processRetainedSweep(job, save =>
         deps.dispatchTier1CrawlUrls(job.data?.cursor, cursor => save({ cursor })),
       )
-    case 'crawl_tier2_dispatcher':
+    case 'crawl.crawl_tier2_dispatcher':
       return processRetainedSweep(job, save =>
         deps.dispatchTier2CrawlUrls(job.data?.cursor, cursor => save({ cursor })),
       )
-    case 'crawl_cleanup':
+    case 'crawl.crawl_cleanup':
       return processCrawlCleanup(deps)
-    case 'refresh_hostname_crawler_dispatcher':
-      return processRefreshHostnameCrawlerDispatcherJob(deps)
-    case 'refresh_hostname_crawler': {
+    case 'crawl.refresh_hostname_crawler_dispatcher':
+      return processRetainedSweep(job, save =>
+        dispatchWeeklyHostnameCrawlerRefresh(
+          job.data?.cursor as HostnameCrawlerRefreshCursor | undefined,
+          cursor => save({ cursor }),
+          deps,
+        ),
+      )
+    case 'crawl.refresh_hostname_crawler': {
       const hostnameId = job.data?.hostname_id
       if (!hostnameId) throw new Error('Refresh hostname crawler job .hostname_id is required')
       return processRefreshHostnameCrawler(hostnameId, deps)

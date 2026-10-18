@@ -8,7 +8,7 @@ import {
 } from '@voucha/test-helpers'
 import { setReferralLinkLastCrawlSuccessAtRecent } from '@voucha/test-helpers/entities/referral-links'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
+import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import type { ReferralCrawlDispatchData } from '@queues/crawl-referral-links/types'
 import { referralCrawlDispatchConfig } from './work-limits.mts'
 import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from './dispatch.mts'

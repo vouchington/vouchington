@@ -3,14 +3,9 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { bedrock_embeddings_batch } from '../queues.mts'
-import {
-  BEDROCK_EMBEDDINGS_BATCH_ORDERING,
-  BEDROCK_EMBEDDINGS_BATCH_DEFAULTS,
-  PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-} from '../config.mts'
-import type { BedrockEmbeddingsBatchDispatcherJob } from '../types.mts'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { reconciliationScheduleEntries } from './reconciliation-schedules.mts'
 import {
   enqueueEmbeddingsBatchBacklogDispatcher,
@@ -20,29 +15,24 @@ import {
 } from '../enqueues.mts'
 
 const DISPATCHER_OPTIONS = {
-  attempts: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.attempts,
-  backoff: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.backoff,
-  removeOnComplete: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.removeOnComplete,
-  removeOnFail: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.removeOnFail,
-  priority: PRIORITY_DISPATCHER,
-  ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.dispatcher,
+  ...requireBackgroundCpuJob('bedrock-embeddings.poll_dispatcher').options,
 } satisfies JobOptions
 
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QUEUE_NAME, [
   ...reconciliationScheduleEntries,
   {
-    schedulerId: 'poll_dispatcher',
+    schedulerId: 'bedrock-embeddings:poll-dispatcher',
     registration: 'sequential',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'poll_dispatcher' as BedrockEmbeddingsBatchDispatcherJob,
+      name: 'bedrock-embeddings.poll_dispatcher',
       data: {},
       opts: DISPATCHER_OPTIONS,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'poll_dispatcher',
+        id: 'bedrock-embeddings:poll-dispatcher',
         schedule: '* * * * *',
         description: 'Poll Bedrock batch embeddings status',
         trigger: enqueueEmbeddingsBatchPollDispatcher,
@@ -51,18 +41,18 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
   {
-    schedulerId: 'creation_dispatcher',
+    schedulerId: 'bedrock-embeddings:creation-dispatcher',
     registration: 'sequential',
     repeat: { pattern: '*/5 * * * *' },
     template: {
-      name: 'creation_dispatcher' as BedrockEmbeddingsBatchDispatcherJob,
+      name: 'bedrock-embeddings.creation_dispatcher',
       data: {},
       opts: DISPATCHER_OPTIONS,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'creation_dispatcher',
+        id: 'bedrock-embeddings:creation-dispatcher',
         schedule: '*/5 * * * *',
         description: 'Create new Bedrock batch embedding requests',
         trigger: enqueueEmbeddingsBatchCreationDispatcher,
@@ -70,18 +60,18 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
   {
-    schedulerId: 'backlog_dispatcher',
+    schedulerId: 'bedrock-embeddings:backlog-dispatcher',
     registration: 'sequential',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'backlog_dispatcher' as BedrockEmbeddingsBatchDispatcherJob,
+      name: 'bedrock-embeddings.backlog_dispatcher',
       data: {},
       opts: DISPATCHER_OPTIONS,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'backlog_dispatcher',
+        id: 'bedrock-embeddings:backlog-dispatcher',
         schedule: '* * * * *',
         description:
           'Trigger creation_dispatcher when single embeddings backlog exceeds the backlog_threshold (default 1000, configurable via Dynamic Config)',
@@ -90,18 +80,18 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     ],
   },
   {
-    schedulerId: 'stale_cleanup_dispatcher',
+    schedulerId: 'bedrock-embeddings:stale-cleanup-dispatcher',
     registration: 'sequential',
     repeat: { pattern: '0 * * * *' },
     template: {
-      name: 'stale_cleanup_dispatcher' as BedrockEmbeddingsBatchDispatcherJob,
+      name: 'bedrock-embeddings.stale_cleanup_dispatcher',
       data: {},
       opts: DISPATCHER_OPTIONS,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'stale_cleanup_dispatcher',
+        id: 'bedrock-embeddings:stale-cleanup-dispatcher',
         schedule: '0 * * * *',
         description:
           'Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)',
@@ -112,5 +102,5 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
 ])
 
 export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(bedrock_embeddings_batch, scheduledJobManifest)
+  await upsertScheduledJobManifest(backgroundCpu, scheduledJobManifest)
 }

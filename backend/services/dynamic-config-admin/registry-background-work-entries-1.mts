@@ -49,6 +49,8 @@ export const backgroundWorkEntries1 = [
     maxValues: languageDetectionWorkMaxValues,
     descriptions: {
       backfill_batch_size: 'Backfill batch size for language detection processing.',
+      backfill_max_rows_per_run:
+        'Maximum language detection rows read by one retained backfill pass.',
     },
   }),
   defineBoundedWorkNamespace({

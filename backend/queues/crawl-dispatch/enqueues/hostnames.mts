@@ -1,8 +1,10 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
-import { crawlDispatchQueue } from '../queues.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { CrawlHostnamesJobs } from '../types.mts'
 
 const ONE_MINUTE_MS = 60_000
@@ -14,15 +16,17 @@ type DispatcherOptions = {
 }
 
 function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: number) {
-  const enqueue = createBulkEnqueueFunction<string, { hostname_id: string }, CrawlHostnamesJobs>({
-    queue: crawlDispatchQueue,
-    queueName: QUEUE_NAME,
-    jobName,
+  const job = requireBackgroundCpuJob(`crawl.${jobName}`)
+  const enqueue = createBulkEnqueueFunction<string, { hostname_id: string }, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
     buildJob: hostnameId => ({
       data: { hostname_id: hostnameId },
       opts: {
         deduplication: {
-          id: `${jobName}__${hostnameId}`,
+          id: `${job.name}__${hostnameId}`,
           mode: jobName === CRAWL_HOSTNAME_JOB_NAME ? ('simple' as const) : ('debounce' as const),
           ...(jobName === CRAWL_HOSTNAME_JOB_NAME ? {} : { ttl: ONE_MINUTE_MS }),
         },
@@ -38,10 +42,12 @@ function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority:
 }
 
 function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: number) {
-  const enqueue = createEnqueueFunction<Record<string, never>, CrawlHostnamesJobs>({
-    queue: crawlDispatchQueue,
-    queueName: QUEUE_NAME,
-    jobName,
+  const job = requireBackgroundCpuJob(`crawl.${jobName}`)
+  const enqueue = createEnqueueFunction<Record<string, never>, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
   })
 
   return (options?: DispatcherOptions): EnqueueReturnType => {
@@ -54,14 +60,14 @@ function createDispatcherEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: n
         jobName === 'crawl_hostnames_dispatcher'
           ? {
               deduplication: {
-                id: options?.deduplicationId ?? jobName,
+                id: `crawl:${options?.deduplicationId ?? jobName}`,
                 mode: 'simple' as const,
               },
             }
           : options?.deduplicationId
             ? {
                 deduplication: {
-                  id: options.deduplicationId,
+                  id: `crawl:${jobName}:${options.deduplicationId}`,
                   mode: 'throttle' as const,
                   ttl: BACKFILL_DEDUPLICATION_TTL_MS,
                 },

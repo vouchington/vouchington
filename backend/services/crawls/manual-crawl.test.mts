@@ -1,6 +1,5 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
-import { crawlUrls } from '@queues/crawler/queues'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
 import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import { enqueueManualUrlCrawlAsCurrentUser } from './manual-crawl.mts'
@@ -24,8 +23,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
   beforeEach(async () => {
     await Promise.all([
-      crawlReferralLinksQueue.obliterate({ force: true }),
-      crawlUrls.obliterate({ force: true }),
+      backgroundCpu.obliterate({ force: true }),
+      backgroundCpu.obliterate({ force: true }),
     ])
   })
 
@@ -41,8 +40,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
     })
     const [rssJobs, htmlJobs, referralJobs] = await Promise.all([
       rssFeedsQueue.searchJobs({ name: RSS_FEEDS_FETCH_JOB.name, data: { rssFeedId: feed.id } }),
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      readAllQueueJobs(backgroundCpu),
+      readAllQueueJobs(backgroundCpu),
     ])
     expect(rssJobs).toHaveLength(1)
     expect(rssJobs[0]?.name).toBe(RSS_FEEDS_FETCH_JOB.name)
@@ -73,8 +72,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 1 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      readAllQueueJobs(backgroundCpu),
+      readAllQueueJobs(backgroundCpu),
     ])
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(1)
@@ -107,8 +106,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 1 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      readAllQueueJobs(backgroundCpu),
+      readAllQueueJobs(backgroundCpu),
     ])
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(1)
@@ -137,8 +136,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 0 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      readAllQueueJobs(backgroundCpu),
+      readAllQueueJobs(backgroundCpu),
     ])
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(0)
@@ -156,8 +155,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'html_url', enqueued_count: 1 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      readAllQueueJobs(backgroundCpu),
+      readAllQueueJobs(backgroundCpu),
     ])
     expect(referralJobs).toHaveLength(0)
     expect(htmlJobs).toHaveLength(1)

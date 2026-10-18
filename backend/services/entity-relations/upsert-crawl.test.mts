@@ -11,7 +11,7 @@ import {
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
 import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 
 const postRelatedUrlMetadata = getEntityRelationMetadataOrThrow({
   subjectType: 'post',

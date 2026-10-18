@@ -31,6 +31,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",

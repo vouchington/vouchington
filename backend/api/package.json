@@ -77,6 +77,7 @@
     "@queues/ai-agents": "workspace:^",
     "@queues/article-sync": "workspace:^",
     "@queues/background": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@queues/bluesky-follow-propagation": "workspace:^",

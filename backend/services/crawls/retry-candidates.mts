@@ -9,7 +9,7 @@ import {
   HttpNoBodyError,
 } from '@modules/on-error/errors'
 
-const RETRY_CRAWL_URL_COUNT = 3
+import { getRetryCrawlUrlCount } from '@services/crawlers/refresh-limits'
 
 type RetryCrawlUrlsResult = {
   hostnameId: string
@@ -29,7 +29,7 @@ export async function getRetryCrawlUrlCandidates(
 
   const newCandidates = await searchCrawlerRefreshUrlCandidatesByHostnameId(
     url.hostname.id,
-    RETRY_CRAWL_URL_COUNT,
+    getRetryCrawlUrlCount(),
     {},
     [urlId],
   )

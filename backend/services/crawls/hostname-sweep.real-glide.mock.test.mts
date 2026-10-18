@@ -1,3 +1,4 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
@@ -12,8 +13,6 @@ import {
   getTestHostnameCrawlSweep,
 } from '@voucha/test-helpers/entities/hostname-crawl-sweeps'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
-import { crawlUrls } from '@queues/crawler/queues'
 import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlHostnames } from './dispatch-crawl-hostnames.mts'
@@ -27,7 +26,7 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => origina
 const sweepStartedAt = '2099-01-15T00:00:00.000Z'
 
 describe('hostname sweep selection and completion', () => {
-  afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
+  afterAll(() => Promise.all([backgroundCpu.close(), backgroundCpu.close()]))
 
   it('keeps a one-row dispatch when a shared-band url-less hostname already exists', async () => {
     const bucket = await acquireTestHostnameSweepBucket()
@@ -145,14 +144,14 @@ describe('hostname sweep selection and completion', () => {
       ).count,
     ).toBe(0)
     expect(saved.at(-1)?.afterBucketDays).toBe(bucketDays)
-    const queued = await crawlDispatchQueue.searchJobs({
-      name: 'crawl_urls_per_hostname_dispatcher',
+    const queued = await backgroundCpu.searchJobs({
+      name: 'crawl.crawl_urls_per_hostname_dispatcher',
       data: { hostname_id: hosts[4]! },
     })
     expect(queued).toHaveLength(1)
     expect(
-      await crawlDispatchQueue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
+      await backgroundCpu.searchJobs({
+        name: 'crawl.crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: hosts[0]! },
       }),
     ).toHaveLength(0)
@@ -162,8 +161,8 @@ describe('hostname sweep selection and completion', () => {
     )
     expect(candidates.filter(row => hosts.includes(row.id))).toHaveLength(4)
     expect(
-      await crawlDispatchQueue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
+      await backgroundCpu.searchJobs({
+        name: 'crawl.crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: hosts[5]! },
       }),
     ).toHaveLength(0)
@@ -252,8 +251,8 @@ describe('hostname sweep selection and completion', () => {
     ).toEqual({ count: 0, hasMore: true })
     expect(saved.at(-1)?.afterId).toBe(bare)
     expect(
-      await crawlDispatchQueue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
+      await backgroundCpu.searchJobs({
+        name: 'crawl.crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: bare },
       }),
     ).toHaveLength(0)
@@ -263,8 +262,8 @@ describe('hostname sweep selection and completion', () => {
       }),
     ).toEqual({ count: 1, hasMore: true })
     expect(
-      await crawlDispatchQueue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
+      await backgroundCpu.searchJobs({
+        name: 'crawl.crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: linked },
       }),
     ).toHaveLength(1)

@@ -1,22 +1,25 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import { CONTENT_ANALYSIS_QUEUE_NAME } from '../config.mts'
-import { contentAnalysisQueue } from '../queues.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 
 const enqueueCleanupJob = createEnqueueFunction({
-  queue: contentAnalysisQueue,
-  queueName: CONTENT_ANALYSIS_QUEUE_NAME,
-  jobName: 'cleanup-abandoned-uploads' as const,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'content-analysis.cleanup-abandoned-uploads' as const,
+  defaults: requireBackgroundCpuJob('content-analysis.cleanup-abandoned-uploads').options,
 })
 
 export function enqueueCleanupAbandonedUploads(): EnqueueReturnType {
   return enqueueCleanupJob({}, { priority: 100 })
 }
 
-const enqueueStaydownHashJob = createEnqueueFunction<{ id: string }, 'staydown-hash'>({
-  queue: contentAnalysisQueue,
-  queueName: CONTENT_ANALYSIS_QUEUE_NAME,
-  jobName: 'staydown-hash',
+const enqueueStaydownHashJob = createEnqueueFunction<{ id: string }, string>({
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'content-analysis.staydown-hash',
+  defaults: requireBackgroundCpuJob('content-analysis.staydown-hash').options,
 })
 
 export function enqueueStaydownHash(

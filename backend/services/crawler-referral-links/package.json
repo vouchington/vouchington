@@ -24,6 +24,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
     "@services/urls-domains-robots": "workspace:^",
     "@voucha/config": "workspace:^",

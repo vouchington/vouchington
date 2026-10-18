@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import {
   createTestPost,
   createTestUser,
@@ -40,7 +40,7 @@ describe('bedrock embeddings single worker', () => {
     })
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: post!.id }), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: post!.id })),
     ).resolves.toEqual({ success: true })
   })
 
@@ -73,7 +73,7 @@ describe('bedrock embeddings single worker', () => {
     })
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: postId }), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: postId })),
     ).resolves.toEqual({ success: true })
 
     await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({
@@ -83,7 +83,7 @@ describe('bedrock embeddings single worker', () => {
 
   it('returns null for post jobs whose row no longer exists', async () => {
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: randomUUID() }), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: randomUUID() })),
     ).resolves.toBeNull()
   })
 
@@ -99,13 +99,13 @@ describe('bedrock embeddings single worker', () => {
     })
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('topic', { id: topic.id }), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('topic', { id: topic.id })),
     ).resolves.toEqual({ success: true })
   })
 
   it('returns null for topic jobs whose row no longer exists', async () => {
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('topic', { id: randomUUID() }), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('topic', { id: randomUUID() })),
     ).resolves.toBeNull()
   })
 
@@ -133,7 +133,6 @@ describe('bedrock embeddings single worker', () => {
     await expect(
       processBedrockNovaMultimodalV1SingleJob(
         makeJob('rss_feed_item', { rss_feed_item_id: rssFeedItemId }),
-        {} as Worker,
       ),
     ).resolves.toEqual({ success: true })
 
@@ -153,18 +152,17 @@ describe('bedrock embeddings single worker', () => {
     await expect(
       processBedrockNovaMultimodalV1SingleJob(
         makeJob('rss_feed_item', { rss_feed_item_id: randomUUID() }),
-        {} as Worker,
       ),
     ).resolves.toBeNull()
   })
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('rss_feed_item', {}), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('rss_feed_item', {})),
     ).rejects.toThrow('rss_feed_item job requires rss_feed_item_id in job.data')
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('unexpected', {}), {} as Worker),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('unexpected', {})),
     ).rejects.toThrow('Unknown job type: unexpected')
   })
 })

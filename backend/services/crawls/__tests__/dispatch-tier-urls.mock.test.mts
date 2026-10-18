@@ -13,7 +13,7 @@ import {
   insertTestUserReferralProgramLink,
   setTestRobotsTxtCache,
 } from '@voucha/test-helpers'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import { addUrl } from '@services/urls/upsert'
 import { getUrlById } from '@services/urls/get'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
@@ -57,7 +57,7 @@ async function seedCrawlDelay(hostname: string): Promise<void> {
 
 async function findCrawlJobsByUrlId(urlId: string): Promise<Job[]> {
   return crawlUrls.searchJobs({
-    name: 'crawl_url',
+    name: 'crawl.crawl_url',
     data: { url_id: urlId },
   })
 }
@@ -67,19 +67,19 @@ async function expectExactCrawlJob(urlId: string, hostnameId: string): Promise<v
   expect(jobs).toHaveLength(1)
   const [job] = jobs
   expect(job).toMatchObject({
-    name: 'crawl_url',
+    name: 'crawl.crawl_url',
     data: { url_id: urlId },
     opts: {
       ...CRAWL_URL_RETRY,
       ...CRAWL_URL_RETENTION,
       priority: 10,
       deduplication: {
-        id: `crawl_url__${urlId}`,
+        id: `crawl.crawl_url__${urlId}`,
         mode: 'debounce',
         ttl: RATE_LIMIT_MS,
       },
       ordering: {
-        key: hostnameId,
+        key: `crawl:${hostnameId}`,
         rateLimit: { max: 1, duration: RATE_LIMIT_MS },
       },
     },
@@ -88,14 +88,16 @@ async function expectExactCrawlJob(urlId: string, hostnameId: string): Promise<v
   expect(job!.opts).toEqual({
     ...CRAWL_URL_RETRY,
     ...CRAWL_URL_RETENTION,
+    lockDuration: 120_000,
     priority: 10,
     deduplication: {
-      id: `crawl_url__${urlId}`,
+      id: `crawl.crawl_url__${urlId}`,
       mode: 'debounce',
       ttl: RATE_LIMIT_MS,
     },
     ordering: {
-      key: hostnameId,
+      key: `crawl:${hostnameId}`,
+      concurrency: 1,
       rateLimit: { max: 1, duration: RATE_LIMIT_MS },
     },
   })

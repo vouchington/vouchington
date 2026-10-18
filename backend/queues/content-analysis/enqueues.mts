@@ -1,11 +1,9 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import {
-  CONTENT_ANALYSIS_QUEUE_NAME,
-  LANGUAGE_DETECTION_DEFAULTS,
-  PRIORITY_DEFAULT,
-} from './config.mts'
-import { contentAnalysisQueue } from './queues.mts'
+import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from './config.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { LanguageDetectionBackfillJobName, LanguageDetectionEntityType } from './types.mts'
 
 const ONE_HOUR_MS = 3_600_000
@@ -27,19 +25,13 @@ function makeJobOpts(
   }
 }
 
-const defaults = {
-  attempts: LANGUAGE_DETECTION_DEFAULTS.attempts,
-  backoff: LANGUAGE_DETECTION_DEFAULTS.backoff,
-  removeOnComplete: LANGUAGE_DETECTION_DEFAULTS.removeOnComplete,
-  removeOnFail: LANGUAGE_DETECTION_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
-
 function createLanguageDetectionEnqueue(jobName: LanguageDetectionEntityType) {
-  return createEnqueueFunction<LanguageDetectionData, LanguageDetectionEntityType>({
-    queue: contentAnalysisQueue,
-    queueName: CONTENT_ANALYSIS_QUEUE_NAME,
-    jobName,
-    defaults,
+  const job = requireBackgroundCpuJob(`content-analysis.${jobName}`)
+  return createEnqueueFunction<LanguageDetectionData, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
   })
 }
 
@@ -55,11 +47,12 @@ const enqueueLanguageDetectionJobs = {
 } satisfies Record<LanguageDetectionEntityType, ReturnType<typeof createLanguageDetectionEnqueue>>
 
 function createBulkLanguageDetectionEnqueue(jobName: LanguageDetectionEntityType) {
-  return createBulkEnqueueFunction<string, LanguageDetectionData, LanguageDetectionEntityType>({
-    queue: contentAnalysisQueue,
-    queueName: CONTENT_ANALYSIS_QUEUE_NAME,
-    jobName,
-    defaults,
+  const job = requireBackgroundCpuJob(`content-analysis.${jobName}`)
+  return createBulkEnqueueFunction<string, LanguageDetectionData, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
     buildJob: id => ({ data: { id }, opts: makeJobOpts(jobName, id, PRIORITY_DEFAULT) }),
   })
 }
@@ -99,11 +92,12 @@ export function enqueueBulkLanguageDetection(
 
 // Backfill dispatcher enqueue functions (throttle, 1h TTL, priority 100)
 function makeBackfillEnqueue(jobName: LanguageDetectionBackfillJobName) {
-  const enqueue = createEnqueueFunction<Record<string, never>, LanguageDetectionBackfillJobName>({
-    queue: contentAnalysisQueue,
-    queueName: CONTENT_ANALYSIS_QUEUE_NAME,
-    jobName,
-    defaults,
+  const job = requireBackgroundCpuJob(`content-analysis.${jobName}`)
+  const enqueue = createEnqueueFunction<Record<string, never>, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
   })
   return () =>
     enqueue(

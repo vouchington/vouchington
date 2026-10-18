@@ -1,7 +1,6 @@
 import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
-export const QUEUE_NAME = 'crawl-dispatch'
 export const PRIORITY_DEFAULT = 10
 export const PRIORITY_DISPATCHER = 100
 

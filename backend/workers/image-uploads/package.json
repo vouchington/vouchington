@@ -25,6 +25,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
     "@modules/queue-errors": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@services/images": "workspace:^",

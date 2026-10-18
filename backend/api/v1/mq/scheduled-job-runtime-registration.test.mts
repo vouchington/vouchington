@@ -1,3 +1,4 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   scheduledJobManifest as aiAgentsManifest,
@@ -8,7 +9,6 @@ import {
   scheduledJobManifest as bedrockManifest,
   upsertSchedules as registerBedrock,
 } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
 import {
   scheduledJobManifest as bloomManifest,
   upsertSchedules as registerBloom,
@@ -18,12 +18,10 @@ import {
   scheduledJobManifest as crawlDispatchManifest,
   upsertSchedules as registerCrawlDispatch,
 } from '@queues/crawl-dispatch/enqueues/schedules'
-import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import {
   scheduledJobManifest as crawlReferralManifest,
   upsertSchedules as registerCrawlReferral,
 } from '@queues/crawl-referral-links/enqueues/schedules'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import {
   scheduledJobManifest as findYourFriendsManifest,
   upsertSchedules as registerFindYourFriends,
@@ -33,7 +31,6 @@ import {
   scheduledJobManifest as contentAnalysisManifest,
   upsertSchedules as registerContentAnalysis,
 } from '@queues/content-analysis/enqueues/schedules'
-import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import {
   combineBackgroundManifests,
   upsertBackgroundSchedules,
@@ -50,7 +47,6 @@ import {
   scheduledJobManifest as unfurlManifest,
   upsertSchedules as registerUnfurl,
 } from '@queues/unfurl-referral-links/enqueues/schedules'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import { scheduledJobManifest as blacklistManifest } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as voteWeightManifest } from '@queues/vote-aggregation/enqueues/schedules'
 
@@ -69,14 +65,14 @@ const registerBackground = () => upsertBackgroundSchedules(BACKGROUND_MANIFESTS)
 
 const REGISTRATIONS = [
   [registerAiAgents, ai_agents, aiAgentsManifest],
-  [registerBedrock, bedrock_embeddings_batch, bedrockManifest],
+  [registerBedrock, backgroundCpu, bedrockManifest],
   [registerBloom, bloomFilters, bloomManifest],
-  [registerCrawlDispatch, crawlDispatchQueue, crawlDispatchManifest],
-  [registerCrawlReferral, crawlReferralLinksQueue, crawlReferralManifest],
+  [registerCrawlDispatch, backgroundCpu, crawlDispatchManifest],
+  [registerCrawlReferral, backgroundCpu, crawlReferralManifest],
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
-  [registerContentAnalysis, contentAnalysisQueue, contentAnalysisManifest],
+  [registerContentAnalysis, backgroundCpu, contentAnalysisManifest],
   [registerBackground, background, combineBackgroundManifests(BACKGROUND_MANIFESTS)],
-  [registerUnfurl, unfurlReferralLinksQueue, unfurlManifest],
+  [registerUnfurl, backgroundCpu, unfurlManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {

@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { upsertSchedules as upsertAiAgentsSchedules } from '@queues/ai-agents/enqueues/schedules'
-import { upsertSchedules as upsertBedrockEmbeddingBatchSchedules } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
-import { upsertSchedules as upsertCrawlDispatchSchedules } from '@queues/crawl-dispatch/enqueues/schedules'
-import { upsertSchedules as upsertCrawlReferralLinkSchedules } from '@queues/crawl-referral-links/enqueues/schedules'
 import { upsertSchedules as upsertQueueMetricsSchedules } from '@queues/heartbeat/enqueues/schedules'
-import { upsertSchedules as upsertContentAnalysisSchedules } from '@queues/content-analysis/enqueues/schedules'
-import { upsertSchedules as upsertUnfurlReferralLinkSchedules } from '@queues/unfurl-referral-links/enqueues/schedules'
+import { upsertBackgroundCpuSchedules } from './background-cpu-schedules.mts'
 import { SCHEDULE_DEFINITIONS } from './schedule-definitions.mts'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
 
@@ -18,17 +14,7 @@ describe('worker-cpu schedule definitions', () => {
     const byQueue = (name: string) =>
       cpuOnlySchedules.find(definition => definition.queueName === name)!
 
-    await expect(byQueue('crawl-dispatch').load()).resolves.toBe(upsertCrawlDispatchSchedules)
-    await expect(byQueue('crawl_referral_links').load()).resolves.toBe(
-      upsertCrawlReferralLinkSchedules,
-    )
-    await expect(byQueue('unfurl_referral_links').load()).resolves.toBe(
-      upsertUnfurlReferralLinkSchedules,
-    )
-    await expect(byQueue('content-analysis').load()).resolves.toBe(upsertContentAnalysisSchedules)
-    await expect(byQueue('bedrock-embeddings-batch').load()).resolves.toBe(
-      upsertBedrockEmbeddingBatchSchedules,
-    )
+    await expect(byQueue('background-cpu').load()).resolves.toBe(upsertBackgroundCpuSchedules)
     await expect(byQueue('ai_agents').load()).resolves.toBe(upsertAiAgentsSchedules)
     await expect(byQueue('heartbeat').load()).resolves.toBe(upsertQueueMetricsSchedules)
   })

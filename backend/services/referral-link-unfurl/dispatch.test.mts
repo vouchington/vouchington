@@ -19,9 +19,8 @@ import {
 import {
   PRIORITY_DEFAULT,
   UNFURL_REFERRAL_LINKS_DEFAULTS,
-  UNFURL_REFERRAL_LINKS_ORDERING,
 } from '@queues/unfurl-referral-links/config'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
+import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
 import type { UnfurlDispatchCursor } from '@queues/unfurl-referral-links/types'
 import { dispatchUnfurlReferralLinks } from './dispatch.mts'
 import { referralUnfurlDispatchConfig } from './work-limits.mts'
@@ -113,15 +112,15 @@ describe('dispatchUnfurlReferralLinks', () => {
     expect(savedCursors.map(cursor => cursor.after?.id)).toEqual([nilId, ids[1], ids[2]])
     for (const parentLinkId of ids) {
       const jobs = await unfurlReferralLinksQueue.searchJobs({
-        name: 'unfurl_referral_link',
+        name: 'crawl.unfurl_referral_link',
         data: { parentLinkId },
       })
       expect(jobs).toHaveLength(1)
       expect(jobs[0]?.opts).toMatchObject({
         priority: PRIORITY_DEFAULT,
-        ordering: UNFURL_REFERRAL_LINKS_ORDERING.unfurl,
+        ordering: { key: 'crawl:unfurl', concurrency: 5 },
         deduplication: {
-          id: `unfurl_referral_link__${parentLinkId}`,
+          id: `crawl.unfurl_referral_link__${parentLinkId}`,
           mode: 'debounce',
           ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
         },

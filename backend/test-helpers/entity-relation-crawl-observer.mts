@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import * as crawlerEnqueues from '../queues/crawler/enqueues.mts'
-import { crawlUrls } from '../queues/crawler/queues.mts'
+import { backgroundCpu as crawlUrls } from '../queues/background-cpu/queues.mts'
 
 function hasStringUrlId(value: unknown): value is { url_id: string } {
   return (

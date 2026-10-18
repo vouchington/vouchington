@@ -19,6 +19,7 @@
   "dependencies": {
     "@backend/worker-runtime": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^"
   },

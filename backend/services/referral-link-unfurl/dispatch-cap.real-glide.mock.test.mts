@@ -6,7 +6,7 @@ import {
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
+import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { insertTestUnfurlDispatchPlanLinks } from '@voucha/test-helpers/entities/unfurl-dispatch-plans'

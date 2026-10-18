@@ -31,6 +31,13 @@ flowchart LR
 - The shared `background` queue serves many small domains. A job is `<domain>.<name>`, a registry
   maps each to a handler, and ordering keys, concurrency and pause are per domain. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
+- The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
+  coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
+  so they respect one external host limit. Provider limits use group rate windows; database-only
+  work uses concurrency. Long network jobs keep their own lock settings. Operators can pause and
+  inspect each domain without pausing unrelated CPU work.
+- Unfurl jobs run with the shared CPU worker selection and can use Lightpanda. Deployments that
+  select the CPU worker need the browser capability and capacity for unfurl work as well as crawls.
 
 ## Why queues are shaped this way
 

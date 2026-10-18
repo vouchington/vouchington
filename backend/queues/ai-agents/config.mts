@@ -1,6 +1,4 @@
 export const AI_AGENTS_QUEUE_NAME = 'ai_agents'
-export const SPEND_CAP_RECHECKS_QUEUE_NAME = 'ai-spend-cap-rechecks'
-export const SPEND_CAP_RECHECK_JOB_NAME = 'recheck' as const
 export const AI_AGENTS_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },

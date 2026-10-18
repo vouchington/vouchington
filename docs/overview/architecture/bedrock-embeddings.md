@@ -85,7 +85,13 @@ AWS Bedrock batches require at least `min_records_per_job` records per job(confi
 
 ## Depth-Driven Creation Trigger
 
-The `backlog_dispatcher` runs on a short schedule and reads the single-queue depth (`waiting + active`) via `getQueueStats`. When depth meets or exceeds `backlog_threshold` (configurable in the `bedrock-embeddings-batch-config` Dynamic Config namespace), it enqueues an extra `creation_dispatcher` so a fresh batch is built well before the next 5-minute tick. This shortens the worst-case time-to-first-batch when a bulk import dumps a large pile of single-embedding jobs.
+The backlog dispatcher runs on a short schedule and considers only single-embedding jobs in the
+shared CPU queue before prompting batch creation. Its read has a configured hard cap. If unrelated
+work fills that cap, the matching-job count is only a lower bound. Admission defers a single only
+when that observed count reaches the threshold; unrelated work alone never suppresses it.
+Scheduled batch creation also scans durable missing entities. No priority tier can guarantee
+progress if arrivals continuously exceed CPU capacity. This avoids scanning an unbounded queue
+during a bulk import.
 
 ## Downstream Consumers
 
