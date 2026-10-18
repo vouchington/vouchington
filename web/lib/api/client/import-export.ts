@@ -1,6 +1,7 @@
 'use client'
 
 import type { PageInfo } from '@/types/api-responses'
+import type { RssFeedImportSummary, RssFeedImportSubmission } from '@/types/rss-feed-imports'
 import { clientApi } from './instance'
 import { admissionIdempotency } from './admission-idempotency'
 import { clientFetch } from './raw-fetch'
@@ -34,26 +35,13 @@ export interface ImportResult {
   recommendation_post_id?: string
 }
 
-export interface RssFeedImportSummary {
-  id: string
-  total_rows: number
-  completed_rows: number
-  failed_rows: number
-  pending_rows: number
-  completed_at: string | null
-  created_at: string
-}
+export type { RssFeedImportSummary, RssFeedImportSubmission } from '@/types/rss-feed-imports'
 
 export interface RssFeedImportStatus {
   import: RssFeedImportSummary
   /** One page of rows; pass `page_info.end_cursor` as `after` for the next. */
   rows: ImportResult[]
   page_info: PageInfo
-}
-
-export interface RssFeedImportSubmission {
-  import: RssFeedImportSummary
-  status_url: string
 }
 
 export interface ExportTopic {

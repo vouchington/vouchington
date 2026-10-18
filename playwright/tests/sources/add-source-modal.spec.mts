@@ -4,6 +4,7 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
+import { completeSourceImport } from '../../helpers/complete-source-import.mts'
 
 test.describe('Add Source modal', () => {
   test.use({ storageState: AUTH_STATE })
@@ -29,28 +30,24 @@ test.describe('Add Source modal', () => {
     const sourceTopic = await insertTestTopic(`Mock Test Source ${suffix}`, topicSlug, 'rss_feed')
     const rssFeed = await insertTestRssFeed(sourceTopic.id, `mock-test-source-${suffix}`)
 
-    await page.route('**/api/v1/rss-feeds', async route => {
-      if (route.request().method() === 'POST') {
-        await route.fulfill({
-          status: 201,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            rss_feed_id: rssFeed.id,
-            topic_id: sourceTopic.id,
-            topic_slug: topicSlug,
-          }),
-        })
-      } else {
-        await route.continue()
-      }
-    })
-
     await navigateTo(page, '/podcasts')
     await page.getByTestId('add-source-button').click()
     await expect(page.getByTestId('add-source-dialog-title')).toBeVisible()
 
-    await page.getByTestId('add-source-form-url').pressSequentially('https://example.com/feed.rss')
+    await page
+      .getByTestId('add-source-form-url')
+      .pressSequentially(`https://${rssFeed.hostname}/feed.xml`)
+    const accepted = page.waitForResponse(
+      response =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/rss-feeds',
+    )
     await page.getByTestId('add-source-form-submit').click()
+    const response = await accepted
+    expect(response.status()).toBe(202)
+    const result = (await response.json()) as { import: { id: string } }
+    await expect(page.getByTestId('add-source-form-submit')).toBeDisabled()
+    await completeSourceImport(result.import.id, rssFeed.id)
 
     await expect(page.locator('[data-sonner-toast][data-type="success"]')).toContainText(
       'Source added successfully',
