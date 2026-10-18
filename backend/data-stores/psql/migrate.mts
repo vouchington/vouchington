@@ -75,6 +75,7 @@ async function applyMigrationsInSession(
   await platform.withMigrationSession(async client => {
     const writer: NonNullable<RunConfigDrivenOptions['writer']> = (input, values) =>
       platform.write(input, values, { client })
+    // ast-grep-ignore: no-three-sequential-awaits -- schema migrations, config SQL, and views must apply in order within this session
     await platform.runMigrations(path.resolve(rootDir, 'migrations'), {
       client,
       logger,
