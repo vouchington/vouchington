@@ -7,9 +7,8 @@ Cross-Site Request Forgery (CSRF) policy for the Voucha API.
 Browser sessions authenticate with the `dt` (device) and `st` (session) cookies set by
 [`set-authentication-cookies.mts`](../../../backend/modules/api-utils/set-authentication-cookies.mts)
 — see [Auth Overview](../../overview/architecture/auth-overview.md) for the full token lifecycle.
-The Cloudflare Worker strips any client-supplied auth headers
-([`proxy.mts`](../../../cloudflare-worker/src/proxy.mts)), so browser ambient authority is
-**cookie-only**. That makes CSRF — a cross-site page causing the victim's browser to send an
+The Cloudflare Worker strips any client-supplied auth headers before proxying, so browser ambient
+authority is **cookie-only**. That makes CSRF — a cross-site page causing the victim's browser to send an
 authenticated state-changing request — the relevant cross-site threat. Non-browser clients
 (native apps, server-to-server) authenticate with `Authorization: Bearer` and cannot be driven
 cross-site by a web page, so they are not CSRF vectors.

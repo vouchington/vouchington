@@ -42,7 +42,7 @@ import {
 
 export async function generateMetadata(): Promise<Metadata> {
   // A cache-fill render's HTML is frozen into the shared anon edge cache and replayed to every
-  // later visitor (see cloudflare-worker's origin-request.mts and nonce-rewrite.mts) — trace meta
+  // later visitor (the Worker replaces the cached placeholder nonce per response) — trace meta
   // baked in here would misattribute every one of those replays to this one origin request, so
   // this is the only render that must omit it. Every other render (bypass, authenticated, RSC) is
   // per-request and keeps emitting trace meta.

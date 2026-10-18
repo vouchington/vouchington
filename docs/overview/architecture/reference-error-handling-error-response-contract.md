@@ -57,7 +57,7 @@ Backend service
   → JSON response { message, code?, request_id?, stack? }
 
 Cloudflare Worker edge
-  → edgeErrorResponse(status, message, code) in cloudflare-worker/src/error-response.mts
+  → published @vouchington/edge error response helper
   → JSON response { message, code }
 
 Web ApiError

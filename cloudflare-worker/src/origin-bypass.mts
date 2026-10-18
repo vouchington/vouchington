@@ -2,8 +2,8 @@ import type { ensureSession } from './auth/session-mint.mts'
 import type { BotTier } from './bot-tier.mts'
 import type { CachePolicy } from './cache-policy.mts'
 import { finalizeOriginResponse } from './cache-writeback.mts'
-import { edgeErrorResponse } from './error-response.mts'
-import { buildWorkerOriginRequest, fetchOriginResponse } from './origin-request.mts'
+import { edgeErrorResponse } from '@vouchington/edge'
+import { buildWorkerOriginRequest, fetchWorkerOriginResponse } from './origin-request.mts'
 import { checkBotRateLimit } from './rate-limit.mts'
 import { getOriginPathOverride, resolveOrigin, type RouteTarget } from './routing.mts'
 import type { Env } from './types.mts'
@@ -83,7 +83,9 @@ export async function runOriginBypass(input: OriginBypassInput): Promise<Respons
   const { origin } = originResult
 
   const skipsCookieStripping = cachePolicy.fullyCachedRoute && !isEffectivelyFullyCachedRoute
-  const stripCookieNames = skipsCookieStripping ? new Set<string>() : cachePolicy.stripCookieNames
+  const stripCookieNames = skipsCookieStripping
+    ? new Set<string>()
+    : new Set(cachePolicy.stripCookieNames)
   const originRequest = buildWorkerOriginRequest({
     canonicalSitemapUrl,
     cspNonce,
@@ -99,7 +101,7 @@ export async function runOriginBypass(input: OriginBypassInput): Promise<Respons
     target,
     webCsp,
   })
-  const originFetch = await fetchOriginResponse(originRequest, {
+  const originFetch = await fetchWorkerOriginResponse(originRequest, {
     botTier,
     countryCode,
     requestId,

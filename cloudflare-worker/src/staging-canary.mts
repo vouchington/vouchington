@@ -1,5 +1,4 @@
-import { timingSafeCredentialMatch } from './basic-auth.mts'
-import { edgeErrorResponse } from './error-response.mts'
+import { edgeErrorResponse, timingSafeCredentialMatch } from '@vouchington/edge'
 import { isProductionMode } from './production-mode.mts'
 import {
   EDGE_CACHE_CANARY_PATH,

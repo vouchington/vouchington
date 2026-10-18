@@ -3,11 +3,19 @@ import { withEdgeSessionCookies } from './auth/session-cookies.mts'
 import type { ensureSession } from './auth/session-mint.mts'
 import type { BotTier } from './bot-tier.mts'
 import type { CacheAudience } from './cache-policy.mts'
-import { INTERNAL_CACHE_VARY_HEADER, mergeClientVary, parseSafeCacheVary } from './cache-vary.mts'
+import {
+  INTERNAL_CACHE_VARY_HEADER,
+  VOUCHA_SAFE_SHARED_CACHE_VARY_TOKENS,
+} from './cache-headers.mts'
+import {
+  edgeErrorResponse,
+  mergeClientVary,
+  parseSafeCacheVary,
+  rewritePlaceholderNonce,
+  withFailureNoStoreHeaders,
+  withHeaders,
+} from '@vouchington/edge'
 import { isCachePlaceholderNonceValid } from './env-validation.mts'
-import { edgeErrorResponse, withFailureNoStoreHeaders } from './error-response.mts'
-import { rewritePlaceholderNonce } from './nonce-rewrite.mts'
-import { withHeaders } from './proxy.mts'
 import type { RouteTarget } from './routing.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
 import { isHtmlResponse, isInvalidWebDocumentResponse } from './web-document-response.mts'
@@ -32,7 +40,11 @@ export const DISPATCH_IP_HEADER = 'x-voucha-dispatch-ip'
 
 function restoreClientVary(response: Response, additions: readonly string[]): Response {
   const headers = new Headers(response.headers)
-  const tunneledTokens = parseSafeCacheVary(headers.get(INTERNAL_CACHE_VARY_HEADER)) ?? []
+  const tunneledTokens =
+    parseSafeCacheVary(
+      headers.get(INTERNAL_CACHE_VARY_HEADER),
+      VOUCHA_SAFE_SHARED_CACHE_VARY_TOKENS,
+    ) ?? []
   headers.delete(INTERNAL_CACHE_VARY_HEADER)
   const vary = mergeClientVary(headers.get('vary'), [...tunneledTokens, ...additions])
   if (vary === null) headers.delete('vary')
@@ -156,10 +168,11 @@ export async function dispatchToCachedOrigin(input: CacheDispatchInput): Promise
   // the web origin) would corrupt the bytes. Gate on content-type, not just the web target.
   const rewritten =
     input.target === 'web' && isHtml
-      ? await rewritePlaceholderNonce(
+      ? rewritePlaceholderNonce(
           responseWithClientVary,
           requireCachePlaceholderNonce(input.env),
           input.cspNonce,
+          { stripMetaNames: ['sentry-trace', 'baggage'] },
         )
       : responseWithClientVary
 

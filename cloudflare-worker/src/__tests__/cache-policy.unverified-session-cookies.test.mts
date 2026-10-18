@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { getCachePolicy, parseStaticCachedPaths } from '../cache-policy.mts'
+import { getCachePolicy } from '../cache-policy.mts'
 
 describe('unverified session cookies cache policy', () => {
   const baseInput = {
-    staticCachedPaths: parseStaticCachedPaths('/favicon.ico,/robots.txt'),
+    staticCachedPaths: new Set(['/favicon.ico', '/robots.txt']),
     sitemapCacheTtlSeconds: 86_400,
     staticCacheTtlSeconds: 86_400,
     botCacheTtlSeconds: 86_400,

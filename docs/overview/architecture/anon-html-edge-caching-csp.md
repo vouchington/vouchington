@@ -2,7 +2,8 @@
 
 Anonymous SSR HTML is cached at the edge (Cloudflare Workers Cache) despite Voucha's strict
 per-request CSP nonce. This page records why that is safe and where the safety argument stops.
-The mechanism lives in `cloudflare-worker/src/` (`cached-origin.mts`, `nonce-rewrite.mts`, `csp.mts`).
+The Worker owns the cache-fill and CSP policy; its published edge package supplies the generic
+nonce-rewrite primitive used when cached HTML returns to a client.
 
 ## Problem
 

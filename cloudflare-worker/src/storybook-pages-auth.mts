@@ -1,7 +1,5 @@
-import {
-  INTERNAL_REFERENCE_BASIC_AUTH_CHALLENGE,
-  requiredBasicAuthDecision,
-} from './basic-auth-credentials.mts'
+import { requiredBasicAuthDecision } from '@vouchington/edge'
+import { INTERNAL_REFERENCE_BASIC_AUTH_CHALLENGE } from './basic-auth.mts'
 
 export interface StorybookPagesEnv {
   ASSETS?: { fetch(request: Request): Promise<Response> }

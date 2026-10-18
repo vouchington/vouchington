@@ -1,42 +1,29 @@
-import { edgeErrorResponse } from './error-response.mts'
+import { createBasicAuthGate, type BasicAuthGate } from '@vouchington/edge'
 import { getIdentityRateLimitRejection } from './identity-rate-limit-rejection.mts'
 import { STAGING_AUTHORIZATION_HEADER } from './staging-control-headers.mts'
-import {
-  basicAuthorizationMatches,
-  readBasicAuthCredentialList,
-} from './basic-auth-credentials.mts'
 import { isExternalServerToServerIngress } from './external-server-ingress.mts'
 import type { Env } from './types.mts'
 
 export { STAGING_AUTHORIZATION_HEADER }
-export { timingSafeCredentialMatch } from './timing-safe-credential-match.mts'
 
-const warnedMalformedCredentialValues = new Set<string>()
+export const INTERNAL_REFERENCE_BASIC_AUTH_CHALLENGE =
+  'Basic realm="Voucha Internal References", charset="UTF-8"'
+// A gate captures one deployment credential value. Reuse it across requests so a malformed
+// rotation list warns once per isolate, including during the pre-auth rate-limit decision.
+const gatesByCredentials = new Map<string | undefined, BasicAuthGate>()
 
-/**
- * Parses a comma-separated list of `user:password` pairs from an env var.
- * Returns a Set of decoded `user:password` strings, or null only when the
- * value is empty/unset (gate disabled). When the value is non-empty and any
- * entry is malformed, returns an empty Set — the gate remains ENABLED and all
- * requests receive 401 (fail-closed). Multiple entries support credential
- * rotation: add a new pair, deploy, then remove the retired pair on the next
- * rotation. Constraint: usernames and passwords must not contain a comma, and
- * whitespace is significant rather than separator padding.
- *
- * Results are cached at module scope so parsing and any console.warn calls
- * happen only once per unique env value rather than on every request.
- */
-export function parseBasicAuthCredentials(envValue: string | undefined): Set<string> | null {
-  const list = readBasicAuthCredentialList(envValue)
-  if (list.status === 'absent') return null
-  if (list.hasMalformedEntries && !warnedMalformedCredentialValues.has(list.source)) {
-    warnedMalformedCredentialValues.add(list.source)
-    console.warn(
-      '[Basic Auth] Rejecting malformed credential list (username and password must both be non-empty)',
-    )
+function basicAuthGate(credentials: string | undefined): BasicAuthGate {
+  let gate = gatesByCredentials.get(credentials)
+  if (!gate) {
+    gate = createBasicAuthGate({
+      credentials,
+      realm: 'Voucha Staging',
+      secondaryAuthorizationHeader: STAGING_AUTHORIZATION_HEADER,
+      isExempt: isBasicAuthExemptRequest,
+    })
+    gatesByCredentials.set(credentials, gate)
   }
-  if (list.hasMalformedEntries) return new Set()
-  return list.credentials
+  return gate
 }
 
 /**
@@ -101,9 +88,8 @@ export function isBasicAuthExemptRequest(method: string, pathname: string): bool
   )
 }
 
-function appliesBasicAuthGate(request: Request, env: Env, url: URL): boolean {
-  const creds = parseBasicAuthCredentials(env.BASIC_AUTH_CREDENTIALS)
-  return creds !== null && !isBasicAuthExemptRequest(request.method, url.pathname)
+function appliesBasicAuthGate(request: Request, env: Env): boolean {
+  return basicAuthGate(env.BASIC_AUTH_CREDENTIALS).appliesTo(request)
 }
 
 export async function getBasicAuthRateLimitRejection(
@@ -112,7 +98,7 @@ export async function getBasicAuthRateLimitRejection(
   url: URL,
   ip: string | null,
 ): Promise<{ applies: boolean; response: Response | null }> {
-  const applies = appliesBasicAuthGate(request, env, url)
+  const applies = appliesBasicAuthGate(request, env)
   if (!applies) return { applies, response: null }
   const response = await getIdentityRateLimitRejection(
     env,
@@ -133,20 +119,6 @@ export async function getBasicAuthRateLimitRejection(
  * The gate is disabled (returns null) when BASIC_AUTH_CREDENTIALS is unset —
  * production and local environments never set it.
  */
-export function getBasicAuthResponse(request: Request, env: Env, url: URL): Response | null {
-  const creds = parseBasicAuthCredentials(env.BASIC_AUTH_CREDENTIALS)
-  if (!creds) return null
-
-  if (isBasicAuthExemptRequest(request.method, url.pathname)) return null
-
-  const primary = request.headers.get('authorization')
-  const secondary = request.headers.get(STAGING_AUTHORIZATION_HEADER)
-  const ordinaryBasic = primary !== null && /^Basic\s/i.test(primary) && secondary === null
-  const dualBearer = primary !== null && /^Bearer\s+\S+$/i.test(primary) && secondary !== null
-  const basicCandidate = ordinaryBasic ? primary : dualBearer ? secondary : null
-  if (basicAuthorizationMatches(basicCandidate, creds)) return null
-
-  return edgeErrorResponse(401, 'Authentication required', 'UNAUTHORIZED', {
-    'www-authenticate': 'Basic realm="Voucha Staging", charset="UTF-8"',
-  })
+export function getBasicAuthResponse(request: Request, env: Env, _url: URL): Response | null {
+  return basicAuthGate(env.BASIC_AUTH_CREDENTIALS).check(request)
 }

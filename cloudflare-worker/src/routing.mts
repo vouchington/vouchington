@@ -1,5 +1,5 @@
 import { isRemovedSideloadRoute } from '@ts-shared/url-signing/media-source-policy'
-import { edgeErrorResponse } from './error-response.mts'
+import { edgeErrorResponse } from '@vouchington/edge'
 import { getMarkdownAliasOriginPath } from './markdown-aliases.mts'
 import { getOAuthBrokerCallbackOriginPath } from './oauth-broker-callback-routing.mts'
 import { isOAuthAuthorizationServerRoute } from './oauth-authorization-server-routing.mts'

@@ -1,6 +1,6 @@
 import type { BotTier } from './bot-tier.mts'
 import { isActivityPubInboxDeliveryRequest } from './activitypub-inbox-rate-limit.mts'
-import { edgeErrorResponse } from './error-response.mts'
+import { edgeErrorResponse } from '@vouchington/edge'
 import { checkIdentityRateLimit, checkServerActionRateLimit } from './identity-rate-limit.mts'
 import { hasAnyRateLimiter } from './request-rate-limiters.mts'
 import type { Env } from './types.mts'

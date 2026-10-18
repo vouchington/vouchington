@@ -13793,6 +13793,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../backend/config
+      '@vouchington/edge':
+        specifier: ^0.2.0
+        version: 0.2.0(@cloudflare/workers-types@5.20261014.1)
       '@vouchington/utils':
         specifier: ^0.7.4
         version: 0.7.4
@@ -19223,6 +19226,15 @@ packages:
   '@vouchington/domain-verification@0.0.0':
     resolution: {integrity: sha512-JyQzxxDvD8BDU5ThlKA8dmztIWJhO8Hx9pLFh+3pNE5eSJdMlgFoovR6jjcqB/2y6P38Q09hVM9pmrGF42OhUA==}
     engines: {node: '>=24.0.0'}
+
+  '@vouchington/edge@0.2.0':
+    resolution: {integrity: sha512-VM2a424JaDsCR/5G7aKfuBFjjV2BPJkuyx77mF6Pr9DgYujgwaHEioWUeA7eK6KoLOa7DlkdLopc5XaRasWb2Q==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      '@cloudflare/workers-types': ^5.20261016.1
+    peerDependenciesMeta:
+      '@cloudflare/workers-types':
+        optional: true
 
   '@vouchington/embeds@0.0.2':
     resolution: {integrity: sha512-USbRNL+a7wU6RC++VC6nJ7A+a6gTFmPYHZFTBJBtWr3NoNLD606k5gwI8qb36eh5f6O0Lmhor0HOe15yOY1RTA==}
@@ -28127,6 +28139,12 @@ snapshots:
       csv-stringify: 6.9.0
 
   '@vouchington/domain-verification@0.0.0': {}
+
+  '@vouchington/edge@0.2.0(@cloudflare/workers-types@5.20261014.1)':
+    dependencies:
+      '@vouchington/utils': 0.7.4
+    optionalDependencies:
+      '@cloudflare/workers-types': 5.20261014.1
 
   '@vouchington/embeds@0.0.2':
     dependencies:

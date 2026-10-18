@@ -115,12 +115,7 @@ describe('handleSentryTunnel', () => {
   })
 
   it('returns 400 when reading the envelope body fails', async () => {
-    const request = {
-      headers: new Headers(),
-      text: () => Promise.reject(new Error('body unavailable')),
-    } as Request
-
-    const res = await handleSentryTunnel(request)
+    const res = await handleSentryTunnel(makeErrorStreamRequest([]))
 
     expect(res.status).toBe(400)
     expect(globalThis.fetch).not.toHaveBeenCalled()

@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { getCachePolicy, parseStaticCachedPaths } from '../../src/cache-policy.mts'
+import { getCachePolicy } from '../../src/cache-policy.mts'
 
 const bypassPolicy = {
   mode: 'bypass',
@@ -9,7 +9,7 @@ const bypassPolicy = {
 } as const
 
 const baseInput = {
-  staticCachedPaths: parseStaticCachedPaths('/favicon.ico,/robots.txt'),
+  staticCachedPaths: new Set(['/favicon.ico', '/robots.txt']),
   sitemapCacheTtlSeconds: 86_400,
   staticCacheTtlSeconds: 86_400,
   botCacheTtlSeconds: 86_400,

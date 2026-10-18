@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildOriginRequest } from '../proxy.mts'
+import { buildWorkerOriginRequest } from '../origin-request.mts'
 import {
   INTERNAL_CANARY_FAULT_HEADER,
   STAGING_AUTHORIZATION_HEADER,
@@ -7,11 +7,17 @@ import {
   STAGING_CANARY_SECRET_HEADER,
 } from '../staging-control-headers.mts'
 import { CACHE_PURGE_SECRET_HEADER } from '@ts-shared/cache/purge'
+import type { Env } from '../types.mts'
 
 describe('staging control header stripping', () => {
   it('removes every external and internal staging control header before origin', () => {
-    const originRequest = buildOriginRequest(
-      new Request('https://voucha.ai/api/v1/posts', {
+    const originRequest = buildWorkerOriginRequest({
+      canonicalSitemapUrl: null,
+      cspNonce: '',
+      edgeSession: { kind: 'anon-passthrough' },
+      env: { CF_WORKER_SECRET: 'worker-secret' } as Env,
+      origin: 'https://backend.example.com',
+      request: new Request('https://voucha.ai/api/v1/posts', {
         headers: {
           authorization: 'Bearer preserved',
           [CACHE_PURGE_SECRET_HEADER]: 'purge-secret',
@@ -21,15 +27,12 @@ describe('staging control header stripping', () => {
           [STAGING_CANARY_SECRET_HEADER]: 'canary-secret',
         },
       }),
-      'https://backend.example.com',
-      new Set(),
-      undefined,
-      undefined,
-      false,
-      undefined,
-      false,
-      true,
-    )
+      requestId: 'request-id',
+      target: 'backend',
+      webCsp: '',
+      stripCookieNames: new Set(),
+      stripAllCookies: false,
+    })
 
     expect(originRequest.headers.get('authorization')).toBe('Bearer preserved')
     for (const header of [

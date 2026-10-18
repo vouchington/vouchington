@@ -71,16 +71,11 @@ same `request_id` returned in the JSON error response without logging request he
 
 All edge-level error responses use `edgeErrorResponse()`:
 
-```typescript
-import { edgeErrorResponse } from './error-response.mts'
-
-return edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY')
-return edgeErrorResponse(429, 'Too Many Requests', 'RATE_LIMIT', { 'retry-after': '60' })
-```
+The Worker uses the published `@vouchington/edge` error-response helper. Voucha's route handlers
+retain responsibility for choosing status, message, code, and route-specific headers.
 
 The CF Worker does not have access to backend error codes. Use string literals that mirror the backend registry.
-[`fetchOriginResponse()`](../../../cloudflare-worker/src/origin-request.mts) retries an idempotent
-origin fetch (`GET` or `HEAD`) when `fetch` throws a dropped-socket error such as
+The published edge package retries an idempotent origin fetch (`GET` or `HEAD`) when `fetch` throws a dropped-socket error such as
 `Network connection lost.` or a connection reset. workerd marks that exception `retryable: true`.
 Mutating methods are not retried, because a lost response may already have been applied by the
 origin. When the retry is exhausted or the error is not a dropped socket, the worker returns
@@ -91,7 +86,7 @@ Edge-generated failures and forwarded origin failures with status 4xx/5xx are st
 responses, but these headers are a defensive signal to every shared cache in front of or behind the
 Worker.
 
-The Sentry tunnel logs structured rejection, forwarding, and upstream non-2xx diagnostics from
-`cloudflare-worker/src/sentry-tunnel-diagnostics.mts`. Forwarding failures and upstream non-2xx
+The Sentry tunnel logs structured rejection, forwarding, and upstream non-2xx diagnostics.
+Forwarding failures and upstream non-2xx
 responses include sanitized envelope item counts and item types after DSN host/project validation;
 they never log envelope payloads, DSN keys, or Sentry response headers.

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { getCachePolicy, parseStaticCachedPaths } from '../cache-policy.mts'
+import { getCachePolicy } from '../cache-policy.mts'
 
 describe('cache-policy', () => {
-  const staticCachedPaths = parseStaticCachedPaths('/favicon.ico,/robots.txt')
+  const staticCachedPaths = new Set(['/favicon.ico', '/robots.txt'])
 
   it('bypasses cache for authenticated users', () => {
     const result = getCachePolicy({
