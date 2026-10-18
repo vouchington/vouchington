@@ -13,7 +13,7 @@ import {
 import { getTestPostCreationSourceUrlId } from '@voucha/test-helpers/entities/post-field-queries'
 import { getUrlByAny } from '@services/urls/get'
 import * as crawlerEnqueues from '@queues/crawler/enqueues'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 
 const enqueueBulkCrawlUrls = crawlerEnqueues.enqueueBulkCrawlUrls
 import type { PrivateUser } from '@services/users/types'

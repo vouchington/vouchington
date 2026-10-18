@@ -1,11 +1,22 @@
 import assert from 'http-assert'
 import pMap from 'p-map'
 import { background } from '@queues/background/queues'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import {
+  BACKGROUND_CPU_DOMAINS,
+  BACKGROUND_CPU_QUEUE_NAME,
+  getDomainStatsScanCap as getCpuDomainStatsScanCap,
+  isBackgroundCpuDomain,
+  type BackgroundCpuDomain,
+} from '@queues/background-cpu/config'
+import { getBackgroundCpuJobNames } from '@queues/background-cpu/enqueues/registry'
+import type { Queue } from 'glide-mq'
 import {
   BACKGROUND_DOMAINS,
   BACKGROUND_QUEUE_NAME,
   getDomainStatsScanCap,
   isBackgroundDomain,
+  type BackgroundDomain,
 } from '@queues/background/config'
 import { getBackgroundJobNames } from '@queues/background/enqueues/registry'
 import { recordStaffOperation } from '@services/moderator-actions'
@@ -21,9 +32,7 @@ import { assertNotSuspended } from '@services/users'
 import { currentUserCanAccessQueueStats } from './authorization.mts'
 import { countDomainJobs, readSharedStates, type DomainStateCounts } from './domain-stats.mts'
 
-/** Failed jobs one retry request replays, the same bound as a whole-queue retry. */
 const RETRY_FAILED_LIMIT = 100
-/** Domains scanned at once; each scan already runs its five states in parallel. */
 const DOMAIN_SCAN_CONCURRENCY = 4
 const MAX_REASON_LENGTH = 500
 
@@ -37,7 +46,7 @@ export type ManagedQueueDomain = DomainStateCounts & {
 
 /** True for a queue whose work is split into operator-controlled domains. */
 export function queueHasDomains(queueName: string): boolean {
-  return queueName === BACKGROUND_QUEUE_NAME
+  return queueName === BACKGROUND_QUEUE_NAME || queueName === BACKGROUND_CPU_QUEUE_NAME
 }
 
 /**
@@ -45,17 +54,17 @@ export function queueHasDomains(queueName: string): boolean {
  * totals on `GET /mq/queues` stay exact; these counts are read fresh and may stop at the cap.
  */
 export async function listManagedQueueDomains(queueName: string) {
-  requireDomainQueue(queueName)
-  const cap = getDomainStatsScanCap()
-  const shared = await readSharedStates(background, cap)
+  const selection = requireDomainQueue(queueName)
+  const cap = selection.scanCap
+  const shared = await readSharedStates(selection.queue, cap)
   const controls = new Map(
-    (await listQueueDomainControls(BACKGROUND_DOMAINS)).map(control => [control.domain, control]),
+    (await listQueueDomainControls(selection.domains)).map(control => [control.domain, control]),
   )
   const domains = await pMap(
-    BACKGROUND_DOMAINS,
+    selection.domains,
     async (domain): Promise<ManagedQueueDomain> => ({
       ...toManagedControl(controls.get(domain)!),
-      ...(await countDomainJobs(background, domain, cap, shared)),
+      ...(await countDomainJobs(selection.queue, selection.getJobNames(domain), cap, shared)),
     }),
     { concurrency: DOMAIN_SCAN_CONCURRENCY },
   )
@@ -70,7 +79,7 @@ export async function setManagedQueueDomainPaused(
 ) {
   assertOperator(currentUser)
   requireDomainQueue(queueName)
-  const domain = requireDomain(domainName)
+  const domain = requireDomain(queueName, domainName)
   const reason = normalizeReason(input.reason)
   if ((await getQueueDomainControl(domain)).paused === input.paused) {
     return { success: true as const }
@@ -97,13 +106,13 @@ export async function retryManagedQueueDomainFailedJobs(
   domainName: string,
 ) {
   assertOperator(currentUser)
-  requireDomainQueue(queueName)
-  const domain = requireDomain(domainName)
+  const selection = requireDomainQueue(queueName)
+  const domain = requireDomain(queueName, domainName)
   const result = await recordStaffOperation(
     currentUser.id,
     { actionType: 'queue_retry_failed', queueName, metadata: { domain } },
     async () => {
-      const failedJobs = await collectFailedJobs(getBackgroundJobNames(domain))
+      const failedJobs = await collectFailedJobs(selection.queue, selection.getJobNames(domain))
       const results = await Promise.allSettled(failedJobs.map(job => job.retry()))
       return {
         attempted: results.length,
@@ -115,11 +124,11 @@ export async function retryManagedQueueDomainFailedJobs(
   return { success: true as const, retried: result.retried }
 }
 
-async function collectFailedJobs(names: readonly string[]) {
-  const failed: Awaited<ReturnType<typeof background.searchJobs>> = []
+async function collectFailedJobs(queue: Queue, names: readonly string[]) {
+  const failed: Awaited<ReturnType<Queue['searchJobs']>> = []
   for (const name of names) {
     // oxlint-disable-next-line no-await-in-loop -- each search spends part of one retry budget
-    const jobs = await background.searchJobs({
+    const jobs = await queue.searchJobs({
       state: 'failed',
       name,
       limit: RETRY_FAILED_LIMIT - failed.length,
@@ -152,12 +161,36 @@ function normalizeReason(reason: string | null | undefined): string | null {
   return trimmed
 }
 
-function requireDomainQueue(queueName: string): void {
-  assert(queueHasDomains(queueName), 404, 'Queue has no domains')
+type DomainQueueSelection = {
+  queue: Queue
+  domains: readonly string[]
+  scanCap: number
+  getJobNames: (domain: string) => string[]
 }
 
-function requireDomain(domain: string) {
-  assert(isBackgroundDomain(domain), 404, 'Domain not found')
+function requireDomainQueue(queueName: string): DomainQueueSelection {
+  assert(queueHasDomains(queueName), 404, 'Queue has no domains')
+  if (queueName === BACKGROUND_CPU_QUEUE_NAME)
+    return {
+      queue: backgroundCpu,
+      domains: BACKGROUND_CPU_DOMAINS,
+      scanCap: getCpuDomainStatsScanCap(),
+      getJobNames: domain => getBackgroundCpuJobNames(domain as BackgroundCpuDomain),
+    }
+  return {
+    queue: background,
+    domains: BACKGROUND_DOMAINS,
+    scanCap: getDomainStatsScanCap(),
+    getJobNames: domain => getBackgroundJobNames(domain as BackgroundDomain),
+  }
+}
+
+function requireDomain(queueName: string, domain: string): string {
+  const known =
+    queueName === BACKGROUND_CPU_QUEUE_NAME
+      ? isBackgroundCpuDomain(domain)
+      : isBackgroundDomain(domain)
+  assert(known, 404, 'Domain not found')
   return domain
 }
 

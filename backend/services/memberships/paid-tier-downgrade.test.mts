@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { randomUUID } from 'node:crypto'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import * as unfurlEnqueues from '@queues/unfurl-referral-links/enqueues'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
+import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
 import type { MembershipLifecycleFields, MembershipUpdateResult } from './update-result.mts'
 import { enqueueUnfurledChildRemovalOnDowngrade } from './paid-tier-downgrade.mts'
 

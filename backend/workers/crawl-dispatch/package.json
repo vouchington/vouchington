@@ -20,6 +20,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/queue-config": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@services/boilerplate-removals": "workspace:^",

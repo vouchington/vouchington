@@ -1,72 +1,56 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { JobOptions } from 'glide-mq'
-import {
-  BEDROCK_EMBEDDINGS_DEFAULTS,
-  EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
-  PRIORITY_DEFAULT,
-} from './config.mts'
-import { bedrock_embeddings_nova_multimodal_v1_single } from './queues.mts'
+import { BEDROCK_EMBEDDINGS_DEFAULTS, PRIORITY_DEFAULT } from './config.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { DefaultBedrockEmbeddingsJobData } from './types.mts'
-import { getQueueBacklogDepthCached } from '@data-stores/valkey-glide-mq/get-queue-stats-cached'
 import { trackAIEmbeddingShortCircuit } from '@services/analytics'
-import { getBacklogThreshold } from '@services/bedrock-embeddings/batch/config'
 import onError from '@modules/on-error'
-
-const QUEUE_STATS_CACHE_TTL_MS = 2000
+import { isSingleEmbeddingBackedUp } from './enqueues/single-backlog.mts'
 
 async function isSingleQueueBackedUp(): Promise<boolean> {
   try {
-    const depth = await getQueueBacklogDepthCached(
-      EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
-      QUEUE_STATS_CACHE_TTL_MS,
-    )
-    return depth >= getBacklogThreshold()
+    return await isSingleEmbeddingBackedUp()
   } catch {
     return false
   }
 }
 
-const defaults = {
-  attempts: BEDROCK_EMBEDDINGS_DEFAULTS.attempts,
-  backoff: BEDROCK_EMBEDDINGS_DEFAULTS.backoff,
-  removeOnComplete: BEDROCK_EMBEDDINGS_DEFAULTS.removeOnComplete,
-  removeOnFail: BEDROCK_EMBEDDINGS_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
-
 const enqueueCreateTopicEmbeddingJob = createEnqueueFunction<
   DefaultBedrockEmbeddingsJobData,
-  'topic'
+  string
 >({
-  queue: bedrock_embeddings_nova_multimodal_v1_single,
-  queueName: EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
-  jobName: 'topic',
-  defaults,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'bedrock-embeddings.topic',
+  defaults: requireBackgroundCpuJob('bedrock-embeddings.topic').options,
 })
 
 const enqueueCreatePostEmbeddingJob = createEnqueueFunction<
   DefaultBedrockEmbeddingsJobData,
-  'post'
+  string
 >({
-  queue: bedrock_embeddings_nova_multimodal_v1_single,
-  queueName: EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
-  jobName: 'post',
-  defaults,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'bedrock-embeddings.post',
+  defaults: requireBackgroundCpuJob('bedrock-embeddings.post').options,
 })
 
 const enqueueBulkCreateRssFeedItemEmbeddingJobs = createBulkEnqueueFunction<
   { rss_feed_item_id: string },
   { rss_feed_item_id: string },
-  'rss_feed_item'
+  string
 >({
-  queue: bedrock_embeddings_nova_multimodal_v1_single,
-  queueName: EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME,
-  jobName: 'rss_feed_item',
-  defaults,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'bedrock-embeddings.rss_feed_item',
+  defaults: requireBackgroundCpuJob('bedrock-embeddings.rss_feed_item').options,
   buildJob: item => ({
     data: { rss_feed_item_id: item.rss_feed_item_id },
     opts: {
       deduplication: {
-        id: `rss_feed_item_embedding_${item.rss_feed_item_id}`,
+        id: `bedrock-embeddings:single:rss-feed-item:${item.rss_feed_item_id}`,
         mode: 'debounce' as const,
       },
     },
@@ -85,7 +69,7 @@ export const enqueueCreateTopicEmbedding = async (
     await enqueueCreateTopicEmbeddingJob({ id: topicId }, {
       priority: priority ?? PRIORITY_DEFAULT,
       deduplication: {
-        id: `topic_embedding_${topicId}`,
+        id: `bedrock-embeddings:single:topic:${topicId}`,
         mode: 'debounce' as const,
       },
     } satisfies Partial<JobOptions>)
@@ -106,7 +90,7 @@ export const enqueueCreatePostEmbedding = async (
     await enqueueCreatePostEmbeddingJob({ id: postId }, {
       priority: priority ?? PRIORITY_DEFAULT,
       deduplication: {
-        id: `post_embedding_${postId}`,
+        id: `bedrock-embeddings:single:post:${postId}`,
         mode: 'debounce' as const,
       },
     } satisfies Partial<JobOptions>)

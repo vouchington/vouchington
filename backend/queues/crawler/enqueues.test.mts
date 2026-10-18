@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { enqueueBulkCrawlUrls } from './enqueues.mts'
-import { crawlUrls } from './queues.mts'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 
 describe('enqueueBulkCrawlUrls', () => {
   beforeEach(async () => {

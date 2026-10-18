@@ -1,4 +1,3 @@
-export const CONTENT_ANALYSIS_QUEUE_NAME = 'content-analysis'
 export const PRIORITY_DEFAULT = 10
 export const LANGUAGE_DETECTION_DEFAULTS = {
   attempts: 3,

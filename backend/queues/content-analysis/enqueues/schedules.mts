@@ -3,23 +3,20 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { contentAnalysisQueue } from '../queues.mts'
-import { CONTENT_ANALYSIS_QUEUE_NAME } from '../config.mts'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { enqueueCleanupAbandonedUploads } from './image-jobs.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(CONTENT_ANALYSIS_QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QUEUE_NAME, [
   {
     schedulerId: 'content-analysis:cleanup-abandoned-uploads-schedule',
     repeat: { every: 3_600_000 },
     template: {
-      name: 'cleanup-abandoned-uploads',
+      name: 'content-analysis.cleanup-abandoned-uploads',
       data: {},
       opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000, jitter: 0.5 },
-        removeOnComplete: 100,
-        removeOnFail: 100,
-        priority: 100,
+        ...requireBackgroundCpuJob('content-analysis.cleanup-abandoned-uploads').options,
       } satisfies JobOptions,
     },
     operatorSurfaces: [
@@ -35,5 +32,5 @@ export const scheduledJobManifest = defineScheduledJobManifest(CONTENT_ANALYSIS_
 ])
 
 export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(contentAnalysisQueue, scheduledJobManifest)
+  await upsertScheduledJobManifest(backgroundCpu, scheduledJobManifest)
 }

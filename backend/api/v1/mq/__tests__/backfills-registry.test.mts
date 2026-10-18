@@ -6,7 +6,7 @@ import {
 } from '@voucha/test-helpers'
 import { activitypub } from '@queues/activitypub/queues'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'

@@ -1,4 +1,3 @@
-export const CRAWL_REFERRAL_LINKS_QUEUE_NAME = 'crawl_referral_links'
 export const PRIORITY_DEFAULT = 10
 export const PRIORITY_DISPATCHER = 100
 

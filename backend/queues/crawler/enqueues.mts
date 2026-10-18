@@ -1,7 +1,8 @@
 import { createBulkEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import { CRAWL_URLS_QUEUE_NAME, PRIORITY_DEFAULT } from './config.mts'
-import { crawlUrls } from './queues.mts'
-import type { CrawlerJobs, EnqueueCrawlerJobOptions, EnqueueCrawlUrlEntry } from './types.mts'
+import { BACKGROUND_CPU_QUEUE_NAME, PRIORITY_TASK } from '@queues/background-cpu/config'
+import { getBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import type { EnqueueCrawlerJobOptions, EnqueueCrawlUrlEntry } from './types.mts'
 
 type CrawlUrlBulkInput = EnqueueCrawlUrlEntry & {
   jobDelay?: number
@@ -10,11 +11,8 @@ type CrawlUrlBulkInput = EnqueueCrawlUrlEntry & {
   rateLimitMs: number
 }
 
-const JOB_NAME: CrawlerJobs = 'crawl_url'
-const CRAWL_URL_JOB_RETRY_OPTIONS = {
-  attempts: 3,
-  backoff: { type: 'exponential', delay: 5000, jitter: 0.5 },
-}
+const JOB_NAME = 'crawl.crawl_url'
+const job = getBackgroundCpuJob(JOB_NAME)!
 
 const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
   CrawlUrlBulkInput,
@@ -33,16 +31,12 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
     import_row_id?: string
     import_discovery_generation?: string
   },
-  CrawlerJobs
+  string
 >({
-  queue: crawlUrls,
-  queueName: CRAWL_URLS_QUEUE_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: JOB_NAME,
-  defaults: {
-    ...CRAWL_URL_JOB_RETRY_OPTIONS,
-    removeOnComplete: 100,
-    removeOnFail: 100,
-  },
+  defaults: job.options,
   buildJob: ({
     urlId,
     options,
@@ -79,7 +73,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
           : {}),
       },
       opts: {
-        priority: priority ?? PRIORITY_DEFAULT,
+        priority: priority ?? PRIORITY_TASK,
         deduplication: {
           // A replacement is enqueued from inside the previous replacement while that job still
           // holds its dedup id, so each retry count needs its own id or the add is skipped.
@@ -91,7 +85,13 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
         },
         ...(delay > 0 ? { delay } : {}),
         ...(hostnameId
-          ? { ordering: { key: hostnameId, rateLimit: { max: 1, duration: rateLimitMs } } }
+          ? {
+              ordering: {
+                key: `crawl:${hostnameId}`,
+                concurrency: 1,
+                rateLimit: { max: 1, duration: rateLimitMs },
+              },
+            }
           : {}),
       },
     }

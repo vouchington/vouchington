@@ -71,7 +71,7 @@ describe('capped per-domain job counts through real GlideMQ', () => {
         },
       )
 
-      const exact = await countDomainJobs(harness.queue, 'ses-inbound', 100)
+      const exact = await countDomainJobs(harness.queue, [SES_INBOUND_PROCESS_JOB.name], 100)
       expect(exact).toEqual({
         waiting: { count: 0, complete: true },
         active: { count: 1, complete: true },
@@ -81,7 +81,7 @@ describe('capped per-domain job counts through real GlideMQ', () => {
       })
 
       // A cap below a state's size stops the scan there; smaller states stay exact.
-      const capped = await countDomainJobs(harness.queue, 'ses-inbound', 2)
+      const capped = await countDomainJobs(harness.queue, [SES_INBOUND_PROCESS_JOB.name], 2)
       expect(capped.delayed).toEqual({ count: 2, complete: false })
       expect(capped.completed).toEqual({ count: 2, complete: false })
       expect(capped.failed).toEqual({ count: 1, complete: true })
@@ -89,11 +89,11 @@ describe('capped per-domain job counts through real GlideMQ', () => {
 
       // Another domain's backlog can fill the shared read: this domain's job lies beyond it, so
       // its count is partial rather than exact.
-      const crowdedOut = await countDomainJobs(harness.queue, 'openai-moderation', 2)
+      const crowdedOut = await countDomainJobs(harness.queue, [OPENAI_MODERATION_POST_JOB.name], 2)
       expect(crowdedOut.delayed).toEqual({ count: 0, complete: false })
 
       // The other domain sees only its own job, though the queue holds both.
-      const other = await countDomainJobs(harness.queue, 'openai-moderation', 100)
+      const other = await countDomainJobs(harness.queue, [OPENAI_MODERATION_POST_JOB.name], 100)
       expect(other.delayed).toEqual({ count: 1, complete: true })
       expect(other.completed).toEqual({ count: 0, complete: true })
     } finally {

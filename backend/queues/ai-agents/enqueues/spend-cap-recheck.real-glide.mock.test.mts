@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { SPEND_CAP_RECHECK_JOB_NAME } from '../config.mts'
+const SPEND_CAP_RECHECK_JOB_NAME = 'ai-spend-cap.recheck'
 import type { SpendCapRecheckJobData } from '../types.mts'
 import { enqueueSpendCapRecheck } from './spend-cap-recheck.mts'
 
@@ -10,8 +10,8 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 
-describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
-  it('enqueues the coordinator with generation-scoped deduplication and priority zero', async () => {
+describe('spend-cap recheck priority-ten scheduling with real GlideMQ', () => {
+  it('enqueues the coordinator with generation-scoped deduplication and priority ten', async () => {
     const generation = randomUUID()
     const job = await enqueueSpendCapRecheck('2026-08-16', generation, 1_000)
     if (!job) throw new Error('Expected spend-cap recheck job')
@@ -23,9 +23,9 @@ describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
         backoff: { type: 'fixed', delay: 60_000, jitter: 0 },
         removeOnComplete: true,
         removeOnFail: true,
-        priority: 0,
+        priority: 10,
         deduplication: {
-          id: `ai-spend-cap-recheck_2026-08-16_${generation}`,
+          id: `ai-spend-cap:recheck:2026-08-16:${generation}`,
           mode: 'simple',
         },
       })
@@ -54,7 +54,7 @@ describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
       const readinessJob = await queue.add(
         SPEND_CAP_RECHECK_JOB_NAME,
         { day: '2026-08-16', generation: randomUUID() },
-        { jobId: randomUUID(), priority: 0 },
+        { jobId: randomUUID(), priority: 10 },
       )
       if (!readinessJob) throw new Error('Expected spend-cap readiness job')
       await drained.promise
@@ -63,7 +63,7 @@ describe('spend-cap recheck priority-zero scheduling with real GlideMQ', () => {
       const job = await queue.add(
         SPEND_CAP_RECHECK_JOB_NAME,
         { day: '2026-08-16', generation: randomUUID() },
-        { delay: 500, jobId: randomUUID(), priority: 0 },
+        { delay: 500, jobId: randomUUID(), priority: 10 },
       )
       if (!job) throw new Error('Expected delayed spend-cap coordinator')
       const delayedCompleted = Promise.withResolvers<void>()

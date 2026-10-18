@@ -4,9 +4,11 @@ import {
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
 import type { CrawlHostnamesJobs } from '../types.mts'
-import { crawlDispatchQueue } from '../queues.mts'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { enqueueBoilerplateRemovalDispatcher } from './boilerplate.mts'
-import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
+import { PRIORITY_DISPATCHER } from '../config.mts'
 import {
   enqueueCrawlCleanup,
   enqueueCrawlHostnamesDispatcher,
@@ -15,14 +17,7 @@ import {
   enqueueRefreshHostnameCrawlerDispatcher,
 } from './hostnames.mts'
 
-const DEFAULT_OPTIONS = {
-  attempts: 3,
-  backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
-  removeOnComplete: 100,
-  removeOnFail: 100,
-}
-
-export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QUEUE_NAME, [
   crawlJob(
     'crawl_hostnames_dispatcher',
     '0 * * * *',
@@ -57,22 +52,23 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   crawlJob(
     'crawl_cleanup',
     '30 3 * * *',
-    PRIORITY_DEFAULT,
+    PRIORITY_DISPATCHER,
     'Clean up old crawl data (daily)',
     enqueueCrawlCleanup,
   ),
   {
-    schedulerId: 'boilerplate_removal_dispatcher',
+    schedulerId: 'crawl:boilerplate-removal-dispatcher',
     repeat: { pattern: '0 5 * * *' },
     template: {
-      name: 'boilerplate_removal_dispatcher',
+      name: 'crawl.boilerplate_removal_dispatcher',
       data: {},
-      opts: { ...DEFAULT_OPTIONS, priority: PRIORITY_DISPATCHER } satisfies JobOptions,
+      opts: requireBackgroundCpuJob('crawl.boilerplate_removal_dispatcher')
+        .options satisfies JobOptions,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'boilerplate_removal_dispatcher',
+        id: 'crawl:boilerplate-removal-dispatcher',
         schedule: '0 5 * * *',
         description: 'Dispatch HTML boilerplate removal',
         trigger: enqueueBoilerplateRemovalDispatcher,
@@ -82,7 +78,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
 ])
 
 export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(crawlDispatchQueue, scheduledJobManifest)
+  await upsertScheduledJobManifest(backgroundCpu, scheduledJobManifest)
 }
 
 function crawlJob(
@@ -94,23 +90,30 @@ function crawlJob(
   backfillId?: string,
 ) {
   return {
-    schedulerId: id,
+    schedulerId: `crawl:${id}`,
     registration: 'sequential' as const,
     repeat: { pattern },
     template: {
-      name:
+      name: `crawl.${
         id === 'crawl_hostnames_dispatcher'
           ? 'enqueueCrawlHostnamesDispatcher'
           : id === 'crawl_tier1_dispatcher'
             ? 'enqueueCrawlTier1Dispatcher'
             : id === 'crawl_tier2_dispatcher'
               ? 'enqueueCrawlTier2Dispatcher'
-              : id,
+              : id
+      }`,
       data: {},
-      opts: { ...DEFAULT_OPTIONS, priority } satisfies JobOptions,
+      opts: { ...requireBackgroundCpuJob(`crawl.${id}`).options, priority } satisfies JobOptions,
     },
     operatorSurfaces: [
-      { kind: 'scheduled-jobs' as const, id, schedule: pattern, description, trigger },
+      {
+        kind: 'scheduled-jobs' as const,
+        id: `crawl:${id}`,
+        schedule: pattern,
+        description,
+        trigger,
+      },
       ...((backfillId ? [{ kind: 'backfill', backfillId: backfillId }] : []) as
         | []
         | [{ kind: 'backfill'; backfillId: string }]),

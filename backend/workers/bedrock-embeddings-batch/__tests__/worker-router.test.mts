@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import type { Job, Worker } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { decodeUuidCursor, encodeScopedUuidCursor, isSimpleCursor } from '@modules/pagination'
 import {
@@ -80,8 +80,11 @@ describe('bedrock embeddings batch worker processor', () => {
     const after = encodeScopedUuidCursor(before.id, 'embedding-reconciliation:topics:id-asc')
 
     const result = (await processBedrockEmbeddingsBatchJob(
-      makeJob('reconcile_existing', { entityType: 'topics', after }, 'reconciliation'),
-      {} as Worker,
+      makeJob(
+        'bedrock-embeddings.reconcile_existing',
+        { entityType: 'topics', after },
+        'bedrock-embeddings:reconciliation',
+      ),
       { entityIds: [topicId] },
     )) as { updatedIds: string[]; scannedCount: number }
     expect(result.updatedIds).toEqual([topicId])
@@ -105,38 +108,51 @@ describe('bedrock embeddings batch worker processor', () => {
     ]) {
       await expect(
         processBedrockEmbeddingsBatchJob(
-          makeJob('reconcile_existing', data, 'reconciliation'),
-          {} as Worker,
+          makeJob(
+            'bedrock-embeddings.reconcile_existing',
+            data,
+            'bedrock-embeddings:reconciliation',
+          ),
         ),
       ).rejects.toThrow(UnrecoverableError)
     }
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('reconcile_existing', null as unknown as Record<string, unknown>, 'reconciliation'),
-        {} as Worker,
+        makeJob(
+          'bedrock-embeddings.reconcile_existing',
+          null as unknown as Record<string, unknown>,
+          'bedrock-embeddings:reconciliation',
+        ),
       ),
     ).rejects.toThrow(UnrecoverableError)
     await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'reconciliation'), {} as Worker),
+      processBedrockEmbeddingsBatchJob(
+        makeJob('unexpected', {}, 'bedrock-embeddings:reconciliation'),
+      ),
     ).rejects.toThrow('Unknown reconciliation job type: unexpected')
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('reconcile_existing', { entityType: 'topics', after: '' }, 'reconciliation'),
-        {} as Worker,
+        makeJob(
+          'bedrock-embeddings.reconcile_existing',
+          { entityType: 'topics', after: '' },
+          'bedrock-embeddings:reconciliation',
+        ),
       ),
     ).rejects.toThrow(UnrecoverableError)
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('post_trigger_recovery', { after: '' }, 'reconciliation'),
-        {} as Worker,
+        makeJob(
+          'bedrock-embeddings.post_trigger_recovery',
+          { after: '' },
+          'bedrock-embeddings:reconciliation',
+        ),
       ),
     ).rejects.toThrow(UnrecoverableError)
   })
   it('runs the creation dispatcher branch through the real queue enqueues', async () => {
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('creation_dispatcher', {}, 'dispatcher'),
-        {} as Worker,
+        makeJob('bedrock-embeddings.creation_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
       ),
     ).resolves.toEqual({ batchesEnqueued: 5 })
   })
@@ -144,45 +160,50 @@ describe('bedrock embeddings batch worker processor', () => {
   it('routes polling and dispatcher jobs through the real processors', async () => {
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('poll_batch', { batch_id: crypto.randomUUID() }, 'polling'),
-        {} as Worker,
+        makeJob(
+          'bedrock-embeddings.poll_batch',
+          { batch_id: crypto.randomUUID() },
+          'bedrock-embeddings:polling',
+        ),
       ),
     ).rejects.toThrow('Batch not found')
 
     await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('poll_dispatcher', {}, 'dispatcher'), {} as Worker),
+      processBedrockEmbeddingsBatchJob(
+        makeJob('bedrock-embeddings.poll_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
+      ),
     ).resolves.toEqual({ count: expect.any(Number) })
 
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('backlog_dispatcher', {}, 'dispatcher'),
-        {} as Worker,
+        makeJob('bedrock-embeddings.backlog_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
       ),
     ).resolves.toMatchObject({ triggered: expect.any(Boolean) })
 
     await expect(
       processBedrockEmbeddingsBatchJob(
-        makeJob('stale_cleanup_dispatcher', {}, 'dispatcher'),
-        {} as Worker,
+        makeJob('bedrock-embeddings.stale_cleanup_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
       ),
     ).resolves.toEqual(expect.objectContaining({ inspected: expect.any(Number) }))
   })
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
     await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('poll_batch', {}, 'polling'), {} as Worker),
+      processBedrockEmbeddingsBatchJob(
+        makeJob('bedrock-embeddings.poll_batch', {}, 'bedrock-embeddings:polling'),
+      ),
     ).rejects.toThrow('Batch ID is required')
 
     await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'polling'), {} as Worker),
+      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'bedrock-embeddings:polling')),
     ).rejects.toThrow('Unknown polling job type: unexpected')
 
     await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'dispatcher'), {} as Worker),
+      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'bedrock-embeddings:dispatcher')),
     ).rejects.toThrow('Unknown dispatcher job type: unexpected')
 
     await expect(
-      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'unknown'), {} as Worker),
+      processBedrockEmbeddingsBatchJob(makeJob('unexpected', {}, 'unknown')),
     ).rejects.toThrow('Unknown ordering key: unknown')
   })
 })

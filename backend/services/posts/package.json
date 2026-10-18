@@ -33,6 +33,7 @@
     "@modules/utils": "workspace:^",
     "@queues/activitypub": "workspace:^",
     "@queues/background": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/entity-listeners": "workspace:^",

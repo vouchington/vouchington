@@ -49,7 +49,10 @@ For each URL crawl:
 
 Crawler-related outbound HTTP uses centralized undici dispatchers to reuse sockets and avoid port exhaustion under worker/test concurrency. SSRF-validated HTML and robots.txt fetches use cached pinned dispatchers keyed by resolved addresses so DNS pinning still removes the TOCTOU window between validation and connect. `@jongleberry/vurst-html` decodes bounded HTML bytes before parsing, with BOM, `Content-Type`, and early HTML meta declarations taking precedence before UTF-8 and Windows-1252 fallbacks so legacy pages can still be parsed.
 
-The `crawl_urls/crawl_url` queue processor stores crawl output through the crawl service and returns only a small crawl reference to GlideMQ. It must not return full crawl rows because `markdown`, `links`, and `meta_tags` can exceed GlideMQ's serialized return-value limit.
+The crawl URL handler on the shared CPU queue stores crawl output through the crawl service and
+returns only a small crawl reference to GlideMQ. It must not return full crawl rows because
+`markdown`, `links`, and `meta_tags` can exceed GlideMQ's serialized return-value limit. URL and
+referral crawls for one hostname share an ordering key and rate window across their handlers.
 
 ## Rate Limiting
 

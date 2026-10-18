@@ -37,6 +37,7 @@
     "@modules/queue-config": "workspace:^",
     "@modules/structured-decisions": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@services/ai-usage": "workspace:^",
     "@services/autotagger": "workspace:^",

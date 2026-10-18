@@ -17,7 +17,8 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^"
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@queues/background-cpu": "workspace:^"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

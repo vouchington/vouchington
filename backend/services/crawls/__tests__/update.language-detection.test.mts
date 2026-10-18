@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contentAnalysisQueue } from '@queues/content-analysis/queues'
+import { backgroundCpu as contentAnalysisQueue } from '@queues/background-cpu/queues'
 import { addUrl } from '@services/urls/upsert'
 import { createCrawler } from '@services/crawlers'
 import { createCrawl } from '../create.mts'

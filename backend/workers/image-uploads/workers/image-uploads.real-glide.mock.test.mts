@@ -1,12 +1,11 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
-import { Queue, type Job, type Worker } from 'glide-mq'
+import { Queue, Worker, type Job } from 'glide-mq'
 import sharp from 'sharp'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection } from '@data-stores/valkey-glide-mq'
 import { imageStatePubSub } from '@data-stores/valkey-pubsub'
-import { getWorkerConcurrency } from '@modules/queue-config'
-import { CONTENT_ANALYSIS_QUEUE_NAME } from '@queues/content-analysis/config'
+import { BACKGROUND_CPU_QUEUE_NAME as CONTENT_ANALYSIS_QUEUE_NAME } from '@queues/background-cpu/config'
 import { IMAGE_UPLOADS_QUEUE_NAME } from '@queues/image-uploads/config'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import {
@@ -14,7 +13,6 @@ import {
   setImageHashAndProcessing,
 } from '@voucha/test-helpers/entities/images'
 import { enableStaydownMatchingForTest } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
-import { createContentAnalysisWorker } from '../../content-analysis/processors/create-content-analysis-worker.mts'
 import { createImageUploadsWorker } from '../processors/create-image-uploads-worker.mts'
 
 // Use native GlideMQ for both queues and the worker in this regression.
@@ -45,25 +43,27 @@ describe('image upload worker', () => {
     const subscription = await imageStatePubSub.subscribe(imageId)
     const published = Promise.withResolvers<{ upload_status: string; id: string }>()
     subscription.setHandler(state => published.resolve(state))
-    const concurrency = getWorkerConcurrency('contentAnalysis', { baseline: 10 })
+    const concurrency = 10
     const allStarted = Promise.withResolvers<void>()
     const releaseAnalysis = Promise.withResolvers<void>()
     let started = 0
     let uploadWorker: Worker | undefined
     let analysisWorker: Worker | undefined
     try {
-      analysisWorker = createContentAnalysisWorker(prefix, {
-        getImageFromS3: async () => {
+      analysisWorker = new Worker(
+        CONTENT_ANALYSIS_QUEUE_NAME,
+        async () => {
           started += 1
           if (started === concurrency) allStarted.resolve()
           await releaseAnalysis.promise
-          return { $metadata: {}, Body: Readable.from([jpeg]) as never }
+          return { success: true }
         },
-      })
+        { connection: workerQueueConnection, prefix, concurrency },
+      )
       await analysisWorker.waitUntilReady()
       await analysis.addBulk(
         Array.from({ length: concurrency + 1 }, () => ({
-          name: 'staydown-hash',
+          name: 'content-analysis.staydown-hash',
           data: { id: staydownImageId },
           opts: { priority: 10 },
         })),

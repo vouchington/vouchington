@@ -2251,7 +2251,8 @@ rules:
       entrypoints:
         - backend/entrypoints/worker-cpu/schedule-definitions.mts
         - backend/entrypoints/worker-io/definitions.mts
-      maxDepth: 1
+      # CPU manifests reach this root through background-cpu-schedules.mts.
+      maxDepth: 2
 
   - name: worker modules are registered in a runtime definition root
     rule: required-entrypoint-reachability
@@ -3002,6 +3003,23 @@ rules:
   - name: backend package required files
     rule: require-files-in-subdirs
     scope: repository
+    # These seven producers and processors use the shared background-cpu queue/worker.
+    # Keep the singleton-file requirement on every other package.
+    exclude:
+      - backend/queues/bedrock-embeddings/**
+      - backend/queues/bedrock-embeddings-batch/**
+      - backend/queues/content-analysis/**
+      - backend/queues/crawl-dispatch/**
+      - backend/queues/crawl-referral-links/**
+      - backend/queues/crawler/**
+      - backend/queues/unfurl-referral-links/**
+      - backend/workers/bedrock-embeddings/**
+      - backend/workers/bedrock-embeddings-batch/**
+      - backend/workers/content-analysis/**
+      - backend/workers/crawl-dispatch/**
+      - backend/workers/crawl-referral-links/**
+      - backend/workers/crawler/**
+      - backend/workers/unfurl-referral-links/**
     options:
       packages:
         - root: backend/queues

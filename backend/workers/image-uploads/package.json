@@ -24,6 +24,7 @@
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@services/images": "workspace:^",

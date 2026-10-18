@@ -8,18 +8,18 @@ export async function processUnfurlReferralLinksJob(
   job: Pick<Job, 'name' | 'data' | 'updateData' | 'moveToDelayed'>,
 ): Promise<unknown> {
   switch (job.name) {
-    case 'enqueueUnfurlReferralLinksDispatcher':
+    case 'crawl.enqueueUnfurlReferralLinksDispatcher':
       return enqueueUnfurlReferralLinksDispatcher()
-    case 'unfurl_referral_links_dispatcher':
+    case 'crawl.unfurl_referral_links_dispatcher':
       return processRetainedSweep(job, save =>
         dispatchUnfurlReferralLinks(job.data?.cursor, cursor => save({ cursor })),
       )
-    case 'unfurl_referral_link': {
+    case 'crawl.unfurl_referral_link': {
       const { parentLinkId } = job.data ?? {}
       if (!parentLinkId) throw new Error('Unfurl referral link job .parentLinkId is required')
       return runReferralLinkUnfurl(parentLinkId)
     }
-    case 'remove_unfurled_children_for_user': {
+    case 'crawl.remove_unfurled_children_for_user': {
       const { userId } = job.data ?? {}
       if (!userId) throw new Error('Remove unfurled children for user job .userId is required')
       return softDeleteChildrenForUser(userId)

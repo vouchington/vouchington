@@ -2,43 +2,33 @@ import { createHash } from 'node:crypto'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  CRAWL_REFERRAL_LINKS_DEFAULTS,
-  CRAWL_REFERRAL_LINKS_QUEUE_NAME,
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-} from './config.mts'
-import { crawlReferralLinksQueue } from './queues.mts'
-import type { CrawlReferralLinksJobs, ReferralCrawlDispatchData } from './types.mts'
+import { CRAWL_REFERRAL_LINKS_DEFAULTS, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { getBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import type { ReferralCrawlDispatchData } from './types.mts'
 
 type CrawlReferralLinkEntry = { linkId: string; urlId: string; referralProgramId: string }
 type CrawlReferralLinkContext = { hostnameId: string; rateLimitMs: number }
 
-const CRAWL_JOB_NAME: CrawlReferralLinksJobs = 'crawl_referral_link'
-const DISPATCHER_JOB_NAME: CrawlReferralLinksJobs = 'crawl_referral_links_dispatcher'
-
-const defaults = {
-  attempts: CRAWL_REFERRAL_LINKS_DEFAULTS.attempts,
-  backoff: CRAWL_REFERRAL_LINKS_DEFAULTS.backoff,
-  removeOnComplete: CRAWL_REFERRAL_LINKS_DEFAULTS.removeOnComplete,
-  removeOnFail: CRAWL_REFERRAL_LINKS_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
+const CRAWL_JOB_NAME = 'crawl.crawl_referral_link'
+const DISPATCHER_JOB_NAME = 'crawl.crawl_referral_links_dispatcher'
 
 const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction<
   CrawlReferralLinkEntry,
   CrawlReferralLinkEntry,
-  CrawlReferralLinksJobs,
+  string,
   CrawlReferralLinkContext
 >({
-  queue: crawlReferralLinksQueue,
-  queueName: CRAWL_REFERRAL_LINKS_QUEUE_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: CRAWL_JOB_NAME,
-  defaults,
+  defaults: getBackgroundCpuJob(CRAWL_JOB_NAME)!.options,
   buildJob: data => ({
     data,
     opts: {
       deduplication: {
-        id: `crawl_referral_link__${data.linkId}`,
+        id: `${CRAWL_JOB_NAME}__${data.linkId}`,
         mode: 'debounce' as const,
       },
     },
@@ -47,12 +37,12 @@ const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction<
 
 const enqueueCrawlReferralLinksDispatcherJob = createEnqueueFunction<
   ReferralCrawlDispatchData,
-  CrawlReferralLinksJobs
+  string
 >({
-  queue: crawlReferralLinksQueue,
-  queueName: CRAWL_REFERRAL_LINKS_QUEUE_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: DISPATCHER_JOB_NAME,
-  defaults,
+  defaults: getBackgroundCpuJob(DISPATCHER_JOB_NAME)!.options,
 })
 
 export function enqueueBulkCrawlReferralLinks(
@@ -67,7 +57,8 @@ export function enqueueBulkCrawlReferralLinks(
     {
       priority: PRIORITY_DEFAULT,
       ordering: {
-        key: hostnameId,
+        key: `crawl:${hostnameId}`,
+        concurrency: 1,
         rateLimit: { max: 1, duration: rateLimitMs },
       },
     } satisfies Partial<JobOptions>,

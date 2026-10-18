@@ -31,6 +31,7 @@
     "@queues/activitypub": "workspace:^",
     "@queues/ai-agents": "workspace:^",
     "@queues/background": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
     "@queues/bloom-filters": "workspace:^",

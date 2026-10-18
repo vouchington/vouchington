@@ -1,12 +1,11 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import '@services/elections-votes'
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import { QUEUE_NAME } from '@queues/crawl-dispatch/config'
-import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
-import { crawlUrls } from '@queues/crawler/queues'
+import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
@@ -34,7 +33,6 @@ import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/c
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
-
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 const fetchWithTimeoutSimpleMock = vi.hoisted(() =>
   vi.fn<typeof import('@modules/utils/http').fetchWithTimeoutSimple>(),
@@ -46,11 +44,9 @@ vi.mock<typeof import('@modules/utils/http')>(
     fetchWithTimeoutSimple: fetchWithTimeoutSimpleMock,
   }),
 )
-
 fetchWithTimeoutSimpleMock.mockImplementation(
   async () => new Response('User-agent: *\nAllow: /', { status: 200 }),
 )
-
 async function crawlableUrl(path: string) {
   const user = await createTestUser()
   const hostname = `dispatch-${randomUUID()}.example.com`
@@ -61,7 +57,10 @@ async function crawlableUrl(path: string) {
     try {
       await updateUrlHostname(url.hostname.id, { is_crawlable: false })
     } finally {
-      const ownedJobs = await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: url.id } })
+      const ownedJobs = await backgroundCpu.searchJobs({
+        name: 'crawl.crawl_url',
+        data: { url_id: url.id },
+      })
       await Promise.all(ownedJobs.map(job => job.remove()))
     }
   })
@@ -79,7 +78,10 @@ async function isolatedTierUrl() {
   await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
   onTestFinished(async () => {
     await updateUrlHostname(hostnameId, { is_crawlable: false })
-    const ownedJobs = await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })
+    const ownedJobs = await backgroundCpu.searchJobs({
+      name: 'crawl.crawl_url',
+      data: { url_id: urlId },
+    })
     await Promise.all(ownedJobs.map(job => job.remove()))
     await deleteTestRobotsTxtCache(hostname)
   })
@@ -119,24 +121,22 @@ async function runJob(
     await queue.close()
   }
 }
-
 async function childCount(name: string, data: Record<string, unknown> = {}) {
-  const jobs = await crawlDispatchQueue.searchJobs({ name, data, limit: 10000 })
+  const jobs = await backgroundCpu.searchJobs({ name, data, limit: 10000 })
   return jobs.length
 }
-
 describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
   it('routes the three enqueue trigger jobs to durable dispatcher children', async () => {
     const routes = [
-      ['enqueueCrawlHostnamesDispatcher', 'crawl_hostnames_dispatcher'],
-      ['enqueueCrawlTier1Dispatcher', 'crawl_tier1_dispatcher'],
-      ['enqueueCrawlTier2Dispatcher', 'crawl_tier2_dispatcher'],
+      ['crawl.enqueueCrawlHostnamesDispatcher', 'crawl.crawl_hostnames_dispatcher'],
+      ['crawl.enqueueCrawlTier1Dispatcher', 'crawl.crawl_tier1_dispatcher'],
+      ['crawl.enqueueCrawlTier2Dispatcher', 'crawl.crawl_tier2_dispatcher'],
     ] as const
     const ownedChildren = [] as Array<{ remove: () => Promise<unknown> }>
     try {
       for (const [name, child] of routes) {
         const enqueued = await runJob(name, { deduplication_id: randomUUID() })
-        const childJob = await readEnqueuedJob(crawlDispatchQueue, enqueued)
+        const childJob = await readEnqueuedJob(backgroundCpu, enqueued)
         ownedChildren.push(childJob)
         expect(childJob.name).toBe(child)
       }
@@ -144,7 +144,6 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       await Promise.all(ownedChildren.map(childJob => childJob.remove()))
     }
   })
-
   it('dispatches a due hostname into the per-hostname queue job', async () => {
     const hostname = `sweep-${randomUUID()}.example.com`
     const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
@@ -153,8 +152,8 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       try {
         await updateUrlHostname(hostnameId, { is_crawlable: false })
       } finally {
-        const ownedChildren = await crawlDispatchQueue.searchJobs({
-          name: 'crawl_urls_per_hostname_dispatcher',
+        const ownedChildren = await backgroundCpu.searchJobs({
+          name: 'crawl.crawl_urls_per_hostname_dispatcher',
           data: { hostname_id: hostnameId },
         })
         await Promise.all(ownedChildren.map(job => job.remove()))
@@ -168,42 +167,40 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       afterBucketDays: bucketDays - 1,
       bucketDays,
     }
-    await runJob('crawl_hostnames_dispatcher', { cursor })
+    await runJob('crawl.crawl_hostnames_dispatcher', { cursor })
     expect(
-      await childCount('crawl_urls_per_hostname_dispatcher', { hostname_id: hostnameId }),
+      await childCount('crawl.crawl_urls_per_hostname_dispatcher', { hostname_id: hostnameId }),
     ).toBeGreaterThan(0)
   })
-
   it('dispatches an eligible URL for one crawlable hostname', async () => {
     const { url } = await crawlableUrl('per-host')
-    const result = await runJob('crawl_urls_per_hostname_dispatcher', {
+    const result = await runJob('crawl.crawl_urls_per_hostname_dispatcher', {
       hostname_id: url.hostname.id,
     })
     expect(result).toMatchObject({ count: expect.any(Number) })
     expect(
-      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: url.id } })).length,
+      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: url.id } }))
+        .length,
     ).toBeGreaterThan(0)
     expect(await getTestHostnameCrawlSweep(url.hostname.id)).not.toBeNull()
   })
-
   it('dispatches a Tier 1 profile URL to the crawl queue', async () => {
     const { user, urlId, cursor } = await isolatedTierUrl()
     await createTestUserProfileLink(user.id, urlId)
-    const result = await runJob('crawl_tier1_dispatcher', { cursor })
+    const result = await runJob('crawl.crawl_tier1_dispatcher', { cursor })
     expect(result).toMatchObject({ count: expect.any(Number) })
     expect(
-      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })).length,
+      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: urlId } })).length,
     ).toBeGreaterThan(0)
   })
-
   it('dispatches a Tier 2 neutral relation URL to the crawl queue', async () => {
     const { user, urlId, cursor } = await isolatedTierUrl()
     const post = await createTestPost({ user })
     await createEntityRelationWithElection(post.id, urlId, user.id, 0)
-    const result = await runJob('crawl_tier2_dispatcher', { cursor })
+    const result = await runJob('crawl.crawl_tier2_dispatcher', { cursor })
     expect(result).toMatchObject({ count: expect.any(Number) })
     expect(
-      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })).length,
+      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: urlId } })).length,
     ).toBeGreaterThan(0)
   })
 
@@ -219,8 +216,8 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       try {
         await updateUrlHostname(hostnameId, { is_crawlable: false })
       } finally {
-        const ownedChildren = await crawlDispatchQueue.searchJobs({
-          name: 'refresh_hostname_crawler',
+        const ownedChildren = await backgroundCpu.searchJobs({
+          name: 'crawl.refresh_hostname_crawler',
           data: { hostname_id: hostnameId },
         })
         await Promise.all(ownedChildren.map(job => job.remove()))
@@ -228,7 +225,7 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     })
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, { weekly_refresh_batch_size: 5000 })
     expect(await searchHostnameIdsNeedingCrawlerRefresh(500, {}, hostnameId)).toContain(hostnameId)
-    const result = await runJob('refresh_hostname_crawler_dispatcher', {}, current =>
+    const result = await runJob('crawl.refresh_hostname_crawler_dispatcher', {}, current =>
       processCrawlDispatchJob(current, {
         processCrawlHostnamesJob: job =>
           processCrawlHostnamesJob(job, {
@@ -237,9 +234,9 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
           }),
       }),
     )
-    expect(result).toBeGreaterThan(0)
+    expect(result).toMatchObject({ count: expect.any(Number) })
     expect(
-      await childCount('refresh_hostname_crawler', { hostname_id: hostnameId }),
+      await childCount('crawl.refresh_hostname_crawler', { hostname_id: hostnameId }),
     ).toBeGreaterThan(0)
   })
 
@@ -256,17 +253,20 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
         await updateUrlHostname(hostnameId, { is_crawlable: false })
       } finally {
         const ownedJobs = await Promise.all(
-          ids.map(urlId => crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })),
+          ids.map(urlId =>
+            backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: urlId } }),
+          ),
         )
         await Promise.all(ownedJobs.flat().map(job => job.remove()))
       }
     })
     await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
     onTestFinished(() => deleteTestRobotsTxtCache(hostname))
-    const result = await runJob('refresh_hostname_crawler', { hostname_id: hostnameId })
+    const result = await runJob('crawl.refresh_hostname_crawler', { hostname_id: hostnameId })
     expect(result).toMatchObject({ hostname_crawler_configuration_id: expect.any(String) })
     expect(
-      (await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: ids[0] } })).length,
+      (await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: ids[0] } }))
+        .length,
     ).toBeGreaterThan(0)
   })
 
@@ -283,7 +283,7 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     })
     expect(await getCrawlData(url.id, oldCrawlId)).toBeDefined()
     expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
-    const result = await runJob('crawl_cleanup', {}, current =>
+    const result = await runJob('crawl.crawl_cleanup', {}, current =>
       processCrawlDispatchJob(current, {
         processCrawlHostnamesJob: job =>
           processCrawlHostnamesJob(job, {

@@ -10,7 +10,7 @@ import { createUserReferralLink } from '@services/user-referral-program-links/cr
 import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
 import { markReferralLinkUnfurlRequested } from '@services/user-referral-program-links/unfurl-state'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
+import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { processUnfurlReferralLinksJob } from './processors.mts'
 
 describe('unfurl referral links processor', () => {

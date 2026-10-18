@@ -1,26 +1,18 @@
-import type { JobOptions } from 'glide-mq'
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import onError from '@modules/on-error'
-import { SPEND_CAP_RECHECK_JOB_NAME, SPEND_CAP_RECHECKS_QUEUE_NAME } from '../config.mts'
-import { spendCapRechecks } from '../queues.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { SpendCapRecheckJobData } from '../types.mts'
 
 export const SPEND_CAP_RECHECK_MAX_ATTEMPTS = 2_880
 export const SPEND_CAP_RECHECK_RETRY_DELAY_MS = 60_000
 
-const defaults = {
-  attempts: SPEND_CAP_RECHECK_MAX_ATTEMPTS,
-  backoff: { type: 'fixed' as const, delay: SPEND_CAP_RECHECK_RETRY_DELAY_MS, jitter: 0 },
-  removeOnComplete: true,
-  removeOnFail: true,
-  priority: 0,
-} satisfies Partial<JobOptions>
-
-const enqueueRecheck = createEnqueueFunction<SpendCapRecheckJobData, 'recheck'>({
-  queue: spendCapRechecks,
-  queueName: SPEND_CAP_RECHECKS_QUEUE_NAME,
-  jobName: SPEND_CAP_RECHECK_JOB_NAME,
-  defaults,
+const enqueueRecheck = createEnqueueFunction<SpendCapRecheckJobData, string>({
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'ai-spend-cap.recheck',
+  defaults: requireBackgroundCpuJob('ai-spend-cap.recheck').options,
 })
 
 export function enqueueSpendCapRecheck(
@@ -57,5 +49,5 @@ export async function enqueueSpendCapRecheckBestEffort(
 }
 
 export function spendCapRecheckDeduplicationId(day: string, generation: string): string {
-  return `ai-spend-cap-recheck_${day}_${generation}`
+  return `ai-spend-cap:recheck:${day}:${generation}`
 }

@@ -1,9 +1,4 @@
-import type {
-  BedrockEmbeddingsBatchPollingJob,
-  BedrockEmbeddingsBatchDispatcherJob,
-  ReconciliationEntityType,
-  ReconciliationJobName,
-} from '@queues/bedrock-embeddings-batch/types'
+import type { ReconciliationEntityType } from '@queues/bedrock-embeddings-batch/types'
 import {
   processBatchPolling,
   processBatchPollingDispatcher,
@@ -13,77 +8,71 @@ import {
   processExistingEmbeddingReconciliation,
   processPostEmbeddingTriggerRecovery,
 } from '../processors.mts'
-import { Worker, type Job } from 'glide-mq'
+import type { Job } from 'glide-mq'
 import { UnrecoverableError } from '@vouchington/queue-errors'
-import { handleBedrockRateLimit } from '@modules/queue-errors'
 
 type JobData = Record<string, unknown>
 
 export const processBedrockEmbeddingsBatchJob = async (
   job: Job<JobData>,
-  worker: Worker,
   scope?: { entityIds?: readonly string[] },
 ): Promise<unknown> => {
-  try {
-    const orderingKey = job.opts.ordering?.key
+  const orderingKey = job.opts.ordering?.key
 
-    switch (orderingKey) {
-      case 'polling': {
-        switch (job.name as BedrockEmbeddingsBatchPollingJob) {
-          case 'poll_batch': {
-            const batchId = job.data?.batch_id
-            if (!batchId) throw new Error('Batch ID is required')
-            return await processBatchPolling(batchId as string)
-          }
-          default:
-            throw new Error(`Unknown polling job type: ${job.name}`)
+  switch (orderingKey) {
+    case 'bedrock-embeddings:polling': {
+      switch (job.name) {
+        case 'bedrock-embeddings.poll_batch': {
+          const batchId = job.data?.batch_id
+          if (!batchId) throw new Error('Batch ID is required')
+          return processBatchPolling(batchId as string)
         }
+        default:
+          throw new Error(`Unknown polling job type: ${job.name}`)
       }
-      case 'dispatcher': {
-        switch (job.name as BedrockEmbeddingsBatchDispatcherJob) {
-          case 'poll_dispatcher':
-            return await processBatchPollingDispatcher()
-          case 'creation_dispatcher':
-            return await processBatchCreationDispatcher()
-          case 'backlog_dispatcher':
-            return await processBacklogDispatcher()
-          case 'stale_cleanup_dispatcher':
-            return await processStaleCleanupDispatcher()
-          default:
-            throw new Error(`Unknown dispatcher job type: ${job.name}`)
-        }
-      }
-      case 'reconciliation': {
-        switch (job.name as ReconciliationJobName) {
-          case 'reconcile_existing': {
-            const data = assertReconciliationPayload(job.data, ['entityType'], ['after'])
-            const entityType = data.entityType
-            if (
-              entityType !== 'topics' &&
-              entityType !== 'posts' &&
-              entityType !== 'rss_feed_items'
-            ) {
-              throw new UnrecoverableError('Invalid reconciliation entity type')
-            }
-            return await processExistingEmbeddingReconciliation(
-              entityType as ReconciliationEntityType,
-              data.after as string | undefined,
-              scope?.entityIds,
-            )
-          }
-          case 'post_trigger_recovery': {
-            const data = assertReconciliationPayload(job.data, [], ['after'])
-            return await processPostEmbeddingTriggerRecovery(data.after as string | undefined)
-          }
-          default:
-            throw new UnrecoverableError(`Unknown reconciliation job type: ${job.name}`)
-        }
-      }
-      default:
-        throw new Error(`Unknown ordering key: ${orderingKey}`)
     }
-  } catch (err: unknown) {
-    return handleBedrockRateLimit(err, worker)
+    case 'bedrock-embeddings:dispatcher': {
+      switch (job.name) {
+        case 'bedrock-embeddings.poll_dispatcher':
+          return processBatchPollingDispatcher()
+        case 'bedrock-embeddings.creation_dispatcher':
+          return processBatchCreationDispatcher()
+        case 'bedrock-embeddings.backlog_dispatcher':
+          return processBacklogDispatcher()
+        case 'bedrock-embeddings.stale_cleanup_dispatcher':
+          return processStaleCleanupDispatcher()
+        default:
+          throw new Error(`Unknown dispatcher job type: ${job.name}`)
+      }
+    }
+    case 'bedrock-embeddings:reconciliation': {
+      switch (job.name) {
+        case 'bedrock-embeddings.reconcile_existing': {
+          const data = assertReconciliationPayload(job.data, ['entityType'], ['after'])
+          const entityType = data.entityType
+          if (
+            entityType !== 'topics' &&
+            entityType !== 'posts' &&
+            entityType !== 'rss_feed_items'
+          ) {
+            throw new UnrecoverableError('Invalid reconciliation entity type')
+          }
+          return processExistingEmbeddingReconciliation(
+            entityType as ReconciliationEntityType,
+            data.after as string | undefined,
+            scope?.entityIds,
+          )
+        }
+        case 'bedrock-embeddings.post_trigger_recovery': {
+          const data = assertReconciliationPayload(job.data, [], ['after'])
+          return processPostEmbeddingTriggerRecovery(data.after as string | undefined)
+        }
+        default:
+          throw new UnrecoverableError(`Unknown reconciliation job type: ${job.name}`)
+      }
+    }
+    default:
+      throw new Error(`Unknown ordering key: ${orderingKey}`)
   }
 }
 

@@ -3,30 +3,19 @@ import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
   BEDROCK_EMBEDDINGS_BATCH_DEFAULTS,
-  BEDROCK_EMBEDDINGS_BATCH_ORDERING,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
-  QUEUE_NAME,
-  CREATION_QUEUE_NAME,
 } from './config.mts'
-import { bedrock_embeddings_batch, bedrock_embeddings_batch_creation } from './queues.mts'
-import type {
-  BedrockEmbeddingsBatchDispatcherJob,
-  BedrockEmbeddingsBatchPollingJob,
-} from './types.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import type { BedrockEmbeddingsBatchDispatcherJob } from './types.mts'
 
 type CreationJobName = 'topics' | 'posts' | 'rss_feed_items' | 'crawl_chunks' | 'images'
 type DispatcherOptions = {
   deduplicationId?: string
 }
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
-
-const defaults = {
-  attempts: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.attempts,
-  backoff: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.backoff,
-  removeOnComplete: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.removeOnComplete,
-  removeOnFail: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
 
 export {
   reconciliationJobOptions,
@@ -36,11 +25,12 @@ export {
 } from './enqueues/reconciliation.mts'
 
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
-  const enqueue = createEnqueueFunction<Record<string, never>, CreationJobName>({
-    queue: bedrock_embeddings_batch_creation,
-    queueName: CREATION_QUEUE_NAME,
-    jobName,
-    defaults,
+  const job = requireBackgroundCpuJob(`bedrock-embeddings.create_${jobName}`)
+  const enqueue = createEnqueueFunction<Record<string, never>, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
   })
 
   return (priority?: number): EnqueueReturnType =>
@@ -53,51 +43,48 @@ export function creationJobOptions(
 ): Partial<JobOptions> {
   return {
     priority: priority ?? PRIORITY_DEFAULT,
-    deduplication: { id: deduplicationId, mode: 'simple' },
+    deduplication: { id: `bedrock-embeddings:creation:${deduplicationId}`, mode: 'simple' },
   }
 }
 
 const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction<
   string,
   { batch_id: string },
-  BedrockEmbeddingsBatchPollingJob
+  string
 >({
-  queue: bedrock_embeddings_batch,
-  queueName: QUEUE_NAME,
-  jobName: 'poll_batch',
-  defaults,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: 'bedrock-embeddings.poll_batch',
+  defaults: requireBackgroundCpuJob('bedrock-embeddings.poll_batch').options,
   buildJob: batchId => ({
     data: { batch_id: batchId },
     opts: {
       deduplication: {
-        id: `bedrock_embeddings_batch_polling_${batchId}`,
+        id: `bedrock-embeddings:batch-polling:${batchId}`,
         mode: 'throttle',
         ttl: BEDROCK_EMBEDDINGS_BATCH_DEFAULTS.deduplicationTtlMs,
       },
-      ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.polling,
     },
   }),
 })
 
 function createDispatcherEnqueue(jobName: BedrockEmbeddingsBatchDispatcherJob) {
-  const enqueue = createEnqueueFunction<Record<string, never>, BedrockEmbeddingsBatchDispatcherJob>(
-    {
-      queue: bedrock_embeddings_batch,
-      queueName: QUEUE_NAME,
-      jobName,
-      defaults,
-    },
-  )
+  const job = requireBackgroundCpuJob(`bedrock-embeddings.${jobName}`)
+  const enqueue = createEnqueueFunction<Record<string, never>, string>({
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: job.name,
+    defaults: job.options,
+  })
 
   return (options?: DispatcherOptions): EnqueueReturnType => {
     return enqueue(
       {},
       {
         priority: PRIORITY_DISPATCHER,
-        ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.dispatcher,
         ...(options?.deduplicationId && {
           deduplication: {
-            id: options.deduplicationId,
+            id: `bedrock-embeddings:${jobName}:${options.deduplicationId}`,
             mode: 'throttle' as const,
             ttl: BACKFILL_DEDUPLICATION_TTL_MS,
           },

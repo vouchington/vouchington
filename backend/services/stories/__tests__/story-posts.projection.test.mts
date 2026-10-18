@@ -14,7 +14,7 @@ import {
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import { notifications } from '@queues/notifications/queues'
 import {
   createEntityRelationElectionTarget,

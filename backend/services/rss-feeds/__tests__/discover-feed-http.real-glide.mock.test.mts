@@ -6,7 +6,7 @@ import {
   workerQueuePrefix,
 } from '../../../data-stores/valkey-glide-mq/index.mts'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { CRAWL_URLS_QUEUE_NAME } from '@queues/crawler/config'
+import { BACKGROUND_CPU_QUEUE_NAME as CRAWL_URLS_QUEUE_NAME } from '@queues/background-cpu/config'
 import {
   IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB,
   IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB,

@@ -12,7 +12,7 @@ import {
   setPostLLMModerationContentSha256,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'

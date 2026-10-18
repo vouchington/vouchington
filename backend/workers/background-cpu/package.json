@@ -1,0 +1,44 @@
+{
+  "name": "@workers/background-cpu",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared CPU background worker with domain handlers",
+  "license": "UNLICENSED",
+  "author": "",
+  "type": "module",
+  "exports": {
+    "./*": {
+      "types": "./*.mts",
+      "import": "./*.mts",
+      "default": "./*.mts"
+    },
+    "./*.test.mts": null,
+    "./*/__tests__/*": null
+  },
+  "scripts": {},
+  "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/on-error": "workspace:^",
+    "@modules/queue-config": "workspace:^",
+    "@modules/queue-errors": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
+    "@queues/content-analysis": "workspace:^",
+    "@services/bedrock-embeddings": "workspace:^",
+    "@services/images": "workspace:^",
+    "@services/queue-domain-controls": "workspace:^",
+    "@workers/ai-agents": "workspace:^",
+    "@workers/bedrock-embeddings": "workspace:^",
+    "@workers/bedrock-embeddings-batch": "workspace:^",
+    "@workers/content-analysis": "workspace:^",
+    "@workers/crawl-dispatch": "workspace:^",
+    "@workers/crawl-referral-links": "workspace:^",
+    "@workers/crawler": "workspace:^",
+    "@workers/unfurl-referral-links": "workspace:^",
+    "glide-mq": "^0.18.0"
+  },
+  "devDependencies": {
+    "@queues/crawl-referral-links": "workspace:^",
+    "@queues/crawler": "workspace:^",
+    "@voucha/test-helpers": "workspace:^"
+  }
+}
