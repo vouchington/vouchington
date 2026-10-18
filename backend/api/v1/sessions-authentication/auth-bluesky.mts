@@ -10,7 +10,7 @@ import {
   peekBlueskyAccountLinkAppState,
 } from '@services/bluesky-accounts'
 import { disconnectBlueskyAccountAndCleanupFollows } from '@services/bluesky-follows'
-import { apiOpenApiNoContent, apiRequest } from '../../response-contract.mts'
+import { apiOpenApiNoContent, apiRequest } from '@vouchington/utils/api-response-contract'
 import createHttpError from 'http-errors'
 import {
   completeNativeCallback,

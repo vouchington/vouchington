@@ -5,7 +5,8 @@ import { parseGrowthMetricsRange } from '@services/growth-metrics/parse-range'
 import type { GrowthRange } from '@services/growth-metrics/types'
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../../api-query-contract.mts'
 
 const RANGE_VALUES = ['today', '7d', '30d', '90d', 'all'] as const satisfies readonly GrowthRange[]
 const rangeQuery = defineQueryContract({

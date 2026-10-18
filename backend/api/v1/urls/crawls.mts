@@ -9,7 +9,8 @@ import { getUrlByAnyCached } from '@services/entity-fetch/get'
 import { searchCrawlsForUrl, searchPublicUrlCrawlsForUrl } from '@services/crawls'
 import { currentUserCanFilterHostnameModeration } from '@services/urls-hostnames'
 import { createPaginationParser } from '@modules/pagination'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 const crawlsParser = createPaginationParser({

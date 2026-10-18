@@ -21,7 +21,7 @@ import { getPostCommunitiesRecord } from '@services/communities/post-communities
 import { getUrlEmbedsByUrlIds, type UrlEmbed } from '@services/rss-feed-items/get-url-embed'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import {
   getPostElectionSidecars,

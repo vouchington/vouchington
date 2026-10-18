@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { defineQueryContract, queryUuid } from '@vouchington/pagination'
 import { currentUserCanRefundMembership } from '@services/memberships/authorization'

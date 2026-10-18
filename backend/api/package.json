@@ -251,6 +251,7 @@
     "@vouchington/oauth-server": "^0.2.0",
     "@vouchington/pagination": "^0.0.3",
     "@vouchington/rate-limit": "^0.2.0",
+    "@vouchington/utils": "^0.7.4",
     "glide-mq": "^0.18.0",
     "http-errors": "^2.0.1",
     "jose": "^6.2.12",
@@ -272,7 +273,6 @@
     "@types/supertest": "^7.2.1",
     "@voucha/mcp": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/utils": "^0.7.4",
     "node-app-attest": "^1.0.1",
     "supertest": "^7.3.1",
     "vitest": "^5.0.5"

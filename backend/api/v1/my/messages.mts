@@ -5,7 +5,8 @@ import {
   listMyMessageConversations,
   createMyMessageConversation,
 } from '@services/messaging/my-message-commands'
-import { apiQuery, type ApiArrayContract } from '../../response-contract.mts'
+import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { preciseTimestampPaginationParser } from '@modules/pagination'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 const MAX_RECIPIENTS = 25

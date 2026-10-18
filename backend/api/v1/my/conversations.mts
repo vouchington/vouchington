@@ -16,7 +16,7 @@ import {
 } from '@services/conversations-messages'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { assertNotSuspended } from '@services/users'
 import { assertDailySpendCapNotBreached, loadServiceModelSelection } from '@services/ai-usage'

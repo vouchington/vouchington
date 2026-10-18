@@ -14,7 +14,7 @@ import { assertNotSuspended, isAdminUser } from '@services/users'
 import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-import { apiRequestContract } from '../../../response-contract.mts'
+import { apiRequestContract } from '@vouchington/utils/api-response-contract'
 import {
   getRouteAccessPost,
   getRoutePostByAnyCached,

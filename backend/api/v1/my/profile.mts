@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { getProfile, updateProfileMarkdown } from '@services/my/profile'
 import { assertNotSuspended } from '@services/users/suspension'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import type { ApiArrayContract } from '../../response-contract.mts'
+import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   listProfileLinks,

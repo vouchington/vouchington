@@ -14,7 +14,8 @@ import { boundedString } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
 import app from '../../app.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiOpenApiNoContent, apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiOpenApiNoContent, apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import {
   parseJsonBody,
   requireAuthAndRateLimit,
@@ -27,13 +28,12 @@ import type {
   CopyrightTrustedFlaggerCreateRequest,
 } from './trusted-flagger-request-types.mts'
 
-const listRoute = 'GET:/api/v1/copyright-trusted-flaggers'
 const createRoute = 'POST:/api/v1/copyright-trusted-flaggers'
+const listRoute = 'GET:/api/v1/copyright-trusted-flaggers'
 const listParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 25 },
 })
-
 function assertCreateInput(ctx: Context, body: CopyrightTrustedFlaggerCreateRequest): void {
   if (!boundedString(body.name, 200)) ctx.throw(422, 'name is required')
   if (typeof body.user_id !== 'string' || !isUUID(body.user_id)) {

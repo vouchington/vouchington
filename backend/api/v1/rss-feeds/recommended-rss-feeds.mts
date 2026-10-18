@@ -10,7 +10,7 @@ import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
 import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { createPaginationParser } from '@modules/pagination'
 import { indexById } from '@modules/utils'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const VALID_SOURCES = new Set<RecommendationSource>(['friends', 'topic', 'collaborative', 'all'])

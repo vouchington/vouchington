@@ -17,9 +17,9 @@ import {
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
-  apiQuery,
   apiRequestContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'

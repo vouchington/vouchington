@@ -9,7 +9,7 @@ import {
   validateRequestContract,
 } from '../../response-helpers.mts'
 import { defineQueryContract, queryBoolean } from '@vouchington/pagination'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 const prioritizedReferralLinksQueryContract = defineQueryContract({ all: queryBoolean() })

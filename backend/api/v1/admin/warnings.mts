@@ -16,7 +16,7 @@ import {
   userWarningsPagination,
 } from '@services/user-warnings'
 import { isUUID } from '@modules/utils'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryUuid } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 

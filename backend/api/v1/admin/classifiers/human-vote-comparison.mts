@@ -9,7 +9,8 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../../api-query-contract.mts'
 
 const comparisonQuery = defineQueryContract({
   from: queryString({

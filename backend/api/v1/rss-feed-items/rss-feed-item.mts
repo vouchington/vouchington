@@ -23,9 +23,9 @@ import { rssFeedItemVoteOptions } from '@services/rss-feed-items/vote-handler-op
 import {
   apiNoRequestBody,
   apiOpenApiNoContent,
-  apiQuery,
   apiRequestContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import {
   getOptionalAuthAndRateLimit,

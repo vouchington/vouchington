@@ -2,7 +2,7 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { listReceivedUserWarnings, userWarningsPagination } from '@services/user-warnings'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 

@@ -35,7 +35,7 @@ import {
   getStoryPreviews,
   getVisiblePostStoryIdsByStoryIds,
 } from '@services/stories'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 
 app.route('/api/v1/rss-feed-items').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/rss-feed-items', parseRssFeedItemsSearchParams)

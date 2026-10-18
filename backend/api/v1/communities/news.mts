@@ -1,7 +1,7 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { getRssFeedItemFeedIds } from '@services/feeds'

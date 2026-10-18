@@ -17,7 +17,7 @@ import {
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-import { apiHeaders } from '../../../response-contract.mts'
+import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
 import { projectPublicTopicRecommendation } from '@services/topic-recommendations/public-projection'

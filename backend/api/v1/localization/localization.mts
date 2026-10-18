@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { localizationQuery, localizationRoute } from './localization-route-helpers.mts'
 
 app.route('/api/v1/localization').get(ctx => {

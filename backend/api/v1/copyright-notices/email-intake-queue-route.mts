@@ -7,7 +7,8 @@ import {
 } from '@services/copyright-notices/copyright-email-intake-page'
 import { assertNotSuspended } from '@services/users'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 app.route('/api/v1/copyright-email-intakes/review-queue').get(async (ctx: Context) => {

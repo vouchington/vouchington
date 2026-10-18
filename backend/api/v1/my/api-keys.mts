@@ -11,7 +11,7 @@ import {
   validateApiKeyCreationPermissions,
 } from '@services/api-keys'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,

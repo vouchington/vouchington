@@ -6,7 +6,7 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
-import type { ApiArrayContract } from '../../response-contract.mts'
+import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   getActiveAnnotationForPost,

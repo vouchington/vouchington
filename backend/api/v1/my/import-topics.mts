@@ -1,7 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiHeaders, apiResponse, type ApiArrayContract } from '../../response-contract.mts'
+import {
+  apiHeaders,
+  apiResponse,
+  type ApiArrayContract,
+} from '@vouchington/utils/api-response-contract'
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
 import { assertCanContribute } from '@services/contribution-gating/assert'
 import { resolveAdmissionIdentity } from '@services/contribution-gating/admission'

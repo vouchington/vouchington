@@ -10,7 +10,7 @@ import {
 import { isDsaTransparencyDatabaseConfigured } from '@services/copyright-notices/dsa-statement-submission-config'
 import { assertNotSuspended } from '@services/users'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiNoRequestBody } from '../../response-contract.mts'
+import { apiNoRequestBody } from '@vouchington/utils/api-response-contract'
 import {
   requireAuthAndRateLimit,
   validateRequestContract,

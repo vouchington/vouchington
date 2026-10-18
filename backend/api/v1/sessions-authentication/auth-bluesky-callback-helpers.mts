@@ -9,7 +9,7 @@ import {
 } from '@services/bluesky-accounts'
 import type { BlueskyLinkAuthorization } from '@services/bluesky-accounts/link-authorization'
 import { createNativeCompletionToken } from '@services/bluesky-accounts/native-completion-token'
-import { getErrorResponseCode, getErrorStatus } from '../../error-response.mts'
+import { getErrorResponseCode, getErrorStatus } from '@vouchington/utils/api-errors'
 
 const BLUESKY_LINK_UI_PATH = '/my/identity'
 

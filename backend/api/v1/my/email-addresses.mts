@@ -15,7 +15,7 @@ import { enqueueSendEmailVerificationToken } from '@queues/emails/enqueues'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { createPaginationParser, decodeScopedTierCursor, encodeCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import createHttpError from 'http-errors'
 

@@ -1,4 +1,4 @@
-import { apiSseFrame } from '../../../response-contract.mts'
+import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import { createChannelPubSub } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 import { getCacheGroups } from '@services/valkey-admin/clear-cache'

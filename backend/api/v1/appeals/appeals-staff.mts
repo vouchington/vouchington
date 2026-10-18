@@ -17,7 +17,7 @@ import {
   dismissModerationAppeal,
   type ModerationAppealAction,
 } from '@services/moderation-appeals'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 
 type UpdateAppealDraftRequest = { public_response?: string; internal_notes?: string }
 type ResolveAppealRequest = { action: ModerationAppealAction }

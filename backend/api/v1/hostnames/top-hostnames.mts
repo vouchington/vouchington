@@ -23,7 +23,7 @@ import {
   getOptionalAuthAndRateLimit,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'

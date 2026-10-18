@@ -8,7 +8,7 @@ import { COOKIE_OPTIONS } from '@modules/api-utils'
 import onError from '@modules/on-error'
 import { deleteExactWebPushSubscription } from '@services/notifications'
 import type { Context } from '@jongleberry/api-server'
-import { apiRequestContract } from '../../response-contract.mts'
+import { apiRequestContract } from '@vouchington/utils/api-response-contract'
 import { validateRequestContract } from '../../response-helpers.mts'
 import { readOptionalJsonBody } from './optional-json-body.mts'
 

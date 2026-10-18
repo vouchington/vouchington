@@ -17,7 +17,7 @@ import {
 import { isAdminUser } from '@services/users'
 import { isUUID } from '@modules/utils'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryInteger, queryString, queryUuid } from '@vouchington/pagination'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 

@@ -10,7 +10,7 @@ import { indexById } from '@modules/utils'
 import { entityRelationViewerFor, getPublicUserByIdOrSlug } from '@services/users'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import {
   defineQueryContract,
   queryBoolean,

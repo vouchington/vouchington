@@ -3,7 +3,10 @@ import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
 import { USER_MCP_SERVER_CONFIG } from '@services/mcp-tools'
 import { dispatchMcpRequest, rejectMcpMethod } from '../../mcp-helpers.mts'
-import { apiOpenApiHttpResponse, apiRequestContract } from '../../response-contract.mts'
+import {
+  apiOpenApiHttpResponse,
+  apiRequestContract,
+} from '@vouchington/utils/api-response-contract'
 
 // POST /api/v1/mcp — Stateless MCP Streamable HTTP endpoint.
 // Auth: a user-resource OAuth access token or a user MCP API key; never session cookies.

@@ -8,7 +8,8 @@ import {
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateUUIDParam } from '../../response-helpers.mts'
 import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 // GET /api/v1/copyright-notices/:id/guest-capabilities — staff list of a case's guest access.

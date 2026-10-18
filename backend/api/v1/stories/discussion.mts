@@ -10,7 +10,7 @@ import { admitRouteContribution, executePreparedContribution } from '@services/c
 import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-codes'
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { apiHeaders } from '../../response-contract.mts'
+import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import { getAuthorizedPostContributionMembershipPlan } from '@services/posts/authorization'
 
 /**

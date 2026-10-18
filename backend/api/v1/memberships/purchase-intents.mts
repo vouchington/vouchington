@@ -7,7 +7,7 @@ import {
   type MembershipPurchaseProvider,
 } from '@services/memberships'
 import { assertNotSuspended } from '@services/users'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 

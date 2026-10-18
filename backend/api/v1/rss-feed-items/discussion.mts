@@ -11,7 +11,7 @@ import { CONTRIBUTION_ADMISSION_IN_PROGRESS } from '@modules/on-error/error-code
 import { prepareLinkPost } from '@services/posts'
 import { assertNotSuspended } from '@services/users'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { apiHeaders } from '../../response-contract.mts'
+import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 /**

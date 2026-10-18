@@ -18,7 +18,8 @@ import {
   setAnonymousPublicCacheHeaders,
   validateRequestContract,
 } from '../../response-helpers.mts'
-import { apiQuery, apiRequestContract, apiResponse } from '../../response-contract.mts'
+import { apiRequestContract, apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { parseBooleanish } from '@ts-shared/utils/query'

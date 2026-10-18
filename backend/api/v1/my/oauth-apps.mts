@@ -16,10 +16,10 @@ import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import {
   apiNoRequestBody,
-  apiQuery,
   apiResponse,
   type ApiArrayContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type CreateOAuthAppRequest = {

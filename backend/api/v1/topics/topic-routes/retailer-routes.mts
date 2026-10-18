@@ -18,7 +18,7 @@ import {
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import app from '../../../app.mts'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import {
   requireAuth,
   requireAuthAndRateLimit,

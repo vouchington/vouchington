@@ -1,4 +1,4 @@
-import { apiSseFrame } from '../../../response-contract.mts'
+import { apiSseFrame } from '@vouchington/utils/api-response-contract'
 import app from '../../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {

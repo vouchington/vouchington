@@ -16,7 +16,7 @@ import {
   dismissReviewDispute,
   type ReviewDisputeResolutionAction,
 } from '@services/review-disputes'
-import { apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 import './dispute-resolution-drafts.mts'
 
 type UpdateDisputeDraftRequest = { public_response?: string; internal_notes?: string }

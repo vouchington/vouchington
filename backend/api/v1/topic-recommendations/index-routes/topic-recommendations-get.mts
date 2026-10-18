@@ -20,7 +20,7 @@ import {
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { defineQueryContract, queryString } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 

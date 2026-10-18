@@ -25,7 +25,8 @@ import type { CommunityMemberRole } from '@services/communities/types'
 import app from '../../../app.mts'
 import { getOptionalAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
 import { getRouteAccessPost } from '@services/posts/route-access'
-import { apiQuery, apiResponse } from '../../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../../api-query-contract.mts'
 import {
   commentAncestorPaginationQuery,
   prepareCommentAncestorPagination,

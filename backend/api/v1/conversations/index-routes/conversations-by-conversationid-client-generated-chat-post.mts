@@ -1,9 +1,9 @@
-import { apiResponse } from '../../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
 import {
   getErrorStatus,
   getErrorResponseMessage,
   getErrorResponseCode,
-} from '../../../error-response.mts'
+} from '@vouchington/utils/api-errors'
 import type { Context } from '@jongleberry/api-server'
 import {
   normalizeFixedClientGeneratedChatModelName,

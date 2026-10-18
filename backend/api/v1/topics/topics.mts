@@ -29,7 +29,7 @@ import { getTopicElectionVotesByUser } from '@services/elections-votes/topic'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { currentUserCanCreateTopic } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import type { Topic } from '@voucha/types/entities/topic'
 

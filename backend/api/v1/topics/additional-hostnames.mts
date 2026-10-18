@@ -10,7 +10,7 @@ import {
 } from '@services/topics/additional-hostnames'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
   createPaginationParser,

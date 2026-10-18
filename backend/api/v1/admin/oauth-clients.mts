@@ -17,7 +17,8 @@ import {
   validateRequestContract,
   validateUUIDParam,
 } from '../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 type VerifyOAuthClientRequest = { client_name: string; redirect_uris: string[] }

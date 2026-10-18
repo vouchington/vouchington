@@ -3,7 +3,10 @@ import { Readable } from 'node:stream'
 import type { Context } from '@jongleberry/api-server'
 import { LEGAL_MCP_SERVER_CONFIG } from '@services/mcp-tools'
 import { dispatchMcpRequest, rejectMcpMethod } from '../../mcp-helpers.mts'
-import { apiOpenApiHttpResponse, apiRequestContract } from '../../response-contract.mts'
+import {
+  apiOpenApiHttpResponse,
+  apiRequestContract,
+} from '@vouchington/utils/api-response-contract'
 
 // Legal casework requires an administrator and a legal-resource OAuth token; API keys are refused.
 app.route('/api/v1/legal/mcp').post(async (ctx: Context) => {

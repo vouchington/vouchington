@@ -24,7 +24,7 @@ import { assertNotSuspended, isAdminUser } from '@services/users'
 import { mintUUIDv7 } from '@ts-shared/session-jwt'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
-import { apiHeaders, apiRequestContract } from '../../../response-contract.mts'
+import { apiHeaders, apiRequestContract } from '@vouchington/utils/api-response-contract'
 
 type CreatePostRequestBody = CreatePostInput & {
   hp_website?: string

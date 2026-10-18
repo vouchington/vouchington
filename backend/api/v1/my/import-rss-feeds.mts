@@ -16,7 +16,8 @@ import { createPaginationParser } from '@modules/pagination'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { isAdminUser } from '@services/users'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 
 type ImportRssFeedsRequest =

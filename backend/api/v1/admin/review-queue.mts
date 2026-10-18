@@ -4,7 +4,8 @@ import { isModerationStaff } from '@services/users'
 import { searchPostsForAdminReview } from '@services/post-clearance'
 import { createPaginationParser } from '@modules/pagination'
 import { requireAuthAndRateLimit } from '../../response-helpers.mts'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 
 const parser = createPaginationParser({

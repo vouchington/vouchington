@@ -53,9 +53,9 @@ import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import {
   apiNoRequestBody,
   apiOpenApiRawResponse,
-  apiQuery,
   apiRequestContract,
-} from '../../response-contract.mts'
+} from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import type {
   CopyrightEmailApprovalRequest,
   CopyrightEmailNoticeAssociationRequest,

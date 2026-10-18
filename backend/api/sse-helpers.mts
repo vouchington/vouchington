@@ -2,7 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import { PassThrough } from 'node:stream'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
-import type { ApiSseEvent } from './response-contract.mts'
+import type { ApiSseEvent } from '@vouchington/utils/api-response-contract'
 import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
 
 export const DEFAULT_SSE_CYCLE_DURATION_MS = 60_000

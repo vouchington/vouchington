@@ -29,7 +29,8 @@ import { isUUID } from '@modules/utils'
 import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
 import { createPaginationParser } from '@modules/pagination'
 import { isAdminUser } from '@services/users'
-import { apiQuery, apiResponse } from '../../response-contract.mts'
+import { apiResponse } from '@vouchington/utils/api-response-contract'
+import { apiQuery } from '../../api-query-contract.mts'
 import {
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
@@ -46,7 +47,6 @@ const blockedHostnamesQuery = defineQueryContract({
   limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
   after: queryString(),
 })
-
 // GET /api/v1/hostnames/blocked - Admin: list all site-wide blocked hostnames
 app.route('/api/v1/hostnames/blocked').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/hostnames/blocked', blockedHostnamesQuery)

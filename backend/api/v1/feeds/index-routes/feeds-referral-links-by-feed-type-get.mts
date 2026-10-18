@@ -7,7 +7,7 @@ import {
 } from '@services/feeds'
 import app from '../../../app.mts'
 import { requireAuth } from '../../../response-helpers.mts'
-import { apiQuery } from '../../../response-contract.mts'
+import { apiQuery } from '../../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../../validate-paginated-query.mts'
 
 const referralLinksFeedParser = createPaginationParser({

@@ -1,4 +1,4 @@
-import type { ApiSseEvent } from '../../../response-contract.mts'
+import type { ApiSseEvent } from '@vouchington/utils/api-response-contract'
 import type { ImportProgressSubscription, ImportProgressChunk } from '@data-stores/valkey-pubsub'
 import { getRssFeedImportSummary } from '@services/user-import-export/rss-feed-imports'
 

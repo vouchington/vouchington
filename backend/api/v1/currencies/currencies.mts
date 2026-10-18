@@ -1,5 +1,5 @@
 import app from '../../app.mts'
-import { apiQuery } from '../../response-contract.mts'
+import { apiQuery } from '../../api-query-contract.mts'
 import { parseAndValidatePaginatedRequest } from '../../validate-paginated-query.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
