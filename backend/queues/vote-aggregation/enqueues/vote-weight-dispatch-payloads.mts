@@ -9,7 +9,6 @@ import type {
 
 function safeWindow(window: VoteWeightDispatchWindow): VoteWeightDispatchWindow {
   return {
-    previousThroughAt: window.previousThroughAt,
     windowStart: window.windowStart,
     windowEnd: window.windowEnd,
   }
@@ -29,7 +28,6 @@ export function safeAgeMilestonesData(
   data: VoteWeightAgeMilestonesData,
 ): VoteWeightAgeMilestonesData {
   return {
-    ...(data.fullReplay === undefined ? {} : { fullReplay: data.fullReplay }),
     ...(data.window === undefined ? {} : { window: safeWindow(data.window) }),
     ...(data.milestoneIndex === undefined ? {} : { milestoneIndex: data.milestoneIndex }),
     ...(data.afterId === undefined ? {} : { afterId: data.afterId }),
@@ -40,7 +38,6 @@ export function safeMembershipExpirationsData(
   data: VoteWeightMembershipExpirationsData,
 ): VoteWeightMembershipExpirationsData {
   return {
-    ...(data.fullReplay === undefined ? {} : { fullReplay: data.fullReplay }),
     ...(data.window === undefined ? {} : { window: safeWindow(data.window) }),
     ...(data.after === undefined ? {} : { after: { at: data.after.at, id: data.after.id } }),
   }
@@ -50,7 +47,6 @@ export function safeFamilySourceChangesData(
   data: VoteWeightFamilySourceChangesData,
 ): VoteWeightFamilySourceChangesData {
   return {
-    ...(data.fullReplay === undefined ? {} : { fullReplay: data.fullReplay }),
     ...(data.window === undefined ? {} : { window: safeWindow(data.window) }),
     ...(data.branches === undefined
       ? {}

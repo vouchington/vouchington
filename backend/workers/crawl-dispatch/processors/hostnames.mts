@@ -143,7 +143,10 @@ export async function processCrawlHostnamesJob(
           )
           return { result, ...(result.hasMore ? { next: { cursor: nextCursor } } : {}) }
         },
-        enqueueNext: createEnqueueFunction({
+        enqueueNext: createEnqueueFunction<
+          { cursor?: CrawlHostnameDispatchCursor },
+          'crawl.crawl_hostnames_dispatcher'
+        >({
           queue: backgroundCpu,
           queueName: 'background-cpu',
           jobName: 'crawl.crawl_hostnames_dispatcher',

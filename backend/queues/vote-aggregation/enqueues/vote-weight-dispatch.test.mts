@@ -185,18 +185,23 @@ describe('vote-weight dispatcher admission', () => {
     const release = holdBackgroundDomain('vote-aggregation')
     const admittedJobs: Array<{ data: unknown; remove: () => Promise<unknown> }> = []
     const extra = { metadata: { token: 'must-not-be-persisted' } }
+    const window = {
+      windowStart: '2026-01-01T00:00:00.000Z',
+      windowEnd: '2026-01-02T00:00:00.000Z',
+    }
+    const widened = { fullReplay: true, window, ...extra }
     const cases = [
       {
-        enqueue: () => enqueueVoteWeightAgeMilestones({ fullReplay: true, ...extra }),
-        expected: { fullReplay: true },
+        enqueue: () => enqueueVoteWeightAgeMilestones(widened),
+        expected: { window },
       },
       {
-        enqueue: () => enqueueVoteWeightMembershipExpirations({ fullReplay: true, ...extra }),
-        expected: { fullReplay: true },
+        enqueue: () => enqueueVoteWeightMembershipExpirations(widened),
+        expected: { window },
       },
       {
-        enqueue: () => enqueueVoteWeightFamilySourceChanges({ fullReplay: true, ...extra }),
-        expected: { fullReplay: true },
+        enqueue: () => enqueueVoteWeightFamilySourceChanges(widened),
+        expected: { window },
       },
       {
         enqueue: () => enqueueVoteWeightDirtyMarkers({ afterId: randomUUID(), ...extra }),

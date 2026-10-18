@@ -91,11 +91,11 @@ describe('paged dispatcher', () => {
     const targetName = `target-${randomUUID()}`
     const dispatchName = `dispatch-${randomUUID()}`
     const target = new Queue(targetName, connection)
-    const enqueueRows = createBulkEnqueueFunction<{ id: number }, { id: number }, 'row'>({
+    const enqueueRows = createBulkEnqueueFunction({
       queue: Object.assign(target, { priorityKind: 'none' as const }),
       queueName: 'background',
       jobName: 'row',
-      buildJob: data => ({ data }),
+      buildJob: (data: { id: number }) => ({ data }),
     })
     const dispatch = new Queue<{ after?: number }>(dispatchName, connection)
     const blocked = Promise.withResolvers<void>()

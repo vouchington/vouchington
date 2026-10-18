@@ -73,17 +73,13 @@ describe('real-queue recovery for paged RSS rows', () => {
         prefix,
       })
       Object.assign(queue, { priorityKind: 'none' as const })
-      const bulk = createBulkEnqueueFunction<
-        { rowId: string; page: number },
-        { rowId: string; page: number },
-        typeof jobName
-      >({
+      const bulk = createBulkEnqueueFunction({
         queue: queue as typeof queue & { priorityKind: 'none' },
         queueName: queue.name,
         queuePrefix: prefix,
         jobName,
         defaults: { attempts: 1, removeOnFail: 100 },
-        buildJob: input => ({
+        buildJob: (input: { rowId: string; page: number }) => ({
           data: input,
           opts: { deduplication: { id: `row__${input.rowId}`, mode: 'simple' } },
         }),
