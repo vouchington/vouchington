@@ -15,7 +15,10 @@ import { getLatestCrawlCompletionForUrl } from '@voucha/test-helpers/entities/cr
 import { processCrawlerJob } from './processors.mts'
 
 describe('crawler RSS import discovery completion', () => {
-  it('keeps discovery pending when storing a feed link fails after a successful crawl', async () => {
+  it.each([
+    { rejection: 'an unstoreable feed URL', blocked: false },
+    { rejection: 'a blocked feed hostname', blocked: true },
+  ])('completes discovery when the persisted crawl exposes $rejection', async ({ blocked }) => {
     const currentUser = await createTestUser()
     const hostname = `crawler-discovery-${randomUUID()}.example.com`
     const pageUrl = `https://${hostname}/blog`
@@ -27,9 +30,10 @@ describe('crawler RSS import discovery completion', () => {
       pageUrl,
       urlId,
     )
-    // The HTML exposes a public feed URL whose pathname cannot fit in the URLs table.
+    // Both URLs are public; persistence rejects the long path or blocked hostname.
     const feedHostname = `t${randomUUID().replaceAll('-', '').slice(0, 8)}.io`
-    const feedUrl = `https://${feedHostname}/${'a'.repeat(2048)}`
+    if (blocked) await insertTestUrlHostname({ hostname: feedHostname, is_blocked: true })
+    const feedUrl = `https://${feedHostname}/${blocked ? 'feed.xml' : 'a'.repeat(2048)}`
     const job = {
       attemptsMade: 0,
       name: 'crawl_url',
@@ -63,7 +67,7 @@ describe('crawler RSS import discovery completion', () => {
           },
         }),
       }),
-    ).rejects.toThrow('URL pathname exceeds 2048 characters')
+    ).resolves.toBeDefined()
 
     expect(await getLatestCrawlCompletionForUrl(urlId)).toEqual({
       completed: true,
@@ -74,9 +78,9 @@ describe('crawler RSS import discovery completion', () => {
         discovery_url_id: urlId,
         discovery_url: pageUrl,
         generation,
-        crawl_id: null,
+        crawl_id: expect.any(String),
         discovered_feed_url: null,
-        failed_at: null,
+        failed_at: expect.any(Date),
       },
     ])
   })

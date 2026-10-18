@@ -64,17 +64,6 @@ export async function assertWithinContributionSubmissionLimit(
   throw createContributionLimitExceededError()
 }
 
-export async function assertWithinContributionDailyLimit(
-  currentUser: BasicUser,
-  membershipPlan: ContributionLimitMembershipPlan,
-  action: ContributionLimitAction,
-): Promise<void> {
-  const status = await checkContributionDailyLimit(currentUser, membershipPlan, action, true)
-  if (!status.allowed) {
-    throw createContributionLimitExceededError()
-  }
-}
-
 export function getContributionActionLimitStatus(
   currentUser: BasicUser,
   membershipPlan: ContributionLimitMembershipPlan,
@@ -171,25 +160,6 @@ async function checkContributionActionLimit(
     tier,
     allowed:
       isWindowAllowed(shortWindow, increment) && isWindowAllowed(dailyWindow, dailyIncrement),
-    short_window: shortWindow,
-    daily_window: dailyWindow,
-  }
-}
-
-async function checkContributionDailyLimit(
-  currentUser: BasicUser,
-  membershipPlan: ContributionLimitMembershipPlan,
-  action: ContributionLimitAction,
-  increment: boolean,
-): Promise<ContributionActionLimitStatus> {
-  const tier = getContributionLimitTier(currentUser, membershipPlan)
-  const key = limitKey(currentUser.id, action)
-  const shortWindow = await checkWindow(shortLimiter, key, action, tier, 'short', false)
-  const dailyWindow = await checkWindow(dailyLimiter, key, action, tier, 'daily', increment)
-  return {
-    action,
-    tier,
-    allowed: isWindowAllowed(dailyWindow, increment),
     short_window: shortWindow,
     daily_window: dailyWindow,
   }

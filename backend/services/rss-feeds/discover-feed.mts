@@ -16,6 +16,7 @@ import sql from 'sql-template-strings'
 import { enqueueUserRssFeedImportRowContinuation } from '@queues/user-rss-feed-imports/enqueues'
 import onError from '@modules/on-error'
 import { randomUUID } from 'node:crypto'
+import { storeDiscoveredFeedUrl } from './store-discovered-feed-url.mts'
 
 const FEED_TYPE_ORDER = [
   'application/rss+xml',
@@ -125,15 +126,7 @@ export async function completeRssFeedImportDiscovery(
       feedUrl = extractFeedLinkFromCrawlLinks(crawl?.links, crawledUrl.url)
     }
   }
-  const discoveredFeedUrlId = feedUrl
-    ? ((
-        await addUrl(null, feedUrl, {
-          preserveHttp: new URL(feedUrl).protocol === 'http:',
-          skipCreatedEvents: true,
-        })
-      )?.id ?? null)
-    : null
-  if (feedUrl && !discoveredFeedUrlId) throw new Error('Discovered feed URL could not be stored')
+  const discoveredFeedUrlId = feedUrl ? await storeDiscoveredFeedUrl(feedUrl) : null
   const { rows } = await write<{ batch_id: string }>(sql`/* completeRssFeedImportDiscovery */
     UPDATE user_rss_feed_import_row_discoveries discovery
     SET crawl_id = ${result?.crawl_id ?? null}::uuid,

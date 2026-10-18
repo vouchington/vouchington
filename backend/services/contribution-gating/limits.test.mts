@@ -12,7 +12,6 @@ import { contributionLimitConfig } from './limits-config.mts'
 import { limitKey } from './limits-helpers.mts'
 import {
   assertWithinContributionActionLimit,
-  assertWithinContributionDailyLimit,
   assertWithinContributionSubmissionLimit,
   getContributionActionLimitStatus,
   getContributionLimitTier,
@@ -116,30 +115,6 @@ describe('contribution action limits', () => {
     })
   })
 
-  it('can enforce daily quota without applying the short cooldown', async () => {
-    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
-    overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
-      topic_recommendation_free_short_limit: 1,
-      topic_recommendation_free_daily_limit: 2,
-    })
-
-    await assertWithinContributionDailyLimit(user, null, 'topic_recommendation')
-    await assertWithinContributionDailyLimit(user, null, 'topic_recommendation')
-    await expect(
-      getContributionActionLimitStatus(user, null, 'topic_recommendation'),
-    ).resolves.toMatchObject({
-      short_window: { limit: 1, used: 0 },
-      daily_window: { limit: 2, used: 2 },
-    })
-
-    await expect(
-      assertWithinContributionDailyLimit(user, null, 'topic_recommendation'),
-    ).rejects.toMatchObject({
-      code: CONTRIBUTION_QUOTA_EXCEEDED,
-      status: 429,
-    })
-  })
-
   it('charges one daily slot for concurrent retries of the same RSS import row', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
@@ -173,7 +148,7 @@ describe('contribution action limits', () => {
       rss_feed_free_daily_limit: 1,
     })
 
-    await assertWithinContributionDailyLimit(user, null, 'rss_feed')
+    await assertWithinRssFeedImportDailyLimit(user, null, randomUUID())
     await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
       short_window: { used: 0 },
       daily_window: { used: 1 },
