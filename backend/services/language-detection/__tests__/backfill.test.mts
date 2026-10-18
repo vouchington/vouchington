@@ -191,6 +191,24 @@ describe('language-detection backfill streams', () => {
   })
 
   describe('streamUsersNeedingLanguageDetection', () => {
+    it('stops at the retained UUIDv7 sweep bound', async () => {
+      const id = await insertLanguageDetectionUserForTest({
+        username: `language-snapshot-${createRandomString(10)}`,
+        markdown: 'An English profile created after the previous sweep began.',
+      })
+
+      const priorSweep = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      const { ids: pastIds } = await drainStream(
+        streamUsersNeedingLanguageDetection([id], undefined, 1, priorSweep),
+      )
+      expect(pastIds.has(id)).toBe(false)
+
+      const { ids: currentIds } = await drainStream(
+        streamUsersNeedingLanguageDetection([id], undefined, 1),
+      )
+      expect(currentIds.has(id)).toBe(true)
+    })
+
     it('includes users with non-empty bio and null or stale sha; excludes empty bio', async () => {
       const random = createRandomString(10)
 

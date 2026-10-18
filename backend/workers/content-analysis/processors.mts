@@ -1,4 +1,5 @@
 import type {
+  LanguageDetectionBackfillCursor,
   LanguageDetectionBackfillJobName,
   LanguageDetectionEntityType,
 } from '@queues/content-analysis/types'
@@ -59,11 +60,17 @@ export function processLanguageDetection(
 export async function processLanguageDetectionBackfill(
   jobName: LanguageDetectionBackfillJobName,
   entityIds?: readonly string[],
-  afterId?: string,
-  saveProgress: (afterId: string) => Promise<void> = async () => undefined,
+  savedCursor?: LanguageDetectionBackfillCursor,
+  saveProgress: (cursor: LanguageDetectionBackfillCursor) => Promise<void> = async () => undefined,
 ): Promise<{ updated: number; hasMore: boolean }> {
   assertKnownLanguageDetectionBackfillJob(jobName)
   if (entityIds?.length === 0) return { updated: 0, hasMore: false }
+  const cursor: LanguageDetectionBackfillCursor = savedCursor
+    ? { ...savedCursor }
+    : {
+        sweepStartedAt: new Date().toISOString(),
+      }
+  if (!savedCursor) await saveProgress(cursor)
   const maxRows = getLanguageDetectionWorkLimit('backfill_max_rows_per_run')
   let read = 0
   let updated = 0
@@ -75,48 +82,79 @@ export async function processLanguageDetectionBackfill(
       const result = await detect(ids)
       updated += result.updated
       read += ids.length
-      await saveProgress(ids.at(-1)!)
+      cursor.afterId = ids.at(-1)!
+      await saveProgress(cursor)
     }
   }
   switch (jobName) {
     case 'backfill_posts': {
       await consume(
-        streamPostsNeedingLanguageDetection(entityIds, afterId, maxRows),
+        streamPostsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
         detectPostLanguageBatch,
       )
       break
     }
     case 'backfill_rss_feed_items': {
       await consume(
-        streamRssFeedItemsNeedingLanguageDetection(entityIds, afterId, maxRows),
+        streamRssFeedItemsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
         detectRssFeedItemLanguageBatch,
       )
       break
     }
     case 'backfill_crawls': {
       await consume(
-        streamCrawlsNeedingLanguageDetection(entityIds, afterId, maxRows),
+        streamCrawlsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
         detectCrawlLanguageBatch,
       )
       break
     }
     case 'backfill_communities': {
       await consume(
-        streamCommunitiesNeedingLanguageDetection(entityIds, afterId, maxRows),
+        streamCommunitiesNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
         detectCommunityLanguageBatch,
       )
       break
     }
     case 'backfill_users': {
       await consume(
-        streamUsersNeedingLanguageDetection(entityIds, afterId, maxRows),
+        streamUsersNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
         detectUserLanguageBatch,
       )
       break
     }
     case 'backfill_topics': {
       await consume(
-        streamTopicsNeedingLanguageDetection(entityIds, afterId, maxRows),
+        streamTopicsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
         detectTopicLanguageBatch,
       )
       break

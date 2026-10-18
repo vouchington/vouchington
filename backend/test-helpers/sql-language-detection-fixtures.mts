@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 
 export async function insertLanguageDetectionPostForTest(params: {
   createdById: string
@@ -65,10 +66,14 @@ export async function insertLanguageDetectionUserForTest(params: {
   username: string
   markdown?: string
   inputSha256?: Buffer
+  createdAt?: Date
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionUserForTest */
-    INSERT INTO users (username, markdown, lingua_rs_input_sha256)
-    VALUES (${params.username}, ${params.markdown ?? ''}, ${params.inputSha256 ?? null})
+    INSERT INTO users (id, username, markdown, lingua_rs_input_sha256)
+    VALUES (
+      COALESCE(${params.createdAt ? uuidv7({ msecs: params.createdAt.getTime() }) : null}::uuid, uuidv7()),
+      ${params.username}, ${params.markdown ?? ''}, ${params.inputSha256 ?? null}
+    )
     RETURNING id
   `)
   return rows[0]!.id

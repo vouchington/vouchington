@@ -17,6 +17,7 @@ import { processStaydownHash } from '@workers/content-analysis/processors/staydo
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type {
+  LanguageDetectionBackfillCursor,
   LanguageDetectionBackfillJobName,
   LanguageDetectionEntityType,
 } from '@queues/content-analysis/types'
@@ -128,7 +129,7 @@ async function runCpuJob(job: Job): Promise<unknown> {
         processLanguageDetectionBackfill(
           localName as LanguageDetectionBackfillJobName,
           undefined,
-          typeof job.data?.cursor === 'string' ? job.data.cursor : undefined,
+          job.data?.cursor as LanguageDetectionBackfillCursor | undefined,
           cursor => save({ cursor }),
         ),
       )
