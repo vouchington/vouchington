@@ -46,6 +46,13 @@ describe('scheduled run lease recovery', () => {
     try {
       await workerQueueCommandClient.set(`${base}:run-metrics`, 'wrong-type')
       expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
+      expect(
+        await workerQueueCommandClient.hget(`${base}:job:${second.id}`, 'scheduledRunLeaseSkipped'),
+      ).toBe('repeat')
+      await release?.()
+      // Even if the collision response were lost, this tick cannot run after the holder releases.
+      expect(await withScheduledRunLease(name, second, { lockDuration: 20000 })).toBeNull()
+      expect(await workerQueueCommandClient.get(`${base}:run:repeat`)).toBeNull()
     } finally {
       await release?.()
       await queue.obliterate({ force: true })

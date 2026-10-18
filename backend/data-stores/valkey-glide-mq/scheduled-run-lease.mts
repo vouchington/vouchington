@@ -6,9 +6,11 @@ import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { registerWorkerQueueScriptFile } from './glide-mq-scripts.mts'
 
 const releaseScript = registerWorkerQueueScriptFile('release-scheduled-run.lua', import.meta.url)
+const admitScript = registerWorkerQueueScriptFile('admit-scheduled-run.lua', import.meta.url)
 const DEFAULT_LOCK_DURATION_MS = 30_000
 const DEFAULT_MAX_STALLED_COUNT = 2
 const ADMITTED_SCHEDULER_FIELD = 'scheduledRunLeaseAdmitted'
+const SKIPPED_SCHEDULER_FIELD = 'scheduledRunLeaseSkipped'
 
 /** A null release means this scheduler run was skipped because another run is live. */
 export async function withScheduledRunLease(
@@ -60,33 +62,30 @@ export async function withScheduledRunLease(
       throw err
     }
   }
-  const acquired = await workerQueueCommandClient.set(key, job.id, {
-    conditionalSet: 'onlyIfDoesNotExist',
-    expiry: { type: TimeUnit.Milliseconds, count: ttl },
-  })
-  if (acquired === null) {
-    const holder = await workerQueueCommandClient.get(key)
-    // A retry of this same job may still own a lease after a failed release command.
-    if (holder !== null && decodeGlideString(holder) === job.id) return completeAdmission()
-    const admitted = await workerQueueCommandClient.hget(jobKey, ADMITTED_SCHEDULER_FIELD)
-    if (admitted !== null && decodeGlideString(admitted) === scheduler) {
-      // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
-      // Keep its saved cursor by delaying it until the current holder finishes.
-      await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))
-    }
-    try {
-      await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
-    } catch (err) {
-      try {
-        onError(err instanceof Error ? err : new Error(String(err)))
-      } catch (err) {
-        console.error('scheduled_overlap_metric_reporting_failed', err)
-      }
-    }
-    console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
-    return null
+  const decision = Number(
+    await workerQueueCommandClient.invokeScript(admitScript, {
+      keys: [key, jobKey],
+      args: [job.id, scheduler, ADMITTED_SCHEDULER_FIELD, SKIPPED_SCHEDULER_FIELD, String(ttl)],
+    }),
+  )
+  if (decision === 1 || decision === 2) return completeAdmission()
+  if (decision !== 0 && decision !== 3) throw new Error('Unknown scheduled lease admission result')
+  if (decision === 3) {
+    // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
+    // Keep its saved cursor by delaying it until the current holder finishes.
+    await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))
   }
-  return completeAdmission()
+  try {
+    await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
+  } catch (err) {
+    try {
+      onError(err instanceof Error ? err : new Error(String(err)))
+    } catch (err) {
+      console.error('scheduled_overlap_metric_reporting_failed', err)
+    }
+  }
+  console.info('skipped_overlap', { queue, scheduler, jobId: job.id })
+  return null
 }
 
 function scheduleInterval(raw: string | Uint8Array | null): number | null {
