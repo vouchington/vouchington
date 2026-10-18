@@ -13,6 +13,7 @@ import { POST_TOPIC_CATEGORY_RELATION_TABLE } from '@services/entity-relations/m
 import type { TrendingPostsOptions, TrendingPostsResult } from './types.mts'
 
 const DEFAULT_LIMIT = 20
+const MAX_UUIDV7_TIMESTAMP = 0xffffffffffff
 
 const TIME_RANGE_DAYS = {
   day: 1,
@@ -22,6 +23,7 @@ const TIME_RANGE_DAYS = {
 
 export async function getTrendingPosts(
   options: TrendingPostsOptions,
+  referenceTime = new Date(),
 ): Promise<TrendingPostsResult> {
   const { timeRange, postType, topicId, minScore, limit, after } = options
 
@@ -30,7 +32,21 @@ export async function getTrendingPosts(
     throw createHttpError(400, 'Invalid time_range')
   }
 
-  const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+  const referenceTimeMs = referenceTime.getTime()
+  if (
+    !Number.isSafeInteger(referenceTimeMs) ||
+    referenceTimeMs < 0 ||
+    referenceTimeMs > MAX_UUIDV7_TIMESTAMP
+  ) {
+    throw new RangeError('Invalid trending reference time')
+  }
+  const capturedReferenceTime = new Date(referenceTimeMs)
+
+  const cutoffTimeMs = referenceTimeMs - days * 24 * 60 * 60 * 1000
+  if (cutoffTimeMs < 0 || cutoffTimeMs > MAX_UUIDV7_TIMESTAMP) {
+    throw new RangeError('Trending cutoff is outside the UUIDv7 timestamp range')
+  }
+  const cutoffDate = new Date(cutoffTimeMs)
   const cutoffId = getMinUUIDv7ForDate(cutoffDate)
 
   if (topicId !== undefined && !isUUID(topicId)) {
@@ -54,7 +70,7 @@ export async function getTrendingPosts(
   const query = sql`trending AS (
       SELECT
         p.id,
-        `.append(buildHotScoreExpression('p')).append(sql` AS trending_score
+        `.append(buildHotScoreExpression('p', capturedReferenceTime)).append(sql` AS trending_score
       FROM posts p
       JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)`)
 
@@ -92,7 +108,7 @@ export async function getTrendingPosts(
       sql`
       AND (trending_score, id) < (
         COALESCE((
-          SELECT `.append(buildHotScoreExpression('cursor_post')).append(sql`
+          SELECT `.append(buildHotScoreExpression('cursor_post', capturedReferenceTime)).append(sql`
           FROM posts cursor_post
           WHERE cursor_post.id = ${cursorId}
         ), ${cursorScore}),
