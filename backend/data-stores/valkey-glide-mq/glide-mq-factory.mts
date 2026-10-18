@@ -22,6 +22,11 @@ import {
 import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
 import { getTestWorkerProcessorDecorator } from './test-worker-processor-decorator.mts'
 import { DEFAULT_MAX_STALLED_COUNT } from './worker-stall-budget.mts'
+import {
+  rejectSelfAdd,
+  wrapBatchProcessor,
+  wrapSingleProcessor,
+} from './guarded-worker-processors.mts'
 
 type SharedQueueOptions = Pick<QueueOptions, 'deadLetterQueue' | 'compression' | 'serializer'>
 type SharedWorkerOptions = Omit<WorkerOptions, 'connection' | 'commandClient' | 'client'> & {
@@ -50,16 +55,21 @@ export function createQueue<T = unknown>(
   const originalAddBulk = queue.addBulk
   // ast-grep-ignore: backend-no-direct-scheduler-upsert -- intercept the queue's scheduler API to enforce priority before the manifest runtime calls it
   const originalUpsertJobScheduler = queue.upsertJobScheduler
-  queue.add = (jobName, data, opts) =>
-    originalAdd.call(queue, jobName, data, checkedPriorityOptions(name, priorityKind, opts))
-  queue.addBulk = jobs =>
-    originalAddBulk.call(
+  queue.add = (jobName, data, opts) => {
+    if (rejectSelfAdd(name, jobName, opts)) return Promise.resolve(null)
+    return originalAdd.call(queue, jobName, data, checkedPriorityOptions(name, priorityKind, opts))
+  }
+  queue.addBulk = jobs => {
+    const allowed = jobs.filter(job => !rejectSelfAdd(name, job.name, job.opts))
+    if (allowed.length === 0) return Promise.resolve([])
+    return originalAddBulk.call(
       queue,
-      jobs.map(job => ({
+      allowed.map(job => ({
         ...job,
         opts: checkedPriorityOptions(name, priorityKind, job.opts),
       })),
     )
+  }
   // ast-grep-ignore: backend-no-direct-scheduler-upsert -- this guard wraps, rather than creates, scheduled jobs
   queue.upsertJobScheduler = (schedulerName, schedule, template) =>
     originalUpsertJobScheduler.call(queue, schedulerName, schedule, {
@@ -76,7 +86,7 @@ export function createWorker<D = unknown, R = unknown>(
   processor: Processor<D, R>,
   options: SharedWorkerOptions = {},
 ): Worker<D, R> {
-  return buildWorker<D, R>(name, processor, options)
+  return buildWorker<D, R>(name, wrapSingleProcessor(name, processor, options), options)
 }
 /** A worker whose processor receives up to `batch.size` jobs at once instead of one. */
 export function createBatchWorker<D = unknown, R = unknown>(
@@ -84,7 +94,8 @@ export function createBatchWorker<D = unknown, R = unknown>(
   processor: BatchProcessor<D, R>,
   { batch, ...options }: SharedWorkerOptions & Required<Pick<WorkerOptions, 'batch'>>,
 ): Worker<D, R> {
-  return buildWorker<D, R>(name, processor, { ...options, batch })
+  const wrapped = wrapBatchProcessor(name, processor, options)
+  return buildWorker<D, R>(name, wrapped, { ...options, batch })
 }
 /** @public Documented GlideMQ factory contract. */
 export function createFlowProducer(): FlowProducer {

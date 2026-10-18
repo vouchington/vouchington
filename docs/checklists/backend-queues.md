@@ -61,6 +61,10 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   Ranked priority orders only jobs promoted together, so a large
   batch already in the ready list delays every later task in the shared queue, whatever its
   priority.
+- **Give each continuation a new identity.** The shared queue factory rejects a processor that
+  re-adds its active job ID or deduplication ID, because GlideMQ silently drops that add.
+- **Schedule the real job directly.** The shared worker lease skips overlapping scheduler runs,
+  so a trampoline job or per-scheduler deduplication is unnecessary.
 - **Throttle our own datastores with concurrency.** Use a `limiter` or group `rateLimit` only to
   stay under an external service's rate limit.
 - **When merging,** namespace job names, deduplication IDs, job IDs, scheduler IDs, and ordering

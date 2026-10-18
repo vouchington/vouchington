@@ -21,6 +21,8 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
 5. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
    data-driven worker-placement requirements from the checklist. Scheduler templates take no
    `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.
+   Each continuation step needs a new job or deduplication ID. Scheduled jobs need no overlap
+   handling of their own; follow the [queue checklist](../../../docs/checklists/backend-queues.md#queue-boundaries).
 6. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
    queues, workers, services, or data stores.
 7. Update the domain README and queue inventory with the implementation.

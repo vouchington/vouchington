@@ -10,10 +10,10 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QU
     schedulerId: 'crawl:unfurl-referral-links-dispatcher',
     repeat: { pattern: '0 * * * *' },
     template: {
-      name: 'crawl.enqueueUnfurlReferralLinksDispatcher',
+      name: 'crawl.unfurl_referral_links_dispatcher',
       data: {},
       opts: {
-        ...requireBackgroundCpuJob('crawl.enqueueUnfurlReferralLinksDispatcher').options,
+        ...requireBackgroundCpuJob('crawl.unfurl_referral_links_dispatcher').options,
         priority: PRIORITY_DISPATCHER,
       } satisfies JobOptions,
     },

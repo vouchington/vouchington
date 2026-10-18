@@ -13,7 +13,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
     schedulerId: 'dispatchFindYourFriends',
     repeat: { pattern: '0 3 * * *' },
     template: {
-      name: 'enqueueDispatchFindYourFriends' as FindYourFriendsDispatcherJobs,
+      name: 'dispatchFindYourFriends' as FindYourFriendsDispatcherJobs,
       data: {},
       opts: {
         attempts: FIND_YOUR_FRIENDS_DEFAULTS.attempts,

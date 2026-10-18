@@ -23,15 +23,6 @@ const RECONCILIATION_RETRY = {
   removeOnFail: 100,
 } as const
 
-/** The scheduler's trigger: it only enqueues one reconciliation dispatch. */
-export const ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB = defineBackgroundJob(
-  ENTITY_LISTENERS_DOMAIN,
-  {
-    name: 'enqueueReconcileEntities',
-    priority: PRIORITY_DISPATCH,
-    ...RECONCILIATION_RETRY,
-  },
-)
 /** One bounded page of candidates in a fixed window; a full page saves its cursor and continues. */
 export const ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB =
   defineBackgroundJob<EntityReconciliationDispatchData>(ENTITY_LISTENERS_DOMAIN, {
@@ -110,7 +101,6 @@ export const ENTITY_LISTENERS_COMMUNITY_AGENT_PROMPTS_DEACTIVATED_JOB = defineBa
 })
 
 export const ENTITY_LISTENERS_JOBS = [
-  ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,
   ENTITY_LISTENERS_URL_CREATED_JOB,

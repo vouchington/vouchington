@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
-import { entitiesListeners } from '@queues/entity-listeners/queues'
 import {
-  ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_JOBS,
   ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_POST_CREATED_JOB,
@@ -46,22 +44,6 @@ describe('entity listener handlers', () => {
     await expect(run(ENTITY_LISTENERS_TOPIC_UPDATED_JOB, created)).rejects.toBeInstanceOf(
       JobPayloadError,
     )
-  })
-
-  it('starts a reconciliation sweep from the scheduled enqueue job', async () => {
-    const add = vi.spyOn(entitiesListeners, 'add').mockResolvedValueOnce({ id: 'root' } as never)
-    try {
-      await run(ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB, {})
-      expect(add).toHaveBeenCalledExactlyOnceWith(
-        ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
-        {},
-        expect.objectContaining({
-          deduplication: { id: 'entity-reconciliation-dispatcher', mode: 'simple' },
-        }),
-      )
-    } finally {
-      add.mockRestore()
-    }
   })
 
   it('saves the fixed window of a reconciliation sweep page on its job', async () => {

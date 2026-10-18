@@ -4,7 +4,7 @@ import {
   toSchedulerTemplateOptions,
 } from '@modules/scheduled-job-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
-import { ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
+import { ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import { getEntityListenerReconciliationIntervalSeconds } from '../config.mts'
 
 export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_NAME, [
@@ -12,11 +12,11 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_QUEUE_
     schedulerId: 'entityListenerReconciliation',
     repeat: () => ({ every: getEntityListenerReconciliationIntervalSeconds() * 1000 }),
     template: {
-      name: ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.name,
+      name: ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.name,
       data: {},
       opts: toSchedulerTemplateOptions({
         ...ENQUEUE_BASE_DEFAULTS,
-        ...ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB.options,
+        ...ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB.options,
       }),
     },
     operatorSurfaces: [{ kind: 'backfill', backfillId: 'entity-listener-reconciliation' }],

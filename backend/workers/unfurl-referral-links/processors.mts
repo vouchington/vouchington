@@ -1,5 +1,4 @@
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
-import { enqueueUnfurlReferralLinksDispatcher } from '@queues/unfurl-referral-links/enqueues'
 import { dispatchUnfurlReferralLinks, runReferralLinkUnfurl } from '@services/referral-link-unfurl'
 import { softDeleteChildrenForUser } from '@services/user-referral-program-links'
 import type { Job } from 'glide-mq'
@@ -8,8 +7,6 @@ export async function processUnfurlReferralLinksJob(
   job: Pick<Job, 'name' | 'data' | 'updateData' | 'moveToDelayed'>,
 ): Promise<unknown> {
   switch (job.name) {
-    case 'crawl.enqueueUnfurlReferralLinksDispatcher':
-      return enqueueUnfurlReferralLinksDispatcher()
     case 'crawl.unfurl_referral_links_dispatcher':
       return processRetainedSweep(job, save =>
         dispatchUnfurlReferralLinks(job.data?.cursor, cursor => save({ cursor })),

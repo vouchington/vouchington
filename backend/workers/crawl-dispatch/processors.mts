@@ -16,9 +16,6 @@ export async function processCrawlDispatchJob(
   dependencies: ProcessorDependencies = {},
 ): Promise<unknown> {
   switch (job.name) {
-    case 'crawl.enqueueCrawlHostnamesDispatcher':
-    case 'crawl.enqueueCrawlTier1Dispatcher':
-    case 'crawl.enqueueCrawlTier2Dispatcher':
     case 'crawl.crawl_hostnames_dispatcher':
     case 'crawl.crawl_urls_per_hostname_dispatcher':
     case 'crawl.crawl_tier1_dispatcher':

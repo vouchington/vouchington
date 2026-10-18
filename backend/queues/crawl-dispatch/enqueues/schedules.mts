@@ -86,15 +86,7 @@ function crawlJob(
     registration: 'sequential' as const,
     repeat: { pattern },
     template: {
-      name: `crawl.${
-        id === 'crawl_hostnames_dispatcher'
-          ? 'enqueueCrawlHostnamesDispatcher'
-          : id === 'crawl_tier1_dispatcher'
-            ? 'enqueueCrawlTier1Dispatcher'
-            : id === 'crawl_tier2_dispatcher'
-              ? 'enqueueCrawlTier2Dispatcher'
-              : id
-      }`,
+      name: `crawl.${id}`,
       data: {},
       opts: { ...requireBackgroundCpuJob(`crawl.${id}`).options, priority } satisfies JobOptions,
     },
