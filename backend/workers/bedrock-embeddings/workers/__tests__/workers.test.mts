@@ -40,7 +40,7 @@ describe('bedrock embeddings single worker', () => {
     })
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: post!.id })),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('bedrock-embeddings.post', { id: post!.id })),
     ).resolves.toEqual({ success: true })
   })
 
@@ -73,7 +73,7 @@ describe('bedrock embeddings single worker', () => {
     })
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: postId })),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('bedrock-embeddings.post', { id: postId })),
     ).resolves.toEqual({ success: true })
 
     await expect(getPostEmbeddingData(postId)).resolves.toMatchObject({
@@ -83,7 +83,9 @@ describe('bedrock embeddings single worker', () => {
 
   it('returns null for post jobs whose row no longer exists', async () => {
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('post', { id: randomUUID() })),
+      processBedrockNovaMultimodalV1SingleJob(
+        makeJob('bedrock-embeddings.post', { id: randomUUID() }),
+      ),
     ).resolves.toBeNull()
   })
 
@@ -99,13 +101,17 @@ describe('bedrock embeddings single worker', () => {
     })
 
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('topic', { id: topic.id })),
+      processBedrockNovaMultimodalV1SingleJob(
+        makeJob('bedrock-embeddings.topic', { id: topic.id }),
+      ),
     ).resolves.toEqual({ success: true })
   })
 
   it('returns null for topic jobs whose row no longer exists', async () => {
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('topic', { id: randomUUID() })),
+      processBedrockNovaMultimodalV1SingleJob(
+        makeJob('bedrock-embeddings.topic', { id: randomUUID() }),
+      ),
     ).resolves.toBeNull()
   })
 
@@ -132,7 +138,7 @@ describe('bedrock embeddings single worker', () => {
 
     await expect(
       processBedrockNovaMultimodalV1SingleJob(
-        makeJob('rss_feed_item', { rss_feed_item_id: rssFeedItemId }),
+        makeJob('bedrock-embeddings.rss_feed_item', { rss_feed_item_id: rssFeedItemId }),
       ),
     ).resolves.toEqual({ success: true })
 
@@ -151,14 +157,14 @@ describe('bedrock embeddings single worker', () => {
   it('returns null for RSS feed item jobs whose row no longer exists', async () => {
     await expect(
       processBedrockNovaMultimodalV1SingleJob(
-        makeJob('rss_feed_item', { rss_feed_item_id: randomUUID() }),
+        makeJob('bedrock-embeddings.rss_feed_item', { rss_feed_item_id: randomUUID() }),
       ),
     ).resolves.toBeNull()
   })
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
     await expect(
-      processBedrockNovaMultimodalV1SingleJob(makeJob('rss_feed_item', {})),
+      processBedrockNovaMultimodalV1SingleJob(makeJob('bedrock-embeddings.rss_feed_item', {})),
     ).rejects.toThrow('rss_feed_item job requires rss_feed_item_id in job.data')
 
     await expect(
