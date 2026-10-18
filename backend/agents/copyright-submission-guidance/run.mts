@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { callAgentModel } from '@agents/_shared'
+import { callReceiptedAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
@@ -21,6 +21,7 @@ export async function runCopyrightSubmissionGuidanceAgent(
   submissionId: string,
   selection: ModelSelection,
   callModel: CopyrightSubmissionGuidanceModelCaller = callCopyrightSubmissionGuidanceModel,
+  operationId = submissionId,
 ): Promise<CopyrightSubmissionGuidanceKind | null> {
   const filing = await getCopyrightSubmissionGuidanceSource(submissionId)
   if (!filing) return null
@@ -28,8 +29,9 @@ export async function runCopyrightSubmissionGuidanceAgent(
     await sanitizePromptInjection(JSON.stringify(filing.input)),
     { source: 'copyright_submission', contentType: filing.kind },
   )
-  const { output: guidance, model } = await callAgentModel({
+  const { output: guidance, model } = await callReceiptedAgentModel({
     agentSlug: 'copyright-submission-guidance',
+    operationId,
     selection,
     input: modelInput,
     safetyIdentifier: createHash('sha256').update(submissionId).digest('hex'),

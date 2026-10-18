@@ -25,10 +25,14 @@ export function wrapHttpForRetry(error: unknown): never {
   return wrapUpstreamHttpForRetry(error, { getStatus: getHttpStatus, UnrecoverableError })
 }
 
-// SES reports "Maximum sending rate exceeded" (and its daily quota) as HTTP 400 with the code
-// `Throttling`, so the status alone would classify the throttle as a permanent client error. The
+// SES reports sending limits as HTTP 400 with `Throttling` or `MaxSendRateExceeded`, so the status
+// alone would classify the throttle as a permanent client error. The
 // request was rejected before anything was sent, so retrying cannot duplicate an email.
-const AWS_THROTTLING_ERROR_NAMES = new Set(['Throttling', 'ThrottlingException'])
+const AWS_THROTTLING_ERROR_NAMES = new Set([
+  'Throttling',
+  'ThrottlingException',
+  'MaxSendRateExceeded',
+])
 const SES_SENDING_RATE_EXCEEDED = /maximum sending rate exceeded/i
 
 export function isAwsThrottlingError(error: unknown): error is Error {

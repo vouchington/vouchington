@@ -5,6 +5,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 import { S3ImagesClient } from '@modules/aws'
+import { wrapHttpForRetry } from '@modules/queue-errors'
 import type { Readable } from 'node:stream'
 import {
   SES_INBOUND_FAILED_PREFIX,
@@ -40,7 +41,7 @@ async function loadSesInboundObjectWithMetadata(
         ? { IfMatch: sourceIdentity.eTag }
         : {}),
     }),
-  )
+  ).catch(wrapHttpForRetry)
   rejectOversizedRawEmail(response.ContentLength)
   if (!response.Body) throw new SesInboundTerminalError('Raw SES object has no body')
   if (!response.LastModified)
@@ -67,7 +68,7 @@ export async function loadSesInboundObjectVersion(
 export async function deleteSesInboundObject(objectKey: string): Promise<void> {
   await S3ImagesClient.send(
     new DeleteObjectCommand({ Bucket: getSesInboundBucket(), Key: objectKey }),
-  )
+  ).catch(wrapHttpForRetry)
 }
 
 /**
@@ -96,7 +97,7 @@ export async function copySesInboundObjectToCopyrightEvidence(
       CopySourceIfMatch: sourceIdentity.eTag,
       MetadataDirective: 'COPY',
     }),
-  )
+  ).catch(wrapHttpForRetry)
   return destinationKey
 }
 
@@ -129,8 +130,10 @@ export async function moveSesInboundObjectToFailed(
       Key: `${SES_INBOUND_FAILED_PREFIX}${sesMessageId}`,
       CopySource: `${bucket}/${encodeURIComponent(objectKey).replaceAll('%2F', '/')}`,
     }),
+  ).catch(wrapHttpForRetry)
+  await S3ImagesClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey })).catch(
+    wrapHttpForRetry,
   )
-  await S3ImagesClient.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey }))
 }
 
 /* no-mistakes: integration=aws */
@@ -151,7 +154,7 @@ async function listSesInboundObjectsWithPrefix(
       Prefix: prefix,
       ContinuationToken: continuationToken,
     }),
-  )
+  ).catch(wrapHttpForRetry)
   return {
     objectKeys: (page.Contents ?? []).flatMap(object => (object.Key ? [object.Key] : [])),
     ...(page.NextContinuationToken ? { nextContinuationToken: page.NextContinuationToken } : {}),

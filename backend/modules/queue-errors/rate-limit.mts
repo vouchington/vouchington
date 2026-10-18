@@ -12,11 +12,15 @@ type HeaderSource = Parameters<typeof getHeaderValue>[0]
  */
 export function getRetryAfterMs(error: unknown): number | null {
   if (typeof error !== 'object' || error === null) return null
-  const { retryAfterMs, headers } = error as { retryAfterMs?: unknown; headers?: HeaderSource }
+  const { retryAfterMs, headers, $response } = error as {
+    retryAfterMs?: unknown
+    headers?: HeaderSource
+    $response?: { headers?: HeaderSource }
+  }
   if (typeof retryAfterMs === 'number' && Number.isFinite(retryAfterMs) && retryAfterMs >= 0) {
     return retryAfterMs
   }
-  const header = getHeaderValue(headers, 'retry-after')
+  const header = getHeaderValue(headers ?? $response?.headers, 'retry-after')
   return getRetryAfterDurationMs(Array.isArray(header) ? header[0] : header)
 }
 

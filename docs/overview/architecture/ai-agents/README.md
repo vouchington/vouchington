@@ -13,3 +13,7 @@ and measurement, and [AI agents](../ai-agents.md) links the surrounding pipeline
 - Tools exposed to agents wrap existing services and are registered in the MCP catalog; no new
   business logic lives in a tool.
 - Sanitize external content before it reaches an agent.
+- Paid background decisions reserve a durable receipt before the provider request. A completed
+  result can finish its domain write after a worker retry; an interrupted call with an unknown
+  billing outcome requires review before it can be sent again. The receipt stores its result
+  encrypted because advisory answers can contain private filing or report content.

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Worker } from 'glide-mq'
 import { loadSesInboundObjectAndHash } from './s3.mts'
 
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => ({
@@ -61,6 +62,21 @@ describe('loadSesInboundObjectAndHash', () => {
     })
     expect(loaded.receivedAt).toBe(receivedAt)
     expect(loaded.sourceIdentity).toEqual({ eTag: '"etag-1"', versionId: 'version-1' })
+  })
+
+  it('defers a throttled S3 read for the SDK response Retry-After', async () => {
+    const error = Object.assign(new Error('SlowDown'), {
+      $metadata: { httpStatusCode: 429 },
+      $response: { headers: { 'retry-after': '17' } },
+    })
+    vi.mocked(S3ImagesClient.send).mockRejectedValueOnce(error)
+
+    const request = loadSesInboundObjectAndHash('copyright-incoming/abc')
+    await expect(request).rejects.toBeInstanceOf(Worker.RateLimitError)
+    await expect(request).rejects.toMatchObject({
+      delayMs: 17_000,
+      cause: error,
+    })
   })
 
   it('rejects the digest when the object stream fails part-way through', async () => {

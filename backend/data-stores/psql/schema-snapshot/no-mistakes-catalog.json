@@ -5324,6 +5324,131 @@
         }
       }
     },
+    "ai_agent_call_receipts": {
+      "checkConstraints": {
+        "ai_agent_call_receipts_operation_key_check": {
+          "definition": "CHECK ((char_length(operation_key) = 64))",
+          "validated": true
+        },
+        "ai_agent_call_receipts_result_ciphertext_check": {
+          "definition": "CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "agent_slug": {
+          "comment": "Agent that reserved the paid call.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "created_at": {
+          "comment": "Creation time derived from the UUIDv7 receipt identity.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "id": {
+          "comment": "UUIDv7 receipt identity and creation order.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "operation_key": {
+          "comment": "SHA-256 of the logical operation, selected model, and exact provider input.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "result_ciphertext": {
+          "comment": "Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
+      "foreignKeys": {},
+      "indexes": {
+        "ai_agent_call_receipts_operation_key_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_agent_call_receipts_operation_key_key ON public.ai_agent_call_receipts USING btree (operation_key)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "operation_key",
+              "descending": false,
+              "expression": "operation_key",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_agent_call_receipts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_agent_call_receipts_pkey ON public.ai_agent_call_receipts USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "ai_agent_call_receipts_operation_key_key": {
+          "columns": ["operation_key"]
+        }
+      }
+    },
     "ai_service_tiers": {
       "checkConstraints": {},
       "columns": {

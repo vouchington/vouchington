@@ -1,7 +1,6 @@
 import type { ProcessSendCommunityModerationSummaryEmailVariables } from '@queues/background/enqueues/email-digests-domain'
 import type { EmailTemplateInput } from '@queues/emails/types'
 import { renderCommunityModerationSummaryEmail } from '@email-templates/core'
-import onError from '@modules/on-error'
 import { getMarketingPostalAddress } from '@modules/utils'
 import { sendClassifiedEmail } from '@services/email-classification'
 import { createEmailUnsubscribeUrl } from '@services/users'
@@ -61,43 +60,16 @@ export const processSendCommunityModerationSummaryEmail = async (
     physicalAddress: renderVariables.physicalAddress ?? getMarketingPostalAddress(),
     uiLocale: input.uiLocale ?? renderVariables.uiLocale,
   })
-  const result = await sendClassifiedEmail('processSendCommunityModerationSummaryEmail', {
+  // Claim the at-most-once send before SES. A crash or ambiguous SES response can lose this
+  // summary, but retrying it could send a duplicate to the moderator.
+  if (input.userId && input.trackingKey) {
+    if (!(await markModerationEmailSent(input.userId, input.trackingKey))) return null
+  }
+  return sendClassifiedEmail('processSendCommunityModerationSummaryEmail', {
     to: emailAddress,
     subject,
     html,
     text,
     userId: input.userId,
   })
-  if (input.userId && input.trackingKey) {
-    try {
-      if (!(await markModerationEmailSent(input.userId, input.trackingKey))) {
-        /* c8 ignore next -- Defensive observability for concurrent processor races. */
-        reportModerationMarkSkipped(input.userId, input.trackingKey)
-      }
-    } catch (err) {
-      /* c8 ignore next -- Avoid retrying after SES accepted the message. */
-      reportModerationMarkFailed(err, input.userId, input.trackingKey)
-    }
-  }
-  return result
 }
-
-/* c8 ignore start -- Defensive observability for post-send mark failures and races. */
-function reportModerationMarkFailed(error: unknown, userId: string, trackingKey: string): void {
-  const reportableError = error instanceof Error ? error : new Error(String(error))
-  Object.assign(reportableError, {
-    tags: { worker: 'moderation-summary-email-processor', phase: 'mark-sent' },
-    extra: { userId, trackingKey },
-  })
-  onError(reportableError)
-}
-
-function reportModerationMarkSkipped(userId: string, trackingKey: string): void {
-  const error = new Error('Moderation summary sent mark skipped because it was already set')
-  Object.assign(error, {
-    tags: { worker: 'moderation-summary-email-processor', phase: 'mark-sent' },
-    extra: { userId, trackingKey },
-  })
-  onError(error)
-}
-/* c8 ignore stop */

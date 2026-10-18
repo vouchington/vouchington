@@ -1,4 +1,4 @@
-import { callAgentModel } from '@agents/_shared'
+import { callReceiptedAgentModel } from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
@@ -23,6 +23,7 @@ interface JudgementInput {
   triggeringReportId: string
   rerunById?: string | null
   runId?: string | null
+  operationId?: string
 }
 
 export type { JudgementModelCaller } from './model.mts'
@@ -136,8 +137,10 @@ export async function runReportJudgementAgent(
   // 'comment' -- both are rows in `posts` (see fetch-entity.mts's combined post-or-comment query)
   // -- but not for 'user', 'url_hostname', or 'rss_feed_item', which don't reference a row in
   // `posts`, and ai_usage_records.post_id has a real FK to it.
-  const result = await callAgentModel({
+  const result = await callReceiptedAgentModel({
     agentSlug: 'report-judgement',
+    operationId:
+      input.operationId ?? `${entityType}:${entityId}:${triggeringReportId}:${rerunById ?? ''}`,
     selection,
     input: userInput,
     safetyIdentifier,
