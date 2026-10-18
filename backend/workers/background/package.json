@@ -76,6 +76,7 @@
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
   }
 }

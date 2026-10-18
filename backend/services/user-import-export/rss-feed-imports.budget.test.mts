@@ -58,7 +58,7 @@ describe('RSS feed import row budget', () => {
     expect(status?.import).toMatchObject({ completed_rows: 0, failed_rows: 0, pending_rows: 1 })
     expect(status?.rows[0]).toMatchObject({
       status: 'pending',
-      error: 'RSS feed processing exceeded its time budget',
+      error_code: 'FEED_FETCH_TIMEOUT',
     })
   })
 
@@ -75,6 +75,6 @@ describe('RSS feed import row budget', () => {
 
     const status = await getRssFeedImport(user.id, importId)
     expect(status?.import).toMatchObject({ failed_rows: 1, pending_rows: 0 })
-    expect(status?.rows[0]?.status).toBe('error')
+    expect(status?.rows[0]).toMatchObject({ status: 'error', error_code: 'FEED_FETCH_TIMEOUT' })
   })
 })
