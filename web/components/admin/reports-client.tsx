@@ -128,10 +128,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   const [resolvedIds, setResolvedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [rerunningId, setRerunningId] = useState<string | null>(null)
-  const [rerunBefore, setRerunBefore] = useState<{
-    reportId: string
-    judgementId: string | null
-  } | null>(null)
+  const [rerunBefore, setRerunBefore] = useState<Record<string, string | null>>({})
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set())
   const [bulkAction, setBulkAction] = useState<ModerationBulkAction | null>(null)
   const [bulkMessage, setBulkMessage] = useState<string | null>(null)
@@ -144,15 +141,14 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   const isEmpty = reports.length === 0
   const pendingJudgement =
     viewerTier === 'staff' && (reports as AdminModerationReport[]).some(report => !report.judgement)
-  const rerunReport =
-    rerunBefore &&
-    (reports as AdminModerationReport[]).find(report => report.id === rerunBefore.reportId)
-  usePendingAiRefresh(
-    Boolean(
-      pendingJudgement || (rerunReport && rerunReport.judgement?.id === rerunBefore?.judgementId),
-    ),
-    () => router.refresh(),
-  )
+  const pendingRerun =
+    viewerTier === 'staff' &&
+    (reports as AdminModerationReport[]).some(
+      report =>
+        Object.hasOwn(rerunBefore, report.id) &&
+        (report.judgement?.id ?? null) === rerunBefore[report.id],
+    )
+  usePendingAiRefresh(pendingJudgement || pendingRerun, () => router.refresh())
   const hotkeyItems =
     viewerTier === 'staff'
       ? (reports as AdminModerationReport[]).map(report => ({
@@ -219,7 +215,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
       try {
         const before = (reports as AdminModerationReport[]).find(report => report.id === reportId)
         await rerunReportJudgement(reportId)
-        setRerunBefore({ reportId, judgementId: before?.judgement?.id ?? null })
+        setRerunBefore(current => ({ ...current, [reportId]: before?.judgement?.id ?? null }))
         onSuccess(t('extracted.admin.reportsClient.judgementReRunQueued_ac6c0160'))
         // Note: because the rerun is async (202), the new judgement may not be
         // immediately visible until the background worker completes.

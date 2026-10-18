@@ -69,10 +69,7 @@ export function ClusteredReportsClient({
   const [loadingClusterAction, setLoadingClusterAction] = useState<ClusterAction | null>(null)
   const [loadingDuplicateId, setLoadingDuplicateId] = useState<string | null>(null)
   const [rerunningReportId, setRerunningReportId] = useState<string | null>(null)
-  const [rerunBefore, setRerunBefore] = useState<{
-    reportId: string
-    judgementId: string | null
-  } | null>(null)
+  const [rerunBefore, setRerunBefore] = useState<Record<string, string | null>>({})
   const [isRefreshing, startRefreshTransition] = useTransition()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
@@ -85,11 +82,13 @@ export function ClusteredReportsClient({
     [data.duplicate_clusters, removedClusterKeys],
   )
   const visibleReports = clusters.flatMap(cluster => cluster.reports)
-  const rerunReport =
-    rerunBefore && visibleReports.find(report => report.id === rerunBefore.reportId)
   usePendingAiRefresh(
-    visibleReports.some(report => !report.judgement) ||
-      Boolean(rerunReport && rerunReport.judgement?.id === rerunBefore?.judgementId),
+    visibleReports.some(
+      report =>
+        !report.judgement ||
+        (Object.hasOwn(rerunBefore, report.id) &&
+          (report.judgement?.id ?? null) === rerunBefore[report.id]),
+    ),
     () => router.refresh(),
   )
   const disabled =
@@ -204,7 +203,7 @@ export function ClusteredReportsClient({
     startRefreshTransition(async () => {
       try {
         await rerunReportJudgement(report.id)
-        setRerunBefore({ reportId: report.id, judgementId: report.judgement?.id ?? null })
+        setRerunBefore(current => ({ ...current, [report.id]: report.judgement?.id ?? null }))
         onSuccess(t('extracted.admin.reportsClusteredClient.judgementReRunQueued_ac6c0160'))
         router.refresh()
       } catch (err) {
