@@ -146,6 +146,7 @@ describe('ci-local', () => {
 
       expect(commands).toContain('pnpm run no-mistakes')
       expect(commands).toContain('pnpm run selene')
+      expect(commands).toContain('node ci/check-repository-policy-scans.mts')
       expect(commands).not.toContainEqual(expect.stringContaining('selene --config'))
       expect(commands).not.toContainEqual(expect.stringContaining('no-mistakes playwright check'))
     })

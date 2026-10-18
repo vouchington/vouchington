@@ -32,6 +32,20 @@ describe('static-code-analysis workflow', () => {
     expect(selene[0]?.['timeout-minutes']).toBeTypeOf('number')
   })
 
+  it('runs live repository policy scans once in static CI, outside Vitest', () => {
+    type Step = { name?: string; run?: string; if?: string; 'timeout-minutes'?: number }
+    const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
+    const steps = parsed.jobs['static-code-analysis']?.steps ?? []
+    const scans = steps.filter(step => step.run === 'node ci/check-repository-policy-scans.mts')
+
+    expect(scans).toHaveLength(1)
+    expect(scans[0]?.if).toBeUndefined()
+    expect(scans[0]?.['timeout-minutes']).toBeLessThanOrEqual(2)
+    expect(steps.indexOf(scans[0]!)).toBeGreaterThan(
+      steps.findIndex(step => step.name === 'Repo Node static checks'),
+    )
+  })
+
   it("runs only when called or dispatched, under its caller's concurrency", () => {
     const parsed = load(workflow) as { on: Record<string, unknown>; concurrency?: unknown }
 
