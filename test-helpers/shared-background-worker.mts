@@ -64,18 +64,24 @@ export function getSharedBackgroundWorker(): SharedBackgroundWorker {
 type JobProcessor = (job: { name: string }) => Promise<unknown>
 
 const domainGates = new Map<string, Promise<void>>()
-// Handlers a gate delayed, until they settle. A held job its test already removed still runs its
-// handler on release, and that DB work must not outlive the test that held it.
-const gatedRuns = new Map<string, Set<Promise<unknown>>>()
+// Handlers of a held domain, from the hold until its release has drained them. A held job its test
+// already removed still runs its handler on release, and that handler may enqueue same-domain
+// children; all of that DB work must settle before the holding test ends.
+const trackedRuns = new Map<string, Set<Promise<unknown>>>()
 let gatingInstalled = false
+
+function domainOf(job: { name: string }): string {
+  return job.name.slice(0, job.name.indexOf('.'))
+}
 
 /**
  * Hold one domain's jobs: they still become active on the shared worker, but their handler does not
  * start until the returned release runs. Pausing the worker instead would stall every other
  * domain's job too, including jobs a producer awaits before it reaches the held domain's job.
  *
- * The returned release resolves once every handler the gate delayed has settled; await it, or those
- * handlers keep querying (and opening pool sockets) after the holding test ends.
+ * The returned release resolves once the domain's handlers, including ones the released handlers
+ * spawned, have settled; await it, or they keep querying (and opening pool sockets) after the
+ * holding test ends.
  */
 export function holdBackgroundDomain(domain: BackgroundDomain): () => Promise<void> {
   const worker = getSharedBackgroundWorker()
@@ -83,19 +89,13 @@ export function holdBackgroundDomain(domain: BackgroundDomain): () => Promise<vo
     const internals = worker as unknown as { processor: JobProcessor }
     const processor = internals.processor
     internals.processor = job => {
-      const gate = domainGates.get(job.name.slice(0, job.name.indexOf('.')))
-      if (!gate) return processor(job)
-      const domainName = job.name.slice(0, job.name.indexOf('.'))
-      const runs = gatedRuns.get(domainName) ?? new Set()
-      gatedRuns.set(domainName, runs)
-      const run = (async () => {
-        try {
-          await gate
-          return await processor(job)
-        } finally {
-          runs.delete(run)
-        }
-      })()
+      const name = domainOf(job)
+      const runs = trackedRuns.get(name)
+      const gate = domainGates.get(name)
+      if (!runs) return gate ? gate.then(() => processor(job)) : processor(job)
+      const run = (gate ? gate.then(() => processor(job)) : processor(job)).finally(() =>
+        runs.delete(run),
+      )
       runs.add(run)
       return run
     }
@@ -103,9 +103,12 @@ export function holdBackgroundDomain(domain: BackgroundDomain): () => Promise<vo
   }
   const gate = Promise.withResolvers<void>()
   domainGates.set(domain, gate.promise)
+  const runs = trackedRuns.get(domain) ?? new Set<Promise<unknown>>()
+  trackedRuns.set(domain, runs)
   return async () => {
     if (domainGates.get(domain) === gate.promise) domainGates.delete(domain)
     gate.resolve()
-    await Promise.allSettled([...(gatedRuns.get(domain) ?? [])])
+    while (runs.size > 0) await Promise.allSettled([...runs])
+    if (!domainGates.has(domain)) trackedRuns.delete(domain)
   }
 }
