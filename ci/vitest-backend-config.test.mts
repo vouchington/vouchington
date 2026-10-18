@@ -62,12 +62,8 @@ describe('backend Vitest project config', () => {
     const runner = './test-helpers/vitest.runner.backend-data-guards.mts'
     const projects = config.test?.projects as BackendProject[] | undefined
     const owners = projects?.filter(project => project.test?.runner === runner) ?? []
-    const dataStores = backendProjects().find(
-      project => project.test?.name === 'backend-data-stores',
-    )?.test
-    const capacity = backendProjects().find(
-      project => project.test?.name === 'backend-activitypub-capacity',
-    )?.test
+    const dataStores = backendProjectTest('backend-data-stores')
+    const capacity = backendProjectTest('backend-activitypub-capacity')
     expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
     expect(dataStores?.runner).toBe(runner)
     expect(capacity?.runner).toBe('./test-helpers/vitest.runner.shared-db-scope-guard.mts')
@@ -121,9 +117,7 @@ describe('backend Vitest project config', () => {
   })
 
   it('serializes the ActivityPub capacity boundary outside the shared backend project', () => {
-    const capacity = backendProjects().find(
-      project => project.test?.name === 'backend-activitypub-capacity',
-    )?.test
+    const capacity = backendProjectTest('backend-activitypub-capacity')
 
     expect(capacity).toMatchObject({ isolate: false })
     expect(capacity).not.toHaveProperty('fileParallelism')
@@ -164,7 +158,11 @@ describe('backend Vitest project config', () => {
     expect(
       ((config.test?.projects ?? []) as BackendProject[]).filter(p => projectOwnsPath(p, path)),
     ).toEqual([capacity])
-    expect(capacity?.test).toMatchObject({ testTimeout: 5000, hookTimeout: 5000 })
+    expect(capacity?.test).toMatchObject({
+      sequence: { groupOrder: 0 },
+      testTimeout: 5000,
+      hookTimeout: 5000,
+    })
     expect(config.test?.sequence?.groupOrder).toBe(1)
     expect(
       mergeConfig({ resolve: config.resolve }, { resolve: capacity?.resolve }).resolve?.alias,

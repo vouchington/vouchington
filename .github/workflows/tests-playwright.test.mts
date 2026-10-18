@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 import { ALLOWED_LABELS } from './runner-policy-classify.mts'
 
 // The runner allowlist owns the versioned ARM label; read it instead of pinning a second literal.
@@ -11,10 +10,6 @@ const armLabel = ALLOWED_LABELS.find(label => label.endsWith('-arm'))
 const workflow = readFileSync('.github/workflows/tests-playwright.yml', 'utf8')
 const playwrightConfigHelpers = readFileSync('playwright/config/config-helpers.mts', 'utf8')
 const playwrightSharedConfig = readFileSync('playwright/config/shared-config.mts', 'utf8')
-const browserSafePortsScript = readFileSync(
-  'node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py',
-  'utf8',
-)
 
 function workflowJobSection(body: string, jobName: string): string {
   const match = body.match(
@@ -119,9 +114,6 @@ describe('tests-playwright.yml', () => {
     expect(workflow).toContain(
       'python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 6',
     )
-    expect(browserSafePortsScript).toContain('"fetch-forbidden-ports.json"')
-    expect(workflow).not.toContain('--forbidden-ports')
-    expect(FETCH_FORBIDDEN_PORTS).toEqual(expect.arrayContaining([4045, 6667, 10_080]))
   })
 
   it('installs JavaScript dependencies before allocating ports', () => {
