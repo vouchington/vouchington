@@ -155,7 +155,7 @@ describe('vote-weight dispatcher admission', () => {
         try {
           await Promise.all(admittedJobs.map(job => job.remove()))
         } finally {
-          release()
+          await release()
         }
       }
     },
@@ -182,7 +182,7 @@ describe('vote-weight dispatcher admission', () => {
       try {
         await Promise.all(admittedJobs.map(job => job.remove()))
       } finally {
-        release()
+        await release()
       }
     }
   })

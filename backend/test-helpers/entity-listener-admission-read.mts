@@ -35,10 +35,9 @@ export function withEntityListenerAdmissionRead<T>(
   if (held)
     return Promise.reject(new Error('The entity-listeners domain is already held by another owner'))
   let ownsHold = false
-  let releaseDomain = () => {}
+  let releaseDomain: () => Promise<void> = () => Promise.resolve()
   const resume = () => {
-    if (ownsHold) releaseDomain()
-    return Promise.resolve()
+    return ownsHold ? releaseDomain() : Promise.resolve()
   }
   const added = Promise.withResolvers<{ id: string; name: string; data: unknown }>()
   const admitted = Promise.withResolvers<EnqueueAdmission>()
