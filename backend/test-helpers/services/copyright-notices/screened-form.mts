@@ -33,8 +33,12 @@ export async function isTestCopyrightStaffCaseQueued(
   }
 }
 
-export async function createClearScreenedForm(targetCount = 1, people: FormPeople = {}) {
-  const notice = await createSignedInCopyrightForm(targetCount, people)
+export async function createClearScreenedForm(
+  targetCount = 1,
+  people: FormPeople = {},
+  options: { now?: Date } = {},
+) {
+  const notice = await createSignedInCopyrightForm(targetCount, people, options)
   const screeningId = await appendCopyrightFormScreening({
     intakeId: notice.intake.id,
     inputSha256: Buffer.alloc(32, targetCount),
@@ -51,15 +55,28 @@ export async function createClearScreenedForm(targetCount = 1, people: FormPeopl
 export type FormPeople = { claimant?: PrivateUser; poster?: { id: string } }
 
 /** A complete signed-in structured form whose screening has not run yet. */
-export function createSignedInCopyrightForm(targetCount = 1, people: FormPeople = {}) {
-  return createForm(targetCount, people, false)
+export function createSignedInCopyrightForm(
+  targetCount = 1,
+  people: FormPeople = {},
+  options: { now?: Date } = {},
+) {
+  return createForm(targetCount, people, false, options)
 }
 
-export function createGuestCopyrightForm(targetCount = 1, people: FormPeople = {}) {
-  return createForm(targetCount, people, true)
+export function createGuestCopyrightForm(
+  targetCount = 1,
+  people: FormPeople = {},
+  options: { now?: Date } = {},
+) {
+  return createForm(targetCount, people, true, options)
 }
 
-async function createForm(targetCount: number, people: FormPeople, guest: boolean) {
+async function createForm(
+  targetCount: number,
+  people: FormPeople,
+  guest: boolean,
+  options: { now?: Date },
+) {
   const [claimant, poster] = await Promise.all([
     people.claimant ?? createTestUser(),
     people.poster ?? createTestUser(),
@@ -74,25 +91,28 @@ async function createForm(targetCount: number, people: FormPeople, guest: boolea
     Array.from({ length: targetCount }, () => insertTestImage(poster.id)),
   )
   await Promise.all(imageIds.map(imageId => insertTestPostImage({ postId, imageId })))
-  return createCopyrightFormIntake({
-    currentUser: guest ? null : claimant,
-    requesterIdentity: guest ? `guest:${crypto.randomUUID()}` : `user:${claimant.id}`,
-    idempotencyKey: crypto.randomUUID(),
-    request: {
-      jurisdiction: 'us_dmca',
-      claimantDisplayName: 'Claimant',
-      claimantContact: 'claimant@example.test',
-      claimantEmail: 'claimant@example.test',
-      workDescription: 'Original photograph',
-      goodFaithBelief: true,
-      accuracyAuthorityUnderPenaltyOfPerjury: true,
-      electronicSignature: 'Claimant',
-      claimantTargets: imageIds.map(imageId => ({
-        surfaceKind: 'post-image' as const,
-        postId,
-        imageId,
-        hostedUseUrl: `https://voucha.ai/posts/${postId}`,
-      })),
+  return createCopyrightFormIntake(
+    {
+      currentUser: guest ? null : claimant,
+      requesterIdentity: guest ? `guest:${crypto.randomUUID()}` : `user:${claimant.id}`,
+      idempotencyKey: crypto.randomUUID(),
+      request: {
+        jurisdiction: 'us_dmca',
+        claimantDisplayName: 'Claimant',
+        claimantContact: 'claimant@example.test',
+        claimantEmail: 'claimant@example.test',
+        workDescription: 'Original photograph',
+        goodFaithBelief: true,
+        accuracyAuthorityUnderPenaltyOfPerjury: true,
+        electronicSignature: 'Claimant',
+        claimantTargets: imageIds.map(imageId => ({
+          surfaceKind: 'post-image' as const,
+          postId,
+          imageId,
+          hostedUseUrl: `https://voucha.ai/posts/${postId}`,
+        })),
+      },
     },
-  })
+    options,
+  )
 }

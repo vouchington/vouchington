@@ -1,22 +1,23 @@
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { beginTransaction, write } from '@data-stores/psql'
 import { checkAutomaticWithholdingCaps } from '../../../services/copyright-notices/automatic-withholding-caps.mts'
 import { readClaimantMisuseSummaries } from '../../../services/copyright-notices/claimant-misuse-summary.mts'
 import { getPendingCopyrightStaffCases } from '../../../services/copyright-notices/read-models-staff-case.mts'
 
 /**
- * Appends an audited change to a config key that only the calling test reads, stamped `daysAgo`
- * days in the past, so the switch-on lookup can be exercised without touching the live namespace.
+ * Appends an audited change to a config key that only the calling test reads, stamped at the
+ * supplied instant so switch-on boundaries can be exercised without touching the live namespace.
  */
 export async function recordTestConfigChange(
   configKey: string,
-  daysAgo: number,
+  at: Date,
   previous: Record<string, unknown>,
   next: Record<string, unknown>,
 ): Promise<void> {
   await write(sql`/* recordTestConfigChange */
     INSERT INTO dynamic_configuration_revisions (id, configuration_key, revision_type, changes)
-    VALUES (uuidv7(${`-${daysAgo} days`}::interval), ${configKey}, 'update',
+    VALUES (${uuidv7({ msecs: at.getTime() })}, ${configKey}, 'update',
       fn_field_changes(${JSON.stringify(previous)}::jsonb, ${JSON.stringify(next)}::jsonb))
   `)
 }
