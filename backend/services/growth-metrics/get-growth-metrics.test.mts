@@ -16,34 +16,24 @@ import { getInfrastructureMetrics } from './get-infrastructure-metrics.mts'
 import type { GrowthMetrics, GrowthRange } from './types.mts'
 
 describe('getRangeStart', () => {
-  it('returns start of today for "today"', () => {
-    const now = new Date('2024-06-15T14:30:00Z')
-    const start = getRangeStart('today', now)
-    expect(start.getUTCHours()).toBe(0)
-    expect(start.getUTCMinutes()).toBe(0)
-    expect(start.getUTCSeconds()).toBe(0)
+  it.each([
+    { now: '2024-06-15T14:30:00.000Z', expected: '2024-06-15T00:00:00.000Z' },
+    { now: '2024-06-30T23:59:59.999Z', expected: '2024-06-30T00:00:00.000Z' },
+    { now: '2024-07-01T00:00:00.001Z', expected: '2024-07-01T00:00:00.000Z' },
+  ])('returns start of today for "today" at $now', ({ now, expected }) => {
+    expect(getRangeStart('today', new Date(now)).toISOString()).toBe(expected)
   })
 
-  it('returns 7 days ago for "7d"', () => {
-    const now = new Date('2024-06-15T14:30:00Z')
-    const start = getRangeStart('7d', now)
-    const diffDays = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    expect(diffDays).toBeCloseTo(7, 0)
-  })
-
-  it('returns 30 days ago for "30d"', () => {
-    const now = new Date('2024-06-15T14:30:00Z')
-    const start = getRangeStart('30d', now)
-    const diffDays = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    expect(diffDays).toBeCloseTo(30, 0)
-  })
-
-  it('returns 90 days ago for "90d"', () => {
-    const now = new Date('2024-06-15T14:30:00Z')
-    const start = getRangeStart('90d', now)
-    const diffDays = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    expect(diffDays).toBeCloseTo(90, 0)
-  })
+  it.each([
+    { range: '7d', now: '2024-03-01T00:00:00.001Z', expected: '2024-02-23T00:00:00.001Z' },
+    { range: '30d', now: '2024-03-31T23:59:59.999Z', expected: '2024-03-01T23:59:59.999Z' },
+    { range: '90d', now: '2024-01-01T00:00:00.001Z', expected: '2023-10-03T00:00:00.001Z' },
+  ] satisfies Array<{ range: GrowthRange; now: string; expected: string }>)(
+    'returns $range across calendar rollover from $now',
+    ({ range, now, expected }) => {
+      expect(getRangeStart(range, new Date(now)).toISOString()).toBe(expected)
+    },
+  )
 
   it('returns epoch for "all"', () => {
     const now = new Date()
