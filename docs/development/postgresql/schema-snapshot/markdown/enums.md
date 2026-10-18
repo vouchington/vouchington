@@ -29,6 +29,13 @@
 - `storyteller`
 - `classifier`
 
+## `ai_agent_call_receipt_agent_slugs`
+
+- `story-post`
+- `report-judgement`
+- `copyright-submission-guidance`
+- `copyright-appeal-recommendation`
+
 ## `ai_model_providers`
 
 - `anthropic`

@@ -6,15 +6,19 @@ Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           | UUIDv7 receipt identity and creation order.                                                                                                            |
-| `operation_key`                  | `text`                     | no       |                              |          |           |           | SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request.                            |
-| `agent_slug`                     | `text`                     | no       |                              |          |           |           | Agent that reserved the paid call.                                                                                                                     |
-| `request_sha256`                 | `text`                     | no       |                              |          |           |           | SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review. |
-| `copyright_notice_submission_id` | `uuid`                     | yes      |                              |          |           |           | Retention owner for copyright guidance and appeal results; null for other agents.                                                                      |
-| `result_ciphertext`              | `text`                     | yes      |                              |          |           |           | Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.                                         |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 receipt identity.                                                                                                |
+| Column                           | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                                |
+| -------------------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                             | `uuid`                              | no       | `uuidv7()`                   |          |           |           | UUIDv7 receipt identity and creation order.                                                                                                            |
+| `operation_key`                  | `text`                              | no       |                              |          |           |           | SHA-256 of the agent and stable logical operation identity; retries cannot mint a second paid call by changing the request.                            |
+| `agent_slug`                     | `ai_agent_call_receipt_agent_slugs` | no       |                              |          |           |           | Agent that reserved the paid call.                                                                                                                     |
+| `request_sha256`                 | `text`                              | no       |                              |          |           |           | SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review. |
+| `copyright_notice_submission_id` | `uuid`                              | yes      |                              |          |           |           | Retention owner for copyright guidance and appeal results; null for other agents.                                                                      |
+| `post_id`                        | `uuid`                              | yes      |                              |          |           |           | Reported post or comment; hard deletion erases the result while retaining the paid operation key.                                                      |
+| `reported_user_id`               | `uuid`                              | yes      |                              |          |           |           | Reported user; hard deletion erases the result while retaining the paid operation key.                                                                 |
+| `hostname_id`                    | `uuid`                              | yes      |                              |          |           |           | Reported URL hostname; hard deletion erases the result while retaining the paid operation key.                                                         |
+| `rss_feed_item_id`               | `uuid`                              | yes      |                              |          |           |           | Reported RSS feed item; hard deletion erases the result while retaining the paid operation key.                                                        |
+| `result_ciphertext`              | `text`                              | yes      |                              |          |           |           | Encrypted provider result saved before the agent writes its domain result; re-used after a downstream failure.                                         |
+| `created_at`                     | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Creation time derived from the UUIDv7 receipt identity.                                                                                                |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -24,7 +28,17 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
-- `ai_agent_call_receipts_check`: `CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::text, 'copyright-appeal-recommendation'::text])) = (copyright_notice_submission_id IS NOT NULL)))`
+- `ai_agent_call_receipts_check`: `CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::ai_agent_call_receipt_agent_slugs, 'copyright-appeal-recommendation'::ai_agent_call_receipt_agent_slugs])) = (copyright_notice_submission_id IS NOT NULL)))`
+- `ai_agent_call_receipts_check1`:
+
+  ```sql
+  CHECK (
+  CASE
+      WHEN (agent_slug = 'report-judgement'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1) OR ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text))))
+      ELSE (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0)
+  END)
+  ```
+
 - `ai_agent_call_receipts_operation_key_check`: `CHECK ((char_length(operation_key) = 64))`
 - `ai_agent_call_receipts_request_sha256_check`: `CHECK ((char_length(request_sha256) = 64))`
 - `ai_agent_call_receipts_result_ciphertext_check`: `CHECK (((result_ciphertext IS NULL) OR (char_length(result_ciphertext) > 0)))`
@@ -32,12 +46,21 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_ai_agent_call_receipts__copyright_notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_ai_agent_call_receipts__hostname`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE SET NULL`
+- `fk_ai_agent_call_receipts__post`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
+- `fk_ai_agent_call_receipts__reported_user`: `FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- `fk_ai_agent_call_receipts__rss_feed_item`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE SET NULL`
 
 **Indexes:**
 
 - `ai_agent_call_receipts_operation_key_key`: `CREATE UNIQUE INDEX ai_agent_call_receipts_operation_key_key ON public.ai_agent_call_receipts USING btree (operation_key)`
 - `ai_agent_call_receipts_pkey`: `CREATE UNIQUE INDEX ai_agent_call_receipts_pkey ON public.ai_agent_call_receipts USING btree (id)`
 - `idx_ai_agent_call_receipts__copyright_submission`: `CREATE INDEX idx_ai_agent_call_receipts__copyright_submission ON public.ai_agent_call_receipts USING btree (copyright_notice_submission_id) WHERE (copyright_notice_submission_id IS NOT NULL)`
+- `idx_ai_agent_call_receipts__hostname`: `CREATE INDEX idx_ai_agent_call_receipts__hostname ON public.ai_agent_call_receipts USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)`
+- `idx_ai_agent_call_receipts__post`: `CREATE INDEX idx_ai_agent_call_receipts__post ON public.ai_agent_call_receipts USING btree (post_id) WHERE (post_id IS NOT NULL)`
+- `idx_ai_agent_call_receipts__reported_user`: `CREATE INDEX idx_ai_agent_call_receipts__reported_user ON public.ai_agent_call_receipts USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)`
+- `idx_ai_agent_call_receipts__rss_feed_item`: `CREATE INDEX idx_ai_agent_call_receipts__rss_feed_item ON public.ai_agent_call_receipts USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)`
 
 **Triggers:**
-_none_
+
+- `trigger_erase_report_agent_call_receipt_target`: `CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_erase_report_agent_call_receipt_target()`

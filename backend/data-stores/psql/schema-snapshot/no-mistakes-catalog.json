@@ -27,6 +27,14 @@
     "agent_types": {
       "values": ["moderator", "autotagger", "storyteller", "classifier"]
     },
+    "ai_agent_call_receipt_agent_slugs": {
+      "values": [
+        "story-post",
+        "report-judgement",
+        "copyright-submission-guidance",
+        "copyright-appeal-recommendation"
+      ]
+    },
     "ai_model_providers": {
       "values": ["anthropic", "openai", "typesafe"]
     },
@@ -1285,6 +1293,9 @@
     },
     "fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_identity_families, identity_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  owner_table TEXT := 'retained_' || family::text || '_identities';\n  pinned_id UUID;\nBEGIN\n  -- Cleanup can remove an orphan between the conflict and key-share reads.\n  -- Retry until this transaction pins the retained owner.\n  LOOP\n    EXECUTE format('INSERT INTO %I (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', owner_table)\n      USING identity_id;\n    EXECUTE format('SELECT id FROM %I WHERE id = $1 FOR KEY SHARE', owner_table)\n      INTO pinned_id USING identity_id;\n    EXIT WHEN pinned_id IS NOT NULL;\n  END LOOP;\nEND;\n$function$\n"
+    },
+    "fn_erase_report_agent_call_receipt_target()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_erase_report_agent_call_receipt_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.agent_slug = 'report-judgement'\n      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) <> 1 THEN\n      RAISE EXCEPTION 'Report call receipts require exactly one live target';\n    END IF;\n  ELSIF OLD.result_ciphertext = 'erased'\n    OR (OLD.agent_slug = 'report-judgement'\n      AND num_nonnulls(OLD.post_id, OLD.reported_user_id, OLD.hostname_id, OLD.rss_feed_item_id) = 1\n      AND num_nonnulls(NEW.post_id, NEW.reported_user_id, NEW.hostname_id, NEW.rss_feed_item_id) = 0) THEN\n    NEW.result_ciphertext := 'erased';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_field_changes(before_fields jsonb, after_fields jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fields jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT COALESCE(jsonb_object_agg(field, jsonb_build_object(\n    'before', before_fields -> field, 'after', after_fields -> field)), '{}'::jsonb)\n  FROM (SELECT jsonb_object_keys(before_fields || after_fields) AS field) fields\n  WHERE before_fields -> field IS DISTINCT FROM after_fields -> field\n$function$\n"
@@ -5327,7 +5338,11 @@
     "ai_agent_call_receipts": {
       "checkConstraints": {
         "ai_agent_call_receipts_check": {
-          "definition": "CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::text, 'copyright-appeal-recommendation'::text])) = (copyright_notice_submission_id IS NOT NULL)))",
+          "definition": "CHECK (((agent_slug = ANY (ARRAY['copyright-submission-guidance'::ai_agent_call_receipt_agent_slugs, 'copyright-appeal-recommendation'::ai_agent_call_receipt_agent_slugs])) = (copyright_notice_submission_id IS NOT NULL)))",
+          "validated": true
+        },
+        "ai_agent_call_receipts_check1": {
+          "definition": "CHECK (\nCASE\n    WHEN (agent_slug = 'report-judgement'::ai_agent_call_receipt_agent_slugs) THEN ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1) OR ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0) AND (NOT (result_ciphertext IS DISTINCT FROM 'erased'::text))))\n    ELSE (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 0)\nEND)",
           "validated": true
         },
         "ai_agent_call_receipts_operation_key_check": {
@@ -5346,7 +5361,7 @@
       "columns": {
         "agent_slug": {
           "comment": "Agent that reserved the paid call.",
-          "dataType": "text",
+          "dataType": "ai_agent_call_receipt_agent_slugs",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -5372,7 +5387,17 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 11
+        },
+        "hostname_id": {
+          "comment": "Reported URL hostname; hard deletion erases the result while retaining the paid operation key.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
         },
         "id": {
           "comment": "UUIDv7 receipt identity and creation order.",
@@ -5394,6 +5419,26 @@
           "nullable": false,
           "ordinalPosition": 2
         },
+        "post_id": {
+          "comment": "Reported post or comment; hard deletion erases the result while retaining the paid operation key.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "reported_user_id": {
+          "comment": "Reported user; hard deletion erases the result while retaining the paid operation key.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "request_sha256": {
           "comment": "SHA-256 of the selected model, prompt/schema contract version and exact provider input reserved for this operation; mismatched retries require review.",
           "dataType": "text",
@@ -5412,7 +5457,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 10
+        },
+        "rss_feed_item_id": {
+          "comment": "Reported RSS feed item; hard deletion erases the result while retaining the paid operation key.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
         }
       },
       "comment": "Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.",
@@ -5423,6 +5478,38 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notice_submissions",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__hostname": {
+          "columns": ["hostname_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "url_hostnames",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__post": {
+          "columns": ["post_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "posts",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__reported_user": {
+          "columns": ["reported_user_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "fk_ai_agent_call_receipts__rss_feed_item": {
+          "columns": ["rss_feed_item_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "rss_feed_items",
           "validated": true
         }
       },
@@ -5495,6 +5582,98 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "idx_ai_agent_call_receipts__hostname": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__hostname ON public.ai_agent_call_receipts USING btree (hostname_id) WHERE (hostname_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "hostname_id",
+              "descending": false,
+              "expression": "hostname_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__post": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__post ON public.ai_agent_call_receipts USING btree (post_id) WHERE (post_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "post_id",
+              "descending": false,
+              "expression": "post_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__reported_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__reported_user ON public.ai_agent_call_receipts USING btree (reported_user_id) WHERE (reported_user_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reported_user_id",
+              "descending": false,
+              "expression": "reported_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(reported_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_ai_agent_call_receipts__rss_feed_item": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_ai_agent_call_receipts__rss_feed_item ON public.ai_agent_call_receipts USING btree (rss_feed_item_id) WHERE (rss_feed_item_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rss_feed_item_id",
+              "descending": false,
+              "expression": "rss_feed_item_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(rss_feed_item_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -5502,7 +5681,11 @@
         "columns": ["id"]
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_erase_report_agent_call_receipt_target": {
+          "definition": "CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_erase_report_agent_call_receipt_target()"
+        }
+      },
       "uniqueConstraints": {
         "ai_agent_call_receipts_operation_key_key": {
           "columns": ["operation_key"]

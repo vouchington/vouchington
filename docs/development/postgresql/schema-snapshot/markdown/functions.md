@@ -149,6 +149,14 @@ CREATE OR REPLACE FUNCTION public.fn_ensure_retained_identity(family retained_id
  LANGUAGE plpgsql
 ```
 
+## `fn_erase_report_agent_call_receipt_target`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_erase_report_agent_call_receipt_target()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_field_changes(before_fields jsonb, after_fields jsonb)`
 
 ```sql
