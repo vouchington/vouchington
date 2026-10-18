@@ -40,7 +40,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `review_disputes_ai_draft_request_token_key`: `UNIQUE (ai_draft_request_token)`
 
 **Check constraints:**
 
@@ -65,6 +66,7 @@ _none_
 - `idx_review_disputes__post_id`: `CREATE INDEX idx_review_disputes__post_id ON public.review_disputes USING btree (post_id)`
 - `idx_review_disputes__status_created`: `CREATE INDEX idx_review_disputes__status_created ON public.review_disputes USING btree (resolved_at, id DESC)`
 - `idx_review_disputes__topic_id`: `CREATE INDEX idx_review_disputes__topic_id ON public.review_disputes USING btree (topic_id)`
+- `review_disputes_ai_draft_request_token_key`: `CREATE UNIQUE INDEX review_disputes_ai_draft_request_token_key ON public.review_disputes USING btree (ai_draft_request_token)`
 - `review_disputes_pkey`: `CREATE UNIQUE INDEX review_disputes_pkey ON public.review_disputes USING btree (id)`
 
 **Triggers:**

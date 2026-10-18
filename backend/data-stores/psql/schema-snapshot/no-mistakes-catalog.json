@@ -115116,6 +115116,29 @@
           "unique": false,
           "valid": true
         },
+        "review_disputes_ai_draft_request_token_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX review_disputes_ai_draft_request_token_key ON public.review_disputes USING btree (ai_draft_request_token)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_request_token",
+              "descending": false,
+              "expression": "ai_draft_request_token",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "review_disputes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -115153,7 +115176,11 @@
           "definition": "CREATE TRIGGER trigger_review_disputes_updated_at BEFORE UPDATE ON public.review_disputes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "review_disputes_ai_draft_request_token_key": {
+          "columns": ["ai_draft_request_token"]
+        }
+      }
     },
     "review_succession_topics": {
       "checkConstraints": {},
