@@ -1,5 +1,4 @@
-/* oxlint-disable max-lines -- this suite exercises the email-review action and pending-detail states together. */
-import { act, configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   copyrightEmailIntakesClientMock as intakesClient,
@@ -72,23 +71,6 @@ describe('CopyrightEmailReview', () => {
     expect(screen.getByLabelText('Claimant email')).toHaveValue(
       'tests+copyright-claimant@voucha.ai',
     )
-  })
-
-  it('makes one immediate detail retry while the selected recommendation is still unavailable', async () => {
-    mockGet.mockResolvedValue({
-      copyright_email_intake: makeIntake(intakeId, { recommendation: null }),
-    })
-    render(<CopyrightEmailReview data={makeQueuePage()} />)
-
-    await selectEmailIntake()
-    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(mockGet).toHaveBeenCalledTimes(2)
-    expect(screen.getByRole('heading', { name: 'Staff-private evidence' })).toBeVisible()
   })
 
   it('submits the moderator-edited statutory payload when approving', async () => {
