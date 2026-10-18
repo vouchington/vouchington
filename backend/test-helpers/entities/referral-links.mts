@@ -6,15 +6,23 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
 
+export function createTestUserReferralProgramLinkIdAt(at: Date): string {
+  return v7({ msecs: at.getTime() })
+}
+
 export async function insertTestUserReferralProgramLink(opts: {
+  id?: string
   userId: string
   referralProgramId: string
   urlId: string
   label?: string
   parentLinkId?: string
 }): Promise<string> {
-  const { rows } = await write(sql`/* insertTestUserReferralProgramLink */
+  const statement = sql`/* insertTestUserReferralProgramLink */
     INSERT INTO user_referral_program_links (
+  `
+  if (opts.id !== undefined) statement.append(sql`id,`)
+  statement.append(sql`
       user_id,
       referral_program_topic_id,
       url_id,
@@ -24,6 +32,9 @@ export async function insertTestUserReferralProgramLink(opts: {
       created_via
     )
     VALUES (
+  `)
+  if (opts.id !== undefined) statement.append(sql`${opts.id}::uuid,`)
+  statement.append(sql`
       ${opts.userId},
       ${opts.referralProgramId},
       ${opts.urlId},
@@ -34,6 +45,7 @@ export async function insertTestUserReferralProgramLink(opts: {
     )
     RETURNING id
   `)
+  const { rows } = await write(statement)
   return rows[0]!.id as string
 }
 
