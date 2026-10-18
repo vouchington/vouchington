@@ -27,7 +27,6 @@ ignores:
   - 'backend/modules/feed-query-builders/**'
   - 'backend/data-stores/psql/config-driven/**'
   - 'backend/data-stores/psql/schema-snapshot/**'
-  - 'backend/data-stores/psql/migration-runner/views.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-notification-push-intents-migration.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-post-admission-reservation-index.test.mts'
   - 'backend/data-stores/psql/__tests__/schema-static-analysis.test.mts'
