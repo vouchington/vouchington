@@ -38,7 +38,6 @@ function toolingFilter(): string[] {
 const fixtureDocumentationPaths = [
   '.github/workflows/README.md',
   '.github/workflows/AGENTS.md',
-  'docs/development/ci/workflows/reference-deploy-and-release.md',
   'AGENTS.md',
   'docs/development/ci.md',
   'docs/development/reference-ci-ci-job-conditions.md',
@@ -79,12 +78,6 @@ describe('CI fixture documentation classifier', () => {
     }
 
     expect(docsOnly(['docs/development/ci.md', 'docs/development/tests.md'])).toBe(false)
-    expect(
-      docsOnly([
-        'docs/development/tests.md',
-        'docs/development/ci/workflows/reference-deploy-and-release.md',
-      ]),
-    ).toBe(false)
     expect(docsOnly(['.github/workflows/cleanup-artifacts.yml'])).toBe(false)
     expect(docsOnly(['docs/development/tests.md', 'package.json'])).toBe(false)
     // Now covered by the whole-tree docs/prompts/.+\.mdx? pattern -- see FIXTURE_DOC_TREES.

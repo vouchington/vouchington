@@ -5,18 +5,8 @@ The [CI reference](../ci.md) is canonical for the CI design rationale and gates.
 
 - [Inline-workflow shell footguns](tooling/reference-inline-workflow-shell-footguns-actionlint-shellcheck.md)
 - [Transient retry rules](transient-retry/README.md)
-
-## Workflow references
-
-- [Deploy And Release](workflows/reference-deploy-and-release.md)
-- [Maintenance, Security, And Utilities](workflows/reference-maintenance-security-and-utilities.md)
-- [Playwright And Storybook](workflows/reference-playwright-and-storybook.md)
-- [Vitest](workflows/reference-vitest.md)
-- [Artifact Rerun Safety](workflows/reference-artifact-rerun-safety.md)
-- [Fix Main dependency policy](workflows/reference-fix-main-dependency-policy.md)
-- [Fixed-Branch Automation PRs](workflows/reference-fixed-branch-automation-prs.md)
+- [Artifact rerun safety](workflows/reference-artifact-rerun-safety.md)
 - [Auto Harness automation](workflows/reference-harness-automation.md)
-- [Merge Queue Run Cancellation](workflows/reference-merge-queue-run-cancellation.md)
-- [PR-Triggered Workflow Trust Boundary Checklist](workflows/reference-pr-triggered-workflow-trust-boundary-checklist.md)
+- [Merge queue run cancellation](workflows/reference-merge-queue-run-cancellation.md)
 - [Sharding](workflows/reference-sharding.md)
-- [Workflow Change Preflight](workflows/reference-workflow-change-preflight.md)
+- [Workflow trust boundary checklist](workflows/reference-pr-triggered-workflow-trust-boundary-checklist.md)

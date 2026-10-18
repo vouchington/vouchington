@@ -1,18 +1,10 @@
 # Transient-Retry Rule Catalogue
 
-Source entrypoint: [ci/transient-retry/README.md](../../../../ci/transient-retry/README.md)
-
-This directory explains the rule catalogue for known-transient CI failures on `main`.
-Automatic `main` recovery runs only while `HARNESS_DISPATCH_ENABLED` and
-`HARNESS_FIX_MAIN_ENABLED` are both exactly `true`; both gates are unset by default. The manual
-non-`main` PR-branch helper documented below remains available.
-
-## Contents
-
-- <a id="what-is-the-rule-catalogue"></a>[What is the rule catalogue?](reference-what-is-the-rule-catalogue.md)
-- <a id="how-automatic-reruns-work-on-main-ci-only"></a>[How automatic reruns work on `main` (CI only)](reference-how-automatic-reruns-work-on-main-ci-only.md)
-- <a id="how-agents-should-use-this-on-non-main-non-dependabot-pr-branches"></a>[How agents should use this on non-`main`, non-Dependabot PR branches](reference-how-agents-should-use-this-on-non-main-non-dependabot-pr-branches.md)
-- <a id="rule-consolidation-concepts"></a>[Rule Consolidation Concepts](reference-rule-consolidation-concepts.md)
+Source entrypoint: [ci/transient-retry/README.md](../../../../ci/transient-retry/README.md). The
+rules live in `ci/transient-retry/rules.mts`, and the scoped
+[invariants](../../../../ci/transient-retry/AGENTS.md) govern changing them. Automatic `main`
+recovery is off unless both Harness gates are enabled; the manual helper for non-`main` PR branches
+always works.
 
 ## Design rationale
 
@@ -28,3 +20,27 @@ non-`main` PR-branch helper documented below remains available.
 - A job-level timeout match is unsafe for a heterogeneous job, because it would rerun real code-bug
   deadlocks. A timeout rule must prove the job is homogeneous by config or pin the owning
   project's boundary.
+- One root cause is one rule, even when it surfaces as different HTTP statuses, `curl` exit codes,
+  step timeouts, or asset paths. Broaden by keeping the consumer's terminal failure marker as the
+  anchor, because it proves the failure happened in the right job, then OR together the transient
+  variants. For multi-error logs, require every error block to match a transient predicate so a
+  genuine error mixed into the set is never silently rerun.
+- Dispatch re-reads the source run before it acts, and escalation repeats that check. A rerun that
+  has already started makes the failed attempt stale, so an obsolete attempt must neither dispatch
+  a fix nor open a needs-human issue. Unreadable state stops the path instead of guessing.
+- Attempt accounting is replayed from prior attempts, and evidence that cannot be fetched degrades
+  to a conservative shared count rather than an optimistic per-rule one.
+
+## Runbook for non-`main`, non-Dependabot PR branches
+
+1. Read the rules before writing a code fix. A failure with the same conclusion, failing jobs, and
+   log fingerprint as an existing rule is known-transient.
+2. Confirm and rerun with `node ci/transient-retry/rerun-known-transient.mts <run-id>` instead of
+   matching by hand and calling `gh run rerun`. An unmatched failure is a real failure until a rule
+   with a real-log fixture says otherwise.
+3. For a new transient pattern, add a rule in your PR.
+
+A rerun replays the same head SHA against the same base merge, so if a shard keeps failing
+identically and `origin/main` has moved, rebase and push instead. Every rerun creates a new
+attempt and is not idempotent: do not start one while another is in progress or after cancelling
+the run, because overlapping attempts race and their recorded state can disagree.

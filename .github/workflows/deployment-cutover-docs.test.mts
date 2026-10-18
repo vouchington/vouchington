@@ -17,9 +17,6 @@ describe('post-cutover deployment documentation', () => {
       /\s+/g,
       ' ',
     )
-    const workflowReference = read(
-      'docs/development/ci/workflows/reference-deploy-and-release.md',
-    ).replace(/\s+/g, ' ')
 
     expect(platform).toContain('Live through the private infrastructure deployment receiver')
     expect(platform).not.toContain('receiver disabled during cutover')
@@ -28,7 +25,6 @@ describe('post-cutover deployment documentation', () => {
     expect(firstTime).toContain('production promotion and rollback are not live')
     expect(firstTime).not.toContain('smoke test → promote to production')
     expect(ciCd).toContain('The global CI apply workflow and its trust')
-    expect(workflowReference).toContain('The global CI apply workflow and its trust')
   })
 
   it('keeps staging credentials and private verification procedures out of public docs', () => {

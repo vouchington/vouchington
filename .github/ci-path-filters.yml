@@ -256,7 +256,6 @@ tooling:
   - 'backend/**'
   - 'backend/agents/AGENTS.md'
   - 'docs/overview/architecture/ai-agents/README.md'
-  - 'docs/development/ci/workflows/reference-deploy-and-release.md'
   - 'docs/development/local-development/{README,reference-bedrock-embeddings-local}.md'
   - 'docs/development/postgresql/{reference-migrations-views-and-config-driven,schema-snapshot/README}.md'
   - 'AGENTS.md'
