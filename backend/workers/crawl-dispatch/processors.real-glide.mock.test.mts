@@ -40,40 +40,40 @@ const fixtures = [
     label: 'hostnames',
     queue: backgroundCpu,
     manifest: crawlManifest,
-    schedulerId: 'crawl_hostnames_dispatcher',
-    work: 'crawl_hostnames_dispatcher',
+    schedulerId: 'crawl:crawl_hostnames_dispatcher',
+    work: 'crawl.crawl_hostnames_dispatcher',
     root: enqueueCrawlHostnamesDispatcher,
   },
   {
     label: 'tier1',
     queue: backgroundCpu,
     manifest: crawlManifest,
-    schedulerId: 'crawl_tier1_dispatcher',
-    work: 'crawl_tier1_dispatcher',
+    schedulerId: 'crawl:crawl_tier1_dispatcher',
+    work: 'crawl.crawl_tier1_dispatcher',
     root: enqueueCrawlTier1Dispatcher,
   },
   {
     label: 'tier2',
     queue: backgroundCpu,
     manifest: crawlManifest,
-    schedulerId: 'crawl_tier2_dispatcher',
-    work: 'crawl_tier2_dispatcher',
+    schedulerId: 'crawl:crawl_tier2_dispatcher',
+    work: 'crawl.crawl_tier2_dispatcher',
     root: enqueueCrawlTier2Dispatcher,
   },
   {
     label: 'referral',
     queue: backgroundCpu,
     manifest: referralManifest,
-    schedulerId: 'crawl_referral_links_dispatcher',
-    work: 'crawl_referral_links_dispatcher',
+    schedulerId: 'crawl:referral-links-dispatcher',
+    work: 'crawl.crawl_referral_links_dispatcher',
     root: enqueueCrawlReferralLinksDispatcher,
   },
   {
     label: 'unfurl',
     queue: backgroundCpu,
     manifest: unfurlManifest,
-    schedulerId: 'unfurl_referral_links_dispatcher',
-    work: 'unfurl_referral_links_dispatcher',
+    schedulerId: 'crawl:unfurl-referral-links-dispatcher',
+    work: 'crawl.unfurl_referral_links_dispatcher',
     root: enqueueUnfurlReferralLinksDispatcher,
   },
   {
@@ -233,7 +233,7 @@ describe('periodic sweep coalescing', () => {
       await otherStarted.promise
       expect(primaryRuns).toBe(1)
       const jobs = await queue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
+        name: 'crawl.crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: hostname },
       })
       expect(jobs).toHaveLength(1)
