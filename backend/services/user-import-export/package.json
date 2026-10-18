@@ -37,6 +37,7 @@
     "@services/rss-feeds": "workspace:^",
     "@services/topic-recommendations": "workspace:^",
     "@services/users": "workspace:^",
+    "@services/web-risk": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/queue-errors": "^0.1.3",

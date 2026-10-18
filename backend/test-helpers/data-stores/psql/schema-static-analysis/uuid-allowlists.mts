@@ -8,7 +8,7 @@ import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-al
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
-    'user_rss_feed_import_rows.discovery_generation',
+    'user_rss_feed_import_row_discoveries.generation',
     'Opaque per-attempt crawl outcome fence; not a durable relationship.',
   ],
   [

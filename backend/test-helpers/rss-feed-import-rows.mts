@@ -1,5 +1,6 @@
 import { jobSerializationPool, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { randomUUID } from 'node:crypto'
 
 /** Pool occupancy for the RSS import row-lock concurrency regression. */
 export function getRssFeedImportSerializationPoolForTest(): { capacity: number; idle: number } {
@@ -28,27 +29,69 @@ export async function getFirstRssFeedImportRowId(importId: string): Promise<stri
   return rowId
 }
 
-export async function getRssFeedImportDiscoveryForTest(rowId: string): Promise<{
-  discovered_feed_url: string | null
-  discovery_crawl_id: string | null
-  discovery_url_id: string | null
-  discovery_generation: string | null
-}> {
-  const { rows } = await write<{
+export async function getRssFeedImportDiscoveriesForTest(rowId: string): Promise<
+  Array<{
+    discovery_url_id: string
+    discovery_url: string
     discovered_feed_url: string | null
-    discovery_crawl_id: string | null
-    discovery_url_id: string | null
-    discovery_generation: string | null
+    crawl_id: string | null
+    generation: string
+    failed_at: Date | null
+  }>
+> {
+  const { rows } = await write<{
+    discovery_url_id: string
+    discovery_url: string
+    discovered_feed_url: string | null
+    crawl_id: string | null
+    generation: string
+    failed_at: Date | null
   }>(
-    sql`/* getRssFeedImportDiscoveryForTest */
-      SELECT discovered.url AS discovered_feed_url, import_row.discovery_crawl_id,
-        import_row.discovery_url_id, import_row.discovery_generation
-      FROM user_rss_feed_import_rows import_row
-      LEFT JOIN urls discovered ON discovered.id = import_row.discovered_feed_url_id
-      WHERE import_row.id = ${rowId}`,
+    sql`/* getRssFeedImportDiscoveriesForTest */
+      SELECT discovery.discovery_url_id, page.url AS discovery_url,
+        discovered.url AS discovered_feed_url,
+        discovery.crawl_id, discovery.generation, discovery.failed_at
+      FROM user_rss_feed_import_row_discoveries discovery
+      JOIN urls page ON page.id = discovery.discovery_url_id
+      LEFT JOIN urls discovered ON discovered.id = discovery.discovered_feed_url_id
+      WHERE discovery.import_row_id = ${rowId}
+      ORDER BY page.url`,
   )
-  if (!rows[0]) throw new Error(`Import row ${rowId} not found`)
-  return rows[0]
+  return rows
+}
+
+/** Creates a minimal owned import row with a pending discovery for a real crawler-worker test. */
+export async function createPendingRssFeedImportDiscoveryForTest(
+  userId: string,
+  inputUrl: string,
+  discoveryUrlId: string,
+): Promise<{ rowId: string; generation: string }> {
+  const generation = randomUUID()
+  const { rows } = await write<{ row_id: string; generation: string }>(sql`
+    /* createPendingRssFeedImportDiscoveryForTest */
+    WITH import_batch AS (
+      INSERT INTO user_rss_feed_import_batches (user_id, created_via, total_rows)
+      VALUES (${userId}, 'web', 1)
+      RETURNING id
+    ), import_row AS (
+      INSERT INTO user_rss_feed_import_rows (batch_id, row_index, input_url)
+      SELECT import_batch.id, 0, ${inputUrl}
+      FROM import_batch
+      RETURNING id
+    ), discovery AS (
+      INSERT INTO user_rss_feed_import_row_discoveries (
+        import_row_id, discovery_url_id, generation
+      )
+      SELECT import_row.id, ${discoveryUrlId}::uuid, ${generation}::uuid
+      FROM import_row
+      RETURNING generation
+    )
+    SELECT import_row.id AS row_id, discovery.generation
+    FROM import_row CROSS JOIN discovery
+  `)
+  const row = rows[0]
+  if (!row) throw new Error('Could not create pending RSS feed import discovery fixture')
+  return { rowId: row.row_id, generation: row.generation }
 }
 
 export async function getRssFeedUrlForTest(rssFeedId: string): Promise<string | null> {

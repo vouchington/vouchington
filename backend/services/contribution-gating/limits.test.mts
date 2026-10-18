@@ -1,4 +1,5 @@
 import { RateLimiter, rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
+import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   overrideDynamicConfigFieldsForTest,
@@ -16,6 +17,7 @@ import {
   getContributionActionLimitStatus,
   getContributionLimitTier,
 } from './limits.mts'
+import { assertWithinRssFeedImportDailyLimit } from './rss-feed-import-limit.mts'
 
 describe('contribution action limits', () => {
   const testContributionLimitFields = () =>
@@ -135,6 +137,32 @@ describe('contribution action limits', () => {
     ).rejects.toMatchObject({
       code: CONTRIBUTION_QUOTA_EXCEEDED,
       status: 429,
+    })
+  })
+
+  it('charges one daily slot for concurrent retries of the same RSS import row', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
+      rss_feed_free_daily_limit: 1,
+    })
+    const rowId = randomUUID()
+
+    await expect(
+      Promise.all([
+        assertWithinRssFeedImportDailyLimit(user, null, rowId),
+        assertWithinRssFeedImportDailyLimit(user, null, rowId),
+      ]),
+    ).resolves.toEqual([undefined, undefined])
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      daily_window: { used: 1 },
+    })
+
+    await expect(
+      assertWithinRssFeedImportDailyLimit(user, null, randomUUID()),
+    ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
+    await expect(assertWithinRssFeedImportDailyLimit(user, null, rowId)).resolves.toBeUndefined()
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      daily_window: { used: 1 },
     })
   })
 

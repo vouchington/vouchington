@@ -49,43 +49,34 @@ export async function discoverFeedUrlFromHtml(
   const url = await addUrl(null, pageUrl, { preserveHttp, skipCreatedEvents: true })
   const hostnameId = url?.hostname?.id
   if (!url || !hostnameId) return null
-  const state = await readImportDiscoveryState(importRowId)
-  if (!state) return null
-  if (state.discovery_url_id === url.id) {
-    if (state.discovered_feed_url_id) {
-      const discovered = await getUrlById(state.discovered_feed_url_id, { readOnly: false })
-      if (discovered) return discovered.url
-    }
-    if (state.discovery_failed_at) return null
+  let state = await readImportDiscoveryState(importRowId, url.id)
+  if (state?.discovered_feed_url_id) {
+    const discovered = await getUrlById(state.discovered_feed_url_id, { readOnly: false })
+    if (discovered) return discovered.url
   }
+  if (state?.failed_at) return null
 
   await getOrCreateCrawlerForHostname(null, hostnameId)
-  const newGeneration = randomUUID()
-  const requested = await write<{
-    discovery_generation: string
-  }>(sql`/* markRssFeedImportDiscoveryRequested */
-    UPDATE user_rss_feed_import_rows
-    SET discovery_generation = CASE
-          WHEN discovery_url_id = ${url.id} AND discovery_generation IS NOT NULL
-            THEN discovery_generation
-          ELSE ${newGeneration}::uuid
-        END,
-        discovery_url_id = ${url.id},
-        discovery_crawl_id = NULL, discovered_feed_url_id = NULL, discovery_failed_at = NULL
-    WHERE id = ${importRowId} AND completed_at IS NULL AND failed_at IS NULL
-      AND (discovery_url_id IS DISTINCT FROM ${url.id}
-        OR (discovered_feed_url_id IS NULL AND discovery_failed_at IS NULL))
-    RETURNING discovery_generation
+  const requested = await write<{ generation: string }>(sql`/* requestRssFeedImportPageDiscovery */
+    INSERT INTO user_rss_feed_import_row_discoveries (
+      import_row_id, discovery_url_id, generation
+    )
+    SELECT ${importRowId}::uuid, ${url.id}::uuid, ${randomUUID()}::uuid
+    FROM user_rss_feed_import_rows import_row
+    WHERE import_row.id = ${importRowId} AND import_row.completed_at IS NULL
+      AND import_row.failed_at IS NULL
+    ON CONFLICT (import_row_id, discovery_url_id) DO NOTHING
+    RETURNING generation
   `)
-  const generation = requested.rows[0]?.discovery_generation
-  if (!generation) {
-    const finished = await readImportDiscoveryState(importRowId)
-    if (finished?.discovery_url_id === url.id && finished.discovered_feed_url_id) {
-      const discovered = await getUrlById(finished.discovered_feed_url_id, { readOnly: false })
-      return discovered?.url ?? null
-    }
-    return null
+  const requestedGeneration = requested.rows[0]?.generation
+  if (!requestedGeneration) state ??= await readImportDiscoveryState(importRowId, url.id)
+  const generation = requestedGeneration ?? state?.generation
+  if (!generation) return null
+  if (!requestedGeneration && state?.discovered_feed_url_id) {
+    const discovered = await getUrlById(state.discovered_feed_url_id, { readOnly: false })
+    if (discovered) return discovered.url
   }
+  if (!requestedGeneration && state?.failed_at) return null
   await enqueueBulkCrawlUrls(
     [
       {
@@ -108,22 +99,6 @@ export async function discoverFeedUrlFromHtml(
     { hostnameId, rateLimitMs: 1_000 },
   )
   throw new RssFeedDiscoveryPendingError()
-}
-
-async function readImportDiscoveryState(importRowId: string): Promise<{
-  discovery_url_id: string | null
-  discovered_feed_url_id: string | null
-  discovery_failed_at: Date | null
-} | null> {
-  const { rows } = await write<{
-    discovery_url_id: string | null
-    discovered_feed_url_id: string | null
-    discovery_failed_at: Date | null
-  }>(sql`/* readRssFeedImportDiscoveryState */
-    SELECT discovery_url_id, discovered_feed_url_id, discovery_failed_at
-    FROM user_rss_feed_import_rows WHERE id = ${importRowId}
-  `)
-  return rows[0] ?? null
 }
 
 /** Called after crawl persistence; recovery can replay the pending row if enqueue fails. */
@@ -160,17 +135,42 @@ export async function completeRssFeedImportDiscovery(
     : null
   if (feedUrl && !discoveredFeedUrlId) throw new Error('Discovered feed URL could not be stored')
   const { rows } = await write<{ batch_id: string }>(sql`/* completeRssFeedImportDiscovery */
-    UPDATE user_rss_feed_import_rows
-    SET discovery_crawl_id = ${result?.crawl_id ?? null}::uuid,
+    UPDATE user_rss_feed_import_row_discoveries discovery
+    SET crawl_id = ${result?.crawl_id ?? null}::uuid,
         discovered_feed_url_id = ${discoveredFeedUrlId}::uuid,
-        discovery_failed_at = CASE WHEN ${discoveredFeedUrlId}::uuid IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END
-    WHERE id = ${importRowId} AND discovery_url_id = ${requestedUrlId}
-      AND discovery_generation = ${generation}::uuid
-      AND completed_at IS NULL AND failed_at IS NULL
-    RETURNING batch_id
+        failed_at = CASE WHEN ${discoveredFeedUrlId}::uuid IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END
+    FROM user_rss_feed_import_rows import_row
+    WHERE discovery.import_row_id = ${importRowId}::uuid
+      AND discovery.discovery_url_id = ${requestedUrlId}::uuid
+      AND discovery.generation = ${generation}::uuid
+      AND discovery.crawl_id IS NULL AND discovery.discovered_feed_url_id IS NULL
+      AND discovery.failed_at IS NULL
+      AND import_row.id = discovery.import_row_id
+      AND import_row.completed_at IS NULL AND import_row.failed_at IS NULL
+    RETURNING import_row.batch_id
   `)
   const row = rows[0]
   if (row) await enqueueUserRssFeedImportRowContinuation(row.batch_id, importRowId).catch(onError)
+}
+
+async function readImportDiscoveryState(
+  importRowId: string,
+  discoveryUrlId: string,
+): Promise<{
+  generation: string
+  discovered_feed_url_id: string | null
+  failed_at: Date | null
+} | null> {
+  const { rows } = await write<{
+    generation: string
+    discovered_feed_url_id: string | null
+    failed_at: Date | null
+  }>(sql`/* readRssFeedImportPageDiscoveryState */
+    SELECT generation, discovered_feed_url_id, failed_at
+    FROM user_rss_feed_import_row_discoveries
+    WHERE import_row_id = ${importRowId} AND discovery_url_id = ${discoveryUrlId}
+  `)
+  return rows[0] ?? null
 }
 
 function getAlternateHrefsForType(

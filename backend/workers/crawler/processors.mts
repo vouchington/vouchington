@@ -58,29 +58,9 @@ export async function processCrawlerJob(
               ...(maxResponseSizeBytes != null ? { maxResponseSizeBytes } : {}),
             }
           : undefined
+      let crawlResult: Awaited<ReturnType<typeof crawlUrl>>
       try {
-        const crawlResult = await crawlUrl(urlId, 0, new Set(), crawlOptions)
-        if (!crawlResult) {
-          if (importRowId && importDiscoveryGeneration)
-            await completeRssFeedImportDiscovery(
-              importRowId,
-              urlId,
-              importDiscoveryGeneration,
-              null,
-            )
-          return null
-        }
-
-        if (importRowId && importDiscoveryGeneration)
-          await completeRssFeedImportDiscovery(
-            importRowId,
-            urlId,
-            importDiscoveryGeneration,
-            buildCrawlerJobResult(crawlResult),
-          )
-
-        /* v8 ignore next -- successful network crawls are covered in crawl-url tests; buildCrawlerJobResult covers worker result shaping. */
-        return buildCrawlerJobResult(crawlResult)
+        crawlResult = await crawlUrl(urlId, 0, new Set(), crawlOptions)
       } catch (err) {
         try {
           return await handleCrawlerProcessorError(urlId, rateLimitRetryCount, err, {
@@ -112,6 +92,23 @@ export async function processCrawlerJob(
           throw err
         }
       }
+      // Persistence failures leave discovery pending; they are not failed crawls.
+      if (!crawlResult) {
+        if (importRowId && importDiscoveryGeneration)
+          await completeRssFeedImportDiscovery(importRowId, urlId, importDiscoveryGeneration, null)
+        return null
+      }
+
+      if (importRowId && importDiscoveryGeneration)
+        await completeRssFeedImportDiscovery(
+          importRowId,
+          urlId,
+          importDiscoveryGeneration,
+          buildCrawlerJobResult(crawlResult),
+        )
+
+      /* v8 ignore next -- successful network crawls are covered in crawl-url tests; buildCrawlerJobResult covers worker result shaping. */
+      return buildCrawlerJobResult(crawlResult)
     }
     default:
       throw new Error(`Crawler job ${job.name} not found`)

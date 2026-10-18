@@ -57,6 +57,10 @@ flowchart LR
   overlap before the terminal update. A contending delivery defers; it does not repeat creation or
   quota side effects. These locks use a separate bounded connection pool so nested vote locks cannot
   exhaust the sessions needed to finish an import. No transaction stays open across feed I/O.
+  Daily creation admission uses the durable row identity, so retrying a failed write reuses its
+  quota charge. HTML discovery retains an outcome for each page in the row’s resolution chain;
+  replay starts from the submitted URL and reuses completed hops, including protocol fallback.
+  A successful crawl whose outcome cannot be persisted stays pending for recovery.
 - **Instance metadata is optional.** Fediverse instance creation persists the topic before its
   NodeInfo enrichment job. The create response does not wait for an external host. A lost or
   exhausted enrichment job leaves nullable metadata unclassified; the topic and its hostname

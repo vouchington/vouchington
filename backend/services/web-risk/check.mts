@@ -122,7 +122,7 @@ export async function assertUrlsAllowedByWebRisk(
 ): Promise<void> {
   const uniqueUrls = [...new Set(urls)]
   const policies = options.policies ?? (await readPolicies(uniqueUrls))
-  await Promise.all(uniqueUrls.map(url => assertUrlAllowedByWebRisk(url, { policies })))
+  await Promise.all(uniqueUrls.map(url => assertUrlAllowedByWebRisk(url, { ...options, policies })))
 }
 
 async function readPolicies(urls: string[]): Promise<PrecomputedHostnamePolicies> {

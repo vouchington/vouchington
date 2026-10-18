@@ -10,6 +10,8 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import { createSourceFromUrl } from '@services/rss-feeds/create-source'
 import type { CreateSourceOptions } from '@services/rss-feeds/create-source-types'
+import { findExistingFeedByUrl } from '@services/rss-feeds/find-existing-feed'
+import { assertUrlsAllowedByWebRisk } from '@services/web-risk/check'
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 
 export type ImportRssFeedResult = {
@@ -64,32 +66,40 @@ export async function importSingleRssFeed(
   const existingFeed = await findExistingRssFeedByUrl(canonicalUrl)
 
   if (existingFeed) {
-    await upsertAutomaticTopicUpvote(currentUser, existingFeed.topic_id)
-    const alreadyFollowing = await isUserFollowingRssFeed(currentUser.id, existingFeed.id)
+    const safetyUrls = new Set([
+      canonicalUrl,
+      existingFeed.matchedUrl,
+      existingFeed.feed.resolved_feed_url,
+    ])
+    await assertUrlsAllowedByWebRisk([...safetyUrls], { signal })
+    const [, alreadyFollowing] = await Promise.all([
+      upsertAutomaticTopicUpvote(currentUser, existingFeed.feed.topic_id),
+      isUserFollowingRssFeed(currentUser.id, existingFeed.feed.id),
+    ])
     if (alreadyFollowing) {
       return {
         input: rawUrl,
         status: 'already_following',
-        entity_id: existingFeed.id,
+        entity_id: existingFeed.feed.id,
       }
     }
 
     if (follow) {
       await upsertEntityRelation(currentUser, followRssFeedRelation, { id: currentUser.id }, [
-        { id: existingFeed.id },
+        { id: existingFeed.feed.id },
       ])
-      await recordRssFeedImportRequest(currentUser.id, rawUrl, existingFeed.id)
+      await recordRssFeedImportRequest(currentUser.id, rawUrl, existingFeed.feed.id)
       return {
         input: rawUrl,
         status: 'followed',
-        entity_id: existingFeed.id,
+        entity_id: existingFeed.feed.id,
       }
     }
 
     return {
       input: rawUrl,
       status: 'imported',
-      entity_id: existingFeed.id,
+      entity_id: existingFeed.feed.id,
     }
   }
 
@@ -117,22 +127,16 @@ export async function importSingleRssFeed(
   }
 }
 
-async function findExistingRssFeedByUrl(
-  url: string,
-): Promise<{ id: string; topic_id: string } | null> {
-  const urls = url.startsWith('http://') ? [url, url.replace(/^http:\/\//, 'https://')] : [url]
-  const { rows } = await read(
-    sql`/* findExistingRssFeedByUrl */
-      SELECT rf.id, rf.topic_id
-      FROM rss_feeds rf
-      JOIN urls u ON u.id = rf.rss_feed_url_id
-      WHERE u.url = ANY(${urls})
-        AND rf.deleted_at IS NULL
-      ORDER BY (u.url = ${url}) DESC
-      LIMIT 1
-    `,
-  )
-  return (rows[0] as { id: string; topic_id: string } | undefined) ?? null
+async function findExistingRssFeedByUrl(url: string): Promise<{
+  feed: NonNullable<Awaited<ReturnType<typeof findExistingFeedByUrl>>>
+  matchedUrl: string
+} | null> {
+  const exact = await findExistingFeedByUrl(url, { readOnly: false })
+  if (exact) return { feed: exact, matchedUrl: url }
+  if (!url.startsWith('http://')) return null
+  const httpsUrl = url.replace(/^http:\/\//, 'https://')
+  const httpsFeed = await findExistingFeedByUrl(httpsUrl, { readOnly: false })
+  return httpsFeed ? { feed: httpsFeed, matchedUrl: httpsUrl } : null
 }
 
 async function isUserFollowingRssFeed(userId: string, rssFeedId: string): Promise<boolean> {

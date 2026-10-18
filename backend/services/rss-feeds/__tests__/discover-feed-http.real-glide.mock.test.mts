@@ -22,7 +22,7 @@ import { processCrawlerJob } from '../../../workers/crawler/processors.mts'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import {
   getFirstRssFeedImportRowId,
-  getRssFeedImportDiscoveryForTest,
+  getRssFeedImportDiscoveriesForTest,
   getRssFeedUrlForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
 import type { CrawlerHtmlResult } from '../../crawler-html/index.mts'
@@ -36,15 +36,22 @@ vi.hoisted(() => {
 })
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
-async function runHtmlImport(links: NonNullable<CrawlerHtmlResult['content']>['links']) {
+async function runHtmlImport(options: {
+  hostname: string
+  inputProtocol?: 'http:' | 'https:'
+  htmlPages: Map<string, NonNullable<CrawlerHtmlResult['content']>['links']>
+  expectedCrawls: number
+  expectedRowRuns: number
+}) {
   const user = await createTestUser()
-  const hostname = `discovery-${randomUUID()}.example.com`
-  const pageUrl = `https://${hostname}/blog`
-  const feedUrl = `https://${hostname}/feed.xml`
+  const { hostname } = options
+  const pageUrl = `${options.inputProtocol ?? 'https:'}//${hostname}/blog`
+  const feedUrl = `${options.inputProtocol === 'http:' ? 'http:' : 'https:'}//${hostname}/feed.xml`
   const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
   const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
-  const crawlCompleted = Promise.withResolvers<Job>()
-  const rowSettled = Promise.withResolvers<void>()
+  const crawlsSettled = Promise.withResolvers<Job[]>()
+  const rowsSettled = Promise.withResolvers<void>()
+  const crawlJobs: Job[] = []
   let rowRuns = 0
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
   const crawler = new Worker(
@@ -53,14 +60,22 @@ async function runHtmlImport(links: NonNullable<CrawlerHtmlResult['content']>['l
       processCrawlerJob(job, {
         resolveDnsCanary: async () => undefined,
         resolveSafeCrawlerAddresses: async () => [{ address: '93.184.216.34', family: 4 }],
-        fetchCrawlerHtml: async (): Promise<CrawlerHtmlResult> => ({
-          response_status_code: 200,
-          request_headers: { 'User-Agent': 'test' },
-          response_headers: { 'content-type': 'text/html' },
-          crawl_started_at: new Date(),
-          crawl_completed_at: new Date(),
-          content: { title: 'Blog', content: 'Blog', meta: {}, links: links ?? {} },
-        }),
+        fetchCrawlerHtml: async ({ url }): Promise<CrawlerHtmlResult> => {
+          if (!options.htmlPages.has(url)) throw new Error(`Unexpected HTML discovery URL ${url}`)
+          return {
+            response_status_code: 200,
+            request_headers: { 'User-Agent': 'test' },
+            response_headers: { 'content-type': 'text/html' },
+            crawl_started_at: new Date(),
+            crawl_completed_at: new Date(),
+            content: {
+              title: 'Blog',
+              content: 'Blog',
+              meta: {},
+              links: options.htmlPages.get(url) ?? {},
+            },
+          }
+        },
       }),
     { ...connection, blockTimeout: 1000, promotionInterval: 50 },
   )
@@ -74,15 +89,14 @@ async function runHtmlImport(links: NonNullable<CrawlerHtmlResult['content']>['l
           crawlerRssOptions: {
             dependencies: {
               fetchUrl: async ({ url }) => ({
-                response:
-                  url === pageUrl
-                    ? new Response('<html><head></head><body>Blog</body></html>', {
-                        headers: { 'content-type': 'text/html' },
-                      })
-                    : new Response(
-                        '<?xml version="1.0"?><rss version="2.0"><channel><title>Feed</title><link>https://example.com/</link><description>Feed</description></channel></rss>',
-                        { headers: { 'content-type': 'application/rss+xml' } },
-                      ),
+                response: options.htmlPages.has(url)
+                  ? new Response('<html><head></head><body>Blog</body></html>', {
+                      headers: { 'content-type': 'text/html' },
+                    })
+                  : new Response(
+                      '<?xml version="1.0"?><rss version="2.0"><channel><title>Feed</title><link>https://example.com/</link><description>Feed</description></channel></rss>',
+                      { headers: { 'content-type': 'application/rss+xml' } },
+                    ),
                 responseSignal: new AbortController().signal,
               }),
             },
@@ -92,18 +106,20 @@ async function runHtmlImport(links: NonNullable<CrawlerHtmlResult['content']>['l
     },
     { ...connection, blockTimeout: 1000, promotionInterval: 50 },
   )
-  crawler.on('error', error => crawlCompleted.reject(error))
+  crawler.on('error', error => crawlsSettled.reject(error))
   crawler.on('failed', (job, error) => {
-    if (job?.data?.import_row_id === rowId) crawlCompleted.reject(error)
+    if (job?.data?.import_row_id === rowId) crawlsSettled.reject(error)
   })
   crawler.on('completed', job => {
-    if (job.data?.import_row_id === rowId) crawlCompleted.resolve(job)
+    if (job.data?.import_row_id !== rowId) return
+    crawlJobs.push(job)
+    if (crawlJobs.length === options.expectedCrawls) crawlsSettled.resolve(crawlJobs)
   })
-  background.on('error', error => rowSettled.reject(error))
+  background.on('error', error => rowsSettled.reject(error))
   const onRowFinished = (job: Job) => {
     if (job.data?.rowId !== rowId) return
     rowRuns += 1
-    if (rowRuns === 2) rowSettled.resolve()
+    if (rowRuns === options.expectedRowRuns) rowsSettled.resolve()
   }
   background.on('completed', onRowFinished)
   background.on('failed', job => {
@@ -112,14 +128,14 @@ async function runHtmlImport(links: NonNullable<CrawlerHtmlResult['content']>['l
   try {
     await Promise.all([crawler.waitUntilReady(), background.waitUntilReady()])
     await enqueueUserRssFeedImportDispatch(submitted.import.id)
-    const crawlJob = await crawlCompleted.promise
-    await rowSettled.promise
+    const completedCrawls = await crawlsSettled.promise
+    await rowsSettled.promise
     const status = await getRssFeedImport(user.id, submitted.import.id)
-    const discovery = await getRssFeedImportDiscoveryForTest(rowId)
+    const discoveries = await getRssFeedImportDiscoveriesForTest(rowId)
     const createdFeedUrl = status?.rows[0]?.entity_id
       ? await getRssFeedUrlForTest(status.rows[0].entity_id)
       : null
-    return { crawlJob, rowId, status, discovery, feedUrl, createdFeedUrl }
+    return { crawlJobs: completedCrawls, rowId, status, discoveries, feedUrl, createdFeedUrl }
   } finally {
     await Promise.all([background.close(true), crawler.close(true)])
   }
@@ -135,28 +151,61 @@ describe('HTML RSS discovery continuation', () => {
     await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
       RssFeedDiscoveryPendingError,
     )
-    const first = await getRssFeedImportDiscoveryForTest(rowId)
+    const first = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
     await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
       RssFeedDiscoveryPendingError,
     )
-    const replayed = await getRssFeedImportDiscoveryForTest(rowId)
-    expect(replayed.discovery_generation).toBe(first.discovery_generation)
+    const replayed = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
+    expect(replayed.generation).toBe(first.generation)
     expect(replayed.discovery_url_id).toBe(first.discovery_url_id)
 
-    await completeRssFeedImportDiscovery(
-      rowId,
-      first.discovery_url_id!,
-      first.discovery_generation!,
-      null,
-    )
+    await completeRssFeedImportDiscovery(rowId, first.discovery_url_id!, first.generation, null)
+    const completed = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
+    await completeRssFeedImportDiscovery(rowId, first.discovery_url_id!, first.generation, null)
+    const replayedCompletion = (await getRssFeedImportDiscoveriesForTest(rowId))[0]!
+    expect(replayedCompletion.failed_at).toEqual(completed.failed_at)
     await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).resolves.toBeNull()
   })
 
   it('runs the dispatcher, HTML crawler, and resumed row to a created source', async () => {
-    const result = await runHtmlImport({ alternate: { 'application/rss+xml': '/feed.xml' } })
-    expect(result.crawlJob.data.import_row_id).toBe(result.rowId)
-    expect(result.discovery.discovery_crawl_id).toEqual(expect.any(String))
-    expect(result.discovery.discovered_feed_url).toBe(result.feedUrl)
+    const hostname = `discovery-${randomUUID()}.example.com`
+    const pageUrl = `https://${hostname}/blog`
+    const sectionUrl = `https://${hostname}/section`
+    const feedUrl = `https://${hostname}/feed.xml`
+    const result = await runHtmlImport({
+      hostname,
+      htmlPages: new Map([
+        [pageUrl, { alternate: { 'application/rss+xml': '/section' } }],
+        [sectionUrl, { alternate: { 'application/rss+xml': '/feed.xml' } }],
+      ]),
+      expectedCrawls: 2,
+      expectedRowRuns: 3,
+    })
+    expect(result.crawlJobs.map(job => job.data.import_row_id)).toEqual([
+      result.rowId,
+      result.rowId,
+    ])
+    expect(result.discoveries).toMatchObject([
+      { discovery_url: expect.stringMatching('/blog'), discovered_feed_url: sectionUrl },
+      { discovery_url: expect.stringMatching('/section'), discovered_feed_url: feedUrl },
+    ])
+    const sectionDiscovery = result.discoveries.find(item => item.discovery_url === sectionUrl)!
+    await completeRssFeedImportDiscovery(
+      result.rowId,
+      sectionDiscovery.discovery_url_id,
+      sectionDiscovery.generation,
+      null,
+    )
+    await completeRssFeedImportDiscovery(
+      result.rowId,
+      sectionDiscovery.discovery_url_id,
+      randomUUID(),
+      null,
+    )
+    expect(await getRssFeedImportDiscoveriesForTest(result.rowId)).toMatchObject([
+      { discovery_url: expect.stringMatching('/blog'), discovered_feed_url: sectionUrl },
+      { discovery_url: sectionUrl, discovered_feed_url: feedUrl, failed_at: null },
+    ])
     expect(result.status?.rows).toMatchObject([
       {
         status: 'source_created',
@@ -168,10 +217,22 @@ describe('HTML RSS discovery continuation', () => {
   })
 
   it('finishes with a safe error code when the crawled page has no feed link', async () => {
-    const result = await runHtmlImport({})
-    expect(result.crawlJob.data.import_row_id).toBe(result.rowId)
-    expect(result.discovery.discovery_crawl_id).toEqual(expect.any(String))
-    expect(result.discovery.discovered_feed_url).toBeNull()
+    const hostname = `discovery-${randomUUID()}.example.com`
+    const pageUrl = `https://${hostname}/blog`
+    const result = await runHtmlImport({
+      hostname,
+      htmlPages: new Map([[pageUrl, {}]]),
+      expectedCrawls: 1,
+      expectedRowRuns: 2,
+    })
+    expect(result.crawlJobs[0]?.data.import_row_id).toBe(result.rowId)
+    expect(result.discoveries).toMatchObject([
+      {
+        discovery_url: expect.stringMatching('/blog'),
+        crawl_id: expect.any(String),
+        failed_at: expect.any(Date),
+      },
+    ])
     expect(result.status?.rows).toMatchObject([
       { status: 'error', error_code: 'INVALID_FEED_CONTENT' },
     ])
@@ -179,11 +240,53 @@ describe('HTML RSS discovery continuation', () => {
   })
 
   it('does not treat an HTML page that links to itself as a feed', async () => {
-    const result = await runHtmlImport({ alternate: { 'application/rss+xml': '/blog' } })
-    expect(result.discovery.discovered_feed_url).toBeNull()
+    const hostname = `discovery-${randomUUID()}.example.com`
+    const pageUrl = `https://${hostname}/blog`
+    const result = await runHtmlImport({
+      hostname,
+      htmlPages: new Map([[pageUrl, { alternate: { 'application/rss+xml': '/blog' } }]]),
+      expectedCrawls: 1,
+      expectedRowRuns: 2,
+    })
+    expect(result.discoveries).toMatchObject([
+      { discovery_url: expect.stringMatching('/blog'), discovered_feed_url: null },
+    ])
     expect(result.status?.rows).toMatchObject([
       { status: 'error', error_code: 'INVALID_FEED_CONTENT' },
     ])
     expect(result.createdFeedUrl).toBeNull()
+  })
+
+  it('keeps HTTPS and HTTP fallback HTML outcomes for distinct page crawls', async () => {
+    const hostname = `discovery-${randomUUID()}.example.com`
+    const httpsPageUrl = `https://${hostname}/blog`
+    const httpPageUrl = `http://${hostname}/blog`
+    const result = await runHtmlImport({
+      hostname,
+      inputProtocol: 'http:',
+      htmlPages: new Map([
+        [httpsPageUrl, {}],
+        [httpPageUrl, { alternate: { 'application/rss+xml': '/feed.xml' } }],
+      ]),
+      expectedCrawls: 2,
+      expectedRowRuns: 3,
+    })
+    expect(new Set(result.crawlJobs.map(job => job.data.url_id)).size).toBe(2)
+    expect(result.discoveries).toMatchObject([
+      {
+        discovery_url: httpPageUrl,
+        discovered_feed_url: result.feedUrl,
+        failed_at: null,
+      },
+      {
+        discovery_url: httpsPageUrl,
+        discovered_feed_url: null,
+        failed_at: expect.any(Date),
+      },
+    ])
+    expect(result.status?.rows).toMatchObject([
+      { status: 'source_created', entity_id: expect.any(String) },
+    ])
+    expect(result.createdFeedUrl).toBe(`https://${hostname}/feed.xml`)
   })
 })

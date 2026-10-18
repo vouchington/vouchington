@@ -1,11 +1,16 @@
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { createCodedError } from '@modules/on-error/create-coded-error'
-import { CONTRIBUTION_QUOTA_EXCEEDED, INVALID_INPUT } from '@modules/on-error/error-codes'
+import { INVALID_INPUT } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@voucha/types/entities/user'
 import { CONTRIBUTION_GATE_ACCOUNT_AGE_MS } from './config.mts'
 import { getContributionLimitValue, getContributionLimitWindowSeconds } from './limits-config.mts'
-import { checkWindow, isWindowAllowed, limitKey } from './limits-helpers.mts'
+import {
+  checkWindow,
+  createContributionLimitExceededError,
+  isWindowAllowed,
+  limitKey,
+} from './limits-helpers.mts'
 import { UNLIMITED_CONTRIBUTION_LIMIT } from './limit-defaults.mts'
 import type {
   ContributionActionLimitStatus,
@@ -188,12 +193,4 @@ async function checkContributionDailyLimit(
     short_window: shortWindow,
     daily_window: dailyWindow,
   }
-}
-
-function createContributionLimitExceededError() {
-  return createCodedError(
-    429,
-    'Contribution limit exceeded. Please try again later.',
-    CONTRIBUTION_QUOTA_EXCEEDED,
-  )
 }

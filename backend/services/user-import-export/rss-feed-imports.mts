@@ -17,7 +17,7 @@ import { getBatchProvenance, type CreateUserRssFeedImportResult } from './rss-fe
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 import { RssFeedDiscoveryPendingError } from '@services/rss-feeds/discovery-pending'
 import { getUserActivePlan } from '@services/memberships'
-import { assertWithinContributionDailyLimit } from '@services/contribution-gating/limits'
+import { assertWithinRssFeedImportDailyLimit } from '@services/contribution-gating/rss-feed-import-limit'
 import { withRssFeedImportRowLock } from './rss-feed-import-row-lock.mts'
 type CompletedImportRssFeedStatus = Exclude<ImportRssFeedStatus, 'error'>
 
@@ -92,8 +92,7 @@ async function processLockedRssFeedImportRow(
     // The queue job is not the submitting request, so the feeds carry the channel and OAuth client
     // that the batch stored when the request submitted the import.
     const result = await importSingleRssFeed(user, getBatchProvenance(batch), row.input_url, {
-      assertRssFeedLimit: () =>
-        assertWithinContributionDailyLimit(user, membershipPlan, 'rss_feed'),
+      assertRssFeedLimit: () => assertWithinRssFeedImportDailyLimit(user, membershipPlan, row.id),
       follow: batch.should_follow_imported_feeds,
       createSourceFromUrlImpl: options.createSourceFromUrlImpl,
       crawlerRssOptions: options.crawlerRssOptions,

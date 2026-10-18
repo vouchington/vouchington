@@ -45,6 +45,19 @@ describe('waitForSourceImport', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 
+  it('rejects a completed import without a usable source result', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
+      Response.json({
+        import: { ...submission.import, pending_rows: 0, completed_rows: 1 },
+        rows: [],
+      }),
+    )
+    vi.stubGlobal('fetch', fetch)
+
+    await expect(waitForSourceImport(submission)).rejects.toThrow('Source import failed')
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
   it('exposes terminal row error codes as expected API errors', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(
       Response.json({
