@@ -8,7 +8,6 @@ import onError, { flushSentry } from '@modules/on-error'
 import {
   cleanupPartitions,
   createMonthlyPartitions,
-  dropRssFeedCrawlsDefaultPartition,
 } from './migration-runner/monthly-partitions.mts'
 import {
   runConfigDriven as runConfigDrivenFromFolder,
@@ -49,7 +48,6 @@ export async function runViews(options: RunViewsOptions = {}) {
 }
 
 export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {
-  await dropRssFeedCrawlsDefaultPartition()
   await runConfigDrivenFromFolder(__dirname, { logger: console, ...options })
 }
 
@@ -81,9 +79,6 @@ async function applyMigrationsInSession(
       client,
       logger,
     })
-    if (path.resolve(rootDir) === path.resolve(__dirname)) {
-      await dropRssFeedCrawlsDefaultPartition(writer)
-    }
     await runConfigDrivenFromFolder(rootDir, { logger, writer })
     await runPlatformViews({ folder: path.resolve(rootDir, 'views'), forced, logger, writer })
   })
