@@ -9,6 +9,7 @@ export type GetLatestHtmlByUrlIdsDependencies = {
   read?: typeof read
   downloadCrawlHtmlToTempFile?: typeof downloadCrawlHtmlToTempFile
   onError?: typeof onError
+  now?: () => Date
 }
 
 function requireHtmlSha256Hex(htmlSha256Hex: unknown): string {
@@ -27,8 +28,10 @@ export const getLatestHtmlByUrlIds = async (
   const query: QueryExecutor = (input, values) => readRows(input, values, queryOptions)
   const downloadCrawlHtml = dependencies.downloadCrawlHtmlToTempFile ?? downloadCrawlHtmlToTempFile
   const reportError = dependencies.onError ?? onError
+  const sampledNowMs = (dependencies.now ?? (() => new Date()))().getTime()
+  if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
-    Date.now() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
 
   const { rows } = await readLatestHtmlRows(query, urlIds, recentCutoffDate)

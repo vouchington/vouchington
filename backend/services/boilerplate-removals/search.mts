@@ -11,10 +11,12 @@ export type ParentPathCandidate = {
 
 export const searchParentPathsNeedingBoilerplateRemoval = async (
   limit: number,
-  options: { hostnameId?: string; queryOptions?: QueryOptions } = {},
+  options: { hostnameId?: string; queryOptions?: QueryOptions; now?: () => Date } = {},
 ): Promise<ParentPathCandidate[]> => {
+  const sampledNowMs = (options.now ?? (() => new Date()))().getTime()
+  if (!Number.isFinite(sampledNowMs)) throw new RangeError('Invalid HTML snapshot decision time')
   const recentCutoffDate = new Date(
-    Date.now() - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    sampledNowMs - CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   )
   const recentCutoffId = getMaxUUIDv7ForDate(recentCutoffDate)
   const query = sql`/* searchParentPathsNeedingBoilerplateRemoval */

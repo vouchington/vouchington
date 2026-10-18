@@ -10,6 +10,7 @@ import {
   createTestRetentionWindow,
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 
 import { cleanupOldReferralAttributions } from '../cleanup.mts'
 
@@ -22,6 +23,34 @@ const DEFAULT_WINDOW_FUTURE_OFFSET_DAYS = 50_000
 const DEFAULT_WINDOW_NAMESPACE_DAYS = 365_000
 
 describe('cleanupOldReferralAttributions', () => {
+  it('keeps the exact 30-day minimum UUID and newer clicks but deletes the preceding millisecond', async () => {
+    const window = createTestRetentionWindow()
+    const referrer = await createTestUserDirect()
+    if (!referrer) throw new Error('Failed to create referrer')
+    const cutoff = window.upperBoundDate
+    const beforeId = await insertReferralAttributionAt(referrer.id, new Date(cutoff.getTime() - 1))
+    const atId = await insertReferralAttributionAt(
+      referrer.id,
+      cutoff,
+      null,
+      null,
+      getMinUUIDv7ForDate(cutoff),
+    )
+    const afterId = await insertReferralAttributionAt(referrer.id, new Date(cutoff.getTime() + 1))
+
+    expect(atId).toBe(getMinUUIDv7ForDate(cutoff))
+    expect(
+      await cleanupOldReferralAttributions({
+        now: new Date(cutoff.getTime() + 30 * DAY_MS),
+        lowerBoundDate: window.lowerBoundDate,
+        maxBatches: window.maxBatches,
+      }),
+    ).toEqual({ deleted: 1, hasMore: false })
+    expect(await referralAttributionExistsById(beforeId)).toBe(false)
+    expect(await referralAttributionExistsById(atId)).toBe(true)
+    expect(await referralAttributionExistsById(afterId)).toBe(true)
+  })
+
   it('defaults to a 30-day retention window when retentionDays is not provided', async () => {
     // Pins the 365 -> 30 day change from #8750; a revert to 365 must turn this red.
     const namespaceOffsetMs = crypto.randomInt(DEFAULT_WINDOW_NAMESPACE_DAYS) * DAY_MS

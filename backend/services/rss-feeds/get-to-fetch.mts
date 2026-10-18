@@ -129,7 +129,9 @@ export function getRssFeedsToFetch({
 }: GetRssFeedsToFetchOptions = {}): Promise<RssFeedDispatchCandidate[]> {
   const capacityBudget = crawlConfig.getCrawlCapacityBudget()
   const budget = Math.min(limit ?? capacityBudget, capacityBudget)
-  return getRssFeedsTiered(budget, asOf, cursor)
+  const asOfMs = asOf.getTime()
+  if (!Number.isFinite(asOfMs)) throw new RangeError('Invalid RSS tier scheduling time')
+  return getRssFeedsTiered(budget, new Date(asOfMs), cursor)
 }
 
 type GetRssFeedByIdToFetchOptions = {

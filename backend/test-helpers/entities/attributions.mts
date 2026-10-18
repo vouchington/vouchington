@@ -52,8 +52,9 @@ export async function insertReferralAttributionAt(
   createdAt: Date,
   userId: string | null = null,
   signedUpAt: Date | null = null,
+  fixtureId?: string,
 ): Promise<string> {
-  const id = uuidv7({ msecs: createdAt.getTime() })
+  const id = fixtureId ?? uuidv7({ msecs: createdAt.getTime() })
   await write(
     allowUnannotatedQuery(sql`
     INSERT INTO session_referral_attributions

@@ -20,8 +20,25 @@ import {
   cleanupOrphanedOAuthAccounts,
   cleanupSoftDeletedUsers,
 } from './cleanup.mts'
+import { getRetentionCutoffDate } from './cleanup-options.mts'
+
+const THIRTY_DAY_UTC_EDGES = [
+  ['2025-01-31T23:59:59.999Z', '2025-01-01T23:59:59.999Z'],
+  ['2025-02-01T00:00:00.001Z', '2025-01-02T00:00:00.001Z'],
+  ['2024-02-29T23:59:59.999Z', '2024-01-30T23:59:59.999Z'],
+  ['2024-03-01T00:00:00.001Z', '2024-01-31T00:00:00.001Z'],
+  ['2025-12-31T23:59:59.999Z', '2025-12-01T23:59:59.999Z'],
+  ['2026-01-01T00:00:00.001Z', '2025-12-02T00:00:00.001Z'],
+] as const
 
 describe('cleanup retention windows', () => {
+  it.each(THIRTY_DAY_UTC_EDGES)(
+    'maps a 30-day cutoff from %s to %s across UTC calendar edges',
+    (now, cutoff) => {
+      expect(getRetentionCutoffDate(30, new Date(now))).toEqual(new Date(cutoff))
+    },
+  )
+
   it('only deletes soft-deleted users inside the bounded retention window', async () => {
     const window = createTestRetentionWindow()
     const beforeLowerBoundUser = await createTestUserDirect()

@@ -102,6 +102,12 @@ jobs:
         run: |
           mkdir -p backend/scripts/explain-analyze/output/pruning-v8
           node backend/scripts/explain-analyze/assert-native-contracts.mts
+      - name: Check native RSS crawl tier snapshot and dispatch
+        timeout-minutes: 2
+        env:
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
+        run: node backend/scripts/check-rss-feed-crawl-tiers.mts
       - name: Seed development data
         # The copyright seed encrypts its review rows and hashes thread references.
         env:
@@ -168,6 +174,7 @@ jobs:
           --include 'backend/data-stores/psql/explain-analyze.mts'
           --include 'backend/services/crawls/{dispatch-per-hostname,dispatch-tier-urls}.mts'
           --include 'backend/services/crawler-referral-links/dispatch.mts'
+          --include 'backend/services/rss-feeds/{get-to-fetch,crawl-config,update,update-fields,update-state-helpers}.mts'
           --include 'backend/services/referral-link-unfurl/dispatch.mts'
           --include 'backend/scripts/explain-analyze/pruning/{run,retirement-controls,retirement-fixture,retirement-schema,retirement-transaction,migration-*}.mts'
       - name: Preserve full native migration LCOV

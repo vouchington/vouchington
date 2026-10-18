@@ -22,6 +22,8 @@ module.exports = [
         '^backend/entrypoints/api/',
         '^backend/scripts/explain-analyze/',
         '^backend/scripts/check-platform-stats-snapshot\\.mts$',
+        '^backend/scripts/check-rss-feed-crawl-tiers\\.mts$',
+        '^backend/scripts/rss-crawl-tier-contract\\.mts$',
         '^backend/scripts/seed/',
         '^backend/scripts/seeds/',
       ],

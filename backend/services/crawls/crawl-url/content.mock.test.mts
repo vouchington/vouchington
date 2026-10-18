@@ -8,7 +8,6 @@ import type { PrivateUser } from '@services/users/types'
 import { createCrawl } from '../create.mts'
 import { getCrawlById } from '../get.mts'
 import type { CrawlHtmlFetchResult } from './types.mts'
-import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from '../constants.mts'
 
 vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOriginal => {
   const mockSend = vi.fn<VitestLooseMock>().mockResolvedValue({})
@@ -22,6 +21,7 @@ vi.mock<typeof import('@modules/aws')>(import('@modules/aws'), async importOrigi
 
 import { S3ImagesClient } from '@modules/aws'
 import { persistCrawlContent } from './content.mts'
+import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from '../constants.mts'
 
 const mockSend = vi.mocked(S3ImagesClient.send)
 

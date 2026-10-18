@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { safeResolveUrl, safeHostname, parseXRobotsTag } from './crawl-url-utils.mts'
+import {
+  isSnapshotReusable,
+  safeResolveUrl,
+  safeHostname,
+  parseXRobotsTag,
+} from './crawl-url-utils.mts'
+import { CRAWL_HTML_SNAPSHOT_RETENTION_DAYS } from './constants.mts'
 import { CrawlerNetworkError, isCrawlerNetworkDnsError } from '@modules/on-error/errors'
 
 describe('parseXRobotsTag', () => {
@@ -81,6 +87,26 @@ describe('safeResolveUrl', () => {
 
   it('returns null for empty string', () => {
     expect(safeResolveUrl('', 'https://example.com/')).toBeNull()
+  })
+})
+
+describe('isSnapshotReusable', () => {
+  const retentionMs = CRAWL_HTML_SNAPSHOT_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  const anchors = [
+    new Date('2024-01-31T23:59:59.999Z'),
+    new Date('2024-02-01T00:00:00.001Z'),
+    new Date('2024-02-29T23:59:59.999Z'),
+    new Date('2024-03-01T00:00:00.001Z'),
+    new Date('2024-12-31T23:59:59.999Z'),
+    new Date('2025-01-01T00:00:00.001Z'),
+  ]
+
+  it.each(anchors)('keeps the inclusive seven-day cutoff at %s', now => {
+    const cutoff = now.getTime() - retentionMs
+
+    expect(isSnapshotReusable(Buffer.alloc(32), new Date(cutoff - 1), now)).toBe(false)
+    expect(isSnapshotReusable(Buffer.alloc(32), new Date(cutoff), now)).toBe(true)
+    expect(isSnapshotReusable(Buffer.alloc(32), new Date(cutoff + 1), now)).toBe(true)
   })
 })
 

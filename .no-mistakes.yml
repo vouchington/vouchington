@@ -605,6 +605,13 @@ rules:
             file: backend/scripts/backfill-rss-feed-item-source-publications.mts,
             callee: 'hasRssFeedItemSourcesMissingPublication',
           }
+        # The standalone RSS preflight replays a finite three-feed fixture and keeps each feed's
+        # production hard-delete transaction; batching would bypass that owned-row cleanup contract.
+        - { file: backend/scripts/check-rss-feed-crawl-tiers.mts, callee: 'hardDeleteRssFeedById' }
+        # The standalone contract advances one owned feed through 18 fixed UTC/SLA states and
+        # queries after each update to observe the production selector at each exact boundary.
+        - { file: backend/scripts/rss-crawl-tier-contract.mts, callee: 'updateRssFeedTiming' }
+        - { file: backend/scripts/rss-crawl-tier-contract.mts, callee: 'getRssFeedsToFetch' }
         - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
         - {
             file: backend/scripts/explain-analyze/pruning/capture.mts,
