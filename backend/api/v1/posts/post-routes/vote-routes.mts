@@ -6,14 +6,13 @@ import {
   getPostElectionVotesByElectionId,
   getPostElectionVotesByUserForEntity,
 } from '@services/elections-votes/post'
-import { getPostByAnyCached } from '@services/entity-fetch'
 import { canViewPost } from '@services/posts'
 import { isAdminUser } from '@services/users'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { apiQuery } from '../../../response-contract.mts'
-import { getRouteAccessPost } from '@services/posts/route-access'
+import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 
 const postVotesParser = createPaginationParser({
   cursor: { type: 'simple' },
@@ -26,10 +25,10 @@ app.route('/api/v1/posts/:id/votes').get(async (ctx: Context) => {
   validateRequestContract(ctx, 'GET:/api/v1/posts/:id/votes', { path: ctx.params })
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
 
-  const post = await getPostByAnyCached(ctx.params.id!)
+  const { post, root } = await getRoutePostByAnyCached(ctx.params.id!)
   ctx.assert(post, 404, 'Post not found')
   const privacyPost =
-    post.post_type === 'topic_recommendation' ? post : await getRouteAccessPost(post)
+    post.post_type === 'topic_recommendation' ? post : await getRouteAccessPost(post, root)
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 

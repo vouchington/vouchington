@@ -32,8 +32,9 @@ export async function updateCommunityPostTypeSettings(
   communityId: string,
   input: UpdateCommunityPostTypeSettingsInput,
   membership?: CommunityMember | null,
+  loadedCommunity?: CommunityWithOwner,
 ): Promise<CommunityWithOwner> {
-  const community = await getCommunity(communityId)
+  const community = loadedCommunity ?? (await getCommunity(communityId))
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Cannot update archived community')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
@@ -71,9 +72,13 @@ export async function updateCommunityPostTypeSettings(
   }
   updateQuery.append(sql`
     WHERE id = ${communityId}
-      AND deleted_at IS NULL`)
+      AND deleted_at IS NULL AND archived_at IS NULL`)
 
-  await write(updateQuery)
+  const { rowCount } = await write(updateQuery)
+  if (!rowCount) {
+    assert(await getCommunity(communityId), 404, 'Community not found')
+    assert(false, 403, 'Cannot update archived community')
+  }
   const updated = await getCommunity(communityId)
   assert(updated, 404, 'Community not found after update')
   await invalidate.communities(community, updated)

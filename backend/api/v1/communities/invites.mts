@@ -59,7 +59,7 @@ app
       path: ctx.params,
       body,
     })
-    const invite = await createInvite(currentUser.id, loaded, body)
+    const invite = await createInvite(currentUser.id, loaded, body, currentUser)
 
     ctx.setStatus(201)
     ctx.json({ community_invite: invite })

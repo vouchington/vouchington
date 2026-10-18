@@ -2,11 +2,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
 import { maybeSanitizeElection } from '@services/elections-votes/shared/sanitize-election'
-import {
-  getPostByAnyCached,
-  getPostElectionByIdCachedBatch,
-  getPostMetricsByAnyCached,
-} from '@services/entity-fetch'
+import { getPostElectionByIdCachedBatch, getPostMetricsByAnyCached } from '@services/entity-fetch'
 import renderMarkdown from '@services/markdown'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { listProfileLinks } from '@services/my'
@@ -33,16 +29,16 @@ import {
   validateRequestContract,
   setAnonymousPublicCacheHeaders,
 } from '../../../response-helpers.mts'
-import { getRouteAccessPost } from '@services/posts/route-access'
+import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 
 app.route('/api/v1/posts/:idOrSlug').get(async (ctx: Context) => {
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/posts/:idOrSlug')
   validateRequestContract(ctx, 'GET:/api/v1/posts/:idOrSlug', { path: ctx.params })
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
+  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
 
-  const privacyPost = await getRouteAccessPost(post)
+  const privacyPost = await getRouteAccessPost(post, root)
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 

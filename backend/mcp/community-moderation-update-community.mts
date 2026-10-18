@@ -50,7 +50,7 @@ export const updateCommunitySettings: CommunityModerationHandler = async (user, 
       membership,
     )
   } else if (archive === undefined) {
-    updated = await updateCommunity(user, community.id, input, membership)
+    updated = await updateCommunity(user, community.id, input, membership, { community })
   } else {
     updated = await setCommunityArchiveState(
       user,

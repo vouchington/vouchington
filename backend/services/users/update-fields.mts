@@ -4,7 +4,7 @@ import { getPrivateUserByAny } from './get.mts'
 import assert from 'http-assert'
 import { validateUsername } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import type { UpdateUserOptions } from './types.mts'
+import type { PrivateUser, UpdateUserOptions } from './types.mts'
 import { oauthProviders } from '@services/oauth-accounts'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -21,7 +21,11 @@ const userMetricsVisibilityFields = [
   'topic_follows_visibility',
 ] as const satisfies ReadonlyArray<keyof UpdateUserOptions>
 
-export async function updateUserFields(userId: string, options: UpdateUserOptions) {
+export async function updateUserFields(
+  userId: string,
+  options: UpdateUserOptions,
+  loadedUser?: Pick<PrivateUser, 'username'>,
+) {
   const invalidatesUserMetrics = hasUserMetricsVisibilityUpdate(options)
   const {
     username,
@@ -53,15 +57,13 @@ export async function updateUserFields(userId: string, options: UpdateUserOption
     direct_messages_audience,
     is_fediverse_federation_enabled,
   } = options
-  let previousUsername: string | null | undefined
   let validatedUsername: string | undefined
 
   if (!hasUserFieldUpdates(options)) return
 
   if (typeof username === 'string' && username !== '') {
-    const existingUser = await getPrivateUserByAny(userId)
+    const existingUser = loadedUser ?? (await getPrivateUserByAny(userId))
     assert(existingUser, 404, 'User not found')
-    previousUsername = existingUser.username
   }
 
   const query = sql`/* updateUserFields */ UPDATE users SET`
@@ -77,7 +79,7 @@ export async function updateUserFields(userId: string, options: UpdateUserOption
       `use_display_name_from must be one of: ${validDisplayNameSources.join(', ')}`,
     )
     if (use_display_name_from === 'username' && username === undefined) {
-      const user = await getPrivateUserByAny(userId)
+      const user = loadedUser ?? (await getPrivateUserByAny(userId))
       assert(user?.username, 422, 'Cannot use username as display name source without a username')
     }
     hasSet = appendSet(query, hasSet, sql`use_display_name_from = ${use_display_name_from}`)
@@ -126,19 +128,20 @@ export async function updateUserFields(userId: string, options: UpdateUserOption
 
   if (!hasSet) return
 
-  query.append(sql` WHERE id = ${userId} AND deleted_at IS NULL`)
+  query.append(sql`
+    WHERE id = ${userId} AND deleted_at IS NULL
+    RETURNING WITH (OLD AS prior) prior.username AS previous_username
+  `)
 
-  await write(query)
+  // An authenticated row can predate another rename; invalidate the version this UPDATE replaced.
+  const { rows } = await write<{ previous_username: string | null }>(query)
+  const previousUsername = typeof username === 'string' ? rows[0]?.previous_username : undefined
 
   if (typeof username === 'string') {
     void addEntityBloomKeys('users', [normalizeKey(username)])
   }
-  await Promise.all([
-    invalidate.users(userId, previousUsername, validatedUsername),
-    invalidatesUserMetrics
-      ? invalidate.user_metrics(userId, previousUsername, validatedUsername)
-      : Promise.resolve(),
-  ])
+  const invalidateUser = invalidatesUserMetrics ? invalidate.usersWithMetrics : invalidate.users
+  await invalidateUser(userId, previousUsername, validatedUsername)
 
   void enqueueOnUserUpdated(userId)
 }

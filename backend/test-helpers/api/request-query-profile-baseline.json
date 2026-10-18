@@ -70,9 +70,14 @@
     "issue": 2612
   },
   {
+    "annotation": "canViewDelegatedPostsBatch",
+    "reason": "Delegated create, update and delete recheck thread access after lockDelegatedPostThread acquires lifecycle and post locks",
+    "issue": 3113
+  },
+  {
     "annotation": "canViewPostsBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "Anonymous outbound-federation visibility is rechecked after the vote transaction commits",
+    "issue": 3113
   },
   {
     "annotation": "claimContributionAdmission.abandonExpiredAttempt",
@@ -230,11 +235,6 @@
     "issue": 2609
   },
   {
-    "annotation": "detectMassReportCampaign",
-    "reason": "A batch of admitted report tools starts one report-integrity check per distinct target; the shared vote worker can complete those checks inside the request profile",
-    "issue": 2609
-  },
-  {
     "annotation": "disconnectOAuthAccount",
     "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
     "issue": 3119
@@ -311,18 +311,18 @@
   },
   {
     "annotation": "getCommunityById",
-    "reason": "Community re-fetch; #2544 covers only part of the routes",
-    "issue": 2614
+    "reason": "Community settings/archive output is read after writes",
+    "issue": 3113
   },
   {
     "annotation": "getCommunityMember",
-    "reason": "Community re-fetch; #2544 covers only part of the routes",
-    "issue": 2614
+    "reason": "Membership authority is read after pair advisory locks; bans recheck target membership after the kick UPDATE to reject concurrent role promotion",
+    "issue": 3113
   },
   {
     "annotation": "getCommunityWithViewerById",
-    "reason": "Community and viewer re-fetched after the route preamble",
-    "issue": 2544
+    "reason": "Community post creation reloads community and membership after admission begins its write transaction; delegated creation also holds lifecycle and membership locks",
+    "issue": 3113
   },
   {
     "annotation": "getDataRequestById",
@@ -371,13 +371,8 @@
   },
   {
     "annotation": "getPostByAny",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
-    "annotation": "getPostCacheKeys",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
+    "reason": "Post mutations reload after locks and writes; follower sends revalidate in their independent write transaction after route preflight; approval and vote federation reread after committed mutations",
+    "issue": 3113
   },
   {
     "annotation": "getPostProvenanceFacts",
@@ -385,24 +380,14 @@
     "issue": 2613
   },
   {
-    "annotation": "getPostsByAnyBatch",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 2613
-  },
-  {
     "annotation": "getPrivateUserByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Authenticated self reads and same-phase mutation inputs reuse rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside fresh report authorization after CAPTCHA/admission, post-body target resolution and postwrite reloads",
+    "issue": 3113
   },
   {
     "annotation": "getPublicUserByAny",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
-  },
-  {
-    "annotation": "getPublicUsersByAnyBatch",
-    "reason": "Batched MCP tool calls can each hydrate users once per tool call",
-    "issue": 2611
+    "reason": "Follow commits before its independent best-effort trust vote checks the target; ban-evasion flag claiming and banning have separate committed retry boundaries",
+    "issue": 3113
   },
   {
     "annotation": "getRelatablePostIds",
@@ -471,33 +456,28 @@
   },
   {
     "annotation": "getTopicByAny",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "reason": "Topic create and update return state after topic/alias writes; merged destination output is reloaded after the merge transaction commits",
+    "issue": 3113
   },
   {
-    "annotation": "getTopicCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "annotation": "getTopicDataPointInsights",
+    "reason": "Relation, vote and topic lookups repeat per target",
+    "issue": 2612
   },
   {
     "annotation": "getTopicsByAnyBatch",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "reason": "Post creation rechecks active topic state on the primary execution transaction after CAPTCHA/admission; link title resolution also rechecks categories after URL writes",
+    "issue": 3113
   },
   {
     "annotation": "getUrlById",
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 2612
+    "reason": "Stored URL existence is checked again in the intentional execution transaction after CAPTCHA and the separately committed capacity transaction (contribution-gating/admission.mts:69-79), so removed URLs reject before the post insert",
+    "issue": 3113
   },
   {
     "annotation": "getUrlsByIds",
-    "reason": "Root URL creation loads the inserted URL for each approved hostname",
-    "issue": 2612
-  },
-  {
-    "annotation": "getUserCacheKeys",
-    "reason": "User and profile lookups repeat per request step",
-    "issue": 2611
+    "reason": "Root URL creation hydrates URLs after their upserts in the shared approval transaction before writing each ordered relation",
+    "issue": 3113
   },
   {
     "annotation": "getUserTagRelationById",

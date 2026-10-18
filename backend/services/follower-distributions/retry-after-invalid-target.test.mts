@@ -8,8 +8,21 @@ import {
 } from '@voucha/test-helpers'
 import { sendPostToFollowers, sharePostWithFollowers } from './create.mts'
 import { processFollowerDistributionChunk } from './process.mts'
+import { preflightPostDistributionTarget } from './create-guards.mts'
 
 describe('follower distribution retry after target validation failure', () => {
+  it('rejects a target made non-distributable after the route preflight', async () => {
+    const sender = await createTestUser()
+    const creator = await createTestUser()
+    const post = await createTestPost({ user: creator, privacy: 'public', broadcast: 'everyone' })
+    await expect(preflightPostDistributionTarget(sender, 'post_send', post.id)).resolves.toBe(
+      post.id,
+    )
+    await setPostBroadcastForTest(post.id, 'followers')
+    await expect(
+      sendPostToFollowers(sender, post.id, { audience: 'all_followers' }),
+    ).rejects.toMatchObject({ status: 400, message: 'Only broadly visible posts can be sent' })
+  })
   it.each(['post_share', 'post_send'] as const)(
     'allows retrying %s when the target fails validation before any delivery',
     async action => {

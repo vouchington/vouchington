@@ -13,7 +13,7 @@ export const updateUser = async (
   assert(user, 404, 'User not found')
   assert(currentUserCanUpdateUser(currentUser, user), 403, 'Forbidden')
 
-  await updateUserFields(user.id, changes)
+  await updateUserFields(user.id, changes, user)
 
   return getPrivateUserByAny(user.id)
 }

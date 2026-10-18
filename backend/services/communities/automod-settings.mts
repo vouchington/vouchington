@@ -25,8 +25,9 @@ export async function updateCommunityAutomodSettings(
   communityId: string,
   input: UpdateCommunityAutomodSettingsInput,
   membership?: CommunityMember | null,
+  loadedCommunity?: CommunityWithOwner,
 ): Promise<CommunityWithOwner> {
-  const community = await getCommunity(communityId)
+  const community = loadedCommunity ?? (await getCommunity(communityId))
   assert(community, 404, 'Community not found')
   assert(!community.archived_at, 403, 'Cannot update archived community')
   assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
@@ -36,10 +37,14 @@ export async function updateCommunityAutomodSettings(
     'automod_action must be record_only, review_queue or unpublish',
   )
 
-  await write(sql`/* updateCommunityAutomodSettings */
+  const { rowCount } = await write(sql`/* updateCommunityAutomodSettings */
     UPDATE communities
     SET automod_action = ${input.automod_action}
-    WHERE id = ${communityId} AND deleted_at IS NULL`)
+    WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NULL`)
+  if (!rowCount) {
+    assert(await getCommunity(communityId), 404, 'Community not found')
+    assert(false, 403, 'Cannot update archived community')
+  }
   const updated = await getCommunity(communityId)
   assert(updated, 404, 'Community not found after update')
   await invalidate.communities(community, updated)

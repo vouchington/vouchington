@@ -2,6 +2,7 @@ import type { BasicUser, PrivateUser } from '@services/users/types'
 import { assertNotSuspended, getPrivateUserByAny } from '@services/users'
 import createHttpError from 'http-errors'
 
+/** Transport authentication precedes body, quota and audit work; hydrate at tool invocation. */
 export async function requirePrivateToolUser(currentUser: BasicUser): Promise<PrivateUser> {
   const privateUser = await getPrivateUserByAny(currentUser.id, { readOnly: false })
   if (!privateUser) {
