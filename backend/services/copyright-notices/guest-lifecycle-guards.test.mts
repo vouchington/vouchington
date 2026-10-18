@@ -74,7 +74,7 @@ describe('copyright guest lifecycle guards', () => {
     const { notice, owner, receivedAt } = await openNotice()
     const actor = await createTestUserDirect()
     const capability = await issueCopyrightGuestCapability({
-      issuedAt: new Date(),
+      issuedAt: receivedAt,
       currentUser: { ...actor, roles: ['moderator'] } as typeof actor,
       noticeId: notice.id,
       expiresAt: new Date('2026-07-03T12:00:00.000Z'),
@@ -159,12 +159,12 @@ describe('copyright guest lifecycle guards', () => {
   })
 
   it('does not treat mail or a staff information request as a capability', async () => {
-    const { notice } = await openNotice()
+    const { notice, receivedAt } = await openNotice()
     await recordTestClaimantEmailReceipt(notice.id)
     const staffRecord = await createTestUserDirect()
     const staff = { ...staffRecord, roles: ['moderator'] as const }
     const capability = await issueCopyrightGuestCapability({
-      issuedAt: new Date(),
+      issuedAt: receivedAt,
       currentUser: staff,
       noticeId: notice.id,
       expiresAt: new Date('2026-07-03T12:00:00.000Z'),
