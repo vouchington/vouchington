@@ -1,7 +1,11 @@
 import { randomBytes } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { onEnqueueAdmission } from '@data-stores/valkey-glide-mq/glide-mq-admission'
+import {
+  onEnqueueAdmission,
+  type EnqueueAdmission,
+} from '@data-stores/valkey-glide-mq/glide-mq-admission'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
+import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import {
   backdateImageUploadStagedAt,
   createTestUser,
@@ -40,7 +44,7 @@ describe('abandoned upload exact cutoff boundaries', () => {
       ids.push(upload.image_id)
     }
     vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue(undefined)
-    const admitted: string[] = []
+    const admissions: EnqueueAdmission[] = []
     const off = onEnqueueAdmission(event => {
       const input = event.inputs[0]
       if (
@@ -52,19 +56,31 @@ describe('abandoned upload exact cutoff boundaries', () => {
         typeof input.id === 'string' &&
         ids.includes(input.id)
       ) {
-        admitted.push(input.id)
+        admissions.push(event)
       }
       return undefined
     })
+    let result: Awaited<ReturnType<typeof cleanupAbandonedUploads>> | undefined
     try {
-      const result = await cleanupAbandonedUploads({ imageIds: ids, now })
-      expect(result.recovered).toBe(1)
-      expect(result.cleaned).toBe(0)
-      expect(admitted).toEqual([ids[0]])
-      for (const id of ids) expect(await getImageById(id)).not.toBeNull()
+      result = await cleanupAbandonedUploads({ imageIds: ids, now })
     } finally {
       off()
+      await Promise.allSettled(admissions.map(admission => admission.completion))
     }
+
+    if (!result) throw new Error('Image cleanup did not return a result')
+    expect(result.recovered).toBe(1)
+    expect(result.cleaned).toBe(0)
+    expect(admissions).toHaveLength(1)
+    for (const id of ids) expect(await getImageById(id)).not.toBeNull()
+    const [expectedId] = ids
+    if (!expectedId) throw new Error('Missing owned image upload ID')
+    const jobs = await Promise.all(
+      admissions.map(async admission =>
+        readEnqueuedJob(imageUploadsQueue, await admission.completion),
+      ),
+    )
+    expect(jobs.map(job => job.data)).toEqual([{ id: expectedId }])
   })
 
   it.each(UTC_ROLLOVERS)('abandons only before the 24-hour edge at %s', async instant => {
