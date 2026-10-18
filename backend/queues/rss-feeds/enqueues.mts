@@ -1,4 +1,7 @@
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
+import { background } from '@queues/background/queues'
+import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import { getPagedDispatchRowJobId } from '@data-stores/valkey-glide-mq/paged-dispatch-context'
 import {
   RSS_FEEDS_DISPATCH_JOB,
   RSS_FEEDS_FETCH_JOB,
@@ -61,10 +64,26 @@ export const enqueueBulkFetchRssFeeds = (
   },
 ): EnqueueReturnType => {
   const { ttl, priority, skipDeduplication, deduplicationScope } = opts ?? {}
-  return enqueueBulkFetchRssFeedJobs(
-    rssFeedIds.map(rssFeedId => ({ rssFeedId, ttl, skipDeduplication, deduplicationScope })),
-    priority === undefined ? {} : { priority },
-  )
+  const inputs = rssFeedIds.map(rssFeedId => ({
+    rssFeedId,
+    ttl,
+    skipDeduplication,
+    deduplicationScope,
+  }))
+  return enqueueBulkReactivatingFinished({
+    queue: background,
+    inputs,
+    jobIdOf: input =>
+      input.skipDeduplication
+        ? undefined
+        : getPagedDispatchRowJobId(
+            background.name,
+            RSS_FEEDS_FETCH_JOB.name,
+            buildRssFeedJobId(input.rssFeedId, input.deduplicationScope),
+          ),
+    enqueueBulk: rows =>
+      enqueueBulkFetchRssFeedJobs(rows, priority === undefined ? {} : { priority }),
+  })
 }
 
 export function enqueueDispatchRssFeeds(): EnqueueReturnType {

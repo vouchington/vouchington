@@ -46,6 +46,9 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   Shared workers preserve ordinary jobs' stall budget while allowing dispatchers to resume.
   Record ownership of row-admission fences before bulk enqueue; clean them in bounded batches
   after the page receipt is durable, preserving each row queue's failure-retention policy.
+  If a fresh sweep must re-admit a retained terminal row, use a dedicated connection to WATCH
+  its native job hash and remove it through GlideMQ's native function in the same transaction.
+  A concurrent retry must abort removal; never remove a live job after a separate state check.
   Ranked priority orders only jobs promoted together, so a large
   batch already in the ready list delays every later task in the shared queue, whatever its
   priority.

@@ -112,7 +112,7 @@ describe('reactivating finished job records through real GlideMQ', () => {
     }
   })
 
-  it('adds an id whose record was trimmed between the lookup and the state read', async () => {
+  it('adds an id whose retained record was trimmed after the first skipped add', async () => {
     const harness = openHarness(async () => undefined)
     const target = { id: randomUUID() }
 
@@ -122,18 +122,19 @@ describe('reactivating finished job records through real GlideMQ', () => {
       await firstRun
 
       const rerun = harness.settled(target.id)
+      let firstAdd = true
       const added = await enqueueBulkReactivatingFinished({
-        // Retention trims the finished record right after the lookup read it.
-        queue: {
-          getJob: async (id, options) => {
-            const job = await harness.queue.getJob(id, options)
-            await job?.remove()
-            return job
-          },
-        },
+        queue: harness.queue,
         inputs: [target],
         jobIdOf: input => input.id,
-        enqueueBulk: harness.addBulk,
+        enqueueBulk: async inputs => {
+          const jobs = await harness.addBulk(inputs)
+          if (firstAdd) {
+            firstAdd = false
+            await (await harness.queue.getJob(target.id))?.remove()
+          }
+          return jobs
+        },
       })
       await rerun
 

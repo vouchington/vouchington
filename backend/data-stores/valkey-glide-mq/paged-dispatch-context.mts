@@ -26,6 +26,20 @@ export function checkpointPagedDispatchFences(): Promise<void> | undefined {
   return page?.checkpoint([...page.dedupIds])
 }
 
+/** Stable row identity for terminal-record recovery, only inside the matching paged dispatch. */
+export function getPagedDispatchRowJobId(
+  queueName: string,
+  jobName: string,
+  identity: string,
+): string | undefined {
+  if (pageContext.getStore()?.target !== queueName) return undefined
+  return `dispatch_row__${rowIdentity(jobName, identity)}`
+}
+
+function rowIdentity(jobName: string, identity: string): string {
+  return createHash('sha256').update(`${jobName}:${identity}`).digest('hex')
+}
+
 /** Native atomic throttle admission survives removal of completed row records. */
 export function pagedDispatchRowOptions(
   queueName: string,
@@ -36,7 +50,7 @@ export function pagedDispatchRowOptions(
   const page = pageContext.getStore()
   if (!page || page.target !== queueName) return options
   const identity = options.jobId ?? options.deduplication?.id ?? JSON.stringify(data)
-  const rowId = createHash('sha256').update(`${jobName}:${identity}`).digest('hex')
+  const rowId = rowIdentity(jobName, identity)
   const dedupId = `dispatch_page__${createHash('sha256').update(`${page.id}:${rowId}`).digest('hex')}`
   page.dedupIds.add(dedupId)
   return {

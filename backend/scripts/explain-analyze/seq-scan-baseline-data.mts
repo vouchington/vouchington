@@ -33,6 +33,8 @@ export const BASELINE_FINGERPRINTS = [
   'rss-feed-item-feed-heavy-follows-after|0|getRssFeedItemFeedIds:heavy:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'rss-feed-item-feed-heavy-follows|0|getRssFeedItemFeedIds:heavy:force_custom_plan|force_custom_plan:rss_feed_item_categories',
   'rss-feed-item-feed-heavy-story-skew|0|getRssFeedItemFeedIds:force_custom_plan|force_custom_plan:rss_feed_item_categories',
+  'rss-feeds-to-fetch-tiered|0|getRssFeedsTiered:force_custom_plan|force_custom_plan:rss_feeds',
+  'rss-feeds-to-fetch-tiered|0|getRssFeedsTiered:force_generic_plan|force_generic_plan:rss_feeds',
   'search-admin-users-email|0|searchAdminUsers:email:force_custom_plan|force_custom_plan:users',
   'search-admin-users-email|0|searchAdminUsers:email:force_generic_plan|force_generic_plan:users',
   'search-admin-users-uuid|0|searchAdminUsers:uuid:force_generic_plan|force_generic_plan:users',

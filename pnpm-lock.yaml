@@ -3218,6 +3218,9 @@ importers:
 
   backend/queues/rss-feeds:
     dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
