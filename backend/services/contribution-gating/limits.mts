@@ -46,7 +46,7 @@ export async function assertWithinContributionActionLimit(
   }
 }
 
-/** Admit an asynchronous submission now; its worker charges the daily window on actual creation. */
+/** Admit an asynchronous submission now; its worker checks and charges daily quota only on creation. */
 export async function assertWithinContributionSubmissionLimit(
   currentUser: BasicUser,
   membershipPlan: ContributionLimitMembershipPlan,
@@ -55,8 +55,7 @@ export async function assertWithinContributionSubmissionLimit(
   const tier = getContributionLimitTier(currentUser, membershipPlan)
   const key = limitKey(currentUser.id, action)
   const shortWindow = await checkWindow(shortLimiter, key, action, tier, 'short', true)
-  const dailyWindow = await checkWindow(dailyLimiter, key, action, tier, 'daily', false)
-  if (isWindowAllowed(shortWindow, true) && isWindowAllowed(dailyWindow, false)) return
+  if (isWindowAllowed(shortWindow, true)) return
   throw createContributionLimitExceededError()
 }
 

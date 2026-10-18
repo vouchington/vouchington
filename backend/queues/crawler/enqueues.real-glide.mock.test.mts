@@ -1,13 +1,46 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { createQueue, workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import {
+  closeAndUnregisterGlideMQInstance,
+  createQueue,
+  workerQueueConnection,
+  workerQueuePrefix,
+} from '@data-stores/valkey-glide-mq'
 import { CRAWL_URLS_QUEUE_NAME } from './config.mts'
+import { enqueueBulkCrawlUrls } from './enqueues.mts'
+import { crawlUrls } from './queues.mts'
 
 // This project selects real glide-mq through an explicit external-package passthrough.
+vi.hoisted(() => {
+  const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
+  url.pathname = String(crypto.getRandomValues(new Uint32Array(1))[0])
+  vi.stubEnv('VALKEY_WORKER_QUEUE_URL', url.toString())
+})
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('crawl_urls priority under backlog', () => {
+  it('keeps one pending crawl for a redispatched import discovery generation', async () => {
+    const entry = {
+      urlId: randomUUID(),
+      options: { importRowId: randomUUID(), importDiscoveryGeneration: randomUUID() },
+    }
+    try {
+      const first = await enqueueBulkCrawlUrls([entry], { rateLimitMs: 1_000 })
+      const replay = await enqueueBulkCrawlUrls([entry], { rateLimitMs: 1_000 })
+
+      expect(first).toHaveLength(1)
+      expect(replay).toHaveLength(0)
+      expect(await crawlUrls.getJob(first[0]!.id)).not.toBeNull()
+    } finally {
+      try {
+        await crawlUrls.obliterate({ force: true })
+      } finally {
+        await closeAndUnregisterGlideMQInstance(crawlUrls)
+      }
+    }
+  })
+
   it('rejects priority 0 on a ranked queue and positive priority on a none queue', async () => {
     const ranked = createQueue(`ranked-priority-${randomUUID()}`, { priorityKind: 'ranked' })
     const none = createQueue(`none-priority-${randomUUID()}`, { priorityKind: 'none' })

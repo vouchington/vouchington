@@ -7,6 +7,7 @@ import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
+import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import { createSourceFromUrl } from '@services/rss-feeds/create-source'
 import type { CreateSourceOptions } from '@services/rss-feeds/create-source-types'
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
@@ -63,6 +64,7 @@ export async function importSingleRssFeed(
   const existingFeed = await findExistingRssFeedByUrl(canonicalUrl)
 
   if (existingFeed) {
+    await upsertAutomaticTopicUpvote(currentUser, existingFeed.topic_id)
     const alreadyFollowing = await isUserFollowingRssFeed(currentUser.id, existingFeed.id)
     if (alreadyFollowing) {
       return {

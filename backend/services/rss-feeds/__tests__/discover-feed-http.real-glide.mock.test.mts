@@ -26,6 +26,8 @@ import {
   getRssFeedUrlForTest,
 } from '@voucha/test-helpers/rss-feed-import-rows'
 import type { CrawlerHtmlResult } from '../../crawler-html/index.mts'
+import { completeRssFeedImportDiscovery, discoverFeedUrlFromHtml } from '../discover-feed.mts'
+import { RssFeedDiscoveryPendingError } from '../discovery-pending.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -124,6 +126,32 @@ async function runHtmlImport(links: NonNullable<CrawlerHtmlResult['content']>['l
 }
 
 describe('HTML RSS discovery continuation', () => {
+  it('replays a pending crawl with the same generation after redispatch', async () => {
+    const user = await createTestUser()
+    const pageUrl = `https://discovery-replay-${randomUUID()}.example.com/blog`
+    const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
+    const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
+
+    await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
+      RssFeedDiscoveryPendingError,
+    )
+    const first = await getRssFeedImportDiscoveryForTest(rowId)
+    await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
+      RssFeedDiscoveryPendingError,
+    )
+    const replayed = await getRssFeedImportDiscoveryForTest(rowId)
+    expect(replayed.discovery_generation).toBe(first.discovery_generation)
+    expect(replayed.discovery_url_id).toBe(first.discovery_url_id)
+
+    await completeRssFeedImportDiscovery(
+      rowId,
+      first.discovery_url_id!,
+      first.discovery_generation!,
+      null,
+    )
+    await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).resolves.toBeNull()
+  })
+
   it('runs the dispatcher, HTML crawler, and resumed row to a created source', async () => {
     const result = await runHtmlImport({ alternate: { 'application/rss+xml': '/feed.xml' } })
     expect(result.crawlJob.data.import_row_id).toBe(result.rowId)

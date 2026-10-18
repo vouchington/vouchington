@@ -4,6 +4,7 @@ export type PsqlPoolMetrics = {
   write: PoolConnectionMetrics
   read: PoolConnectionMetrics
   advisoryLock: PoolConnectionMetrics
+  jobSerialization: PoolConnectionMetrics
 }
 
 type PoolConnectionMetrics = {
@@ -115,13 +116,26 @@ export function handshakeSnapshot(
 
 export function poolConnectionCounts(metrics: PsqlPoolMetrics): PoolConnectionCounts {
   return {
-    total: metrics.write.total + metrics.read.total + metrics.advisoryLock.total,
-    idle: metrics.write.idle + metrics.read.idle + metrics.advisoryLock.idle,
+    total:
+      metrics.write.total +
+      metrics.read.total +
+      metrics.advisoryLock.total +
+      metrics.jobSerialization.total,
+    idle:
+      metrics.write.idle +
+      metrics.read.idle +
+      metrics.advisoryLock.idle +
+      metrics.jobSerialization.idle,
     nonIdleOrConnecting:
       metrics.write.nonIdleOrConnecting +
       metrics.read.nonIdleOrConnecting +
-      metrics.advisoryLock.nonIdleOrConnecting,
-    waiting: metrics.write.waiting + metrics.read.waiting + metrics.advisoryLock.waiting,
+      metrics.advisoryLock.nonIdleOrConnecting +
+      metrics.jobSerialization.nonIdleOrConnecting,
+    waiting:
+      metrics.write.waiting +
+      metrics.read.waiting +
+      metrics.advisoryLock.waiting +
+      metrics.jobSerialization.waiting,
   }
 }
 

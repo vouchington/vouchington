@@ -138,20 +138,29 @@ describe('contribution action limits', () => {
     })
   })
 
-  it('checks daily capacity at submission but charges it only when the worker creates a feed', async () => {
+  it('admits an existing-feed submission when daily creation quota is full until the short window fills', async () => {
     const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
     overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
-      rss_feed_free_short_limit: 3,
+      rss_feed_free_short_limit: 2,
       rss_feed_free_daily_limit: 1,
     })
 
-    await assertWithinContributionSubmissionLimit(user, null, 'rss_feed')
+    await assertWithinContributionDailyLimit(user, null, 'rss_feed')
     await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
-      short_window: { used: 1 },
-      daily_window: { used: 0 },
+      short_window: { used: 0 },
+      daily_window: { used: 1 },
     })
 
-    await assertWithinContributionDailyLimit(user, null, 'rss_feed')
+    await expect(
+      assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
+    ).resolves.toBeUndefined()
+    await expect(getContributionActionLimitStatus(user, null, 'rss_feed')).resolves.toMatchObject({
+      short_window: { used: 1 },
+      daily_window: { used: 1 },
+    })
+    await expect(
+      assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
+    ).resolves.toBeUndefined()
     await expect(
       assertWithinContributionSubmissionLimit(user, null, 'rss_feed'),
     ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })

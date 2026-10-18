@@ -22,13 +22,14 @@ describe('enqueueBulkCrawlUrls', () => {
     expect(job).toBeDefined()
     expect(job!.opts).toMatchObject({
       priority: 10,
-      deduplication: { id: 'crawl_url__url-1__row-1__gen-1', mode: 'debounce' },
+      deduplication: { id: 'crawl_url__url-1__row-1__gen-1', mode: 'simple' },
       ordering: { key: 'hostname-1', rateLimit: { max: 1, duration: 1234 } },
     })
     expect(job!.data).toMatchObject({
       import_row_id: 'row-1',
       import_discovery_generation: 'gen-1',
     })
+    expect(job!.opts.deduplication).not.toHaveProperty('ttl')
   })
 
   it('gives each rate-limit replacement its own dedup id per retry count', async () => {

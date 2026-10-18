@@ -22,13 +22,13 @@ describe('userRssFeedImportsHandlers', () => {
     ])
   })
 
-  it('rejects a row job without an import id or row id', () => {
+  it('rejects a row job without an import id or row id', async () => {
     const handler = handlerFor(IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB.name)
 
-    expect(() => handler.handle({ data: { rowId: 'row-1' } } as Job<never>)).toThrow(
+    await expect(handler.handle({ data: { rowId: 'row-1' } } as Job<never>)).rejects.toThrow(
       'User RSS feed import job .importId is required',
     )
-    expect(() => handler.handle({ data: { importId: 'import-1' } } as Job<never>)).toThrow(
+    await expect(handler.handle({ data: { importId: 'import-1' } } as Job<never>)).rejects.toThrow(
       'User RSS feed import job .rowId is required',
     )
   })

@@ -53,6 +53,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
     rateLimitMs,
   }) => {
     const delay = options?.delay ?? jobDelay ?? 0
+    const isImportDiscovery = Boolean(options?.importRowId && options.importDiscoveryGeneration)
     return {
       data: {
         url_id: urlId,
@@ -86,7 +87,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
             rateLimitRetryCount != null
               ? `${JOB_NAME}_ratelimit__${urlId}${options?.importRowId ? `__${options.importRowId}__${options.importDiscoveryGeneration}` : ''}__${rateLimitRetryCount}`
               : `${JOB_NAME}__${urlId}${options?.importRowId ? `__${options.importRowId}__${options.importDiscoveryGeneration}` : ''}`,
-          mode: 'debounce',
+          mode: isImportDiscovery ? 'simple' : 'debounce',
         },
         ...(delay > 0 ? { delay } : {}),
         ...(hostnameId

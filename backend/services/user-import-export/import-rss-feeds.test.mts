@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import {
+  countTopicElectionVoteRowsForUser,
   createTestUser,
+  getRssFeedFollowExistsForTest,
   getRssFeedImportRequestForTest,
   insertTestRssFeedDirect,
   WEB_PROVENANCE,
@@ -77,5 +79,26 @@ describe('importSingleRssFeed', () => {
       status: 'followed',
       entity_id: rssFeed.id,
     })
+  })
+
+  it('casts one automatic topic vote across existing-feed import and repeated follows', async () => {
+    const member = await createTestUser()
+    const rssFeedUrl = `https://existing-vote-${randomUUID()}.example.com/feed.xml`
+    const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl })
+
+    const imported = await importSingleRssFeed(member, WEB_PROVENANCE, rssFeedUrl, {
+      follow: false,
+    })
+    expect(imported).toMatchObject({ status: 'imported', entity_id: rssFeed.id })
+    expect(await getRssFeedFollowExistsForTest(member.id, rssFeed.id)).toBe(false)
+    expect(await countTopicElectionVoteRowsForUser(member.id)).toBe(1)
+
+    const followed = await importSingleRssFeed(member, WEB_PROVENANCE, rssFeedUrl)
+    expect(followed).toMatchObject({ status: 'followed', entity_id: rssFeed.id })
+    expect(await getRssFeedFollowExistsForTest(member.id, rssFeed.id)).toBe(true)
+
+    const repeated = await importSingleRssFeed(member, WEB_PROVENANCE, rssFeedUrl)
+    expect(repeated).toMatchObject({ status: 'already_following', entity_id: rssFeed.id })
+    expect(await countTopicElectionVoteRowsForUser(member.id)).toBe(1)
   })
 })

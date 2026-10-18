@@ -53,6 +53,10 @@ flowchart LR
   small one. A dispatcher can be lost, so a scheduled sweep re-dispatches unfinished imports whose
   progress stopped; every step is idempotent, so the sweep is safe to repeat. Because imports have
   no row cap, an import's status is counters plus a keyset-paged row list, never every row at once.
+  RSS row processing uses a nonblocking session lock because recovery and crawler continuations can
+  overlap before the terminal update. A contending delivery defers; it does not repeat creation or
+  quota side effects. These locks use a separate bounded connection pool so nested vote locks cannot
+  exhaust the sessions needed to finish an import. No transaction stays open across feed I/O.
 - **Instance metadata is optional.** Fediverse instance creation persists the topic before its
   NodeInfo enrichment job. The create response does not wait for an external host. A lost or
   exhausted enrichment job leaves nullable metadata unclassified; the topic and its hostname

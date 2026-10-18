@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { createServer, connect } from 'node:net'
 import { Pool, type PoolClient } from 'pg'
-import { advisoryLockPool, readPool, writePool } from './setup.mts'
+import { advisoryLockPool, jobSerializationPool, readPool, writePool } from './setup.mts'
 import { registerPsqlPoolMetricsForTestEnvironment, type PsqlPoolMetrics } from './pool-metrics.mts'
 import { waitForForkLeakHandshakeSettle } from '../../../test-helpers/vitest-fork-leak-handshake.mts'
 
 type PsqlPoolSocketHandles = { active: ReadonlySet<object>; owned: ReadonlySet<object> }
 
 describe('PostgreSQL pool metrics', () => {
-  it('reports the initialized write, read, and advisory pools', () => {
+  it('reports the initialized write, read, advisory, and job serialization pools', () => {
     const metricsProvider = (
       globalThis as typeof globalThis & Record<symbol, (() => unknown) | undefined>
     )[Symbol.for('vitest-fork-leak-psql-pool-metrics')]
@@ -16,11 +16,13 @@ describe('PostgreSQL pool metrics', () => {
       write: expectedPoolMetrics(writePool),
       read: expectedPoolMetrics(readPool),
       advisoryLock: expectedPoolMetrics(advisoryLockPool),
+      jobSerialization: expectedPoolMetrics(jobSerializationPool),
     })
   })
 
   it('tracks the real pool socket without claiming an unrelated net.Socket', async () => {
     const client = await writePool.connect()
+    const serializationClient = await jobSerializationPool.connect()
     const server = createServer(socket => socket.on('error', () => undefined))
     const acceptedSockets = new Set<import('node:net').Socket>()
     let unrelatedSocket: import('node:net').Socket | undefined
@@ -29,9 +31,15 @@ describe('PostgreSQL pool metrics', () => {
     try {
       await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
       const poolHandle = Reflect.get(Reflect.get(client, 'connection').stream, '_handle') as object
+      const serializationHandle = Reflect.get(
+        Reflect.get(serializationClient, 'connection').stream,
+        '_handle',
+      ) as object
       const before = getRegisteredPsqlPoolSocketHandles()
       expect(before?.active.has(poolHandle)).toBe(true)
       expect(before?.owned.has(poolHandle)).toBe(true)
+      expect(before?.active.has(serializationHandle)).toBe(true)
+      expect(before?.owned.has(serializationHandle)).toBe(true)
 
       const address = server.address()
       if (!address || typeof address === 'string') throw new Error('TCP server has no address')
@@ -45,11 +53,14 @@ describe('PostgreSQL pool metrics', () => {
       const unrelatedHandle = Reflect.get(unrelatedSocket, '_handle') as object
       expect(after?.active.has(poolHandle)).toBe(true)
       expect(after?.owned.has(poolHandle)).toBe(true)
+      expect(after?.active.has(serializationHandle)).toBe(true)
+      expect(after?.owned.has(serializationHandle)).toBe(true)
       expect(after?.active.has(unrelatedHandle)).toBe(true)
       expect(after?.owned.has(unrelatedHandle)).toBe(false)
     } finally {
       unrelatedSocket?.destroy()
       client.release()
+      serializationClient.release()
       for (const socket of acceptedSockets) socket.destroy()
       await new Promise<void>(resolve => server.close(() => resolve()))
     }
@@ -67,7 +78,12 @@ describe('PostgreSQL pool metrics', () => {
     let secondConnection: Promise<PoolClient> | undefined
 
     registerPsqlPoolMetricsForTestEnvironment(
-      { write: pool, read: readPool, advisoryLock: advisoryLockPool },
+      {
+        write: pool,
+        read: readPool,
+        advisoryLock: advisoryLockPool,
+        jobSerialization: jobSerializationPool,
+      },
       'test',
     )
 

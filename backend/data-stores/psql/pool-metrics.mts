@@ -12,6 +12,7 @@ export type PsqlPoolMetrics = {
   write: PsqlPoolMetric
   read: PsqlPoolMetric
   advisoryLock: PsqlPoolMetric
+  jobSerialization: PsqlPoolMetric
 }
 
 type PsqlPoolMetricsProvider = () => PsqlPoolMetrics
@@ -46,7 +47,7 @@ export function registerPsqlPoolMetricsForTestEnvironment(
   if (environment !== 'test') return false
 
   installTcpResourceHook()
-  for (const pool of [pools.write, pools.read, pools.advisoryLock]) {
+  for (const pool of [pools.write, pools.read, pools.advisoryLock, pools.jobSerialization]) {
     if (tcpResourceTracker.registeredPools.has(pool)) continue
     tcpResourceTracker.registeredPools.add(pool)
     pool.on('connect', client => markPoolTcpResource(client))
@@ -57,6 +58,7 @@ export function registerPsqlPoolMetricsForTestEnvironment(
     write: snapshotPool(pools.write),
     read: snapshotPool(pools.read),
     advisoryLock: snapshotPool(pools.advisoryLock),
+    jobSerialization: snapshotPool(pools.jobSerialization),
   })
   ;(globalThis as typeof globalThis & Record<symbol, PsqlPoolSocketHandlesProvider>)[
     psqlPoolSocketHandlesKey()
@@ -74,6 +76,7 @@ type PsqlPools = {
   write: pg.Pool
   read: pg.Pool
   advisoryLock: pg.Pool
+  jobSerialization: pg.Pool
 }
 
 function installTcpResourceHook(): void {

@@ -41,6 +41,13 @@ export const psql: Psql = await createPsql({
 export const writePool = psql.writePool
 export const advisoryLockPool = psql.advisoryLockPool
 export const readPool = psql.readPool
+// Long-running job serialization must not occupy the advisory pool used by nested vote locks.
+export const jobSerializationPool = new Pool({
+  ...poolConfiguration.common,
+  connectionString,
+  max: poolConfiguration.advisoryLockMax,
+})
+jobSerializationPool.on('error', onError)
 const runtimeQuery = psql.query
 const runtimeRead = psql.read
 const runtimeWrite = psql.write
@@ -52,12 +59,23 @@ export const write: Psql['write'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeWrite(input, valuesOrOptions, options))
 export const { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } =
   createBoundedCursorApi(psql)
-export const close: Psql['close'] = psql.close
+export const close: Psql['close'] = async () => {
+  await Promise.all([psql.close(), jobSerializationPool.end()])
+}
 
 registerPsqlPoolMetricsForTestEnvironment(
-  { write: writePool, read: readPool, advisoryLock: advisoryLockPool },
+  {
+    write: writePool,
+    read: readPool,
+    advisoryLock: advisoryLockPool,
+    jobSerialization: jobSerializationPool,
+  },
   process.env.NODE_ENV,
 )
-startConfiguredPoolStatsSampler(psql, poolConfiguration, Boolean(process.env.NODE_PREWARM))
+startConfiguredPoolStatsSampler(
+  { ...psql, jobSerializationPool },
+  poolConfiguration,
+  Boolean(process.env.NODE_PREWARM),
+)
 
 export { Pool }

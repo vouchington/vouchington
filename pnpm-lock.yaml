@@ -11140,6 +11140,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
+      '@services/elections-votes':
+        specifier: workspace:^
+        version: link:../elections-votes
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations

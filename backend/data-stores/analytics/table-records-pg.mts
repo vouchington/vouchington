@@ -20,7 +20,7 @@ export interface PgQueryTimingRecord extends AnalyticsBaseRecord {
 
 /** Periodic gauge snapshot of a `pg.Pool`'s connection accounting. */
 export interface PgPoolStatsRecord extends AnalyticsBaseRecord {
-  pool: 'advisory-lock' | 'read' | 'write'
+  pool: 'advisory-lock' | 'job-serialization' | 'read' | 'write'
   /** Total connections (idle + in-use). */
   total: number
   idle: number

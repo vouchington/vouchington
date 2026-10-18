@@ -7,9 +7,11 @@ export interface SampledPools {
   write: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
   read: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
   advisoryLock: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
+  jobSerialization: Pick<pg.Pool, 'totalCount' | 'idleCount' | 'waitingCount'>
   readMax: number
   writeMax: number
   advisoryLockMax: number
+  jobSerializationMax: number
 }
 
 type PoolStatsInterval = { unref(): void; dispose(): void }
@@ -29,6 +31,7 @@ export function createPoolStatsSampler(schedule: PoolStatsScheduler = schedulePo
       writePool: SampledPools['write']
       readPool: SampledPools['read']
       advisoryLockPool: SampledPools['advisoryLock']
+      jobSerializationPool: SampledPools['jobSerialization']
     },
     limits: { readMax: number; writeMax: number; advisoryLockMax: number },
     nodePrewarm: boolean,
@@ -38,9 +41,11 @@ export function createPoolStatsSampler(schedule: PoolStatsScheduler = schedulePo
       write: pools.writePool,
       read: pools.readPool,
       advisoryLock: pools.advisoryLockPool,
+      jobSerialization: pools.jobSerializationPool,
       readMax: limits.readMax,
       writeMax: limits.writeMax,
       advisoryLockMax: limits.advisoryLockMax,
+      jobSerializationMax: limits.advisoryLockMax,
     })
   }
 
@@ -90,10 +95,14 @@ export function emitPoolStats(pools: SampledPools): void {
     ...baseRecord(now),
     ...poolGauge('advisory-lock', pools.advisoryLock, pools.advisoryLockMax),
   })
+  emitAnalytics('pg_pool_stats', {
+    ...baseRecord(now),
+    ...poolGauge('job-serialization', pools.jobSerialization, pools.jobSerializationMax),
+  })
 }
 
 function poolGauge(
-  label: 'advisory-lock' | 'read' | 'write',
+  label: 'advisory-lock' | 'job-serialization' | 'read' | 'write',
   pool: SampledPools['write'],
   max: number,
 ) {

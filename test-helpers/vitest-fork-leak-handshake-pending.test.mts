@@ -8,7 +8,7 @@ import {
 function poolMetrics(total: number, idle = total): PsqlPoolMetrics {
   const metric = { total, idle, nonIdleOrConnecting: total - idle, waiting: 0 }
   const empty = { total: 0, idle: 0, nonIdleOrConnecting: 0, waiting: 0 }
-  return { write: metric, read: empty, advisoryLock: empty }
+  return { write: metric, read: empty, advisoryLock: empty, jobSerialization: empty }
 }
 
 function socketHandles(active: readonly object[], owned: readonly object[]): PsqlPoolSocketHandles {
