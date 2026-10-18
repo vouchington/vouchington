@@ -23,7 +23,6 @@ import {
   type CopyrightEmailIntake,
 } from '@/lib/api/client/copyright-email-intakes'
 import { useCopyrightEmailReviewActions } from './copyright-email-review-actions'
-
 export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueuePage }) {
   const {
     pages,
@@ -34,7 +33,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     fetchError,
     clearError,
     resetToFirstPage,
-    replaceFirstPage,
+    refreshLoadedPages,
     resetKey,
   } = usePaginatedList(
     data,
@@ -47,14 +46,14 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     for (const item of page.copyright_email_intakes) itemById.set(item.id, item)
   }
   const items = [...itemById.values()]
-  usePendingAiRefresh(
+  const refreshTimedOut = usePendingAiRefresh(
     items.some(
       item =>
         item.waiting_reason === 'awaiting_review' &&
         item.parse_status === 'succeeded' &&
         item.recommendation_id === null,
     ),
-    async () => replaceFirstPage?.(await listCopyrightEmailIntakes()),
+    () => refreshLoadedPages?.(() => listCopyrightEmailIntakes()),
   )
   const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
   const selectedRecommendationId = items.find(item => item.id === detail?.id)?.recommendation_id
@@ -115,10 +114,13 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
         Staff must verify each parsed email and approve, reject, or ask the sender for more
         information before any case action.
       </p>
-      {error && (
-        <Alert variant='destructive'>
-          <AlertTitle>Review action failed</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+      {(error || refreshTimedOut) && (
+        <Alert variant={error ? 'destructive' : undefined}>
+          <AlertTitle>{error ? 'Review action failed' : 'AI review is still pending'}</AlertTitle>
+          <AlertDescription>
+            {error ??
+              'The AI recommendation is taking longer than expected. Refresh to check again.'}
+          </AlertDescription>
         </Alert>
       )}
       {success && (

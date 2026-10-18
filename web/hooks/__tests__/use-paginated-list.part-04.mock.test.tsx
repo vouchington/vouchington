@@ -45,4 +45,25 @@ describe('usePaginatedList loadMore start signal', () => {
     expect(getPaginatedPage).not.toHaveBeenCalled()
     expect(result.current.pages).toEqual([initial])
   })
+
+  it('refreshes every loaded cursor page before replacing the visible list', async () => {
+    const initial = makePage(['first-old'], 'old-cursor')
+    const second = makePage(['second-old'], null)
+    vi.mocked(getPaginatedPage).mockResolvedValueOnce(second)
+    const { result } = renderHook(() => usePaginatedList(initial, '/api/v1/items', {}))
+    await act(async () => {
+      await result.current.loadMore()
+    })
+    expect(result.current.pages).toEqual([initial, second])
+
+    const newFirst = makePage(['first-new'], 'new-cursor')
+    const newSecond = makePage(['second-new'], null)
+    vi.mocked(getPaginatedPage).mockResolvedValueOnce(newSecond)
+    await act(async () => {
+      await result.current.refreshLoadedPages?.(async () => newFirst)
+    })
+
+    expect(getPaginatedPage).toHaveBeenLastCalledWith('/api/v1/items', { after: 'new-cursor' })
+    expect(result.current.pages).toEqual([newFirst, newSecond])
+  })
 })

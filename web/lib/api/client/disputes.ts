@@ -72,9 +72,12 @@ export function rerunDisputeAI(disputeId: string): Promise<void> {
 }
 
 /** The rerun request only confirms queue admission; each poll reads the saved draft separately. */
-export async function reconcileDisputeAIDraft(before: ReviewDispute): Promise<ReviewDispute> {
+export async function reconcileDisputeAIDraft(
+  before: Pick<ReviewDispute, 'id'>,
+): Promise<ReviewDispute> {
   const { dispute } = await clientApi.get<{ dispute: ReviewDispute }>(
     `/api/v1/disputes/${before.id}`,
+    { searchParams: { consistency: 'primary' } },
   )
   return dispute
 }

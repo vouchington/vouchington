@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines -- rerun scenarios share the same report and navigation fixtures. */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -143,7 +144,7 @@ describe('ReportsClient re-run judgement button', () => {
       current_report_count: 1,
     }
     const first = makeReport({ id: 'report-1', judgement })
-    const second = makeReport({ id: 'report-2', judgement })
+    const second = makeReport({ id: 'report-2', entity_id: 'post-2', judgement })
     const data = makeReportsResponse()
     mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
     const { rerender } = render(
@@ -185,6 +186,58 @@ describe('ReportsClient re-run judgement button', () => {
     await waitFor(() =>
       expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function)),
     )
+  })
+
+  it('serializes reruns for two reports on the same entity until the first judgement completes', async () => {
+    const judgement = {
+      id: '00000000-0000-7000-8000-000000000001',
+      recommended_action: 'remove' as const,
+      public_response: 'Same response',
+      internal_response: 'Same rationale',
+      is_stale: false,
+      judged_report_count: 1,
+      current_report_count: 1,
+    }
+    const first = makeReport({ id: 'report-1', judgement })
+    const second = makeReport({ id: 'report-2', judgement })
+    const data = makeReportsResponse()
+    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
+    const { rerender } = render(
+      <ReportsClient
+        viewerTier='staff'
+        data={{ ...data, results: [first, second] }}
+      />,
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[0]!)
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(true, expect.any(Function)),
+    )
+    await waitFor(() => expect(mockNav.refresh).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeDisabled(),
+    )
+    expect(mockRerunReportJudgement).toHaveBeenCalledTimes(1)
+
+    rerender(
+      <ReportsClient
+        viewerTier='staff'
+        data={{
+          ...data,
+          results: [
+            { ...first, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' } },
+            { ...second, judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' } },
+          ],
+        }}
+      />,
+    )
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(false, expect.any(Function)),
+    )
+    await waitFor(() =>
+      expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeEnabled(),
+    )
+    fireEvent.click(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]!)
+    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledTimes(2))
   })
 
   it('routes a failed re-run through onError and keeps the row', async () => {

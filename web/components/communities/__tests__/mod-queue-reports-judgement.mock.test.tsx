@@ -38,6 +38,7 @@ describe('ModQueueReports judgement', () => {
         reports={[
           makeReport({
             judgement: {
+              id: '00000000-0000-7000-8000-000000000302',
               recommended_action: 'warn',
               public_response: 'Needs another look.',
               internal_response: 'Older report context.',

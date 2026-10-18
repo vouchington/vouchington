@@ -9002,6 +9002,12 @@
                   "type": "number"
                 }
               },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "internal_response": {
                 "required": true,
                 "schema": {
@@ -12288,6 +12294,12 @@
                 "required": true,
                 "schema": {
                   "type": "number"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "internal_response": {
@@ -42945,6 +42957,12 @@
                   "type": "number"
                 }
               },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
               "internal_response": {
                 "required": true,
                 "schema": {
@@ -44777,6 +44795,12 @@
                 "required": true,
                 "schema": {
                   "type": "number"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
                 }
               },
               "internal_response": {
@@ -96712,7 +96736,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "1dd13b72500291dc788c40852a0f3d668723e8ddb65d4e94d0be7aa6430a911b",
+        "hash": "a8303f6ef1d0cbf019ba8324f071e0cf599f00c43872f4bdcdd2e8b7f63fc94c",
         "key": "native.moderation.reports.default"
       },
       "route": {

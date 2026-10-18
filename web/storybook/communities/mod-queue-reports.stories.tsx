@@ -46,6 +46,7 @@ const report: CommunityModerationReport = {
   report_count: 3,
   resolved_by_id: null,
   judgement: {
+    id: '00000000-0000-7000-8000-000000000303',
     recommended_action: 'remove',
     public_response: 'This post reads like an unsolicited referral pitch.',
     internal_response: 'Referral link with no personal spend data.',

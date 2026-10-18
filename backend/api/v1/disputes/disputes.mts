@@ -8,6 +8,7 @@ import {
   parseCreateReviewDisputeInput,
   createReviewDispute,
   getReviewDisputeById,
+  getReviewDisputeByIdFromPrimary,
   redactReviewDispute,
   listRedactedReviewDisputes,
   REVIEW_DISPUTE_STATUSES,
@@ -43,6 +44,11 @@ const disputesQuery = defineQueryContract({
   mine: queryBoolean({ description: 'Only disputes the caller filed.' }),
   limit: queryInteger({ minimum: 1, maximum: 100, default: 25 }),
   after: queryString(),
+})
+const disputeDetailQuery = defineQueryContract({
+  consistency: queryEnum(['primary'], {
+    description: 'Staff can request an authoritative read from the primary database.',
+  }),
 })
 
 // POST /api/v1/disputes — file a review dispute
@@ -97,15 +103,18 @@ app.route('/api/v1/disputes').get(async (ctx: Context) => {
 
 // GET /api/v1/disputes/:id — get a single dispute
 app.route('/api/v1/disputes/:id').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/disputes/:id', disputeDetailQuery)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/disputes/:id')
   const id = validateUUIDParam(ctx, 'id')
-  validateRequestContract(ctx, 'GET:/api/v1/disputes/:id', { path: ctx.params })
+  validateRequestContract(ctx, 'GET:/api/v1/disputes/:id', { path: ctx.params, query: ctx.query })
 
-  const dispute = await getReviewDisputeById(id)
+  const isStaff = isModerationStaff(currentUser)
+  const dispute = await (isStaff && ctx.query.consistency === 'primary'
+    ? getReviewDisputeByIdFromPrimary(id)
+    : getReviewDisputeById(id))
   ctx.assert(dispute, 404, 'Dispute not found')
   const [viewerDispute] = await filterReviewDisputePostContentForViewer(currentUser, [dispute])
 
-  const isStaff = isModerationStaff(currentUser)
   if (isStaff) {
     ctx.json(apiResponse('GET:/api/v1/disputes/:id#staff', { dispute: viewerDispute! }))
     return

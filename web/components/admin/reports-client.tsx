@@ -134,14 +134,20 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   const isEmpty = reports.length === 0
   const pendingJudgement =
     viewerTier === 'staff' && (reports as AdminModerationReport[]).some(report => !report.judgement)
-  const pendingRerun =
-    viewerTier === 'staff' &&
-    (reports as AdminModerationReport[]).some(
-      report =>
+  const pendingRerunEntities = new Set<string>()
+  if (viewerTier === 'staff') {
+    for (const report of reports as AdminModerationReport[]) {
+      if (
         Object.hasOwn(rerunBefore, report.id) &&
-        (report.judgement?.id ?? null) === rerunBefore[report.id],
-    )
-  usePendingAiRefresh(pendingJudgement || pendingRerun, () => router.refresh())
+        (report.judgement?.id ?? null) === rerunBefore[report.id]
+      )
+        pendingRerunEntities.add(`${report.entity_type}:${report.entity_id}`)
+    }
+  }
+  const pendingRerun = pendingRerunEntities.size > 0
+  const pollingTimedOut = usePendingAiRefresh(pendingJudgement || pendingRerun, () =>
+    router.refresh(),
+  )
   const hotkeyItems =
     viewerTier === 'staff'
       ? (reports as AdminModerationReport[]).map(report => ({
@@ -201,6 +207,8 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   }
 
   function handleRerun(reportId: string) {
+    const target = (reports as AdminModerationReport[]).find(report => report.id === reportId)
+    if (target && pendingRerunEntities.has(`${target.entity_type}:${target.entity_id}`)) return
     setRerunningId(reportId)
     // Wrap the entire async sequence so controls stay disabled until both the POST
     // and the follow-up router.refresh() transition complete (web/AGENTS.md rule 29).
@@ -296,6 +304,11 @@ function FlatReportsClient(props: FlatReportsClientProps) {
           ? ` from ${reporterCount} reporter${reporterCount === 1 ? '' : 's'}`
           : null}
       </p>
+      {pollingTimedOut && (
+        <output className='block text-sm text-muted-foreground'>
+          AI judgement is taking longer than expected. Refresh this page to check again.
+        </output>
+      )}
       <div className='flex flex-wrap items-center gap-2'>
         <ReportsSortSelect
           viewerTier={viewerTier}
@@ -333,7 +346,11 @@ function FlatReportsClient(props: FlatReportsClientProps) {
                     key={report.id}
                     active={activeKey === report.id}
                     disabled={
-                      loadingId !== null || rerunningId !== null || isRefreshing || bulkLoading
+                      loadingId !== null ||
+                      rerunningId !== null ||
+                      isRefreshing ||
+                      bulkLoading ||
+                      pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)
                     }
                     onActiveChange={setActiveKey}
                     onResolve={handleResolve}

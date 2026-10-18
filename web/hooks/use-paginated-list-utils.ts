@@ -5,6 +5,22 @@ export interface PaginatedData {
   page_info: Pick<PageInfo, 'has_next_page' | 'end_cursor'>
 }
 
+/** Re-read every currently visible cursor page after a background mutation. */
+export async function fetchLoadedCursorPages<T extends PaginatedData>(
+  loadedCount: number,
+  first: () => Promise<T>,
+  next: (cursor: string) => Promise<T>,
+): Promise<T[]> {
+  const refreshed = [await first()]
+  while (refreshed.length < loadedCount) {
+    const { has_next_page, end_cursor } = refreshed.at(-1)!.page_info
+    if (!has_next_page || !end_cursor) break
+    // oxlint-disable-next-line no-await-in-loop -- the next cursor depends on this response
+    refreshed.push(await next(end_cursor))
+  }
+  return refreshed
+}
+
 interface StableIdResult {
   id: string | number
 }

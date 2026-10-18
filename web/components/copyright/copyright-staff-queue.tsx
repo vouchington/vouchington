@@ -26,7 +26,7 @@ export function CopyrightStaffQueue({
     loadingMore,
     fetchError,
     clearError,
-    replaceFirstPage,
+    refreshLoadedPages,
     resetKey,
   } = usePaginatedList(
     data,
@@ -41,7 +41,7 @@ export function CopyrightStaffQueue({
     for (const notice of page.copyright_notices) noticeById.set(notice.id, notice)
   }
   const notices = [...noticeById.values()]
-  usePendingAiRefresh(
+  const refreshTimedOut = usePendingAiRefresh(
     notices.some(
       notice =>
         (notice.form_review &&
@@ -50,7 +50,7 @@ export function CopyrightStaffQueue({
         notice.counter_notices.some(counter => counter.guidance === null) ||
         notice.legal_holds.some(hold => hold.guidance === null),
     ),
-    async () => replaceFirstPage?.(await listCopyrightReviewQueue()),
+    () => refreshLoadedPages?.(() => listCopyrightReviewQueue()),
   )
   const [rationale, setRationale] = useState('')
   const [pending, startTransition] = useTransition()
@@ -81,6 +81,11 @@ export function CopyrightStaffQueue({
     return <p className='text-muted-foreground'>No copyright cases need review.</p>
   return (
     <div className='space-y-5'>
+      {refreshTimedOut && (
+        <output className='block text-sm text-muted-foreground'>
+          The AI guidance is taking longer than expected. Refresh this page to check again.
+        </output>
+      )}
       <Textarea
         aria-label='Review rationale'
         placeholder='State the basis for this decision.'

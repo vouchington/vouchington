@@ -41613,6 +41613,15 @@
         },
         "required": ["id"],
         "type": "object"
+      },
+      "query": {
+        "properties": {
+          "consistency": {
+            "enum": ["primary"],
+            "type": "string"
+          }
+        },
+        "type": "object"
       }
     },
     "GET:/api/v1/dynamic-config/namespaces/:namespace": {

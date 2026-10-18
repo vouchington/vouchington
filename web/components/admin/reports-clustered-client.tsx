@@ -82,13 +82,16 @@ export function ClusteredReportsClient({
     [data.duplicate_clusters, removedClusterKeys],
   )
   const visibleReports = clusters.flatMap(cluster => cluster.reports)
-  usePendingAiRefresh(
-    visibleReports.some(
-      report =>
-        !report.judgement ||
-        (Object.hasOwn(rerunBefore, report.id) &&
-          (report.judgement?.id ?? null) === rerunBefore[report.id]),
-    ),
+  const pendingRerunEntities = new Set<string>()
+  for (const report of visibleReports) {
+    if (
+      Object.hasOwn(rerunBefore, report.id) &&
+      (report.judgement?.id ?? null) === rerunBefore[report.id]
+    )
+      pendingRerunEntities.add(`${report.entity_type}:${report.entity_id}`)
+  }
+  const pollingTimedOut = usePendingAiRefresh(
+    visibleReports.some(report => !report.judgement) || pendingRerunEntities.size > 0,
     () => router.refresh(),
   )
   const disabled =
@@ -199,6 +202,7 @@ export function ClusteredReportsClient({
   }
 
   function handleRerun(report: AdminModerationReport) {
+    if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
     setRerunningReportId(report.id)
     startRefreshTransition(async () => {
       try {
@@ -234,6 +238,11 @@ export function ClusteredReportsClient({
       <p className='text-sm text-muted-foreground'>
         {t('shared.countLabel.format', { count: clusters.length, unit: 'queueItem' })}
       </p>
+      {pollingTimedOut && (
+        <output className='block text-sm text-muted-foreground'>
+          AI judgement is taking longer than expected. Refresh this page to check again.
+        </output>
+      )}
       <DuplicateClusterList
         duplicateClusters={duplicateClusters}
         canBulkRemove={canBulkRemove && isPendingFilter}
@@ -257,6 +266,7 @@ export function ClusteredReportsClient({
         onWarn={handleWarn}
         onBanEvasionAction={handleBanEvasionAction}
         rerunningReportId={rerunningReportId}
+        pendingRerunEntities={pendingRerunEntities}
         uiLocale={uiLocale}
       />
       <div className='flex gap-4'>

@@ -61,6 +61,7 @@ export function ReportClusterList({
   onWarn,
   onBanEvasionAction,
   rerunningReportId,
+  pendingRerunEntities,
   uiLocale,
 }: {
   clusters: AdminModerationReportCluster[]
@@ -77,6 +78,7 @@ export function ReportClusterList({
   onWarn: (report: AdminModerationReport) => void
   onBanEvasionAction: (reportId: string) => void
   rerunningReportId: string | null
+  pendingRerunEntities?: ReadonlySet<string>
   uiLocale: string
 }) {
   const t = useTranslations()
@@ -106,6 +108,7 @@ export function ReportClusterList({
             onWarn={onWarn}
             onBanEvasionAction={onBanEvasionAction}
             rerunningReportId={rerunningReportId}
+            pendingRerunEntities={pendingRerunEntities}
             uiLocale={uiLocale}
           />
         ))

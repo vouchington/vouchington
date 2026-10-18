@@ -30,6 +30,7 @@ export function ReportClusterCard({
   onWarn,
   onBanEvasionAction,
   rerunningReportId,
+  pendingRerunEntities,
   uiLocale,
 }: {
   active: boolean
@@ -45,6 +46,7 @@ export function ReportClusterCard({
   onWarn: (report: AdminModerationReport) => void
   onBanEvasionAction: (reportId: string) => void
   rerunningReportId: string | null
+  pendingRerunEntities?: ReadonlySet<string>
   uiLocale: string
 }) {
   const t = useTranslations()
@@ -157,7 +159,10 @@ export function ReportClusterCard({
                 <ReportDetail
                   key={report.id}
                   report={report}
-                  disabled={disabled}
+                  disabled={
+                    disabled ||
+                    Boolean(pendingRerunEntities?.has(`${report.entity_type}:${report.entity_id}`))
+                  }
                   rerunning={rerunningReportId === report.id}
                   onRerun={() => onRerun(report)}
                   onWarn={() => onWarn(report)}

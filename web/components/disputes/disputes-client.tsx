@@ -56,7 +56,7 @@ export function DisputesClient({
   const disputes = uniqueDisputes(pages.flatMap(page => page.disputes)).map(
     dispute => state.disputeOverrides[dispute.id] ?? dispute,
   )
-  const { handleRerunAI, pendingRerunId } = useDisputeAiReruns(disputes, dispatch)
+  const { handleRerunAI, pendingRerunIds } = useDisputeAiReruns(disputes, dispatch)
 
   async function handleApprove(id: string) {
     dispatch({ type: 'set_loading', id })
@@ -159,7 +159,8 @@ export function DisputesClient({
           viewerTier={viewerTier}
           disputes={disputes}
           draftEdits={state.draftEdits}
-          loadingId={state.loadingId ?? pendingRerunId}
+          loadingId={state.loadingId}
+          pendingRerunIds={pendingRerunIds}
           onEdit={(id, text) => dispatch({ type: 'edit_draft', id, text })}
           onApprove={handleSaveAndApprove}
           onSend={handleSend}

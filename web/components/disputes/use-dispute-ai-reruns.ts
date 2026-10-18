@@ -18,7 +18,7 @@ export function useDisputeAiReruns(
   const [pendingReruns, setPendingReruns] = useState<ReadonlyMap<string, PendingRerun>>(
     () => new Map(),
   )
-  const pendingRerunId = pendingReruns.keys().next().value ?? null
+  const pendingRerunIds = new Set(pendingReruns.keys())
 
   function clearPendingRerun(id: string, before: ReviewDispute) {
     setPendingReruns(current => {
@@ -35,7 +35,7 @@ export function useDisputeAiReruns(
     clearPendingRerun(before.id, before)
   }
 
-  usePendingAiRefresh(pendingRerunId !== null, async () => {
+  usePendingAiRefresh(pendingRerunIds.size > 0, async () => {
     await Promise.all(
       [...pendingReruns].map(async ([id, { before, expiresAt }]) => {
         if (Date.now() >= expiresAt) {
@@ -71,5 +71,5 @@ export function useDisputeAiReruns(
     }
   }
 
-  return { handleRerunAI, pendingRerunId }
+  return { handleRerunAI, pendingRerunIds }
 }
