@@ -12,7 +12,6 @@ import {
 } from './vote-weight.mts'
 
 const window = {
-  previousThroughAt: null,
   windowStart: '2026-01-01T00:00:00.000000Z',
   windowEnd: '2026-01-02T00:00:00.000000Z',
 }
@@ -33,14 +32,12 @@ const dispatchers = [
   {
     name: 'age milestones',
     backfillId: 'vote-weight-age-milestones',
-    root: (deduplicationId: string) =>
-      enqueueVoteWeightAgeMilestones({ fullReplay: true }, { deduplicationId }),
-    continuation: () =>
-      enqueueVoteWeightAgeMilestones({ fullReplay: true, window, afterId: randomUUID() }),
-    rootData: { fullReplay: true },
-    continuationData: { fullReplay: true, window },
+    root: (deduplicationId: string) => enqueueVoteWeightAgeMilestones({}, { deduplicationId }),
+    continuation: () => enqueueVoteWeightAgeMilestones({ window, afterId: randomUUID() }),
+    rootData: {},
+    continuationData: { window },
     admissions: () => {
-      const data = { fullReplay: true, window, afterId: randomUUID() }
+      const data = { window, afterId: randomUUID() }
       return admitSameAndDistinct(enqueueVoteWeightAgeMilestones, data, {
         ...data,
         afterId: randomUUID(),
@@ -51,17 +48,16 @@ const dispatchers = [
     name: 'membership expirations',
     backfillId: 'vote-weight-membership-expirations',
     root: (deduplicationId: string) =>
-      enqueueVoteWeightMembershipExpirations({ fullReplay: true }, { deduplicationId }),
+      enqueueVoteWeightMembershipExpirations({}, { deduplicationId }),
     continuation: () =>
       enqueueVoteWeightMembershipExpirations({
-        fullReplay: true,
         window,
         after: { at: window.windowStart, id: randomUUID() },
       }),
-    rootData: { fullReplay: true },
-    continuationData: { fullReplay: true, window },
+    rootData: {},
+    continuationData: { window },
     admissions: () => {
-      const data = { fullReplay: true, window, after: { at: window.windowStart, id: randomUUID() } }
+      const data = { window, after: { at: window.windowStart, id: randomUUID() } }
       return admitSameAndDistinct(enqueueVoteWeightMembershipExpirations, data, {
         ...data,
         after: { ...data.after, id: randomUUID() },
@@ -72,19 +68,17 @@ const dispatchers = [
     name: 'family source changes',
     backfillId: 'vote-weight-family-source-changes',
     root: (deduplicationId: string) =>
-      enqueueVoteWeightFamilySourceChanges({ fullReplay: true }, { deduplicationId }),
+      enqueueVoteWeightFamilySourceChanges({}, { deduplicationId }),
     continuation: () =>
       enqueueVoteWeightFamilySourceChanges({
-        fullReplay: true,
         window,
         branches: { updated_at: { at: window.windowStart, id: randomUUID() } },
       }),
-    rootData: { fullReplay: true },
-    continuationData: { fullReplay: true, window },
+    rootData: {},
+    continuationData: { window },
     admissions: () => {
       const id = randomUUID()
       const data = {
-        fullReplay: true,
         window,
         branches: { rejected_at: { at: window.windowStart, id, afterSourceId: randomUUID() } },
       }

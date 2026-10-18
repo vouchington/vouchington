@@ -68,9 +68,14 @@ const additionalOwners = [
     read: (field: string) =>
       field === 'dispatch_batch_size'
         ? votes.getVoteWeightDispatchBatchSize()
-        : field === 'window_overlap_seconds'
-          ? votes.getVoteWeightWindowOverlapSeconds()
-          : votes.getVoteWeightElectionFanOutPageSize(),
+        : field.endsWith('_lookback_seconds')
+          ? votes.getVoteWeightLookbackSeconds(
+              field.replace('_lookback_seconds', '') as
+                | 'age_milestones'
+                | 'membership_expirations'
+                | 'family_source_changes',
+            )
+          : votes.getVoteWeightDispatchBatchSize(),
   },
   {
     config: membership.membershipWorkConfig,

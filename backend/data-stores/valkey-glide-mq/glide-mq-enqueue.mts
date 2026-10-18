@@ -1,3 +1,4 @@
+import { pagedDispatchRowOptions } from './paged-dispatch-context.mts'
 import onError from '@modules/on-error'
 import { publishEnqueueAdmission } from './glide-mq-admission.mts'
 import { trackJobEnqueue } from '@data-stores/analytics/queue'
@@ -113,7 +114,12 @@ export function createBulkEnqueueFunction<
     const jobs = inputs.map((input, index) => {
       const job = options.buildJob(input, index)
       const kind = options.queue.priorityKind
-      const opts = mergeJobOptions(kind, options.defaults, job.opts, perCallOpts)
+      const opts = pagedDispatchRowOptions(
+        options.queueName,
+        options.jobName,
+        job.data,
+        mergeJobOptions(kind, options.defaults, job.opts, perCallOpts),
+      )
       assertQueuePriority(options.queueName, kind, opts.priority ?? (kind === 'none' ? 0 : 10))
       return {
         name: options.jobName,

@@ -13,15 +13,17 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
    [queue boundaries](../../../docs/checklists/backend-queues.md#queue-boundaries).
 2. Keep enqueue configuration and payload types in the queue package, processor orchestration in the
    worker package, and business logic and durable idempotency in services.
-3. Start from durable source-of-truth state, pass minimal identifiers, make every retry safe, and
+3. For a fan-out, use the [paged-dispatcher helper](../../../backend/data-stores/valkey-glide-mq/paged-dispatcher.mts);
+   follow the [checklist](../../../docs/checklists/backend-queues.md#queue-boundaries).
+4. Start from durable source-of-truth state, pass minimal identifiers, make every retry safe, and
    await or explicitly mark every fan-out edge.
-4. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
+5. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
    data-driven worker-placement requirements from the checklist. Scheduler templates take no
    `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.
-5. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
+6. Test service behavior with real PostgreSQL, Valkey, and GlideMQ boundaries; do not mock internal
    queues, workers, services, or data stores.
-6. Update the domain README and queue inventory with the implementation.
-7. For effectful worker/RPC or financial (Stripe) operations, fill in the
+7. Update the domain README and queue inventory with the implementation.
+8. For effectful worker/RPC or financial (Stripe) operations, fill in the
    [durable transition matrix](../../../docs/checklists/backend-queues.md#durable-transition-matrix).
 
 For sweeps and cleanup jobs, apply [bounded-iteration](../bounded-iteration/SKILL.md).

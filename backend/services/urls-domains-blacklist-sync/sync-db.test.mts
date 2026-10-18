@@ -139,7 +139,6 @@ describe('sync-db', () => {
         rangeLimit: 10,
         afterBucketDays: 0,
         bucketDays,
-        range: 0,
       },
       10,
     )

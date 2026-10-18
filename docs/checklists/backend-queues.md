@@ -38,8 +38,11 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   result (`addAndWait`, `waitUntilFinished`, polling a job's return value); return a pending resource
   and let clients poll. The crawler's remaining wait path is being removed in
   [#2853](https://github.com/vouchington/vouchington/issues/2853).
-- **Fan out in pages.** Dispatchers, backfills, and other fan-out jobs enqueue one bounded page,
-  then continue through a cursor. Ranked priority orders only jobs promoted together, so a large
+- **Fan out in pages.** A job that enqueues one job per row of a query pages through a unique
+  cursor and checks the target queue's depth before each page. HTTP routes enqueue one dispatcher,
+  never the rows. Use the shared paged-dispatcher helper with DynamicConfig page, queue-depth,
+  and backoff limits; dispatchers retry indefinitely. Dispatcher state lives in job data, not
+  PostgreSQL. Ranked priority orders only jobs promoted together, so a large
   batch already in the ready list delays every later task in the shared queue, whatever its
   priority.
 - **Throttle our own datastores with concurrency.** Use a `limiter` or group `rateLimit` only to

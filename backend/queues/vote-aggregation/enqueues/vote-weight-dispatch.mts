@@ -51,7 +51,7 @@ function continuationJobId(dispatcher: string, state: unknown): string {
 }
 
 function windowState(window: VoteWeightDispatchWindow | undefined) {
-  return window ? [window.previousThroughAt, window.windowStart, window.windowEnd] : null
+  return window ? [window.windowStart, window.windowEnd] : null
 }
 
 function keysetState(keyset: VoteWeightRejectedEvidenceKeyset | null | undefined) {
@@ -61,7 +61,6 @@ function keysetState(keyset: VoteWeightRejectedEvidenceKeyset | null | undefined
 
 function ageJobId(data: VoteWeightAgeMilestonesData): string {
   return continuationJobId('age', [
-    data.fullReplay ?? false,
     windowState(data.window),
     data.milestoneIndex ?? null,
     data.afterId ?? null,
@@ -69,16 +68,11 @@ function ageJobId(data: VoteWeightAgeMilestonesData): string {
 }
 
 function expirationJobId(data: VoteWeightMembershipExpirationsData): string {
-  return continuationJobId('expiry', [
-    data.fullReplay ?? false,
-    windowState(data.window),
-    keysetState(data.after),
-  ])
+  return continuationJobId('expiry', [windowState(data.window), keysetState(data.after)])
 }
 
 function familyJobId(data: VoteWeightFamilySourceChangesData): string {
   return continuationJobId('family', [
-    data.fullReplay ?? false,
     windowState(data.window),
     keysetState(data.branches?.updated_at),
     keysetState(data.branches?.effective_at),

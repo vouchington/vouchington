@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/model-providers": "workspace:^",
     "@queues/admin-imports": "workspace:^",
     "@queues/background": "workspace:^",

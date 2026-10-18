@@ -23,6 +23,7 @@ export type RssFeedToFetch = {
 
 type GetRssFeedsToFetchOptions = {
   limit?: number
+  afterId?: string
 }
 
 const FEED_COLUMNS = `
@@ -45,7 +46,7 @@ const FEED_JOINS = `
     JOIN urls ON urls.id = rss_feeds.rss_feed_url_id
     JOIN url_hostnames ON url_hostnames.id = urls.hostname_id`
 
-async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
+async function getRssFeedsTiered(limit: number, afterId?: string): Promise<RssFeedToFetch[]> {
   const tier1_sla_ms = crawlConfig.getTierSlaMs(1)
   const tier2_sla_ms = crawlConfig.getTierSlaMs(2)
   const tier3_sla_ms = crawlConfig.getTierSlaMs(3)
@@ -81,6 +82,7 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       FROM rss_feeds${FEED_JOINS}
       LEFT JOIN mv_rss_feed_crawl_tiers t ON t.rss_feed_id = rss_feeds.id
       WHERE ${enabledWhere}
+        AND ($7::uuid IS NULL OR rss_feeds.id > $7::uuid)
         AND (${isDueExpr}
           OR rss_feeds.last_fetched_at <= CURRENT_TIMESTAMP - ($1::BIGINT * INTERVAL '1 millisecond'))
     )
@@ -91,11 +93,7 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
       feed_unreliable_status_codes, hostname_unreliable_status_codes,
       crawl_score, crawl_tier, priority_group
     FROM candidates
-    ORDER BY
-      priority_group ASC,
-      deadline_at ASC NULLS FIRST,
-      crawl_score DESC,
-      id ASC
+    ORDER BY id ASC
     LIMIT $6`
 
   const params: unknown[] = [
@@ -107,16 +105,17 @@ async function getRssFeedsTiered(limit: number): Promise<RssFeedToFetch[]> {
     limit,
   ]
 
+  params.push(afterId ?? null)
   const { rows } = await read<RssFeedToFetch>(query, params)
   return rows
 }
 
-export function getRssFeedsToFetch({ limit }: GetRssFeedsToFetchOptions = {}): Promise<
+export function getRssFeedsToFetch({ limit, afterId }: GetRssFeedsToFetchOptions = {}): Promise<
   RssFeedToFetch[]
 > {
   const capacityBudget = crawlConfig.getCrawlCapacityBudget()
-  const budget = limit === undefined ? capacityBudget : Math.min(limit, capacityBudget)
-  return getRssFeedsTiered(budget)
+  const budget = limit ?? capacityBudget
+  return getRssFeedsTiered(budget, afterId)
 }
 
 type GetRssFeedByIdToFetchOptions = {

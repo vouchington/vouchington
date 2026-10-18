@@ -14,7 +14,7 @@ describe('reconcileEntities', () => {
 })
 
 describe('reconcileEntityBatches', () => {
-  it('advances the durable checkpoint only after every entity finishes', async () => {
+  it('finishes a bounded page after every entity finishes', async () => {
     const first: ReconcileEntityData = {
       entityType: 'user',
       entityId: 'user-1',
@@ -25,22 +25,15 @@ describe('reconcileEntityBatches', () => {
       entityId: 'topic-1',
       changedAtEpochUs: '2',
     }
-    const completedThrough = new Date('2026-07-17T00:00:00.000Z')
     const reconcile = vi.fn<(data: ReconcileEntityData) => Promise<void>>(async () => {})
-    const advanceCheckpoint = vi.fn<(completedThrough: Date) => Promise<void>>(async () => {})
 
     await expect(
-      reconcileEntityBatches(toAsyncBatches([[first], [second]]), completedThrough, {
+      reconcileEntityBatches(toAsyncBatches([[first], [second]]), {
         reconcileEntity: reconcile,
-        advanceCheckpoint,
       }),
     ).resolves.toEqual({ reconciled: 2, hasMore: false })
 
     expect(reconcile.mock.calls).toEqual([[first], [second]])
-    expect(advanceCheckpoint).toHaveBeenCalledWith(completedThrough)
-    expect(reconcile.mock.invocationCallOrder[1]).toBeLessThan(
-      advanceCheckpoint.mock.invocationCallOrder[0]!,
-    )
   })
 
   it('keeps the fixed window pending at its cap and emits the last successful cursor', async () => {
@@ -49,21 +42,17 @@ describe('reconcileEntityBatches', () => {
       entityId: 'user-a',
       changedAtEpochUs: '1001',
     }
-    const advanceCheckpoint = vi.fn<(through: Date) => Promise<void>>(async () => {})
     const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
     expect(
       await reconcileEntityBatches(
         toAsyncBatches([[candidate]]),
-        new Date(),
         {
           reconcileEntity: async () => {},
-          advanceCheckpoint,
         },
         { hasMore: () => true, onMore },
       ),
     ).toEqual({ reconciled: 1, hasMore: true })
     expect(onMore).toHaveBeenCalledExactlyOnceWith(candidate)
-    expect(advanceCheckpoint).not.toHaveBeenCalled()
   })
 
   it('resumes from the successful predecessor when the next side effect fails', async () => {
@@ -78,42 +67,33 @@ describe('reconcileEntityBatches', () => {
       changedAtEpochUs: '1001',
     }
     const onMore = vi.fn<(after?: ReconcileEntityData) => Promise<void>>(async () => {})
-    const advanceCheckpoint = vi.fn<(through: Date) => Promise<void>>(async () => {})
     await expect(
       reconcileEntityBatches(
         toAsyncBatches([[first, second]]),
-        new Date(),
         {
           reconcileEntity: async data => {
             if (data.entityId === second.entityId) throw new Error('side effect failed')
           },
-          advanceCheckpoint,
         },
         { hasMore: () => false, onMore },
       ),
     ).rejects.toThrow('side effect failed')
     expect(onMore).toHaveBeenCalledExactlyOnceWith(first)
-    expect(advanceCheckpoint).not.toHaveBeenCalled()
   })
 
-  it('leaves the checkpoint unchanged when an entity fails', async () => {
+  it('propagates an entity failure', async () => {
     const failure = new Error('entity reconciliation failed')
-    const advanceCheckpoint = vi.fn<(completedThrough: Date) => Promise<void>>(async () => {})
 
     await expect(
       reconcileEntityBatches(
         toAsyncBatches([[{ entityType: 'user', entityId: 'user-1', changedAtEpochUs: '1' }]]),
-        new Date(),
         {
           reconcileEntity: vi.fn<(data: ReconcileEntityData) => Promise<void>>(async () => {
             throw failure
           }),
-          advanceCheckpoint,
         },
       ),
     ).rejects.toThrow(failure)
-
-    expect(advanceCheckpoint).not.toHaveBeenCalled()
   })
 })
 

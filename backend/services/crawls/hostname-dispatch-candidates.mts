@@ -5,9 +5,8 @@ import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 
 export type HostnameDispatchCandidate = {
   id: string
-  range: 0 | 1
-  crawl_swept_at: Date | null
   has_url: boolean
+  is_due: boolean
 }
 
 /** Seek one distinct leading index value rather than scan all hosts to enumerate thresholds. */
@@ -24,37 +23,17 @@ export async function getCrawlHostnameCandidates(
   cursor: CrawlHostnameDispatchCursor & { bucketDays: number },
   remaining: number,
 ) {
-  const never = sql`
-    SELECT id, 0 AS range, crawl_swept_at,
-      EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id) AS has_url
-    FROM url_hostnames uh
-    WHERE uh.is_crawlable AND NOT uh.is_blocked
-      AND uh.age_threshold_days = ${cursor.bucketDays}
-      AND uh.crawl_swept_at IS NULL
-      AND uh.id < ${getMinUUIDv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
-  `
-  const overdue = sql`
-    SELECT id, 1 AS range, crawl_swept_at,
-      EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id) AS has_url
-    FROM url_hostnames uh
-    WHERE uh.is_crawlable AND NOT uh.is_blocked
-      AND uh.age_threshold_days = ${cursor.bucketDays}
-      AND uh.crawl_swept_at < ${cursor.sweepStartedAt}::timestamptz
-        - ${cursor.bucketDays}::integer * INTERVAL '1 day'
-  `
-  if (cursor.afterId && cursor.range === 0) never.append(sql` AND uh.id > ${cursor.afterId}::uuid`)
-  if (cursor.afterId && cursor.afterSweptAt && cursor.range === 1)
-    overdue.append(sql` AND (uh.crawl_swept_at, uh.id)
-      > (${cursor.afterSweptAt}::timestamptz, ${cursor.afterId}::uuid)`)
-  never.append(
-    sql` ORDER BY uh.crawl_swept_at NULLS FIRST, uh.id LIMIT ${cursor.range === 1 ? 0 : cursor.rangeLimit}`,
-  )
-  overdue.append(sql` ORDER BY uh.crawl_swept_at NULLS FIRST, uh.id
-    LIMIT ${cursor.rangeLimit}`)
-  // Each input range stops in index order. This final ordering touches only the two capped pages.
   const statement = sql`/* dispatchCrawlHostnames */
-    SELECT due.* FROM (`
-  statement.append('(').append(never).append(') UNION ALL (').append(overdue).append(')')
-  statement.append(sql`) due ORDER BY crawl_swept_at NULLS FIRST, id LIMIT ${remaining}`)
+    SELECT id,
+      (crawl_swept_at IS NULL OR crawl_swept_at < ${cursor.sweepStartedAt}::timestamptz
+        - ${cursor.bucketDays}::integer * INTERVAL '1 day') AS is_due,
+      EXISTS (SELECT 1 FROM urls WHERE urls.hostname_id = uh.id) AS has_url
+    FROM url_hostnames uh
+    WHERE uh.is_crawlable AND NOT uh.is_blocked
+      AND uh.age_threshold_days = ${cursor.bucketDays}
+      AND uh.id < ${getMinUUIDv7ForDate(new Date(cursor.sweepStartedAt))}::uuid
+`
+  if (cursor.afterId) statement.append(sql` AND uh.id > ${cursor.afterId}::uuid`)
+  statement.append(sql` ORDER BY uh.id LIMIT ${remaining}`)
   return (await read<HostnameDispatchCandidate>(statement)).rows
 }

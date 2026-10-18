@@ -1,3 +1,4 @@
+import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { describe, expect, it } from 'vitest'
 import type { Job } from 'glide-mq'
 import {
@@ -8,10 +9,12 @@ import { kagiSmallWebHandlers } from './workers.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
-function run(name: string, data: unknown) {
+async function run(name: string, data: unknown) {
   const handler = kagiSmallWebHandlers.find(candidate => candidate.job.name === name)
   if (!handler) throw new Error(`No kagi-smallweb handler for ${name}`)
-  return handler.handle({ data } as Job<never>)
+  const job = await kagiSmallWeb.add(name, data)
+  if (!job) throw new Error('Expected Kagi job admission')
+  return handler.handle(job as Job<never>)
 }
 
 describe('kagiSmallWebHandlers', () => {

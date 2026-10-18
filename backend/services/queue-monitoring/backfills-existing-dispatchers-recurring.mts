@@ -104,7 +104,7 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     description: 'Dispatch vote-weight age milestones from users',
     source_table: 'users',
     trigger: createBackfillDispatcherTrigger('vote-weight-age-milestones', async options => {
-      const result = await enqueueVoteWeightAgeMilestones({ fullReplay: true }, options)
+      const result = await enqueueVoteWeightAgeMilestones({}, options)
       return result
     }),
   },
@@ -117,7 +117,7 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     trigger: createBackfillDispatcherTrigger(
       'vote-weight-membership-expirations',
       async options => {
-        const result = await enqueueVoteWeightMembershipExpirations({ fullReplay: true }, options)
+        const result = await enqueueVoteWeightMembershipExpirations({}, options)
         return result
       },
     ),
@@ -129,7 +129,7 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     description: 'Dispatch vote-weight family source changes',
     source_table: 'membership_source_states, membership_provider_evidence_records',
     trigger: createBackfillDispatcherTrigger('vote-weight-family-source-changes', async options => {
-      const result = await enqueueVoteWeightFamilySourceChanges({ fullReplay: true }, options)
+      const result = await enqueueVoteWeightFamilySourceChanges({}, options)
       return result
     }),
   },

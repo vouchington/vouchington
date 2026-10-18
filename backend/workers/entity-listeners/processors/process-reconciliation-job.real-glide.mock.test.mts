@@ -62,7 +62,6 @@ describe('reconciliation sweep ownership', () => {
     const repeated = Promise.withResolvers<void>()
     const seen: { id: string; data: unknown }[] = []
     let roots = 0
-    let checkpointAdvances = 0
     harness = await startBackgroundHarness({
       connection,
       createProcessor: createBackgroundProcessor,
@@ -90,16 +89,12 @@ describe('reconciliation sweep ownership', () => {
             await save({ window, ...(data.after && { after: data.after }) })
             return reconcileEntityBatches(
               oneBatch(data.after ? second : first),
-              new Date(window.end),
               {
                 reconcileEntity: async () => {
                   if (!data.after) {
                     started.resolve()
                     await release.promise
                   }
-                },
-                advanceCheckpoint: async () => {
-                  checkpointAdvances++
                 },
               },
               {
@@ -147,7 +142,6 @@ describe('reconciliation sweep ownership', () => {
       await harness.settled(active!)
       expect(seen.map(item => item.id)).toEqual([active!.id, active!.id])
       expect(seen[1]!.data).toEqual({ window: fixedWindow, after: first })
-      expect(checkpointAdvances).toBe(1)
       expect((await queue.getJob(active!.id))?.attemptsMade).toBe(0)
     } finally {
       release.resolve()
@@ -176,13 +170,9 @@ describe('reconciliation sweep ownership', () => {
         await save({ window })
         return reconcileEntityBatches(
           twoBatches(first),
-          new Date(window.end),
           {
             reconcileEntity: async candidate => {
               if (candidate.entityId === 'b') throw failure
-            },
-            advanceCheckpoint: async () => {
-              throw new Error('unexpected checkpoint')
             },
           },
           {

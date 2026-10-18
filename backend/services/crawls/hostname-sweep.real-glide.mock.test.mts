@@ -128,7 +128,6 @@ describe('hostname sweep selection and completion', () => {
       }),
     ).toEqual({ count: 2, hasMore: true })
     expect(saved.at(-1)?.afterId).toBe(hosts[3])
-    expect(saved.at(-1)?.range).toBe(0)
     overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
       hostname_batch_size: 1,
       hostname_max_rows_per_run: 1,
@@ -137,6 +136,14 @@ describe('hostname sweep selection and completion', () => {
       saved.push(cursor)
     })
     expect(tail.count).toBe(1)
+    expect(
+      (
+        await dispatchCrawlHostnames(saved.at(-1), async cursor => {
+          saved.push(cursor)
+        })
+      ).count,
+    ).toBe(0)
+    // The recent host is still an immutable-id candidate; one more bounded page exhausts it.
     expect(
       (
         await dispatchCrawlHostnames(saved.at(-1), async cursor => {
@@ -160,7 +167,7 @@ describe('hostname sweep selection and completion', () => {
       { ...start, bucketDays, rangeLimit: 10 },
       20,
     )
-    expect(candidates.filter(row => hosts.includes(row.id))).toHaveLength(4)
+    expect(candidates.filter(row => hosts.includes(row.id))).toHaveLength(5)
     expect(
       await crawlDispatchQueue.searchJobs({
         name: 'crawl_urls_per_hostname_dispatcher',

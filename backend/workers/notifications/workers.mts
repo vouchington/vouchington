@@ -1,4 +1,11 @@
+import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import { background } from '@queues/background/queues'
 import {
+  enqueueContinueReconcilePostNotifications,
+  enqueueContinueReconcileRssFeedItemNotifications,
+} from '@queues/notifications/enqueues'
+import {
+  backgroundHandler,
   backgroundContinuationHandler,
   backgroundDataHandler,
   backgroundSweepHandler,
@@ -32,13 +39,49 @@ import * as processors from './processors.mts'
 import { processCommunityActivityDigestScheduleTick } from './processors/community-activity-digest-schedule.mts'
 
 export const notificationsHandlers = [
-  backgroundDataHandler(
-    NOTIFICATIONS_RECONCILE_POST_JOB,
-    processors.processReconcilePostNotifications,
+  backgroundHandler(NOTIFICATIONS_RECONCILE_POST_JOB, job =>
+    processPagedDispatcher(job, {
+      dispatcher: 'notifications',
+      cursorKey: 'userId',
+      target: background,
+      targetName: 'background',
+      readAndDispatch: async pageSize => {
+        const result = await processors.processReconcilePostNotifications({ ...job.data, pageSize })
+        return {
+          result,
+          ...(result.nextAfterUserId
+            ? { next: { postId: job.data.postId, afterUserId: result.nextAfterUserId } }
+            : {}),
+        }
+      },
+      enqueueNext: enqueueContinueReconcilePostNotifications,
+    }),
   ),
-  backgroundDataHandler(
-    NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
-    processors.processReconcileRssFeedItemNotifications,
+  backgroundHandler(NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB, job =>
+    processPagedDispatcher(job, {
+      dispatcher: 'notifications',
+      cursorKey: 'userId',
+      target: background,
+      targetName: 'background',
+      readAndDispatch: async pageSize => {
+        const result = await processors.processReconcileRssFeedItemNotifications({
+          ...job.data,
+          pageSize,
+        })
+        return {
+          result,
+          ...(result.nextAfterUserId
+            ? {
+                next: {
+                  rssFeedItemId: job.data.rssFeedItemId,
+                  afterUserId: result.nextAfterUserId,
+                },
+              }
+            : {}),
+        }
+      },
+      enqueueNext: enqueueContinueReconcileRssFeedItemNotifications,
+    }),
   ),
   backgroundDataHandler(
     NOTIFICATIONS_DELIVER_PUSH_INTENT_JOB,

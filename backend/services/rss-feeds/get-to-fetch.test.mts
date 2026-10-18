@@ -127,9 +127,9 @@ describe('get-to-fetch', () => {
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 100 })
     })
 
-    it('capacity_budget caps the result count', async () => {
+    it('capacity_budget supplies the default bounded result count', async () => {
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, { capacity_budget: 2 })
-      const feeds = await getRssFeedsToFetch({ limit: 10_000 })
+      const feeds = await getRssFeedsToFetch()
       expect(feeds.length).toBeLessThanOrEqual(2)
       overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
         capacity_budget: RSS_FEED_CRAWL_MAX_VALUES.capacity_budget,

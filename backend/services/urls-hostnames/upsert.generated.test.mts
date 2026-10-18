@@ -120,7 +120,6 @@ describe('upsert.generated', () => {
         rangeLimit: 10,
         afterBucketDays: 0,
         bucketDays,
-        range: 0,
       },
       10,
     )
@@ -142,7 +141,6 @@ describe('upsert.generated', () => {
         rangeLimit: 10,
         afterBucketDays: 0,
         bucketDays,
-        range: 0,
       },
       10,
     )
@@ -169,7 +167,6 @@ describe('upsert.generated', () => {
         rangeLimit: 10,
         afterBucketDays: 0,
         bucketDays,
-        range: 0,
       },
       10,
     )

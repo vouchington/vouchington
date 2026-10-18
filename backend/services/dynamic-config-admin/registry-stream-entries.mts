@@ -126,6 +126,18 @@ export const streamDynamicConfigRegistryEntries = [
     config: entityReconciliationConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      lookback_seconds: {
+        description: 'Fixed source lookback; raise after an outage.',
+        min_value: 1,
+        max_value: 31536000,
+        integer: true,
+      },
+      replica_margin_seconds: {
+        description: 'Replica visibility safety margin.',
+        min_value: 1,
+        max_value: 3600,
+        integer: true,
+      },
       batch_size: {
         description: 'Maximum candidates per cursor batch.',
         min_value: 1,

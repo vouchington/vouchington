@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundJob } from './define-job.mts'
 import {
@@ -24,7 +25,12 @@ const INBOX = {
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
   DOMAIN,
-  { name: 'distributeActivity', priority: PRIORITY_TASK, ...DELIVERY },
+  {
+    name: 'distributeActivity',
+    priority: PRIORITY_DISPATCH,
+    ...DELIVERY,
+    ...pagedDispatchJobOptions('activitypub'),
+  },
 )
 export const ACTIVITYPUB_DELIVER_ACTIVITY_JOB = defineBackgroundJob<DeliverActivityData>(DOMAIN, {
   name: 'deliverActivity',

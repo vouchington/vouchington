@@ -18,8 +18,7 @@ const mockGetVerificationResult =
 const mockFingerprint = vi.fn<typeof computeIdentityFingerprint>()
 const mockRecalculateVoteWeight =
   vi.fn<(userId: string) => Promise<{ weight: number; changed: boolean }>>()
-const mockEnqueueElectionUpdates =
-  vi.fn<(userId: string) => Promise<{ jobIds: string[]; nextCursor: null }>>()
+const mockEnqueueElectionUpdates = vi.fn<(userId: string) => Promise<void>>()
 
 function onVerificationSessionVerifiedForTest(
   ...args: Parameters<typeof onVerificationSessionVerified>
@@ -64,7 +63,7 @@ function resetEventVerifiedDoubles() {
   mockFingerprint.mockReturnValue('a'.repeat(64))
   mockInvalidateUsers.mockResolvedValue(undefined)
   mockRecalculateVoteWeight.mockResolvedValue({ weight: 1, changed: false })
-  mockEnqueueElectionUpdates.mockResolvedValue({ jobIds: [], nextCursor: null })
+  mockEnqueueElectionUpdates.mockResolvedValue(undefined)
   mockBeginTransaction
     .mockImplementationOnce(async () => {
       const query = vi.fn<VitestLooseMock>().mockResolvedValue(makePreGuardResult('vs_test'))

@@ -4,7 +4,7 @@ import type {
   VoteWeightAgeMilestonesData,
   VoteWeightDispatchPage,
 } from '@queues/vote-aggregation/enqueues/types-dispatch'
-import { beginVoteWeightDispatch } from './dispatch-cursor.mts'
+import { getVoteWeightDispatchWindow } from './dispatch-window.mts'
 import { getVoteWeightDispatchBatchSize } from './work-limits.mts'
 
 export const VOTE_WEIGHT_AGE_MILESTONES = [
@@ -19,9 +19,7 @@ export const VOTE_WEIGHT_AGE_MILESTONES = [
 export async function dispatchVoteWeightAgeMilestones(
   data: VoteWeightAgeMilestonesData = {},
 ): Promise<VoteWeightDispatchPage<VoteWeightAgeMilestonesData>> {
-  const window =
-    data.window ??
-    (await beginVoteWeightDispatch('age_milestones', new Date(), { fullReplay: data.fullReplay }))
+  const window = data.window ?? getVoteWeightDispatchWindow('age_milestones')
   const milestoneIndex = data.milestoneIndex ?? 0
   const milestone = VOTE_WEIGHT_AGE_MILESTONES[milestoneIndex]
   if (milestone === undefined) throw new RangeError('Invalid vote-weight age milestone')

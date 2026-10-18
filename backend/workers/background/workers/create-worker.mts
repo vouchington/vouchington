@@ -1,3 +1,4 @@
+import { pagedDispatchBackoffStrategies } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { createWorker } from '@data-stores/valkey-glide-mq'
 import onError from '@modules/on-error'
 import { getWorkerConcurrency } from '@modules/queue-config'
@@ -27,6 +28,8 @@ export function createBackgroundWorker(options: BackgroundWorkerOptions) {
   const processor = createBackgroundProcessor(buildHandlerMap(options.handlers, options.domains))
   const worker = createWorker(BACKGROUND_QUEUE_NAME, processor, {
     dedicatedCommandClient: true,
+    backoffStrategies: pagedDispatchBackoffStrategies(),
+    maxStalledCount: 1000000,
     ...(options.prefix ? { prefix: options.prefix } : {}),
     concurrency:
       options.concurrency ?? getWorkerConcurrency('background', { baseline, max: baseline * 4 }),

@@ -1,3 +1,4 @@
+import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { processCrawlHostnamesJob } from './hostnames.mts'
 import type { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
@@ -69,9 +70,14 @@ describe('crawl-hostnames processors', () => {
   it('dispatches crawl-hostnames jobs to the matching processor', async () => {
     const deps = dependencies()
 
-    await expect(
-      processCrawlHostnamesJob(job('crawl_hostnames_dispatcher'), deps),
-    ).resolves.toEqual({ count: 4, hasMore: false })
+    const dispatchJob = await crawlDispatchQueue.add('crawl_hostnames_dispatcher', {
+      cursor: { sweepStartedAt: new Date(0).toISOString(), rangeLimit: 1, afterBucketDays: 1 },
+    })
+    if (!dispatchJob) throw new Error('Expected dispatcher admission')
+    await expect(processCrawlHostnamesJob(dispatchJob, deps)).resolves.toEqual({
+      count: 4,
+      hasMore: false,
+    })
     await expect(
       processCrawlHostnamesJob(
         job('crawl_urls_per_hostname_dispatcher', { hostname_id: 'h1' }),

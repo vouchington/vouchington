@@ -23,7 +23,6 @@ describe('dispatchVoteWeightMembershipExpirations', () => {
     await setVoteWeightMembershipExpiryExact(firstMembership.id, `${prefix}.000100Z`)
     await setVoteWeightMembershipExpiryExact(secondMembership.id, `${prefix}.000900Z`)
     const window = {
-      previousThroughAt: null,
       windowStart: `${prefix}.000000Z`,
       windowEnd: `${prefix}.001000Z`,
     }

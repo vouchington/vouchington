@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import type {
   VoteWeightAgeMilestonesData,
   VoteWeightMembershipExpirationsData,
@@ -101,6 +102,7 @@ export const VOTE_AGGREGATION_DIRTY_MARKERS_JOB = defineBackgroundJob<VoteWeight
 export const VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB =
   defineBackgroundJob<UserElectionFanOutData>(VOTE_AGGREGATION_DOMAIN, {
     name: 'enqueueUserElectionUpdates',
+    ...pagedDispatchJobOptions('elections'),
     priority: PRIORITY_DISPATCH,
     removeOnComplete: true,
     removeOnFail: true,

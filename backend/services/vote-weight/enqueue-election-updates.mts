@@ -16,7 +16,7 @@ import {
   createEntityRelationElectionTarget,
   entityRelationElectionTables,
 } from '@services/elections-votes/entity-relation'
-import { getVoteWeightElectionFanOutPageSize } from './work-limits.mts'
+import { getPagedDispatchLimit } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 
 type EntityRow = {
   entity_type: string
@@ -38,17 +38,14 @@ const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
 
 /**
  * Queues the recompute of the elections the user has voted in, from `cursor` (the start by
- * default). It reads and enqueues one bounded page; a full page queues a fan-out job that
- * continues from its last row, so a user with a very large vote history never loads or enqueues
- * all of it at once and the caller (a request, a webhook, a job) stays bounded.
+ * default). The request admits one dispatcher; its worker reads bounded pages and stores each
+ * continuation cursor in job data, keeping large vote histories off the request path.
  */
 export async function enqueueElectionUpdatesForUser(
   userId: string,
   cursor: UserElectionFanOutCursor | null = null,
-): Promise<ElectionUpdatePage> {
-  const page = await enqueueElectionUpdatePageForUser(userId, cursor)
-  if (page.nextCursor) await enqueueUserElectionFanOut(userId, page.nextCursor)
-  return page
+): Promise<void> {
+  await enqueueUserElectionFanOut(userId, cursor)
 }
 
 /**
@@ -58,7 +55,7 @@ export async function enqueueElectionUpdatesForUser(
 export async function enqueueElectionUpdatePageForUser(
   userId: string,
   cursor: UserElectionFanOutCursor | null,
-  limit = getVoteWeightElectionFanOutPageSize(),
+  limit = getPagedDispatchLimit('elections_page_size'),
 ): Promise<ElectionUpdatePage> {
   const lane = cursor?.lane ?? 0
   const afterId = cursor?.afterId ?? START_OF_IDS

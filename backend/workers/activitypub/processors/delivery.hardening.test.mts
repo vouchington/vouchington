@@ -30,7 +30,6 @@ const releaseActivityDistributionPageMock = vi.fn<typeof releaseActivityDistribu
 function distributeDeps() {
   return {
     enqueueBulkDeliverActivity: enqueueBulkDeliverActivityMock,
-    enqueueDistributeActivity: enqueueDistributeActivityMock,
     isFederationEnabledForUser: isFederationEnabledForUserMock,
     prepareActivityDistributionPage: prepareActivityDistributionPageMock,
     commitActivityDistributionPage: commitActivityDistributionPageMock,
@@ -149,7 +148,7 @@ describe('distributeActivity', () => {
     )
   })
 
-  it('enqueues exactly one continuation after committing a nonterminal page', async () => {
+  it('returns the next unique cursor after committing a nonterminal page', async () => {
     prepareActivityDistributionPageMock.mockResolvedValueOnce({
       status: 'ready',
       leaseToken: 'lease-one',
@@ -161,8 +160,8 @@ describe('distributeActivity', () => {
 
     const result = await distributeActivity(FOLLOW_DATA, distributeDeps())
 
-    expect(result).toEqual({ enqueued: 1, completed: false })
-    expect(enqueueDistributeActivityMock).toHaveBeenCalledWith(FOLLOW_DATA)
+    expect(result).toEqual({ enqueued: 1, completed: false, cursor: 'remote-actor-1' })
+    expect(enqueueDistributeActivityMock).not.toHaveBeenCalled()
   })
 
   it('does not commit or continue when the delivery batch rejects', async () => {
@@ -228,7 +227,7 @@ describe('distributeActivity', () => {
     ])
   })
 
-  it('surfaces a continuation failure after committing the page', async () => {
+  it('leaves continuation admission to the shared dispatcher after committing the page', async () => {
     const error = new Error('Valkey rejected the continuation')
     prepareActivityDistributionPageMock.mockResolvedValueOnce({
       status: 'ready',
@@ -240,7 +239,10 @@ describe('distributeActivity', () => {
     })
     enqueueDistributeActivityMock.mockRejectedValueOnce(error)
 
-    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).rejects.toBe(error)
+    await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).resolves.toMatchObject({
+      completed: false,
+      cursor: 'remote-actor-1',
+    })
 
     expect(commitActivityDistributionPageMock).toHaveBeenCalledTimes(1)
   })
@@ -286,6 +288,6 @@ describe('distributeActivity', () => {
     const result = await distributeActivity(FOLLOW_DATA, distributeDeps())
 
     expect(result).toEqual({ enqueued: 1, completed: false, stale: true })
-    expect(enqueueDistributeActivityMock).toHaveBeenCalledWith(FOLLOW_DATA)
+    expect(enqueueDistributeActivityMock).not.toHaveBeenCalled()
   })
 })

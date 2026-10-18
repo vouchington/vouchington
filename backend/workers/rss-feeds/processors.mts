@@ -22,14 +22,17 @@ type FetchRssFeedDependencies = {
  */
 export async function processRssFeedsDispatcher(
   dependencies?: Partial<RssFeedsDispatcherDependencies>,
-): Promise<{ count: number }> {
+  page?: { afterId?: string; limit: number },
+): Promise<{ count: number; nextAfterId?: string }> {
   const deps = {
     enqueueBulkFetchRssFeeds,
     getRssFeedsToFetch,
     getTierSlaMs,
     ...dependencies,
   }
-  const feeds = await deps.getRssFeedsToFetch()
+  const feeds = await deps.getRssFeedsToFetch(
+    page ? { limit: page.limit, afterId: page.afterId } : {},
+  )
   if (feeds.length === 0) return { count: 0 }
 
   // Group feeds by (tier, ttl) so each group shares one priority value and TTL.
@@ -58,7 +61,10 @@ export async function processRssFeedsDispatcher(
     ),
   )
 
-  return { count: feeds.length }
+  return {
+    count: feeds.length,
+    ...(page && feeds.length === page.limit ? { nextAfterId: feeds.at(-1)!.id } : {}),
+  }
 }
 
 /**

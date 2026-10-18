@@ -19,8 +19,6 @@ export type CrawlHostnameDispatchCursor = {
   rangeLimit: number
   afterBucketDays: number
   bucketDays?: number
-  range?: 0 | 1
   afterId?: string
-  afterSweptAt?: string
 }
 export type BoilerplateRemovalJobs = 'boilerplate_removal_dispatcher' | 'boilerplate_removal'

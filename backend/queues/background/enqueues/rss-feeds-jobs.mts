@@ -1,3 +1,4 @@
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 
@@ -25,10 +26,11 @@ export const RSS_FEEDS_FETCH_JOB = defineBackgroundJob<RssFeedFetchData>(RSS_FEE
   priority: PRIORITY_TASK,
   ...DEFAULTS,
 })
-export const RSS_FEEDS_DISPATCH_JOB = defineBackgroundJob<Record<string, never>>(RSS_FEEDS_DOMAIN, {
+export const RSS_FEEDS_DISPATCH_JOB = defineBackgroundJob<{ afterId?: string }>(RSS_FEEDS_DOMAIN, {
   name: 'dispatchRssFeeds',
   priority: PRIORITY_DISPATCH,
   ...DEFAULTS,
+  ...pagedDispatchJobOptions('rss'),
 })
 
 export const RSS_FEEDS_JOBS = [RSS_FEEDS_FETCH_JOB, RSS_FEEDS_DISPATCH_JOB] as const

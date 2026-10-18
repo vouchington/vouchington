@@ -1,6 +1,8 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID, randomInt } from 'node:crypto'
+import { insertTestReconciliationRevisionClocks } from '@voucha/test-helpers/entities/reconciliation-revisions'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { entityReconciliationConfig } from './work-limits.mts'
 import { describe, expect, it } from 'vitest'
-import { withTestEntityReconciliationCheckpoint } from '@voucha/test-helpers/entities/entity-reconciliation-checkpoint'
 import {
   createTestPost,
   createTestUser,
@@ -12,7 +14,6 @@ import {
 } from '@voucha/test-helpers'
 import { createPostRevision } from '@services/post-revisions'
 import {
-  advanceEntityReconciliationCheckpoint,
   getEntityReconciliationWindow,
   streamEntityReconciliationCandidateBatches,
   type EntityReconciliationCandidate,
@@ -39,16 +40,53 @@ async function* streamCompleteWindow(window: EntityReconciliationWindow) {
 }
 
 describe('entity-listener reconciliation', () => {
-  it('resumes from the durable checkpoint with overlap and replica-lag margin', async () => {
-    await withTestEntityReconciliationCheckpoint(async options => {
-      const now = new Date()
-      const existing = await getEntityReconciliationWindow(3600, now, options)
-      const completedThrough = new Date(existing.start.getTime() + 300_000 + 86_400_000)
-      await advanceEntityReconciliationCheckpoint(completedThrough, options)
-      const window = await getEntityReconciliationWindow(3600, now, options)
-      expect(window.end).toEqual(new Date(now.getTime() - 60_000))
-      expect(window.start.getTime()).toBe(completedThrough.getTime() - 300_000)
+  it('uses a fixed lookback ending before the replica margin', () => {
+    const now = new Date('2026-10-17T12:00:00Z')
+    const window = getEntityReconciliationWindow(now)
+    expect(window.end).toEqual(new Date(now.getTime() - 60000))
+    expect(window.start).toEqual(new Date(now.getTime() - 60000 - 86400000))
+  })
+
+  it('scans only changes inside its configured lookback and recovers an expanded window', async () => {
+    const now = new Date(Date.UTC(2200, 0, 1) + randomInt(0, 1000000000))
+    const actor = await createTestUser()
+    const post = await createTestPost()
+    const older = await insertTestReconciliationRevisionClocks(
+      post.id,
+      actor.id,
+      now.getTime() - 120000,
+    )
+    const recent = await insertTestReconciliationRevisionClocks(
+      post.id,
+      actor.id,
+      now.getTime() - 30000,
+    )
+    const restore = overrideDynamicConfigFieldsForTest(entityReconciliationConfig, {
+      lookback_seconds: 60,
+      replica_margin_seconds: 1,
     })
+    try {
+      const included: string[] = []
+      for await (const batch of streamCompleteWindow(getEntityReconciliationWindow(now))) {
+        included.push(...batch.flatMap(row => (row.changeId ? [row.changeId] : [])))
+      }
+      expect(included).toEqual(expect.arrayContaining(recent.map(row => row.id)))
+      expect(included).not.toEqual(expect.arrayContaining(older.map(row => row.id)))
+      const restoreExpanded = overrideDynamicConfigFieldsForTest(entityReconciliationConfig, {
+        lookback_seconds: 180,
+      })
+      try {
+        const recovered: string[] = []
+        for await (const batch of streamCompleteWindow(getEntityReconciliationWindow(now))) {
+          recovered.push(...batch.flatMap(row => (row.changeId ? [row.changeId] : [])))
+        }
+        expect(recovered).toEqual(expect.arrayContaining([...older, ...recent].map(row => row.id)))
+      } finally {
+        restoreExpanded()
+      }
+    } finally {
+      restore()
+    }
   })
 
   it('streams active current-state entities in bounded batches', async () => {

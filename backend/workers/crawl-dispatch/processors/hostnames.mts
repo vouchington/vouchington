@@ -1,12 +1,14 @@
+import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
+import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import { getWeeklyHostnameRefreshBatchSize } from '@services/crawls/work-limits'
-import type { CrawlHostnamesJobs } from '@queues/crawl-dispatch/types'
+import type { CrawlHostnamesJobs, CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import { refreshHostnameCrawler } from '@services/crawlers/refresh'
 import { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostnames'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
 import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
-import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
+import { createEnqueueFunction, processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import {
   enqueueBulkRefreshHostnameCrawler,
   enqueueCrawlHostnamesDispatcher,
@@ -102,9 +104,35 @@ export async function processCrawlHostnamesJob(
     case 'enqueueCrawlTier2Dispatcher':
       return enqueueCrawlTier2Dispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'crawl_hostnames_dispatcher':
-      return processRetainedSweep(job, save =>
-        deps.dispatchCrawlHostnames(job.data?.cursor, cursor => save({ cursor })),
-      )
+      return processPagedDispatcher<{ cursor?: CrawlHostnameDispatchCursor }, unknown>(job, {
+        dispatcher: 'hostnames',
+        cursorKey: 'id',
+        target: crawlDispatchQueue,
+        targetName: 'crawl-dispatch',
+        readAndDispatch: async pageSize => {
+          const cursor = job.data?.cursor ?? {
+            sweepStartedAt: new Date().toISOString(),
+            rangeLimit: pageSize,
+            afterBucketDays: -32769,
+          }
+          if (!job.data?.cursor) await job.updateData({ cursor })
+          let nextCursor = cursor
+          const result = await deps.dispatchCrawlHostnames(
+            cursor,
+            async next => {
+              nextCursor = next
+            },
+            pageSize,
+          )
+          return { result, ...(result.hasMore ? { next: { cursor: nextCursor } } : {}) }
+        },
+        enqueueNext: createEnqueueFunction({
+          queue: crawlDispatchQueue,
+          queueName: 'crawl-dispatch',
+          jobName: 'crawl_hostnames_dispatcher',
+          defaults: { priority: 100 },
+        }),
+      })
     case 'crawl_urls_per_hostname_dispatcher': {
       const hostnameId = job.data?.hostname_id
       if (!hostnameId)

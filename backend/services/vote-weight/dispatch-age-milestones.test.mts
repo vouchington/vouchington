@@ -10,7 +10,6 @@ describe('dispatchVoteWeightAgeMilestones', () => {
     const start = new Date(Date.UTC(2040, 0, 1) + randomInt(0, 30_000_000))
     const userId = await createVoteWeightDispatchUserAt(start)
     const window = {
-      previousThroughAt: null,
       windowStart: start.toISOString(),
       windowEnd: new Date(start.getTime() + 1).toISOString(),
     }

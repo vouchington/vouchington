@@ -11,7 +11,6 @@ import {
 import { VOTE_WEIGHT_DIRTY_MARKER_AFTER_ID } from '../seed-data/vote-weight-dirty-markers.mts'
 
 const window = {
-  previousThroughAt: VOTE_WEIGHT_DISPATCH_WINDOW_START.toISOString(),
   windowStart: VOTE_WEIGHT_DISPATCH_WINDOW_START.toISOString(),
   windowEnd: VOTE_WEIGHT_DISPATCH_WINDOW_END.toISOString(),
 }
@@ -92,7 +91,11 @@ export async function runVoteWeightDispatchScenarios(): Promise<void> {
         dispatchVoteWeightFamilySourceChanges({
           window:
             branch === 'updated_at'
-              ? { ...window, windowStart: null, windowEnd: '2100-01-01T00:00:00Z' }
+              ? {
+                  ...window,
+                  windowStart: new Date(0).toISOString(),
+                  windowEnd: '2100-01-01T00:00:00Z',
+                }
               : window,
           branches: Object.fromEntries(
             familyBranches.map(key => [key, key === branch ? undefined : null]),

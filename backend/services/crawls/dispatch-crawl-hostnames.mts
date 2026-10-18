@@ -10,6 +10,7 @@ import {
 export const dispatchCrawlHostnames = async (
   saved?: CrawlHostnameDispatchCursor,
   saveProgress?: (cursor: CrawlHostnameDispatchCursor) => Promise<void>,
+  pageSize?: number,
 ) => {
   const limits = getCrawlHostnameDispatchLimits()
   let cursor: CrawlHostnameDispatchCursor = saved ?? {
@@ -20,11 +21,11 @@ export const dispatchCrawlHostnames = async (
   await saveProgress?.(cursor)
   let count = 0
   let probes = 0
-  while (count + probes < limits.maxRows) {
+  while (count + probes < (pageSize ?? limits.maxRows)) {
     // oxlint-disable-next-line no-await-in-loop -- each page advances the retained index position after its enqueue succeeds
     const page = await dispatchHostnamePage(
       cursor,
-      Math.min(cursor.rangeLimit, limits.batchSize, limits.maxRows - count - probes),
+      Math.min(cursor.rangeLimit, limits.batchSize, (pageSize ?? limits.maxRows) - count - probes),
       saveProgress,
     )
     cursor = page.cursor
@@ -64,14 +65,12 @@ async function dispatchHostnamePage(
       afterBucketDays: cursor.bucketDays!,
     }
   } else {
-    const hostnameIds = rows.flatMap(row => (row.has_url ? [row.id] : []))
+    const hostnameIds = rows.flatMap(row => (row.has_url && row.is_due ? [row.id] : []))
     enqueued = hostnameIds.length
     if (hostnameIds.length) await enqueueBulkCrawlHostname(hostnameIds)
     const next = { ...cursor }
     for (const row of rows) {
-      next.range = row.range
       next.afterId = row.id
-      if (row.crawl_swept_at) next.afterSweptAt = row.crawl_swept_at.toISOString()
     }
     cursor = next
   }

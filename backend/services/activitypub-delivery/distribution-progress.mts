@@ -34,6 +34,7 @@ export async function prepareActivityDistributionPage(
   activityId: string,
   sourceUserId: string,
   dependencies: Partial<DistributionPageDependencies> = {},
+  pageSize?: number,
 ): Promise<PreparedActivityDistributionPage> {
   const deps = { listRemoteFollowerInboxPage, ...dependencies }
   await using transaction = await beginTransaction()
@@ -42,6 +43,7 @@ export async function prepareActivityDistributionPage(
     sourceUserId,
     deps,
     transaction,
+    pageSize,
   )
   await transaction.commit()
   return page
@@ -52,8 +54,10 @@ async function prepareActivityDistributionPageInTransaction(
   sourceUserId: string,
   dependencies: DistributionPageDependencies,
   query: TransactionQuery,
+  pageSize?: number,
 ): Promise<PreparedActivityDistributionPage> {
-  const FOLLOWER_INBOX_BATCH_SIZE = getRemoteActorsWorkLimit('follower_inbox_batch_size')
+  const FOLLOWER_INBOX_BATCH_SIZE =
+    pageSize ?? getRemoteActorsWorkLimit('follower_inbox_batch_size')
   await query(sql`/* prepareActivityDistributionPage:insert */
       INSERT INTO activitypub_distribution_work_items (activity_id, source_user_id)
       VALUES (${activityId}, ${sourceUserId})

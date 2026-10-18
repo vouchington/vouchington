@@ -40,11 +40,12 @@ type DistributeUndoLikeActivityData = {
   targetPostId: string
 }
 
-export type DistributeActivityData =
+export type DistributeActivityData = (
   | DistributeFollowActivityData
   | DistributeUndoFollowActivityData
   | DistributeLikeActivityData
   | DistributeUndoLikeActivityData
+) & { cursor?: string }
 
 // Accept never goes through distributeActivity's fan-out: an inbound Follow's Accept always
 // targets exactly one already-known inbox (the sender's).
