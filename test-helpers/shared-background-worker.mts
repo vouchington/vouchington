@@ -1,9 +1,12 @@
+import {
+  DEFAULT_FLUSH_TIMEOUT_MS,
+  settleRunnableQueueJobs,
+  type ShimTestQueue,
+} from '@vouchington/worker-runtime/testing'
 import type { BackgroundDomain } from '../backend/queues/background/config.mts'
 import { entityListenersHandlers } from '../backend/workers/entity-listeners/workers.mts'
 import { voteAggregationHandlers } from '../backend/workers/vote-aggregation/workers.mts'
 import { createBackgroundWorker } from '../backend/workers/background/workers/create-worker.mts'
-import { DEFAULT_FLUSH_TIMEOUT_MS, type FlushQueue } from './glide-mq-vitest-flush-wait.mts'
-import { settleRunnableQueueJobs } from './vitest-fork-leak-background-settle.mts'
 
 type SharedBackgroundWorker = ReturnType<typeof createBackgroundWorker>
 
@@ -13,7 +16,7 @@ type SharedBackgroundWorker = ReturnType<typeof createBackgroundWorker>
 type TestWorkerInternals = {
   paused: boolean
   wake(): void
-  queue: { workers: Set<unknown> }
+  queue: ShimTestQueue
 }
 
 let sharedWorker: SharedBackgroundWorker | undefined
@@ -31,7 +34,7 @@ function yieldToOtherBackgroundWorkers(worker: SharedBackgroundWorker): void {
   const { workers } = internals.queue
   const { wake } = internals
   internals.wake = () => {
-    internals.paused = [...workers].some(other => other !== worker)
+    internals.paused = [...workers].some(other => other !== (worker as unknown))
     Reflect.apply(wake, internals, [])
   }
 }
@@ -73,11 +76,9 @@ export async function settleSharedBackgroundJobs(
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
 ): Promise<boolean> {
   if (!sharedWorker) return false
-  const internals = sharedWorker as unknown as { queue: FlushQueue }
-  if ((await internals.queue.getWorkers()).length === 0) return false
-  await settleRunnableQueueJobs(internals.queue, {
-    flushTimeoutMs,
-  })
+  const { queue } = sharedWorker as unknown as TestWorkerInternals
+  if (queue.workers.size === 0 && queue.activeWorkers.size === 0) return false
+  await settleRunnableQueueJobs(queue, flushTimeoutMs)
   return true
 }
 

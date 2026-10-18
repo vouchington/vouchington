@@ -77,8 +77,8 @@ importers:
         specifier: ^0.7.4
         version: 0.7.4
       '@vouchington/worker-runtime':
-        specifier: ^0.1.2
-        version: 0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.1.3
+        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       agent-blackboard:
         specifier: ^0.7.0
         version: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
@@ -11772,8 +11772,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
       '@vouchington/worker-runtime':
-        specifier: ^0.1.2
-        version: 0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.1.3
+        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -11893,8 +11893,8 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/utils
       '@vouchington/worker-runtime':
-        specifier: ^0.1.2
-        version: 0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.1.3
+        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
@@ -19468,8 +19468,8 @@ packages:
     resolution: {integrity: sha512-MzrhsHnPzTUw5k1RWVKdfpYLKewPGx8+th4imB01LKIasEWOHxrMcwuZz1FEFgRHZdLtrhIs1DI78pGgOmqwvg==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/worker-runtime@0.1.2':
-    resolution: {integrity: sha512-UmbBrGNNbtKmQ5bzcIjONn6teNwZaxlXjY6lEWOUDPmucC8xdPTa30X8H2+RIqfj/Y0HbDVEoCT9DhMhZ0mDPA==}
+  '@vouchington/worker-runtime@0.1.3':
+    resolution: {integrity: sha512-QpAZs8N3lWw4roAhXJVljAP2+2sSEiEtTUFqdcStToEK16so2xSqd2KMuq3loN+mZEWI8tNV3GyOHm9yvODX1w==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       glide-mq: ^0.18.0
@@ -28411,7 +28411,7 @@ snapshots:
     dependencies:
       uuid: 14.0.3
 
-  '@vouchington/worker-runtime@0.1.2(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
+  '@vouchington/worker-runtime@0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
     dependencies:
       glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     optionalDependencies:
