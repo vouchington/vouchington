@@ -43,6 +43,8 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   never the rows. Use the shared paged-dispatcher helper with DynamicConfig page, queue-depth,
   and backoff limits; dispatchers retry indefinitely. Dispatcher state lives in job data, not
   PostgreSQL. The depth threshold is a soft admission limit: each admitted page may cross it.
+  It includes dispatcher jobs. A threshold below an unread control backlog conservatively
+  blocks admission until an operator raises it; already-receipted pages can still finish cleanup.
   Shared workers preserve ordinary jobs' stall budget while allowing dispatchers to resume.
   Record ownership of row-admission fences before bulk enqueue; clean them in bounded batches
   after the page receipt is durable, preserving each row queue's failure-retention policy.

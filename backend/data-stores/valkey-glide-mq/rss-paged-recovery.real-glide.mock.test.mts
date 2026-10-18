@@ -6,10 +6,9 @@ import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
-import { enqueueBulkReactivatingFinished } from './enqueue-or-reactivate.mts'
 import { createRetryingCommandClient } from './glide-mq-command-client.mts'
 import { acquireTerminalJobRemoval } from './terminal-job-removal.mts'
-import { getPagedDispatchRowJobId, withPagedDispatchPage } from './paged-dispatch-context.mts'
+import { withPagedDispatchPage } from './paged-dispatch-context.mts'
 
 describe('real-queue recovery for paged RSS rows', () => {
   it('keeps a concurrently retried failed job when watched terminal removal conflicts', async () => {
@@ -62,90 +61,89 @@ describe('real-queue recovery for paged RSS rows', () => {
     }
   })
 
-  it('re-admits a failed RSS row on a fresh page while fencing replay and in-flight pages', async () => {
-    const prefix = `${workerQueuePrefix ?? 'glide'}:rss-recovery:${randomUUID()}`
-    const queue = new Queue<{ rssFeedId: string; page: number }>(`rss-${randomUUID()}`, {
-      connection: workerQueueConnection,
-      prefix,
-    })
-    Object.assign(queue, { priorityKind: 'none' as const })
-    const bulk = createBulkEnqueueFunction<
-      { rssFeedId: string; page: number },
-      { rssFeedId: string; page: number },
-      'fetchRssFeed'
-    >({
-      queue: queue as typeof queue & { priorityKind: 'none' },
-      queueName: queue.name,
-      jobName: 'fetchRssFeed',
-      defaults: { attempts: 1, removeOnFail: 100 },
-      buildJob: input => ({
-        data: input,
-        opts: { deduplication: { id: `rss-feed__${input.rssFeedId}`, mode: 'simple' } },
-      }),
-    })
-    const firstFailed = Promise.withResolvers<void>()
-    const secondEntered = Promise.withResolvers<void>()
-    const releaseSecond = Promise.withResolvers<void>()
-    const worker = new Worker(
-      queue.name,
-      async (job: Job<{ rssFeedId: string; page: number }>) => {
-        if (job.data.page === 1) throw new Error('synthetic fetch failure')
-        secondEntered.resolve()
-        await releaseSecond.promise
-      },
-      { connection: workerQueueConnection, prefix, blockTimeout: 1000 },
-    )
-    worker.on('failed', job => {
-      if (job?.data.page === 1) firstFailed.resolve()
-    })
-    worker.on('error', firstFailed.reject)
-    const rssFeedId = randomUUID()
-    const enqueuePage = (pageId: string, page: number) =>
-      withPagedDispatchPage(
-        pageId,
+  it.each([
+    { label: 'RSS', jobName: 'fetchRssFeed' },
+    { label: 'election', jobName: 'processUpdateElectionVoteStats' },
+  ] as const)(
+    're-admits a failed $label row on a fresh page while fencing replay and in-flight pages',
+    async ({ label, jobName }) => {
+      const prefix = `${workerQueuePrefix ?? 'glide'}:${label}-recovery:${randomUUID()}`
+      const queue = new Queue<{ rowId: string; page: number }>(`${label}-${randomUUID()}`, {
+        connection: workerQueueConnection,
+        prefix,
+      })
+      Object.assign(queue, { priorityKind: 'none' as const })
+      const bulk = createBulkEnqueueFunction<
+        { rowId: string; page: number },
+        { rowId: string; page: number },
+        typeof jobName
+      >({
+        queue: queue as typeof queue & { priorityKind: 'none' },
+        queueName: queue.name,
+        queuePrefix: prefix,
+        jobName,
+        defaults: { attempts: 1, removeOnFail: 100 },
+        buildJob: input => ({
+          data: input,
+          opts: { deduplication: { id: `row__${input.rowId}`, mode: 'simple' } },
+        }),
+      })
+      const firstFailed = Promise.withResolvers<void>()
+      const secondEntered = Promise.withResolvers<void>()
+      const releaseSecond = Promise.withResolvers<void>()
+      const worker = new Worker(
         queue.name,
-        () =>
-          enqueueBulkReactivatingFinished({
-            queue,
-            prefix,
-            inputs: [{ rssFeedId, page }],
-            jobIdOf: input =>
-              getPagedDispatchRowJobId(queue.name, 'fetchRssFeed', `rss-feed__${input.rssFeedId}`),
-            enqueueBulk: bulk,
-          }),
-        ids =>
-          ids.length
-            ? queue
-                .getClient()
-                .then(client =>
-                  client.sadd(`${prefix}:{${queue.name}}:dispatch-fences:${pageId}`, ids),
-                )
-                .then(() => undefined)
-            : Promise.resolve(),
+        async (job: Job<{ rowId: string; page: number }>) => {
+          if (job.data.page === 1) throw new Error('synthetic row failure')
+          secondEntered.resolve()
+          await releaseSecond.promise
+        },
+        { connection: workerQueueConnection, prefix, blockTimeout: 1000 },
       )
+      worker.on('failed', job => {
+        if (job?.data.page === 1) firstFailed.resolve()
+      })
+      worker.on('error', firstFailed.reject)
+      const rowId = randomUUID()
+      const enqueuePage = (pageId: string, page: number) =>
+        withPagedDispatchPage(
+          pageId,
+          queue.name,
+          () => bulk([{ rowId, page }]),
+          ids =>
+            ids.length
+              ? queue
+                  .getClient()
+                  .then(client =>
+                    client.sadd(`${prefix}:{${queue.name}}:dispatch-fences:${pageId}`, ids),
+                  )
+                  .then(() => undefined)
+              : Promise.resolve(),
+        )
 
-    try {
-      await worker.waitUntilReady()
-      const first = await enqueuePage('first', 1)
-      expect(first.value).toHaveLength(1)
-      await firstFailed.promise
-      expect(await (await queue.getJob(first.value[0]!.id))?.getState()).toBe('failed')
+      try {
+        await worker.waitUntilReady()
+        const first = await enqueuePage('first', 1)
+        expect(first.value).toHaveLength(1)
+        await firstFailed.promise
+        expect(await (await queue.getJob(first.value[0]!.id))?.getState()).toBe('failed')
 
-      // The old page owns a durable throttle fence even after terminal cleanup.
-      expect((await enqueuePage('first', 1)).value).toEqual([])
-      const fresh = await enqueuePage('second', 2)
-      expect(fresh.value).toHaveLength(1)
-      expect(fresh.value[0]?.data.page).toBe(2)
-      await secondEntered.promise
-      expect((await enqueuePage('third', 3)).value).toEqual([])
-      releaseSecond.resolve()
-    } finally {
-      releaseSecond.resolve()
-      await worker.close(true)
-      await queue.obliterate({ force: true })
-      await queue.close()
-    }
-  })
+        // The old page owns a durable throttle fence even after terminal cleanup.
+        expect((await enqueuePage('first', 1)).value).toEqual([])
+        const fresh = await enqueuePage('second', 2)
+        expect(fresh.value).toHaveLength(1)
+        expect(fresh.value[0]?.data.page).toBe(2)
+        await secondEntered.promise
+        expect((await enqueuePage('third', 3)).value).toEqual([])
+        releaseSecond.resolve()
+      } finally {
+        releaseSecond.resolve()
+        await worker.close(true)
+        await queue.obliterate({ force: true })
+        await queue.close()
+      }
+    },
+  )
 })
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())

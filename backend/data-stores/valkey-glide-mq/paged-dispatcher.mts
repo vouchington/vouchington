@@ -60,19 +60,21 @@ export async function processPagedDispatcher<TData extends object, TResult>(
 ): Promise<TResult> {
   if (!CURSOR_KEYS.includes(options.cursorKey))
     throw new TypeError('Dispatcher requires a unique immutable cursor')
-  const counts = await options.target.getJobCounts()
-  const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
-  if (depth > getPagedDispatchLimit(`${options.targetName}_max_depth`)) {
-    return processRetainedSweep(job, async () => ({ hasMore: true }), {
-      resumeAt: Date.now() + getPagedDispatchLimit(`${options.dispatcher}_backoff_ms`),
-    }) as Promise<never>
-  }
   const fences = createPagedDispatchFences(options.target.name, job.id, options.targetPrefix)
   type Receipt = { result: TResult; next?: TData; nextAdmitted?: boolean }
   const data = job.data as TData & { dispatchReceipt?: Receipt }
   let receipt = data.dispatchReceipt
   let afterDispatch: (() => Promise<void>) | undefined
   if (!receipt) {
+    // Capacity gates new row work. A durable receipt must still be allowed to retire its
+    // admission fences and finish, including when control jobs themselves fill the queue.
+    const counts = await options.target.getJobCounts()
+    const depth = (counts.waiting ?? 0) + (counts.active ?? 0) + (counts.delayed ?? 0)
+    if (depth > getPagedDispatchLimit(`${options.targetName}_max_depth`)) {
+      return processRetainedSweep(job, async () => ({ hasMore: true }), {
+        resumeAt: Date.now() + getPagedDispatchLimit(`${options.dispatcher}_backoff_ms`),
+      }) as Promise<never>
+    }
     const admitted = await withPagedDispatchPage(
       job.id,
       options.targetName,

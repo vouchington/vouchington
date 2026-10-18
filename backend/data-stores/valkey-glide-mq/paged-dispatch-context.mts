@@ -26,14 +26,9 @@ export function checkpointPagedDispatchFences(): Promise<void> | undefined {
   return page?.checkpoint([...page.dedupIds])
 }
 
-/** Stable row identity for terminal-record recovery, only inside the matching paged dispatch. */
-export function getPagedDispatchRowJobId(
-  queueName: string,
-  jobName: string,
-  identity: string,
-): string | undefined {
-  if (pageContext.getStore()?.target !== queueName) return undefined
-  return `dispatch_row__${rowIdentity(jobName, identity)}`
+/** Only the matching page may reactivate a row whose hard job id holds a terminal record. */
+export function isPagedDispatchRow(queueName: string): boolean {
+  return pageContext.getStore()?.target === queueName
 }
 
 function rowIdentity(jobName: string, identity: string): string {

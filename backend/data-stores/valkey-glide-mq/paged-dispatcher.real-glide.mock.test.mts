@@ -8,9 +8,54 @@ import {
   type DispatchCursorKey,
 } from './paged-dispatcher.mts'
 import { pagedDispatchConfig } from './paged-dispatcher-config.mts'
+import { createPagedDispatchFences } from './paged-dispatch-fences.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('paged dispatcher', () => {
+  it('retires a durable receipt while the target remains above its depth limit', async () => {
+    const settings = {
+      connection: workerQueueConnection,
+      prefix: `${workerQueuePrefix}:receipt-drain:${randomUUID()}`,
+    }
+    const target = new Queue(`rows-${randomUUID()}`, settings)
+    const dispatch = new Queue(`pages-${randomUUID()}`, settings)
+    const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      background_max_depth: 1,
+    })
+    try {
+      await target.add('held', {})
+      await target.add('held', {})
+      const job = await dispatch.add('page', { dispatchReceipt: { result: 7 } })
+      if (!job) throw new Error('Expected dispatcher admission')
+      const fences = createPagedDispatchFences(target.name, job.id, settings.prefix)
+      await fences.checkpoint(['old-page-row'])
+      const result = await processPagedDispatcher(job, {
+        dispatcher: 'rss',
+        cursorKey: 'id',
+        target,
+        targetName: 'background',
+        targetPrefix: settings.prefix,
+        readAndDispatch: async () => {
+          throw new Error('A durable receipt must never reread its source')
+        },
+        enqueueNext: async () => {
+          throw new Error('The final page has no continuation')
+        },
+      })
+      expect(result).toBe(7)
+      expect((await target.getJobCounts()).waiting).toBe(2)
+      expect(
+        await (
+          await target.getClient()
+        ).scard(`${settings.prefix}:{${target.name}}:dispatch-fences:${job.id}`),
+      ).toBe(0)
+    } finally {
+      restore()
+      await Promise.all([target.obliterate({ force: true }), dispatch.obliterate({ force: true })])
+      await Promise.all([target.close(), dispatch.close()])
+    }
+  })
+
   it.each(['updated_at', 'created_at'])(
     'rejects a non-unique or mutable %s cursor before dispatch',
     async cursorKey => {

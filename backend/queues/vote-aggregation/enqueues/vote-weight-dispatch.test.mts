@@ -180,13 +180,4 @@ describe('vote-weight dispatcher admission', () => {
       }
     }
   })
-
-  it('reactivates a finished continuation with the same stable id', async () => {
-    const data = { afterId: `ffffffff-ffff-4fff-8fff-${randomUUID().slice(24)}` }
-    const first = await readEnqueuedJob(voteAggregation, await enqueueVoteWeightDirtyMarkers(data))
-    await expect((await voteAggregation.getJob(first.id))?.getState()).resolves.toBe('completed')
-
-    const replay = await readEnqueuedJob(voteAggregation, await enqueueVoteWeightDirtyMarkers(data))
-    expect(replay.id).toBe(first.id)
-  })
 })
