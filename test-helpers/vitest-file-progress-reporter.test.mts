@@ -26,20 +26,42 @@ describe('backend-unit file progress reporter', () => {
 
   it('logs a file when a worker starts it and when it finishes', () => {
     const lines: string[] = []
-    const reporter = createVitestFileProgressReporter(chunk => {
-      lines.push(chunk)
-    })
+    const reporter = createVitestFileProgressReporter(
+      chunk => {
+        lines.push(chunk)
+      },
+      () => 1,
+    )
     const file = testModule('backend/services/example.test.mts', 'passed')
 
     reporter.onTestModuleQueued(file)
     reporter.onTestModuleEnd(file)
 
     expect(lines).toEqual([
-      formatBackendUnitFileProgress('start', 'backend/services/example.test.mts'),
-      formatBackendUnitFileProgress('finish', 'backend/services/example.test.mts', 'passed'),
+      formatBackendUnitFileProgress('start', 'backend/services/example.test.mts', undefined, 1),
+      formatBackendUnitFileProgress('finish', 'backend/services/example.test.mts', 'passed', 1),
     ])
     expect(lines.join('')).not.toContain(' FAIL ')
     expect(lines.join('')).not.toContain('AssertionError')
+  })
+
+  it('stamps each event with the clock reading so slow files can be told from stuck ones', () => {
+    const lines: string[] = []
+    const ticks = [1_000, 4_500]
+    const reporter = createVitestFileProgressReporter(
+      chunk => lines.push(chunk),
+      () => ticks.shift()!,
+    )
+    const file = testModule('backend/services/example.test.mts', 'passed')
+
+    reporter.onTestModuleQueued(file)
+    reporter.onTestModuleEnd(file)
+
+    expect(lines).toEqual([
+      formatBackendUnitFileProgress('start', 'backend/services/example.test.mts', undefined, 1_000),
+      formatBackendUnitFileProgress('finish', 'backend/services/example.test.mts', 'passed', 4_500),
+    ])
+    expect(lines[1]).toContain(' state=passed at=4500\n')
   })
 
   it('appends the reporter only when diagnostics are enabled', () => {
@@ -101,14 +123,14 @@ describe('backend-unit file progress reporter', () => {
     }
     expect(buffered.length).toBe(baseline.length + 1)
     expect(both.length).toBe(baseline.length + 2)
-    const reporter = createVitestFileProgressReporter(createFileProgressWriter(file))
+    const reporter = createVitestFileProgressReporter(createFileProgressWriter(file), () => 7)
     expect(buffered.filter(isBackendUnitFileProgressReporter)).toHaveLength(1)
     const fileModule = testModule('backend/example.test.mts', 'passed')
     reporter.onTestModuleQueued(fileModule)
     reporter.onTestModuleEnd(fileModule)
     expect(readFileSync(file, 'utf8')).toBe(
-      formatBackendUnitFileProgress('start', 'backend/example.test.mts') +
-        formatBackendUnitFileProgress('finish', 'backend/example.test.mts', 'passed'),
+      formatBackendUnitFileProgress('start', 'backend/example.test.mts', undefined, 7) +
+        formatBackendUnitFileProgress('finish', 'backend/example.test.mts', 'passed', 7),
     )
   })
 
