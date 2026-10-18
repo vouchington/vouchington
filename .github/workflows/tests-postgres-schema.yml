@@ -63,6 +63,9 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/check-staging-rss-bootstrap.mts
         timeout-minutes: 1
+      - name: Clear stale PostgreSQL schema JUnit report
+        timeout-minutes: 1
+        run: rm -f postgres-schema-test-report.junit.xml
       - name: Run PostgreSQL schema tests
         # The command keeps the previous 180s step budget. The extra minute lets
         # run-bounded reap the process group and flush the log. GitHub's
@@ -75,6 +78,17 @@ jobs:
           VITEST_JUNIT_OUTPUT_FILE: postgres-schema-test-report.junit.xml
         run: |
           VITEST_MAX_WORKERS=1 python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 180 pnpm exec ./ci/with-node-test-options vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema --project backend-activitypub-capacity
+      - name: Upload PostgreSQL schema JUnit report
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: postgres-schema-junit
+          path: postgres-schema-test-report.junit.xml
+          retention-days: 1
+          if-no-files-found: ignore
       - name: Check PostgreSQL schema snapshot is up to date
         if: ${{ !cancelled() }}
         working-directory: backend

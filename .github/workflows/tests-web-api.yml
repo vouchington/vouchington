@@ -95,6 +95,9 @@ jobs:
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
+      - name: Clear stale web API JUnit report
+        timeout-minutes: 1
+        run: rm -f web-api-shard-${{ matrix.shard }}.junit.xml
       - name: Run web API tests
         env:
           IMAGE_ORIGIN: http://127.0.0.1:3100
@@ -109,6 +112,17 @@ jobs:
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.
         timeout-minutes: 10
+      - name: Upload web API JUnit report
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          overwrite: true
+          name: web-api-junit-shard-${{ matrix.shard }}
+          path: web-api-shard-${{ matrix.shard }}.junit.xml
+          retention-days: 1
+          if-no-files-found: ignore
       - name: Preserve full web-api-shard-${{ matrix.shard }} LCOV
         timeout-minutes: 1
         if: ${{ !cancelled() && inputs.publish_coverage }}
