@@ -19,7 +19,6 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@queues/background-cpu": "workspace:^",
-    "@queues/unfurl-referral-links": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
     "glide-mq": "^0.18.0"

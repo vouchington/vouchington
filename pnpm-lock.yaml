@@ -12946,9 +12946,6 @@ importers:
       '@queues/crawl-browser':
         specifier: workspace:^
         version: link:../../queues/crawl-browser
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/crawl-referral-links
       '@services/crawler-referral-links':
         specifier: workspace:^
         version: link:../../services/crawler-referral-links
@@ -13869,9 +13866,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/unfurl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/unfurl-referral-links
       '@services/referral-link-unfurl':
         specifier: workspace:^
         version: link:../../services/referral-link-unfurl
