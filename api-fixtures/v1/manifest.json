@@ -3806,6 +3806,615 @@
       "source": "backend/api/v1/admin/landing-pages.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/appeals#member": {
+      "bodyKind": "content",
+      "hash": "55df21a3cf3a8ed704e701907978bc590fef505b28ce86d138a04fde46ffb066",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/appeals",
+      "schema": {
+        "definitions": {
+          "RedactedModerationAppeal": {
+            "additionalProperties": false,
+            "properties": {
+              "approved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_ban_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_overdue": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "post_removal_kind": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "community"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "platform"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "public_response": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resolution_action": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "accept"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "deny"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reduce"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "resolved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolved"
+                    }
+                  ]
+                }
+              },
+              "target_context": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "name": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "expires_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "community_ban"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "name": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "public_message": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "warning"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "name": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "declared_language": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "community"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "platform"
+                              }
+                            ]
+                          }
+                        },
+                        "lingua_rs_detected_language": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "public_reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "title": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "post_removal"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "suspension"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_suspension_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "user_warning_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "appeals": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "RedactedModerationAppeal",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "end_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "has_next_page": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "start_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/appeals/appeals.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/appeals#staff": {
       "bodyKind": "content",
       "hash": "8474a40613b535816beab4b5d388718b999135cca9fc8c4d77ef3196883a4e15",
@@ -4744,6 +5353,569 @@
                   }
                 },
                 "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/appeals/appeals.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/appeals/:id#member": {
+      "bodyKind": "content",
+      "hash": "788dcdce353d51ec0b82464ab8180274cf9b58159d25b51efbc296c2053a5fce",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/appeals/:id",
+      "schema": {
+        "definitions": {
+          "RedactedModerationAppeal": {
+            "additionalProperties": false,
+            "properties": {
+              "approved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_ban_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_overdue": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "post_removal_kind": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "community"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "platform"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "public_response": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resolution_action": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "accept"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "deny"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reduce"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "resolved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolved"
+                    }
+                  ]
+                }
+              },
+              "target_context": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "name": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "expires_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "community_ban"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "name": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "public_message": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "warning"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "name": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "declared_language": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "community"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "platform"
+                              }
+                            ]
+                          }
+                        },
+                        "lingua_rs_detected_language": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "public_reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "title": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "post_removal"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "suspension"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_suspension_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "user_warning_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "appeal": {
+              "required": true,
+              "schema": {
+                "name": "RedactedModerationAppeal",
+                "type": "ref"
               }
             }
           },
@@ -75847,6 +77019,576 @@
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/appeals#member": {
+      "bodyKind": "content",
+      "hash": "da7b3be9dba2bc71fbc98c3e186e9acac2ee595b4eb5093ba1399bcbcef79262",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/appeals",
+      "schema": {
+        "definitions": {
+          "RedactedModerationAppeal": {
+            "additionalProperties": false,
+            "properties": {
+              "approved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_ban_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "community_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_overdue": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "post_removal_kind": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "community"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "platform"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "public_response": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "resolution_action": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "accept"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "deny"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "reduce"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "resolved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolved"
+                    }
+                  ]
+                }
+              },
+              "target_context": {
+                "required": false,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              },
+                              "name": {
+                                "required": true,
+                                "schema": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "expires_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "community_ban"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "name": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "public_message": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "warning"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "community": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "name": {
+                                    "required": true,
+                                    "schema": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "decided_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "declared_language": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "kind": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "literal",
+                                "value": "community"
+                              },
+                              {
+                                "type": "literal",
+                                "value": "platform"
+                              }
+                            ]
+                          }
+                        },
+                        "lingua_rs_detected_language": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "public_reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "title": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "post_removal"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "reason": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "suspension"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "user_suspension_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "user_warning_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "appeal": {
+              "required": true,
+              "schema": {
+                "name": "RedactedModerationAppeal",
+                "type": "ref"
+              }
+            },
+            "isDuplicate": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/appeals/appeals.mts",
+      "statusCodes": [200, 201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/appeals/:id/approval#staff": {
       "bodyKind": "content",
       "hash": "d3acbecb0fce29514ac00416aae5b6738a08079e83ce310227ad9e4f85799ff0",
@@ -97571,6 +99313,155 @@
         "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
       },
       "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/appeals#member",
+      "bodyFile": "responses/native.moderation.appeals.member.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.member.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
+      "path": "/api/v1/appeals",
+      "query": {
+        "limit": "25",
+        "status": "pending"
+      },
+      "responseSchema": {
+        "hash": "4566ae4e37ac3b551d241668b29cc394800b3d665a9198ac762c76518f622aeb",
+        "key": "native.moderation.appeals.member.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/appeals"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/appeals#member",
+      "bodyFile": "responses/native.moderation.appeals.member.page-2.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.member.page-2",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
+      "path": "/api/v1/appeals",
+      "query": {
+        "after": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnVzZXItMTppZC1kZXNjIn0",
+        "limit": "25",
+        "status": "pending"
+      },
+      "responseSchema": {
+        "hash": "844cccdb7229b385b9776cd6b47e33a0d42c675a7dc32c790b188187d815fe05",
+        "key": "native.moderation.appeals.member.page-2"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/appeals"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/appeals#member",
+      "bodyFile": "responses/native.moderation.appeals.member.resolved.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.member.resolved",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
+      "path": "/api/v1/appeals",
+      "query": {
+        "limit": "25",
+        "status": "resolved"
+      },
+      "responseSchema": {
+        "hash": "03c4a983377c26b31e5ff0c0457ac3f86cf31cb5660b40028548c8e9a2b98851",
+        "key": "native.moderation.appeals.member.resolved"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/appeals"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/appeals/:id#member",
+      "bodyFile": "responses/native.moderation.appeals.detail.member.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.detail.member.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102",
+      "responseSchema": {
+        "hash": "e3553bc460e957921a2bf192c1302020b6b9c8a4420ee0fa31474d36a89cc47c",
+        "key": "native.moderation.appeals.detail.member.default"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000102"
+        },
+        "routeTemplate": "/api/v1/appeals/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/appeals/:id#member",
+      "bodyFile": "responses/native.moderation.appeals.detail.member.sent.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.detail.member.sent",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
+      "path": "/api/v1/appeals/00000000-0000-7000-8000-000000000102",
+      "responseSchema": {
+        "hash": "06960123d0bffe5cbeab007d0cac40af036c020364089f4672b09848e2ac5261",
+        "key": "native.moderation.appeals.detail.member.sent"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000102"
+        },
+        "routeTemplate": "/api/v1/appeals/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/appeals#member",
+      "bodyFile": "responses/native.moderation.appeals.create.member.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.appeals.create.member.default",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
+      "path": "/api/v1/appeals",
+      "requestBody": {
+        "appeal_reason": "Please review this again.",
+        "target_type": "suspension"
+      },
+      "responseSchema": {
+        "hash": "8dae6224d5d535ae4fe7c31d7970da469cba4287ee2321cf7f1c49a64a93837d",
+        "key": "native.moderation.appeals.create.member.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/appeals"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 201
     },
     {
       "auth": "fixture-admin",

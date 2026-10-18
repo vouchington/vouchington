@@ -104,9 +104,24 @@
       "fixtureIds": ["native.admin-user-landing-pages.default"],
       "hash": "41f4d78bc8bce20a2f94ab6df2bcb0b3a9b69496834bb3458d09776c683475e2"
     },
+    "GET:/api/v1/appeals#member": {
+      "fixtureIds": [
+        "native.moderation.appeals.member.default",
+        "native.moderation.appeals.member.page-2",
+        "native.moderation.appeals.member.resolved"
+      ],
+      "hash": "55df21a3cf3a8ed704e701907978bc590fef505b28ce86d138a04fde46ffb066"
+    },
     "GET:/api/v1/appeals#staff": {
       "fixtureIds": ["native.moderation.appeals.default", "native.moderation.appeals.page-2"],
       "hash": "8474a40613b535816beab4b5d388718b999135cca9fc8c4d77ef3196883a4e15"
+    },
+    "GET:/api/v1/appeals/:id#member": {
+      "fixtureIds": [
+        "native.moderation.appeals.detail.member.default",
+        "native.moderation.appeals.detail.member.sent"
+      ],
+      "hash": "788dcdce353d51ec0b82464ab8180274cf9b58159d25b51efbc296c2053a5fce"
     },
     "GET:/api/v1/appeals/:id#staff": {
       "fixtureIds": ["native.moderation.appeals.detail.default"],
@@ -1059,6 +1074,10 @@
     "POST:/api/v1/admin/warnings": {
       "fixtureIds": ["native.moderation.admin-warning.report"],
       "hash": "35609b1c22fa84fb7fd6a28d41e891169af9dd7a94617eda041b823a4c611331"
+    },
+    "POST:/api/v1/appeals#member": {
+      "fixtureIds": ["native.moderation.appeals.create.member.default"],
+      "hash": "da7b3be9dba2bc71fbc98c3e186e9acac2ee595b4eb5093ba1399bcbcef79262"
     },
     "POST:/api/v1/appeals/:id/approval#staff": {
       "fixtureIds": ["native.moderation.appeals.approval.default"],
@@ -2087,6 +2106,10 @@
       "fixtureIds": ["native.moderation.appeals.approval.default"],
       "hash": "eae5b29075e852e5a11bc5ddb0e1d5cb81770d05517ddde430c1147553a19bb6"
     },
+    "native.moderation.appeals.create.member.default": {
+      "fixtureIds": ["native.moderation.appeals.create.member.default"],
+      "hash": "8dae6224d5d535ae4fe7c31d7970da469cba4287ee2321cf7f1c49a64a93837d"
+    },
     "native.moderation.appeals.default": {
       "fixtureIds": ["native.moderation.appeals.default"],
       "hash": "cab39f08ca16f9d13cc70c3a907720b8f5199c88da03fb4bb7086b627a4e14c1"
@@ -2098,6 +2121,26 @@
     "native.moderation.appeals.detail.default": {
       "fixtureIds": ["native.moderation.appeals.detail.default"],
       "hash": "b246672764226f0db352cb914752ba98eff92c74eb40201aec11512615e0d3c7"
+    },
+    "native.moderation.appeals.detail.member.default": {
+      "fixtureIds": ["native.moderation.appeals.detail.member.default"],
+      "hash": "e3553bc460e957921a2bf192c1302020b6b9c8a4420ee0fa31474d36a89cc47c"
+    },
+    "native.moderation.appeals.detail.member.sent": {
+      "fixtureIds": ["native.moderation.appeals.detail.member.sent"],
+      "hash": "06960123d0bffe5cbeab007d0cac40af036c020364089f4672b09848e2ac5261"
+    },
+    "native.moderation.appeals.member.default": {
+      "fixtureIds": ["native.moderation.appeals.member.default"],
+      "hash": "4566ae4e37ac3b551d241668b29cc394800b3d665a9198ac762c76518f622aeb"
+    },
+    "native.moderation.appeals.member.page-2": {
+      "fixtureIds": ["native.moderation.appeals.member.page-2"],
+      "hash": "844cccdb7229b385b9776cd6b47e33a0d42c675a7dc32c790b188187d815fe05"
+    },
+    "native.moderation.appeals.member.resolved": {
+      "fixtureIds": ["native.moderation.appeals.member.resolved"],
+      "hash": "03c4a983377c26b31e5ff0c0457ac3f86cf31cb5660b40028548c8e9a2b98851"
     },
     "native.moderation.appeals.page-2": {
       "fixtureIds": ["native.moderation.appeals.page-2"],
