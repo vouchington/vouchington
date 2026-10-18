@@ -1,4 +1,7 @@
+import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-ids.mts'
+
 export const BOUNDED_WORK_SCENARIOS = [
+  ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
   'dispatch-hostname-url-selectivity',
   'dispatch-tier1-url-selectivity',
   'dispatch-tier2-url-selectivity',

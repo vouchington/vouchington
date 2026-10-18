@@ -1,14 +1,12 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import { decryptSecret } from '@modules/token-secrets'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 
-/** The claimant email the filing recorded, retained encrypted with the notice's receipt delivery. */
-export async function getCopyrightClaimantEmail(
-  noticeId: string,
-  transaction: TransactionQuery,
-): Promise<string | null> {
-  const { rows } = await transaction<{ id: string; email_ciphertext: string }>(
-    sql`/* getCopyrightClaimantEmail */
+export type CopyrightClaimantEmailRow = { id: string; email_ciphertext: string }
+
+/** The receipt recipient row without its annotation, so a caller can fold it into a larger statement. */
+export function copyrightClaimantEmailSql(noticeId: string): SQLStatement {
+  return sql`
     SELECT receipt.id, recipient.email_ciphertext
     FROM copyright_notice_delivery_work_items receipt
     JOIN copyright_notice_delivery_recipients recipient
@@ -18,8 +16,23 @@ export async function getCopyrightClaimantEmail(
       AND receipt.delivery_kind = 'claimant_receipt'
     ORDER BY receipt.id
     LIMIT 1
-  `,
-  )
-  const row = rows[0]
+  `
+}
+
+/** Decrypts the recorded address; call it only when a claimant is told. */
+export function decryptCopyrightClaimantEmail(
+  row: CopyrightClaimantEmailRow | null,
+): string | null {
   return row ? decryptSecret(row.email_ciphertext, `copyright-delivery-recipient:${row.id}`) : null
+}
+
+/** The claimant email the filing recorded, retained encrypted with the notice's receipt delivery. */
+export async function getCopyrightClaimantEmail(
+  noticeId: string,
+  transaction: TransactionQuery,
+): Promise<string | null> {
+  const { rows } = await transaction<CopyrightClaimantEmailRow>(
+    sql`/* getCopyrightClaimantEmail */ `.append(copyrightClaimantEmailSql(noticeId)),
+  )
+  return decryptCopyrightClaimantEmail(rows[0] ?? null)
 }

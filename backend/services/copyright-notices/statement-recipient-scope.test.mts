@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { DELETED_USER_ID } from '@services/users/constants'
-import { createCopyrightStatementDeliveryInTransaction } from './statement-delivery.mts'
+import { createCopyrightStatementDeliveriesInTransaction } from './statement-delivery.mts'
 import {
   createMultiOwnerStatementFixture,
   markStatementPosterDeleted,
@@ -35,16 +35,18 @@ describe('statement recipient scope and lifecycle', () => {
     async recipientUserId => {
       await using transaction = await beginTransaction()
       const { queries } = await withCapturedTestQueries(() =>
-        createCopyrightStatementDeliveryInTransaction(
-          {
-            noticeId: crypto.randomUUID(),
-            recipientUserId,
-            recipientRole: 'poster',
-            deliveryKind: 'poster_review_notice',
-            correspondenceKind: 'decision_notice',
-            key: crypto.randomUUID(),
-            text: 'No active poster recipient.',
-          },
+        createCopyrightStatementDeliveriesInTransaction(
+          [
+            {
+              noticeId: crypto.randomUUID(),
+              recipientUserId,
+              recipientRole: 'poster',
+              deliveryKind: 'poster_review_notice',
+              correspondenceKind: 'decision_notice',
+              key: crypto.randomUUID(),
+              text: 'No active poster recipient.',
+            },
+          ],
           transaction,
         ),
       )

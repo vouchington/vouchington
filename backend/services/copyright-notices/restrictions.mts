@@ -4,10 +4,9 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { getImagePlacementKey } from '@services/images/placements'
 import type { CopyrightRestrictionRecord } from './types.mts'
-import { createCopyrightPosterNoticesInTransaction } from './restriction-poster-notices.mts'
+import { createCopyrightRestrictionDecisionNoticesInTransaction } from './restriction-outcome-notices.mts'
 import { enqueueApplyCopyrightAction } from '@queues/notifications/enqueues'
 import { lockAssessmentForm } from './compliance.mts'
-import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import {
   applyCopyrightConfirmationConsequencesInTransaction,
   enqueueCopyrightStaydownHashes,
@@ -139,17 +138,13 @@ export async function acceptCopyrightNoticeAndImposeRestriction(input: {
     lockedTargets[0].placement_revision,
     'withhold',
   )
-  await createCopyrightPosterNoticesInTransaction(
+  await createCopyrightRestrictionDecisionNoticesInTransaction(
     {
       noticeId: input.noticeId,
       targetId: input.targetId,
       restrictionId: restriction.id,
       event: 'restricted',
     },
-    transaction,
-  )
-  await createCopyrightClaimantDecisionNoticeInTransaction(
-    { noticeId: input.noticeId, event: 'restricted', assessmentId: input.assessmentId },
     transaction,
   )
   let staydownImageIds: string[] = []

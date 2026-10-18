@@ -8,39 +8,60 @@ import type { CopyrightCorrespondenceKind, CopyrightCorrespondenceRecord } from 
 
 type OutboundCompositionKind = 'deterministic_template' | 'staff' | 'agent'
 
+type DeterministicCorrespondenceInput = {
+  noticeId: string
+  submissionId: string | null
+  correspondenceKind: CopyrightCorrespondenceKind
+  bodyText: string
+}
+
 export async function createDeterministicCopyrightCorrespondenceInTransaction(
-  input: {
-    noticeId: string
-    submissionId: string | null
-    correspondenceKind: CopyrightCorrespondenceKind
-    bodyText: string
-  },
+  input: DeterministicCorrespondenceInput,
   transaction: TransactionQuery,
 ): Promise<CopyrightCorrespondenceRecord> {
-  assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
-  const id = uuidv7()
+  return (await createDeterministicCopyrightCorrespondencesInTransaction([input], transaction))[0]!
+}
+
+/** One statement creates every message; results align with `inputs`. */
+export async function createDeterministicCopyrightCorrespondencesInTransaction(
+  inputs: readonly DeterministicCorrespondenceInput[],
+  transaction: TransactionQuery,
+): Promise<CopyrightCorrespondenceRecord[]> {
+  if (inputs.length === 0) return []
+  for (const input of inputs)
+    assert(input.bodyText.trim().length > 0, 422, 'Copyright correspondence body is required')
+  const ids = inputs.map(() => uuidv7())
   const { rows } = await transaction<CopyrightCorrespondenceRecord>(
-    sql`/* createDeterministicCopyrightCorrespondenceInTransaction */
+    sql`/* createDeterministicCopyrightCorrespondencesInTransaction */
       INSERT INTO copyright_notice_correspondence_messages (
         id, copyright_notice_id, copyright_notice_submission_id, direction, correspondence_kind,
         composition_kind, body_ciphertext, drafted_by_id
       )
-      SELECT ${id}, ${input.noticeId}, ${input.submissionId}, 'outbound', ${input.correspondenceKind},
-        'deterministic_template', ${encryptSecret(input.bodyText, copyrightCorrespondencePurpose(id))}, NULL
-      FROM copyright_notices notice
-      WHERE notice.id = ${input.noticeId}
-        AND (${input.submissionId}::uuid IS NULL OR EXISTS (
+      SELECT input.id, input.notice_id, input.submission_id, 'outbound', input.correspondence_kind,
+        'deterministic_template', input.body_ciphertext, NULL
+      FROM unnest(
+        ${ids}::uuid[],
+        ${inputs.map(input => input.noticeId)}::uuid[],
+        ${inputs.map(input => input.submissionId)}::uuid[],
+        ${inputs.map(input => input.correspondenceKind)}::copyright_notice_correspondence_kinds[],
+        ${inputs.map((input, index) => encryptSecret(input.bodyText, copyrightCorrespondencePurpose(ids[index]!)))}::text[]
+      ) AS input(id, notice_id, submission_id, correspondence_kind, body_ciphertext)
+      JOIN copyright_notices notice ON notice.id = input.notice_id
+      WHERE input.submission_id IS NULL OR EXISTS (
           SELECT 1 FROM copyright_notice_submissions submission
-          WHERE submission.id = ${input.submissionId} AND submission.copyright_notice_id = notice.id
-        ))
+          WHERE submission.id = input.submission_id AND submission.copyright_notice_id = notice.id
+        )
       RETURNING id, copyright_notice_id, copyright_notice_submission_id, copyright_notice_email_intake_id,
         direction, correspondence_kind, composition_kind, body_ciphertext, drafted_by_id,
         approved_at, approved_by_id, sent_at
     `,
   )
-  const correspondence = rows[0]
-  assert(correspondence, 404, 'Copyright notice or case submission not found')
-  return correspondence
+  const byId = new Map(rows.map(row => [row.id, row]))
+  return ids.map(id => {
+    const correspondence = byId.get(id)
+    assert(correspondence, 404, 'Copyright notice or case submission not found')
+    return correspondence
+  })
 }
 
 export async function getCopyrightEmailCorrespondence(intentId: string): Promise<{

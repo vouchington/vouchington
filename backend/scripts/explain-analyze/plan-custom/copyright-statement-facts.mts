@@ -2,7 +2,7 @@ import type { ExplainResult } from '@data-stores/psql'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import { collectPlanNodes, type PlanNode } from '../plan-nodes.mts'
 
-const SCENARIO_ID = 'copyright-statement-facts'
+const SCENARIO_IDS = new Set(['copyright-statement-facts', 'copyright-delivery-inputs'])
 // A hashed SubPlan reads its whole relation once per execution, so it must never be the way the
 // query asks about the target's own placement or post.
 const TARGET_BOUND_RELATIONS = new Set(['posts', 'image_placements', 'image_surface_placements'])
@@ -17,7 +17,7 @@ const CONDITION_KEYS = ['Filter', 'Join Filter', 'One-Time Filter', 'Index Cond'
  * only a handful of post rows read.
  */
 export function assertCopyrightStatementFactsIsTargetBounded(result: ExplainResult): void {
-  if (result.scenario_id !== SCENARIO_ID) return
+  if (!SCENARIO_IDS.has(result.scenario_id ?? '')) return
   const nodes = collectPlanNodes(result.plan)
   const hashed = new Set(nodes.flatMap(hashedSubPlanNames))
   for (const node of nodes) {

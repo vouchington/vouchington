@@ -14,8 +14,12 @@ import {
 } from './territorial-fields.mts'
 import { territorialLabels } from './territorial-labels.mts'
 import { createCopyrightRestoreIntentForReversalInTransaction } from './restoration-reversal.mts'
-import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
-import { createTerritorialRedressDecisionNotice } from './territorial-redress-notices.mts'
+import { buildCopyrightClaimantDecisionDelivery } from './claimant-decision-notices.mts'
+import { buildTerritorialRedressDecisionDelivery } from './territorial-redress-notices.mts'
+import {
+  createCopyrightStatementDeliveriesInTransaction,
+  type CopyrightStatementDeliveryInput,
+} from './statement-delivery.mts'
 import {
   applyCopyrightConfirmationConsequencesInTransaction,
   enqueueCopyrightStaydownHashes,
@@ -90,6 +94,7 @@ export async function recordTerritorialCopyrightRedressDecision(
   const created = rows[0]
   assert(created, 500, labels.redressDecisionFailed)
   const restoreIntentIds: string[] = []
+  const deliveries: CopyrightStatementDeliveryInput[] = []
   let staydownImageIds: string[] = []
   if (disposition === 'revoke') {
     const { rows: restrictions } = await transaction<{ id: string }>(sql`
@@ -115,15 +120,18 @@ export async function recordTerritorialCopyrightRedressDecision(
       noticeId,
       transaction,
     )
-    await createCopyrightClaimantDecisionNoticeInTransaction(
+    const claimantNotice = await buildCopyrightClaimantDecisionDelivery(
       { noticeId, event: 'reversed' },
       transaction,
     )
+    if (claimantNotice) deliveries.push(claimantNotice)
   }
-  await createTerritorialRedressDecisionNotice(
+  const redressNotice = await buildTerritorialRedressDecisionDelivery(
     { noticeId, redressId, disposition, rationale },
     transaction,
   )
+  if (redressNotice) deliveries.push(redressNotice)
+  await createCopyrightStatementDeliveriesInTransaction(deliveries, transaction)
   await transaction.commit()
   void enqueueBulkApplyCopyrightActions(restoreIntentIds)
   enqueueCopyrightStaydownHashes(staydownImageIds)
