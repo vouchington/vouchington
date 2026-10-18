@@ -130910,7 +130910,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_user_rss_feed_import_row_discoveries__crawl_id": {
           "accessMethod": "btree",
