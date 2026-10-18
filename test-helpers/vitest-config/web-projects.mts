@@ -195,7 +195,6 @@ export const webProjects: TestProjectConfiguration[] = [
       testTimeout: 5_000,
       hookTimeout: 5_000,
       include: ['cloudflare-worker/**/*.mock.test.mts'],
-      exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
 ]

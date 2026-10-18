@@ -76,8 +76,8 @@ describe('createWorker stall budget', () => {
 
   it('injects the configured test processor decorator into app-created workers', async () => {
     const { createWorker, setTestWorkerProcessorDecorator } = await importFactory()
-    const decorated = vi.fn((processor: unknown) => processor)
-    const callerWrapped = vi.fn((processor: unknown) => processor)
+    const decorated = vi.fn<(processor: unknown) => unknown>(processor => processor)
+    const callerWrapped = vi.fn<(processor: unknown) => unknown>(processor => processor)
     const decorator = (processor: unknown, queueName: string) => {
       expect(queueName).toBe('profiled-queue')
       return decorated(processor)
@@ -92,7 +92,7 @@ describe('createWorker stall budget', () => {
     const wrapProcessor = lastWorkerOptions().wrapProcessor as
       | ((processor: unknown, queueName: string) => unknown)
       | undefined
-    const original = vi.fn()
+    const original = vi.fn<() => void>()
     expect(wrapProcessor?.(original, 'profiled-queue')).toBe(original)
     expect(callerWrapped).toHaveBeenCalledWith(original, 'profiled-queue')
     expect(decorated).toHaveBeenCalledWith(original)
