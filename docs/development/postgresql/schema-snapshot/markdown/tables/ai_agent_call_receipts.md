@@ -63,4 +63,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_erase_report_agent_call_receipt_target`: `CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_erase_report_agent_call_receipt_target()`
+- `trigger_erase_report_agent_call_receipt_target`: `CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_update_report_agent_call_receipt_target()`
