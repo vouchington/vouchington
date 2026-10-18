@@ -7,7 +7,7 @@ import {
   insertTestRssFeedDirect,
 } from '../../../../backend/test-helpers/index.mts'
 import { rssFeedsQueue } from '../../../../backend/queues/rss-feeds/queues.mts'
-import type { RssFeedResponseBody } from '@/types/api-responses'
+import { getRssFeedImport } from '@/lib/api/client/import-export'
 import { installClientContentRouteHarness } from '../../../test-helpers/client-content-route-harness.mts'
 
 function unset(target: object, key: string) {
@@ -18,7 +18,7 @@ describe('client-content-routes', () => {
   const harness = installClientContentRouteHarness({ unset })
 
   describe('rss-feeds client routes', () => {
-    it('createSource creates a source', async () => {
+    it('createSource returns a pollable import', async () => {
       const rssFeedUrlId = crypto.randomUUID()
       const rssFeedUrl = `https://feed-create-${rssFeedUrlId}.example.com/feed.xml`
       const result = await harness.withClientRuntime(
@@ -29,20 +29,18 @@ describe('client-content-routes', () => {
           }),
         harness.adminCookieHeader,
       )
-      expect(result).toMatchObject({
-        status: 'created',
-        rss_feed_id: expect.any(String),
-        topic_id: expect.any(String),
-        topic_slug: expect.any(String),
+      expect(result.import).toMatchObject({
+        id: expect.any(String),
+        total_rows: 1,
+        pending_rows: 1,
       })
-      const persisted = await serverRoutes.serverApi.get<RssFeedResponseBody>(
-        `/api/v1/rss-feeds/${result.rss_feed_id}`,
+      expect(result.status_url).toBe(`/api/v1/my/import/rss-feeds/${result.import.id}`)
+      const status = await harness.withClientRuntime(
+        () => getRssFeedImport(result.import.id),
+        harness.adminCookieHeader,
       )
-      expect(persisted.rss_feed).toMatchObject({
-        id: result.rss_feed_id,
-        rss_feed_url: { url: rssFeedUrl },
-        topic: { id: result.topic_id, slug: result.topic_slug },
-      })
+      expect(status.import.id).toBe(result.import.id)
+      expect(status.rows).toEqual([expect.objectContaining({ input: rssFeedUrl })])
     })
 
     it('updateRssFeed returns the updated feed', async () => {

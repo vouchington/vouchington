@@ -162,8 +162,7 @@ export interface RssFeedRefreshResponseBody {
   force: boolean
 }
 
-export type CreateSourceResponseBody =
-  import('@/lib/api/client/import-export').RssFeedImportSubmission
+export type CreateSourceResponseBody = import('@/types/rss-feed-imports').RssFeedImportSubmission
 
 export interface FollowContextUsers {
   total: number
