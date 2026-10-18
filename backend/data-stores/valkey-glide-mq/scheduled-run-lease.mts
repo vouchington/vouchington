@@ -46,7 +46,6 @@ export async function withScheduledRunLease(
       // A retained sweep page or retry is already admitted work, not a fresh scheduler tick.
       // Keep its saved cursor by delaying it until the current holder finishes.
       await job.moveToDelayed(Date.now() + Math.min(ttl, 1000))
-      throw new Error(`Scheduled continuation ${job.id} did not move to delayed`)
     }
     await workerQueueCommandClient.hincrBy(`${baseKey}:run-metrics`, 'skipped_overlap', 1)
     console.info('skipped_overlap', { queue, scheduler, jobId: job.id })

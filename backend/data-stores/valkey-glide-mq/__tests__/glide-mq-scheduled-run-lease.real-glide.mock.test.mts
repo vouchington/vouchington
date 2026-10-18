@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
+import { QueueEvents } from 'glide-mq'
+import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createQueue, createWorker } from '../glide-mq-factory.mts'
 import { workerQueueCommandClient } from '../glide-mq-shared-client.mts'
 import { withScheduledRunLease } from '../scheduled-run-lease.mts'
@@ -57,6 +58,16 @@ describe('scheduled run lease recovery', () => {
     const first = await queue.add('sweep', { kind: 'old', page: 1 }, { jobId: 'old-root' })
     if (!first) throw new Error('Expected the first scheduled root')
     await workerQueueCommandClient.hset(`${base}:job:${first.id}`, { schedulerName: 'repeat' })
+    const events = new QueueEvents(name, {
+      connection: workerQueueConnection,
+      prefix: workerQueuePrefix,
+      blockTimeout: 500,
+    })
+    const oldDelayedAgain = Promise.withResolvers<void>()
+    let oldDelayCount = 0
+    events.on('delay-changed', ({ jobId }: { jobId: string }) => {
+      if (jobId === first.id && ++oldDelayCount === 2) oldDelayedAgain.resolve()
+    })
     const firstMoved = Promise.withResolvers<void>()
     const oldWorker = createWorker<typeof first.data>(name, async job => {
       await job.updateData({ kind: 'old', page: 2 })
@@ -66,10 +77,10 @@ describe('scheduled run lease recovery', () => {
     let newWorker: ReturnType<typeof createWorker<typeof first.data>> | undefined
     const releaseNew = Promise.withResolvers<void>()
     const newStarted = Promise.withResolvers<void>()
-    const oldRetried = Promise.withResolvers<void>()
     const oldCompleted = Promise.withResolvers<void>()
     const seenPages: number[] = []
     try {
+      await events.waitUntilReady()
       await oldWorker.waitUntilReady()
       await firstMoved.promise
       await oldWorker.close()
@@ -91,12 +102,9 @@ describe('scheduled run lease recovery', () => {
         },
         { concurrency: 2 },
       )
-      newWorker.on('active', job => {
-        if (job.id === first.id) oldRetried.resolve()
-      })
       await newWorker.waitUntilReady()
       await newStarted.promise
-      await oldRetried.promise
+      await oldDelayedAgain.promise
       expect(seenPages).toEqual([])
       releaseNew.resolve()
       await oldCompleted.promise
@@ -106,7 +114,7 @@ describe('scheduled run lease recovery', () => {
       await Promise.all([oldWorker.close(true), newWorker?.close(true)])
       await queue.obliterate({ force: true })
       await workerQueueCommandClient.unlink([`${base}:run:repeat`, `${base}:run:repeat:previous`])
-      await queue.close()
+      await Promise.all([queue.close(), events.close()])
     }
   })
 
