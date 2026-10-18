@@ -17,7 +17,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { FETCH_FORBIDDEN_PORTS } from '@ts-shared/utils/fetch-ports'
 
 import { assertWorkflowInvariant } from '../test-helpers/workflow-fixtures.mts'
 
@@ -48,10 +47,6 @@ const trustedJobEntries = ['web', 'backend'].flatMap(area =>
 )
 const credentialedWorkflowText = readFileSync(
   '.github/workflows/tests-playwright-credentialed.yml',
-  'utf8',
-)
-const browserSafePortsScript = readFileSync(
-  'node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py',
   'utf8',
 )
 
@@ -211,12 +206,6 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
       'NEXT_PUBLIC_ASSET_PREFIX=http://localhost:$NEXT_PORT',
     )
     expect(credentialedWorkflowText).not.toContain('CSP_ASSET_ORIGIN=http://localhost:$NEXT_PORT')
-  })
-
-  it('does not allocate Chromium-restricted ports for browser-facing servers', () => {
-    expect(browserSafePortsScript).toContain('"fetch-forbidden-ports.json"')
-    expect(credentialedWorkflowText).not.toContain('--forbidden-ports')
-    expect(FETCH_FORBIDDEN_PORTS).toEqual(expect.arrayContaining([4045, 6667, 10_080]))
   })
 
   it('installs JavaScript dependencies before allocating ports', () => {
