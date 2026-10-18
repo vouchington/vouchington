@@ -8,7 +8,10 @@ import {
 } from '@voucha/test-helpers/real-glide-background'
 import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
+import { BACKGROUND_CPU_DOMAINS, BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { createTestUser } from '@voucha/test-helpers'
 import { countDomainJobs } from './domain-stats.mts'
+import { listManagedQueueDomains, setManagedQueueDomainPaused } from './domains.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -30,6 +33,19 @@ describe('capped per-domain job counts through real GlideMQ', () => {
   afterEach(async () => {
     await harness?.close()
     harness = undefined
+  })
+
+  it('routes CPU domain stats and rejects an unknown domain before changing controls', async () => {
+    const { domains } = await listManagedQueueDomains(BACKGROUND_CPU_QUEUE_NAME)
+    expect(domains.map(domain => domain.domain)).toEqual(BACKGROUND_CPU_DOMAINS)
+    expect(domains.every(domain => domain.waiting.count >= 0 && domain.delayed.count >= 0)).toBe(
+      true,
+    )
+
+    const admin = await createTestUser({ administrator: true })
+    await expect(
+      setManagedQueueDomainPaused(admin, BACKGROUND_CPU_QUEUE_NAME, 'unknown', { paused: true }),
+    ).rejects.toMatchObject({ statusCode: 404 })
   })
 
   it('counts each state exactly under the cap, never counts another domain, and stops at the cap', async () => {
