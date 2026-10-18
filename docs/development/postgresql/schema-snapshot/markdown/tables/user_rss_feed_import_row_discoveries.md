@@ -33,9 +33,9 @@ _none_
 
 **Indexes:**
 
-- `idx_rss_feed_import_row_discoveries__discovered_feed_url_id`: `CREATE INDEX idx_rss_feed_import_row_discoveries__discovered_feed_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)`
 - `idx_user_rss_feed_import_row_discoveries__crawl_id`: `CREATE INDEX idx_user_rss_feed_import_row_discoveries__crawl_id ON public.user_rss_feed_import_row_discoveries USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)`
 - `idx_user_rss_feed_import_row_discoveries__discovery_url_id`: `CREATE INDEX idx_user_rss_feed_import_row_discoveries__discovery_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovery_url_id)`
+- `idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id`: `CREATE INDEX idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)`
 - `user_rss_feed_import_row_discoveries_pkey`: `CREATE UNIQUE INDEX user_rss_feed_import_row_discoveries_pkey ON public.user_rss_feed_import_row_discoveries USING btree (import_row_id, discovery_url_id)`
 
 **Triggers:**

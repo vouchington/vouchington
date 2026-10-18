@@ -137379,29 +137379,6 @@
         }
       },
       "indexes": {
-        "idx_rss_feed_import_row_discoveries__discovered_feed_url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_rss_feed_import_row_discoveries__discovered_feed_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "discovered_feed_url_id",
-              "descending": false,
-              "expression": "discovered_feed_url_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(discovered_feed_url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_user_rss_feed_import_row_discoveries__crawl_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -137443,6 +137420,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_usr_rss_fee_imprt_row_dscvrs__discovered_feed_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "discovered_feed_url_id",
+              "descending": false,
+              "expression": "discovered_feed_url_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(discovered_feed_url_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
