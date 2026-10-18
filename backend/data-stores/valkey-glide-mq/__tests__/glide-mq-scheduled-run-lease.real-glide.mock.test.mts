@@ -215,6 +215,9 @@ describe('scheduled run lease recovery', () => {
       await newStarted.promise
       await oldDelayedAgain.promise
       expect(seenPages).toEqual([])
+      expect(
+        Number(await workerQueueCommandClient.hget(`${base}:run-metrics`, 'skipped_overlap')),
+      ).toBeGreaterThan(0)
       releaseNew.resolve()
       await oldCompleted.promise
       expect(seenPages).toEqual([2])
@@ -222,7 +225,11 @@ describe('scheduled run lease recovery', () => {
       releaseNew.resolve()
       await Promise.all([oldWorker.close(true), newWorker?.close(true)])
       await queue.obliterate({ force: true })
-      await workerQueueCommandClient.unlink([`${base}:run:repeat`, `${base}:run:repeat:previous`])
+      await workerQueueCommandClient.unlink([
+        `${base}:run:repeat`,
+        `${base}:run:repeat:previous`,
+        `${base}:run-metrics`,
+      ])
       await Promise.all([queue.close(), events.close()])
     }
   })
