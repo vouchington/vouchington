@@ -1,11 +1,15 @@
-import { render } from './react-email-runtime.mts'
-import { emailOptional } from './catalog-copy.mts'
+import {
+  emailOptional,
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
 import { getLocalizedSignoff } from './locale.mts'
 import {
   RecommendationEmailLayout,
   type RecommendationEmailLayoutProps,
 } from './recommendation-email-layout.tsx'
-import type { EmailRenderResultPromise, PreviewableEmailComponent } from './types.mts'
 
 function recommendationEmailText({
   locale,
@@ -46,11 +50,12 @@ export function createRecommendationEmail<TProps extends object>(
   )
   async function renderEmail(props: TProps): EmailRenderResultPromise {
     const layoutProps = toLayoutProps(props)
-    return {
+    return renderTemplateEmail({
       subject: layoutProps.t('subject'),
-      html: await render(<Email {...props} />, { pretty: true }),
+      element: <Email {...props} />,
+      pretty: true,
       text: recommendationEmailText(layoutProps),
-    }
+    })
   }
   return Object.assign(Email, { render: renderEmail })
 }

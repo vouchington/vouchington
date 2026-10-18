@@ -2562,6 +2562,8 @@ rules:
           reason: First-party HTML decoding and extraction primitives published by the repo author.
         - name: '@vouchington/embeds'
           reason: First-party policy-injected HTML unfurl and oEmbed primitives published by the repo author.
+        - name: '@vouchington/email'
+          reason: First-party email rendering and catalog primitives published by the repo author.
         - name: '@vouchington/domain-verification'
           reason: First-party DNS and well-known domain-verification primitives published by the repo author.
         - name: '@vouchington/edge'
@@ -2646,6 +2648,12 @@ rules:
         - '@jongleberry/'
         - '@jonathanong/'
         - '@vouchington/'
+      temporaryGroups:
+        - selectors:
+            - '@react-email/render@2.1.1'
+            - 'react-email@6.11.3'
+          reason: Required peer releases for the authorized published @vouchington/email adoption.
+          eligibleForRemovalAt: '2026-10-18T12:43:19Z'
       workspaceYaml: pnpm-workspace.yaml
       dependabotPath: .github/dependabot.yml
       lockfilePath: pnpm-lock.yaml

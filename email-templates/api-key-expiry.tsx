@@ -1,4 +1,6 @@
 import {
+  type EmailRenderResultPromise,
+  resolveEmailLocale,
   Body,
   Button,
   Container,
@@ -7,16 +9,18 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
 import { VouchaFooter, VouchaHeader } from './components.tsx'
 import { styles } from './styles.mts'
-import type { ApiKeyExpiryEmailProps, EmailRenderResultPromise } from './types.mts'
+import type { ApiKeyExpiryEmailProps } from './types.mts'
 import { emailCopy } from './catalog-copy.mts'
-import { resolveUiLocale } from './locale.mts'
 
 function ApiKeyExpiryEmail(props: ApiKeyExpiryEmailProps) {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'api-key-expiry')
   return (
     <Html lang={locale}>
@@ -49,16 +53,20 @@ function ApiKeyExpiryEmail(props: ApiKeyExpiryEmailProps) {
 }
 
 async function renderApiKeyExpiryEmail(props: ApiKeyExpiryEmailProps): EmailRenderResultPromise {
-  const t = emailCopy(resolveUiLocale(props.uiLocale), 'api-key-expiry')
-  return {
+  const t = emailCopy(
+    resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE),
+    'api-key-expiry',
+  )
+  return renderTemplateEmail({
     subject: t('subject'),
-    html: await render(<ApiKeyExpiryEmail {...props} />, { pretty: true }),
+    element: <ApiKeyExpiryEmail {...props} />,
+    pretty: true,
     text: [
       t('body', { label: props.label, date: props.expiresAt }),
       t('action'),
       `${t('button')}: ${props.apiKeysUrl}`,
     ].join('\n\n'),
-  }
+  })
 }
 
 const RenderableApiKeyExpiryEmail = Object.assign(ApiKeyExpiryEmail, {

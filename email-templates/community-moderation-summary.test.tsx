@@ -1,6 +1,6 @@
+import { renderCommunityModerationSummaryEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderCommunityModerationSummaryEmail } from './community-moderation-summary-renderer.mts'
 import CommunityModerationSummaryEmail from './community-moderation-summary.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

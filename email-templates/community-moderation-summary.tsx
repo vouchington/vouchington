@@ -1,4 +1,8 @@
 import {
+  emailOptional,
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  resolveEmailLocale,
   Body,
   Button,
   Container,
@@ -8,23 +12,17 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
-import { emailCopy, emailOptional } from './catalog-copy.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
+import { emailCopy } from './catalog-copy.mts'
 import { CommunityModerationSummaryCard } from './community-moderation-summary-card.tsx'
 import { MarketingFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { getLocalizedSignoff } from './locale.mts'
 import { colors, styles } from './styles.mts'
-import type {
-  CommunityModerationSummaryEmailProps,
-  EmailRenderResultPromise,
-  PreviewableEmailComponent,
-} from './types.mts'
-
-const settingsLink = {
-  color: colors.primary,
-  textDecoration: 'underline',
-}
+import type { CommunityModerationSummaryEmailProps } from './types.mts'
 
 const CommunityModerationSummaryEmail: PreviewableEmailComponent<
   CommunityModerationSummaryEmailProps
@@ -38,7 +36,7 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
   uiLocale,
 }) =>
   (() => {
-    const locale = resolveUiLocale(uiLocale)
+    const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
     const t = emailCopy(locale, 'community-moderation-summary')
     const dateVars = { date: generatedForDate }
     return (
@@ -81,7 +79,7 @@ const CommunityModerationSummaryEmail: PreviewableEmailComponent<
               <Text style={styles.paragraph}>
                 <Link
                   href={unsubscribeUrl}
-                  style={settingsLink}
+                  style={{ color: colors.primary, textDecoration: 'underline' }}
                 >
                   {t('unsubscribe')}
                 </Link>
@@ -146,7 +144,7 @@ CommunityModerationSummaryEmail.PreviewProps = {
 async function renderCommunityModerationSummaryEmail(
   props: CommunityModerationSummaryEmailProps,
 ): EmailRenderResultPromise {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'community-moderation-summary')
   const dateVars = { date: props.generatedForDate }
   const communitySummaries = props.communities.flatMap(community => [
@@ -172,9 +170,10 @@ async function renderCommunityModerationSummaryEmail(
     '',
   ])
 
-  return {
+  return renderTemplateEmail({
     subject: t('subject', dateVars),
-    html: await render(<CommunityModerationSummaryEmail {...props} />, { pretty: true }),
+    element: <CommunityModerationSummaryEmail {...props} />,
+    pretty: true,
     text: [
       emailOptional(t, 'greeting', props.userName),
       '',
@@ -189,7 +188,7 @@ async function renderCommunityModerationSummaryEmail(
       '',
       props.physicalAddress,
     ].join('\n'),
-  }
+  })
 }
 
 const RenderableCommunityModerationSummaryEmail = Object.assign(CommunityModerationSummaryEmail, {

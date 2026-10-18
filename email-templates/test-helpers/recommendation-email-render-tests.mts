@@ -1,7 +1,7 @@
 /* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
-import type { EmailRenderResultPromise } from '../types.mts'
+import type { EmailRenderResultPromise } from '@vouchington/email'
 import { omitReactEmailPreviewPadding } from './omit-react-email-preview-padding.mts'
 
 const recommendationEmailShell = {

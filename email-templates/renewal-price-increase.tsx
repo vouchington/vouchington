@@ -1,4 +1,6 @@
 import {
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
   Body,
   Button,
   Container,
@@ -7,17 +9,14 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
 import { VouchaFooter, VouchaHeader } from './components.tsx'
 import { getLocalizedSignoff } from './locale.mts'
 import { getRenewalPriceIncreaseContent } from './renewal-price-increase-copy.mts'
 import { styles } from './styles.mts'
-import type {
-  EmailRenderResultPromise,
-  PreviewableEmailComponent,
-  RenewalPriceIncreaseEmailProps,
-} from './types.mts'
+import type { RenewalPriceIncreaseEmailProps } from './types.mts'
 
 const RenewalPriceIncreaseEmail: PreviewableEmailComponent<
   RenewalPriceIncreaseEmailProps
@@ -68,9 +67,10 @@ async function renderRenewalPriceIncreaseEmail(
   props: RenewalPriceIncreaseEmailProps,
 ): EmailRenderResultPromise {
   const { locale, copy, plan, body } = getRenewalPriceIncreaseContent(props)
-  return {
+  return renderTemplateEmail({
     subject: copy.subject(plan),
-    html: await render(<RenewalPriceIncreaseEmail {...props} />, { pretty: true }),
+    element: <RenewalPriceIncreaseEmail {...props} />,
+    pretty: true,
     text: [
       copy.heading,
       '',
@@ -82,7 +82,7 @@ async function renderRenewalPriceIncreaseEmail(
       '',
       getLocalizedSignoff(locale),
     ].join('\n'),
-  }
+  })
 }
 
 const RenderableRenewalPriceIncreaseEmail = Object.assign(RenewalPriceIncreaseEmail, {

@@ -1,6 +1,6 @@
+import { renderCommunityApplicationDecisionEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderCommunityApplicationDecisionEmail } from './community-application-decision-renderer.mts'
 import CommunityApplicationDecisionEmail from './community-application-decision.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

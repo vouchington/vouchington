@@ -1,7 +1,7 @@
+import { renderWelcomeEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
-import { renderWelcomeEmail } from './welcome-renderer.mts'
 import WelcomeEmail from './welcome.tsx'
 
 describe('renderWelcomeEmail', () => {

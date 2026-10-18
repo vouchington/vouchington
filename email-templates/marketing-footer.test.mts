@@ -1,9 +1,13 @@
+import {
+  renderCommunityModerationSummaryEmail,
+  renderFollowNewsSourcesEmail,
+  renderFollowTopicsEmail,
+  renderPostReferralLinkEmail,
+} from './index.mts'
+
+import type { EmailRenderResultPromise } from '@vouchington/email'
+
 import { describe, expect, it } from 'vitest'
-import { renderCommunityModerationSummaryEmail } from './community-moderation-summary-renderer.mts'
-import { renderFollowNewsSourcesEmail } from './follow-news-sources-renderer.mts'
-import { renderFollowTopicsEmail } from './follow-topics-renderer.mts'
-import { renderPostReferralLinkEmail } from './post-referral-link-renderer.mts'
-import type { EmailRenderResultPromise } from './types.mts'
 
 /**
  * CAN-SPAM enforcement test — every commercial/marketing template must render
