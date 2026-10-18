@@ -1,3 +1,4 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -9,7 +10,6 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
 import {
   enqueueBulkCrawlHostname,
   enqueueCrawlHostnamesDispatcher,
@@ -17,10 +17,8 @@ import {
   enqueueCrawlTier2Dispatcher,
 } from '@queues/crawl-dispatch/enqueues/hostnames'
 import { scheduledJobManifest as crawlManifest } from '@queues/crawl-dispatch/enqueues/schedules'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
 import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
 import { scheduledJobManifest as referralManifest } from '@queues/crawl-referral-links/enqueues/schedules'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
 import { enqueueUnfurlReferralLinksDispatcher } from '@queues/unfurl-referral-links/enqueues'
 import { scheduledJobManifest as unfurlManifest } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
@@ -40,42 +38,42 @@ const PROMOTION_INTERVAL_MS = 100
 const fixtures = [
   {
     label: 'hostnames',
-    queue: crawlDispatchQueue,
+    queue: backgroundCpu,
     manifest: crawlManifest,
-    schedulerId: 'crawl_hostnames_dispatcher',
-    work: 'crawl_hostnames_dispatcher',
+    schedulerId: 'crawl:crawl_hostnames_dispatcher',
+    work: 'crawl.crawl_hostnames_dispatcher',
     root: enqueueCrawlHostnamesDispatcher,
   },
   {
     label: 'tier1',
-    queue: crawlDispatchQueue,
+    queue: backgroundCpu,
     manifest: crawlManifest,
-    schedulerId: 'crawl_tier1_dispatcher',
-    work: 'crawl_tier1_dispatcher',
+    schedulerId: 'crawl:crawl_tier1_dispatcher',
+    work: 'crawl.crawl_tier1_dispatcher',
     root: enqueueCrawlTier1Dispatcher,
   },
   {
     label: 'tier2',
-    queue: crawlDispatchQueue,
+    queue: backgroundCpu,
     manifest: crawlManifest,
-    schedulerId: 'crawl_tier2_dispatcher',
-    work: 'crawl_tier2_dispatcher',
+    schedulerId: 'crawl:crawl_tier2_dispatcher',
+    work: 'crawl.crawl_tier2_dispatcher',
     root: enqueueCrawlTier2Dispatcher,
   },
   {
     label: 'referral',
-    queue: crawlReferralLinksQueue,
+    queue: backgroundCpu,
     manifest: referralManifest,
-    schedulerId: 'crawl_referral_links_dispatcher',
-    work: 'crawl_referral_links_dispatcher',
+    schedulerId: 'crawl:referral-links-dispatcher',
+    work: 'crawl.crawl_referral_links_dispatcher',
     root: enqueueCrawlReferralLinksDispatcher,
   },
   {
     label: 'unfurl',
-    queue: unfurlReferralLinksQueue,
+    queue: backgroundCpu,
     manifest: unfurlManifest,
-    schedulerId: 'unfurl_referral_links_dispatcher',
-    work: 'unfurl_referral_links_dispatcher',
+    schedulerId: 'crawl:unfurl-referral-links-dispatcher',
+    work: 'crawl.unfurl_referral_links_dispatcher',
     root: enqueueUnfurlReferralLinksDispatcher,
   },
   {
@@ -197,7 +195,7 @@ describe('periodic sweep coalescing', () => {
   })
 
   it('coalesces daily hostname fanout without suppressing a different hostname', async () => {
-    const queue = crawlDispatchQueue
+    const queue = backgroundCpu
     const hostname = crypto.randomUUID()
     const otherHostname = crypto.randomUUID()
     const started = Promise.withResolvers<void>()
@@ -235,7 +233,7 @@ describe('periodic sweep coalescing', () => {
       await otherStarted.promise
       expect(primaryRuns).toBe(1)
       const jobs = await queue.searchJobs({
-        name: 'crawl_urls_per_hostname_dispatcher',
+        name: 'crawl.crawl_urls_per_hostname_dispatcher',
         data: { hostname_id: hostname },
       })
       expect(jobs).toHaveLength(1)
@@ -247,8 +245,8 @@ describe('periodic sweep coalescing', () => {
       await queue.obliterate({ force: true })
       await Promise.all([
         queue.close(),
-        crawlReferralLinksQueue.close(),
-        unfurlReferralLinksQueue.close(),
+        backgroundCpu.close(),
+        backgroundCpu.close(),
         findYourFriendsQueue.close(),
       ])
     }

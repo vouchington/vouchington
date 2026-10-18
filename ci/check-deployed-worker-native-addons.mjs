@@ -23,7 +23,8 @@ function requireFromPackage(parent, name) {
 }
 
 async function checkLingua() {
-  const requireFromWorker = requireFromConsumer('@workers/content-analysis')
+  let requireFromWorker = requireFromConsumer('@workers/background-cpu')
+  requireFromWorker = requireFromPackage(requireFromWorker, '@workers/content-analysis')
   const serviceEntry = requireFromWorker.resolve('@services/language-detection/detector')
   const lingua = createRequire(serviceEntry).resolve('lingua-rs')
 

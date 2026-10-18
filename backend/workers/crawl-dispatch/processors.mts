@@ -16,18 +16,18 @@ export async function processCrawlDispatchJob(
   dependencies: ProcessorDependencies = {},
 ): Promise<unknown> {
   switch (job.name) {
-    case 'enqueueCrawlHostnamesDispatcher':
-    case 'enqueueCrawlTier1Dispatcher':
-    case 'enqueueCrawlTier2Dispatcher':
-    case 'crawl_hostnames_dispatcher':
-    case 'crawl_urls_per_hostname_dispatcher':
-    case 'crawl_tier1_dispatcher':
-    case 'crawl_tier2_dispatcher':
-    case 'refresh_hostname_crawler_dispatcher':
-    case 'refresh_hostname_crawler':
-    case 'crawl_cleanup':
+    case 'crawl.enqueueCrawlHostnamesDispatcher':
+    case 'crawl.enqueueCrawlTier1Dispatcher':
+    case 'crawl.enqueueCrawlTier2Dispatcher':
+    case 'crawl.crawl_hostnames_dispatcher':
+    case 'crawl.crawl_urls_per_hostname_dispatcher':
+    case 'crawl.crawl_tier1_dispatcher':
+    case 'crawl.crawl_tier2_dispatcher':
+    case 'crawl.refresh_hostname_crawler_dispatcher':
+    case 'crawl.refresh_hostname_crawler':
+    case 'crawl.crawl_cleanup':
       return (dependencies.processCrawlHostnamesJob ?? processCrawlHostnamesJob)(job)
-    case 'boilerplate_removal_dispatcher': {
+    case 'crawl.boilerplate_removal_dispatcher': {
       const candidates = await (
         dependencies.processBoilerplateRemovalDispatcher ?? processBoilerplateRemovalDispatcher
       )()
@@ -39,7 +39,7 @@ export async function processCrawlDispatchJob(
       )
       return candidates.length
     }
-    case 'boilerplate_removal': {
+    case 'crawl.boilerplate_removal': {
       const hostnameId = job.data?.hostname_id
       const parentPath = job.data?.parent_path
       if (!hostnameId || !parentPath)

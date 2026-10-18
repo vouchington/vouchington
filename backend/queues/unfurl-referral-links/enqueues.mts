@@ -1,66 +1,52 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import {
-  PRIORITY_DEFAULT,
-  PRIORITY_DISPATCHER,
-  UNFURL_REFERRAL_LINKS_DEFAULTS,
-  UNFURL_REFERRAL_LINKS_ORDERING,
-  UNFURL_REFERRAL_LINKS_QUEUE_NAME,
-} from './config.mts'
-import { unfurlReferralLinksQueue } from './queues.mts'
-import type { UnfurlReferralLinksJobs, UnfurlDispatchCursor } from './types.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import type { UnfurlDispatchCursor } from './types.mts'
 
 type UnfurlReferralLinkEntry = { parentLinkId: string }
 type RemoveUnfurledChildrenForUserEntry = { userId: string }
 
-const UNFURL_JOB_NAME: UnfurlReferralLinksJobs = 'unfurl_referral_link'
-const DISPATCHER_JOB_NAME: UnfurlReferralLinksJobs = 'unfurl_referral_links_dispatcher'
-const REMOVE_CHILDREN_JOB_NAME: UnfurlReferralLinksJobs = 'remove_unfurled_children_for_user'
+const UNFURL_JOB_NAME = 'crawl.unfurl_referral_link'
+const DISPATCHER_JOB_NAME = 'crawl.unfurl_referral_links_dispatcher'
+const REMOVE_CHILDREN_JOB_NAME = 'crawl.remove_unfurled_children_for_user'
 
-const defaults = {
-  attempts: UNFURL_REFERRAL_LINKS_DEFAULTS.attempts,
-  backoff: UNFURL_REFERRAL_LINKS_DEFAULTS.backoff,
-  removeOnComplete: UNFURL_REFERRAL_LINKS_DEFAULTS.removeOnComplete,
-  removeOnFail: UNFURL_REFERRAL_LINKS_DEFAULTS.removeOnFail,
-} satisfies Partial<JobOptions>
-
-const enqueueUnfurlReferralLinkJob = createEnqueueFunction<
-  UnfurlReferralLinkEntry,
-  UnfurlReferralLinksJobs
->({
-  queue: unfurlReferralLinksQueue,
-  queueName: UNFURL_REFERRAL_LINKS_QUEUE_NAME,
+const enqueueUnfurlReferralLinkJob = createEnqueueFunction<UnfurlReferralLinkEntry, string>({
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: UNFURL_JOB_NAME,
-  defaults,
+  defaults: requireBackgroundCpuJob(UNFURL_JOB_NAME).options,
 })
 
 const enqueueUnfurlReferralLinksDispatcherJob = createEnqueueFunction<
   { cursor?: UnfurlDispatchCursor },
-  UnfurlReferralLinksJobs
+  string
 >({
-  queue: unfurlReferralLinksQueue,
-  queueName: UNFURL_REFERRAL_LINKS_QUEUE_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: DISPATCHER_JOB_NAME,
-  defaults,
+  defaults: requireBackgroundCpuJob(DISPATCHER_JOB_NAME).options,
 })
 
 const enqueueRemoveUnfurledChildrenForUserJob = createEnqueueFunction<
   RemoveUnfurledChildrenForUserEntry,
-  UnfurlReferralLinksJobs
+  string
 >({
-  queue: unfurlReferralLinksQueue,
-  queueName: UNFURL_REFERRAL_LINKS_QUEUE_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: REMOVE_CHILDREN_JOB_NAME,
-  defaults,
+  defaults: requireBackgroundCpuJob(REMOVE_CHILDREN_JOB_NAME).options,
 })
 
 function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
   return {
     priority: PRIORITY_DEFAULT,
-    ordering: UNFURL_REFERRAL_LINKS_ORDERING.unfurl,
+    ordering: { key: 'crawl:unfurl', concurrency: 5 },
     deduplication: {
-      id: `unfurl_referral_link__${data.parentLinkId}`,
+      id: `${UNFURL_JOB_NAME}__${data.parentLinkId}`,
       mode: 'debounce' as const,
     },
   } satisfies Partial<JobOptions>
@@ -70,12 +56,12 @@ function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
 export const enqueueBulkUnfurlReferralLinks = createBulkEnqueueFunction<
   UnfurlReferralLinkEntry,
   UnfurlReferralLinkEntry,
-  UnfurlReferralLinksJobs
+  string
 >({
-  queue: unfurlReferralLinksQueue,
-  queueName: UNFURL_REFERRAL_LINKS_QUEUE_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: UNFURL_JOB_NAME,
-  defaults,
+  defaults: requireBackgroundCpuJob(UNFURL_JOB_NAME).options,
   buildJob: data => ({ data, opts: unfurlReferralLinkJobOptions(data) }),
 })
 
@@ -90,7 +76,7 @@ export function enqueueUnfurlReferralLinksDispatcher(
 ): EnqueueReturnType {
   return enqueueUnfurlReferralLinksDispatcherJob(cursor ? { cursor } : {}, {
     priority: PRIORITY_DISPATCHER,
-    deduplication: { id: 'referral-unfurl-dispatcher', mode: 'simple' },
+    deduplication: { id: 'crawl:referral-unfurl-dispatcher', mode: 'simple' },
   })
 }
 
@@ -99,9 +85,9 @@ export function enqueueUnfurlReferralLinksDispatcher(
 export function enqueueRemoveUnfurledChildrenForUser(userId: string): EnqueueReturnType {
   return enqueueRemoveUnfurledChildrenForUserJob({ userId }, {
     priority: PRIORITY_DEFAULT,
-    ordering: { key: `remove_unfurled_children__${userId}`, concurrency: 1 },
+    ordering: { key: `crawl:remove_unfurled_children__${userId}`, concurrency: 1 },
     deduplication: {
-      id: `remove_unfurled_children_for_user__${userId}`,
+      id: `${REMOVE_CHILDREN_JOB_NAME}__${userId}`,
       mode: 'debounce' as const,
     },
   } satisfies Partial<JobOptions>)

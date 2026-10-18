@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contentAnalysisQueue } from '@queues/content-analysis/queues'
+import { backgroundCpu as contentAnalysisQueue } from '@queues/background-cpu/queues'
 import { addUrl } from '@services/urls/upsert'
 import { createCrawler } from '@services/crawlers'
 import { createCrawl } from '../create.mts'
@@ -21,7 +21,10 @@ describe('updateCrawl language detection enqueueing', () => {
 
     const jobs = await readAllQueueJobs(contentAnalysisQueue)
     expect(
-      jobs.some(job => job.name === 'crawl' && (job.data as { id?: string }).id === crawl.id),
+      jobs.some(
+        job =>
+          job.name === 'content-analysis.crawl' && (job.data as { id?: string }).id === crawl.id,
+      ),
     ).toBe(true)
   })
 })

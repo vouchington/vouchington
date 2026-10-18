@@ -19,7 +19,7 @@ describe('worker-cpu WORKER_QUEUE_CLASS selection', () => {
     accepted: ['all', 'cpu'],
     rejected: ['io', 'gpu'],
     fullClass: 'all',
-    explicitInclusionQueues: ['crawl_browser', 'unfurl_referral_links'],
+    explicitInclusionQueues: ['crawl_browser'],
     // worker-io registers the IO schedules, so a cpu-class worker-cpu must not repeat them.
     expectedSchedules: {
       all: queueNames(SCHEDULE_DEFINITIONS),

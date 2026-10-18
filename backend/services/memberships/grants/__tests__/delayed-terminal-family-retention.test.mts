@@ -9,7 +9,7 @@ import {
   setTestMembershipGrantRemainingMilliseconds,
 } from '@voucha/test-helpers'
 import * as unfurlEnqueues from '@queues/unfurl-referral-links/enqueues'
-import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
+import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId } from '../../get.mts'
 import { updateMembershipFromEvent } from '../../update.mts'

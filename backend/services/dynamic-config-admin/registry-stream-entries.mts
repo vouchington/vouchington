@@ -3,6 +3,7 @@ import { referralCrawlDispatchConfig } from '@services/crawler-referral-links/wo
 import { referralUnfurlDispatchConfig } from '@services/referral-link-unfurl/work-limits'
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
+import { crawlerRefreshWorkConfig } from '@services/crawlers/refresh-limits'
 import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
 
 export const streamDynamicConfigRegistryEntries = [
@@ -17,6 +18,12 @@ export const streamDynamicConfigRegistryEntries = [
         description: 'Hostname rows per weekly refresh page.',
         min_value: 1,
         max_value: 5000,
+        integer: true,
+      },
+      weekly_refresh_max_rows_per_run: {
+        description: 'Maximum weekly hostname refresh rows before retained-job continuation.',
+        min_value: 1,
+        max_value: 50000,
         integer: true,
       },
       hostname_batch_size: {
@@ -42,6 +49,22 @@ export const streamDynamicConfigRegistryEntries = [
         description: 'Maximum URLs per run; a fixed-sweep continuation resumes remaining work.',
         min_value: 1,
         max_value: 100000,
+        integer: true,
+      },
+    },
+  }),
+  defineDynamicConfigNamespace({
+    namespace: 'crawler-refresh-work-config',
+    label: 'Crawler refresh work',
+    description:
+      'Bounded URL candidate selection during crawler retries and weekly hostname refresh.',
+    config: crawlerRefreshWorkConfig,
+    access: { update_roles: ['developer'] },
+    fields: {
+      retry_crawl_url_count: {
+        description: 'Maximum alternative URL candidates considered for one hostname.',
+        min_value: 1,
+        max_value: 20,
         integer: true,
       },
     },

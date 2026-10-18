@@ -1,6 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu } from '@queues/background-cpu/queues'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { RSS_FEEDS_FETCH_JOB } from '@queues/background/enqueues/rss-feeds-jobs'
 import { rssFeedsQueue } from '@queues/rss-feeds/queues'
 import { enqueueManualUrlCrawlAsCurrentUser } from './manual-crawl.mts'
@@ -12,21 +11,20 @@ import {
   insertTestRssFeedDirect,
   insertTestUrlDirect,
   insertTestUserReferralProgramLink,
-  readAllQueueJobs,
 } from '@voucha/test-helpers'
+
+const CRAWL_URL_JOB_NAME = 'crawl.crawl_url'
+const CRAWL_REFERRAL_JOB_NAME = 'crawl.crawl_referral_link'
+const htmlJobsFor = (urlId: string) =>
+  backgroundCpu.searchJobs({ name: CRAWL_URL_JOB_NAME, data: { url_id: urlId } })
+const referralJobsFor = (urlId: string) =>
+  backgroundCpu.searchJobs({ name: CRAWL_REFERRAL_JOB_NAME, data: { urlId } })
 
 describe('enqueueManualUrlCrawlAsCurrentUser', () => {
   let admin: PrivateUser
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
-  })
-
-  beforeEach(async () => {
-    await Promise.all([
-      crawlReferralLinksQueue.obliterate({ force: true }),
-      crawlUrls.obliterate({ force: true }),
-    ])
   })
 
   it('routes RSS feed URLs to the RSS fetch queue instead of the HTML crawl queue', async () => {
@@ -41,8 +39,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
     })
     const [rssJobs, htmlJobs, referralJobs] = await Promise.all([
       rssFeedsQueue.searchJobs({ name: RSS_FEEDS_FETCH_JOB.name, data: { rssFeedId: feed.id } }),
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      htmlJobsFor(feed.rss_feed_url_id),
+      referralJobsFor(feed.rss_feed_url_id),
     ])
     expect(rssJobs).toHaveLength(1)
     expect(rssJobs[0]?.name).toBe(RSS_FEEDS_FETCH_JOB.name)
@@ -73,12 +71,12 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 1 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      htmlJobsFor(url!.id),
+      referralJobsFor(url!.id),
     ])
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(1)
-    expect(referralJobs[0]?.name).toBe('crawl_referral_link')
+    expect(referralJobs[0]?.name).toBe(CRAWL_REFERRAL_JOB_NAME)
     expect(referralJobs[0]?.data).toMatchObject({
       linkId,
       urlId: url!.id,
@@ -107,8 +105,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 1 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      htmlJobsFor(url!.id),
+      referralJobsFor(url!.id),
     ])
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(1)
@@ -137,8 +135,8 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'referral_link', enqueued_count: 0 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      htmlJobsFor(url!.id),
+      referralJobsFor(url!.id),
     ])
     expect(htmlJobs).toHaveLength(0)
     expect(referralJobs).toHaveLength(0)
@@ -156,12 +154,12 @@ describe('enqueueManualUrlCrawlAsCurrentUser', () => {
 
     expect(result).toEqual({ target: 'html_url', enqueued_count: 1 })
     const [htmlJobs, referralJobs] = await Promise.all([
-      readAllQueueJobs(crawlUrls),
-      readAllQueueJobs(crawlReferralLinksQueue),
+      htmlJobsFor(url!.id),
+      referralJobsFor(url!.id),
     ])
     expect(referralJobs).toHaveLength(0)
     expect(htmlJobs).toHaveLength(1)
-    expect(htmlJobs[0]?.name).toBe('crawl_url')
+    expect(htmlJobs[0]?.name).toBe(CRAWL_URL_JOB_NAME)
     expect(htmlJobs[0]?.data).toMatchObject({ url_id: url!.id })
   })
 })

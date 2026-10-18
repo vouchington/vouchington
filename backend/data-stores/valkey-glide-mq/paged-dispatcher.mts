@@ -51,7 +51,7 @@ export async function processPagedDispatcher<TData extends object, TResult>(
     targetPrefix?: string
     /** Defaults to the destination when dispatchers and row jobs share one queue. */
     continuationQueue?: Pick<Queue, 'name'>
-    targetName: 'background' | 'crawl-dispatch'
+    targetName: 'background' | 'background-cpu'
     readAndDispatch: (
       pageSize: number,
     ) => Promise<{ result: TResult; next?: TData; afterDispatch?: () => Promise<void> }>

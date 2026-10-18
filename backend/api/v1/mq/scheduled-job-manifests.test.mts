@@ -18,6 +18,23 @@ import {
 } from '@services/queue-monitoring/scheduled-jobs-registry'
 
 const EXPECTED_SCHEDULED_JOBS = [
+  'background-cpu/bedrock-embeddings:backlog-dispatcher',
+  'background-cpu/bedrock-embeddings:creation-dispatcher',
+  'background-cpu/bedrock-embeddings:poll-dispatcher',
+  'background-cpu/bedrock-embeddings:post_trigger_recovery',
+  'background-cpu/bedrock-embeddings:reconcile_existing_posts',
+  'background-cpu/bedrock-embeddings:reconcile_existing_rss_feed_items',
+  'background-cpu/bedrock-embeddings:reconcile_existing_topics',
+  'background-cpu/bedrock-embeddings:stale-cleanup-dispatcher',
+  'background-cpu/content-analysis:cleanup-abandoned-uploads-schedule',
+  'background-cpu/crawl:boilerplate-removal-dispatcher',
+  'background-cpu/crawl:crawl_cleanup',
+  'background-cpu/crawl:crawl_hostnames_dispatcher',
+  'background-cpu/crawl:crawl_tier1_dispatcher',
+  'background-cpu/crawl:crawl_tier2_dispatcher',
+  'background-cpu/crawl:referral-links-dispatcher',
+  'background-cpu/crawl:refresh_hostname_crawler_dispatcher',
+  'background-cpu/crawl:unfurl-referral-links-dispatcher',
   'background/account-data-requests-cleanup',
   'background/accountDataRequestRecovery',
   'background/activitypub-inbox-recovery',
@@ -26,28 +43,12 @@ const EXPECTED_SCHEDULED_JOBS = [
   'ai_agents/reconcileBackgroundResponses',
   'ai_agents/reconcileCopyrightAgentDispatches',
   'ai_agents/reconcileClassifierRuns',
-  'bedrock-embeddings-batch/backlog_dispatcher',
-  'bedrock-embeddings-batch/creation_dispatcher',
-  'bedrock-embeddings-batch/poll_dispatcher',
-  'bedrock-embeddings-batch/stale_cleanup_dispatcher',
-  'bedrock-embeddings-batch/reconcile_existing_topics',
-  'bedrock-embeddings-batch/reconcile_existing_posts',
-  'bedrock-embeddings-batch/reconcile_existing_rss_feed_items',
-  'bedrock-embeddings-batch/post_trigger_recovery',
-  'crawl-dispatch/boilerplate_removal_dispatcher',
-  'crawl-dispatch/crawl_cleanup',
-  'crawl-dispatch/crawl_hostnames_dispatcher',
-  'crawl-dispatch/crawl_tier1_dispatcher',
-  'crawl-dispatch/crawl_tier2_dispatcher',
-  'crawl-dispatch/refresh_hostname_crawler_dispatcher',
-  'crawl_referral_links/crawl_referral_links_dispatcher',
   'background/email-digests-api-key-expiry',
   'background/email-digests-moderation-summary',
   'background/email-digests-engagement',
   'background/entityListenerReconciliation',
   'find-your-friends/dispatchFindYourFriends',
   'heartbeat/publish-glidemq-stats',
-  'content-analysis/content-analysis:cleanup-abandoned-uploads-schedule',
   'background/kagi-smallweb-sync',
   'background/imports-recover-stalled',
   'memberships/dispatchMembershipPauseCollection',
@@ -95,7 +96,6 @@ const EXPECTED_SCHEDULED_JOBS = [
   'background/sitemaps-backfill-processNightlyBackfillWeekDispatcher',
   'background/sitemaps-backfill-processWeeklyBackfillMonthDispatcher',
   'background/reconcileStoryPostRelatedUrlProjections',
-  'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'background/blacklistDispatcher',
   'background/userDeletionRecovery',
   'background/voteWeightAgeMilestones',
@@ -107,8 +107,8 @@ const EXPECTED_SCHEDULED_JOBS = [
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 13 manifests and 82 live jobs', () => {
-    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(13)
+  it('imports the exact 9 manifests and 84 live jobs', () => {
+    expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(9)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
         manifest.jobs.map(job => `${manifest.queueName}/${job.schedulerId}`),

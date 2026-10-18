@@ -206,6 +206,7 @@ describe('language detection processors', () => {
       })
       await expect(processLanguageDetectionBackfill(fixture.job, [ownedId])).resolves.toEqual({
         updated: 1,
+        hasMore: false,
       })
       const state = await getLanguageDetectionStateForTest(fixture.table, ownedId)
       expect(state.lingua_rs_detected_language).toBe('en')
@@ -213,6 +214,7 @@ describe('language detection processors', () => {
       expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
       await expect(processLanguageDetectionBackfill(fixture.job, [ownedId])).resolves.toEqual({
         updated: 0,
+        hasMore: false,
       })
       await expect(getLanguageDetectionStateForTest(fixture.table, ownedId)).resolves.toEqual(state)
       await expect(getLanguageDetectionStateForTest(fixture.table, foreignId)).resolves.toEqual(
@@ -242,13 +244,14 @@ describe('language detection processors', () => {
     })
     const result = await processLanguageDetectionBackfill('backfill_users', [userId])
 
-    expect(result).toEqual({ updated: 1 })
+    expect(result).toEqual({ updated: 1, hasMore: false })
     const state = await getLanguageDetectionStateForTest('users', userId)
     expect(state.lingua_rs_detected_language).toBe('en')
     expect(state.lingua_rs_input_sha256).toBeInstanceOf(Buffer)
     expect(state.lingua_rs_detected_at).toBeInstanceOf(Date)
     await expect(processLanguageDetectionBackfill('backfill_users', [userId])).resolves.toEqual({
       updated: 0,
+      hasMore: false,
     })
     await expect(getLanguageDetectionStateForTest('users', userId)).resolves.toEqual(state)
     await expect(getLanguageDetectionStateForTest('users', foreignUserId)).resolves.toEqual(

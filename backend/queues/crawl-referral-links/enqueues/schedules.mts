@@ -1,36 +1,26 @@
 import type { JobOptions } from 'glide-mq'
-import {
-  defineScheduledJobManifest,
-  upsertScheduledJobManifest,
-} from '@modules/scheduled-job-manifest'
-import type { CrawlReferralLinksJobs } from '../types.mts'
-import { crawlReferralLinksQueue } from '../queues.mts'
-import {
-  CRAWL_REFERRAL_LINKS_DEFAULTS,
-  PRIORITY_DISPATCHER,
-  CRAWL_REFERRAL_LINKS_QUEUE_NAME,
-} from '../config.mts'
+import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { PRIORITY_DISPATCHER } from '../config.mts'
 import { enqueueCrawlReferralLinksDispatcher } from '../enqueues.mts'
 
-export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_REFERRAL_LINKS_QUEUE_NAME, [
+export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QUEUE_NAME, [
   {
-    schedulerId: 'crawl_referral_links_dispatcher',
+    schedulerId: 'crawl:referral-links-dispatcher',
     repeat: { pattern: '0 4 * * 0' },
     template: {
-      name: 'enqueueCrawlReferralLinksDispatcher' as CrawlReferralLinksJobs,
+      name: 'crawl.enqueueCrawlReferralLinksDispatcher',
       data: {},
       opts: {
-        attempts: CRAWL_REFERRAL_LINKS_DEFAULTS.attempts,
-        backoff: CRAWL_REFERRAL_LINKS_DEFAULTS.backoff,
-        removeOnComplete: CRAWL_REFERRAL_LINKS_DEFAULTS.removeOnComplete,
-        removeOnFail: CRAWL_REFERRAL_LINKS_DEFAULTS.removeOnFail,
+        ...requireBackgroundCpuJob('crawl.enqueueCrawlReferralLinksDispatcher').options,
         priority: PRIORITY_DISPATCHER,
       } satisfies JobOptions,
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'crawl_referral_links_dispatcher',
+        id: 'crawl:referral-links-dispatcher',
         schedule: '0 4 * * 0',
         description: 'Dispatch referral link crawling (weekly)',
         trigger: enqueueCrawlReferralLinksDispatcher,
@@ -38,7 +28,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(CRAWL_REFERRAL_LI
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(crawlReferralLinksQueue, scheduledJobManifest)
-}

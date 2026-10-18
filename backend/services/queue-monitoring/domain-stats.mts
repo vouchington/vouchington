@@ -1,5 +1,3 @@
-import { getBackgroundJobNames } from '@queues/background/enqueues/registry'
-import type { BackgroundDomain } from '@queues/background/config'
 import type { Queue } from 'glide-mq'
 
 export const DOMAIN_STATS_STATES = ['waiting', 'active', 'delayed', 'completed', 'failed'] as const
@@ -45,11 +43,10 @@ export async function readSharedStates(queue: StatsQueue, cap: number): Promise<
  */
 export async function countDomainJobs(
   queue: StatsQueue,
-  domain: BackgroundDomain,
+  names: readonly string[],
   cap: number,
   shared?: SharedStateReads,
 ): Promise<DomainStateCounts> {
-  const names = getBackgroundJobNames(domain)
   const reads = shared ?? (await readSharedStates(queue, cap))
   const entries = await Promise.all(
     DOMAIN_STATS_STATES.map(

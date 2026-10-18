@@ -1,18 +1,5 @@
 {
-  "cpuOnlyQueues": [
-    "crawl_urls",
-    "crawl-dispatch",
-    "crawl_referral_links",
-    "crawl_browser",
-    "unfurl_referral_links",
-    "image-uploads",
-    "ai_agents",
-    "ai-spend-cap-rechecks",
-    "bedrock_embeddings_nova_multimodal_v1_single",
-    "bedrock-embeddings-batch",
-    "bedrock-embeddings-batch-creation",
-    "content-analysis"
-  ],
+  "cpuOnlyQueues": ["background-cpu", "crawl_browser", "image-uploads", "ai_agents"],
   "ioCapableQueues": [
     "background",
     "emails",

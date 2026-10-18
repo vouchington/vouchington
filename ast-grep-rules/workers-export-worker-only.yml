@@ -8,6 +8,8 @@ ignores:
   # The shared background worker's factory: one worker serves every domain, so its leaf exports the
   # factory (and its options type) rather than a single createWorker instance.
   - 'backend/workers/background/workers/create-worker.mts'
+  # The shared CPU worker has the same factory contract for its CPU queue domains.
+  - 'backend/workers/background-cpu/workers/create-worker.mts'
 rule:
   any:
     - pattern: 'export default $EXP'
@@ -38,3 +40,9 @@ examples:
   - code: "const emailWorker = createWorker('email', handler)"
     isValid: true
     file: 'backend/workers/email/workers/send.mts'
+  - code: 'export function createBackgroundCpuWorker() {}'
+    isValid: true
+    file: 'backend/workers/background-cpu/workers/create-worker.mts'
+  - code: 'export function createBackgroundCpuWorker() {}'
+    isValid: false
+    file: 'backend/workers/background-cpu/workers/another-worker.mts'

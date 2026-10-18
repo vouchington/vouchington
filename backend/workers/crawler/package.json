@@ -19,7 +19,7 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@services/crawls": "workspace:^",
     "@services/rss-feeds": "workspace:^",

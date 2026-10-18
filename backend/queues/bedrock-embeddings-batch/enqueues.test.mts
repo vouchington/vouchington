@@ -2,30 +2,33 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { isDeduplicatedEnqueue, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
 import { enqueueReconcileExistingEmbeddings, reconciliationJobOptions } from './enqueues.mts'
-import { bedrock_embeddings_batch } from './queues.mts'
-import { BEDROCK_EMBEDDINGS_BATCH_ORDERING, PRIORITY_DEFAULT } from './config.mts'
+import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
+import { PRIORITY_DISPATCHER } from './config.mts'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { reconciliationScheduleEntries } from './enqueues/reconciliation-schedules.mts'
 
 describe('embedding reconciliation enqueues', () => {
   it('dispatches each scheduled copy root with its entity payload and reconciliation lane', async () => {
     for (const entityType of ['topics', 'posts', 'rss_feed_items'] as const) {
       const entry = reconciliationScheduleEntries.find(
-        candidate => candidate.schedulerId === `reconcile_existing_${entityType}`,
+        candidate =>
+          candidate.schedulerId === `bedrock-embeddings:reconcile_existing_${entityType}`,
       )!
       const surface = entry.operatorSurfaces.find(candidate => candidate.kind === 'scheduled-jobs')!
       if (surface.kind !== 'scheduled-jobs') throw new Error('Missing scheduled trigger')
       const enqueued = await surface.trigger()
-      const deduplicationId = `bedrock-embedding-reconciliation:copy:${entityType}`
+      const deduplicationId = `bedrock-embeddings:reconciliation:copy:${entityType}`
       const job = isDeduplicatedEnqueue(enqueued)
         ? (await readAllQueueJobs(bedrock_embeddings_batch)).find(
             queued => queued.opts.deduplication?.id === deduplicationId,
           )
         : await readEnqueuedJob(bedrock_embeddings_batch, enqueued)
       expect(job).toMatchObject({
-        name: 'reconcile_existing',
+        name: 'bedrock-embeddings.reconcile_existing',
         data: { entityType },
         opts: {
-          ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.reconciliation,
+          ordering: requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options
+            .ordering,
           deduplication: { id: deduplicationId },
         },
       })
@@ -38,12 +41,12 @@ describe('embedding reconciliation enqueues', () => {
       const options = reconciliationJobOptions(flow)
       expect(options).toMatchObject({
         attempts: 3,
-        priority: PRIORITY_DEFAULT,
-        ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.reconciliation,
+        priority: PRIORITY_DISPATCHER,
+        ordering: requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options.ordering,
         removeOnComplete: 100,
         removeOnFail: 100,
         deduplication: {
-          id: `bedrock-embedding-reconciliation:${flow}`,
+          id: `bedrock-embeddings:reconciliation:${flow}`,
           mode: 'throttle',
           ttl: 60_000,
         },
@@ -57,13 +60,13 @@ describe('embedding reconciliation enqueues', () => {
     const enqueued = await enqueueReconcileExistingEmbeddings('topics', after)
     const job = await readEnqueuedJob(bedrock_embeddings_batch, enqueued)
     expect(job).toMatchObject({
-      name: 'reconcile_existing',
+      name: 'bedrock-embeddings.reconcile_existing',
       data: { entityType: 'topics', after },
       opts: {
-        priority: PRIORITY_DEFAULT,
-        ordering: BEDROCK_EMBEDDINGS_BATCH_ORDERING.reconciliation,
+        priority: PRIORITY_DISPATCHER,
+        ordering: requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options.ordering,
         deduplication: {
-          id: `bedrock-embedding-reconciliation:copy:topics:${after}`,
+          id: `bedrock-embeddings:reconciliation:copy:topics:${after}`,
           mode: 'simple',
         },
       },
@@ -71,7 +74,7 @@ describe('embedding reconciliation enqueues', () => {
     expect(job.opts.deduplication).not.toHaveProperty('ttl')
     expect(job.opts.jobId).toBeUndefined()
     expect(reconciliationJobOptions('copy:topics').deduplication).toEqual({
-      id: 'bedrock-embedding-reconciliation:copy:topics',
+      id: 'bedrock-embeddings:reconciliation:copy:topics',
       mode: 'throttle',
       ttl: 60_000,
     })

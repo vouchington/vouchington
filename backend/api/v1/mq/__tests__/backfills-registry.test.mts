@@ -6,7 +6,7 @@ import {
 } from '@voucha/test-helpers'
 import { activitypub } from '@queues/activitypub/queues'
 import { scheduledJobManifest as embeddingReconciliationManifest } from '@queues/bedrock-embeddings-batch/enqueues/schedules'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { EXISTING_DISPATCHER_BACKFILLS } from '@services/queue-monitoring/backfills-existing-dispatchers'
 import { BACKFILL_REGISTRY } from '@services/queue-monitoring/backfills-registry'
@@ -46,10 +46,10 @@ describe('BACKFILL_REGISTRY', () => {
     const enqueued = await entry.trigger()
     if (!Array.isArray(enqueued)) throw new Error('Expected all four root enqueues')
     const expected = [
-      { name: 'reconcile_existing', data: { entityType: 'topics' } },
-      { name: 'reconcile_existing', data: { entityType: 'posts' } },
-      { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
-      { name: 'post_trigger_recovery', data: {} },
+      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'topics' } },
+      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'posts' } },
+      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'rss_feed_items' } },
+      { name: 'bedrock-embeddings.post_trigger_recovery', data: {} },
     ]
     expect(enqueued).toHaveLength(expected.length)
     expect(

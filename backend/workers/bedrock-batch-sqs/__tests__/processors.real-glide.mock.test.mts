@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SqsMessage } from '@backend/worker-runtime'
-import { bedrock_embeddings_batch } from '@queues/bedrock-embeddings-batch/queues'
+import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
@@ -22,25 +22,12 @@ function eventBridgeMessage(detail: Record<string, unknown>): SqsMessage {
   }
 }
 
-function isPollBatchJobFor(job: { name: string; data: unknown }, batchId: string): boolean {
-  return job.name === 'poll_batch' && (job.data as { batch_id?: unknown }).batch_id === batchId
-}
-
-async function findAllPollBatchJobs() {
-  // The 'polling' ordering group applies a real rate limit (config.mts), so a freshly enqueued
-  // poll_batch job legitimately starts life in 'delayed' rather than 'waiting'. No worker runs
-  // against this queue in the backend-real-glide-mq project, so a job never reaches 'active',
-  // 'completed', or 'failed'.
-  const [waiting, delayed] = await Promise.all([
-    bedrock_embeddings_batch.getJobs('waiting'),
-    bedrock_embeddings_batch.getJobs('delayed'),
-  ])
-  return [...waiting, ...delayed]
-}
-
 async function findPollBatchJobs(batchId: string) {
-  const jobs = await findAllPollBatchJobs()
-  return jobs.filter(job => isPollBatchJobFor(job, batchId))
+  // The first priority job may be prioritized; group-limited successors may be delayed.
+  return bedrock_embeddings_batch.searchJobs({
+    name: 'bedrock-embeddings.poll_batch',
+    data: { batch_id: batchId },
+  })
 }
 
 describe('processBedrockBatchSqsMessage', () => {
@@ -52,11 +39,11 @@ describe('processBedrockBatchSqsMessage', () => {
     // Remove only this test's own jobs by id, not the whole shared production queue: other
     // parallel test runs against the same isolated real-glide-mq Valkey prefix may have jobs in
     // flight, and obliterate() would delete those too.
-    const jobs = await findAllPollBatchJobs()
     await Promise.all(
-      jobs
-        .filter(job => batchIds.some(batchId => isPollBatchJobFor(job, batchId)))
-        .map(job => job.remove()),
+      batchIds.map(async batchId => {
+        const jobs = await findPollBatchJobs(batchId)
+        await Promise.all(jobs.map(job => job.remove()))
+      }),
     )
   })
 

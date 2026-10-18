@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import * as imageEnqueues from '@queues/content-analysis/enqueues/image-jobs'
-import { contentAnalysisQueue } from '@queues/content-analysis/queues'
+import { backgroundCpu as contentAnalysisQueue } from '@queues/background-cpu/queues'
 import { readCopyrightStaydownEntries } from '@voucha/test-helpers/data-stores/psql/copyright-staydown'
 import { createRestrictedStaydownCase } from '@voucha/test-helpers/services/copyright-notices/staydown-fixture'
 import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-notices/staydown-matching'
@@ -45,7 +45,7 @@ async function registrationHashJobs(imageIds: readonly string[]) {
   const groups = await Promise.all(
     imageIds.map(imageId =>
       contentAnalysisQueue.searchJobs({
-        name: 'staydown-hash',
+        name: 'content-analysis.staydown-hash',
         data: { id: imageId },
       }),
     ),

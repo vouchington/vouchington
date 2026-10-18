@@ -10,9 +10,9 @@ import {
 import { CrawlerRateLimitError } from '@modules/on-error/errors'
 import { IMPORTS_PROCESS_USER_RSS_FEED_IMPORT_ROW_JOB } from '@queues/background/enqueues/imports-jobs'
 import { background } from '@queues/background/queues'
-import { CRAWL_URLS_QUEUE_NAME } from '@queues/crawler/config'
+import { BACKGROUND_CPU_QUEUE_NAME as CRAWL_URLS_QUEUE_NAME } from '@queues/background-cpu/config'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import {
   createTestUser,
   insertTestCrawler,
@@ -125,9 +125,9 @@ describe('RSS import crawl rate-limit deferral', () => {
       )
       expect((await getRssFeedImportDiscoveriesForTest(rowId))[0]?.generation).toBe(generation)
       expect(
-        (await crawlUrls.searchJobs({ name: 'crawl_url', data: { import_row_id: rowId } })).map(
-          candidate => candidate.id,
-        ),
+        (
+          await crawlUrls.searchJobs({ name: 'crawl.crawl_url', data: { import_row_id: rowId } })
+        ).map(candidate => candidate.id),
       ).toEqual([job.id])
       await crawlUrls.resume()
       queuePaused = false
@@ -141,7 +141,7 @@ describe('RSS import crawl rate-limit deferral', () => {
       await Promise.all([worker.close(true), events.close()])
       if (ownedJob) await ownedJob.remove()
       const retriedJobs = await crawlUrls.searchJobs({
-        name: 'crawl_url',
+        name: 'crawl.crawl_url',
         data: { import_row_id: rowId },
         limit: 3,
       })
@@ -172,15 +172,17 @@ describe('RSS import crawl rate-limit deferral', () => {
     let providerCalls = 0
     const worker = new Worker(
       CRAWL_URLS_QUEUE_NAME,
-      (job: Job) =>
-        processCrawlerJob(job, {
+      (job: Job) => {
+        expect(job.name).toBe('crawl.crawl_url')
+        return processCrawlerJob(job, {
           resolveDnsCanary: async () => undefined,
           resolveSafeCrawlerAddresses: async () => [{ address: '93.184.216.34', family: 4 }],
           fetchCrawlerHtml: async () => {
             providerCalls += 1
             throw new CrawlerRateLimitError(pageUrl, 429, 10, 60_000)
           },
-        }),
+        })
+      },
       { ...connection, concurrency: 1, blockTimeout: 1_000, promotionInterval: 50 },
     )
     let ownedJob: Job | null | undefined

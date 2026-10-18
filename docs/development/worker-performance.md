@@ -7,6 +7,10 @@ code and the Dockerfile; queue placement lives in
 - Every queue runs in exactly one worker process per deployed environment. `worker-cpu` runs the
   native and CPU-bound queues (Rust N-API, sharp, cloud-browser crawling); `worker-io` may run the
   DB, Valkey, and HTTP queues. Local development runs every queue in one process.
+- `background-cpu` shares a worker across CPU domains while keeping hostname and provider ordering
+  at the job group. Worker concurrency is based on the constituent domains; domain pause and
+  per-job locks prevent one slow source from idling the whole queue. Its unfurl handler can use
+  Lightpanda, so CPU placement must account for that browser resource.
 - Thread pools stack inside one Node process: libuv, plus a separate Tokio and Rayon pool per
   loaded native addon. Caps are per addon, not per process, so adding an addon multiplies the
   footprint. Retune them together when changing baselines.

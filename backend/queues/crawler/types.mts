@@ -1,5 +1,3 @@
-export type CrawlerJobs = 'crawl_url'
-
 export type EnqueueCrawlerJobOptions = {
   /** Import row resumed after the persisted HTML crawl outcome. */
   importRowId?: string

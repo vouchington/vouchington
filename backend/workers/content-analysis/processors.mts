@@ -1,4 +1,5 @@
 import type {
+  LanguageDetectionBackfillCursor,
   LanguageDetectionBackfillJobName,
   LanguageDetectionEntityType,
 } from '@queues/content-analysis/types'
@@ -26,6 +27,7 @@ import {
   streamTopicsNeedingLanguageDetection,
   streamUsersNeedingLanguageDetection,
 } from '@services/language-detection/backfill'
+import { getLanguageDetectionWorkLimit } from '@services/language-detection/work-limits'
 
 export function processLanguageDetection(
   entityType: LanguageDetectionEntityType,
@@ -52,58 +54,109 @@ export function processLanguageDetection(
 }
 
 /**
- * Backfill dispatcher — streams IDs via pg-cursor and batch-detects each page
- * directly using detectLanguageMany (one libuv thread call per batch) instead
- * of enqueueing individual jobs, avoiding queue overhead for large backfills.
+ * Each retained pass reads at most the configured number of IDs. Save the keyset cursor after
+ * every successful batch so a worker restart can resume without replaying the entire table.
  */
 export async function processLanguageDetectionBackfill(
   jobName: LanguageDetectionBackfillJobName,
   entityIds?: readonly string[],
-): Promise<{ updated: number }> {
+  savedCursor?: LanguageDetectionBackfillCursor,
+  saveProgress: (cursor: LanguageDetectionBackfillCursor) => Promise<void> = async () => undefined,
+): Promise<{ updated: number; hasMore: boolean }> {
   assertKnownLanguageDetectionBackfillJob(jobName)
-  if (entityIds?.length === 0) return { updated: 0 }
+  if (entityIds?.length === 0) return { updated: 0, hasMore: false }
+  const cursor: LanguageDetectionBackfillCursor = savedCursor
+    ? { ...savedCursor }
+    : {
+        sweepStartedAt: new Date().toISOString(),
+      }
+  if (!savedCursor) await saveProgress(cursor)
+  const maxRows = getLanguageDetectionWorkLimit('backfill_max_rows_per_run')
+  let read = 0
   let updated = 0
+  const consume = async (
+    batches: AsyncGenerator<string[], void, unknown>,
+    detect: (ids: string[]) => Promise<{ updated: number }>,
+  ) => {
+    for await (const ids of batches) {
+      const result = await detect(ids)
+      updated += result.updated
+      read += ids.length
+      cursor.afterId = ids.at(-1)!
+      await saveProgress(cursor)
+    }
+  }
   switch (jobName) {
     case 'backfill_posts': {
-      for await (const ids of streamPostsNeedingLanguageDetection(entityIds)) {
-        const result = await detectPostLanguageBatch(ids)
-        updated += result.updated
-      }
+      await consume(
+        streamPostsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
+        detectPostLanguageBatch,
+      )
       break
     }
     case 'backfill_rss_feed_items': {
-      for await (const ids of streamRssFeedItemsNeedingLanguageDetection(entityIds)) {
-        const result = await detectRssFeedItemLanguageBatch(ids)
-        updated += result.updated
-      }
+      await consume(
+        streamRssFeedItemsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
+        detectRssFeedItemLanguageBatch,
+      )
       break
     }
     case 'backfill_crawls': {
-      for await (const ids of streamCrawlsNeedingLanguageDetection(entityIds)) {
-        const result = await detectCrawlLanguageBatch(ids)
-        updated += result.updated
-      }
+      await consume(
+        streamCrawlsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
+        detectCrawlLanguageBatch,
+      )
       break
     }
     case 'backfill_communities': {
-      for await (const ids of streamCommunitiesNeedingLanguageDetection(entityIds)) {
-        const result = await detectCommunityLanguageBatch(ids)
-        updated += result.updated
-      }
+      await consume(
+        streamCommunitiesNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
+        detectCommunityLanguageBatch,
+      )
       break
     }
     case 'backfill_users': {
-      for await (const ids of streamUsersNeedingLanguageDetection(entityIds)) {
-        const result = await detectUserLanguageBatch(ids)
-        updated += result.updated
-      }
+      await consume(
+        streamUsersNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
+        detectUserLanguageBatch,
+      )
       break
     }
     case 'backfill_topics': {
-      for await (const ids of streamTopicsNeedingLanguageDetection(entityIds)) {
-        const result = await detectTopicLanguageBatch(ids)
-        updated += result.updated
-      }
+      await consume(
+        streamTopicsNeedingLanguageDetection(
+          entityIds,
+          cursor.afterId,
+          maxRows,
+          cursor.sweepStartedAt,
+        ),
+        detectTopicLanguageBatch,
+      )
       break
     }
     default: {
@@ -111,7 +164,8 @@ export async function processLanguageDetectionBackfill(
       throw new Error(`Unknown backfill job: ${_exhaustive}`)
     }
   }
-  return { updated }
+  // An exactly full page may have no successor; one empty retained pass closes the sweep.
+  return { updated, hasMore: read === maxRows }
 }
 
 function assertKnownLanguageDetectionBackfillJob(jobName: LanguageDetectionBackfillJobName): void {

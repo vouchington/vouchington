@@ -8,7 +8,7 @@ import {
   setUserReferrerId,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { contentAnalysisQueue } from '@queues/content-analysis/queues'
+import { backgroundCpu as contentAnalysisQueue } from '@queues/background-cpu/queues'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import {
   streamEntityReconciliationCandidateBatches,
@@ -112,7 +112,10 @@ async function hasVoteWeightJob(userId: string): Promise<boolean> {
 }
 
 async function hasLanguageDetectionJob(userId: string): Promise<boolean> {
-  const jobs = await contentAnalysisQueue.searchJobs({ name: 'user', data: { id: userId } })
+  const jobs = await contentAnalysisQueue.searchJobs({
+    name: 'content-analysis.user',
+    data: { id: userId },
+  })
   return jobs.length > 0
 }
 

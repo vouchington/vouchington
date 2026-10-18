@@ -23,7 +23,7 @@ describe('publishAggregatedQueueStats', () => {
     await publishAggregatedQueueStats({
       environment: 'staging',
       timestamp,
-      queueNamesByClass: { cpu: ['crawl_urls'], io: ['emails', 'rss-feeds'] },
+      queueNamesByClass: { cpu: ['background-cpu'], io: ['emails', 'rss-feeds'] },
       getAggregatedQueueMetricStats: async queueNames => {
         aggregateCalls.push([...queueNames])
         return {
@@ -41,7 +41,7 @@ describe('publishAggregatedQueueStats', () => {
       },
     })
 
-    expect(aggregateCalls).toEqual([['crawl_urls'], ['emails', 'rss-feeds']])
+    expect(aggregateCalls).toEqual([['background-cpu'], ['emails', 'rss-feeds']])
     expect(publishedInput).toEqual({
       Namespace: 'Voucha/staging',
       MetricData: [

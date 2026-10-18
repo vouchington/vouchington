@@ -123,7 +123,7 @@ async function withDiscoveryJob(
   let job: Job | null | undefined
   try {
     job = await queue.add(
-      'crawl_url',
+      'crawl.crawl_url',
       {
         url_id: urlId,
         import_row_id: rowId,

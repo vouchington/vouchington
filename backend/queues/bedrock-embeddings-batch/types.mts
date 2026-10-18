@@ -1,14 +1,4 @@
-export type BedrockEmbeddingsBatchCreationJob =
-  | 'topics'
-  | 'posts'
-  | 'rss_feed_items'
-  | 'crawl_chunks'
-  | 'images'
-
-export type BedrockEmbeddingsBatchPollingJob = 'poll_batch'
-
 export type ReconciliationEntityType = 'topics' | 'posts' | 'rss_feed_items'
-export type ReconciliationJobName = 'reconcile_existing' | 'post_trigger_recovery'
 
 export type ReconciliationFlow = `copy:${ReconciliationEntityType}` | 'post-trigger'
 

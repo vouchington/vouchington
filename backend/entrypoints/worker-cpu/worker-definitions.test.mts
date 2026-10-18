@@ -21,57 +21,12 @@ describe('worker-cpu worker definitions', () => {
     expect(WORKER_DEFINITIONS).toEqual([...cpuOnlyDefinitions, ...IO_WORKER_DEFINITIONS])
   })
 
-  it('loads and closes the dedicated AI spend-cap recheck worker', async () => {
-    const definition = cpuOnlyDefinitions.find(
-      definition => definition.queueName === 'ai-spend-cap-rechecks',
-    )!
-    const worker = await definition.load()
-
-    try {
-      expect(worker).toBeDefined()
-    } finally {
-      await worker.close()
-    }
-  })
-
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
-      ['crawl_urls', '/backend/workers/crawler/workers.mts', 'crawlUrls'],
-      ['crawl-dispatch', '/backend/workers/crawl-dispatch/workers.mts', 'crawlDispatch'],
-      [
-        'crawl_referral_links',
-        '/backend/workers/crawl-referral-links/workers.mts',
-        'crawlReferralLinks',
-      ],
+      ['background-cpu', '/backend/workers/background-cpu/workers.mts', 'backgroundCpu'],
       ['crawl_browser', '/backend/workers/crawl-browser/workers.mts', 'crawlBrowser'],
-      [
-        'unfurl_referral_links',
-        '/backend/workers/unfurl-referral-links/workers.mts',
-        'unfurlReferralLinks',
-      ],
       ['image-uploads', '/backend/workers/image-uploads/workers.mts', 'imageUploads'],
       ['ai_agents', '/backend/workers/ai-agents/workers.mts', 'ai_agents'],
-      [
-        'ai-spend-cap-rechecks',
-        '/backend/workers/ai-agents/workers/spend-cap-recheck.mts',
-        'spendCapRechecks',
-      ],
-      [
-        'bedrock_embeddings_nova_multimodal_v1_single',
-        '/backend/workers/bedrock-embeddings/workers.mts',
-        'bedrock_embeddings_nova_multimodal_v1_single',
-      ],
-      [
-        'bedrock-embeddings-batch-creation',
-        '/backend/workers/bedrock-embeddings-batch/workers/bedrock-embeddings-batch-creation.mts',
-        'createEmbeddingCreationWorker',
-      ],
-      [
-        'bedrock-embeddings-batch',
-        '/backend/workers/bedrock-embeddings-batch/workers.mts',
-        'bedrock_embeddings_batch',
-      ],
-      ['content-analysis', '/backend/workers/content-analysis/workers.mts', 'contentAnalysis'],
     ] as const
     const byQueue = (name: string) =>
       cpuOnlyDefinitions.find(definition => definition.queueName === name)!

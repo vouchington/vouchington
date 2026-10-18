@@ -25,7 +25,6 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",
@@ -34,6 +33,7 @@
     "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/notifications": "workspace:^",

@@ -8,18 +8,18 @@ import {
 
 export const reconciliationScheduleEntries = [
   {
-    schedulerId: 'reconcile_existing_topics',
+    schedulerId: 'bedrock-embeddings:reconcile_existing_topics',
     registration: 'sequential',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'reconcile_existing',
+      name: 'bedrock-embeddings.reconcile_existing',
       data: { entityType: 'topics' },
       opts: toSchedulerTemplateOptions(reconciliationJobOptions('copy:topics')),
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'reconcile_existing_topics',
+        id: 'bedrock-embeddings:reconcile_existing_topics',
         schedule: '* * * * *',
         description: 'Copy reusable topic embeddings from the centralized table',
         trigger: () => enqueueReconcileExistingEmbeddings('topics'),
@@ -28,18 +28,18 @@ export const reconciliationScheduleEntries = [
     ],
   },
   {
-    schedulerId: 'reconcile_existing_posts',
+    schedulerId: 'bedrock-embeddings:reconcile_existing_posts',
     registration: 'sequential',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'reconcile_existing',
+      name: 'bedrock-embeddings.reconcile_existing',
       data: { entityType: 'posts' },
       opts: toSchedulerTemplateOptions(reconciliationJobOptions('copy:posts')),
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'reconcile_existing_posts',
+        id: 'bedrock-embeddings:reconcile_existing_posts',
         schedule: '* * * * *',
         description: 'Copy reusable post embeddings from the centralized table',
         trigger: () => enqueueReconcileExistingEmbeddings('posts'),
@@ -47,18 +47,18 @@ export const reconciliationScheduleEntries = [
     ],
   },
   {
-    schedulerId: 'reconcile_existing_rss_feed_items',
+    schedulerId: 'bedrock-embeddings:reconcile_existing_rss_feed_items',
     registration: 'sequential',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'reconcile_existing',
+      name: 'bedrock-embeddings.reconcile_existing',
       data: { entityType: 'rss_feed_items' },
       opts: toSchedulerTemplateOptions(reconciliationJobOptions('copy:rss_feed_items')),
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'reconcile_existing_rss_feed_items',
+        id: 'bedrock-embeddings:reconcile_existing_rss_feed_items',
         schedule: '* * * * *',
         description: 'Copy reusable RSS item embeddings from the centralized table',
         trigger: () => enqueueReconcileExistingEmbeddings('rss_feed_items'),
@@ -66,18 +66,18 @@ export const reconciliationScheduleEntries = [
     ],
   },
   {
-    schedulerId: 'post_trigger_recovery',
+    schedulerId: 'bedrock-embeddings:post_trigger_recovery',
     registration: 'sequential',
     repeat: { pattern: '* * * * *' },
     template: {
-      name: 'post_trigger_recovery',
+      name: 'bedrock-embeddings.post_trigger_recovery',
       data: {},
       opts: toSchedulerTemplateOptions(reconciliationJobOptions('post-trigger')),
     },
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
-        id: 'post_trigger_recovery',
+        id: 'bedrock-embeddings:post_trigger_recovery',
         schedule: '* * * * *',
         description: 'Recover ban-evasion delivery for current first-community-post embeddings',
         trigger: enqueuePostEmbeddingTriggerRecovery,

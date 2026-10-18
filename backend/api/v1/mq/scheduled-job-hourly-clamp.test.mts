@@ -36,7 +36,7 @@ describe('staging hourly wake alignment', () => {
       pattern: '0 * * * *',
     })
     expect(
-      staging.get('content-analysis/content-analysis:cleanup-abandoned-uploads-schedule'),
+      staging.get('background-cpu/content-analysis:cleanup-abandoned-uploads-schedule'),
     ).toEqual({
       pattern: '0 * * * *',
     })

@@ -19,7 +19,7 @@ import { deactivateUserReferralLink } from '@services/user-referral-program-link
 import { getUrlById } from '@services/urls/get'
 import type { PrivateUser } from '@services/users/types'
 import { dispatchReferralLinkCrawls, enqueueReferralLinkCrawlsForUrlId } from './dispatch.mts'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
+import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import { CRAWLER_USER_AGENT } from '@voucha/config'
 
 describe('dispatch', () => {

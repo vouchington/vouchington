@@ -1,9 +1,12 @@
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
+import { getMinUUIDv7ForParentHistory, getMaxUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
 import { getOrCreateCrawlerForHostname } from './create-crawler.mts'
+import { getRetryCrawlUrlCount } from './refresh-limits.mts'
+
+export type HostnameCrawlerRefreshCursor = { sweepStartedAt: string; afterId?: string }
 
 type CrawlerRefreshCandidateUrl = {
   id: string
@@ -14,6 +17,7 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
   limit: number,
   queryOptions: QueryOptions = {},
   hostnameId?: string,
+  cursor?: HostnameCrawlerRefreshCursor,
 ): Promise<string[]> => {
   const query = sql`/* searchHostnameIdsNeedingCrawlerRefresh */
     SELECT h.id
@@ -25,6 +29,12 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
       AND h.is_crawlable
   `
   if (hostnameId) query.append(sql` AND h.id = ${hostnameId}::uuid`)
+  if (cursor?.afterId) query.append(sql` AND h.id > ${cursor.afterId}::uuid`)
+  const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
+  if (cursor) {
+    const sweepMaxId = getMaxUUIDv7ForDate(new Date(sweepStartedAt))
+    query.append(sql` AND h.id <= ${sweepMaxId}::uuid`)
+  }
   query.append(sql`
     GROUP BY h.id
     HAVING (
@@ -32,7 +42,7 @@ export const searchHostnameIdsNeedingCrawlerRefresh = async (
         SELECT 1 FROM hostname_crawler_configurations existing_crawler
         WHERE existing_crawler.hostname_id = h.id AND existing_crawler.deleted_at IS NULL
       )
-      OR MAX(c.updated_at) < date_trunc('week', CURRENT_TIMESTAMP)
+      OR MAX(c.updated_at) < date_trunc('week', ${sweepStartedAt}::timestamptz)
     )
     ORDER BY h.id ASC
     LIMIT ${limit}
@@ -78,8 +88,6 @@ type RefreshHostnameCrawlerResult = {
   url_ids_to_crawl: string[]
 }
 
-const REFRESH_URLS_PER_HOSTNAME = 3
-
 export async function refreshHostnameCrawler(
   hostnameId: string,
 ): Promise<RefreshHostnameCrawlerResult> {
@@ -98,7 +106,7 @@ export async function refreshHostnameCrawler(
 
   const urls = await searchCrawlerRefreshUrlCandidatesByHostnameId(
     hostnameId,
-    REFRESH_URLS_PER_HOSTNAME,
+    getRetryCrawlUrlCount(),
   )
   if (urls.length < 2) {
     return {

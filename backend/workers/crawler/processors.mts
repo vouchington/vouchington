@@ -1,4 +1,3 @@
-import type { CrawlerJobs } from '@queues/crawler/types'
 import type { CrawlUrlOptions } from '@services/crawls/crawl-url/types'
 import { crawlUrl } from '@services/crawls/crawl-url'
 import { UnrecoverableError, type Job } from 'glide-mq'
@@ -15,8 +14,8 @@ export async function processCrawlerJob(
   job: Job,
   dependencies?: CrawlUrlOptions['dependencies'],
 ): Promise<unknown> {
-  switch (job.name as CrawlerJobs) {
-    case 'crawl_url': {
+  switch (job.name) {
+    case 'crawl.crawl_url': {
       const urlId = job.data?.url_id
       if (!urlId) throw new Error('Crawl URL job .url_id is required')
       const rateLimitRetryCount = job.data?.rate_limit_retry_count ?? 0

@@ -24,6 +24,7 @@
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@services/images": "workspace:^",
@@ -35,7 +36,6 @@
     "sharp": "^0.35.5"
   },
   "devDependencies": {
-    "@queues/content-analysis": "workspace:^",
     "@services/users": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"

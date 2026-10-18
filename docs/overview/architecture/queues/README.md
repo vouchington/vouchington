@@ -31,6 +31,13 @@ flowchart LR
 - The shared `background` queue serves many small domains. A job is `<domain>.<name>`, a registry
   maps each to a handler, and ordering keys, concurrency and pause are per domain. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
+- The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
+  coordination, and content analysis. URL and referral crawls use the same hostname ordering key,
+  so they respect one external host limit. Provider limits use group rate windows; database-only
+  work uses concurrency. Long network jobs keep their own lock settings. Operators can pause and
+  inspect each domain without pausing unrelated CPU work.
+- Unfurl jobs run with the shared CPU worker selection and can use Lightpanda. Deployments that
+  select the CPU worker need the browser capability and capacity for unfurl work as well as crawls.
 
 ## Why queues are shaped this way
 
@@ -46,6 +53,8 @@ flowchart LR
   concurrency. Provider 429s and domain pauses defer the single job (`moveToDelayed`, which spends no
   attempt), never `RateLimitError` or `worker.rateLimit()`, because those idle the whole shared
   worker and one slow provider would stall unrelated domains.
+  Bedrock Retry-After state is shared by its ordering lane and checked before provider work, so
+  newly queued priority jobs observe the same cooldown while unrelated CPU domains keep running.
 - **Fan-out is paged.** Dispatchers and backfills enqueue one bounded page and continue through a
   cursor, so no run reads unbounded rows and priority stays meaningful.
 - **A paged import survives a lost dispatcher.** User RSS and admin topic imports share the
@@ -105,17 +114,9 @@ Replaying an event can reactivate its retained completed or failed queue record;
 running record keeps its claim. Election replay has its own
 bounded dispatcher and does not recalculate weights or change administrator overrides.
 
-## Where to look by domain
+## Related architecture
 
-- Content and publication: `post-publication`, `post-mentions`, `content-analysis`, `image-uploads`,
-  `sitemaps`, `cache-purge`, `story-post-related-url-projections`.
-- Imports: user RSS feed imports and admin topic imports, on the shared `background` queue.
-- Crawling: `crawler`, `crawl-*`, `rss-feed*`, `rss-feeds`, `kagi-smallweb`, `unfurl-referral-links`,
-  `urls-domains-blacklist`.
-- AI: `ai-agents`, `openai-moderation`, `bedrock-embeddings*`. See the [AI platform](../ai-platform.md).
-- Moderation and trust: `report-integrity`, `vote-*`, `elections`, and the `moderation-signals` domain on `background` (spam and ban-evasion detection).
-- Accounts and money: `account-lifecycle`, `user-deletions`, `account-data-requests`, `memberships`,
-  `emails`, `email-digests`, `notifications`, `oauth-authorization-exchange`.
-- Federation: `activitypub*`, `bluesky-follow-propagation`, `follower-distributions`. See
-  [fediverse federation](../fediverse-federation.md).
-- Platform: `heartbeat`, `bloom-filters`, `entity-listeners`, `entity-metrics-cache-refresh`, `psql`.
+- [Crawling](../reference-crawling-components.md) explains how URL and referral crawling share CPU
+  execution while embed enrichment keeps its destination-host-limited I/O path.
+- [AI platform](../ai-platform.md) describes model and embedding work.
+- [Fediverse federation](../fediverse-federation.md) describes federation work.

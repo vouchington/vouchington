@@ -27,6 +27,7 @@
     "@data-stores/valkey-pubsub": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/background": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {

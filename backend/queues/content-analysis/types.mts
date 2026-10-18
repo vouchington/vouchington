@@ -13,3 +13,6 @@ export type LanguageDetectionBackfillJobName =
   | 'backfill_communities'
   | 'backfill_users'
   | 'backfill_topics'
+
+/** The snapshot fence and keyset position retained by one backfill job. */
+export type LanguageDetectionBackfillCursor = { sweepStartedAt: string; afterId?: string }

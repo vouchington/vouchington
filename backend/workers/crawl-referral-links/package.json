@@ -19,7 +19,6 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@modules/queue-config": "workspace:^",
     "@queues/crawl-browser": "workspace:^",
     "@queues/crawl-referral-links": "workspace:^",
     "@services/crawler-referral-links": "workspace:^",

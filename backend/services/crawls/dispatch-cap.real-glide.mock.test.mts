@@ -1,3 +1,4 @@
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import { randomUUID } from 'node:crypto'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -10,8 +11,6 @@ import {
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
-import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
-import { crawlUrls } from '@queues/crawler/queues'
 import { crawlDispatchConfig } from './work-limits.mts'
 import { dispatchCrawlUrlsPerHostname } from './dispatch-per-hostname.mts'
 import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
@@ -21,7 +20,7 @@ import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from './dispatch-tier-
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 describe('bounded crawl URL dispatch', () => {
-  afterAll(() => Promise.all([crawlDispatchQueue.close(), crawlUrls.close()]))
+  afterAll(() => backgroundCpu.close())
   it.each([1, 2] as const)('resumes Tier %s past still-eligible queued URLs', async tier => {
     const owner = await createTestUser()
     const hostname = `bounded-tier-${randomUUID()}.example.com`
@@ -55,7 +54,9 @@ describe('bounded crawl URL dispatch', () => {
     expect(await dispatch(saved)).toEqual({ count: 1, hasMore: true })
     expect(await dispatch({ ...saved, afterId: ids[1] })).toEqual({ count: 1, hasMore: false })
     for (const url_id of ids)
-      expect(await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id } })).toHaveLength(1)
+      expect(
+        await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id } }),
+      ).toHaveLength(1)
   })
 
   it('advances past still-eligible rows and excludes later inserts until the next sweep', async () => {
@@ -88,11 +89,11 @@ describe('bounded crawl URL dispatch', () => {
     ).toEqual({ count: 1, hasMore: false })
     for (const url of urls) {
       expect(
-        await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: url.id } }),
+        await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: url.id } }),
       ).toHaveLength(1)
     }
-    expect(await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: later.id } })).toEqual(
-      [],
-    )
+    expect(
+      await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: later.id } }),
+    ).toEqual([])
   })
 })

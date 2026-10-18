@@ -28,8 +28,7 @@ import {
   processCrawlChunkBatchResults,
   processImageBatchResultsInBatches,
 } from '@services/bedrock-embeddings-batch/result-processing'
-import { getQueueBacklogDepth } from '@data-stores/valkey-glide-mq/get-queue-stats'
-import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
+import { getSingleEmbeddingBacklogSnapshot } from '@queues/bedrock-embeddings/enqueues/single-backlog'
 import { getBacklogThreshold, getStaleTtlHours } from '@services/bedrock-embeddings/batch/config'
 
 export {
@@ -113,7 +112,7 @@ export const processBacklogDispatcher = async (): Promise<{
   depth: number
   threshold: number
 }> => {
-  const depth = await getQueueBacklogDepth(EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME)
+  const { depth } = await getSingleEmbeddingBacklogSnapshot()
   const threshold = getBacklogThreshold()
 
   if (depth >= threshold) {

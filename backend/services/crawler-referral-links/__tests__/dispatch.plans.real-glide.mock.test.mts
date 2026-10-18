@@ -9,7 +9,7 @@ import { insertTestReferralCrawlPlanLinks } from '@voucha/test-helpers/entities/
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { getDateFromUUIDv7, mintUUIDv7 } from '@modules/utils'
-import { crawlReferralLinksQueue } from '@queues/crawl-referral-links/queues'
+import { backgroundCpu as crawlReferralLinksQueue } from '@queues/background-cpu/queues'
 import type { ReferralCrawlDispatchData } from '@queues/crawl-referral-links/types'
 import { referralCrawlDispatchConfig } from '../work-limits.mts'
 import { dispatchReferralLinkCrawls } from '../dispatch.mts'

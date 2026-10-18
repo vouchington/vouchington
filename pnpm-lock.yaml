@@ -786,6 +786,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../queues/background-cpu
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../queues/bedrock-embeddings-batch
@@ -798,12 +801,6 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../queues/content-analysis
-      '@queues/crawl-dispatch':
-        specifier: workspace:^
-        version: link:../queues/crawl-dispatch
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../queues/crawl-referral-links
       '@queues/emails':
         specifier: workspace:^
         version: link:../queues/emails
@@ -849,9 +846,6 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../queues/story-post-related-url-projections
-      '@queues/unfurl-referral-links':
-        specifier: workspace:^
-        version: link:../queues/unfurl-referral-links
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../queues/urls-domains-blacklist
@@ -1700,6 +1694,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
@@ -1721,33 +1718,22 @@ importers:
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../../workers/ai-agents
-      '@workers/bedrock-embeddings':
+      '@workers/background-cpu':
         specifier: workspace:^
-        version: link:../../workers/bedrock-embeddings
-      '@workers/bedrock-embeddings-batch':
-        specifier: workspace:^
-        version: link:../../workers/bedrock-embeddings-batch
-      '@workers/content-analysis':
-        specifier: workspace:^
-        version: link:../../workers/content-analysis
+        version: link:../../workers/background-cpu
       '@workers/crawl-browser':
         specifier: workspace:^
         version: link:../../workers/crawl-browser
-      '@workers/crawl-dispatch':
-        specifier: workspace:^
-        version: link:../../workers/crawl-dispatch
-      '@workers/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../../workers/crawl-referral-links
-      '@workers/crawler':
-        specifier: workspace:^
-        version: link:../../workers/crawler
       '@workers/image-uploads':
         specifier: workspace:^
         version: link:../../workers/image-uploads
-      '@workers/unfurl-referral-links':
+    devDependencies:
+      '@data-stores/valkey-glide-mq':
         specifier: workspace:^
-        version: link:../../workers/unfurl-referral-links
+        version: link:../../data-stores/valkey-glide-mq
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/entrypoints/worker-io:
     dependencies:
@@ -2738,6 +2724,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@services/analytics':
         specifier: workspace:^
         version: link:../../services/analytics
@@ -2789,6 +2778,24 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
 
+  backend/queues/background-cpu:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/scheduled-job-manifest':
+        specifier: workspace:^
+        version: link:../../modules/scheduled-job-manifest
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
+
   backend/queues/bedrock-embeddings:
     dependencies:
       '@data-stores/valkey-glide-mq':
@@ -2797,6 +2804,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@services/analytics':
         specifier: workspace:^
         version: link:../../services/analytics
@@ -2806,10 +2816,6 @@ importers:
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-    devDependencies:
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/queues/bedrock-embeddings-batch:
     dependencies:
@@ -2819,6 +2825,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2884,6 +2893,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2914,6 +2926,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2944,6 +2959,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -2956,6 +2974,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3315,6 +3336,9 @@ importers:
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../background-cpu
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -5096,6 +5120,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -5315,6 +5342,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
@@ -5401,6 +5431,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@jongleberry/vurst-html':
         specifier: ^0.4.3
         version: 0.4.3
@@ -5437,6 +5470,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5471,6 +5507,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -5480,9 +5519,6 @@ importers:
       '@queues/crawl-embeds':
         specifier: workspace:^
         version: link:../../queues/crawl-embeds
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/crawl-referral-links
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
@@ -5747,6 +5783,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../../queues/crawl-dispatch
@@ -5813,6 +5852,9 @@ importers:
       '@services/crawler-referral-links':
         specifier: workspace:^
         version: link:../crawler-referral-links
+      '@services/crawlers':
+        specifier: workspace:^
+        version: link:../crawlers
       '@services/crawls':
         specifier: workspace:^
         version: link:../crawls
@@ -6492,6 +6534,9 @@ importers:
       '@queues/activitypub':
         specifier: workspace:^
         version: link:../../queues/activitypub
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/bluesky-follow-propagation':
         specifier: workspace:^
         version: link:../../queues/bluesky-follow-propagation
@@ -7420,6 +7465,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/memberships':
         specifier: workspace:^
         version: link:../../queues/memberships
@@ -8913,6 +8961,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -9110,6 +9161,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -9144,9 +9198,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
-      '@queues/bedrock-embeddings':
+      '@queues/background-cpu':
         specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
+        version: link:../../queues/background-cpu
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
@@ -9171,9 +9225,6 @@ importers:
       '@queues/crawl-referral-links':
         specifier: workspace:^
         version: link:../../queues/crawl-referral-links
-      '@queues/crawler':
-        specifier: workspace:^
-        version: link:../../queues/crawler
       '@queues/email-digests':
         specifier: workspace:^
         version: link:../../queues/email-digests
@@ -9425,6 +9476,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links
@@ -9710,9 +9764,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
       '@jongleberry/vurst-html':
         specifier: ^0.4.3
         version: 0.4.3
@@ -9737,6 +9788,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -9867,6 +9921,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -10228,6 +10285,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
@@ -11741,6 +11801,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../queues/background-cpu
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../queues/entity-listeners
@@ -12117,6 +12180,9 @@ importers:
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications
@@ -12411,6 +12477,76 @@ importers:
         specifier: ^8.11.2
         version: 8.11.2
 
+  backend/workers/background-cpu:
+    dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
+      '@modules/queue-config':
+        specifier: workspace:^
+        version: link:../../modules/queue-config
+      '@modules/queue-errors':
+        specifier: workspace:^
+        version: link:../../modules/queue-errors
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
+      '@services/bedrock-embeddings':
+        specifier: workspace:^
+        version: link:../../services/bedrock-embeddings
+      '@services/images':
+        specifier: workspace:^
+        version: link:../../services/images
+      '@services/queue-domain-controls':
+        specifier: workspace:^
+        version: link:../../services/queue-domain-controls
+      '@vouchington/queue-errors':
+        specifier: ^0.1.3
+        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+      '@workers/ai-agents':
+        specifier: workspace:^
+        version: link:../ai-agents
+      '@workers/bedrock-embeddings':
+        specifier: workspace:^
+        version: link:../bedrock-embeddings
+      '@workers/bedrock-embeddings-batch':
+        specifier: workspace:^
+        version: link:../bedrock-embeddings-batch
+      '@workers/content-analysis':
+        specifier: workspace:^
+        version: link:../content-analysis
+      '@workers/crawl-dispatch':
+        specifier: workspace:^
+        version: link:../crawl-dispatch
+      '@workers/crawl-referral-links':
+        specifier: workspace:^
+        version: link:../crawl-referral-links
+      '@workers/crawler':
+        specifier: workspace:^
+        version: link:../crawler
+      '@workers/unfurl-referral-links':
+        specifier: workspace:^
+        version: link:../unfurl-referral-links
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+    devDependencies:
+      '@queues/crawl-referral-links':
+        specifier: workspace:^
+        version: link:../../queues/crawl-referral-links
+      '@queues/crawler':
+        specifier: workspace:^
+        version: link:../../queues/crawler
+      '@voucha/test-helpers':
+        specifier: workspace:^
+        version: link:../../test-helpers
+
   backend/workers/bedrock-batch-sqs:
     dependencies:
       '@backend/worker-runtime':
@@ -12419,6 +12555,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/bedrock-embeddings-batch':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings-batch
@@ -12438,21 +12577,9 @@ importers:
 
   backend/workers/bedrock-embeddings:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
-      '@queues/bedrock-embeddings':
-        specifier: workspace:^
-        version: link:../../queues/bedrock-embeddings
       '@services/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings
@@ -12484,12 +12611,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
+      '@modules/pagination':
         specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@modules/queue-errors':
-        specifier: workspace:^
-        version: link:../../modules/queue-errors
+        version: link:../../modules/pagination
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -12515,9 +12639,6 @@ importers:
       '@modules/aws':
         specifier: workspace:^
         version: link:../../modules/aws
-      '@modules/pagination':
-        specifier: workspace:^
-        version: link:../../modules/pagination
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -12606,15 +12727,6 @@ importers:
 
   backend/workers/content-analysis:
     dependencies:
-      '@data-stores/valkey-glide-mq':
-        specifier: workspace:^
-        version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
-      '@queues/background':
-        specifier: workspace:^
-        version: link:../../queues/background
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../../queues/content-analysis
@@ -12633,9 +12745,6 @@ importers:
       '@vouchington/media':
         specifier: ^0.2.0
         version: 0.2.0
-      glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@26.6.5)
@@ -12707,9 +12816,9 @@ importers:
       '@jongleberry/vurst-html':
         specifier: ^0.4.3
         version: 0.4.3
-      '@modules/queue-config':
+      '@queues/background-cpu':
         specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background-cpu
       '@queues/crawl-dispatch':
         specifier: workspace:^
         version: link:../../queues/crawl-dispatch
@@ -12786,9 +12895,6 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
-        specifier: workspace:^
-        version: link:../../modules/queue-config
       '@queues/crawl-browser':
         specifier: workspace:^
         version: link:../../queues/crawl-browser
@@ -12823,9 +12929,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
-      '@modules/queue-config':
+      '@queues/background-cpu':
         specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background-cpu
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
@@ -12949,6 +13055,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/bedrock-embeddings':
         specifier: workspace:^
         version: link:../../queues/bedrock-embeddings
@@ -13152,6 +13261,9 @@ importers:
       '@modules/queue-config':
         specifier: workspace:^
         version: link:../../modules/queue-config
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../../queues/background-cpu
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
@@ -13180,9 +13292,6 @@ importers:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@26.6.5)
     devDependencies:
-      '@queues/content-analysis':
-        specifier: workspace:^
-        version: link:../../queues/content-analysis
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
@@ -13712,9 +13821,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
-      '@modules/queue-config':
+      '@queues/background-cpu':
         specifier: workspace:^
-        version: link:../../modules/queue-config
+        version: link:../../queues/background-cpu
       '@queues/unfurl-referral-links':
         specifier: workspace:^
         version: link:../../queues/unfurl-referral-links

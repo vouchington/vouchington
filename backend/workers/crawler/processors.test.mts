@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { insertTestUrl, insertTestUrlHostname } from '@voucha/test-helpers'
 import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
 import { CrawlerNetworkError, CrawlerRateLimitError } from '@modules/on-error/errors'
-import { crawlUrls } from '@queues/crawler/queues'
+import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
 import { setDomainRateLimited } from '@services/crawls/domain-rate-limit'
 import { buildCrawlerJobResult, handleCrawlerProcessorError } from './processors/outcomes.mts'
 import { processCrawlerJob } from './processors.mts'
@@ -16,7 +16,9 @@ describe('crawler processor', () => {
     const hostnameId = await insertTestUrlHostname({ hostname })
     const urlId = await insertTestUrl({ hostnameId, url: `http://${hostname}/path` })
 
-    await expect(processCrawlerJob(makeJob('crawl_url', { url_id: urlId }))).resolves.toBeNull()
+    await expect(
+      processCrawlerJob(makeJob('crawl.crawl_url', { url_id: urlId })),
+    ).resolves.toBeNull()
   })
 
   it('accepts a crawl timeout override on crawl_url jobs', async () => {
@@ -25,12 +27,12 @@ describe('crawler processor', () => {
     const urlId = await insertTestUrl({ hostnameId, url: `http://${hostname}/path` })
 
     await expect(
-      processCrawlerJob(makeJob('crawl_url', { url_id: urlId, crawl_timeout_ms: 10_000 })),
+      processCrawlerJob(makeJob('crawl.crawl_url', { url_id: urlId, crawl_timeout_ms: 10_000 })),
     ).resolves.toBeNull()
   })
 
   it('rejects malformed and unknown crawler jobs', async () => {
-    await expect(processCrawlerJob(makeJob('crawl_url', {}))).rejects.toThrow(
+    await expect(processCrawlerJob(makeJob('crawl.crawl_url', {}))).rejects.toThrow(
       'Crawl URL job .url_id is required',
     )
     await expect(processCrawlerJob(makeJob('unexpected', {}))).rejects.toThrow(
@@ -44,7 +46,7 @@ describe('crawler processor', () => {
     await setDomainRateLimited(hostnameId, 1_000)
 
     await expect(
-      processCrawlerJob(makeJob('crawl_url', { url_id: urlId }, { priority: 7 })),
+      processCrawlerJob(makeJob('crawl.crawl_url', { url_id: urlId }, { priority: 7 })),
     ).resolves.toEqual({
       replacement_job_id: expect.any(String),
     })
@@ -61,7 +63,7 @@ describe('crawler processor', () => {
     expect(
       waiting.some(
         job =>
-          job.name === 'crawl_url' &&
+          job.name === 'crawl.crawl_url' &&
           (job.data as { url_id?: string; rate_limit_retry_count?: number }).url_id === urlId &&
           (job.data as { url_id?: string; rate_limit_retry_count?: number })
             .rate_limit_retry_count === 1 &&
@@ -126,7 +128,7 @@ describe('crawler processor', () => {
     expect(
       waiting.some(
         job =>
-          job.name === 'crawl_url' &&
+          job.name === 'crawl.crawl_url' &&
           (job.data as { url_id?: string; rate_limit_retry_count?: number }).url_id === urlId &&
           (job.data as { url_id?: string; rate_limit_retry_count?: number })
             .rate_limit_retry_count === 1,
@@ -167,7 +169,7 @@ describe('crawler processor', () => {
     expect(
       waiting.some(
         job =>
-          job.name === 'crawl_url' &&
+          job.name === 'crawl.crawl_url' &&
           job.opts.priority === 1 &&
           (
             job.data as {

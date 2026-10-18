@@ -1,5 +1,6 @@
 import type { ScheduleDefinition } from '@backend/worker-runtime'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 
 export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {
@@ -12,35 +13,9 @@ export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
       import('@queues/heartbeat/enqueues/schedules').then(module => module.upsertSchedules),
   },
   {
-    queueName: 'crawl-dispatch',
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
     load: () =>
-      import('@queues/crawl-dispatch/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'crawl_referral_links',
-    load: () =>
-      import('@queues/crawl-referral-links/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
-    queueName: 'unfurl_referral_links',
-    load: () =>
-      import('@queues/unfurl-referral-links/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
-  },
-  {
-    queueName: 'content-analysis',
-    load: () =>
-      import('@queues/content-analysis/enqueues/schedules').then(module => module.upsertSchedules),
-  },
-  {
-    queueName: 'bedrock-embeddings-batch',
-    load: () =>
-      import('@queues/bedrock-embeddings-batch/enqueues/schedules').then(
-        module => module.upsertSchedules,
-      ),
+      import('./background-cpu-schedules.mts').then(module => module.upsertBackgroundCpuSchedules),
   },
   {
     queueName: 'ai_agents',

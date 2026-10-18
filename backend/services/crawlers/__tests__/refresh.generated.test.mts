@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { beforeAll, expect, it, describe } from 'vitest'
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
 import {
@@ -100,6 +102,44 @@ describe('refresh.generated', () => {
     await insertStaleFetchCrawlerForHostname(hostnameId!)
     const ids = await searchHostnameIdsNeedingCrawlerRefresh(10_000)
     expect(ids.filter(id => id === hostnameId)).toHaveLength(1)
+  })
+
+  it('bounds a refresh sweep by its saved cursor and start time', async () => {
+    const sweepStartedAt = new Date(
+      Date.UTC(2090, 0, 15, 12) + parseInt(randomUUID().slice(0, 7), 16),
+    )
+    const idAt = (offsetMs: number) =>
+      getMinUUIDv7ForDate(new Date(sweepStartedAt.getTime() + offsetMs))
+    const beforeCursorId = idAt(-3_000)
+    const afterCursorId = idAt(-1_000)
+    const beyondSweepId = idAt(1)
+    const suffix = randomUUID()
+    await Promise.all([
+      insertTestUrlHostname({
+        id: beforeCursorId,
+        hostname: `refresh-before-cursor-${suffix}.example.com`,
+        is_crawlable: true,
+      }),
+      insertTestUrlHostname({
+        id: afterCursorId,
+        hostname: `refresh-after-cursor-${suffix}.example.com`,
+        is_crawlable: true,
+      }),
+      insertTestUrlHostname({
+        id: beyondSweepId,
+        hostname: `refresh-beyond-sweep-${suffix}.example.com`,
+        is_crawlable: true,
+      }),
+    ])
+
+    const ids = await searchHostnameIdsNeedingCrawlerRefresh(1, {}, undefined, {
+      sweepStartedAt: sweepStartedAt.toISOString(),
+      afterId: idAt(-2_000),
+    })
+
+    expect(ids).toEqual([afterCursorId])
+    expect(ids).not.toContain(beforeCursorId)
+    expect(ids).not.toContain(beyondSweepId)
   })
 
   it('searchCrawlerRefreshUrlCandidatesByHostnameId excludes IDs and returns unique candidates', async () => {

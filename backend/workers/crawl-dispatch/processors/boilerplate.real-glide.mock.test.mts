@@ -5,8 +5,8 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { S3ImagesClient } from '@modules/aws'
 import { gzipBytes } from '@modules/utils/compression'
-import { QUEUE_NAME } from '@queues/crawl-dispatch/config'
-import { crawlDispatchQueue } from '@queues/crawl-dispatch/queues'
+import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
+import { backgroundCpu as crawlDispatchQueue } from '@queues/background-cpu/queues'
 import { getLatestBoilerplateRemovalByHostnameAndPath } from '@services/boilerplate-removals'
 import { createCrawler } from '@services/crawlers'
 import { createCrawl } from '@services/crawls/create'
@@ -56,7 +56,7 @@ async function runJob(
 
 describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
   it('fails malformed and unknown jobs without acknowledging them', async () => {
-    await expect(runJob('boilerplate_removal')).rejects.toThrow(
+    await expect(runJob('crawl.boilerplate_removal')).rejects.toThrow(
       'Boilerplate removal job requires .hostname_id and .parent_path',
     )
     await expect(runJob('missingJob')).rejects.toThrow('Crawl dispatch job missingJob not found')
@@ -80,7 +80,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
         await updateUrlHostname(hostnameId, { is_crawlable: false })
       } finally {
         const ownedJobs = await crawlDispatchQueue.searchJobs({
-          name: 'boilerplate_removal',
+          name: 'crawl.boilerplate_removal',
           data: { hostname_id: hostnameId, parent_path: '/blog' },
         })
         await Promise.all(ownedJobs.map(job => job.remove()))
@@ -98,7 +98,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
       })
     }
 
-    const dispatched = await runJob('boilerplate_removal_dispatcher', {}, current =>
+    const dispatched = await runJob('crawl.boilerplate_removal_dispatcher', {}, current =>
       processCrawlDispatchJob(current, {
         processBoilerplateRemovalDispatcher: () => processBoilerplateRemovalDispatcher(hostnameId),
       }),
@@ -107,13 +107,13 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
     expect(
       (
         await crawlDispatchQueue.searchJobs({
-          name: 'boilerplate_removal',
+          name: 'crawl.boilerplate_removal',
           data: { hostname_id: hostnameId, parent_path: '/blog' },
         })
       ).length,
     ).toBeGreaterThan(0)
 
-    const result = await runJob('boilerplate_removal', {
+    const result = await runJob('crawl.boilerplate_removal', {
       hostname_id: hostnameId,
       parent_path: '/blog',
     })

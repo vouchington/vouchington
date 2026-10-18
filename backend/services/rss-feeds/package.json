@@ -31,6 +31,7 @@
     "@modules/pagination": "workspace:^",
     "@modules/rss-feed-cover-art": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/psql": "workspace:^",

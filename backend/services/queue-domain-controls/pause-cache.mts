@@ -3,6 +3,10 @@ import {
   queueDomainControlsPubSub,
 } from '@data-stores/valkey-pubsub'
 import { getPauseCacheMs } from '@queues/background/config'
+import {
+  getPauseCacheMs as getCpuPauseCacheMs,
+  isBackgroundCpuDomain,
+} from '@queues/background-cpu/config'
 import { getQueueDomainControl } from './read.mts'
 
 type CachedPause = { paused: boolean; expiresAt: number }
@@ -30,7 +34,11 @@ async function readAndCache(domain: string): Promise<boolean> {
   const generation = generations.get(domain) ?? 0
   const { paused } = await getQueueDomainControl(domain)
   if ((generations.get(domain) ?? 0) === generation) {
-    cache.set(domain, { paused, expiresAt: Date.now() + getPauseCacheMs() })
+    cache.set(domain, {
+      paused,
+      expiresAt:
+        Date.now() + (isBackgroundCpuDomain(domain) ? getCpuPauseCacheMs() : getPauseCacheMs()),
+    })
   }
   return paused
 }

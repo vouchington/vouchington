@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest'
 
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { CORE_BACKFILLS } from '@services/queue-monitoring/backfills-core'
 
 describe('CORE_BACKFILLS', () => {
+  it('advertises the registered CPU job names for language backfills', () => {
+    const backfills = CORE_BACKFILLS.filter(entry => entry.id.startsWith('language-detection-'))
+
+    expect(backfills).toHaveLength(6)
+    for (const backfill of backfills) {
+      expect(backfill.queue_name).toBe(BACKGROUND_CPU_QUEUE_NAME)
+      expect(requireBackgroundCpuJob(backfill.job_name).name).toBe(backfill.job_name)
+    }
+  })
+
   it('registers classifier run recovery for operators', () => {
     const backfill = CORE_BACKFILLS.find(entry => entry.id === 'classifier-runs')
 

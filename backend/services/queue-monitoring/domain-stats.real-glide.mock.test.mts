@@ -8,7 +8,10 @@ import {
 } from '@voucha/test-helpers/real-glide-background'
 import { OPENAI_MODERATION_POST_JOB } from '@queues/background/enqueues/openai-moderation-jobs'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
+import { BACKGROUND_CPU_DOMAINS, BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { createTestUser } from '@voucha/test-helpers'
 import { countDomainJobs } from './domain-stats.mts'
+import { listManagedQueueDomains, setManagedQueueDomainPaused } from './domains.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -30,6 +33,19 @@ describe('capped per-domain job counts through real GlideMQ', () => {
   afterEach(async () => {
     await harness?.close()
     harness = undefined
+  })
+
+  it('routes CPU domain stats and rejects an unknown domain before changing controls', async () => {
+    const { domains } = await listManagedQueueDomains(BACKGROUND_CPU_QUEUE_NAME)
+    expect(domains.map(domain => domain.domain)).toEqual(BACKGROUND_CPU_DOMAINS)
+    expect(domains.every(domain => domain.waiting.count >= 0 && domain.delayed.count >= 0)).toBe(
+      true,
+    )
+
+    const admin = await createTestUser({ administrator: true })
+    await expect(
+      setManagedQueueDomainPaused(admin, BACKGROUND_CPU_QUEUE_NAME, 'unknown', { paused: true }),
+    ).rejects.toMatchObject({ statusCode: 404 })
   })
 
   it('counts each state exactly under the cap, never counts another domain, and stops at the cap', async () => {
@@ -71,7 +87,7 @@ describe('capped per-domain job counts through real GlideMQ', () => {
         },
       )
 
-      const exact = await countDomainJobs(harness.queue, 'ses-inbound', 100)
+      const exact = await countDomainJobs(harness.queue, [SES_INBOUND_PROCESS_JOB.name], 100)
       expect(exact).toEqual({
         waiting: { count: 0, complete: true },
         active: { count: 1, complete: true },
@@ -81,7 +97,7 @@ describe('capped per-domain job counts through real GlideMQ', () => {
       })
 
       // A cap below a state's size stops the scan there; smaller states stay exact.
-      const capped = await countDomainJobs(harness.queue, 'ses-inbound', 2)
+      const capped = await countDomainJobs(harness.queue, [SES_INBOUND_PROCESS_JOB.name], 2)
       expect(capped.delayed).toEqual({ count: 2, complete: false })
       expect(capped.completed).toEqual({ count: 2, complete: false })
       expect(capped.failed).toEqual({ count: 1, complete: true })
@@ -89,11 +105,11 @@ describe('capped per-domain job counts through real GlideMQ', () => {
 
       // Another domain's backlog can fill the shared read: this domain's job lies beyond it, so
       // its count is partial rather than exact.
-      const crowdedOut = await countDomainJobs(harness.queue, 'openai-moderation', 2)
+      const crowdedOut = await countDomainJobs(harness.queue, [OPENAI_MODERATION_POST_JOB.name], 2)
       expect(crowdedOut.delayed).toEqual({ count: 0, complete: false })
 
       // The other domain sees only its own job, though the queue holds both.
-      const other = await countDomainJobs(harness.queue, 'openai-moderation', 100)
+      const other = await countDomainJobs(harness.queue, [OPENAI_MODERATION_POST_JOB.name], 100)
       expect(other.delayed).toEqual({ count: 1, complete: true })
       expect(other.completed).toEqual({ count: 0, complete: true })
     } finally {

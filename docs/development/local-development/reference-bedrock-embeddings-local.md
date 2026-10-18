@@ -2,8 +2,9 @@
 
 [Back to Dev Environment Reference](README.md#bedrock-embeddings-local)
 
-The `bedrock-embeddings-batch-creation` worker uploads `input.jsonl` to S3, then invokes a Bedrock batch
-job. Local runs must use an isolated developer bucket and short-lived, least-privilege credentials;
+The Bedrock batch-creation handler on the shared CPU worker uploads `input.jsonl` to S3, then
+invokes a Bedrock batch job. Local runs must use an isolated developer bucket and short-lived,
+least-privilege credentials;
 they must never target staging or production resources.
 
 Follow the private `vouchington-infra` operator runbook to obtain the deployment-specific values.

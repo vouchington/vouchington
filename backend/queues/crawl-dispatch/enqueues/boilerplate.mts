@@ -1,8 +1,10 @@
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { QUEUE_NAME, PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
-import { crawlDispatchQueue } from '../queues.mts'
+import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from '../config.mts'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
+import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { BoilerplateRemovalJobs } from '../types.mts'
 
 type EnqueueBoilerplateRemovalEntry = {
@@ -16,30 +18,31 @@ const DISPATCHER_JOB_NAME: BoilerplateRemovalJobs = 'boilerplate_removal_dispatc
 const enqueueBulkBoilerplateRemovalJobs = createBulkEnqueueFunction<
   EnqueueBoilerplateRemovalEntry,
   { hostname_id: string; parent_path: string },
-  BoilerplateRemovalJobs
+  string
 >({
-  queue: crawlDispatchQueue,
-  queueName: QUEUE_NAME,
-  jobName: REMOVAL_JOB_NAME,
+  queue: backgroundCpu,
+  queueName: BACKGROUND_CPU_QUEUE_NAME,
+  jobName: `crawl.${REMOVAL_JOB_NAME}`,
+  defaults: requireBackgroundCpuJob(`crawl.${REMOVAL_JOB_NAME}`).options,
   buildJob: ({ hostnameId, parentPath }) => ({
     data: { hostname_id: hostnameId, parent_path: parentPath },
     opts: {
       deduplication: {
-        id: `${REMOVAL_JOB_NAME}__${hostnameId}__${parentPath}`,
+        id: `crawl.${REMOVAL_JOB_NAME}__${hostnameId}__${parentPath}`,
         mode: 'debounce',
       },
     },
   }),
 })
 
-const enqueueBoilerplateRemovalDispatcherJob = createEnqueueFunction<
-  Record<string, never>,
-  BoilerplateRemovalJobs
->({
-  queue: crawlDispatchQueue,
-  queueName: QUEUE_NAME,
-  jobName: DISPATCHER_JOB_NAME,
-})
+const enqueueBoilerplateRemovalDispatcherJob = createEnqueueFunction<Record<string, never>, string>(
+  {
+    queue: backgroundCpu,
+    queueName: BACKGROUND_CPU_QUEUE_NAME,
+    jobName: `crawl.${DISPATCHER_JOB_NAME}`,
+    defaults: requireBackgroundCpuJob(`crawl.${DISPATCHER_JOB_NAME}`).options,
+  },
+)
 
 export const enqueueBulkBoilerplateRemoval = (
   entries: EnqueueBoilerplateRemovalEntry[],

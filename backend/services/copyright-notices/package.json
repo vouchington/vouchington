@@ -29,6 +29,7 @@
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/ai-agents": "workspace:^",
+    "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@queues/emails": "workspace:^",
     "@queues/notifications": "workspace:^",
