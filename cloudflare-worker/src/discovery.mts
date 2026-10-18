@@ -2,7 +2,7 @@ import { VALID_RSS_POST_TYPES, isCatalogValue } from '@ts-shared/feed-capabiliti
 import { isPrivateDiscoveryPath } from '@ts-shared/route-classification'
 
 import { getSiteOrigin } from './discovery-origin.mts'
-import { appendHeaders } from './proxy.mts'
+import { appendHeaders } from '@vouchington/edge'
 import type { Env } from './types.mts'
 
 type LinkEntry = {

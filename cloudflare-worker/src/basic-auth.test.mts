@@ -1,68 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { getBasicAuthResponse, parseBasicAuthCredentials } from './basic-auth.mts'
+import { getBasicAuthResponse } from './basic-auth.mts'
 import type { Env } from './types.mts'
 
 const baseEnv: Env = {
   BACKEND_ORIGIN: 'https://backend.example.com',
   WEB_ORIGIN: 'https://web.example.com',
 }
-
-describe('parseBasicAuthCredentials', () => {
-  it('returns null when env value is unset', () => {
-    expect(parseBasicAuthCredentials(undefined)).toBeNull()
-  })
-
-  it('returns null when env value is empty', () => {
-    expect(parseBasicAuthCredentials('')).toBeNull()
-  })
-
-  it('returns null when env value is whitespace only', () => {
-    expect(parseBasicAuthCredentials('   ')).toBeNull()
-  })
-
-  it('parses a single credential', () => {
-    const result = parseBasicAuthCredentials('alice:hunter2')
-    expect(result).toEqual(new Set(['alice:hunter2']))
-  })
-
-  it('parses multiple credentials (rotation list)', () => {
-    const result = parseBasicAuthCredentials('alice:hunter2,bob:s3cr3t')
-    expect(result).toEqual(new Set(['alice:hunter2', 'bob:s3cr3t']))
-  })
-
-  it('preserves significant whitespace around entries', () => {
-    const result = parseBasicAuthCredentials(' alice:hunter2 , bob:s3cr3t ')
-    expect(result).toEqual(new Set([' alice:hunter2 ', ' bob:s3cr3t ']))
-  })
-
-  it('rejects the entire list when any entry is malformed', () => {
-    const result = parseBasicAuthCredentials('alice:hunter2,,bob:s3cr3t,')
-    expect(result).toEqual(new Set())
-  })
-
-  it('returns an empty Set (gate enabled, fail-closed) when all entries are malformed', () => {
-    const result = parseBasicAuthCredentials('alice,bob')
-    expect(result).not.toBeNull()
-    expect(result?.size).toBe(0)
-  })
-
-  it('rejects an entry with an empty password (colon at end)', () => {
-    const result = parseBasicAuthCredentials('alice:')
-    expect(result).not.toBeNull()
-    expect(result?.size).toBe(0)
-  })
-
-  it('rejects an entry with an empty username (colon at start)', () => {
-    const result = parseBasicAuthCredentials(':hunter2')
-    expect(result).not.toBeNull()
-    expect(result?.size).toBe(0)
-  })
-
-  it('accepts credentials where the password contains a colon', () => {
-    const result = parseBasicAuthCredentials('alice:pass:word')
-    expect(result).toEqual(new Set(['alice:pass:word']))
-  })
-})
 
 const makeRequest = (
   path: string,

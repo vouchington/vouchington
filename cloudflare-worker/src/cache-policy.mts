@@ -1,6 +1,6 @@
 import { isSitemapRoute, isAdminBackendRoute, RSS_ROUTE_RE } from './routing.mts'
-import { WELL_KNOWN_PATHS } from './specification-documents.mts'
 import type { BotTier } from './bot-tier.mts'
+import { bypassPolicy, cachedPolicy, type CachePolicy as EdgeCachePolicy } from '@vouchington/edge'
 import {
   isAuthCallbackRoute,
   isFullyCachedRoute,
@@ -9,36 +9,7 @@ import {
   isPrivateBackendCacheBypassRoute,
 } from './cache-route-policy.mts'
 
-export const toPositiveNumber = (raw: string | undefined, fallback: number): number => {
-  const value = Number(raw)
-  if (!Number.isFinite(value) || value <= 0) return fallback
-  return Math.floor(value)
-}
-
-// Workers Cache is the sole cache layer (no downstream shared cache), so max-age carries the TTL
-// directly. Bound stale origin-error serving to one day instead of Cloudflare's indefinite default.
-export const buildCacheControlHeader = (ttlSeconds: number): string =>
-  `public, max-age=${ttlSeconds}, stale-while-revalidate=${ttlSeconds * 2}, stale-if-error=86400`
-
-const hasSharedCacheDisqualifyingCacheControl = (headers: Headers): boolean => {
-  const cacheControl = headers.get('cache-control')
-  if (!cacheControl) return false
-  return cacheControl
-    .split(',')
-    .map(part => part.trim().toLowerCase())
-    .some(
-      directive => directive === 'private' || directive === 'no-store' || directive === 'no-cache',
-    )
-}
-
-export const isCacheableResponse = (response: Response): boolean => {
-  if (response.status < 200 || response.status >= 300) return false
-  if (hasSharedCacheDisqualifyingCacheControl(response.headers)) return false
-  return !response.headers.has('set-cookie')
-}
-
 const SESSION_COOKIES_TO_STRIP = new Set(['st', 'dt'])
-const EMPTY_SET = new Set<string>()
 
 interface CachePolicyInput {
   pathname: string
@@ -59,49 +30,23 @@ interface CachePolicyInput {
 
 export type CacheAudience = 'static' | 'bot' | 'anon'
 
-export interface CachePolicy {
-  mode: 'cache' | 'bypass'
-  /** Which audience this response targets. Determines the cache key suffix. */
-  audience: CacheAudience | null
-  /** True for routes that must not remain browser/intermediary cacheable on BYPASS. */
-  forceNoStore: boolean
-  ttlSeconds: number
-  staleWhileRevalidateSeconds: number
+export type CachePolicy = EdgeCachePolicy<CacheAudience> & {
+  /** Voucha routes can require no-store behavior while still bypassing shared cache. */
   fullyCachedRoute: boolean
-  stripCookieNames: Set<string>
-  stripAllCookies: boolean
 }
 
-const BYPASS_POLICY: CachePolicy = {
-  mode: 'bypass',
-  audience: null,
-  forceNoStore: false,
-  ttlSeconds: 0,
-  staleWhileRevalidateSeconds: 0,
+const BYPASS_POLICY: CachePolicy = { ...bypassPolicy<CacheAudience>(), fullyCachedRoute: false }
+
+const NO_STORE_BYPASS_POLICY: CachePolicy = {
+  ...bypassPolicy<CacheAudience>({ forceNoStore: true }),
   fullyCachedRoute: false,
-  stripCookieNames: EMPTY_SET,
-  stripAllCookies: false,
 }
-
-const NO_STORE_BYPASS_POLICY: CachePolicy = { ...BYPASS_POLICY, forceNoStore: true }
 const BOT_NO_STORE_BYPASS_POLICY: CachePolicy = {
-  ...NO_STORE_BYPASS_POLICY,
-  stripCookieNames: SESSION_COOKIES_TO_STRIP,
-}
-
-export const parseStaticCachedPaths = (raw: string | undefined): Set<string> => {
-  const extra = raw
-    ? raw.split(',').flatMap(pathname => (pathname.trim() ? [pathname.trim()] : []))
-    : []
-  // Always include the hardcoded defaults so a CACHED_STATIC_PATHS binding adds paths rather than dropping them.
-  return new Set([
-    '/favicon.ico',
-    '/robots.txt',
-    '/llms.txt',
-    '/llms-full.txt',
-    ...WELL_KNOWN_PATHS,
-    ...extra,
-  ])
+  ...bypassPolicy<CacheAudience>({
+    forceNoStore: true,
+    stripCookieNames: SESSION_COOKIES_TO_STRIP,
+  }),
+  fullyCachedRoute: false,
 }
 
 export type CacheTtlConfig = Pick<
@@ -154,29 +99,17 @@ export const getCachePolicy = (input: CachePolicyInput): CachePolicy => {
   const fullyCachedRoute = isFullyCachedRoute(input.pathname, input.staticCachedPaths)
   if (fullyCachedRoute) {
     const ttlSeconds = getCacheTtlSecondsForAudience('static', input.pathname, input)
-    return {
-      mode: 'cache',
-      audience: 'static',
-      forceNoStore: false,
-      ttlSeconds,
-      staleWhileRevalidateSeconds: ttlSeconds * 2,
-      fullyCachedRoute,
-      stripCookieNames: EMPTY_SET,
-      stripAllCookies: true,
-    }
+    return { ...cachedPolicy('static', ttlSeconds, { stripAllCookies: true }), fullyCachedRoute }
   }
 
   // Check bots before auth: bots always get cached responses, cookies stripped, regardless of st.
   if (input.botTier !== null) {
     return {
-      mode: 'cache',
-      audience: 'bot',
-      forceNoStore: false,
-      ttlSeconds: input.botCacheTtlSeconds,
-      staleWhileRevalidateSeconds: input.botCacheTtlSeconds * 2,
+      ...cachedPolicy('bot', input.botCacheTtlSeconds, {
+        stripCookieNames: SESSION_COOKIES_TO_STRIP,
+        stripAllCookies: true,
+      }),
       fullyCachedRoute: false,
-      stripCookieNames: SESSION_COOKIES_TO_STRIP,
-      stripAllCookies: true,
     }
   }
 
@@ -185,13 +118,7 @@ export const getCachePolicy = (input: CachePolicyInput): CachePolicy => {
   }
 
   return {
-    mode: 'cache',
-    audience: 'anon',
-    forceNoStore: false,
-    ttlSeconds: input.anonCacheTtlSeconds,
-    staleWhileRevalidateSeconds: input.anonCacheTtlSeconds * 2,
+    ...cachedPolicy('anon', input.anonCacheTtlSeconds, { stripAllCookies: true }),
     fullyCachedRoute: false,
-    stripCookieNames: EMPTY_SET,
-    stripAllCookies: true,
   }
 }

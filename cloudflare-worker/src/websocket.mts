@@ -1,7 +1,12 @@
-import { buildOriginRequest } from './proxy.mts'
-import { edgeErrorResponse } from './error-response.mts'
+import {
+  buildOriginRequest,
+  edgeErrorResponse,
+  NEXTJS_INTERNAL_HEADERS_TO_STRIP,
+} from '@vouchington/edge'
 import { isProductionMode } from './production-mode.mts'
 import type { Env } from './types.mts'
+import { REQUEST_KIND_HEADER } from './client-info.mts'
+import { stripStagingControlHeaders } from './staging-control-headers.mts'
 
 export const DEV_HMR_WEBSOCKET_PATH = '/_next/hmr'
 const NO_STRIP_COOKIES = new Set<string>()
@@ -55,15 +60,21 @@ export const handleWebSocket = async (request: Request, url: URL, env: Env): Pro
   }
 
   const requestId = crypto.randomUUID()
-  const originRequest = buildOriginRequest(
-    request,
-    env.WEB_ORIGIN ?? '',
-    NO_STRIP_COOKIES,
-    undefined,
-    undefined,
-    false,
+  const appHeaders = new Headers(request.headers)
+  stripStagingControlHeaders(appHeaders)
+  appHeaders.delete('x-user-id')
+  appHeaders.delete('x-device-token')
+  appHeaders.delete('x-session-token')
+  appHeaders.delete('x-voucha-gpc')
+  appHeaders.delete(REQUEST_KIND_HEADER)
+  if (request.headers.get('sec-gpc') === '1') appHeaders.set('x-voucha-gpc', '1')
+  const originRequest = buildOriginRequest(new Request(request, { headers: appHeaders }), {
+    origin: env.WEB_ORIGIN ?? '',
+    stripCookieNames: NO_STRIP_COOKIES,
     requestId,
-  )
+    sharedSecret: { header: 'x-cf-worker-secret', value: undefined },
+    stripHeaders: NEXTJS_INTERNAL_HEADERS_TO_STRIP,
+  })
 
   let originResponse: Response
   try {

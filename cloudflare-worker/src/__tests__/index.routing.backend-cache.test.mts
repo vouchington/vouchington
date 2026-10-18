@@ -175,7 +175,7 @@ describe('worker fetch handler — routing and caching', () => {
 
     expect(response.headers.get('x-voucha-cache')).toBe('BYPASS')
     // The old caches.default no-vary-search response header is retired — Workers Cache
-    // normalizes the dispatch URL itself (see cache-no-vary-search.mts), and this branch
+    // normalizes the dispatch URL itself through @vouchington/edge, and this branch
     // never dispatches at all (no CACHE_PLACEHOLDER_NONCE configured).
     expect(response.headers.get('no-vary-search')).toBeNull()
     expect(fetchSpy).toHaveBeenCalledTimes(1)

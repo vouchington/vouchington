@@ -90,7 +90,7 @@ export interface Env {
   /**
    * Fixed per-deploy high-entropy placeholder nonce. CachedOrigin stamps this into cached
    * HTML/CSP in place of a real per-request nonce; the gateway rewrites it to a fresh nonce
-   * on every serve (see nonce-rewrite.mts). Rotated only at deploy time, never per-request —
+   * on every serve (see the published edge nonce rewrite). Rotated only at deploy time, never per-request —
    * injected by the private deployment receiver. Its secrecy is
    * load-bearing: never log it.
    */

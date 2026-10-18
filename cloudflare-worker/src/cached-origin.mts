@@ -1,9 +1,9 @@
-import { WorkerEntrypoint, type CachePurgeResult } from 'cloudflare:workers'
+import { WorkerEntrypoint } from 'cloudflare:workers'
 import { finalizeCachedOriginResponse } from './cached-origin-response.mts'
 import { DISPATCH_BOT_TIER_HEADER, DISPATCH_IP_HEADER } from './cache-dispatch.mts'
 import { buildWebCsp } from './csp.mts'
-import { edgeErrorResponse } from './error-response.mts'
-import { buildWorkerOriginRequest, fetchOriginResponse } from './origin-request.mts'
+import { edgeErrorResponse, purgeCacheTags, stripDispatchOnlyHeaders } from '@vouchington/edge'
+import { buildWorkerOriginRequest, fetchWorkerOriginResponse } from './origin-request.mts'
 import { isProductionMode } from './production-mode.mts'
 import { checkBotRateLimit } from './rate-limit.mts'
 import { getOriginPathOverride, getRouteTarget, resolveOrigin } from './routing.mts'
@@ -14,23 +14,6 @@ import {
 } from './staging-canary.mts'
 import { INTERNAL_CANARY_FAULT_HEADER } from './staging-control-headers.mts'
 import type { CachedOriginProps, Env } from './types.mts'
-// Strips the dispatch-only bot-tier/IP signal (see cache-dispatch.mts) before any
-// origin-bound request is built — the raw header names must never reach the origin.
-// The IP is re-injected as cf-connecting-ip only inside the synthetic dispatch request:
-// cache-dispatch.mts builds never carries CF's own cf-connecting-ip, so without this,
-// buildOriginRequest's cf-connecting-ip -> x-forwarded-for rewrite would silently drop
-// the client IP on every MISS. buildOriginRequest strips cf-connecting-ip before the
-// origin fetch. (Reconstructing an `rsc` header from ctx.props.isRsc is deferred —
-// RSC stays BYPASS pending plan risk #2 verification.)
-const stripDispatchOnlyHeaders = (request: Request): Request => {
-  const headers = new Headers(request.headers)
-  headers.delete(DISPATCH_BOT_TIER_HEADER)
-  headers.delete(INTERNAL_CANARY_FAULT_HEADER)
-  const dispatchIp = headers.get(DISPATCH_IP_HEADER)
-  headers.delete(DISPATCH_IP_HEADER)
-  if (dispatchIp) headers.set('cf-connecting-ip', dispatchIp)
-  return new Request(request, { headers })
-}
 
 /**
  * Thin origin-fetching passthrough that Workers Cache sits in front of (see
@@ -100,7 +83,7 @@ export class CachedOrigin extends WorkerEntrypoint<Env, CachedOriginProps> {
 
     // Stamped in place of a real nonce so the same cached bytes are valid for
     // every client; the gateway swaps it for a fresh per-request nonce on
-    // every serve (see nonce-rewrite.mts). The gateway only dispatches
+    // every serve (see the published edge nonce rewrite). The gateway only dispatches
     // target==='web' requests here when this secret is configured — see
     // request-handler.mts's canDispatchToCache — so it is guaranteed
     // non-empty whenever target === 'web' actually reaches this line.
@@ -127,7 +110,10 @@ export class CachedOrigin extends WorkerEntrypoint<Env, CachedOriginProps> {
       forceIdentityEncoding: true,
       origin,
       pathOverride,
-      request: stripDispatchOnlyHeaders(request),
+      request: stripDispatchOnlyHeaders(request, {
+        dropHeaders: [DISPATCH_BOT_TIER_HEADER, INTERNAL_CANARY_FAULT_HEADER],
+        ipHeader: DISPATCH_IP_HEADER,
+      }),
       requestId,
       requestKind: 'cache-fill',
       stripCookieNames: new Set(),
@@ -136,7 +122,7 @@ export class CachedOrigin extends WorkerEntrypoint<Env, CachedOriginProps> {
       webCsp,
     })
 
-    const originFetch = await fetchOriginResponse(originRequest, {
+    const originFetch = await fetchWorkerOriginResponse(originRequest, {
       botTier: null,
       countryCode: null,
       requestId,
@@ -154,17 +140,10 @@ export class CachedOrigin extends WorkerEntrypoint<Env, CachedOriginProps> {
   }
 
   /**
-   * RPC-only purge entry point (see EdgeExecutionContext.exports.CachedOrigin.purge in
-   * types.mts and the /infra/cache-purge route that calls it). Scoped to this
-   * entrypoint's own Workers Cache namespace via ctx.cache.purge({ tags }) — it cannot
-   * purge any other entrypoint's cache. Throws rather than silently no-opping when
-   * ctx.cache is unavailable: a silent no-op here would fail open on a cache-correctness
-   * path (stale content would keep serving with no error signal).
+   * RPC-only product entrypoint; the published helper applies the cache namespace's
+   * scoped purge contract and fails when the cache API is unavailable.
    */
-  async purge(tags: string[]): Promise<CachePurgeResult> {
-    if (!this.ctx.cache) {
-      throw new Error('Workers Cache purge API unavailable on this execution context')
-    }
-    return this.ctx.cache.purge({ tags })
+  async purge(tags: string[]) {
+    return purgeCacheTags(this.ctx, tags)
   }
 }

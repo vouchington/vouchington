@@ -1,4 +1,4 @@
-import { edgeErrorResponse } from './error-response.mts'
+import { edgeErrorResponse } from '@vouchington/edge'
 import type { Env } from './types.mts'
 
 export function getMaintenanceResponse(request: Request, env: Env): Response | null {

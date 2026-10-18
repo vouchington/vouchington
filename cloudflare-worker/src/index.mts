@@ -11,11 +11,14 @@ import {
   warnIfProductionValueInvalid,
   warnIfSentryConfigurationInvalid,
 } from './env-validation.mts'
-import { edgeErrorResponse } from './error-response.mts'
+import {
+  addSecurityHeaders as applySecurityHeaders,
+  edgeErrorResponse,
+  withHeaders,
+} from '@vouchington/edge'
 import { isProductionMode } from './production-mode.mts'
-import { withHeaders } from './proxy.mts'
 import { getRouteTarget, isAdminBackendRoute } from './routing.mts'
-import { addSecurityHeaders, shouldPreserveOriginNoReferrer } from './security-headers.mts'
+import { shouldPreserveOriginNoReferrer } from './security-headers.mts'
 import { captureWorkerException, createSentryOptions } from './sentry.mts'
 import { fetchInner as defaultFetchInner } from './request-handler.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
@@ -54,11 +57,9 @@ export function createWorker(
         // depends on (CF_WORKER_SECRET, CSP, bot tiers, rate limiters). Branch before them.
         if (env?.DOCS_BUCKET) {
           const response = await serveDocsRequest(request, env)
-          return addSecurityHeaders(
-            withHeaders(response, { 'x-request-id': requestId }),
-            true,
-            false,
-          )
+          return applySecurityHeaders(withHeaders(response, { 'x-request-id': requestId }), {
+            production: true,
+          })
         }
         warnIfWorkerSecretMisconfigured(env)
         warnIfProductionValueInvalid(env)
@@ -107,14 +108,13 @@ export function createWorker(
           addDiscoveryHeaders(response, url, env),
           responseHeaders,
         )
-        const securedResponse = addSecurityHeaders(
-          responseWithRequestHeaders,
-          isProduction,
-          env.HSTS_PRELOAD?.toLowerCase() === 'true',
-          responseCsp || undefined,
-          isOauthCallback ? 'unsafe-none' : undefined,
-          shouldPreserveOriginNoReferrer(url),
-        )
+        const securedResponse = applySecurityHeaders(responseWithRequestHeaders, {
+          production: isProduction,
+          hstsPreload: env.HSTS_PRELOAD?.toLowerCase() === 'true',
+          csp: responseCsp || undefined,
+          openerPolicy: isOauthCallback ? 'unsafe-none' : undefined,
+          preserveOriginNoReferrer: shouldPreserveOriginNoReferrer(url),
+        })
         logCacheDiagnostic(env, {
           requestId,
           routeTarget,
@@ -135,11 +135,10 @@ export function createWorker(
           edgeErrorResponse(500, 'Internal Server Error', 'INTERNAL_ERROR'),
           { 'x-request-id': requestId },
         )
-        return addSecurityHeaders(
-          errorResponse,
-          recoveryIsProduction,
-          recoveryEnv.HSTS_PRELOAD?.toLowerCase() === 'true',
-          buildWebCsp(recoveryEnv.CSP_ASSET_ORIGIN, {
+        return applySecurityHeaders(errorResponse, {
+          production: recoveryIsProduction,
+          hstsPreload: recoveryEnv.HSTS_PRELOAD?.toLowerCase() === 'true',
+          csp: buildWebCsp(recoveryEnv.CSP_ASSET_ORIGIN, {
             browserUploadOrigins: recoveryEnv.CSP_BROWSER_UPLOAD_ORIGINS,
             production: recoveryIsProduction,
             nonce: cspNonce,
@@ -147,8 +146,8 @@ export function createWorker(
             sentryWebDsn: recoveryEnv.SENTRY_WEB_DSN,
             requireBrowserUploadOrigins: false,
           }),
-          isOauthCallback ? 'unsafe-none' : undefined,
-        )
+          openerPolicy: isOauthCallback ? 'unsafe-none' : undefined,
+        })
       }
     },
   }

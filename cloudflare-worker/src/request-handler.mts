@@ -4,9 +4,13 @@ import type { BotTier } from './bot-tier.mts'
 import { getCachePolicy } from './cache-policy.mts'
 import { canUseCache, hasReferralAttributionSignal, isRscRequest } from './cache-route-policy.mts'
 import { dispatchToCachedOrigin } from './cache-dispatch.mts'
-import { normalizeCacheUrl } from './cache-no-vary-search.mts'
+import {
+  DEFAULT_NO_VARY_SEARCH_PARAM_NAMES,
+  normalizeCacheUrl,
+  parseCookies,
+  withHeaders,
+} from '@vouchington/edge'
 import { handleCachePurgeRequest } from './cache-purge-route.mts'
-import { parseCookies } from './cookies.mts'
 import { omitAtDefaultLocale, resolveEdgeUiLocale } from './edge-ui-locale.mts'
 import {
   getIdentityRateLimitRejection,
@@ -23,7 +27,6 @@ import {
 import { getMaintenanceResponse } from './maintenance.mts'
 import { runOriginBypass } from './origin-bypass.mts'
 import { isProductionMode } from './production-mode.mts'
-import { withHeaders } from './proxy.mts'
 import { getWorkerRequestConfig } from './request-config.mts'
 import { getCanonicalSitemapUrl, getRouteTarget, rejectRemovedSideloadRoute } from './routing.mts'
 import { handleSentryTunnel } from './sentry-tunnel.mts'
@@ -73,9 +76,8 @@ export async function fetchInner(
   // Serve Worker-owned responses before session, cache-dispatch, and rate-limit decisions.
   const staticInlineResponse = getStaticInlineResponse(request, url, env)
   if (staticInlineResponse) return staticInlineResponse
-  // Rate-limited early interceptions: handled in-worker, not proxied to origin, so each must
-  // run before getRouteTarget()'s routing below. /infra/cache-purge is unlike any other /infra/*
-  // path (those proxy to backend) — it calls context.exports.CachedOrigin.purge() directly.
+  // Early in-worker interceptions must rate-limit before getRouteTarget(). Cache purge calls
+  // CachedOrigin.purge() directly; other /infra/* routes proxy to the backend.
   const getInterceptResponse = async (handler: () => Promise<Response>) =>
     (await getRejection(false)) ?? handler()
   if (pathname === '/monitoring' && method === 'POST') {
@@ -98,10 +100,8 @@ export async function fetchInner(
   const sessionToken = cookies.get('st') ?? null
   const tokenPayloads = await verifyBackendSessionTokens(deviceToken, sessionToken, env)
   const { devicePayload, sessionPayload, sessionCachePayload } = tokenPayloads
-  // A validly-signed `st` with `uid: null` is normal for a returning anon visitor and must stay
-  // on the anon-cache path. Only an `st` that once claimed a real user but fails edge verification
-  // indicates a stale auth attempt (e.g. an expired session the backend can cold-refresh from
-  // `dt`) — see isAuthShapedSessionToken's doc comment and CachePolicyInput.
+  // Signed `st` with `uid: null` is normal for anon visitors. Only a formerly authenticated
+  // session that fails edge verification is stale auth (see isAuthShapedSessionToken).
   const hasUnverifiedSessionCookies = !sessionCachePayload && isAuthShapedSessionToken(sessionToken)
 
   const cachePolicy = getCachePolicy({
@@ -117,14 +117,11 @@ export async function fetchInner(
   const isEffectivelyFullyCachedRoute =
     cachePolicy.fullyCachedRoute && (target !== 'web' || isStaticWebAssetPath(url.pathname))
 
-  // Web dispatch requires CACHE_PLACEHOLDER_NONCE and fails closed otherwise. It must
-  // pass the same minimum-length check env-validation.mts warns on — a short-but-truthy
-  // secret is guessable enough that its CSP nonce isn't meaningfully secret.
+  // Web dispatch fails closed without a sufficiently long CSP nonce (same check as env warnings).
   const canUseCachedOriginForWeb =
     target !== 'web' || isCachePlaceholderNonceValid(env.CACHE_PLACEHOLDER_NONCE)
-  // RSC stays excluded from dispatch (header-less RPC can't relay `rsc`) — a safety gate, not a
-  // data-availability gap like props.lang below. Reconstructing `rsc: '1'` from ctx.props.isRsc
-  // and lifting this gate await staging verification of the RSC-nav nonce risk (plan risk #2).
+  // Header-less RPC cannot relay RSC navigation state; keep RSC out until staging verifies nonce
+  // behavior for reconstructed requests.
   const isRsc = isRscRequest(request, url)
   const canDispatchToCache =
     canUseCachedOriginForWeb &&
@@ -149,9 +146,12 @@ export async function fetchInner(
   const isProduction = isProductionMode(env)
 
   if (canDispatchToCache && cachePolicy.audience) {
-    // Canonical dispatch URL: strips tracking params + sorts the rest so requests differing
-    // only by marketing params/order share one entry (see cache-no-vary-search.mts).
-    const dispatchUrl = new URL(normalizeCacheUrl((canonicalSitemapUrl ?? url).toString()))
+    // Normalize URL params so marketing-only differences share one cache entry.
+    const dispatchUrl = new URL(
+      normalizeCacheUrl((canonicalSitemapUrl ?? url).toString(), {
+        stripParams: [...DEFAULT_NO_VARY_SEARCH_PARAM_NAMES, '_rsc'],
+      }),
+    )
     // `lang` partitions only the anon audience — bots/static never vary by UI locale (#6994).
     const lang =
       cachePolicy.audience === 'anon'

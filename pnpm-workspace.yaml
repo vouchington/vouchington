@@ -76,6 +76,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/crawler-html'
   - '@vouchington/embeds'
   - '@vouchington/domain-verification'
+  - '@vouchington/edge'
   - '@vouchington/frontmatter'
   - '@vouchington/html-utils'
   - '@vouchington/http-transport'

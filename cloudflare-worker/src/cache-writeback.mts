@@ -1,8 +1,7 @@
 import type { ensureSession } from './auth/session-mint.mts'
 import { withEdgeSessionCookies } from './auth/session-cookies.mts'
-import { INTERNAL_CACHE_VARY_HEADER } from './cache-vary.mts'
-import { NO_STORE_HEADERS, withFailureNoStoreHeaders } from './error-response.mts'
-import { withHeaders } from './proxy.mts'
+import { INTERNAL_CACHE_VARY_HEADER } from './cache-headers.mts'
+import { NO_STORE_HEADERS, withFailureNoStoreHeaders, withHeaders } from '@vouchington/edge'
 
 type CacheWritebackOptions = {
   edgeSession: Awaited<ReturnType<typeof ensureSession>>
@@ -21,7 +20,7 @@ type CacheWritebackOptions = {
  * responsibility now (see cached-origin.mts); Workers Cache replaces the old
  * caches.default write-back this module used to perform here. No longer
  * takes cachePolicy/method: those only fed the old no-vary-search response
- * header (see cache-no-vary-search.mts's doc comment for why that mechanism
+ * header (see the published edge cache URL normalizer's doc comment for why that mechanism
  * doesn't apply to Workers Cache).
  */
 export function finalizeOriginResponse({

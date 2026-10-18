@@ -2,8 +2,11 @@ import { ensureSession } from './auth/session-mint.mts'
 import { replaceSessionCookies } from './cookies.mts'
 import { isOAuthClientAuthenticatedRoute } from './oauth-authorization-server-routing.mts'
 import { captureWorkerException } from './sentry.mts'
-import { buildOriginRequest } from './proxy.mts'
-import { edgeErrorResponse } from './error-response.mts'
+import {
+  buildOriginRequest,
+  NEXTJS_INTERNAL_HEADERS_TO_STRIP,
+  fetchOriginResponse as fetchOriginResponseFromOrigin,
+} from '@vouchington/edge'
 import type { BotTier } from './bot-tier.mts'
 import type { RouteTarget } from './routing.mts'
 import type { Env } from './types.mts'
@@ -12,6 +15,7 @@ import {
   REQUEST_KIND_HEADER,
   type BackendRequestKind,
 } from './client-info.mts'
+import { stripStagingControlHeaders } from './staging-control-headers.mts'
 
 type OriginRequestOptions = {
   canonicalSitemapUrl: URL | null
@@ -70,19 +74,33 @@ export function buildWorkerOriginRequest({
     originRequestSource = new Request(originRequestSource, { headers: updatedHeaders })
   }
 
-  const originRequest = buildOriginRequest(
-    originRequestSource,
+  const appHeaders = new Headers(originRequestSource.headers)
+  stripStagingControlHeaders(appHeaders)
+  appHeaders.delete('x-user-id')
+  appHeaders.delete('x-device-token')
+  appHeaders.delete('x-session-token')
+  appHeaders.delete('x-voucha-gpc')
+  appHeaders.delete(REQUEST_KIND_HEADER)
+  if (request.headers.get('sec-gpc') === '1') appHeaders.set('x-voucha-gpc', '1')
+  originRequestSource = new Request(originRequestSource, { headers: appHeaders })
+
+  const originRequest = buildOriginRequest(originRequestSource, {
     origin,
     stripCookieNames,
-    target === 'backend' ? env.CF_WORKER_SECRET : undefined,
+    stripAllCookies: target === 'sitemaps' || stripAllCookies,
     pathOverride,
-    target === 'sitemaps' || stripAllCookies,
     requestId,
+    sharedSecret: {
+      header: 'x-cf-worker-secret',
+      value: target === 'backend' ? env.CF_WORKER_SECRET : undefined,
+    },
     forceIdentityEncoding,
-    target === 'backend',
-    target === 'backend' &&
+    preserveNonBasicAuthorization: target === 'backend',
+    preserveBasicAuthorization:
+      target === 'backend' &&
       isOAuthClientAuthenticatedRoute(new URL(originRequestSource.url).pathname),
-  )
+    stripHeaders: NEXTJS_INTERNAL_HEADERS_TO_STRIP,
+  })
   if (target === 'backend') {
     const headers = new Headers(originRequest.headers)
     applyBackendClientInfoHeaders(headers, {
@@ -95,7 +113,7 @@ export function buildWorkerOriginRequest({
   }
 
   // Lets web's generateMetadata() suppress Sentry trace meta on a cache-fill render, so it
-  // never gets frozen into the shared cache entry (see nonce-rewrite.mts's doc comment for why
+  // never gets frozen into the shared cache entry (see the published edge nonce rewrite's doc comment for why
   // that would otherwise misattribute traces on every later HIT). Request→origin only, and
   // buildOriginRequest above already stripped any client-supplied copy — this can't reach a
   // client via a response header or leak into cached bytes.
@@ -115,50 +133,19 @@ type OriginFetchMetadata = {
   target: OriginRequestOptions['target']
 }
 
-// workerd throws `Network connection lost.` with `retryable: true` when the origin socket
-// resets. A second GET/HEAD uses a new connection. Mutating methods stay single-attempt
-// because a lost response may already have been applied by the origin.
-const IDEMPOTENT_ORIGIN_METHODS = new Set(['GET', 'HEAD'])
-const DROPPED_ORIGIN_SOCKET =
-  /network connection lost|connection reset by peer|ECONNRESET|ECONNREFUSED|EPIPE|UND_ERR_SOCKET/i
-
-function isRetryableOriginConnectionLoss(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-  return DROPPED_ORIGIN_SOCKET.test(error.message)
-}
-
-function originFetchFailure(error: unknown, metadata: OriginFetchMetadata): { error: Response } {
-  captureWorkerException(error, {
-    routeTarget: metadata.target,
-    botTier: metadata.botTier,
-    countryCode: metadata.countryCode,
-    requestId: metadata.requestId,
-  })
-  console.error('Origin fetch failed:', error)
-  return { error: edgeErrorResponse(502, 'Bad Gateway', 'BAD_GATEWAY') }
-}
-
-export async function fetchOriginResponse(
+export async function fetchWorkerOriginResponse(
   originRequest: Request,
   metadata: OriginFetchMetadata,
 ): Promise<{ duration: number; response: Response } | { error: Response }> {
-  const fetchStart = Date.now()
-  const canRetry = IDEMPOTENT_ORIGIN_METHODS.has(originRequest.method.toUpperCase())
-  // Clone before the first attempt so a retry still has an unread request.
-  const firstRequest = canRetry ? originRequest.clone() : originRequest
-  try {
-    const response = await fetch(firstRequest)
-    return { duration: Date.now() - fetchStart, response }
-  } catch (err) {
-    if (!canRetry || !isRetryableOriginConnectionLoss(err)) {
-      return originFetchFailure(err, metadata)
-    }
-  }
-
-  try {
-    const response = await fetch(originRequest)
-    return { duration: Date.now() - fetchStart, response }
-  } catch (err) {
-    return originFetchFailure(err, metadata)
-  }
+  return fetchOriginResponseFromOrigin(originRequest, {
+    onError(error) {
+      captureWorkerException(error, {
+        routeTarget: metadata.target,
+        botTier: metadata.botTier,
+        countryCode: metadata.countryCode,
+        requestId: metadata.requestId,
+      })
+      console.error('Origin fetch failed:', error)
+    },
+  })
 }

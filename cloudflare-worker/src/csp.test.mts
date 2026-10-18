@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildWebCsp, normalizeAssetOrigin, REGISTERED_WEB_CSP_ORIGINS } from './csp.mts'
+import { buildWebCsp, REGISTERED_WEB_CSP_ORIGINS } from './csp.mts'
 
 const BROWSER_UPLOAD_ORIGINS = JSON.stringify([
   'https://test-images.s3.us-west-2.amazonaws.com',
@@ -29,51 +29,24 @@ function parseDirectives(csp: string): Map<string, string[]> {
   )
 }
 
-describe('normalizeAssetOrigin', () => {
-  it('returns empty string for undefined or empty input', () => {
-    expect(normalizeAssetOrigin(undefined)).toBe('')
-    expect(normalizeAssetOrigin('')).toBe('')
-    expect(normalizeAssetOrigin('  ')).toBe('')
-  })
-
-  it('returns the https origin (strips path/query/hash)', () => {
-    expect(normalizeAssetOrigin('https://cdn.example.com')).toBe('https://cdn.example.com')
-    expect(normalizeAssetOrigin('https://cdn.example.com/')).toBe('https://cdn.example.com')
-    expect(normalizeAssetOrigin('https://cdn.example.com/path?q=1#hash')).toBe(
-      'https://cdn.example.com',
-    )
-  })
-
-  it('trims whitespace before validating', () => {
-    expect(normalizeAssetOrigin('  https://cdn.example.com  ')).toBe('https://cdn.example.com')
-  })
-
-  it('rejects non-https non-localhost URLs', () => {
-    expect(normalizeAssetOrigin('http://cdn.example.com')).toBe('')
-    expect(normalizeAssetOrigin('ftp://cdn.example.com')).toBe('')
-  })
-
-  it('accepts http://localhost origins for local dev', () => {
-    expect(normalizeAssetOrigin('http://localhost:3000')).toBe('http://localhost:3000')
-    expect(normalizeAssetOrigin('http://localhost:53220')).toBe('http://localhost:53220')
-    expect(normalizeAssetOrigin('http://localhost:3000/')).toBe('http://localhost:3000')
-    expect(normalizeAssetOrigin('http://localhost:3000/path?q=1#hash')).toBe(
-      'http://localhost:3000',
-    )
-  })
-
-  it('rejects http://127.0.0.1 and other non-localhost HTTP origins', () => {
-    expect(normalizeAssetOrigin('http://127.0.0.1:3000')).toBe('')
-    expect(normalizeAssetOrigin('http://0.0.0.0:3000')).toBe('')
-  })
-
-  it('returns empty string for malformed URLs', () => {
-    expect(normalizeAssetOrigin('not-a-url')).toBe('')
-    expect(normalizeAssetOrigin('cdn.example.com')).toBe('')
-  })
-})
-
 describe('buildWebCsp', () => {
+  it('accepts only configured exact S3 upload origins', () => {
+    for (const raw of [
+      '[]',
+      '["https://example.com"]',
+      '["https://test-images.s3.us-west-2.amazonaws.com/path"]',
+      '["not-an-origin"]',
+      'not-json',
+    ]) {
+      expect(() =>
+        buildWebCsp(undefined, {
+          browserUploadOrigins: raw,
+          nonce: 'testnonce',
+          requireBrowserUploadOrigins: true,
+        }),
+      ).toThrow('CSP_BROWSER_UPLOAD_ORIGINS')
+    }
+  })
   it('returns a semicolon-separated CSP string with all directives', () => {
     const csp = buildTestWebCsp()
     const directives = csp.split('; ')

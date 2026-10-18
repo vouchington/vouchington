@@ -33,7 +33,7 @@ export const isPrivateBackendCacheBypassRoute = (pathname: string): boolean => {
 }
 
 // RSC-fetch signal: `_rsc` param, `Accept: text/x-component`, or Next's `rsc: '1'` header (see
-// proxy.mts's CVE comment) — a header-only miss dispatches full HTML instead of an RSC payload.
+// published edge proxy builder's CVE comment) — a header-only miss dispatches full HTML instead of an RSC payload.
 export const isRscRequest = (request: Request, url: URL): boolean =>
   url.searchParams.has('_rsc') ||
   (request.headers.get('accept') ?? '').toLowerCase().includes('text/x-component') ||

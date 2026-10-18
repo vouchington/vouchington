@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { getCachePolicy, parseStaticCachedPaths } from '../cache-policy.mts'
+import { getCachePolicy } from '../cache-policy.mts'
 import { finalizeOriginResponse } from '../cache-writeback.mts'
 import { isOAuthConsentRoute, isPrivateBackendCacheBypassRoute } from '../cache-route-policy.mts'
 
 const baseInput = {
-  staticCachedPaths: parseStaticCachedPaths('/favicon.ico,/robots.txt'),
+  staticCachedPaths: new Set(['/favicon.ico', '/robots.txt']),
   sitemapCacheTtlSeconds: 86_400,
   staticCacheTtlSeconds: 86_400,
   botCacheTtlSeconds: 86_400,

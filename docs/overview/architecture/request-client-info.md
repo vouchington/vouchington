@@ -77,8 +77,8 @@ server rendering, the web proxy, and the localization smoke probe call the backe
 `CF_WORKER_SECRET`. Server rendering must therefore set the internal `API_BASE_URL`; a public
 `NEXT_PUBLIC_API_BASE_URL` fallback that routes through the edge loses its `web` classification.
 Headerless callers are left unstamped so backend enforcement rejects them instead of silently
-classifying an unknown client as web. The evidence check lives in
-`cloudflare-worker/src/web-browser-evidence.mts`.
+classifying an unknown client as web. The published edge package provides the generic browser
+evidence check; the Worker supplies Voucha's route and header policy.
 
 Any non-browser caller can forge these headers, so `web`, `swift`, and `dotnet` stay
 telemetry-grade. Nothing public is derived from them; public provenance labels come only from the
@@ -128,7 +128,7 @@ focused contract suites with:
 ```sh
 pnpm exec vitest run --project backend-modules backend/modules/request-client-info/index.test.mts backend/modules/request-client-info/listener.test.mts
 pnpm exec vitest run --project ts-shared ts-shared/request-client-info/index.test.mts
-pnpm exec vitest run --project cloudflare-worker cloudflare-worker/src/web-browser-evidence.test.mts cloudflare-worker/src/client-info.test.mts cloudflare-worker/src/origin-request.client-info.test.mts
+pnpm exec vitest run --project cloudflare-worker cloudflare-worker/src/client-info.test.mts cloudflare-worker/src/origin-request.client-info.test.mts
 pnpm exec vitest run --project web web/lib/api/server/client-info.test.ts web/lib/api/server/request.mock.test.ts web/lib/api/server/images-proxy.test.ts
 ```
 

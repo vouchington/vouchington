@@ -1,4 +1,4 @@
-import { normalizeAssetOrigin } from './csp.mts'
+import { normalizeAssetOrigin } from '@vouchington/edge'
 import {
   getSentryDsnConfig,
   resolveSentryEnablement,

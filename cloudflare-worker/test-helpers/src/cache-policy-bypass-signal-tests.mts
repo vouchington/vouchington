@@ -1,10 +1,10 @@
 /* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { expect, test } from 'vitest'
 import type { BotTier } from '../../src/bot-tier.mts'
-import { getCachePolicy, parseStaticCachedPaths } from '../../src/cache-policy.mts'
+import { getCachePolicy } from '../../src/cache-policy.mts'
 
 const baseInput = {
-  staticCachedPaths: parseStaticCachedPaths('/favicon.ico,/robots.txt'),
+  staticCachedPaths: new Set(['/favicon.ico', '/robots.txt']),
   sitemapCacheTtlSeconds: 86_400,
   staticCacheTtlSeconds: 86_400,
   botCacheTtlSeconds: 86_400,

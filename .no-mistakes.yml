@@ -2538,6 +2538,8 @@ rules:
           reason: First-party policy-injected HTML unfurl and oEmbed primitives published by the repo author.
         - name: '@vouchington/domain-verification'
           reason: First-party DNS and well-known domain-verification primitives published by the repo author.
+        - name: '@vouchington/edge'
+          reason: First-party policy-injected edge runtime primitives published by the repo author.
         - name: '@vouchington/frontmatter'
           reason: First-party deterministic YAML frontmatter serializer published by the repo author.
         - name: '@vouchington/html-utils'

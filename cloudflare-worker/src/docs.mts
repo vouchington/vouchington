@@ -1,8 +1,5 @@
-import { edgeErrorResponse, NO_STORE_HEADERS } from './error-response.mts'
-import {
-  INTERNAL_REFERENCE_BASIC_AUTH_CHALLENGE,
-  requiredBasicAuthDecision,
-} from './basic-auth-credentials.mts'
+import { edgeErrorResponse, NO_STORE_HEADERS, requiredBasicAuthDecision } from '@vouchington/edge'
+import { INTERNAL_REFERENCE_BASIC_AUTH_CHALLENGE } from './basic-auth.mts'
 import type { Env } from './types.mts'
 
 const MIME_TYPES: Record<string, string> = {

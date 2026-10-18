@@ -7,13 +7,12 @@
 // Auth: gated by the same `CF_WORKER_SECRET` value already used for the (opposite-direction)
 // worker -> backend origin guard (see dashboard-auth.mts's createWorkerSecretValidator()).
 // A distinct header name is used here — `x-cf-worker-secret` is the established name for the
-// worker-forwards-to-backend direction (proxy.mts/origin-request.mts); reusing it for this
+// worker-forwards-to-backend direction (origin-request.mts); reusing it for this
 // reverse direction would be misleading. No new secret needs provisioning: the value is
 // already a private-infrastructure-managed Cloudflare Worker secret and readable by the backend via
 // `process.env.CF_WORKER_SECRET`.
 
-import { timingSafeCredentialMatch } from './basic-auth.mts'
-import { edgeErrorResponse } from './error-response.mts'
+import { edgeErrorResponse, timingSafeCredentialMatch } from '@vouchington/edge'
 import { captureWorkerException } from './sentry.mts'
 import type { EdgeExecutionContext, Env } from './types.mts'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache/purge'

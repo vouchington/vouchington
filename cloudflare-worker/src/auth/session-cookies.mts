@@ -3,7 +3,7 @@ import {
   serializeSessionCookie,
   sessionCookieAttributes,
 } from '@ts-shared/session-jwt'
-import { appendHeaders } from '../proxy.mts'
+import { appendHeaders } from '@vouchington/edge'
 import type { EnsuredSession } from './session-mint.mts'
 
 export function withEdgeSessionCookies(
