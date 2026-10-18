@@ -9,7 +9,11 @@ describe('canonical enqueue admission observation', () => {
   it('publishes the original single admission promise and exact source queue before returning', async () => {
     await withEnqueueAdmissionQueue(async (queue, events) => {
       const data = { id: crypto.randomUUID() }
-      const enqueue = createEnqueueFunction({ queue, queueName: queue.name, jobName: 'single' })
+      const enqueue = createEnqueueFunction<{ id: string }, 'single'>({
+        queue,
+        queueName: queue.name,
+        jobName: 'single',
+      })
       const admission = enqueue(data)
       expect(events).toHaveLength(1)
       expect(events[0]!.queue).toBe(queue)
@@ -27,9 +31,14 @@ describe('canonical enqueue admission observation', () => {
 
   it('retains the original pre-admission serialization rejection without manufacturing a job', async () => {
     await withEnqueueAdmissionQueue(async (queue, events) => {
-      const data: Record<string, unknown> = {}
+      type CyclicPayload = { self?: CyclicPayload }
+      const data: CyclicPayload = {}
       data.self = data
-      const enqueue = createEnqueueFunction({ queue, queueName: queue.name, jobName: 'invalid' })
+      const enqueue = createEnqueueFunction<CyclicPayload, 'invalid'>({
+        queue,
+        queueName: queue.name,
+        jobName: 'invalid',
+      })
       const admission = enqueue(data)
       expect(events).toHaveLength(1)
       expect(events[0]!.completion).toBe(admission)
@@ -53,7 +62,11 @@ describe('canonical enqueue admission observation', () => {
         { id: crypto.randomUUID(), jobId: `first-${crypto.randomUUID()}` },
         { id: crypto.randomUUID(), jobId: `second-${crypto.randomUUID()}` },
       ]
-      const enqueue = createBulkEnqueueFunction({
+      const enqueue = createBulkEnqueueFunction<
+        { id: string; jobId: string },
+        { id: string },
+        'bulk'
+      >({
         queue,
         queueName: queue.name,
         jobName: 'bulk',
@@ -103,9 +116,11 @@ describe('canonical enqueue admission observation', () => {
         }),
       )
       const data = { id: crypto.randomUUID() }
-      const admission = createEnqueueFunction({ queue, queueName: queue.name, jobName: 'faults' })(
-        data,
-      )
+      const admission = createEnqueueFunction<{ id: string }, 'faults'>({
+        queue,
+        queueName: queue.name,
+        jobName: 'faults',
+      })(data)
       expect(tail).toBe(events[0])
       expect(tail!.completion).toBe(admission)
       const persisted = await readEnqueuedJob(queue, await admission)
@@ -128,7 +143,11 @@ describe('canonical enqueue admission observation', () => {
         return undefined
       })
       restore(off)
-      const enqueue = createEnqueueFunction({ queue, queueName: queue.name, jobName: 'detach' })
+      const enqueue = createEnqueueFunction<{ id: string }, 'detach'>({
+        queue,
+        queueName: queue.name,
+        jobName: 'detach',
+      })
       const first = enqueue({ id: crypto.randomUUID() })
       off()
       off()
@@ -188,7 +207,7 @@ describe('canonical enqueue admission observation', () => {
       await released.promise
       order.push('action')
       const data = { id: crypto.randomUUID() }
-      const admission = createEnqueueFunction({
+      const admission = createEnqueueFunction<{ id: string }, 'released'>({
         queue,
         queueName: queue.name,
         jobName: 'released',

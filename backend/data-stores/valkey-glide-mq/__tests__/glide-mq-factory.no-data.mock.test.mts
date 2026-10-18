@@ -162,7 +162,7 @@ describe('glide-mq-factory', () => {
   it('tracks enqueue attempts and reports rejected promises', async () => {
     const { createEnqueueFunction } = await import('../glide-mq-enqueue.mts')
     const error = new Error('enqueue failed')
-    const enqueue = createEnqueueFunction({
+    const enqueue = createEnqueueFunction<{ id: string }, 'job'>({
       queue: createRejectingQueueStub<{ id: string }>(error),
       queueName: 'queue',
       jobName: 'job',
@@ -178,7 +178,7 @@ describe('glide-mq-factory', () => {
   it('tracks bulk counts and decorates rejected promises before reporting', async () => {
     const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
     const error = new Error('bulk failed')
-    const enqueueBulk = createBulkEnqueueFunction({
+    const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'job'>({
       queue: createRejectingQueueStub<{ id: string }>(error),
       queueName: 'queue',
       jobName: 'job',
@@ -215,7 +215,7 @@ describe('glide-mq-factory', () => {
     it('createEnqueueFunction retries a transient error and succeeds when the queue recovers', async () => {
       const { createEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'job-1' })
-      const enqueue = createEnqueueFunction({
+      const enqueue = createEnqueueFunction<{ id: string }, 'j'>({
         queue: stub,
         queueName: 'q',
         jobName: 'j',
@@ -236,7 +236,7 @@ describe('glide-mq-factory', () => {
     it('createEnqueueFunction reports to onError after exhausting all retry attempts', async () => {
       const { createEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const transientError = new Error('Reached maximum inflight requests')
-      const enqueue = createEnqueueFunction({
+      const enqueue = createEnqueueFunction<{ id: string }, 'j'>({
         queue: createRejectingQueueStub<{ id: string }>(transientError),
         queueName: 'q',
         jobName: 'j',
@@ -253,7 +253,7 @@ describe('glide-mq-factory', () => {
     it('createEnqueueFunction does not retry when retry: false', async () => {
       const { createEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'job-1' })
-      const enqueue = createEnqueueFunction({
+      const enqueue = createEnqueueFunction<{ id: string }, 'j'>({
         queue: stub,
         queueName: 'q',
         jobName: 'j',
@@ -267,7 +267,7 @@ describe('glide-mq-factory', () => {
     it('createBulkEnqueueFunction retries a transient error and succeeds when the queue recovers', async () => {
       const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'bulk-1' })
-      const enqueueBulk = createBulkEnqueueFunction({
+      const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'j'>({
         queue: stub,
         queueName: 'q',
         jobName: 'j',
@@ -283,7 +283,7 @@ describe('glide-mq-factory', () => {
     it('createBulkEnqueueFunction does not retry when retry: false', async () => {
       const { createBulkEnqueueFunction } = await import('../glide-mq-enqueue.mts')
       const stub = createEventualSuccessQueueStub<{ id: string }>(1, { id: 'bulk-1' })
-      const enqueueBulk = createBulkEnqueueFunction({
+      const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'j'>({
         queue: stub,
         queueName: 'q',
         jobName: 'j',

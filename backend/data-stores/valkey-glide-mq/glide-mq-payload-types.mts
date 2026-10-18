@@ -43,12 +43,14 @@ export type NoSensitiveFields<T> = T extends readonly unknown[]
   ? { [TKey in keyof T]: NoSensitiveFields<T[TKey]> }
   : T extends object
     ? string extends keyof T
-      ? unknown extends T[string & keyof T]
-        ? never
-        : T
+      ? [T[string & keyof T]] extends [never]
+        ? T
+        : never
       : {
           [TKey in keyof T]: Lowercase<TKey & string> extends SensitivePayloadKey
             ? never
             : NoSensitiveFields<T[TKey]>
         }
-    : T
+    : unknown extends T
+      ? never
+      : T

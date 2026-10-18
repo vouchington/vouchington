@@ -62,13 +62,17 @@ describe('glide-mq factory', () => {
       expect(() => ranked.add('raw', {}, { priority: 2049 })).toThrow(RangeError)
       expect(checkedPriorityOptions(name, 'ranked')).toMatchObject({ priority: 10 })
       expect(checkedPriorityOptions(`${name}-none`, 'none')).toMatchObject({ priority: 0 })
-      const enqueue = createEnqueueFunction({
+      const enqueue = createEnqueueFunction<Record<string, never>, 'wrapped'>({
         queue: ranked,
         queueName: name,
         jobName: 'wrapped',
       })
       expect(() => enqueue({}, { priority: 0 })).toThrow(RangeError)
-      const enqueueBulk = createBulkEnqueueFunction({
+      const enqueueBulk = createBulkEnqueueFunction<
+        Record<string, never>,
+        Record<string, never>,
+        'wrapped'
+      >({
         queue: none,
         queueName: `${name}-none`,
         jobName: 'wrapped',
@@ -117,7 +121,7 @@ describe('glide-mq factory', () => {
 describe('createEnqueueFunction', () => {
   it('merges base defaults, system defaults, and per-call options in order', async () => {
     const stub = createQueueStub<{ id: string }>()
-    const enqueue = createEnqueueFunction({
+    const enqueue = createEnqueueFunction<{ id: string }, 'job'>({
       queue: stub.queue,
       queueName: 'queue',
       jobName: 'job',

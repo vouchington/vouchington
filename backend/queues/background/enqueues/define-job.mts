@@ -22,16 +22,16 @@ export function defineBackgroundDomain(
   return definition
 }
 
-export function defineBackgroundJob<TData = unknown>(
+export function defineBackgroundJob<TData = Record<string, never>>(
   domain: BackgroundDomainDefinition,
   spec: BackgroundJobSpec & { sensitive: true },
 ): BackgroundJobDefinition<TData, true> & { sensitive: true }
-export function defineBackgroundJob<TData = unknown>(
+export function defineBackgroundJob<TData = Record<string, never>>(
   domain: BackgroundDomainDefinition,
   spec: BackgroundJobSpec &
     ([TData] extends [NoSensitiveFields<TData>] ? { sensitive?: undefined } : never),
 ): BackgroundJobDefinition<TData, false>
-export function defineBackgroundJob<TData = unknown>(
+export function defineBackgroundJob<TData = Record<string, never>>(
   domain: BackgroundDomainDefinition,
   spec: BackgroundJobSpec,
 ): BackgroundJobDefinition<TData> {

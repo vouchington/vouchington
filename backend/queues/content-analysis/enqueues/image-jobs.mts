@@ -4,7 +4,10 @@ import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
 
-const enqueueCleanupJob = createEnqueueFunction({
+const enqueueCleanupJob = createEnqueueFunction<
+  Record<string, never>,
+  'content-analysis.cleanup-abandoned-uploads'
+>({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: 'content-analysis.cleanup-abandoned-uploads' as const,

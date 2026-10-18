@@ -15,6 +15,29 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
   // @ts-expect-error nested emailAddress fields require sensitive: true
   void enqueueUser({ profile: { emailAddress: 'user@example.test' } })
 
+  const untypedEnqueue = createEnqueueFunction({
+    queue,
+    queueName: 'queue',
+    jobName: 'untyped',
+  })
+  // @ts-expect-error an unknown payload must fail closed until the producer declares its shape
+  void untypedEnqueue({ email: 'user@example.test' })
+
+  const stringMapEnqueue = createEnqueueFunction<Record<string, string>, 'string-map'>({
+    queue,
+    queueName: 'queue',
+    jobName: 'string-map',
+  })
+  // @ts-expect-error dynamic string-keyed payloads cannot prove that keys are non-sensitive
+  void stringMapEnqueue({ label: 'safe-looking' })
+
+  void createEnqueueFunction<Record<string, string>, 'sensitive-string-map'>({
+    queue,
+    queueName: 'queue',
+    jobName: 'sensitive-string-map',
+    sensitive: true,
+  })({ token: 'allowed only with sensitive retention' })
+
   // @ts-expect-error bulk payloads use the same guard
   createBulkEnqueueFunction<string, { context: { session_id: string } }, 'batch'>({
     queue,

@@ -9,7 +9,10 @@ import { BACKGROUND_QUEUE_NAME } from '../../../queues/background/config.mts'
 import { ENTITY_LISTENERS_POST_UPDATED_JOB } from '../../../queues/background/enqueues/entity-listeners-jobs.mts'
 import { settlePostCommitEffects } from '../post-commit-completion.mts'
 
-const enqueue = createEnqueueFunction({
+const enqueue = createEnqueueFunction<
+  { id: string },
+  typeof ENTITY_LISTENERS_POST_UPDATED_JOB.name
+>({
   queue: entitiesListeners,
   queueName: BACKGROUND_QUEUE_NAME,
   jobName: ENTITY_LISTENERS_POST_UPDATED_JOB.name,
@@ -57,7 +60,8 @@ describe('owned entity listener completion', () => {
       title: 'Owned rejected entity',
       markdown: 'Owned rejected entity content',
     })
-    const circular: Record<string, unknown> = { id }
+    type CircularPayload = { id: string; self?: CircularPayload }
+    const circular: CircularPayload = { id }
     circular.self = circular
     let durableResultFulfilled = false
     let admissionFailure: unknown
