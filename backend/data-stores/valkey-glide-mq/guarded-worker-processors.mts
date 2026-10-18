@@ -5,7 +5,7 @@ import { withScheduledRunLease } from './scheduled-run-lease.mts'
 
 type ActiveJob = { queue: string; jobId: string; dedupId?: string }
 const activeJobs = new AsyncLocalStorage<ActiveJob[]>()
-type LeaseOptions = Pick<WorkerOptions, 'lockDuration' | 'maxStalledCount'>
+type LeaseOptions = Pick<WorkerOptions, 'lockDuration' | 'maxStalledCount' | 'prefix'>
 
 export function wrapSingleProcessor<D, R>(
   queue: string,
@@ -38,12 +38,15 @@ export function wrapBatchProcessor<D, R>(
             () => processor(runnable),
           )
         : []
-      return jobs.map(job => {
+      const result = jobs.map(job => {
         const index = runnable.indexOf(job)
         return index < 0 ? (undefined as R) : values[index]!
       })
-    } finally {
       await Promise.all(releases.map(release => release()))
+      return result
+    } catch (err) {
+      await releaseAfterFailure(releases)
+      throw err
     }
   }
 }
@@ -57,9 +60,25 @@ async function runJob<D, R>(
   const release = await withScheduledRunLease(queue, job, options)
   if (!release) return undefined as R
   try {
-    return await activeJobs.run([activeJob(queue, job)], () => processor(job))
-  } finally {
+    const result = await activeJobs.run([activeJob(queue, job)], () => processor(job))
     await release()
+    return result
+  } catch (err) {
+    await releaseAfterFailure([release])
+    throw err
+  }
+}
+
+async function releaseAfterFailure(releases: Array<() => Promise<void>>): Promise<void> {
+  const results = await Promise.allSettled(releases.map(release => release()))
+  for (const result of results) {
+    if (result.status !== 'rejected') continue
+    try {
+      onError(result.reason)
+    } catch (err) {
+      // Diagnostics must not replace the original processor or lease error.
+      console.error('scheduled_lease_release_reporting_failed', err)
+    }
   }
 }
 
