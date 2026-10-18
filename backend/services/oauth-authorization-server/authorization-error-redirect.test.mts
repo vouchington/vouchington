@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { QueryExecutor } from '@data-stores/psql'
 import { getOAuthAuthorizationErrorRedirect } from './authorization-error-redirect.mts'
-import { OAuthProtocolError } from './errors.mts'
+import { OAuthProtocolError } from '@vouchington/oauth-server'
 
 function redirectInput() {
   return {

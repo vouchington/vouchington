@@ -1,5 +1,5 @@
 import onError from '@modules/on-error'
-import { OAuthProtocolError } from './errors.mts'
+import { OAuthProtocolError } from '@vouchington/oauth-server'
 
 export function unavailableClientIdMetadata(
   cause?: unknown,

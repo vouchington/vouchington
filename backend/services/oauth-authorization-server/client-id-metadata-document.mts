@@ -8,10 +8,10 @@ import {
   validateAuthMethod,
   validateClientName,
   validateGrantTypes,
+  validateRedirectUris,
   validateRegistrationObject,
   validateResponseTypes,
-} from './client-metadata-validation.mts'
-import { validateClientIdMetadataRedirectUris } from './redirect-uri-validation.mts'
+} from '@vouchington/oauth-server'
 import { parseOAuthScopes } from './validation.mts'
 import type { ClientIdMetadataDocument, OAuthClient } from './types.mts'
 import {
@@ -139,11 +139,11 @@ function validateClientIdMetadata(metadataUrl: string, input: unknown): Validate
   ) {
     throw unavailableClientIdMetadata()
   }
-  const tokenEndpointAuthMethod = validateAuthMethod(metadata.token_endpoint_auth_method)
+  const tokenEndpointAuthMethod = validateAuthMethod(metadata.token_endpoint_auth_method, 'none')
   if (tokenEndpointAuthMethod !== 'none') throw unavailableClientIdMetadata()
   return {
     client_name: validateClientName(metadata.client_name),
-    redirect_uris: validateClientIdMetadataRedirectUris(metadata.redirect_uris),
+    redirect_uris: validateRedirectUris(metadata.redirect_uris, { serialize: false }),
     token_endpoint_auth_method: tokenEndpointAuthMethod,
     grant_types: validateGrantTypes(metadata.grant_types),
     response_types: validateResponseTypes(metadata.response_types),

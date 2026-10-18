@@ -1,4 +1,3 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
@@ -8,10 +7,14 @@ import {
   readOAuthAuthorizationCodeParticipantUserIds,
 } from './active-users.mts'
 import { authenticateLockedOAuthClient } from './clients.mts'
-import { OAuthProtocolError } from './errors.mts'
+import {
+  assertTokenRequestResource,
+  matchesRegisteredRedirectUri,
+  OAuthProtocolError,
+  validatePkceVerifier,
+  verifyPkce,
+} from '@vouchington/oauth-server'
 import { insertOAuthTokenPair } from './token-pairs.mts'
-import { assertTokenRequestResource, validatePkceVerifier } from './validation.mts'
-import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 import type { ApiScope } from '@modules/scopes'
 import type { OAuthClient, OAuthTokenResponse } from './types.mts'
 
@@ -143,16 +146,10 @@ function assertCodeExchange(
     code.grant_revoked_at ||
     code.expires_at <= new Date() ||
     code.redirect_uri !== input.redirectUri ||
-    !pkceMatches(code.code_challenge, verifier)
+    !verifyPkce(code.code_challenge, verifier)
   ) {
     throw new OAuthProtocolError('invalid_grant', 'authorization code is invalid')
   }
-}
-
-function pkceMatches(expectedChallenge: string, verifier: string): boolean {
-  const actual = Buffer.from(createHash('sha256').update(verifier).digest('base64url'))
-  const expected = Buffer.from(expectedChallenge)
-  return actual.length === expected.length && timingSafeEqual(actual, expected)
 }
 
 async function issueNewTokenFamily(

@@ -1296,6 +1296,9 @@ importers:
       '@vouchington/localization':
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
+      '@vouchington/oauth-server':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@vouchington/pagination':
         specifier: ^0.0.3
         version: 0.0.3
@@ -8238,9 +8241,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../../ts-shared/utils
+      '@vouchington/oauth-server':
+        specifier: ^0.2.0
+        version: 0.2.0
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -19331,6 +19334,10 @@ packages:
     resolution: {integrity: sha512-I46h8Se7jv81xCD5/4CvRb1BtCcQYjHscEy8BjxmSga1LGi4KiHmeNC0KVqxLSmypi4aUQmrsldij5BhStTkog==}
     engines: {node: '>=24.0.0'}
 
+  '@vouchington/oauth-server@0.2.0':
+    resolution: {integrity: sha512-XKnfYa8umOQl0GparCKurEhvBBDBXdDZD7jRQSfVbmc3FmKcYZ2g1jjR9U9pMGmeHgJmi0p0ARdzRxjG5P819A==}
+    engines: {node: '>=24.0.0'}
+
   '@vouchington/pagination@0.0.3':
     resolution: {integrity: sha512-OmJLGJHEmeqE4xnaiuIwe6rNT0Arx7jiGfkb4MWa8OrmHmqjTAAnWYZ2gsDfR+Oxb2QrBIbDK7ZOPMME0zSBzw==}
     engines: {node: '>=24.0.0'}
@@ -28252,6 +28259,10 @@ snapshots:
       '@aws-sdk/s3-request-presigner': 3.1152.0
 
   '@vouchington/memberships@0.2.0': {}
+
+  '@vouchington/oauth-server@0.2.0':
+    dependencies:
+      '@vouchington/utils': 0.7.4
 
   '@vouchington/pagination@0.0.3':
     dependencies:

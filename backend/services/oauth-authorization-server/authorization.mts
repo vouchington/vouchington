@@ -1,40 +1,27 @@
-import { SCOPE_DEFINITIONS } from '@modules/scopes'
+import { SCOPE_DEFINITIONS, isApiScope } from '@modules/scopes'
 import { beginTransaction, write } from '@data-stores/psql'
 import { createOAuthBrowserBindingHash } from './browser-binding.mts'
 import { AUTHORIZATION_REQUEST_TTL_MS } from './constants.mts'
-import {
-  assertClientAuthorizationRequest,
-  getOAuthClient,
-  getOAuthClientForAuthorization,
-} from './clients.mts'
+import { getOAuthClient, getOAuthClientForAuthorization } from './clients.mts'
 import { lockOAuthParticipantUsers } from './active-users.mts'
-import { OAuthProtocolError, invalidRequest } from './errors.mts'
-import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
 import {
-  assertScopesMatchResource,
-  parseOAuthScopes,
-  validatePkceChallenge,
-  validateResource,
-} from './validation.mts'
+  OAuthProtocolError,
+  assertClientMayRequestScopes,
+  invalidRequest,
+  matchesRegisteredRedirectUri,
+  validateAuthorizationRequest,
+} from '@vouchington/oauth-server'
+import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
+import { OAUTH_SCOPE_POLICY } from './validation.mts'
 import type {
   OAuthAuthorizationRequestView,
+  OAuthAuthorizationRequestParameters,
   OAuthClient,
   ValidatedOAuthAuthorizationRequest,
 } from './types.mts'
 import { getOAuthClientDisplayName } from './known-clients.mts'
-import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
-
-type OAuthAuthorizationRequestParameters = {
-  clientId: string
-  codeChallenge: unknown
-  codeChallengeMethod: unknown
-  redirectUri: string
-  resource: unknown
-  responseType: unknown
-  scope: unknown
-  state: unknown
-}
+import { findOAuthProtectedResource } from './resources.mts'
 
 type AuthorizationRequestRow = {
   id: string
@@ -78,7 +65,10 @@ export async function beginValidatedOAuthAuthorizationRequest(
   ) {
     throw new OAuthProtocolError('access_denied', 'authorization request is unavailable', 403)
   }
-  assertClientAuthorizationRequest(lockedClient, validated.redirectUri, scopes)
+  if (!matchesRegisteredRedirectUri(validated.redirectUri, lockedClient.redirect_uris)) {
+    throw invalidRequest('redirect_uri is not registered for this client')
+  }
+  assertClientMayRequestScopes(OAUTH_SCOPE_POLICY, lockedClient.scopes, scopes)
   if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
@@ -125,26 +115,38 @@ export async function validateOAuthAuthorizationRequest(
   input: OAuthAuthorizationRequestParameters,
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
 ): Promise<ValidatedOAuthAuthorizationRequest> {
-  if (input.responseType !== 'code') {
-    throw new OAuthProtocolError('unsupported_response_type', 'response_type must be code')
+  const foundClients: OAuthClient[] = []
+  const validated = await validateAuthorizationRequest(input, {
+    scopes: OAUTH_SCOPE_POLICY,
+    resolveResource: findOAuthProtectedResource,
+    clients: {
+      findClient: async clientId => {
+        const client = await getOAuthClientForAuthorization(clientId, clientIdMetadataDependencies)
+        if (client) foundClients.push(client)
+        return (
+          client && {
+            clientId: client.client_id,
+            clientName: client.client_name,
+            redirectUris: client.redirect_uris,
+            scopes: client.scopes,
+            tokenEndpointAuthMethod: client.token_endpoint_auth_method,
+            clientSecretHash: client.client_secret_hash,
+          }
+        )
+      },
+    },
+  })
+  const client = foundClients[0]
+  if (!client || !validated.scopes.every(isApiScope)) {
+    throw new OAuthProtocolError('server_error', 'authorization request validation failed', 503)
   }
-  if (typeof input.state !== 'string' || input.state.length === 0 || input.state.length > 1024) {
-    throw invalidRequest('state is required')
-  }
-  const scopes = parseOAuthScopes(input.scope)
-  const resource = validateResource(input.resource)
-  assertScopesMatchResource(scopes, resource)
-  const codeChallenge = validatePkceChallenge(input.codeChallenge, input.codeChallengeMethod)
-  const client = await getOAuthClientForAuthorization(input.clientId, clientIdMetadataDependencies)
-  if (!client) throw new OAuthProtocolError('unauthorized_client', 'client is not registered')
-  assertClientAuthorizationRequest(client, input.redirectUri, scopes)
   return {
     client,
-    codeChallenge,
-    redirectUri: input.redirectUri,
-    resource: resource.url,
-    scopes,
-    state: input.state,
+    codeChallenge: validated.codeChallenge,
+    redirectUri: validated.redirectUri,
+    resource: validated.resource,
+    scopes: validated.scopes,
+    state: validated.state,
   } as ValidatedOAuthAuthorizationRequest
 }
 

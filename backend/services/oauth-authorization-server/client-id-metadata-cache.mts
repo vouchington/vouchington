@@ -1,6 +1,6 @@
 import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import type { QueryExecutor } from '@data-stores/psql'
-import { OAuthProtocolError } from './errors.mts'
+import { OAuthProtocolError } from '@vouchington/oauth-server'
 import type { OAuthClient } from './types.mts'
 
 export const CLIENT_ID_METADATA_DEFAULT_TTL_MS = 5 * 60_000
@@ -10,8 +10,8 @@ export type ValidatedClientIdMetadata = {
   client_name: string
   redirect_uris: string[]
   token_endpoint_auth_method: 'none'
-  grant_types: Array<'authorization_code' | 'refresh_token'>
-  response_types: ['code']
+  grant_types: string[]
+  response_types: string[]
   scopes: OAuthClient['scopes']
 }
 

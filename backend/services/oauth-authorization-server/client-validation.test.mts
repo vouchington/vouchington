@@ -14,10 +14,6 @@ import {
   parseOAuthScopes,
   registerOAuthClient,
   validateOAuthAuthorizationRequest,
-  validatePkceChallenge,
-  validatePkceVerifier,
-  validateRedirectUris,
-  validateResource,
 } from './index.mts'
 
 describe('OAuth client and authorization validation', () => {
@@ -38,70 +34,12 @@ describe('OAuth client and authorization validation', () => {
     ).resolves.toBe(true)
   })
 
-  it('rejects wildcard redirects and resources outside the configured site origin', () => {
-    expect(() => validateRedirectUris(['https://*.example.com/callback'])).toThrowError(
-      expect.objectContaining({ code: 'invalid_redirect_uri' }),
-    )
-    expect(() => validateResource('https://attacker.example/api/v1/mcp')).toThrowError(
-      expect.objectContaining({ code: 'invalid_target' }),
-    )
-    expect(() => validateResource('http://127.0.0.1:9999/api/v1/mcp')).toThrowError(
-      expect.objectContaining({ code: 'invalid_target' }),
-    )
-  })
-
-  it.each([
-    ['a missing list', undefined],
-    ['an empty list', []],
-    ['a non-string entry', [42]],
-    ['a malformed URI', ['not a URI']],
-    ['userinfo', ['https://tests+oauth-redirect@voucha.ai/callback']],
-    ['a fragment', ['https://example.com/callback#fragment']],
-    [
-      'a URI exceeding storage length after serialization',
-      [`https://example.com/${'é'.repeat(340)}`],
-    ],
-    ['duplicate URIs', ['https://example.com/callback', 'https://example.com/callback']],
-  ])('rejects redirect metadata with %s', (_name, redirectUris) => {
-    expect(() => validateRedirectUris(redirectUris)).toThrowError(
-      expect.objectContaining({ code: 'invalid_redirect_uri' }),
-    )
-  })
-
-  it.each([
-    ['a missing value', undefined],
-    ['an empty value', ''],
-  ])('rejects a resource with %s as a malformed request', (_name, resource) => {
-    expect(() => validateResource(resource)).toThrowError(
-      expect.objectContaining({ code: 'invalid_request' }),
-    )
-  })
-
-  it.each([
-    ['a malformed URI', 'not a URI'],
-    ['a non-HTTPS remote URI', 'http://example.com/api/v1/mcp'],
-    ['userinfo', 'https://tests+oauth-resource@voucha.ai/api/v1/mcp'],
-    ['a query', `${TEST_OAUTH_RESOURCE}?debug=true`],
-    ['a trailing slash', `${TEST_OAUTH_RESOURCE}/`],
-    ['an unsupported path', 'https://example.com/api/v1/other'],
-  ])('rejects a resource with %s as an invalid target', (_name, resource) => {
-    expect(() => validateResource(resource)).toThrowError(
-      expect.objectContaining({ code: 'invalid_target' }),
-    )
-  })
-
-  it('enforces the scope and PKCE validation boundaries directly', () => {
+  it('enforces product scope validation boundaries', () => {
     expect(() => parseOAuthScopes(undefined)).toThrowError(
       expect.objectContaining({ code: 'invalid_scope' }),
     )
     expect(() => assertScopeSubset(['mcp.user:write'], ['mcp.user:read'])).toThrowError(
       expect.objectContaining({ code: 'invalid_scope' }),
-    )
-    expect(() => validatePkceChallenge('short', 'S256')).toThrowError(
-      expect.objectContaining({ code: 'invalid_request' }),
-    )
-    expect(() => validatePkceVerifier('short')).toThrowError(
-      expect.objectContaining({ code: 'invalid_grant' }),
     )
   })
 

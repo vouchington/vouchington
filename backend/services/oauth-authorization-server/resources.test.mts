@@ -2,15 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { listScopeCatalog } from '@modules/scopes'
 import { getSiteOrigin } from '@modules/utils'
 import {
-  assertScopesMatchResource,
-  assertTokenRequestResource,
   buildOAuthAuthorizationServerMetadata,
   buildOAuthProtectedResourceMetadata,
   findOAuthProtectedResource,
   getOAuthIssuer,
   getOAuthResourceMetadataUrl,
   getOAuthResourceUrl,
-  validateResource,
 } from './index.mts'
 
 describe('OAuth protected resources', () => {
@@ -38,46 +35,12 @@ describe('OAuth protected resources', () => {
       audience: 'user',
       url: getOAuthResourceUrl('user'),
     })
-    expect(validateResource(getOAuthResourceUrl('admin'))).toEqual({
+    expect(findOAuthProtectedResource(getOAuthResourceUrl('admin'))).toEqual({
       audience: 'admin',
       url: getOAuthResourceUrl('admin'),
     })
-    expect(validateResource(getOAuthResourceUrl('legal')).audience).toBe('legal')
+    expect(findOAuthProtectedResource(getOAuthResourceUrl('legal'))?.audience).toBe('legal')
     expect(findOAuthProtectedResource(getOAuthResourceUrl('user').toUpperCase())).toBeNull()
-  })
-
-  it('accepts a token-endpoint resource only when it names the bound resource', () => {
-    const bound = getOAuthResourceUrl('user')
-
-    expect(() => assertTokenRequestResource(undefined, bound)).not.toThrow()
-    expect(() => assertTokenRequestResource(bound, bound)).not.toThrow()
-    expect(() => assertTokenRequestResource(getOAuthResourceUrl('admin'), bound)).toThrowError(
-      expect.objectContaining({ code: 'invalid_target' }),
-    )
-  })
-
-  it('rejects scopes whose audience differs from the requested resource', () => {
-    const user = validateResource(getOAuthResourceUrl('user'))
-    const admin = validateResource(getOAuthResourceUrl('admin'))
-
-    expect(() => assertScopesMatchResource(['mcp.user:read'], user)).not.toThrow()
-    expect(() => assertScopesMatchResource(['mcp.admin:read'], admin)).not.toThrow()
-    expect(() => assertScopesMatchResource(['mcp.user:read'], admin)).toThrowError(
-      expect.objectContaining({ code: 'invalid_scope' }),
-    )
-    expect(() => assertScopesMatchResource(['mcp.admin:read'], user)).toThrowError(
-      expect.objectContaining({ code: 'invalid_scope' }),
-    )
-    const community = validateResource(getOAuthResourceUrl('community_moderation'))
-    const legal = validateResource(getOAuthResourceUrl('legal'))
-    expect(() => assertScopesMatchResource(['community-moderation:read'], community)).not.toThrow()
-    expect(() => assertScopesMatchResource(['copyright-notices:read'], legal)).not.toThrow()
-    expect(() => assertScopesMatchResource(['community-moderation:read'], user)).toThrowError(
-      expect.objectContaining({ code: 'invalid_scope' }),
-    )
-    expect(() => assertScopesMatchResource(['copyright-notices:read'], admin)).toThrowError(
-      expect.objectContaining({ code: 'invalid_scope' }),
-    )
   })
 
   it('publishes authorization-server metadata that advertises every OAuth scope', () => {

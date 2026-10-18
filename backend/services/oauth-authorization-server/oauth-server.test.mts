@@ -14,11 +14,7 @@ import {
   randomTestOAuthRedirectUri,
   TEST_OAUTH_SCOPE,
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
-import {
-  exchangeOAuthAuthorizationCode,
-  registerOAuthClient,
-  validatePkceVerifier,
-} from './index.mts'
+import { exchangeOAuthAuthorizationCode, registerOAuthClient } from './index.mts'
 import { validateOAuthAccessToken } from './access-tokens.mts'
 
 type TestUser = Awaited<ReturnType<typeof createTestUserDirect>>
@@ -170,11 +166,5 @@ describe('OAuth authorization-code exchange', () => {
     } finally {
       await unsuspendTestUser(owner.id)
     }
-  })
-
-  it('accepts the full RFC 7636 verifier length and character set', () => {
-    const verifier = `${'.~_-'.repeat(31)}abcd`
-    expect(verifier).toHaveLength(128)
-    expect(validatePkceVerifier(verifier)).toBe(verifier)
   })
 })

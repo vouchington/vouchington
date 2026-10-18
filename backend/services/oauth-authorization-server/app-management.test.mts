@@ -1,3 +1,4 @@
+import { MAX_REDIRECT_URIS } from '@vouchington/oauth-server'
 import { randomBytes } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -17,7 +18,6 @@ import {
   exchangeOAuthRefreshToken,
   listOwnedOAuthApps,
   MAX_OAUTH_APP_SCOPES,
-  MAX_REDIRECT_URIS,
   revokeOwnedOAuthApp,
   rotateOwnedOAuthAppSecret,
   updateOwnedOAuthApp,

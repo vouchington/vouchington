@@ -1,10 +1,9 @@
+import { OAuthProtocolError, requiredFormValue } from '@vouchington/oauth-server'
 import {
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,
-  OAuthProtocolError,
   type OAuthTokenResponse,
 } from '@services/oauth-authorization-server'
-import { requiredFormValue } from './protocol-helpers.mts'
 
 // RFC 8707 makes `resource` optional at the token endpoint; the service rejects a value that does
 // not match the resource the code or refresh family is bound to.

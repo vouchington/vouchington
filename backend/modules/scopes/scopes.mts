@@ -113,6 +113,11 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     ScopeDefinition
   >),
 }
+
+/** The product catalog injected into reusable OAuth scope validation. */
+export function getVouchaScopeCatalog() {
+  return compileVouchaScopeCatalog(SCOPE_DEFINITIONS)
+}
 export type ScopeSetValidationErrorCode =
   | 'duplicate-scope'
   | 'empty-scope-set'
