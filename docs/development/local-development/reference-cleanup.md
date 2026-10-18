@@ -12,9 +12,9 @@ orphaned databases and Valkey containers left by any worktree that is gone, and 
 (`dev/check-fresh-base`) call `./dev/cleanup --yes`, never the reclaim command directly, so the
 existing sandbox exclusion and allow rule cover them.
 Reclaim runs under the same host-wide worktree-resource operation lock as `./dev/initialize` and the
-orphan scans, and skips when another operation holds it. The SessionStart call adds `--background`: it
-exits quietly if the lock is busy, and while it runs `./dev/initialize` waits for it (a kernel flock,
-bounded to two minutes) instead of failing.
+orphan scans, and skips when another operation holds it. The SessionStart and post-merge calls add `--background`: it
+exits quietly if the lock is busy, and while it runs `./dev/initialize` waits for it (a kernel flock)
+instead of failing.
 
 After moving a checkout, re-run `./dev/initialize web` first so
 `.env` names the new resources. Cleanup removes only unreferenced resources in the canonical hashed

@@ -164,7 +164,7 @@ worktree_resource_acquire_operation_lock_after_background && echo acquired`,
     waiter.stdout.on('data', chunk => (stdout += String(chunk)))
     for await (const chunk of waiter.stderr) if (String(chunk).includes('waiting')) break
 
-    cleanup.stdin.end()
+    cleanup.stdin?.end()
     const code = await new Promise(resolve => waiter.on('close', resolve))
 
     expect(code).toBe(0)
