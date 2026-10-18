@@ -4,7 +4,8 @@ Apply this before the first push of any PR-triggered or unattended workflow chan
 free, pushes are expensive; see [workflow instructions](../../../../.github/workflows/AGENTS.md)).
 Each item is a judgment a test cannot make. Mechanical rules (pinned action SHAs, runner allowlist,
 permission unions, checkout credentials, zizmor, actionlint) are enforced by tests and CI and are
-not restated here.
+not restated here. The pin guard checks only the 40-hex shape: when pinning from an annotated tag,
+resolve the commit with `<tag>^{commit}`, not the tag object's SHA, or Actions cannot load it.
 
 ## PR-triggered workflows
 
@@ -34,7 +35,9 @@ not restated here.
 - Run commit-creating jobs on GitHub-hosted runners; persistent self-hosted runners must not
   receive git identity or fixed-branch writes.
 - Use a non-`GITHUB_TOKEN` secret when a follow-on PR, label, comment, merge, or workflow trigger
-  is needed, and inject it only into the single branch-update command.
+  is needed. Inject it as the git credential only into the single branch-update command, and pass
+  it as `GH_TOKEN` to each `gh` command that must act with it; otherwise `gh` uses the default
+  token and the follow-on trigger is suppressed.
 - Commit and update the branch with repository hooks disabled so hooks cannot run unattended.
 - Owner-qualify PR lookups by head repository owner and ref, and validate the result before
   mutating the PR.
