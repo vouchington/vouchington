@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createBulkEnqueueFunction, createEnqueueFunction } from './glide-mq-enqueue.mts'
 import { defineBackgroundJob } from '../../queues/background/enqueues/define-job.mts'
 import { createBackgroundEnqueue } from '../../queues/background/enqueues.mts'
+import { enqueueProcessUserCreated } from '../../queues/entity-listeners/enqueues/enqueue-jobs.mts'
 
 const queue = undefined as never
 const domain = undefined as never
@@ -132,6 +133,16 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
     sensitive: true,
   })
   void createBackgroundEnqueue(safeBackgroundJob)({ nested: { phone_number: '+15555550123' } })
+
+  const ordinaryBackgroundJob = defineBackgroundJob<{ userId: string }>(domain, {
+    name: 'ordinary',
+    priority: 10,
+  })
+  const widerBackgroundPayload = { userId: 'user-id', metadata: { token: 'must-not-be-persisted' } }
+  // @ts-expect-error background enqueue wrappers preserve the actual-argument guard
+  void createBackgroundEnqueue(ordinaryBackgroundJob)(widerBackgroundPayload)
+  // @ts-expect-error domain-specific enqueue wrappers preserve the actual-argument guard
+  void enqueueProcessUserCreated(widerBackgroundPayload)
 
   void createEnqueueFunction<{ profile: { emailAddress: string } }, 'safe-user-created'>({
     queue,

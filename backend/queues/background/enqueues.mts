@@ -21,6 +21,19 @@ type BulkEnqueue<TInput> = (
   perCallOpts?: Partial<JobOptions>,
   callContext?: unknown,
 ) => ReturnType<Queue['addBulk']>
+type GuardedEnqueue<TData> = <TActual extends TData>(
+  data: TActual &
+    NoSensitiveFields<TData> &
+    ([true] extends [HasSensitiveFields<TData>] ? never : unknown) &
+    (TData extends Record<string, never>
+      ? unknown
+      : [keyof TActual] extends [never]
+        ? unknown
+        : ([true] extends [HasSensitiveFields<TActual>] ? never : unknown) &
+            NoSensitiveFields<NoInfer<TActual>>),
+  perCallOpts?: Partial<JobOptions>,
+  callContext?: unknown,
+) => ReturnType<Queue['add']>
 
 type BulkEnqueueFactory = <TInput, TData, TName extends string>(
   options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName>,
@@ -37,7 +50,7 @@ export function createBackgroundEnqueue<TData>(
 export function createBackgroundEnqueue<TData>(
   job: BackgroundJobDefinition<TData, false>,
   options?: BackgroundEnqueueOptions,
-): Enqueue<NoSensitiveFields<TData>>
+): GuardedEnqueue<TData>
 export function createBackgroundEnqueue<TData>(
   job: BackgroundJobDefinition<TData>,
   options: BackgroundEnqueueOptions = {},

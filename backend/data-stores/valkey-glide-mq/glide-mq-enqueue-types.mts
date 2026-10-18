@@ -70,8 +70,10 @@ export type CreateEnqueueFunction = {
       ([true] extends [HasSensitiveFields<TData>] ? never : unknown) &
       (TData extends Record<string, never>
         ? unknown
-        : ([true] extends [HasSensitiveFields<TActual>] ? never : unknown) &
-            NoSensitiveFields<NoInfer<TActual>>),
+        : [keyof TActual] extends [never]
+          ? unknown
+          : ([true] extends [HasSensitiveFields<TActual>] ? never : unknown) &
+              NoSensitiveFields<NoInfer<TActual>>),
     perCallOpts?: Partial<JobOptions>,
     callContext?: TCallContext,
   ) => ReturnType<AddQueue['add']>
