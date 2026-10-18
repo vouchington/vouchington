@@ -2,12 +2,37 @@ import { describe, expect, it, vi } from 'vitest'
 import { QueueEvents } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createQueue, createWorker } from '../glide-mq-factory.mts'
+import { wrapBatchProcessor } from '../guarded-worker-processors.mts'
 import { workerQueueCommandClient } from '../glide-mq-shared-client.mts'
 import { withScheduledRunLease } from '../scheduled-run-lease.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
 describe('scheduled run lease recovery', () => {
+  it('releases a scheduled batch lease when the batch processor fails', async () => {
+    const name = `lease-batch-failure-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const job = await queue.add('batch', {}, { jobId: 'scheduled-batch' })
+    if (!job) throw new Error('Expected a scheduled batch job')
+    await workerQueueCommandClient.hset(`${base}:job:${job.id}`, { schedulerName: 'repeat' })
+    const process = wrapBatchProcessor(
+      name,
+      async () => {
+        throw new Error('batch processor failure')
+      },
+      { lockDuration: 20_000 },
+    )
+    try {
+      await expect(process([job])).rejects.toThrow('batch processor failure')
+      expect(await workerQueueCommandClient.get(`${base}:run:repeat`)).toBeNull()
+    } finally {
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([`${base}:run:repeat:previous`])
+      await queue.close()
+    }
+  })
+
   it('still skips a fresh tick when overlap metric storage fails', async () => {
     const name = `lease-metric-${crypto.randomUUID()}`
     const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
