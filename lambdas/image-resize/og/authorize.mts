@@ -2,10 +2,11 @@ import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb'
 import {
   getImagePlacementDeliveryKey,
   parseMediaDeliveryEdgeEnforcementMode,
-  type DependencyAuthorization,
   type PlacementSourcePolicy,
 } from '@ts-shared/url-signing'
 import { MAX_OG_DEPENDENCIES } from './params.mts'
+
+type DependencyAuthorization = 'allow' | 'withheld' | 'unknown'
 
 export type OgDependencyAuthorizationResult = {
   states: readonly DependencyAuthorization[]

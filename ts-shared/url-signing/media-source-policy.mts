@@ -4,8 +4,6 @@ export const CURRENT_SIDELOAD_PATH_PREFIX = '/sideload/v2/'
 /** Transformed sideload objects live in this namespace so legacy render keys cannot be read. */
 export const TRANSFORMED_SIDELOAD_CACHE_PREFIX = 'transformed/sideload/v2/'
 
-const CANONICAL_FIRST_PARTY_MEDIA_HOSTS = ['images.voucha.ai', 'images-staging.voucha.ai'] as const
-
 const PLACEMENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export type MediaDeliveryEdgeEnforcementMode = 'off' | 'report' | 'enforce'
