@@ -41,12 +41,12 @@
   {
     "annotation": "backfillCategoriesForTopicAliases",
     "reason": "The update runs after the candidate scan and item locks, so it can return a short page while matching rows remain beyond the LIMIT; the re-read after the batch write must see rows a concurrent writer changed (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
-    "issue": 3114
+    "issue": 3336
   },
   {
     "annotation": "backfillCategoriesForTopicAliases.candidateItems",
     "reason": "The terminal candidate scan re-reads after the batch write to see rows a concurrent writer changed; a short update page does not prove exhaustion (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
-    "issue": 3114
+    "issue": 3336
   },
   {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
@@ -106,8 +106,8 @@
   },
   {
     "annotation": "createPublicationAliasIdentityStaging",
-    "reason": "Each alias claim stages its source posts in its own claim sequence; merging claims needs a batched alias capture (#3114 question 3)",
-    "issue": 3114
+    "reason": "Each alias claim stages its source posts in its own claim sequence; merging claims needs a batched alias capture (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "createTopicRecommendationLinkRelation",
@@ -116,8 +116,8 @@
   },
   {
     "annotation": "createTopicRevision",
-    "reason": "Topic create and alias-link revisions record different completed writes, and a merge inserts source then destination revisions (#3114 question 3)",
-    "issue": 3114
+    "reason": "Topic create and alias-link revisions record different completed writes, and a merge inserts source then destination revisions (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "createTotpAuthenticator",
@@ -156,8 +156,8 @@
   },
   {
     "annotation": "fencePublicationIdentityBridgeCapture",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "fetchElectionVoteRowsByUser",
@@ -242,7 +242,7 @@
   {
     "annotation": "getTopicAliasesForMergeRevision",
     "reason": "The destination aliases are re-read after the alias move and source-slug alias writes, so the after snapshot must see them",
-    "issue": 3114
+    "issue": 3336
   },
   {
     "annotation": "getTopicByAny",
@@ -288,28 +288,28 @@
   },
   {
     "annotation": "listDescendantPostPublicationSitemapPage",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "listPostPublicationIdentityNativeSourcePage",
-    "reason": "Eight source branches page sequentially under one row budget and cursor; one statement would change page boundaries (#3114 question 2)",
-    "issue": 3114
+    "reason": "Eight source branches page sequentially under one row budget and cursor; one statement would change page boundaries (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "listPublicationIdentityFeedItem",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "listPublicationIdentityFeedSourcePage",
-    "reason": "Feed items page under the shared source row budget and cursor; one statement would change page boundaries (#3114 question 2)",
-    "issue": 3114
+    "reason": "Feed items page under the shared source row budget and cursor; one statement would change page boundaries (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "listTopicAliasPublicationPostImpacts",
-    "reason": "Each alias retains its own ownership pages under its own dirty-work row (#3114 question 3)",
-    "issue": 3114
+    "reason": "Each alias retains its own ownership pages under its own dirty-work row (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
@@ -364,33 +364,33 @@
   },
   {
     "annotation": "lockExistingTopicAliasPublicationScopes",
-    "reason": "Each alias claim locks its alias scope before its own row lock and rechecks after it (#3114 question 3)",
-    "issue": 3114
+    "reason": "Each alias claim locks its alias scope before its own row lock and rechecks after it (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "lockPostPublicationCaptures",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "lockPostPublicationRssFeedScopes",
     "reason": "Per-item lock order: the final feed scopes must be locked before the dirty-work upsert, because the impact re-read after the item-row wait can include feeds the caller's pre-lock scan missed (backend/services/post-publication/capture-rss-feeds.mts:recordRssFeedTopicPublicationChanges)",
-    "issue": 3114
+    "issue": 3336
   },
   {
     "annotation": "lockPostPublicationScope",
-    "reason": "Author, post and feed scope locks are distinct keys taken at separate sites, and the nested rss-feed state change re-locks its feed as its own entry point (#3114 question 1)",
-    "issue": 3114
+    "reason": "Author, post and feed scope locks are distinct keys taken at separate sites, and the nested rss-feed state change re-locks its feed as its own entry point (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "lockPreparedPublicationScopes",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
     "reason": "The capture re-reads category aliases after the feed lifecycle and row locks to catch aliases added since the first read",
-    "issue": 3114
+    "issue": 3336
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
@@ -400,8 +400,8 @@
   },
   {
     "annotation": "lockTopicAliasPublicationCaptures",
-    "reason": "Each alias capture locks its scope before its own write; merging needs a batched alias capture (#3114 question 3)",
-    "issue": 3114
+    "reason": "Each alias capture locks its scope before its own write; merging needs a batched alias capture (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "maybeResolveCases",
@@ -411,18 +411,18 @@
   },
   {
     "annotation": "orderPostPublicationRetainedKeyInput",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "pagePublicationAliasIdentityStaging",
-    "reason": "Each alias claim pages its own staged post identities in global UUID order (#3114 question 3)",
-    "issue": 3114
+    "reason": "Each alias claim pages its own staged post identities in global UUID order (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "pagePublicationAliasSourceIdentities",
-    "reason": "Authored and relation sources are separate keyset walks per alias; one statement would change plans and cursors (#3114 question 3)",
-    "issue": 3114
+    "reason": "Authored and relation sources are separate keyset walks per alias; one statement would change plans and cursors (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
@@ -480,8 +480,8 @@
   },
   {
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
-    "reason": "Each relation write resolves canonical topics at its own write boundary; merging writes needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each relation write resolves canonical topics at its own write boundary; merging writes needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
@@ -525,28 +525,28 @@
   },
   {
     "annotation": "resolvePublicationPostScopeLiveOwner",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "retainCurrentRssFeedPublicationKeys",
     "reason": "The topic-change capture runs after the feed UPDATE and must see the new topic that the earlier state-change capture did not",
-    "issue": 3114
+    "issue": 3336
   },
   {
     "annotation": "retainPostPublicationDirtyWorkKeys",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "retainPublicationIdentityBridges",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "retainPublicationIdentityRoots",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "revokeAllAuthenticatedSessions",
@@ -586,8 +586,8 @@
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
@@ -612,8 +612,8 @@
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3114 question 1)",
-    "issue": 3114
+    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
+    "issue": 3336
   },
   {
     "annotation": "upsertUrlHostnames",
