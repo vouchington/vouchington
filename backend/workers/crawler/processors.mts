@@ -4,6 +4,8 @@ import { crawlUrl } from '@services/crawls/crawl-url'
 import type { Job } from 'glide-mq'
 import { buildCrawlerJobResult, handleCrawlerProcessorError } from './processors/outcomes.mts'
 import { completeRssFeedImportDiscovery } from '@services/rss-feeds/discover-feed'
+import { CrawlerRateLimitError } from '@modules/on-error/errors'
+import { normalizeDomainRateLimitMs } from '@services/crawls/domain-rate-limit'
 
 export async function processCrawlerJob(
   job: Job,
@@ -62,6 +64,12 @@ export async function processCrawlerJob(
       try {
         crawlResult = await crawlUrl(urlId, 0, new Set(), crawlOptions)
       } catch (err) {
+        // Keep the import's simple-dedup job alive through provider 429s. A replacement job
+        // would release this generation's base ID while its delayed result is still pending.
+        if (importRowId && importDiscoveryGeneration && err instanceof CrawlerRateLimitError)
+          return job.moveToDelayed(
+            Date.now() + normalizeDomainRateLimitMs(err.retryAfterMs ?? undefined),
+          )
         try {
           return await handleCrawlerProcessorError(urlId, rateLimitRetryCount, err, {
             crawlTimeoutMs,
@@ -74,8 +82,6 @@ export async function processCrawlerJob(
             skipChunks,
             skipEmbedResolution,
             skipCreatedEventsForRedirects,
-            importRowId,
-            importDiscoveryGeneration,
           })
         } catch (err) {
           if (

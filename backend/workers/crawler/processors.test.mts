@@ -139,7 +139,7 @@ describe('crawler processor', () => {
     expect(observer.ownedPromises()).toHaveLength(1)
   })
 
-  it('preserves discovery crawl options on rate-limit replacement jobs', async () => {
+  it('preserves crawl options on non-import rate-limit replacement jobs', async () => {
     const { urlId, url } = await createCrawlerUrlFixture('rate-limit-options')
     await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
 
@@ -153,7 +153,6 @@ describe('crawler processor', () => {
       skipCanonicalUrl: true,
       skipChunks: true,
       skipCreatedEventsForRedirects: true,
-      importRowId: urlId,
     })
 
     expect(observer.ownedPromises()).toHaveLength(1)
@@ -180,7 +179,6 @@ describe('crawler processor', () => {
               skip_canonical_url?: boolean
               skip_chunks?: boolean
               skip_created_events_for_redirects?: boolean
-              import_row_id?: string
             }
           ).crawl_timeout_ms === 10_000 &&
           (job.data as { ensure_crawler_for_redirects?: boolean }).ensure_crawler_for_redirects ===
@@ -192,8 +190,7 @@ describe('crawler processor', () => {
           (job.data as { skip_canonical_url?: boolean }).skip_canonical_url === true &&
           (job.data as { skip_chunks?: boolean }).skip_chunks === true &&
           (job.data as { skip_created_events_for_redirects?: boolean })
-            .skip_created_events_for_redirects === true &&
-          (job.data as { import_row_id?: string }).import_row_id === urlId,
+            .skip_created_events_for_redirects === true,
       ),
     ).toBe(true)
   })

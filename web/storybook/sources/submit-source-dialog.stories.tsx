@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import {
   clearStoryMutationFixture,
   setStoryMutationFixture,
@@ -18,6 +19,7 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+const onOpenChange = fn<(open: boolean) => void>()
 
 export const Button: Story = {
   render: () => (
@@ -32,8 +34,20 @@ export const Open: Story = {
     <StoryFrame>
       <SubmitSourceDialog
         open
-        onOpenChange={() => undefined}
+        onOpenChange={onOpenChange}
       />
     </StoryFrame>
   ),
+  play: async () => {
+    const completed = Promise.withResolvers<void>()
+    onOpenChange.mockClear()
+    onOpenChange.mockImplementation(open => {
+      if (!open) completed.resolve()
+    })
+    const dialog = within(document.body).getByRole('dialog', { name: 'Submit a Source' })
+    await userEvent.type(within(dialog).getByRole('textbox'), 'https://example.com/feed.xml')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Submit Source' }))
+    await completed.promise
+    await expect(onOpenChange).toHaveBeenCalledWith(false)
+  },
 }

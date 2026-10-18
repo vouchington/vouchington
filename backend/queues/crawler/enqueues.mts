@@ -85,7 +85,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
           // holds its dedup id, so each retry count needs its own id or the add is skipped.
           id:
             rateLimitRetryCount != null
-              ? `${JOB_NAME}_ratelimit__${urlId}${options?.importRowId ? `__${options.importRowId}__${options.importDiscoveryGeneration}` : ''}__${rateLimitRetryCount}`
+              ? `${JOB_NAME}_ratelimit__${urlId}__${rateLimitRetryCount}`
               : `${JOB_NAME}__${urlId}${options?.importRowId ? `__${options.importRowId}__${options.importDiscoveryGeneration}` : ''}`,
           mode: isImportDiscovery ? 'simple' : 'debounce',
         },

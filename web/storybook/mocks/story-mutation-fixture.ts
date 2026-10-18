@@ -3,6 +3,7 @@ import { publicUsers } from '@/storybook/entities/fixtures/users'
 import { resetModNoteSequence } from './story-mutation-bodies'
 import { resetParticipantSequence } from './story-mutation-participant'
 import { resetInviteSequence } from './story-mutation-post-routes'
+import { resetStorySourceImport, storySourceImportStatus } from './story-mutation-claim'
 import { clearStoryTopicRoutes, setStoryTopicRoutes } from './story-topic-routes'
 import {
   storyMutationDelete,
@@ -17,12 +18,14 @@ const previousPatch = ClientRequest.prototype.patch
 const previousDelete = ClientRequest.prototype.delete
 const previousPut = ClientRequest.prototype.put
 const previousGet = ClientRequest.prototype.get
+const previousFetch = globalThis.fetch
 
 export function setStoryMutationFixture(): void {
   storyMutations = true
   resetModNoteSequence()
   resetParticipantSequence()
   resetInviteSequence()
+  resetStorySourceImport()
   setStoryTopicRoutes()
 }
 
@@ -31,7 +34,26 @@ export function clearStoryMutationFixture(): void {
   resetModNoteSequence()
   resetParticipantSequence()
   resetInviteSequence()
+  resetStorySourceImport()
   clearStoryTopicRoutes()
+}
+
+globalThis.fetch = function storybookMutationFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const endpoint =
+    typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+  const status = storyMutations ? storySourceImportStatus(endpoint) : undefined
+  if (status !== undefined) {
+    return Promise.resolve(
+      new Response(JSON.stringify(status), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+  }
+  return previousFetch.call(globalThis, input, init)
 }
 
 function respond<T>(response: unknown, fallback: () => Promise<T>): Promise<T> {
