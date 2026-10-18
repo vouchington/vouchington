@@ -76,6 +76,8 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
 - **Mark moderation summaries after local send checks and before SES.** A failed preference or
   suppression lookup can retry without a send mark. A definitive sending-rate rejection clears
   the mark for a queue retry; an unknown send outcome keeps it to prevent duplicate mail.
+  The mark-first contract accepts a lost summary if execution stops or the mark acknowledgement
+  is lost before dispatch. An unconfirmed mark cannot safely be cleared without proving ownership.
 - **When merging,** namespace job names, deduplication IDs, job IDs, scheduler IDs, and ordering
   keys by domain, and size the worker for the combined load. A job that already needs an ordering
   key keeps it, namespaced, and gives up any domain-wide group cap.

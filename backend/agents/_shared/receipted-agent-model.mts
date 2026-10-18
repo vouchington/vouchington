@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { unrecoverable } from '@vouchington/queue-errors'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { ModelProviderError } from '@modules/model-providers/errors'
 import type { ModelCallResult } from '@modules/model-providers/types'
 import {
   completeAgentCallReceipt,
@@ -80,7 +81,15 @@ export async function callReceiptedAgentModel<Output>(
       },
     })
   } catch (err) {
-    if (err instanceof UnbilledRetrySpendCapBreachError) {
+    // These two provider codes are only constructed by request validation and missing Anthropic
+    // credentials, before an SDK call. A post-dispatch 4xx can lack billed flags too, so never
+    // infer an unbilled attempt from those flags alone.
+    const rejectedBeforeDispatch =
+      err instanceof ModelProviderError &&
+      (err.code === 'unsupported-parameter' || err.code === 'client-unavailable') &&
+      !err.ambiguousBilled &&
+      !err.billedResponse
+    if (err instanceof UnbilledRetrySpendCapBreachError || rejectedBeforeDispatch) {
       await releaseUnbilledAgentCallReceipt(key, requestSha256)
     }
     throw err

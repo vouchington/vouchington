@@ -71,7 +71,8 @@ export const processSendCommunityModerationSummaryEmail = async (
       text,
       userId: input.userId,
       // Preference and suppression reads happen before this callback. Mark immediately before
-      // SES so a pre-dispatch failure may retry, while an ambiguous SES outcome remains at-most-once.
+      // SES. A lost mark acknowledgement may drop this summary: clearing an unconfirmed mark
+      // could erase another worker's winning mark and allow a duplicate send.
       beforeDispatch:
         userId && trackingKey ? () => markModerationEmailSent(userId, trackingKey) : undefined,
     })
