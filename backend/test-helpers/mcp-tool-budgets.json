@@ -415,8 +415,8 @@
       },
       "submit_rss_feed": {
         "measured": {
-          "list": 1013,
-          "core": 487
+          "list": 1286,
+          "core": 495
         },
         "max": {
           "list": 2000,
