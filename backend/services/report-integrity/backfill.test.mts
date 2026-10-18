@@ -237,7 +237,7 @@ describe('listPendingReportEntityPage', () => {
           parentId: rootPostId,
         })
       } else if (entityType === 'user') {
-        entityId = (await createTestUser())!.id
+        entityId = (await createTestUser()).id
       } else if (entityType === 'url_hostname') {
         entityId = await insertTestUrlHostname({
           hostname: `backfill-cutoff-${crypto.randomUUID().slice(0, 8)}.example.com`,
