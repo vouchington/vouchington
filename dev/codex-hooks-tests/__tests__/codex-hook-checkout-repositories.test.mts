@@ -42,6 +42,7 @@ describe('github checkout repositories', () => {
       ['an scp-like URL in another case', 'git@github.com:Widgets-Inc/tool.git'],
       ['a repository name in another case', 'https://github.com/Widgets-Inc/Tool.git'],
       ['an https URL', 'https://github.com/widgets-inc/tool.git'],
+      ['the www GitHub URL alias', 'https://www.github.com/widgets-inc/tool.git'],
       ['an ssh URL with a port', 'ssh://git@github.com:22/widgets-inc/tool.git'],
       ['GitHub SSH over port 443', 'ssh://git@ssh.github.com:443/widgets-inc/tool.git'],
       ['a trailing slash', 'https://github.com/widgets-inc/tool/'],

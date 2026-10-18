@@ -41,6 +41,12 @@ describe('same-owner repositories keep their own content policy', () => {
     })
   })
 
+  it('derives github.com from a validated GitHub checkout when GH_HOST is unset', async () => {
+    await withRepo({ origin: 'https://github.com/acme/platform.git' }, dir => {
+      expect(reasonOf(nonDraftPr(''), dir)).toBeUndefined()
+    })
+  })
+
   it('requires the effective GH_HOST for hostless selectors and cwd', async () => {
     vi.stubEnv('GH_HOST', 'other.example')
     expect(reasonOf(nonDraftPr('--repo acme/platform'))).toBeDefined()
@@ -88,6 +94,28 @@ describe('same-owner repositories keep their own content policy', () => {
     expect(
       reasonOf(editPr('https://github.com:443/acme/platform/pull/5', '--repo acme/app')),
     ).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo https://www.github.com/acme/platform'))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo https://www.github.com/acme/app'))).toContain('pr_create')
+    expect(
+      reasonOf(editPr('https://www.github.com/acme/platform/pull/5', '--repo acme/app')),
+    ).toBeUndefined()
+  })
+
+  it('does not treat a value consumed by another edit flag as a repository selector', async () => {
+    await withRepo({ origin: 'https://github.com/acme/app.git' }, dir => {
+      expect(reasonOf(editPr('5 --add-label -Racme/platform --body x --title fix'), dir)).toContain(
+        'pr_update',
+      )
+    })
+  })
+
+  it.each([
+    'gh --repo github.com/acme/app pr edit 5 --body no refs',
+    'gh pr --repo github.com/acme/app edit 5 --body no refs',
+  ])('honors a global repository selector in %s', async command => {
+    await withRepo({ origin: 'https://github.com/widgets-inc/tool.git' }, dir => {
+      expect(findGitHubWorkflowBlock(command, dir, SESSION)?.reason).toContain('pr_update')
+    })
   })
 
   it.each(['GH_HOST=other.example ', 'GH_HOST="$HOST" ', 'export GH_HOST=other.example; '])(
@@ -118,6 +146,13 @@ describe('same-owner repositories keep their own content policy', () => {
         {
           sessionRepositories: () => new Set(['acme/app.git']),
         },
+      )?.reason,
+    ).toContain('pr_update')
+    expect(
+      findGitHubWorkflowBlock(
+        editPr('https://www.github.com:443/acme/app.git/pull/5'),
+        '/repository-scope-session',
+        { sessionRepositories: () => new Set(['acme/app.git']) },
       )?.reason,
     ).toContain('pr_update')
     expect(reasonOf(editPr('5 --add-label https://github.com/acme/platform/pull/5'))).toContain(

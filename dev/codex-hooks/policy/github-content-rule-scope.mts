@@ -1,5 +1,5 @@
 import type { GitHubWorkflowPolicyOptions } from './core.mts'
-import { editSelectorRepositories } from './github-pr-edit-selector.mts'
+import { editRepositorySelector, editSelectorRepositories } from './github-pr-edit-selector.mts'
 import { implicitRepository, invocationRepositorySelector } from './github-implicit-repository.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import type { ShellWord } from './shell-tokenizer.mts'
@@ -30,9 +30,13 @@ export function contentRuleExemption(
     if (!isContentRuleInvocation || options.sessionRepositories === undefined) {
       return false
     }
-    const repo = parseGhOptions(invocation.optionTokens).repo.at(-1)
+    const repo =
+      area === 'pr' && action === 'edit'
+        ? editRepositorySelector(invocation, words)
+        : (parseGhOptions(invocation.optionTokens).repo.at(-1) ?? null)
+    if (repo === undefined) return false
     const base =
-      repo === undefined
+      repo === null
         ? implicitRepository(tokens, index, isTopLevelCommand, cwd)
         : invocationRepositorySelector(repo, tokens, index, isTopLevelCommand)
     const target = targetRepository(base, invocation, words)

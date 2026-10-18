@@ -10,7 +10,10 @@ export function repositoryOfRepoSelector(value: string): string | undefined {
   const segments = path.split('/')
   if (!REPO_SELECTOR_CHARACTERS.test(path) || segments.includes('')) return undefined
   if (isUrl) {
-    if (segments.length !== 3 || !/^github\.com(?::\d+)?$/i.test(segments.shift() ?? '')) {
+    if (
+      segments.length !== 3 ||
+      !/^(?:www\.)?github\.com(?::\d+)?$/i.test(segments.shift() ?? '')
+    ) {
       return undefined
     }
   } else if (segments.length === 3 && segments.shift()?.toLowerCase() !== 'github.com') {
@@ -26,7 +29,7 @@ export function repositoryOfRemoteUrl(url: string): string | null | undefined {
   if (withScheme !== null) {
     const [, scheme, host, path] = withScheme
     if (scheme.toLowerCase() === 'file' || host === '') return null
-    return /^(?:[^@/]+@)?github\.com(?::\d+)?$/i.test(host) ||
+    return /^(?:[^@/]+@)?(?:www\.)?github\.com(?::\d+)?$/i.test(host) ||
       (scheme.toLowerCase() === 'ssh' && /^(?:[^@/]+@)?ssh\.github\.com:443$/i.test(host))
       ? repositoryOfRemotePath(path)
       : undefined
@@ -34,7 +37,7 @@ export function repositoryOfRemoteUrl(url: string): string | null | undefined {
   // Git's scp-like `[user@]host:path` form needs a colon before any slash.
   const scpLike = /^([^/:]+):(.*)$/.exec(url)
   if (scpLike === null) return null
-  return /^(?:[^@/]+@)?github\.com$/i.test(scpLike[1])
+  return /^(?:[^@/]+@)?(?:www\.)?github\.com$/i.test(scpLike[1])
     ? repositoryOfRemotePath(scpLike[2])
     : undefined
 }

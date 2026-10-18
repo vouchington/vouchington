@@ -1,12 +1,16 @@
 import { checkoutRepository } from './github-checkout-repositories.mts'
-import { repositoryOfRepoSelector } from './github-repository-identities.mts'
 import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
-import { plainShellAssignment } from './shell-token-utils.mts'
+import { repositoryOfRepoSelector } from './github-repository-identities.mts'
+import {
+  followsOnlyChainedCds,
+  githubHostAllowsCheckout,
+  githubHostIsProven,
+  prefixOnlySetsVariables,
+} from './github-command-host.mts'
 
 // The prefix words that only set or unset gh's environment: `env` and `command` themselves and
 // `env`'s unset forms. Any other `env` option (`-i`, `-`, `-C`, `-S`) or wrapper clears the
 // environment, moves the directory, or rewrites the command, so it never proves gh's target.
-const MODELED_PREFIX_WORD = /^(?:env|command|-u.+|--unset=.+)$/
 const GIT_VARIABLE = /^GIT_[A-Z\d_]*=/
 
 /**
@@ -36,8 +40,10 @@ export function implicitRepository(
     return invocationRepositorySelector(ghRepo, tokens, index, isTopLevelCommand)
   }
   const cwdIsProven = inherited && cwd !== undefined && !Object.keys(env).some(isGitContextOverride)
-  return cwdIsProven && githubHostIsProven(tokens, index, isTopLevelCommand)
-    ? checkoutRepository(cwd)
+  if (!cwdIsProven) return undefined
+  const repository = checkoutRepository(cwd)
+  return repository !== undefined && githubHostAllowsCheckout(tokens, index, isTopLevelCommand)
+    ? repository
     : undefined
 }
 
@@ -57,49 +63,12 @@ export function invocationRepositorySelector(
   return hasHost || githubHostIsProven(tokens, index, isTopLevelCommand) ? repository : undefined
 }
 
-function githubHostIsProven(tokens: string[], index: number, isTopLevelCommand: boolean): boolean {
-  const prefix = tokens.slice(commandSegmentStart(tokens, index), index)
-  const env = commandPrefixAt(tokens, index)?.env
-  if (env === undefined || !prefixOnlySetsVariables(prefix)) return false
-  const inherited = isTopLevelCommand && followsOnlyChainedCds(tokens, index)
-  if (!('GH_HOST' in env) && !inherited) return false
-  const host = 'GH_HOST' in env ? env.GH_HOST : process.env.GH_HOST
-  return host?.toLowerCase() === 'github.com'
-}
-
-// A `NAME+=value` append or `NAME[i]=value` element gives gh a value the hook can't read, so only a
-// plain `NAME=value` assignment counts.
-function prefixOnlySetsVariables(prefix: string[]): boolean {
-  for (let cursor = 0; cursor < prefix.length; cursor += 1) {
-    const word = prefix[cursor]
-    if ((word === '-u' || word === '--unset') && cursor + 1 < prefix.length) {
-      cursor += 1
-    } else if (plainShellAssignment(word) === null && !MODELED_PREFIX_WORD.test(word)) {
-      return false
-    }
-  }
-  return true
-}
-
 // gh provably inherits the hook's view of the shell — the hook's GH_REPO and commandCwd's
 // directory, which models only sequential literal `cd`s — only when every command before gh is such
 // a `cd`, joined by `&&`, so gh runs only if each one did. Any other command or joiner (`;` after a
 // short-circuit, `||`, a zsh pipeline's last `cd`, `eval`, a function, `builtin cd`, `pushd`,
 // `source`, a same-command `git remote set-url`) can leave gh with a directory, remote, or
 // environment the hook didn't read.
-function followsOnlyChainedCds(tokens: string[], index: number): boolean {
-  for (let start = commandSegmentStart(tokens, index); start > 0;) {
-    if (tokens[start - 1] !== '&&') {
-      return false
-    }
-    start = commandSegmentStart(tokens, start - 1)
-    if (tokens[start] !== 'cd') {
-      return false
-    }
-  }
-  return true
-}
-
 function isGitContextOverride(name: string): boolean {
   return GIT_VARIABLE.test(`${name}=`) || /^(?:HOME|XDG_CONFIG_HOME)$/.test(name)
 }
