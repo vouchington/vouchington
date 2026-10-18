@@ -51,18 +51,21 @@ export async function discoverFeedUrlFromHtml(
   if (!url || !hostnameId) return null
   const { rows } = await write<{
     discovery_url_id: string | null
-    discovered_feed_url: string | null
+    discovered_feed_url_id: string | null
     discovery_failed_at: Date | null
   }>(
     sql`/* discoverFeedUrlFromHtml */
-      SELECT discovery_url_id, discovered_feed_url, discovery_failed_at
+      SELECT discovery_url_id, discovered_feed_url_id, discovery_failed_at
       FROM user_rss_feed_import_rows WHERE id = ${importRowId}
     `,
   )
   const state = rows[0]
   if (!state) return null
   if (state.discovery_url_id === url.id) {
-    if (state.discovered_feed_url) return state.discovered_feed_url
+    if (state.discovered_feed_url_id) {
+      const discovered = await getUrlById(state.discovered_feed_url_id, { readOnly: false })
+      if (discovered) return discovered.url
+    }
     if (state.discovery_failed_at) return null
   }
 
@@ -71,7 +74,7 @@ export async function discoverFeedUrlFromHtml(
   const requested = await write(sql`/* markRssFeedImportDiscoveryRequested */
     UPDATE user_rss_feed_import_rows
     SET discovery_url_id = ${url.id}, discovery_generation = ${generation}::uuid,
-        discovery_crawl_id = NULL, discovered_feed_url = NULL, discovery_failed_at = NULL
+        discovery_crawl_id = NULL, discovered_feed_url_id = NULL, discovery_failed_at = NULL
     WHERE id = ${importRowId} AND completed_at IS NULL AND failed_at IS NULL
     RETURNING id
   `)
@@ -124,11 +127,20 @@ export async function completeRssFeedImportDiscovery(
       feedUrl = extractFeedLinkFromCrawlLinks(crawl?.links, crawledUrl.url)
     }
   }
+  const discoveredFeedUrlId = feedUrl
+    ? ((
+        await addUrl(null, feedUrl, {
+          preserveHttp: new URL(feedUrl).protocol === 'http:',
+          skipCreatedEvents: true,
+        })
+      )?.id ?? null)
+    : null
+  if (feedUrl && !discoveredFeedUrlId) throw new Error('Discovered feed URL could not be stored')
   const { rows } = await write<{ batch_id: string }>(sql`/* completeRssFeedImportDiscovery */
     UPDATE user_rss_feed_import_rows
     SET discovery_crawl_id = ${result?.crawl_id ?? null}::uuid,
-        discovered_feed_url = ${feedUrl},
-        discovery_failed_at = CASE WHEN ${feedUrl}::text IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END
+        discovered_feed_url_id = ${discoveredFeedUrlId}::uuid,
+        discovery_failed_at = CASE WHEN ${discoveredFeedUrlId}::uuid IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END
     WHERE id = ${importRowId} AND discovery_url_id = ${requestedUrlId}
       AND discovery_generation = ${generation}::uuid
       AND completed_at IS NULL AND failed_at IS NULL
