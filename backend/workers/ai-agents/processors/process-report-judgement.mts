@@ -11,13 +11,14 @@ export async function processReportJudgement(
   job: Job<ReportJudgementJobData>,
   callModel?: JudgementModelCaller,
 ): Promise<unknown> {
-  const { entity_type, entity_id, triggering_report_id, rerun_by_id } = job.data
+  const { entity_type, entity_id, triggering_report_id, rerun_by_id, run_id } = job.data
   const result = await runReportJudgementAgent(
     {
       entityType: entity_type as ModerationReportEntityType,
       entityId: entity_id,
       triggeringReportId: triggering_report_id,
       rerunById: rerun_by_id ?? null,
+      runId: run_id ?? null,
     },
     await loadServiceModelSelection('report-judgement'),
     callModel,

@@ -201,9 +201,8 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     // and the follow-up router.refresh() transition complete (web/AGENTS.md rule 29).
     startRefreshTransition(async () => {
       try {
-        const before = (reports as AdminModerationReport[]).find(report => report.id === reportId)
-        await rerunReportJudgement(reportId)
-        markRerun(reportId, before?.judgement?.id ?? null)
+        const { run_id: runId } = await rerunReportJudgement(reportId)
+        markRerun(reportId, runId)
         onSuccess(t('extracted.admin.reportsClient.judgementReRunQueued_ac6c0160'))
         // Note: because the rerun is async (202), the new judgement may not be
         // immediately visible until the background worker completes.

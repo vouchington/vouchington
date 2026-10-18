@@ -10874,6 +10874,15 @@
     "POST:/api/v1/report-integrity/flags/:id/penalties": {
       "$ref": "#/components/schemas/ApplyReportAbusePenaltyResult"
     },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "additionalProperties": false,
+      "properties": {
+        "completed": { "type": "boolean" },
+        "judgement_id": { "type": ["string", "null"] }
+      },
+      "required": ["completed", "judgement_id"],
+      "type": "object"
+    },
     "POST:/api/v1/reports/:id/judgements": {
       "additionalProperties": false,
       "properties": {
@@ -10882,9 +10891,12 @@
         },
         "rerun_by_id": {
           "type": "string"
+        },
+        "run_id": {
+          "type": "string"
         }
       },
-      "required": ["queued", "rerun_by_id"],
+      "required": ["queued", "rerun_by_id", "run_id"],
       "type": "object"
     },
     "POST:/api/v1/rss-feed-categories/assignments": {
@@ -48469,6 +48481,16 @@
     "POST:/api/v1/reports": {
       "body": {
         "$ref": "#/components/schemas/CreateModerationReportRequest"
+      }
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "path": {
+        "properties": {
+          "id": { "type": "string" },
+          "runId": { "type": "string" }
+        },
+        "required": ["id", "runId"],
+        "type": "object"
       }
     },
     "POST:/api/v1/reports/:id/judgements": {

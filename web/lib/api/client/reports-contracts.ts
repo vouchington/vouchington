@@ -134,6 +134,12 @@ export interface ModerationReportResolutionResponse {
 }
 
 export interface RerunReportJudgementResponse {
-  queued: boolean
+  queued: true
   rerun_by_id: string
+  run_id: string
+}
+
+export interface ReportJudgementRunResponse {
+  completed: boolean
+  judgement_id: string | null
 }

@@ -32,7 +32,11 @@ describe('ReportsClient re-run judgement button', () => {
   })
 
   it('does not poll disabled automatic AI, but still polls an admitted manual rerun', async () => {
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     render(
       <ReportsClient
         viewerTier='staff'
@@ -51,14 +55,18 @@ describe('ReportsClient re-run judgement button', () => {
       expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
         true,
         expect.any(Function),
-        'rerun:report-1:new',
+        'rerun:report-1:report_judgement_test-run',
         expect.any(Function),
       ),
     )
   })
 
   it('clusters skip disabled automatic polling but retain a manual rerun key', async () => {
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     const response = makeClusteredReportsResponse()
     const cluster = response.results[0]!
     render(
@@ -91,7 +99,7 @@ describe('ReportsClient re-run judgement button', () => {
       expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
         true,
         expect.any(Function),
-        `rerun:${cluster.reports[0]!.id}:new`,
+        `rerun:${cluster.reports[0]!.id}:report_judgement_test-run`,
         expect.any(Function),
       ),
     )
@@ -107,7 +115,11 @@ describe('ReportsClient re-run judgement button', () => {
       judged_report_count: 1,
       current_report_count: 1,
     }
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     render(
       <ReportsClient
         viewerTier='staff'
@@ -147,7 +159,11 @@ describe('ReportsClient re-run judgement button', () => {
   })
 
   it('calls rerunReportJudgement and shows a success toast on success', async () => {
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     render(
       <ReportsClient
         viewerTier='staff'
@@ -160,54 +176,6 @@ describe('ReportsClient re-run judgement button', () => {
     await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
     await waitFor(() => expect(mockOnSuccess).toHaveBeenCalledWith('Judgement re-run queued'))
     await waitFor(() => expect(mockNav.refresh).toHaveBeenCalled())
-  })
-
-  it('keeps polling a rerun until the judgement row ID changes, even with identical text', async () => {
-    const judgement = {
-      id: '00000000-0000-7000-8000-000000000001',
-      recommended_action: 'remove' as const,
-      public_response: 'Same response',
-      internal_response: 'Same rationale',
-      is_stale: false,
-      judged_report_count: 1,
-      current_report_count: 1,
-    }
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
-    const { rerender } = render(
-      <ReportsClient
-        viewerTier='staff'
-        data={makeReportsResponse({ judgement })}
-      />,
-    )
-    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-      false,
-      expect.any(Function),
-      expect.any(String),
-      expect.any(Function),
-    )
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        true,
-        expect.any(Function),
-        expect.any(String),
-        expect.any(Function),
-      ),
-    )
-    rerender(
-      <ReportsClient
-        viewerTier='staff'
-        data={makeReportsResponse({
-          judgement: { ...judgement, id: '00000000-0000-7000-8000-000000000002' },
-        })}
-      />,
-    )
-    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-      false,
-      expect.any(Function),
-      expect.any(String),
-      expect.any(Function),
-    )
   })
 
   it('routes a failed re-run through onError and keeps the row', async () => {
@@ -243,7 +211,11 @@ describe('ReportsClient re-run judgement button', () => {
     }
     const cluster = makeCluster()
     const data = makeClusteredReportsResponse()
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     render(
       <ReportsClient
         viewerTier='staff'
@@ -262,7 +234,9 @@ describe('ReportsClient re-run judgement button', () => {
       | ((keys: string[]) => void)
       | undefined
 
-    await act(async () => onTimeout?.([`rerun:${cluster.reports[0]!.id}:${judgement.id}`]))
+    await act(async () =>
+      onTimeout?.([`rerun:${cluster.reports[0]!.id}:report_judgement_test-run`]),
+    )
 
     await waitFor(() => expect(button).toBeEnabled())
     expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()

@@ -6,6 +6,7 @@ import type {
   MemberFlatModerationReportsResponse,
   ModerationReportResolutionResponse,
   ModerationReportStatus,
+  ReportJudgementRunResponse,
   ReportableEntityType,
   ReportReason,
   RerunReportJudgementResponse,
@@ -21,6 +22,7 @@ export type {
   ModerationReportsPageInfo,
   ModerationReportResolutionResponse,
   ModerationReportStatus,
+  ReportJudgementRunResponse,
   ReportableEntityType,
   ReportReason,
   RerunReportJudgementResponse,
@@ -101,6 +103,15 @@ export function resolveModerationReport(
 
 export function rerunReportJudgement(reportId: string): Promise<RerunReportJudgementResponse> {
   return clientApi.post<RerunReportJudgementResponse>(`/api/v1/reports/${reportId}/judgements`)
+}
+
+export function getReportJudgementRun(
+  reportId: string,
+  runId: string,
+): Promise<ReportJudgementRunResponse> {
+  return clientApi.get<ReportJudgementRunResponse>(
+    `/api/v1/reports/${reportId}/judgements/${encodeURIComponent(runId)}`,
+  )
 }
 
 export function resolveCommunityModerationReport(

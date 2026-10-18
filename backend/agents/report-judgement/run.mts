@@ -5,6 +5,7 @@ import {
   getAllReportsForEntity,
   getReportJudgementContextForEntity,
   insertReportJudgement,
+  getJudgementByRunId,
   shouldRefreshReportJudgementForEntity,
   type ModerationReportEntityType,
   type ModerationReportJudgement,
@@ -21,6 +22,7 @@ interface JudgementInput {
   entityId: string
   triggeringReportId: string
   rerunById?: string | null
+  runId?: string | null
 }
 
 export type { JudgementModelCaller } from './model.mts'
@@ -36,7 +38,21 @@ export async function runReportJudgementAgent(
   selection: ModelSelection,
   callModel: JudgementModelCaller = callJudgementModel,
 ): Promise<JudgementAgentResult | null> {
-  const { entityType, entityId, triggeringReportId, rerunById } = input
+  const { entityType, entityId, triggeringReportId, rerunById, runId } = input
+
+  if (runId) {
+    const existing = await withPrimaryReads(() => getJudgementByRunId(runId))
+    if (existing) {
+      if (
+        existing.entity_type !== entityType ||
+        existing.entity_id !== entityId ||
+        existing.triggering_report_id !== triggeringReportId ||
+        existing.rerun_by_id !== rerunById
+      )
+        throw new Error('Judgement run identity belongs to another request')
+      return { judgement: existing, communityId: null, authorId: null }
+    }
+  }
 
   const loadCurrentInput = async (): Promise<{
     entityContent: NonNullable<Awaited<ReturnType<typeof fetchEntityContent>>>
@@ -135,6 +151,7 @@ export async function runReportJudgementAgent(
     entityId,
     triggeringReportId,
     rerunById: rerunById ?? null,
+    runId: runId ?? null,
     recommendedAction: result.output.recommended_action,
     publicResponse: result.output.public_response,
     internalResponse: result.output.internal_response,

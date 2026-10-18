@@ -41,6 +41,7 @@ export type ReportJudgementJobData = {
   entity_id: string
   triggering_report_id: string
   rerun_by_id?: string | null
+  run_id?: string | null
   context_hash?: string | null
 }
 

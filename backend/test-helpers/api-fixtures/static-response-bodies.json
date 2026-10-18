@@ -2212,7 +2212,12 @@
   },
   "native.moderation.report-judgement.default": {
     "queued": true,
-    "rerun_by_id": "admin-1"
+    "rerun_by_id": "admin-1",
+    "run_id": "00000000-0000-7000-8000-000000000303"
+  },
+  "native.moderation.report-judgement-run.pending": {
+    "completed": false,
+    "judgement_id": null
   },
   "native.moderation.appeals.default": {
     "appeals": [

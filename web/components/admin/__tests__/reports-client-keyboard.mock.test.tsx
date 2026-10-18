@@ -151,7 +151,11 @@ describe('ReportsClient keyboard shortcuts', () => {
       judged_report_count: 1,
       current_report_count: 1,
     }
-    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValueOnce({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     render(
       <ReportsClient
         viewerTier='staff'

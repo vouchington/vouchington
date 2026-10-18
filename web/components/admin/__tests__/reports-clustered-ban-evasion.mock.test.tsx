@@ -21,6 +21,7 @@ vi.mock(import('@/lib/api/client/posts'), () => ({ deletePost: vi.fn<VitestLoose
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveReport,
   rerunReportJudgement: mockRerunJudgement,
+  getReportJudgementRun: vi.fn<VitestLooseMock>(),
 }))
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),

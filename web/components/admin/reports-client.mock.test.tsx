@@ -4,17 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
 
 const mockNav = createNavMock()
-const { mockResolveModerationReport, mockRerunReportJudgement, mockOnError, mockOnSuccess } =
-  vi.hoisted(() => ({
-    mockResolveModerationReport: vi.fn<VitestLooseMock>(),
-    mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
-    mockOnError: vi.fn<VitestLooseMock>(),
-    mockOnSuccess: vi.fn<VitestLooseMock>(),
-  }))
+const {
+  mockResolveModerationReport,
+  mockRerunReportJudgement,
+  mockGetReportJudgementRun,
+  mockOnError,
+  mockOnSuccess,
+} = vi.hoisted(() => ({
+  mockResolveModerationReport: vi.fn<VitestLooseMock>(),
+  mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
+  mockGetReportJudgementRun: vi.fn<VitestLooseMock>(),
+  mockOnError: vi.fn<VitestLooseMock>(),
+  mockOnSuccess: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveModerationReport,
   rerunReportJudgement: mockRerunReportJudgement,
+  getReportJudgementRun: mockGetReportJudgementRun,
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError, onSuccess: mockOnSuccess }))

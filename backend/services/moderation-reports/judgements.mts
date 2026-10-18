@@ -40,6 +40,7 @@ export type InsertReportJudgementInput = {
   caseId?: string | null
   triggeringReportId?: string | null
   rerunById?: string | null
+  runId?: string | null
   recommendedAction: ModerationJudgementAction
   publicResponse: string
   internalResponse: string
@@ -69,7 +70,7 @@ export async function insertReportJudgement(
   const query = sql`/* insertReportJudgement */ INSERT INTO moderation_report_judgements (`
   query.append(fkColumn)
   query.append(
-    sql`, case_id, triggering_report_id, rerun_by_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank) VALUES (${input.entityId}::uuid, ${resolvedCaseId}, ${input.triggeringReportId ?? null}, ${input.rerunById ?? null}, ${input.recommendedAction}, ${input.publicResponse}, ${input.internalResponse}, ${input.model}, ${context.contextHash}, ${context.reportCount}, ${context.noteHash}, ${context.maxReasonRank}) RETURNING id, case_id, triggering_report_id, rerun_by_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank, created_at, `,
+    sql`, case_id, triggering_report_id, rerun_by_id, run_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank) VALUES (${input.entityId}::uuid, ${resolvedCaseId}, ${input.triggeringReportId ?? null}, ${input.rerunById ?? null}, ${input.runId ?? null}::uuid, ${input.recommendedAction}, ${input.publicResponse}, ${input.internalResponse}, ${input.model}, ${context.contextHash}, ${context.reportCount}, ${context.noteHash}, ${context.maxReasonRank}) RETURNING id, case_id, triggering_report_id, rerun_by_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank, created_at, `,
   )
   query.append(fkColumn)
   query.append(

@@ -29,8 +29,7 @@ import type {
   AdminModerationReportDuplicateCluster,
 } from './reports-client-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
-import { isOrdinaryPendingReport } from './report-action-eligibility'
+import { useReportsAiPolling } from './use-reports-ai-polling'
 
 interface ClusteredReportsClientProps {
   data: AdminClusteredModerationReportsResponse
@@ -70,8 +69,6 @@ export function ClusteredReportsClient({
   const [loadingClusterAction, setLoadingClusterAction] = useState<ClusterAction | null>(null)
   const [loadingDuplicateId, setLoadingDuplicateId] = useState<string | null>(null)
   const [rerunningReportId, setRerunningReportId] = useState<string | null>(null)
-  const [rerunBefore, setRerunBefore] = useState<Record<string, string | null>>({})
-  const [rerunTimedOut, setRerunTimedOut] = useState(false)
   const [isRefreshing, startRefreshTransition] = useTransition()
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
@@ -84,38 +81,8 @@ export function ClusteredReportsClient({
     [data.duplicate_clusters, removedClusterKeys],
   )
   const visibleReports = clusters.flatMap(cluster => cluster.reports)
-  const pendingAutomaticJudgementReports = visibleReports.filter(
-    report =>
-      isOrdinaryPendingReport(report) && report.automatic_judgement_enabled && !report.judgement,
-  )
-  const pendingRerunEntities = new Set<string>()
-  const pendingRerunKeys: string[] = []
-  for (const report of visibleReports) {
-    if (
-      Object.hasOwn(rerunBefore, report.id) &&
-      (report.judgement?.id ?? null) === rerunBefore[report.id]
-    ) {
-      pendingRerunEntities.add(`${report.entity_type}:${report.entity_id}`)
-      pendingRerunKeys.push(`rerun:${report.id}:${rerunBefore[report.id] ?? 'new'}`)
-    }
-  }
-  const pollingTimedOut = usePendingAiRefresh(
-    pendingAutomaticJudgementReports.length > 0 || pendingRerunEntities.size > 0,
-    () => router.refresh(),
-    [...pendingAutomaticJudgementReports.map(report => report.id), ...pendingRerunKeys].join('|'),
-    expiredKeys => {
-      const expired = new Set(expiredKeys)
-      if (![...expired].some(key => key.startsWith('rerun:'))) return
-      setRerunBefore(current =>
-        Object.fromEntries(
-          Object.entries(current).filter(
-            ([id, before]) => !expired.has(`rerun:${id}:${before ?? 'new'}`),
-          ),
-        ),
-      )
-      setRerunTimedOut(true)
-    },
-  )
+  const { pendingRerunEntities, pollingTimedOut, rerunTimedOut, clearRerunTimeout, markRerun } =
+    useReportsAiPolling(visibleReports, true)
   const disabled =
     Boolean(loadingClusterId || loadingDuplicateId || rerunningReportId) || isRefreshing
   const isPendingFilter = !statusFilter || statusFilter === 'pending'
@@ -233,12 +200,12 @@ export function ClusteredReportsClient({
 
   function handleRerun(report: AdminModerationReport) {
     if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
-    setRerunTimedOut(false)
+    clearRerunTimeout()
     setRerunningReportId(report.id)
     startRefreshTransition(async () => {
       try {
-        await rerunReportJudgement(report.id)
-        setRerunBefore(current => ({ ...current, [report.id]: report.judgement?.id ?? null }))
+        const { run_id: runId } = await rerunReportJudgement(report.id)
+        markRerun(report.id, runId)
         onSuccess(t('extracted.admin.reportsClusteredClient.judgementReRunQueued_ac6c0160'))
         router.refresh()
       } catch (err) {

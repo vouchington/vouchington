@@ -82,4 +82,54 @@ describe('copyright staff queue AI polling eligibility', () => {
       'appeal:appeal-1|counter:counter-2',
     )
   })
+
+  it.each([
+    ['unassessed', null, true],
+    [
+      'assessed',
+      {
+        id: 'hold-assessment-1',
+        is_from_original_claimant: true,
+        proceeding_kind: 'federal_court' as const,
+        ccb_claim_kind: null,
+        commenced_at: '2026-01-01T00:00:00Z',
+        received_by_designated_agent_at: '2026-01-01T00:00:00Z',
+        is_same_material: true,
+        target_ids: [],
+        qualifying: true,
+        resolved: false,
+      },
+      false,
+    ],
+  ])(
+    'polls an %s legal hold with missing guidance only until assessment',
+    (_name, assessment, pending) => {
+      const notice = makeCopyrightStaffQueueItem({
+        legal_holds: [
+          {
+            submission_id: 'hold-1',
+            received_at: '2026-01-01T00:00:00Z',
+            statement: {},
+            guidance: null,
+            assessment,
+          },
+        ],
+      })
+
+      render(
+        <CopyrightStaffQueue
+          data={{
+            copyright_notices: [notice],
+            page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+          }}
+        />,
+      )
+
+      expect(vi.mocked(usePendingAiRefresh)).toHaveBeenLastCalledWith(
+        pending,
+        expect.any(Function),
+        pending ? 'hold:hold-1' : '',
+      )
+    },
+  )
 })

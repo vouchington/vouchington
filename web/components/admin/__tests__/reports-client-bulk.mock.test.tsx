@@ -16,6 +16,7 @@ vi.mock(import('@/lib/api/client/posts'), () => ({
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveModerationReport,
   rerunReportJudgement: vi.fn<VitestLooseMock>(),
+  getReportJudgementRun: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({

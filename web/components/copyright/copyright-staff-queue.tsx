@@ -51,7 +51,8 @@ export function CopyrightStaffQueue({
     for (const counter of notice.counter_notices)
       if (counter.guidance === null) keys.push(`counter:${counter.submission_id}`)
     for (const hold of notice.legal_holds)
-      if (hold.guidance === null) keys.push(`hold:${hold.submission_id}`)
+      if (hold.guidance === null && hold.assessment === null)
+        keys.push(`hold:${hold.submission_id}`)
     return keys
   })
   const refreshTimedOut = usePendingAiRefresh(

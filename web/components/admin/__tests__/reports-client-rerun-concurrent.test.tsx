@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockNav,
   mockRerunReportJudgement,
+  mockGetReportJudgementRun,
   mockOnSuccess,
   mockUsePendingAiRefresh,
 } from '@/test-helpers/reports-client-rerun-mocks'
@@ -26,12 +27,16 @@ describe('ReportsClient concurrent judgement reruns', () => {
   beforeEach(() => mockNav.reset())
   afterEach(() => vi.clearAllMocks())
 
-  it('tracks two pending reruns until each report receives a new judgement row', async () => {
+  it('tracks two pending reruns until each exact run completes', async () => {
     const judgement = makeJudgement()
     const first = makeReport({ id: 'report-1', judgement })
     const second = makeReport({ id: 'report-2', entity_id: 'post-2', judgement })
     const data = makeReportsResponse()
-    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValue({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     const { rerender } = render(
       <ReportsClient
         viewerTier='staff'
@@ -64,6 +69,14 @@ describe('ReportsClient concurrent judgement reruns', () => {
       expect.any(String),
       expect.any(Function),
     )
+    mockGetReportJudgementRun
+      .mockResolvedValueOnce({ completed: true, judgement_id: 'judgement-from-run-1' })
+      .mockResolvedValueOnce({ completed: false, judgement_id: null })
+    let poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
+    await act(async () => poll?.())
+    expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+      'rerun:report-2:report_judgement_test-run',
+    )
     rerender(
       <ReportsClient
         viewerTier='staff'
@@ -76,13 +89,17 @@ describe('ReportsClient concurrent judgement reruns', () => {
         }}
       />,
     )
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        false,
-        expect.any(Function),
-        expect.any(String),
-        expect.any(Function),
-      ),
+    mockGetReportJudgementRun.mockResolvedValueOnce({
+      completed: true,
+      judgement_id: 'judgement-from-run-2',
+    })
+    poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
+    await act(async () => poll?.())
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      '',
+      expect.any(Function),
     )
   })
 
@@ -91,7 +108,11 @@ describe('ReportsClient concurrent judgement reruns', () => {
     const first = makeReport({ id: 'report-1', judgement })
     const second = makeReport({ id: 'report-2', judgement })
     const data = makeReportsResponse()
-    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValue({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     const { rerender } = render(
       <ReportsClient
         viewerTier='staff'
@@ -125,14 +146,18 @@ describe('ReportsClient concurrent judgement reruns', () => {
         }}
       />,
     )
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
-        false,
-        expect.any(Function),
-        expect.any(String),
-        expect.any(Function),
-      ),
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      true,
+      expect.any(Function),
+      'rerun:report-1:report_judgement_test-run',
+      expect.any(Function),
     )
+    mockGetReportJudgementRun.mockResolvedValueOnce({
+      completed: true,
+      judgement_id: 'judgement-from-run-1',
+    })
+    const poll = mockUsePendingAiRefresh.mock.lastCall?.[1] as (() => Promise<void>) | undefined
+    await act(async () => poll?.())
     await waitFor(() =>
       expect(screen.getAllByRole('button', { name: /re-run ai judgement/i })[1]).toBeEnabled(),
     )
@@ -145,7 +170,11 @@ describe('ReportsClient concurrent judgement reruns', () => {
     const first = makeReport({ id: 'report-1', judgement })
     const second = makeReport({ id: 'report-2', entity_id: 'post-2', judgement })
     const data = makeReportsResponse()
-    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValue({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     render(
       <ReportsClient
         viewerTier='staff'
@@ -161,7 +190,7 @@ describe('ReportsClient concurrent judgement reruns', () => {
       | ((keys: string[]) => void)
       | undefined
 
-    await act(async () => onTimeout?.([`rerun:report-1:${judgement.id}`]))
+    await act(async () => onTimeout?.(['rerun:report-1:report_judgement_test-run']))
 
     await waitFor(() => expect(buttons[0]).toBeEnabled())
     expect(buttons[1]).toBeDisabled()

@@ -74,6 +74,21 @@ const paginationReportApiFixtureCases = nativeModerationReportApiFixtureCases.fl
       },
     ]
   }
+  if (fixture.id === 'native.moderation.report-judgement-run.pending') {
+    return [
+      {
+        ...fixture,
+        path: `/api/v1/reports/${nativeModerationFlatReportId}/judgements/00000000-0000-7000-8000-000000000303`,
+        route: {
+          routeTemplate: '/api/v1/reports/:id/judgements/:runId',
+          pathParams: {
+            id: nativeModerationFlatReportId,
+            runId: '00000000-0000-7000-8000-000000000303',
+          },
+        },
+      },
+    ]
+  }
   if (fixture.id === 'native.moderation.report-resolution.reviewed') {
     const body = fixture.body as { report: Record<string, unknown> }
     return [

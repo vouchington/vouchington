@@ -9238,7 +9238,7 @@
                       "additionalProperties": false,
                       "properties": {
                         "automatic_judgement_enabled": {
-                          "required": true,
+                          "required": false,
                           "schema": {
                             "type": "boolean"
                           }
@@ -9521,7 +9521,7 @@
                               }
                             },
                             "automatic_judgement_enabled": {
-                              "required": true,
+                              "required": false,
                               "schema": {
                                 "type": "boolean"
                               }
@@ -9820,7 +9820,7 @@
                               }
                             },
                             "automatic_judgement_enabled": {
-                              "required": true,
+                              "required": false,
                               "schema": {
                                 "type": "boolean"
                               }
@@ -45444,6 +45444,46 @@
       },
       "source": "backend/api/v1/reports/reports.mts",
       "statusKnowledge": "default"
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "bodyKind": "content",
+      "hash": "be23e1061ca6ba49055cbed6c9343d5b8f906236e12aaa26a97219c9f9010641",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/reports/:id/judgements/:runId",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "completed": {
+              "required": true,
+              "schema": {
+                "type": "boolean"
+              }
+            },
+            "judgement_id": {
+              "required": true,
+              "schema": {
+                "type": "union",
+                "variants": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/reports/reports.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
     },
     "GET:/api/v1/rss-feed-categories": {
       "bodyKind": "content",
@@ -86435,6 +86475,12 @@
               "schema": {
                 "type": "string"
               }
+            },
+            "run_id": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
             }
           },
           "type": "object"
@@ -93137,7 +93183,7 @@
       "migratedFrom": ["backend/api/v1/communities/moderation-queue.mts"],
       "path": "/api/v1/communities/test-community/moderation-queue",
       "responseSchema": {
-        "hash": "ccaec0c03c2247802bef8df6162d69ff9b834d6ec558d9d24ff8af43e69196d8",
+        "hash": "c61606981461c8204731f17d2653cac44e9faa6c48be0095d66c93455becaeee",
         "key": "web.communities.moderation-queue.default"
       },
       "route": {
@@ -97123,7 +97169,7 @@
       "migratedFrom": ["backend/api/v1/reports/reports.mts"],
       "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements",
       "responseSchema": {
-        "hash": "20e75d65b89e7e2ed3b08b4f223f47570b26efc7cbb151bbc40d4261fde3c2c6",
+        "hash": "dcdd714dddfac7e1552b4392112159658c36250bab5a33f8c6ec1705762646ee",
         "key": "native.moderation.report-judgement.default"
       },
       "route": {
@@ -97136,6 +97182,31 @@
         "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
       },
       "status": 202
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "GET:/api/v1/reports/:id/judgements/:runId",
+      "bodyFile": "responses/native.moderation.report-judgement-run.pending.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.report-judgement-run.pending",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/reports/reports.mts"],
+      "path": "/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303",
+      "responseSchema": {
+        "hash": "77404d6091586656a5fd091b60f4d6e36569f02b84cf48f043f648dcc4fe5638",
+        "key": "native.moderation.report-judgement-run.pending"
+      },
+      "route": {
+        "pathParams": {
+          "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
+          "runId": "00000000-0000-7000-8000-000000000303"
+        },
+        "routeTemplate": "/api/v1/reports/:id/judgements/:runId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
     },
     {
       "auth": "fixture-admin",

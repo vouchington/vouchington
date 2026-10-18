@@ -13,6 +13,7 @@ function buildReportJudgementJob(
   triggeringReportId: string,
   rerunById?: string | null,
   contextHash?: string | null,
+  runId?: string | null,
 ): { data: ReportJudgementJobData; opts: JobOptions } {
   return {
     data: {
@@ -20,6 +21,7 @@ function buildReportJudgementJob(
       entity_id: entityId,
       triggering_report_id: triggeringReportId,
       rerun_by_id: rerunById ?? null,
+      run_id: runId ?? null,
       context_hash: contextHash ?? null,
     } satisfies ReportJudgementJobData,
     opts: {
@@ -28,6 +30,7 @@ function buildReportJudgementJob(
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
       removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
       priority: AGENT_PRIORITY['report-judgement'],
+      ...(runId ? { jobId: `report_judgement_${runId}` } : {}),
       // Skip deduplication on manual re-runs so the staff-triggered job is
       // not silently dropped by a pending automatic job with no rerun_by_id.
       ...(rerunById
@@ -56,6 +59,7 @@ export async function enqueueReportJudgement(
   triggeringReportId: string,
   rerunById?: string | null,
   contextHash?: string | null,
+  runId?: string | null,
 ): Promise<void> {
   const { data, opts } = buildReportJudgementJob(
     entityType,
@@ -63,6 +67,7 @@ export async function enqueueReportJudgement(
     triggeringReportId,
     rerunById,
     contextHash,
+    runId,
   )
   await ai_agents.add('report-judgement', data, opts)
   trackJobEnqueue(AI_AGENTS_QUEUE_NAME, 'report-judgement')

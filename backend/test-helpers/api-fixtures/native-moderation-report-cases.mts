@@ -67,6 +67,16 @@ export const nativeModerationReportApiFixtureCases = [
     migratedFrom: ['backend/api/v1/reports/reports.mts'],
   }),
   fixtureCase({
+    id: 'native.moderation.report-judgement-run.pending',
+    method: 'GET',
+    path: '/api/v1/reports/report-1/judgements/00000000-0000-7000-8000-000000000303',
+    route: {
+      routeTemplate: '/api/v1/reports/:id/judgements/:runId',
+      pathParams: { id: 'report-1', runId: '00000000-0000-7000-8000-000000000303' },
+    },
+    migratedFrom: ['backend/api/v1/reports/reports.mts'],
+  }),
+  fixtureCase({
     id: 'native.moderation.report-resolution.reviewed',
     method: 'PATCH',
     path: '/api/v1/reports/report-1',

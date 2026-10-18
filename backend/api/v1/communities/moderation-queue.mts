@@ -117,6 +117,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
                 reporter_username: _run,
                 note: _note,
                 judgement: _judgement,
+                automatic_judgement_enabled: _aje,
                 target_user_id,
                 ...rest
               } = publicEntry

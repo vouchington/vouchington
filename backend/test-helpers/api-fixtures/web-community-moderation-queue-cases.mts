@@ -106,7 +106,6 @@ export const webCommunityModerationQueueApiFixtureCases: ApiFixtureCase[] = [
           community_ban_evasion: null,
           post_moderation_context: null,
           is_system_generated: false,
-          automatic_judgement_enabled: false,
         },
       ],
       page_info: pageInfo,

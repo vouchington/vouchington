@@ -7,12 +7,14 @@ export const mockNav = createNavMock()
 const {
   mockResolveModerationReport,
   mockRerunReportJudgement,
+  mockGetReportJudgementRun,
   mockOnError,
   mockOnSuccess,
   mockUsePendingAiRefresh,
 } = vi.hoisted(() => ({
   mockResolveModerationReport: vi.fn<VitestLooseMock>(),
   mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
+  mockGetReportJudgementRun: vi.fn<VitestLooseMock>(),
   mockOnError: vi.fn<VitestLooseMock>(),
   mockOnSuccess: vi.fn<VitestLooseMock>(),
   mockUsePendingAiRefresh: vi.fn<VitestLooseMock>(),
@@ -21,6 +23,7 @@ const {
 export {
   mockResolveModerationReport,
   mockRerunReportJudgement,
+  mockGetReportJudgementRun,
   mockOnError,
   mockOnSuccess,
   mockUsePendingAiRefresh,
@@ -29,6 +32,7 @@ export {
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveModerationReport,
   rerunReportJudgement: mockRerunReportJudgement,
+  getReportJudgementRun: mockGetReportJudgementRun,
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError, onSuccess: mockOnSuccess }))
