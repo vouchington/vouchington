@@ -100,6 +100,36 @@ describe('computeTrustTier', () => {
     expect(tier).toBe(2)
   })
 
+  it.each([
+    '2026-01-31T23:59:59.999Z',
+    '2026-02-01T00:00:00.001Z',
+    '2028-02-29T23:59:59.999Z',
+    '2028-03-01T00:00:00.001Z',
+    '2026-12-31T23:59:59.999Z',
+    '2027-01-01T00:00:00.001Z',
+  ])('pins account-age gates at %s', now => {
+    vi.setSystemTime(new Date(now))
+    const dayMs = 86_400_000
+    const boundaries = [
+      { ageMs: dayMs, signal: 'oauth', tiers: [0, 2, 2] },
+      { ageMs: 30 * dayMs, signal: 'pro', tiers: [2, 2, 3] },
+      { ageMs: 180 * dayMs, signal: 'none', tiers: [1, 1, 2] },
+      { ageMs: 365 * dayMs, signal: 'pro', tiers: [3, 3, 4] },
+    ] as const
+    for (const { ageMs, signal, tiers } of boundaries) {
+      for (const [index, deltaMs] of [-1, 0, 1].entries()) {
+        const user = createMockUser({
+          id: uuidv7ForDate(new Date(Date.now() - ageMs - deltaMs)),
+          ...(signal === 'oauth'
+            ? { google_account: { id: '123', name: 'Test', email_address: 'test@test.com' } }
+            : {}),
+        })
+        const context: TrustTierContext = { membershipPlan: signal === 'pro' ? 'pro' : null }
+        expect(computeTrustTier(user, context)).toBe(tiers[index])
+      }
+    }
+  })
+
   it('adds +1 for plus membership', () => {
     const user = createMockUser()
     const tier = computeTrustTier(user, { membershipPlan: 'plus' })
