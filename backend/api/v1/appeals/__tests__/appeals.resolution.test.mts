@@ -121,6 +121,38 @@ describe('POST /api/v1/appeals/:id/resolution — resolve an appeal', () => {
     expect(response.body.appeal.status).toBe('dismissed')
   })
 
+  it('returns 404 for an unknown appeal', async () => {
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    await request
+      .post(`/api/v1/appeals/${crypto.randomUUID()}/resolution`)
+      .set('Content-Type', 'application/json')
+      .send({ action: 'deny' })
+      .expect(404)
+  })
+
+  it('returns 404 once the appeal is resolved', async () => {
+    const appellant = await createTestUser()
+    const appeal = await createWarningAppeal(
+      appellant,
+      staff,
+      `Resolved twice test ${crypto.randomUUID()}`,
+    )
+    await deliverModerationAppealForTest(staff.id, appeal.id)
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    await request
+      .post(`/api/v1/appeals/${appeal.id}/resolution`)
+      .set('Content-Type', 'application/json')
+      .send({ action: 'deny' })
+      .expect(200)
+    await request
+      .post(`/api/v1/appeals/${appeal.id}/resolution`)
+      .set('Content-Type', 'application/json')
+      .send({ action: 'deny' })
+      .expect(404)
+  })
+
   it('returns 422 before the response is delivered', async () => {
     const appellant = await createTestUser()
     const appeal = await createWarningAppeal(

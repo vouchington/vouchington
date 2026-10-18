@@ -138,6 +138,11 @@ describe('POST /api/v1/disputes/:id/resolution', () => {
     expect(response.body.dispute.status).toBe('dismissed')
     expect(response.body.dispute.resolution_action).toBe('dismiss')
     expectEnrichedStaffContext(response.body.dispute)
+    await request
+      .post(`/api/v1/disputes/${dispute.id}/resolution`)
+      .set('Content-Type', 'application/json')
+      .send({ action: 'dismiss' })
+      .expect(404)
   })
 
   it('remove action resolves the dispute', async () => {

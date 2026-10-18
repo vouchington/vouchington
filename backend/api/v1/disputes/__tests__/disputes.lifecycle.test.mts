@@ -262,5 +262,24 @@ describe('POST /api/v1/disputes/:id/approval and /delivery', () => {
       .expect(200)
     expect(deliveryResponse.body.dispute.sent_at).not.toBeNull()
     expectEnrichedStaffContext(deliveryResponse.body.dispute)
+
+    // The already-sent guard is exercised here, after this test's own approval and delivery.
+    await staffRequest.post(`/api/v1/disputes/${disputeId}/delivery`).expect(422)
+  })
+
+  it('delivery of an unknown dispute returns 404', async () => {
+    const request = createRequest()
+    await request.authenticateAs(staffUser)
+    await request.post(`/api/v1/disputes/${crypto.randomUUID()}/delivery`).expect(404)
+  })
+
+  it('resolution of an unknown dispute returns 404', async () => {
+    const request = createRequest()
+    await request.authenticateAs(staffUser)
+    await request
+      .post(`/api/v1/disputes/${crypto.randomUUID()}/resolution`)
+      .set('Content-Type', 'application/json')
+      .send({ action: 'dismiss' })
+      .expect(404)
   })
 })

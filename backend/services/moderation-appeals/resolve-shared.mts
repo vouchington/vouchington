@@ -1,4 +1,3 @@
-import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import {
   registerPostCommitAction,
@@ -10,7 +9,7 @@ import {
   recordModerationTrainingFeedback,
   type ModerationTrainingEvidence,
 } from '@services/moderation-training'
-import { assertModerationAppealDelivered } from './assert-delivered.mts'
+import { rejectUnresolvableAppeal } from './assert-delivered.mts'
 import type { ModerationAppeal } from './config.mts'
 import { getModerationAppealAfterMutation } from './get.mts'
 import { appendAppealLifecycleChange } from './lifecycle.mts'
@@ -62,7 +61,6 @@ export async function finalizeDeliveredModerationAppeal(
   const now = new Date()
   let afterCommit: (() => Promise<void>) | undefined
   const response = await runWithTransaction(options.query, async (query: TransactionQuery) => {
-    await assertModerationAppealDelivered(appealId, { query })
     const { rows } = await query(
       sql`/* finalizeDeliveredModerationAppeal */
       UPDATE moderation_appeals
@@ -73,7 +71,7 @@ export async function finalizeDeliveredModerationAppeal(
       RETURNING `.append(APPEAL_RETURNING),
     )
     const row = rows[0] as ModerationAppeal | undefined
-    assert(row, 404, 'Appeal not found or already resolved')
+    if (!row) return rejectUnresolvableAppeal(appealId, { query })
 
     const lifecycleId = await appendAppealLifecycleChange(
       appealId,

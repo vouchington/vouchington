@@ -78,7 +78,11 @@ export async function escalateModerationQueueItem(
       },
       { query },
     )
-    await openModInternalThread(currentUserId, { communityId, reportId, postId }, { query })
+    await openModInternalThread(
+      currentUserId,
+      { communityId, reportId, postId, reportScopeVerified: !!reportId },
+      { query },
+    )
   })
 }
 

@@ -17,6 +17,8 @@ export async function openModInternalThread(
     communityId: string
     reportId?: string | null
     postId?: string | null
+    /** The caller already asserted this report belongs to `communityId`; skip the repeat read. */
+    reportScopeVerified?: boolean
   },
   queryOptions?: QueryOptions,
   dependencies: { clock?: () => Date } = {},
@@ -31,7 +33,7 @@ export async function openModInternalThread(
 
   const observedTime = observeModerationVacationTime(dependencies.clock)
 
-  if (reportId) {
+  if (reportId && !options.reportScopeVerified) {
     const context = await getReportResolutionContext(reportId, communityId)
     if (!context) throw createError(404, 'Report not found')
     if (!context.is_in_community_scope) throw createError(403, 'Forbidden')
