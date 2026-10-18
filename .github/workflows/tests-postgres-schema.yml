@@ -63,6 +63,10 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/check-staging-rss-bootstrap.mts
         timeout-minutes: 1
+      - name: Check platform-stats snapshot against live data
+        working-directory: backend
+        run: node scripts/check-platform-stats-snapshot.mts
+        timeout-minutes: 2
       - name: Clear stale PostgreSQL schema JUnit report
         timeout-minutes: 1
         run: rm -f postgres-schema-test-report.junit.xml

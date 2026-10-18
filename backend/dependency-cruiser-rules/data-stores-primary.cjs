@@ -3,7 +3,8 @@ module.exports = [
     name: 'no-data-stores-imports-unrestricted',
     comment:
       'Only backend/services/ and backend/test-helpers/ may import @data-stores/*. ' +
-      'Other areas have specific allowlists. Which valkey concern a consumer may touch is ' +
+      'Other areas have specific allowlists, including the fresh-bootstrap platform-stats ' +
+      'snapshot CI preflight. Which valkey concern a consumer may touch is ' +
       'enforced by the pnpm workspace graph: each per-concern package ' +
       '(@data-stores/valkey-{core,pubsub,rate-limiter,glide-mq}) must be declared in the ' +
       "consumer's package.json.",
@@ -20,6 +21,7 @@ module.exports = [
         '^backend/rss/',
         '^backend/entrypoints/api/',
         '^backend/scripts/explain-analyze/',
+        '^backend/scripts/check-platform-stats-snapshot\\.mts$',
         '^backend/scripts/seed/',
         '^backend/scripts/seeds/',
       ],

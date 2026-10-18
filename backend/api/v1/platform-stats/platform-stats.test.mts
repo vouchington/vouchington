@@ -14,17 +14,26 @@ import {
   stopTestQueryCapture,
 } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
-import { getPlatformStatsReference } from '@voucha/test-helpers/platform-stats-reference'
-import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
+import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
+import { acquirePlatformStatsRefreshReservation } from '@voucha/test-helpers/platform-stats-refresh-reservation'
 
 describe('platform-stats', () => {
   afterAll(() => cacheValkeyClient.close())
 
-  it('matches the former live aggregate after refresh', async () => {
-    await refreshMaterializedViewForTest('mv_platform_stats')
-    const response = await createRequest().get('/api/v1/platform-stats').expect(200)
-    expect(response.body).toEqual(await getPlatformStatsReference())
-    await invalidateSearchCache('platform_stats_anon')
+  it('serializes the published platform snapshot as JSON', async () => {
+    const reservation = await acquirePlatformStatsRefreshReservation()
+    try {
+      await invalidateSearchCache('platform_stats_anon')
+      const expected = await getPlatformStatsCached({})
+      const response = await createRequest().get('/api/v1/platform-stats').expect(200)
+      expect(response.body).toEqual(expected)
+    } finally {
+      try {
+        await invalidateSearchCache('platform_stats_anon')
+      } finally {
+        await reservation.release()
+      }
+    }
   })
 
   it('shares one cold platform aggregate with two authenticated viewers and preserves HTTP headers', async () => {
@@ -32,24 +41,35 @@ describe('platform-stats', () => {
     const authenticated = [createRequest(), createRequest()]
     for (const request of authenticated) await request.authenticateAs(await createTestUser())
 
+    const reservation = await acquirePlatformStatsRefreshReservation()
     const key = stableSerialize({})
     const written = Promise.withResolvers<void>()
     const onWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
       if (cacheName === 'platform_stats_anon' && keys.includes(key)) written.resolve()
     }
-    valkeyEvents.on('cache:set', onWrite)
     const requestStats = async (request: ReturnType<typeof createRequest>) =>
       request.get('/api/v1/platform-stats').expect(200)
     let queries: ReturnType<typeof stopTestQueryCapture> = []
     const responses = []
-    enableQueryCapture()
+    let listenerRegistered = false
+    let queryCaptureStarted = false
     try {
+      await invalidateSearchCache('platform_stats_anon')
+      valkeyEvents.on('cache:set', onWrite)
+      listenerRegistered = true
+      enableQueryCapture()
+      queryCaptureStarted = true
       const [cold] = await Promise.all([requestStats(anonymous), written.promise])
       responses.push(cold)
       for (const request of authenticated) responses.push(await requestStats(request))
     } finally {
-      queries = stopTestQueryCapture()
-      valkeyEvents.off('cache:set', onWrite)
+      if (queryCaptureStarted) queries = stopTestQueryCapture()
+      if (listenerRegistered) valkeyEvents.off('cache:set', onWrite)
+      try {
+        await invalidateSearchCache('platform_stats_anon')
+      } finally {
+        await reservation.release()
+      }
     }
     const aggregateQueries = countCapturedQueriesByAnnotation(queries, 'getPlatformStats')
     await writeFile(

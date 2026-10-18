@@ -3638,6 +3638,9 @@ importers:
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       husky:
         specifier: ^9.1.7
