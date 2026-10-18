@@ -21,12 +21,27 @@ export async function submitRssFeedSource(
     await getUserActivePlan(currentUser.id),
     'rss_feed',
   )
-  const submitted = await submitRssFeedImport(currentUser, provenance, [validation.canonicalUrl], {
-    should_follow_imported_feeds: follow,
-  })
-  await enqueueUserRssFeedImportDispatch(submitted.import.id).catch(onError)
+  const submitted = await persistAndDispatchRssFeedImport(
+    currentUser,
+    provenance,
+    validation.canonicalUrl,
+    follow,
+  )
   return {
     import: submitted.import,
     status_url: `/api/v1/my/import/rss-feeds/${submitted.import.id}`,
   }
+}
+
+async function persistAndDispatchRssFeedImport(
+  currentUser: BasicUser,
+  provenance: ContentProvenance,
+  canonicalUrl: string,
+  follow: boolean,
+) {
+  const submitted = await submitRssFeedImport(currentUser, provenance, [canonicalUrl], {
+    should_follow_imported_feeds: follow,
+  })
+  await enqueueUserRssFeedImportDispatch(submitted.import.id).catch(onError)
+  return submitted
 }
