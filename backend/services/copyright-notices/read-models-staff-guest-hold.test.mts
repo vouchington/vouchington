@@ -13,6 +13,7 @@ describe('guest court or CCB filing staff reads', () => {
     const staff = await createTestCopyrightStaff()
     const now = new Date()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId: notice.id,
       expiresAt: new Date(now.getTime() + 60_000),

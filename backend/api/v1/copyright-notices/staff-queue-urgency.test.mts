@@ -88,6 +88,7 @@ describe('copyright staff queue urgency', () => {
     const missed = await createGuestNotice()
     const filingCase = await createGuestNotice()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: moderator,
       noticeId: filingCase,
       expiresAt: new Date(decisionNow.getTime() + day),

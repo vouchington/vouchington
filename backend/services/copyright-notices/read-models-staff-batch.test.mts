@@ -23,6 +23,7 @@ async function createCasesWithDistinctChildren() {
   const staff = await createTestCopyrightStaff()
   const now = new Date()
   const capability = await issueCopyrightGuestCapability({
+    issuedAt: new Date(),
     currentUser: staff,
     noticeId: ids[1]!,
     expiresAt: new Date(now.getTime() + 60_000),

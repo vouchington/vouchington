@@ -24,7 +24,12 @@ describe('copyright guest capability revocation on withdrawal', () => {
     const staff = await createTestCopyrightStaff()
     const expiresAt = new Date(Date.now() + 7 * dayMs)
     const issue = (id: string) =>
-      issueCopyrightGuestCapability({ currentUser: staff, noticeId: id, expiresAt })
+      issueCopyrightGuestCapability({
+        issuedAt: new Date(),
+        currentUser: staff,
+        noticeId: id,
+        expiresAt,
+      })
     const [filer, sibling, alreadyRevoked, otherCase] = await Promise.all([
       issue(noticeId),
       issue(noticeId),
@@ -79,6 +84,7 @@ describe('copyright guest capability revocation on withdrawal', () => {
     const noticeId = await openTestGuestCopyrightNotice()
     const staff = await createTestCopyrightStaff()
     const capability = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
       currentUser: staff,
       noticeId,
       expiresAt: new Date(Date.now() + 7 * dayMs),

@@ -20,7 +20,7 @@ export async function createTestCopyrightStaff(): Promise<PrivateUser> {
   return { ...record, roles: ['moderator'] } as PrivateUser
 }
 
-export async function openTestGuestCopyrightNotice(): Promise<string> {
+export async function openTestGuestCopyrightNotice(receivedAt: Date = new Date()): Promise<string> {
   const owner = await createTestUserDirect()
   const imageId = await insertTestImage(owner.id)
   const postId = await insertTestPost({
@@ -34,7 +34,7 @@ export async function openTestGuestCopyrightNotice(): Promise<string> {
   if (!placement) throw new Error('fixture image placement disappeared')
   const notice = await createCopyrightNoticeAggregate({
     jurisdiction: 'us_dmca',
-    receivedAt: new Date(),
+    receivedAt,
     claimantUserId: null,
     claimantDisplayName: null,
     claimantContactCiphertext: `ciphertext-${crypto.randomUUID()}`,

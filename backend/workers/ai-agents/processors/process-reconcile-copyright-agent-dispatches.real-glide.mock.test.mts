@@ -53,6 +53,7 @@ describe('copyright submission guidance backlog with new intake off', () => {
       } else {
         const staff = await createTestUser({ extraRoles: ['moderator'] })
         const capability = await issueCopyrightGuestCapability({
+          issuedAt: new Date(),
           currentUser: staff,
           noticeId,
           expiresAt: new Date(Date.now() + 60_000),

@@ -15,9 +15,24 @@ describe('listCopyrightGuestCapabilities', () => {
     const otherNoticeId = await openTestGuestCopyrightNotice()
     const staff = await createTestCopyrightStaff()
     const expiresAt = new Date(Date.now() + 7 * dayMs)
-    const older = await issueCopyrightGuestCapability({ currentUser: staff, noticeId, expiresAt })
-    const newer = await issueCopyrightGuestCapability({ currentUser: staff, noticeId, expiresAt })
-    await issueCopyrightGuestCapability({ currentUser: staff, noticeId: otherNoticeId, expiresAt })
+    const older = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
+      currentUser: staff,
+      noticeId,
+      expiresAt,
+    })
+    const newer = await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
+      currentUser: staff,
+      noticeId,
+      expiresAt,
+    })
+    await issueCopyrightGuestCapability({
+      issuedAt: new Date(),
+      currentUser: staff,
+      noticeId: otherNoticeId,
+      expiresAt,
+    })
     const revokedAt = new Date()
     await revokeCopyrightGuestCapability({
       currentUser: staff,
