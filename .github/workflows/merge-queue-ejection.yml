@@ -49,7 +49,7 @@ jobs:
       - name: Render prompt
         timeout-minutes: 2
         id: render
-        uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@8325525ec675f738a3969cb92ce20477f38dcf71 # v1.0.2
         with:
           template: docs/prompts/automation/merge-queue-ejection.md
           merge-authority-doc: docs/development/merge-authority.md
