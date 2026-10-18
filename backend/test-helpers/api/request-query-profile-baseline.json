@@ -751,7 +751,7 @@
   },
   {
     "annotation": "renewContributionAdmissionLease",
-    "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:57, :64 and :93)",
+    "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
     "issue": 3117
   },
   {
