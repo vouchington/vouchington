@@ -50,7 +50,7 @@ export async function setRssFeedStatesAsCurrentUser(
     await insertRssFeedStateChanges(rssFeedId, updates, currentUser.id, { query })
     for (const update of updates) {
       // oxlint-disable-next-line no-await-in-loop -- one publication change per kind, in request order
-      await recordRssFeedStatePublicationChange(query, rssFeedId, update.kind)
+      await recordRssFeedStatePublicationChange(query, rssFeedId, update.kind) // no-mistakes-disable-line query-reached-per-item: at most two fixed kinds, each records its own publication reason on the transaction client
     }
     return 'updated'
   }
