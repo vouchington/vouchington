@@ -61,6 +61,7 @@ app.route('/api/v1/rss-feed-items/:rssFeedItemId/sends').post(async (ctx: Contex
   // A missing item answers 404 before a bad body answers its error, so a body error is held until
   // the service has read the item in its own transaction. The body is read here, before that
   // transaction opens, so a slow client never holds a database connection.
+  // ast-grep-ignore: no-three-sequential-awaits -- each step consumes the previous result: the parsed body feeds the send, whose distribution id feeds the enqueue
   const input = await readSendFollowersInput(ctx)
   const result = await sendRssFeedItemToFollowers(currentUser, rssFeedItemId, () => {
     if (input instanceof Error) throw input
