@@ -19,7 +19,7 @@ import { featureFlagDynamicConfigRegistryEntries } from './registry-feature-flag
 import { operationalDynamicConfigRegistryEntries } from './registry-operational-entries.mts'
 import { policyDynamicConfigRegistryEntries } from './registry-policy-entries.mts'
 import { tagLimitsDynamicConfigRegistryEntries } from './registry-tag-limits-entries.mts'
-import type { DynamicConfigRegistryEntry } from './types.mts'
+import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 
 const unorderedRegistryEntries = [
   pagedDispatchRegistryEntry,

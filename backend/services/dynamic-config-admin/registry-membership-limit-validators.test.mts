@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { autotaggerPaidLimitsConfig } from '@services/autotagger/limits-config'
 import { manualTagLimitConfig } from '@services/tag-limits/config'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
-import { getDynamicConfigRegistryEntry } from './registry.mts'
+import { dynamicConfigRegistry } from './registry.mts'
 
 describe('membership limit registry validation', () => {
   it('rejects user rate-limit thresholds that decrease at a higher trust tier', () => {
-    const entry = getDynamicConfigRegistryEntry('rate-limit-thresholds')
+    const entry = dynamicConfigRegistry.get('rate-limit-thresholds')
 
     expect(() =>
       entry?.validate?.({
@@ -17,7 +17,7 @@ describe('membership limit registry validation', () => {
   })
 
   it('rejects equal API thresholds because paid membership must increase an allowance', () => {
-    const entry = getDynamicConfigRegistryEntry('rate-limit-thresholds')
+    const entry = dynamicConfigRegistry.get('rate-limit-thresholds')
     const defaults = rateLimitConfig.defaultFields as Record<string, number>
 
     expect(() =>
@@ -33,7 +33,7 @@ describe('membership limit registry validation', () => {
   })
 
   it('rejects manual tag limits that decrease for a paid plan', () => {
-    const entry = getDynamicConfigRegistryEntry('manual-tag-limits')
+    const entry = dynamicConfigRegistry.get('manual-tag-limits')
 
     expect(() =>
       entry?.validate?.({
@@ -44,7 +44,7 @@ describe('membership limit registry validation', () => {
   })
 
   it('rejects autotagger limits that decrease for a paid plan', () => {
-    const entry = getDynamicConfigRegistryEntry('autotagger-paid-limits')
+    const entry = dynamicConfigRegistry.get('autotagger-paid-limits')
 
     expect(() =>
       entry?.validate?.({
@@ -57,7 +57,7 @@ describe('membership limit registry validation', () => {
   })
 
   it('rejects enabling post autotagging for free-tier authors', () => {
-    const entry = getDynamicConfigRegistryEntry('autotagger-paid-limits')
+    const entry = dynamicConfigRegistry.get('autotagger-paid-limits')
 
     expect(() =>
       entry?.validate?.({

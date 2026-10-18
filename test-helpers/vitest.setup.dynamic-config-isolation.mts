@@ -7,7 +7,7 @@ import {
 } from '../backend/test-helpers/dynamic-config.mts'
 
 await Promise.all(
-  dynamicConfigRegistry.map(async entry => {
+  dynamicConfigRegistry.entries.map(async entry => {
     const { config } = entry
     await config.waitForInitialization()
     await config.close()
@@ -15,7 +15,7 @@ await Promise.all(
   }),
 )
 
-const isolatedConfigs = dynamicConfigRegistry.map(entry => entry.config)
+const isolatedConfigs = dynamicConfigRegistry.entries.map(entry => entry.config)
 let restoreTestSnapshot: (() => void) | undefined
 
 beforeEach(() => {

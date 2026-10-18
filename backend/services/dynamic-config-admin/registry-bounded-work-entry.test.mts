@@ -90,7 +90,7 @@ const additionalOwners = [
 describe('additional bounded work namespaces', () => {
   it('registers additional owner fields and reads bounded live overrides', () => {
     for (const owner of additionalOwners) {
-      const entry = dynamicConfigRegistry.find(
+      const entry = dynamicConfigRegistry.entries.find(
         candidate => candidate.namespace === owner.config.key.slice('dynamic-config:'.length),
       )!
       expect(entry.config).toBe(owner.config)
@@ -98,8 +98,8 @@ describe('additional bounded work namespaces', () => {
         const fallback = (owner.config.defaultFields as Record<string, number>)[field]!
         expect(entry.fields[field]).toMatchObject({
           integer: true,
-          min_value: 1,
-          max_value: maximum,
+          minValue: 1,
+          maxValue: maximum,
         })
         expect(fallback).toBeLessThanOrEqual(maximum)
         const restore = overrideDynamicConfigFieldsForTest(owner.config, { [field]: 1 })

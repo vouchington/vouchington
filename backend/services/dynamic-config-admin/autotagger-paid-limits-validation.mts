@@ -1,5 +1,5 @@
-import { DynamicConfigValidationError } from './namespace.mts'
-import type { DynamicConfigFields } from './types.mts'
+import { DynamicConfigValidationError } from 'valkyries/dynamic-config'
+import type { DynamicConfigFields } from '@vouchington/dynamic-config'
 
 export function validateAutotaggerPaidLimitsConfig(next: DynamicConfigFields): void {
   if (next.post_free_max_topics !== undefined && next.post_free_max_topics !== 0) {

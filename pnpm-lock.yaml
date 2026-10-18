@@ -1342,8 +1342,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1152.0
@@ -2148,6 +2148,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6068,12 +6071,18 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/dynamic-config':
+        specifier: ^0.2.0
+        version: 0.2.0(valkyries@0.9.0)
       '@workers/ses-inbound':
         specifier: workspace:^
         version: link:../../workers/ses-inbound
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.9.0
+        version: 0.9.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -19565,6 +19574,12 @@ packages:
     resolution: {integrity: sha512-JyQzxxDvD8BDU5ThlKA8dmztIWJhO8Hx9pLFh+3pNE5eSJdMlgFoovR6jjcqB/2y6P38Q09hVM9pmrGF42OhUA==}
     engines: {node: '>=24.0.0'}
 
+  '@vouchington/dynamic-config@0.2.0':
+    resolution: {integrity: sha512-4gFVvFBCuRCbqcHgi+Njs95W4dw0PZapp6SvYy9a4uduTwrGZpSlK6ePapabysi5EgJNNjySOjnyynkxCq1SLw==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      valkyries: ^0.9.0
+
   '@vouchington/edge@0.2.0':
     resolution: {integrity: sha512-VM2a424JaDsCR/5G7aKfuBFjjV2BPJkuyx77mF6Pr9DgYujgwaHEioWUeA7eK6KoLOa7DlkdLopc5XaRasWb2Q==}
     engines: {node: '>=24.0.0'}
@@ -23352,6 +23367,10 @@ packages:
 
   valkyries@0.8.2:
     resolution: {integrity: sha512-IEDQlNChFLhKhikJgkOa1tTVt8HGU2wsbs3+zMEjCmcBz4NR6+m3zdjRGENI1RLfTgePbx90hnhvbaM15SJsmg==}
+    engines: {node: '>=24.0.0'}
+
+  valkyries@0.9.0:
+    resolution: {integrity: sha512-8rrkDwr4GAOO3fKu1IG+NXyEk3Tn2NVsL9rEu0GXmiJvmdW7PQDCKMGptNArogR+1gr+DMmHUKpTpRvR3fiolw==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -28535,6 +28554,10 @@ snapshots:
 
   '@vouchington/domain-verification@0.0.0': {}
 
+  '@vouchington/dynamic-config@0.2.0(valkyries@0.9.0)':
+    dependencies:
+      valkyries: 0.9.0
+
   '@vouchington/edge@0.2.0(@cloudflare/workers-types@5.20261016.1)':
     dependencies:
       '@vouchington/utils': 0.7.4
@@ -28624,6 +28647,11 @@ snapshots:
     dependencies:
       '@jongleberry/api-server': 3.0.1
       valkyries: 0.8.2
+
+  '@vouchington/rate-limit@0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.9.0)':
+    dependencies:
+      '@jongleberry/api-server': 3.0.1
+      valkyries: 0.9.0
 
   '@vouchington/request-contract-validation@0.0.3':
     dependencies:
@@ -32692,6 +32720,10 @@ snapshots:
       '@valkey/valkey-glide': 2.5.3
 
   valkyries@0.8.2:
+    dependencies:
+      '@valkey/valkey-glide': 2.5.3
+
+  valkyries@0.9.0:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 

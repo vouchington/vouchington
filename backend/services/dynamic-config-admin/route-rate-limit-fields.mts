@@ -15,31 +15,31 @@ export function routeRateLimitFields() {
     attested_multiplier: {
       description:
         'Rate limit threshold multiplier applied to attested (Apple App Attest) devices. Default 1 keeps their allowance unchanged.',
-      min_value: 1,
-      max_value: 100,
+      minValue: 1,
+      maxValue: 100,
     },
     activitypub_inbox_attempt_max_requests: {
       description: 'ActivityPub inbox attempts per source IP and pre-verification window.',
-      min_value: ACTIVITYPUB_INBOX_LIMITS.attemptMaxRequests.min,
-      max_value: ACTIVITYPUB_INBOX_LIMITS.attemptMaxRequests.max,
+      minValue: ACTIVITYPUB_INBOX_LIMITS.attemptMaxRequests.min,
+      maxValue: ACTIVITYPUB_INBOX_LIMITS.attemptMaxRequests.max,
       integer: true,
     },
     activitypub_inbox_attempt_window_seconds: {
       description: 'ActivityPub inbox source-IP attempt window length in seconds.',
-      min_value: ACTIVITYPUB_INBOX_LIMITS.attemptWindowSeconds.min,
-      max_value: ACTIVITYPUB_INBOX_LIMITS.attemptWindowSeconds.max,
+      minValue: ACTIVITYPUB_INBOX_LIMITS.attemptWindowSeconds.min,
+      maxValue: ACTIVITYPUB_INBOX_LIMITS.attemptWindowSeconds.max,
       integer: true,
     },
     activitypub_inbox_max_requests: {
       description: 'Accepted ActivityPub inbox deliveries per sender hostname and window.',
-      min_value: ACTIVITYPUB_INBOX_LIMITS.maxRequests.min,
-      max_value: ACTIVITYPUB_INBOX_LIMITS.maxRequests.max,
+      minValue: ACTIVITYPUB_INBOX_LIMITS.maxRequests.min,
+      maxValue: ACTIVITYPUB_INBOX_LIMITS.maxRequests.max,
       integer: true,
     },
     activitypub_inbox_window_seconds: {
       description: 'ActivityPub inbox sender rate-limit window length in seconds.',
-      min_value: ACTIVITYPUB_INBOX_LIMITS.windowSeconds.min,
-      max_value: ACTIVITYPUB_INBOX_LIMITS.windowSeconds.max,
+      minValue: ACTIVITYPUB_INBOX_LIMITS.windowSeconds.min,
+      maxValue: ACTIVITYPUB_INBOX_LIMITS.windowSeconds.max,
       integer: true,
     },
   }
@@ -48,8 +48,8 @@ export function routeRateLimitFields() {
 function rateLimitThresholdField(label: string) {
   return {
     description: `${label} request threshold.`,
-    max_value_exemption: RATE_LIMIT_MAX_EXEMPTION,
-    min_value: 1,
+    maxValueExemption: RATE_LIMIT_MAX_EXEMPTION,
+    minValue: 1,
     integer: true,
   }
 }
@@ -57,8 +57,8 @@ function rateLimitThresholdField(label: string) {
 function rateLimitTtlField(label: string) {
   return {
     description: `${label} rate-limit window length in seconds.`,
-    max_value_exemption: RATE_LIMIT_MAX_EXEMPTION,
-    min_value: 1,
+    maxValueExemption: RATE_LIMIT_MAX_EXEMPTION,
+    minValue: 1,
     integer: true,
   }
 }

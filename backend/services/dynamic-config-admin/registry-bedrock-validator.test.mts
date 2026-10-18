@@ -6,15 +6,19 @@ import {
 } from '@services/bedrock-embeddings/batch/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
+import { dynamicConfigRegistry } from './registry.mts'
+import { normalizeFields } from '@vouchington/dynamic-config'
+import { DynamicConfigValidationError, validateDynamicConfigUpdate } from 'valkyries/dynamic-config'
 
 describe('Bedrock minimum request ceilings', () => {
   it('rejects creation retries above the registered hard ceiling', () => {
+    const entry = dynamicConfigRegistry.get('bedrock-embeddings-batch-config')
+    expect(entry).toBeDefined()
     expect(() =>
-      validateBedrockBatchConfig({
-        ...bedrockEmbeddingsBatchConfig.defaultFields,
+      validateDynamicConfigUpdate(entry!, normalizeFields(entry!, entry!.config.defaultFields), {
         creation_retry_delay_ms: BEDROCK_BATCH_MAX_VALUES.creation_retry_delay_ms + 1,
       }),
-    ).toThrow('creation_retry_delay_ms')
+    ).toThrow(DynamicConfigValidationError)
   })
 
   it.each(['max_requests_per_file', 'max_requests_per_hour'])(

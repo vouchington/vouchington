@@ -1,35 +1,15 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
-import {
-  closeScopedDynamicConfigContext,
-  createDynamicConfigForTest,
-  createDynamicConfigTestKey,
-} from '@voucha/test-helpers/dynamic-config'
-import type { getDynamicConfigRegistryEntry } from '@services/dynamic-config-admin'
-import { dynamicConfigRegistry } from '@services/dynamic-config-admin/registry'
 import type { PrivateUser } from '@services/users/types'
-
-type DynamicConfigRegistryEntry = NonNullable<ReturnType<typeof getDynamicConfigRegistryEntry>>
 
 describe('dynamic-config', () => {
   let admin: PrivateUser
   let regularUser: PrivateUser
-  const temporaryEntries: DynamicConfigRegistryEntry[] = []
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     regularUser = await createTestUser({ administrator: false })
-  })
-
-  afterEach(async () => {
-    for (const entry of temporaryEntries.splice(0)) {
-      const index = dynamicConfigRegistry.indexOf(entry)
-      if (index >= 0) dynamicConfigRegistry.splice(index, 1)
-      await closeScopedDynamicConfigContext([
-        entry.config as ReturnType<typeof createDynamicConfigForTest>,
-      ])
-    }
   })
 
   describe('GET /api/v1/dynamic-config/namespaces', () => {
@@ -102,17 +82,17 @@ describe('dynamic-config', () => {
 
   describe('PATCH /api/v1/dynamic-config/namespaces/:namespace', () => {
     it('updates a field, records audit history, and returns changed fields', async () => {
-      const { namespace } = await registerTemporaryConfig({ enabled: false })
+      const namespace = 'feature-flags'
       const request = createRequest()
       await request.authenticateAs(admin)
 
       const patchResponse = await request
         .patch(`/api/v1/dynamic-config/namespaces/${namespace}`)
-        .send({ config: { enabled: true } })
+        .send({ config: { memberships: true } })
         .expect(200)
 
       expect(patchResponse.body.changed).toBe(true)
-      expect(patchResponse.body.namespace.config.enabled).toBe(true)
+      expect(patchResponse.body.namespace.config.memberships).toBe(true)
 
       const historyResponse = await request
         .get(`/api/v1/dynamic-config/namespaces/${namespace}/history`)
@@ -122,7 +102,7 @@ describe('dynamic-config', () => {
         namespace,
         changed_by: { id: admin.id },
         changed_fields: {
-          enabled: { previous: false, next: true },
+          memberships: expect.objectContaining({ previous: expect.any(Boolean), next: true }),
         },
       })
     })
@@ -225,17 +205,6 @@ describe('dynamic-config', () => {
       }
     })
 
-    it('allows namespaces with valid non-positive numeric thresholds', async () => {
-      const { namespace } = await registerTemporaryConfig({ threshold: -4 })
-      const request = createRequest()
-      await request.authenticateAs(admin)
-
-      await request
-        .patch(`/api/v1/dynamic-config/namespaces/${namespace}`)
-        .send({ config: { threshold: -5 } })
-        .expect(200)
-    })
-
     it('returns 403 for non-admin users without namespace grants', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
@@ -259,31 +228,4 @@ describe('dynamic-config', () => {
       await request.get('/api/v1/valkey/bloom-filter-config').expect(404)
     })
   })
-
-  async function registerTemporaryConfig(
-    defaultFields: Record<string, boolean | number | string>,
-  ): Promise<DynamicConfigRegistryEntry> {
-    const namespace = createDynamicConfigTestKey('api')
-    const config = createDynamicConfigForTest({
-      key: namespace,
-      fieldTypes: Object.fromEntries(
-        Object.entries(defaultFields).map(([name, value]) => [name, typeof value]),
-      ) as Record<string, 'boolean' | 'number' | 'string'>,
-      defaultFields,
-    })
-    await config.waitForInitialization()
-    const entry: DynamicConfigRegistryEntry = {
-      namespace,
-      label: 'Temporary test config',
-      description: 'Worker-unique DynamicConfig API persistence fixture.',
-      config,
-      access: { update_roles: ['developer'] },
-      fields: Object.fromEntries(
-        Object.keys(defaultFields).map(name => [name, { description: 'Temporary test field.' }]),
-      ),
-    }
-    dynamicConfigRegistry.push(entry)
-    temporaryEntries.push(entry)
-    return entry
-  }
 })

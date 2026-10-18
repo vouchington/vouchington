@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { getDynamicConfigRegistryEntry } from './registry.mts'
+import { dynamicConfigRegistry } from './registry.mts'
 import { contributionLimitConfig } from '@services/contribution-gating/limits-config'
 import { RSS_FEED_CRAWL_MAX_VALUES } from '@services/rss-feeds/crawl-config'
 import { DEFAULT_USER_IMPORT_EXPORT_CONFIG } from '@services/user-import-export/config'
+import { normalizeFields } from '@vouchington/dynamic-config'
+import { DynamicConfigValidationError, validateDynamicConfigUpdate } from 'valkyries/dynamic-config'
 
 const VALID_USER_IMPORT_EXPORT_FIELDS = { ...DEFAULT_USER_IMPORT_EXPORT_CONFIG }
 
@@ -18,77 +20,75 @@ const VALID_RSS_FEED_CRAWL_FIELDS = {
 
 describe('dynamic-config-admin registry validators', () => {
   it('rejects non-positive rate limit numbers', () => {
-    const entry = getDynamicConfigRegistryEntry('rate-limit-thresholds')
+    const entry = dynamicConfigRegistry.get('rate-limit-thresholds')
 
     expect(entry?.fields).not.toHaveProperty('enabled')
-    expect(() => entry?.validate?.({ read_tier0: 0 })).toThrow(
+    expect(() => validateRegistryChange(entry, { read_tier0: 0 })).toThrow(
       'Field read_tier0 must be a positive finite number',
     )
   })
 
   it('does not expose the removed RSS crawl mode switch', () => {
-    const entry = getDynamicConfigRegistryEntry('rss-feed-crawl-config')
+    const entry = dynamicConfigRegistry.get('rss-feed-crawl-config')
     expect(entry?.fields).not.toHaveProperty('enabled')
   })
 
   it('rejects reCAPTCHA thresholds outside the score range', () => {
-    const entry = getDynamicConfigRegistryEntry('recaptcha-config')
+    const entry = dynamicConfigRegistry.get('recaptcha-config')
 
-    expect(() => entry?.validate?.({ enabled: true, block_threshold: 2 })).toThrow(
-      'Field block_threshold must be a number between 0 and 1',
+    expect(() => validateRegistryChange(entry, { enabled: true, block_threshold: 2 })).toThrow(
+      'Field block_threshold must be less than or equal to 1',
     )
   })
 
   it('rejects post content limits below their minimums', () => {
-    const entry = getDynamicConfigRegistryEntry('post-content-limits-config')
+    const entry = dynamicConfigRegistry.get('post-content-limits-config')
 
     expect(() =>
-      entry?.validate?.({
+      validateRegistryChange(entry, {
         data_point_topic_ids_max_items: 1,
         review_topic_ratings_max_items: 1,
       }),
-    ).toThrow('Field review_topic_ratings_max_items must be an integer between 2 and 100')
+    ).toThrow('Field review_topic_ratings_max_items must be greater than or equal to 2')
   })
 
   it('registers the post related URL summary bound', () => {
-    const entry = getDynamicConfigRegistryEntry('post-related-url-display-config')
+    const entry = dynamicConfigRegistry.get('post-related-url-display-config')
 
     expect(entry?.fields.summary_limit).toMatchObject({
-      min_value: 1,
-      max_value: 10,
+      minValue: 1,
+      maxValue: 10,
       integer: true,
     })
   })
 
   it('rejects contribution limits below disabled sentinel', () => {
-    const entry = getDynamicConfigRegistryEntry('contribution-rate-limits')
+    const entry = dynamicConfigRegistry.get('contribution-rate-limits')
 
     expect(() =>
-      entry?.validate?.({
+      validateRegistryChange(entry, {
         ...(contributionLimitConfig.defaultFields as Record<string, number>),
         review_free_daily_limit: -2,
       }),
-    ).toThrow('Field review_free_daily_limit must be an integer greater than or equal to -1')
+    ).toThrow(DynamicConfigValidationError)
   })
 
   it('rejects non-positive contribution limit windows', () => {
-    const entry = getDynamicConfigRegistryEntry('contribution-rate-limits')
+    const entry = dynamicConfigRegistry.get('contribution-rate-limits')
 
     expect(() =>
-      entry?.validate?.({
+      validateRegistryChange(entry, {
         ...(contributionLimitConfig.defaultFields as Record<string, number>),
         review_free_short_window_seconds: 0,
       }),
-    ).toThrow(
-      'Field review_free_short_window_seconds must be an integer greater than or equal to 1',
-    )
+    ).toThrow(DynamicConfigValidationError)
   })
 
   it('rejects unordered RSS feed discoverability thresholds', () => {
-    const entry = getDynamicConfigRegistryEntry('rss-feed-discoverability-config')
+    const entry = dynamicConfigRegistry.get('rss-feed-discoverability-config')
 
     expect(() =>
-      entry?.validate?.({
+      validateRegistryChange(entry, {
         make_undiscoverable_max_net_score: 5,
         make_discoverable_alt_min_net_score: 4,
         make_discoverable_min_net_score: 3,
@@ -98,36 +98,36 @@ describe('dynamic-config-admin registry validators', () => {
   })
 
   it('rejects negative RSS feed discoverability subscription thresholds', () => {
-    const entry = getDynamicConfigRegistryEntry('rss-feed-discoverability-config')
+    const entry = dynamicConfigRegistry.get('rss-feed-discoverability-config')
 
     expect(() =>
-      entry?.validate?.({
+      validateRegistryChange(entry, {
         make_undiscoverable_max_net_score: -5,
         make_discoverable_alt_min_net_score: 0,
         make_discoverable_min_net_score: 5,
         make_discoverable_min_subscriptions: -1,
       }),
-    ).toThrow('Field make_discoverable_min_subscriptions must be a nonnegative integer')
+    ).toThrow('Field make_discoverable_min_subscriptions must be greater than or equal to 0')
   })
 
   it('rejects moderation confidence thresholds outside 0–1', () => {
-    const entry = getDynamicConfigRegistryEntry('moderation-config')
+    const entry = dynamicConfigRegistry.get('moderation-config')
 
-    expect(() => entry?.validate?.({ ai_generated_confidence_threshold: 1.5 })).toThrow(
-      'Field ai_generated_confidence_threshold must be a number between 0 and 1',
+    expect(() => validateRegistryChange(entry, { ai_generated_confidence_threshold: 1.5 })).toThrow(
+      'Field ai_generated_confidence_threshold must be less than or equal to 1',
     )
   })
 
   it('rejects non-positive integers for Bedrock batch config fields', () => {
-    const entry = getDynamicConfigRegistryEntry('bedrock-embeddings-batch-config')
+    const entry = dynamicConfigRegistry.get('bedrock-embeddings-batch-config')
 
-    expect(() => entry?.validate?.({ max_inflight_jobs: 0 })).toThrow(
-      'Field max_inflight_jobs must be a positive integer',
+    expect(() => validateRegistryChange(entry, { max_inflight_jobs: 0 })).toThrow(
+      'Field max_inflight_jobs must be greater than or equal to 1',
     )
-    expect(() => entry?.validate?.({ stale_ttl_hours: -5 })).toThrow(
-      'Field stale_ttl_hours must be a positive integer',
+    expect(() => validateRegistryChange(entry, { stale_ttl_hours: -5 })).toThrow(
+      'Field stale_ttl_hours must be greater than or equal to 1',
     )
-    expect(() => entry?.validate?.({ stale_ttl_hours: 169 })).toThrow(
+    expect(() => validateRegistryChange(entry, { stale_ttl_hours: 169 })).toThrow(
       'Field stale_ttl_hours must be less than or equal to 168',
     )
   })
@@ -140,55 +140,78 @@ describe('dynamic-config-admin registry validators', () => {
 
   it('rejects non-positive safe integers for RSS feed crawl fields', () => {
     expect(() => validateRssFeedCrawl({ capacity_budget: Number.MAX_SAFE_INTEGER + 1 })).toThrow(
-      'Field capacity_budget must be a safe integer between 1 and 10000',
+      'Field capacity_budget must be a safe integer',
     )
   })
 
   it('rejects RSS feed crawl fields above their maximums', () => {
     expect(() =>
       validateRssFeedCrawl({ tier5_sla_ms: RSS_FEED_CRAWL_MAX_VALUES.tier5_sla_ms + 1 }),
-    ).toThrow('Field tier5_sla_ms must be a safe integer between 1 and 604800000')
+    ).toThrow('Field tier5_sla_ms must be less than or equal to 604800000')
     expect(() =>
       validateRssFeedCrawl({ capacity_budget: RSS_FEED_CRAWL_MAX_VALUES.capacity_budget + 1 }),
-    ).toThrow('Field capacity_budget must be a safe integer between 1 and 10000')
+    ).toThrow('Field capacity_budget must be less than or equal to 10000')
   })
 
   it('rejects non-number RSS feed crawl numeric fields', () => {
     expect(() => validateRssFeedCrawl({ tier1_sla_ms: null as unknown as number })).toThrow(
-      'Field tier1_sla_ms must be a safe integer between 1 and 604800000',
+      'Field tier1_sla_ms must be a finite number',
     )
     expect(() => validateRssFeedCrawl({ tier5_sla_ms: '5' as unknown as number })).toThrow(
-      'Field tier5_sla_ms must be a safe integer between 1 and 604800000',
+      'Field tier5_sla_ms must be a finite number',
     )
   })
 
   it('rejects out-of-range user import/export limits', () => {
-    const entry = getDynamicConfigRegistryEntry('user-import-export-config')
+    const entry = dynamicConfigRegistry.get('user-import-export-config')
 
     expect(() =>
-      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, sync_export_max_items: 0 }),
-    ).toThrow('Field sync_export_max_items must be an integer between 1 and 50000')
+      validateRegistryChange(entry, {
+        ...VALID_USER_IMPORT_EXPORT_FIELDS,
+        sync_export_max_items: 0,
+      }),
+    ).toThrow(DynamicConfigValidationError)
     expect(() =>
-      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, sync_export_max_items: 50_001 }),
-    ).toThrow('Field sync_export_max_items must be an integer between 1 and 50000')
+      validateRegistryChange(entry, {
+        ...VALID_USER_IMPORT_EXPORT_FIELDS,
+        sync_export_max_items: 50_001,
+      }),
+    ).toThrow('Field sync_export_max_items must be less than or equal to 50000')
     expect(() =>
-      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, rss_feed_import_budget_ms: 25_001 }),
-    ).toThrow('Field rss_feed_import_budget_ms must be an integer between 1000 and 25000')
+      validateRegistryChange(entry, {
+        ...VALID_USER_IMPORT_EXPORT_FIELDS,
+        rss_feed_import_budget_ms: 25_001,
+      }),
+    ).toThrow('Field rss_feed_import_budget_ms must be less than or equal to 25000')
     expect(() =>
-      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, import_dispatch_page_size: 0 }),
-    ).toThrow('Field import_dispatch_page_size must be an integer between 1 and 1000')
+      validateRegistryChange(entry, {
+        ...VALID_USER_IMPORT_EXPORT_FIELDS,
+        import_dispatch_page_size: 0,
+      }),
+    ).toThrow('Field import_dispatch_page_size must be greater than or equal to 1')
   })
 
   it('rejects non-number user import/export limits', () => {
-    const entry = getDynamicConfigRegistryEntry('user-import-export-config')
+    const entry = dynamicConfigRegistry.get('user-import-export-config')
 
     expect(() =>
-      entry?.validate?.({ ...VALID_USER_IMPORT_EXPORT_FIELDS, sync_export_max_items: true }),
-    ).toThrow('Field sync_export_max_items must be an integer between 1 and 50000')
+      validateRegistryChange(entry, {
+        ...VALID_USER_IMPORT_EXPORT_FIELDS,
+        sync_export_max_items: true,
+      }),
+    ).toThrow(DynamicConfigValidationError)
   })
 })
 
 function validateRssFeedCrawl(overrides: Partial<typeof VALID_RSS_FEED_CRAWL_FIELDS>): void {
-  const entry = getDynamicConfigRegistryEntry('rss-feed-crawl-config')
-  entry?.validate?.({ ...VALID_RSS_FEED_CRAWL_FIELDS, ...overrides })
+  const entry = dynamicConfigRegistry.get('rss-feed-crawl-config')
+  validateRegistryChange(entry, { ...VALID_RSS_FEED_CRAWL_FIELDS, ...overrides })
+}
+
+function validateRegistryChange(
+  entry: ReturnType<typeof dynamicConfigRegistry.get>,
+  changes: Record<string, unknown>,
+): void {
+  if (!entry) throw new Error('Dynamic-config registry entry missing')
+  validateDynamicConfigUpdate(entry, normalizeFields(entry, entry.config.defaultFields), changes)
 }

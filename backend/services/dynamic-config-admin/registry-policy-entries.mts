@@ -7,17 +7,17 @@ import { validateContributionLimitConfig } from '@services/contribution-gating/l
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
 import { voteWeightConfig } from '@services/vote-weight/config'
-import { DynamicConfigValidationError } from './namespace.mts'
-import { copyrightRegistryEntry } from './registry-copyright-entry.mts'
 import {
-  RATE_LIMIT_MAX_EXEMPTION,
-  VOTE_WEIGHT_MAX_EXEMPTION,
+  DynamicConfigValidationError,
+  defineDynamicConfigNamespace,
+  validatePositiveNumberFields,
   withMaxValueExemption,
-} from './registry-entry-utils.mts'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+} from 'valkyries/dynamic-config'
+import { copyrightRegistryEntry } from './registry-copyright-entry.mts'
+import { RATE_LIMIT_MAX_EXEMPTION, VOTE_WEIGHT_MAX_EXEMPTION } from './registry-entry-utils.mts'
 import { routeRateLimitFields } from './route-rate-limit-fields.mts'
 import { validateRateLimitThresholdConfig } from './registry-membership-limit-validators.mts'
-import { validatePositiveNumberFields, validateVoteWeightConfig } from './registry-validators.mts'
+import { validateVoteWeightConfig } from './product-config-validators.mts'
 
 export const policyDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({
@@ -152,7 +152,7 @@ function userRateLimitFields() {
 function rateLimitTtlField(label: string) {
   return {
     description: `${label} rate-limit window length in seconds.`,
-    max_value_exemption: RATE_LIMIT_MAX_EXEMPTION,
+    maxValueExemption: RATE_LIMIT_MAX_EXEMPTION,
   }
 }
 

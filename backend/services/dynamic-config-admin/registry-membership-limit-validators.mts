@@ -1,6 +1,8 @@
-import { DynamicConfigValidationError } from './namespace.mts'
-import { validatePositiveNumberFields } from './registry-validators.mts'
-import type { DynamicConfigFields } from './types.mts'
+import {
+  DynamicConfigValidationError,
+  validatePositiveNumberFields,
+} from 'valkyries/dynamic-config'
+import type { DynamicConfigFields } from '@vouchington/dynamic-config'
 
 export function validateRateLimitThresholdConfig(next: DynamicConfigFields): void {
   validatePositiveNumberFields(next)

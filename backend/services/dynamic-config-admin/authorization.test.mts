@@ -3,23 +3,24 @@ import {
   DYNAMIC_CONFIG_VIEWER_ROLES,
   currentUserCanAccessDynamicConfigNamespace,
 } from './authorization.mts'
-import { getDynamicConfigRegistryEntry } from './registry.mts'
-import type { DynamicConfigRegistryEntry, DynamicConfigUser } from './types.mts'
+import { dynamicConfigRegistry } from './registry.mts'
+import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
+import type { DynamicConfigUser } from './types.mts'
 
-const moderatorEntry: Pick<DynamicConfigRegistryEntry, 'access'> = {
-  access: { update_roles: ['moderator'] },
-}
+const moderatorEntry = makeEntry(['moderator'])
+const developerEntry = makeEntry(['developer'])
+const sharedEntry = makeEntry(['moderator', 'developer'])
+const noRolesEntry = makeEntry([])
 
-const developerEntry: Pick<DynamicConfigRegistryEntry, 'access'> = {
-  access: { update_roles: ['developer'] },
-}
-
-const sharedEntry: Pick<DynamicConfigRegistryEntry, 'access'> = {
-  access: { update_roles: ['moderator', 'developer'] },
-}
-
-const noRolesEntry: Pick<DynamicConfigRegistryEntry, 'access'> = {
-  access: { update_roles: [] },
+function makeEntry(update_roles: string[]): DynamicConfigRegistryEntry {
+  return {
+    namespace: 'test',
+    label: 'Test',
+    description: 'Test entry',
+    access: { update_roles },
+    config: {} as DynamicConfigRegistryEntry['config'],
+    fields: {},
+  }
 }
 
 function makeUser(roles: string[]): DynamicConfigUser {
@@ -110,7 +111,7 @@ describe('currentUserCanAccessDynamicConfigNamespace', () => {
     ]
 
     for (const namespace of adminOnlyNamespaces) {
-      const entry = getDynamicConfigRegistryEntry(namespace)
+      const entry = dynamicConfigRegistry.get(namespace)
       if (entry === null) {
         throw new Error(`Missing registry entry: ${namespace}`)
       }

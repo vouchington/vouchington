@@ -1400,6 +1400,63 @@
         "react/jsx-no-target-blank": "off",
         "nextjs/no-html-link-for-pages": "off"
       }
+    },
+    {
+      "files": ["**/backend/services/dynamic-config-admin/**/*.mts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "name": "next/cache",
+            "message": "Direct next/cache imports are not allowed — use the server cache abstraction."
+          },
+          {
+            "name": "valkyries/dynamic-config",
+            "allowImportNames": [
+              "getBoundedPositiveIntegerField",
+              "BoundedPositiveIntegerLimits",
+              "dynamicConfigs",
+              "createDynamicConfigRegistry",
+              "defineDynamicConfigNamespace",
+              "withMaxValueExemption",
+              "DynamicConfigValidationError",
+              "getChangedFields",
+              "validateDynamicConfigUpdate",
+              "validateNumberRange",
+              "validateOneOf",
+              "validatePositiveIntegerFields",
+              "validatePositiveNumberFields",
+              "validateStrictlyAscending",
+              "DynamicConfigChangedFields"
+            ],
+            "message": "Construct DynamicConfig through the registered-key @data-stores/valkey facade."
+          },
+          "sanitize-html",
+          "markdown-it",
+          "marked",
+          "showdown",
+          "micromark",
+          "react-markdown",
+          "remark",
+          "rehype",
+          {
+            "patterns": ["remark-*", "rehype-*", "@mdx-js/*"]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/backend/api/v1/dynamic-config/**/*.mts", "**/backend/mcp/admin/**/*.mts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "name": "valkyries/dynamic-config",
+            "allowImportNames": ["DynamicConfigValidationError"],
+            "message": "Use the dynamic-config-admin service for product configuration behavior."
+          }
+        ]
+      }
     }
   ]
 }

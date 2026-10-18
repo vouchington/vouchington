@@ -9,7 +9,7 @@ import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
-import { getDynamicConfigRegistryEntry } from '../dynamic-config-admin/registry.mts'
+import { dynamicConfigRegistry } from '../dynamic-config-admin/registry.mts'
 import { processImageBatchCreation } from './utils.mts'
 import { addImageToBatch, streamPendingImages } from './entities/images.mts'
 
@@ -184,7 +184,7 @@ describe('embedding scan caps', () => {
   })
 
   it('rejects a scan cap below the minimum before file, cursor or provider work', async () => {
-    const entry = getDynamicConfigRegistryEntry('bedrock-embeddings-batch-config')!
+    const entry = dynamicConfigRegistry.get('bedrock-embeddings-batch-config')!
     expect(() =>
       entry.validate?.({
         ...bedrockEmbeddingsBatchConfig.defaultFields,

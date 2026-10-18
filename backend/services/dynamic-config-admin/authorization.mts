@@ -1,22 +1,22 @@
-import type {
-  DynamicConfigPermission,
-  DynamicConfigRegistryEntry,
-  DynamicConfigUser,
-} from './types.mts'
+import {
+  createRoleAuthorizer,
+  type DynamicConfigPermission,
+  type DynamicConfigRegistryEntry,
+} from '@vouchington/dynamic-config'
+import type { DynamicConfigUser } from './types.mts'
 
 export const DYNAMIC_CONFIG_VIEWER_ROLES = ['moderator', 'developer', 'investor'] as const
 
+const authorizeDynamicConfig = createRoleAuthorizer<DynamicConfigUser>({
+  getRoles: user => user.roles,
+  adminRoles: ['administrator'],
+  viewerRoles: DYNAMIC_CONFIG_VIEWER_ROLES,
+})
+
 export function currentUserCanAccessDynamicConfigNamespace(
   currentUser: DynamicConfigUser | null,
-  entry: Pick<DynamicConfigRegistryEntry, 'access'>,
+  entry: DynamicConfigRegistryEntry,
   permission: DynamicConfigPermission,
 ): boolean {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-  if (permission === 'view') {
-    return currentUser.roles.some(role =>
-      (DYNAMIC_CONFIG_VIEWER_ROLES as readonly string[]).includes(role),
-    )
-  }
-  return entry.access.update_roles.some(role => currentUser.roles.includes(role))
+  return currentUser !== null && authorizeDynamicConfig(currentUser, entry, permission)
 }

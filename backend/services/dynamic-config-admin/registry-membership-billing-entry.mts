@@ -1,5 +1,5 @@
 import { membershipBillingControls } from '@services/memberships/purchase-controls'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const membershipBillingRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'membership-billing',

@@ -1,19 +1,18 @@
 import { read } from '@data-stores/psql'
+import {
+  normalizeFields,
+  toAdminNamespaceSummary,
+  toAdminNamespaceView,
+  type DynamicConfigNamespace,
+  type DynamicConfigNamespaceSummary,
+} from '@vouchington/dynamic-config'
+import { getChangedFields, validateDynamicConfigUpdate } from 'valkyries/dynamic-config'
 import { recordDynamicConfigChange } from '@services/dynamic-config-audit'
 import sql from 'sql-template-strings'
 import { currentUserCanAccessDynamicConfigNamespace } from './authorization.mts'
-import {
-  assertPlainChanges,
-  normalizeFields,
-  toNamespace,
-  toNamespaceSummary,
-  validateChanges,
-} from './namespace.mts'
-import { dynamicConfigRegistry, getDynamicConfigRegistryEntry } from './registry.mts'
+import { dynamicConfigRegistry } from './registry.mts'
 import type {
   DynamicConfigHistoryEntry,
-  DynamicConfigNamespace,
-  DynamicConfigNamespaceSummary,
   DynamicConfigUpdateResult,
   DynamicConfigUser,
 } from './types.mts'
@@ -21,21 +20,29 @@ import type {
 export function listDynamicConfigNamespaces(
   currentUser: DynamicConfigUser,
 ): DynamicConfigNamespaceSummary[] {
-  const summaries = dynamicConfigRegistry.map(entry => toNamespaceSummary(currentUser, entry))
-  return summaries.filter(summary => summary.can_view)
+  return dynamicConfigRegistry.entries.flatMap(entry => {
+    const summary = toAdminNamespaceSummary(entry, {
+      can_view: currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'view'),
+      can_update: currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'update'),
+    })
+    return summary.can_view ? [summary] : []
+  })
 }
 
 export async function getDynamicConfigNamespace(
   currentUser: DynamicConfigUser,
   namespace: string,
 ): Promise<DynamicConfigNamespace | null> {
-  const entry = getDynamicConfigRegistryEntry(namespace)
+  const entry = dynamicConfigRegistry.get(namespace)
   if (!entry || !currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'view')) {
     return null
   }
 
   await entry.config.waitForInitialization()
-  return toNamespace(currentUser, entry)
+  return toAdminNamespaceView(entry, {
+    can_view: true,
+    can_update: currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'update'),
+  })
 }
 
 export async function updateDynamicConfigNamespace(
@@ -43,27 +50,25 @@ export async function updateDynamicConfigNamespace(
   namespace: string,
   changes: Record<string, unknown>,
 ): Promise<DynamicConfigUpdateResult | null> {
-  const entry = getDynamicConfigRegistryEntry(namespace)
+  const entry = dynamicConfigRegistry.get(namespace)
   if (!entry || !currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'update')) {
     return null
   }
 
-  assertPlainChanges(changes)
   await entry.config.waitForInitialization()
   const previous = normalizeFields(entry, entry.config.getFields())
-  const validatedChanges = validateChanges(entry, previous, changes)
-  const next = { ...previous, ...validatedChanges }
-  if (entry.validate) entry.validate(next)
-
-  const changed = Object.entries(validatedChanges).some(([key, value]) => previous[key] !== value)
-  if (changed) {
-    await recordDynamicConfigChange(currentUser.id, entry.namespace, previous, next)
-    await entry.config.setFields(validatedChanges)
+  const validated = validateDynamicConfigUpdate(entry, previous, changes)
+  if (validated.changed) {
+    await recordDynamicConfigChange(currentUser.id, entry.namespace, previous, validated.next)
+    await entry.config.setFields(validated.changes)
   }
 
   return {
-    changed,
-    namespace: toNamespace(currentUser, entry),
+    changed: validated.changed,
+    namespace: toAdminNamespaceView(entry, {
+      can_view: true,
+      can_update: true,
+    }),
   }
 }
 
@@ -71,7 +76,7 @@ export async function listDynamicConfigNamespaceHistory(
   currentUser: DynamicConfigUser,
   namespace: string,
 ): Promise<DynamicConfigHistoryEntry[] | null> {
-  const entry = getDynamicConfigRegistryEntry(namespace)
+  const entry = dynamicConfigRegistry.get(namespace)
   if (!entry || !currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'view')) {
     return null
   }
@@ -121,22 +126,4 @@ export async function listDynamicConfigNamespaceHistory(
       created_at: row.created_at.toISOString(),
     }
   })
-}
-
-function getChangedFields(
-  previousFields: Record<string, unknown> | null | undefined,
-  nextFields: Record<string, unknown> | null | undefined,
-): Record<string, { previous: unknown; next: unknown }> {
-  const changedFields: Record<string, { previous: unknown; next: unknown }> = {}
-  const previous = previousFields ?? {}
-  const next = nextFields ?? {}
-  for (const key of new Set([...Object.keys(previous), ...Object.keys(next)])) {
-    if (previous[key] !== next[key]) {
-      changedFields[key] = {
-        previous: previous[key],
-        next: next[key],
-      }
-    }
-  }
-  return changedFields
 }

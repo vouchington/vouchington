@@ -104,8 +104,10 @@
     "@services/vote-weight": "workspace:^",
     "@services/web-risk": "workspace:^",
     "@voucha/config": "workspace:^",
+    "@vouchington/dynamic-config": "^0.2.0",
     "@workers/ses-inbound": "workspace:^",
-    "sql-template-strings": "^2.2.2"
+    "sql-template-strings": "^2.2.2",
+    "valkyries": "^0.9.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

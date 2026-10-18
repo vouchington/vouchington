@@ -3,8 +3,7 @@ import {
   USER_IMPORT_EXPORT_MIN_VALUES,
   userImportExportConfig,
 } from '@services/user-import-export/config'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
-import { validateUserImportExportConfig } from './registry-validators.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
   namespace: 'user-import-export-config',
@@ -15,47 +14,46 @@ export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
   fields: {
     sync_export_max_items: {
       description: 'Maximum items allowed in synchronous RSS feed and topic exports.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.sync_export_max_items,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.sync_export_max_items,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.sync_export_max_items,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.sync_export_max_items,
       integer: true,
     },
     import_max_body_bytes: {
       description: 'Largest JSON body, in bytes, the RSS feed import endpoint reads.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_max_body_bytes,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_max_body_bytes,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_max_body_bytes,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.import_max_body_bytes,
       integer: true,
     },
     import_dispatch_page_size: {
       description: 'Pending rows one import dispatcher page puts on the queue before it continues.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_dispatch_page_size,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_dispatch_page_size,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_dispatch_page_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.import_dispatch_page_size,
       integer: true,
     },
     import_insert_chunk_size: {
       description: 'Rows one INSERT statement writes when an RSS feed import is submitted.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_insert_chunk_size,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_insert_chunk_size,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_insert_chunk_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.import_insert_chunk_size,
       integer: true,
     },
     import_recovery_batch_size: {
       description: 'Stalled RSS feed imports one recovery sweep re-dispatches.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_recovery_batch_size,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_recovery_batch_size,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_recovery_batch_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.import_recovery_batch_size,
       integer: true,
     },
     import_status_page_size: {
       description: 'Rows one page of an RSS feed import status lists.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.import_status_page_size,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.import_status_page_size,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_status_page_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.import_status_page_size,
       integer: true,
     },
     rss_feed_import_budget_ms: {
       description:
         'Time in milliseconds one imported feed gets across Web Risk and both protocol attempts.',
-      min_value: USER_IMPORT_EXPORT_MIN_VALUES.rss_feed_import_budget_ms,
-      max_value: USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_budget_ms,
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.rss_feed_import_budget_ms,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.rss_feed_import_budget_ms,
       integer: true,
     },
   },
-  validate: validateUserImportExportConfig,
 })

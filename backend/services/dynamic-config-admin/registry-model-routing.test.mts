@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { modelFieldName, providerFieldName } from '@modules/model-providers/routing'
-import { getDynamicConfigRegistryEntry } from './registry.mts'
-import type { DynamicConfigFields } from './types.mts'
+import { dynamicConfigRegistry } from './registry.mts'
+import type { DynamicConfigFields } from '@vouchington/dynamic-config'
 
 function entry() {
-  const registered = getDynamicConfigRegistryEntry('ai-model-routing')
+  const registered = dynamicConfigRegistry.get('ai-model-routing')
   if (!registered?.validate) throw new Error('ai-model-routing is not registered')
   return registered
 }
