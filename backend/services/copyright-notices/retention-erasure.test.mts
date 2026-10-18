@@ -87,6 +87,16 @@ describe('copyright evidence retention sweep', () => {
     await expect(getAgentCallReceipt(receiptKey)).resolves.toMatchObject({
       result_ciphertext: 'erased',
     })
+    const lateReceiptKey = createHash('sha256').update(randomUUID()).digest('hex')
+    await expect(
+      reserveAgentCallReceipt(
+        lateReceiptKey,
+        'copyright-submission-guidance',
+        'a'.repeat(64),
+        counterSubmissionId,
+      ),
+    ).rejects.toThrow('erased by retention')
+    await expect(getAgentCallReceipt(lateReceiptKey)).resolves.toBeUndefined()
     await expect(readCopyrightStaffQueueCursorRows(noticeIds)).resolves.toEqual([])
     for (const [index, entry] of cases.entries()) {
       for (const key of entry.evidenceKeys) expect(bucket.countVersions(key)).toBe(0)
