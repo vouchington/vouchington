@@ -18,12 +18,12 @@ type DispatcherOptions = {
 
 function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority: number) {
   const job = requireBackgroundCpuJob(`crawl.${jobName}`)
-  const enqueue = createBulkEnqueueFunction<string, { hostname_id: string }, string>({
+  const enqueue = createBulkEnqueueFunction({
     queue: backgroundCpu,
     queueName: BACKGROUND_CPU_QUEUE_NAME,
     jobName: job.name,
     defaults: job.options,
-    buildJob: hostnameId => ({
+    buildJob: (hostnameId: string) => ({
       data: { hostname_id: hostnameId },
       opts: {
         deduplication: {

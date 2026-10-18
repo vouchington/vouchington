@@ -180,4 +180,47 @@ describe('vote-weight dispatcher admission', () => {
       }
     }
   })
+
+  it('strips wider runtime fields from dispatcher roots before enqueueing', async () => {
+    const release = holdBackgroundDomain('vote-aggregation')
+    const admittedJobs: Array<{ data: unknown; remove: () => Promise<unknown> }> = []
+    const extra = { metadata: { token: 'must-not-be-persisted' } }
+    const window = {
+      windowStart: '2026-01-01T00:00:00.000Z',
+      windowEnd: '2026-01-02T00:00:00.000Z',
+    }
+    const widened = { fullReplay: true, window, ...extra }
+    const cases = [
+      {
+        enqueue: () => enqueueVoteWeightAgeMilestones(widened),
+        expected: { window },
+      },
+      {
+        enqueue: () => enqueueVoteWeightMembershipExpirations(widened),
+        expected: { window },
+      },
+      {
+        enqueue: () => enqueueVoteWeightFamilySourceChanges(widened),
+        expected: { window },
+      },
+      {
+        enqueue: () => enqueueVoteWeightDirtyMarkers({ afterId: randomUUID(), ...extra }),
+        expected: { afterId: expect.any(String) },
+      },
+    ]
+
+    try {
+      for (const testCase of cases) {
+        const job = await readEnqueuedJob(voteAggregation, await withoutFlush(testCase.enqueue))
+        admittedJobs.push(job)
+        expect(job.data).toEqual(testCase.expected)
+      }
+    } finally {
+      try {
+        await Promise.all(admittedJobs.map(job => job.remove()))
+      } finally {
+        await release()
+      }
+    }
+  })
 })

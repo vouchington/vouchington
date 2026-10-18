@@ -37,16 +37,12 @@ const enqueueCreatePostEmbeddingJob = createEnqueueFunction<
   defaults: requireBackgroundCpuJob('bedrock-embeddings.post').options,
 })
 
-const enqueueBulkCreateRssFeedItemEmbeddingJobs = createBulkEnqueueFunction<
-  { rss_feed_item_id: string },
-  { rss_feed_item_id: string },
-  string
->({
+const enqueueBulkCreateRssFeedItemEmbeddingJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: 'bedrock-embeddings.rss_feed_item',
   defaults: requireBackgroundCpuJob('bedrock-embeddings.rss_feed_item').options,
-  buildJob: item => ({
+  buildJob: (item: { rss_feed_item_id: string }) => ({
     data: { rss_feed_item_id: item.rss_feed_item_id },
     opts: {
       deduplication: {

@@ -14,11 +14,7 @@ const enqueueProcessStripeEventJob = createEnqueueFunction<ProcessStripeEventDat
   { queue: memberships, queueName: QUEUE_NAME, jobName: STRIPE_EVENT_JOB_NAME },
 )
 
-export const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction<
-  ProcessStripeEventData,
-  ProcessStripeEventData,
-  MembershipsJobs
->({
+export const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: STRIPE_EVENT_JOB_NAME,
@@ -28,7 +24,7 @@ export const enqueueBulkProcessStripeEvents = createBulkEnqueueFunction<
     removeOnComplete: 100,
     removeOnFail: 100,
   },
-  buildJob: data => {
+  buildJob: (data: ProcessStripeEventData) => {
     const jobId = stripeEventJobId(data)
     return {
       data,

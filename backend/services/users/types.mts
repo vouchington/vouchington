@@ -40,11 +40,6 @@ export type CreateUserOptions = {
   sessionId?: string
 }
 
-// Canonical definition lives in @queues/entity-listeners/types (the enqueue job-payload
-// contract); re-exported here since this service already depends on that queue for real
-// enqueue calls and has other in-package consumers of this type (avoids a workspace cycle).
-export type { UserLoginContext } from '@queues/entity-listeners/types'
-
 export type GetUserOptions = {
   oauthAccount?: { provider: OAuthProvider; account: OAuthAccount }
   emailAddress?: string

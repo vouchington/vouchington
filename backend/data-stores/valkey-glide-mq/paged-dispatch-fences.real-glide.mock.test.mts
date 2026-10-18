@@ -14,11 +14,11 @@ describe('page admission fence ownership', () => {
     }
     const target = new Queue<{ id: number }>(`rows-${randomUUID()}`, settings)
     const dispatch = new Queue<Record<string, never>>(`pages-${randomUUID()}`, settings)
-    const enqueue = createBulkEnqueueFunction<{ id: number }, { id: number }, 'row'>({
+    const enqueue = createBulkEnqueueFunction({
       queue: Object.assign(target, { priorityKind: 'none' as const }),
       queueName: 'background',
       jobName: 'row',
-      buildJob: data => ({ data }),
+      buildJob: (data: { id: number }) => ({ data }),
     })
     const consumed: number[] = []
     const firstConsumed = Promise.withResolvers<void>()
@@ -90,12 +90,12 @@ describe('page admission fence ownership', () => {
     }
     const target = new Queue<{ id: string }>(`retained-${randomUUID()}`, settings)
     const dispatch = new Queue<Record<string, never>>(`dispatch-${randomUUID()}`, settings)
-    const enqueue = createBulkEnqueueFunction<{ id: string }, { id: string }, 'row'>({
+    const enqueue = createBulkEnqueueFunction({
       queue: Object.assign(target, { priorityKind: 'none' as const }),
       queueName: 'background',
       jobName: 'row',
       defaults: { removeOnFail: 77 },
-      buildJob: data => ({ data }),
+      buildJob: (data: { id: string }) => ({ data }),
     })
     const failed = Promise.withResolvers<string>()
     const consumer = new Worker(

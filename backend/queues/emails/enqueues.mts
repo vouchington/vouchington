@@ -19,7 +19,6 @@ import type {
 } from './types.mts'
 import { QUEUE_NAME } from './config.mts'
 import { emails } from './queues.mts'
-import { getEmailSendJobOptions } from './enqueues/job-options.mts'
 
 export const enqueueSendCommunityInviteEmail =
   createEnqueueFunction<ProcessSendCommunityInviteEmailVariables>('processSendCommunityInviteEmail')
@@ -59,18 +58,16 @@ const enqueueSendCopyrightNoticeEmailJob = createGlideMqEnqueueFunction({
   queue: emails,
   queueName: QUEUE_NAME,
   jobName: 'processSendCopyrightNoticeEmail',
+  sensitive: true,
 })
 
 /** One batched add of `enqueueSendCopyrightNoticeEmail` jobs, each with its own dedup id. */
-export const enqueueBulkSendCopyrightNoticeEmails = createGlideMqBulkEnqueueFunction<
-  string,
-  ProcessSendCopyrightNoticeEmailVariables,
-  'processSendCopyrightNoticeEmail'
->({
+export const enqueueBulkSendCopyrightNoticeEmails = createGlideMqBulkEnqueueFunction({
   queue: emails,
   queueName: QUEUE_NAME,
   jobName: 'processSendCopyrightNoticeEmail',
-  buildJob: intentId => ({
+  sensitive: true,
+  buildJob: (intentId: string) => ({
     data: { intentId } satisfies ProcessSendCopyrightNoticeEmailVariables,
     opts: copyrightNoticeEmailJobOptions(intentId),
   }),
@@ -98,13 +95,14 @@ export function enqueueSendCopyrightNoticeEmail(intentId: string): EnqueueReturn
 }
 
 function createEnqueueFunction<V extends Record<string, unknown>>(jobName: EmailJobs) {
-  const enqueue = createGlideMqEnqueueFunction({
+  const enqueue = createGlideMqEnqueueFunction<{ input: EmailJobInput; variables: V }, EmailJobs>({
     queue: emails,
     queueName: QUEUE_NAME,
     jobName,
+    sensitive: true,
   })
 
   return (input: EmailJobInput, variables: V): EnqueueReturnType => {
-    return enqueue({ input, variables }, getEmailSendJobOptions(jobName))
+    return enqueue({ input, variables })
   }
 }

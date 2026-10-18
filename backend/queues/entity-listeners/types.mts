@@ -2,7 +2,6 @@ export type {
   CreateTopicUpdates,
   EntityReconciliationDispatchData,
   ReconcileEntityData,
-  UserLoginContext,
 } from '@queues/background/enqueues/entity-listeners-payloads'
 
 /** Local job names of the `entity-listeners` domain (the queue-wide name is `entity-listeners.<name>`). */

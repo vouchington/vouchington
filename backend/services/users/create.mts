@@ -18,7 +18,7 @@ import { getReferrerIdForSession, updateAttributionSignup } from '@services/attr
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { USER_CREATION_RACE } from '@modules/on-error/error-codes'
-import type { PrivateUser, UpsertUserOptions, UserLoginContext } from './types.mts'
+import type { PrivateUser, UpsertUserOptions } from './types.mts'
 import {
   createUser,
   getUser,
@@ -31,24 +31,10 @@ export const upsertUser = async ({
   oauthAccount,
   emailAddress,
   phoneNumber,
-  deviceId,
   sessionId,
-  ipAddress,
-  userAgent,
 }: UpsertUserOptions): Promise<PrivateUser> => {
   const effectiveEmailAddress =
     (emailAddress || oauthAccount?.account.provider_user_email_address) ?? undefined
-
-  const loginContext: UserLoginContext = {
-    oauth_provider: oauthAccount?.provider,
-    oauth_user_id: oauthAccount?.account.provider_user_id,
-    email_address: effectiveEmailAddress,
-    phone_number: phoneNumber,
-    device_id: deviceId,
-    session_id: sessionId,
-    ip_address: ipAddress,
-    user_agent: userAgent,
-  }
 
   const existingUser = await getUser({
     oauthAccount,
@@ -76,7 +62,7 @@ export const upsertUser = async ({
             assert(connectedUser, 500, 'User not found for concurrently connected account')
             await ensureCurrentConsents(connectedUser.id)
             /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-            void enqueueOnUserLoggedIn(connectedUser.id, loginContext)
+            void enqueueOnUserLoggedIn(connectedUser.id)
             return connectedUser
           }
         }
@@ -86,12 +72,12 @@ export const upsertUser = async ({
       assert(user, 500, 'User not found after connecting oauth account')
       await ensureCurrentConsents(user.id)
       void enqueueOnUserUpdated(user.id)
-      void enqueueOnUserLoggedIn(user.id, loginContext)
+      void enqueueOnUserLoggedIn(user.id)
       return user
     }
 
     await ensureCurrentConsents(existingUser.id)
-    void enqueueOnUserLoggedIn(existingUser.id, loginContext)
+    void enqueueOnUserLoggedIn(existingUser.id)
     return existingUser
   }
 
@@ -119,7 +105,7 @@ export const upsertUser = async ({
         }
         if (racedUser) {
           await ensureCurrentConsents(racedUser.id)
-          void enqueueOnUserLoggedIn(racedUser.id, loginContext)
+          void enqueueOnUserLoggedIn(racedUser.id)
           return racedUser
         }
       }
@@ -135,7 +121,7 @@ export const upsertUser = async ({
     void enqueueReferralSignupNotification(referrerId, newUser.id)
     void enqueueAutoFollowReferrer(newUser.id, referrerId)
   }
-  if (effectiveEmailAddress || loginContext.oauth_provider) {
+  if (effectiveEmailAddress || oauthAccount) {
     void enqueueSendWelcomeEmail(
       {
         userId: newUser.id,
@@ -144,7 +130,7 @@ export const upsertUser = async ({
       { userName: newUser.username ?? undefined, uiLocale: newUser.ui_locale ?? null },
     )
   }
-  void enqueueOnUserCreated(newUser.id, loginContext)
+  void enqueueOnUserCreated(newUser.id)
   return newUser
 }
 

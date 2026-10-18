@@ -29,16 +29,12 @@ const enqueueCrawlEmbedJob = createEnqueueFunction<{ crawl_id: string }, CrawlEm
   defaults,
 })
 
-const enqueueBulkCrawlEmbedJobs = createBulkEnqueueFunction<
-  CrawlEmbedEntry,
-  { crawl_id: string },
-  CrawlEmbedsJobs
->({
+const enqueueBulkCrawlEmbedJobs = createBulkEnqueueFunction({
   queue: crawlEmbedsQueue,
   queueName: CRAWL_EMBEDS_QUEUE_NAME,
   jobName: JOB_NAME,
   defaults,
-  buildJob: entry => ({
+  buildJob: (entry: CrawlEmbedEntry) => ({
     data: { crawl_id: entry.crawlId },
     opts: crawlEmbedJobOptions(entry.crawlId, entry.endpointHostname),
   }),

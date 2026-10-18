@@ -26,16 +26,12 @@ const enqueueProcessMembershipVerificationJob = createEnqueueFunction<
   defaults: verificationDefaults,
 })
 
-export const enqueueBulkProcessMembershipVerifications = createBulkEnqueueFunction<
-  ProcessMembershipVerificationData,
-  ProcessMembershipVerificationData,
-  MembershipsJobs
->({
+export const enqueueBulkProcessMembershipVerifications = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: VERIFICATION_JOB_NAME,
   defaults: verificationDefaults,
-  buildJob: data => ({
+  buildJob: (data: ProcessMembershipVerificationData) => ({
     data,
     opts: verificationJobOptions(data),
   }),

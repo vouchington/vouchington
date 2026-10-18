@@ -56,7 +56,12 @@ export async function processReconcileCopyrightDeliveryIntents(
   data: CopyrightSweepContinuation = {},
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const deps = { ...defaultDeps, ...dependencyOverrides }
-  const cursors = new Map(Object.entries(data.cursors ?? {}))
+  const cursors = new Map(
+    Object.entries(data.cursors ?? {}).map(([key, cursor]) => [
+      key === 'email-notices' ? 'email' : key,
+      cursor,
+    ]),
+  )
   const budget = createCopyrightSweepBudget()
   const deferred = new Set<string>()
   const tally: CopyrightSweepTally = { enqueued: 0, errors: [] }
@@ -92,8 +97,12 @@ export async function processReconcileCopyrightDeliveryIntents(
     if (cursors.has(channel) && !deferred.has(channel)) pending.push(channel)
   }
   pending.push(...deferred)
-  if (pending.length > 0)
-    await deps.enqueueContinuation({ pending, cursors: Object.fromEntries(cursors) })
+  if (pending.length > 0) {
+    const continuationCursors = Object.fromEntries(
+      [...cursors].map(([key, cursor]) => [key === 'email' ? 'email-notices' : key, cursor]),
+    )
+    await deps.enqueueContinuation({ pending, cursors: continuationCursors })
+  }
   if (tally.errors.length > 0) {
     throw new AggregateError(tally.errors, 'Copyright delivery reconciliation failed')
   }

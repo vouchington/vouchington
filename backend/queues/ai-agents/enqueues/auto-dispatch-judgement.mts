@@ -14,15 +14,14 @@ const enqueueAutoDispatchJudgementJob = createEnqueueFunction<
 })
 
 /** One batched add of `enqueueAutoDispatchJudgement` jobs, each with its own dedup id. */
-export const enqueueBulkAutoDispatchJudgements = createBulkEnqueueFunction<
-  AutoDispatchJudgementJobData,
-  AutoDispatchJudgementJobData,
-  'auto-dispatch-judgement'
->({
+export const enqueueBulkAutoDispatchJudgements = createBulkEnqueueFunction({
   queue: ai_agents,
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'auto-dispatch-judgement',
-  buildJob: data => ({ data, opts: autoDispatchJudgementJobOptions(data) }),
+  buildJob: (data: AutoDispatchJudgementJobData) => ({
+    data,
+    opts: autoDispatchJudgementJobOptions(data),
+  }),
 })
 
 function autoDispatchJudgementJobOptions(data: AutoDispatchJudgementJobData): Partial<JobOptions> {

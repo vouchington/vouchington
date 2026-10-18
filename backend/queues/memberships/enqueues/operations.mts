@@ -35,15 +35,11 @@ const enqueueDeliverMembershipEntitlementEffectsJob = createEnqueueFunction<
   },
 })
 
-const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction<
-  ProcessSendRenewalPriceIncreaseEmailData,
-  ProcessSendRenewalPriceIncreaseEmailData,
-  MembershipsJobs
->({
+const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: RENEWAL_PRICE_INCREASE_JOB_NAME,
-  buildJob: data => ({
+  buildJob: (data: ProcessSendRenewalPriceIncreaseEmailData) => ({
     data,
     opts: {
       deduplication: {

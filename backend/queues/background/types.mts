@@ -41,16 +41,19 @@ export type BackgroundJobSpec = {
   /** Lock and heartbeat window for this job alone, for domains whose work outlasts the default. */
   readonly lockDuration?: number
   readonly timeout?: number
+  /** Payloads that carry personal data or secrets must be removed after their terminal outcome. */
+  readonly sensitive?: true
   readonly removeOnComplete?: JobOptions['removeOnComplete']
   readonly removeOnFail?: JobOptions['removeOnFail']
 }
 
 /** The phantom `data` member carries the payload type to the enqueue and handler helpers. */
-export type BackgroundJobDefinition<TData = unknown> = {
+export type BackgroundJobDefinition<TData = unknown, TSensitive extends boolean = boolean> = {
   readonly name: string
   readonly domain: BackgroundDomain
   /** Defaults for every enqueue of this job; per-call options override them. */
   readonly options: Readonly<JobOptions>
+  readonly sensitive?: TSensitive
   readonly data?: TData
 }
 

@@ -9,7 +9,6 @@ import {
 import { memberships } from '../queues.mts'
 import type {
   AcknowledgeGooglePlayPurchaseData,
-  MembershipsJobs,
   ProcessGooglePlayNotificationData,
   ReconcileGooglePlayActiveSourceData,
 } from '../types.mts'
@@ -78,11 +77,7 @@ function googlePlayActiveSourceJobOptions(
 }
 
 /** One batched add of `enqueueProcessGooglePlayNotification` jobs, each with its own stable id. */
-export const enqueueBulkProcessGooglePlayNotifications = createBulkEnqueueFunction<
-  GooglePlayNotificationInput,
-  ProcessGooglePlayNotificationData,
-  MembershipsJobs
->({
+export const enqueueBulkProcessGooglePlayNotifications = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: 'processGooglePlayNotification',
@@ -91,28 +86,23 @@ export const enqueueBulkProcessGooglePlayNotifications = createBulkEnqueueFuncti
 })
 
 /** One batched add of `enqueueAcknowledgeGooglePlayPurchase` jobs, each with its own stable id. */
-export const enqueueBulkAcknowledgeGooglePlayPurchases = createBulkEnqueueFunction<
-  AcknowledgeGooglePlayPurchaseData,
-  AcknowledgeGooglePlayPurchaseData,
-  MembershipsJobs
->({
+export const enqueueBulkAcknowledgeGooglePlayPurchases = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: 'acknowledgeGooglePlayPurchase',
   defaults: googlePlayJobDefaults,
-  buildJob: data => ({ data, opts: googlePlayAcknowledgementJobOptions(data) }),
+  buildJob: (data: AcknowledgeGooglePlayPurchaseData) => ({
+    data,
+    opts: googlePlayAcknowledgementJobOptions(data),
+  }),
 })
 
-const enqueueBulkActiveSource = createBulkEnqueueFunction<
-  ReconcileGooglePlayActiveSourceData & { bucket: number },
-  ReconcileGooglePlayActiveSourceData,
-  MembershipsJobs
->({
+const enqueueBulkActiveSource = createBulkEnqueueFunction({
   queue: memberships,
   queueName: QUEUE_NAME,
   jobName: 'reconcileGooglePlayActiveSource',
   defaults: googlePlayJobDefaults,
-  buildJob: ({ bucket, ...data }) => ({
+  buildJob: ({ bucket, ...data }: ReconcileGooglePlayActiveSourceData & { bucket: number }) => ({
     data,
     opts: googlePlayActiveSourceJobOptions(data, bucket),
   }),

@@ -7,7 +7,6 @@ import {
   parseReconcileEntity,
   topicPayload,
   topicUpdatedPayload,
-  userWithContext,
 } from './job-payload-records.mts'
 import {
   asRecord,
@@ -25,9 +24,9 @@ const parsers = {
   reconcileEntities: parseReconciliationDispatch,
   processUrlCreated: idPayload,
   processImageCreated: idPayload,
-  processUserCreated: userWithContext,
+  processUserCreated: idPayload,
   processUserUpdated: idPayload,
-  processUserLoggedIn: userWithContext,
+  processUserLoggedIn: idPayload,
   processAutoFollowReferrer: followPayload,
   processPostCreated: idPayload,
   processPostUpdated: postUpdatedPayload,

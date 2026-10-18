@@ -5,7 +5,6 @@ import type {
   EntityReconciliationDispatchData,
   ProcessPostCreatedJobData,
   ReconcileEntityData,
-  UserLoginContext,
 } from './entity-listeners-payloads.mts'
 
 // The old queue had no ordering key or limiter; its cap was the worker concurrency of 5. One
@@ -24,17 +23,15 @@ const RECONCILIATION_RETRY = {
   removeOnFail: 100,
 } as const
 
-const task = <TData,>(name: string) =>
-  defineBackgroundJob<TData>(ENTITY_LISTENERS_DOMAIN, { name, priority: PRIORITY_TASK })
-
 /** The scheduler's trigger: it only enqueues one reconciliation dispatch. */
-export const ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB = defineBackgroundJob<
-  Record<string, never>
->(ENTITY_LISTENERS_DOMAIN, {
-  name: 'enqueueReconcileEntities',
-  priority: PRIORITY_DISPATCH,
-  ...RECONCILIATION_RETRY,
-})
+export const ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB = defineBackgroundJob(
+  ENTITY_LISTENERS_DOMAIN,
+  {
+    name: 'enqueueReconcileEntities',
+    priority: PRIORITY_DISPATCH,
+    ...RECONCILIATION_RETRY,
+  },
+)
 /** One bounded page of candidates in a fixed window; a full page saves its cursor and continues. */
 export const ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB =
   defineBackgroundJob<EntityReconciliationDispatchData>(ENTITY_LISTENERS_DOMAIN, {
@@ -47,44 +44,70 @@ export const ENTITY_LISTENERS_RECONCILE_ENTITY_JOB = defineBackgroundJob<Reconci
   { name: 'reconcileEntity', priority: PRIORITY_TASK, ...RECONCILIATION_RETRY },
 )
 
-export const ENTITY_LISTENERS_URL_CREATED_JOB = task<{ id: string }>('processUrlCreated')
-export const ENTITY_LISTENERS_IMAGE_CREATED_JOB = task<{ id: string }>('processImageCreated')
-export const ENTITY_LISTENERS_USER_CREATED_JOB = task<{ id: string; context: UserLoginContext }>(
-  'processUserCreated',
+export const ENTITY_LISTENERS_URL_CREATED_JOB = defineBackgroundJob<{ id: string }>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processUrlCreated', priority: PRIORITY_TASK },
 )
-export const ENTITY_LISTENERS_USER_UPDATED_JOB = task<{ id: string }>('processUserUpdated')
-export const ENTITY_LISTENERS_USER_LOGGED_IN_JOB = task<{ id: string; context: UserLoginContext }>(
-  'processUserLoggedIn',
+export const ENTITY_LISTENERS_IMAGE_CREATED_JOB = defineBackgroundJob<{ id: string }>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processImageCreated', priority: PRIORITY_TASK },
 )
-export const ENTITY_LISTENERS_AUTO_FOLLOW_REFERRER_JOB = task<{
+export const ENTITY_LISTENERS_USER_CREATED_JOB = defineBackgroundJob<{ id: string }>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processUserCreated', priority: PRIORITY_TASK },
+)
+export const ENTITY_LISTENERS_USER_UPDATED_JOB = defineBackgroundJob<{ id: string }>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processUserUpdated', priority: PRIORITY_TASK },
+)
+export const ENTITY_LISTENERS_USER_LOGGED_IN_JOB = defineBackgroundJob<{ id: string }>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processUserLoggedIn', priority: PRIORITY_TASK },
+)
+export const ENTITY_LISTENERS_AUTO_FOLLOW_REFERRER_JOB = defineBackgroundJob<{
   newUserId: string
   referrerId: string
-}>('processAutoFollowReferrer')
-export const ENTITY_LISTENERS_POST_CREATED_JOB =
-  task<ProcessPostCreatedJobData>('processPostCreated')
-export const ENTITY_LISTENERS_POST_UPDATED_JOB = task<{ id: string; contentChanged?: boolean }>(
-  'processPostUpdated',
+}>(ENTITY_LISTENERS_DOMAIN, { name: 'processAutoFollowReferrer', priority: PRIORITY_TASK })
+export const ENTITY_LISTENERS_POST_CREATED_JOB = defineBackgroundJob<ProcessPostCreatedJobData>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processPostCreated', priority: PRIORITY_TASK },
 )
-export const ENTITY_LISTENERS_POST_DELETED_JOB = task<{ id: string }>('processPostDeleted')
-export const ENTITY_LISTENERS_TOPIC_CREATED_JOB = task<{ id: string; updates: CreateTopicUpdates }>(
-  'processTopicCreated',
+export const ENTITY_LISTENERS_POST_UPDATED_JOB = defineBackgroundJob<{
+  id: string
+  contentChanged?: boolean
+}>(ENTITY_LISTENERS_DOMAIN, { name: 'processPostUpdated', priority: PRIORITY_TASK })
+export const ENTITY_LISTENERS_POST_DELETED_JOB = defineBackgroundJob<{ id: string }>(
+  ENTITY_LISTENERS_DOMAIN,
+  { name: 'processPostDeleted', priority: PRIORITY_TASK },
 )
-export const ENTITY_LISTENERS_TOPIC_UPDATED_JOB = task<{ id: string; updated_by_id?: string }>(
-  'processTopicUpdated',
-)
-export const ENTITY_LISTENERS_TOPIC_DELETED_JOB = task<{ id: string; updates: CreateTopicUpdates }>(
-  'processTopicDeleted',
-)
-export const ENTITY_LISTENERS_CONVERSATION_MESSAGE_CREATED_JOB = task<{
+export const ENTITY_LISTENERS_TOPIC_CREATED_JOB = defineBackgroundJob<{
+  id: string
+  updates: CreateTopicUpdates
+}>(ENTITY_LISTENERS_DOMAIN, { name: 'processTopicCreated', priority: PRIORITY_TASK })
+export const ENTITY_LISTENERS_TOPIC_UPDATED_JOB = defineBackgroundJob<{
+  id: string
+  updated_by_id?: string
+}>(ENTITY_LISTENERS_DOMAIN, { name: 'processTopicUpdated', priority: PRIORITY_TASK })
+export const ENTITY_LISTENERS_TOPIC_DELETED_JOB = defineBackgroundJob<{
+  id: string
+  updates: CreateTopicUpdates
+}>(ENTITY_LISTENERS_DOMAIN, { name: 'processTopicDeleted', priority: PRIORITY_TASK })
+export const ENTITY_LISTENERS_CONVERSATION_MESSAGE_CREATED_JOB = defineBackgroundJob<{
   conversationId: string
   messageId: string
   senderId: string
-}>('processConversationMessageCreated')
-export const ENTITY_LISTENERS_COMMUNITY_AGENT_PROMPTS_DEACTIVATED_JOB = task<{
+}>(ENTITY_LISTENERS_DOMAIN, {
+  name: 'processConversationMessageCreated',
+  priority: PRIORITY_TASK,
+})
+export const ENTITY_LISTENERS_COMMUNITY_AGENT_PROMPTS_DEACTIVATED_JOB = defineBackgroundJob<{
   actorUserId: string
   userId: string
   communityId: string
-}>('processCommunityAgentPromptsDeactivated')
+}>(ENTITY_LISTENERS_DOMAIN, {
+  name: 'processCommunityAgentPromptsDeactivated',
+  priority: PRIORITY_TASK,
+})
 
 export const ENTITY_LISTENERS_JOBS = [
   ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB,

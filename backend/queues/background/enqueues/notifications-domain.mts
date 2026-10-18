@@ -33,13 +33,24 @@ export type ReconcileNotificationPushIntentsData = {
 export type CopyrightIntentData = { intentId: string }
 export type DsaStatementSubmissionData = { submissionId: string }
 
+type CopyrightSweepCursor =
+  | 'forms'
+  | 'decisions'
+  | 'enforcement'
+  | 'suspended'
+  | 'blocked'
+  | 'restorations'
+  | 'actions'
+  | 'in_app'
+  | 'email-notices'
+
 /** A fixed evaluation time and only the unfinished copyright stage cursors. */
 export type CopyrightSweepContinuation = {
   evaluatedAt?: string
   /** Round-robin order of unfinished and unvisited stages/channels. */
   pending?: string[]
   /** null resumes a stage which had no page allowance to start. */
-  cursors?: Record<string, string | null>
+  cursors?: Partial<Record<CopyrightSweepCursor, string | null>>
 }
 
 export type CommunityActivityDigestDispatchData = {

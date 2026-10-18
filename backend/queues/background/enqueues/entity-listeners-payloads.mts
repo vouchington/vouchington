@@ -4,20 +4,6 @@ import type { TopicTypes } from '@voucha/types/entities/topic'
 // the shared queue package carries no dependency on a domain package; `@queues/entity-listeners/types`
 // re-exports them for callers.
 
-// Pure type relocated from backend/services/users/types.mts so this package can define its own
-// enqueue job-data shape without depending on @services/users (avoids a workspace cycle).
-// `oauth_provider` is inlined as a literal union to keep this package free of service dependencies.
-export type UserLoginContext = {
-  oauth_provider?: 'facebook' | 'apple' | 'google' | 'x' | 'linkedin' | 'microsoft' | 'github'
-  oauth_user_id?: string
-  email_address?: string
-  phone_number?: string
-  device_id?: string
-  session_id?: string
-  ip_address?: string
-  user_agent?: string
-}
-
 // Pure type relocated from backend/services/topics/types.mts (same cycle avoidance).
 export type CreateTopicUpdates = {
   name: string

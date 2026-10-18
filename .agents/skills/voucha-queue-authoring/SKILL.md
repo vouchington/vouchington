@@ -15,8 +15,9 @@ scoped rules under [`backend/queues/`](../../../backend/queues/AGENTS.md),
    worker package, and business logic and durable idempotency in services.
 3. For a fan-out, use the [paged-dispatcher helper](../../../backend/data-stores/valkey-glide-mq/paged-dispatcher.mts);
    follow the [checklist](../../../docs/checklists/backend-queues.md#queue-boundaries).
-4. Start from durable source-of-truth state, pass minimal identifiers, make every retry safe, and
-   await or explicitly mark every fan-out edge.
+4. Start from durable source-of-truth state, pass minimal identifiers, mark jobs `sensitive: true`
+   when payloads contain secrets or personal data, make every retry safe, and await or explicitly
+   mark every fan-out edge.
 5. Apply the canonical job options, deduplication, backfill, scheduler/admin-trigger, and
    data-driven worker-placement requirements from the checklist. Scheduler templates take no
    `delay`, `deduplication`, `parent`, or `jobId`, and backlog guards count `delayed` jobs too.

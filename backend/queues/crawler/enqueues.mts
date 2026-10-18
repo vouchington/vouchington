@@ -14,25 +14,7 @@ type CrawlUrlBulkInput = EnqueueCrawlUrlEntry & {
 const JOB_NAME = 'crawl.crawl_url'
 const job = getBackgroundCpuJob(JOB_NAME)!
 
-const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
-  CrawlUrlBulkInput,
-  {
-    ensure_crawler_for_redirects?: boolean
-    should_ignore_robots_txt?: boolean
-    max_response_size_bytes?: number
-    preserve_http_redirects?: boolean
-    skip_canonical_url?: boolean
-    skip_created_events_for_redirects?: boolean
-    url_id: string
-    crawl_timeout_ms?: number
-    rate_limit_retry_count?: number
-    skip_chunks?: boolean
-    skip_embed_resolution?: boolean
-    import_row_id?: string
-    import_discovery_generation?: string
-  },
-  string
->({
+const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,
   jobName: JOB_NAME,
@@ -45,7 +27,7 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
     priority,
     hostnameId,
     rateLimitMs,
-  }) => {
+  }: CrawlUrlBulkInput) => {
     const delay = options?.delay ?? jobDelay ?? 0
     const isImportDiscovery = Boolean(options?.importRowId && options.importDiscoveryGeneration)
     return {

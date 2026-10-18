@@ -17,10 +17,10 @@ export const POST_PUBLICATION_DOMAIN = defineBackgroundDomain({
   workerConcurrency: 1,
 })
 
-export const POST_PUBLICATION_RECONCILE_JOB = defineBackgroundJob<Record<string, never>>(
-  POST_PUBLICATION_DOMAIN,
-  { name: 'reconcile', priority: PRIORITY_DISPATCH },
-)
+export const POST_PUBLICATION_RECONCILE_JOB = defineBackgroundJob(POST_PUBLICATION_DOMAIN, {
+  name: 'reconcile',
+  priority: PRIORITY_DISPATCH,
+})
 
 export const POST_PUBLICATION_SHADOW_AUDIT_JOB =
   defineBackgroundJob<PostPublicationShadowAuditJobData>(POST_PUBLICATION_DOMAIN, {

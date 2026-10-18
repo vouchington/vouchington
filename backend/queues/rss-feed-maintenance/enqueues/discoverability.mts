@@ -7,15 +7,11 @@ import type { RssFeedDiscoverabilityJobs } from '../types.mts'
 
 const JOB_NAME: RssFeedDiscoverabilityJobs = 'processEvaluateRssFeedDiscoverability'
 
-const enqueueBulkEvaluateJobs = createBulkEnqueueFunction<
-  string,
-  { rssFeedId: string },
-  RssFeedDiscoverabilityJobs
->({
+const enqueueBulkEvaluateJobs = createBulkEnqueueFunction({
   queue: rssFeedMaintenance,
   queueName: QUEUE_NAME,
   jobName: JOB_NAME,
-  buildJob: rssFeedId => ({
+  buildJob: (rssFeedId: string) => ({
     data: { rssFeedId },
     opts: {
       attempts: RSS_FEED_DISCOVERABILITY_DEFAULTS.attempts,

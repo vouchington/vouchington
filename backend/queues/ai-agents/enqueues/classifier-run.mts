@@ -46,26 +46,21 @@ function classifierRunDispatcherOptions(data: ClassifierRunDispatcherJobData): J
   }
 }
 
-const enqueueClassifierRunBatch = createBulkEnqueueFunction<
-  ClassifierRunJobData,
-  ClassifierRunJobData,
-  'classifier-run'
->({
+const enqueueClassifierRunBatch = createBulkEnqueueFunction({
   queue: ai_agents,
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'classifier-run',
-  buildJob: data => ({ data, opts: classifierRunOptions(data.runId) }),
+  buildJob: (data: ClassifierRunJobData) => ({ data, opts: classifierRunOptions(data.runId) }),
 })
 
-const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction<
-  ClassifierRunDispatcherJobData,
-  ClassifierRunDispatcherJobData,
-  'classifier-run-dispatcher'
->({
+const enqueueClassifierRunDispatcherBatch = createBulkEnqueueFunction({
   queue: ai_agents,
   queueName: AI_AGENTS_QUEUE_NAME,
   jobName: 'classifier-run-dispatcher',
-  buildJob: data => ({ data, opts: classifierRunDispatcherOptions(data) }),
+  buildJob: (data: ClassifierRunDispatcherJobData) => ({
+    data,
+    opts: classifierRunDispatcherOptions(data),
+  }),
 })
 
 export async function enqueueClassifierRunDispatcher(

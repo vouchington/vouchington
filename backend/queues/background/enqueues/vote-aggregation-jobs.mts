@@ -113,7 +113,11 @@ export const VOTE_AGGREGATION_VOTE_INTEGRITY_JOB = defineBackgroundJob<{
   userId: string
   ipAddress: string | null
   score: number
-}>(VOTE_AGGREGATION_DOMAIN, { name: 'processVoteIntegrityCheck', priority: PRIORITY_TASK })
+}>(VOTE_AGGREGATION_DOMAIN, {
+  name: 'processVoteIntegrityCheck',
+  priority: PRIORITY_TASK,
+  sensitive: true,
+})
 export const VOTE_AGGREGATION_TOPIC_RATING_STATS_JOB = defineBackgroundJob<{ topicId: string }>(
   VOTE_AGGREGATION_DOMAIN,
   { name: 'processUpdateTopicRatingStats', priority: PRIORITY_TASK },

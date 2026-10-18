@@ -1,5 +1,5 @@
 import { topicTypes } from '@voucha/types/entities/topic'
-import type { CreateTopicUpdates, ReconcileEntityData, UserLoginContext } from '../types.mts'
+import type { CreateTopicUpdates, ReconcileEntityData } from '../types.mts'
 import {
   asRecord,
   assertExactKeys,
@@ -11,25 +11,6 @@ import {
   requiredString,
 } from './job-payload-read.mts'
 
-const oauthProviders = {
-  facebook: true,
-  apple: true,
-  google: true,
-  x: true,
-  linkedin: true,
-  microsoft: true,
-  github: true,
-} as const satisfies Record<NonNullable<UserLoginContext['oauth_provider']>, true>
-const userLoginKeys = {
-  oauth_provider: true,
-  oauth_user_id: true,
-  email_address: true,
-  phone_number: true,
-  device_id: true,
-  session_id: true,
-  ip_address: true,
-  user_agent: true,
-} as const satisfies Record<keyof UserLoginContext, true>
 const topicUpdateKeys = {
   name: true,
   slug: true,
@@ -80,19 +61,6 @@ const topicIdKeys = [
   'referral_program_id',
   'source_topic_alias_id',
 ] as const
-
-export function userWithContext(data: unknown): Record<string, unknown> {
-  const record = asRecord(data, 'payload')
-  assertExactKeys(record, ['id', 'context'])
-  requiredString(record, 'id')
-  const context = asRecord(record.context, 'context')
-  assertExactKeys(context, Object.keys(userLoginKeys))
-  optionalEnum(context, 'oauth_provider', Object.keys(oauthProviders))
-  for (const key of Object.keys(userLoginKeys)) {
-    if (key !== 'oauth_provider') optionalString(context, key)
-  }
-  return record
-}
 
 export function followPayload(data: unknown): Record<string, unknown> {
   const record = asRecord(data, 'payload')

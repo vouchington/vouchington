@@ -12467,9 +12467,6 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
-      '@queues/emails':
-        specifier: workspace:^
-        version: link:../../queues/emails
       '@queues/notifications':
         specifier: workspace:^
         version: link:../../queues/notifications

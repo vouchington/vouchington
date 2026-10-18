@@ -33,22 +33,25 @@ export const EMAIL_DIGESTS_DISPATCH_API_KEY_EXPIRY_JOB =
   })
 export const EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB = defineBackgroundJob<SendFollowTopicsEmailData>(
   DOMAIN,
-  { name: 'processSendFollowTopicsEmail', ...TASK },
+  { name: 'processSendFollowTopicsEmail', ...TASK, sensitive: true },
 )
 export const EMAIL_DIGESTS_SEND_POST_REFERRAL_LINK_JOB =
   defineBackgroundJob<SendPostReferralLinkEmailData>(DOMAIN, {
     name: 'processSendPostReferralLinkEmail',
     ...TASK,
+    sensitive: true,
   })
 export const EMAIL_DIGESTS_SEND_FOLLOW_NEWS_SOURCES_JOB =
   defineBackgroundJob<SendFollowNewsSourcesEmailData>(DOMAIN, {
     name: 'processSendFollowNewsSourcesEmail',
     ...TASK,
+    sensitive: true,
   })
 export const EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB =
   defineBackgroundJob<SendCommunityModerationSummaryEmailData>(DOMAIN, {
     name: 'processSendCommunityModerationSummaryEmail',
     ...TASK,
+    sensitive: true,
   })
 export const EMAIL_DIGESTS_SEND_API_KEY_EXPIRY_JOB =
   defineBackgroundJob<SendApiKeyExpiryReminderData>(DOMAIN, {

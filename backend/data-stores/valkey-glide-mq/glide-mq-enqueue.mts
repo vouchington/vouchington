@@ -9,63 +9,19 @@ import { trackJobEnqueue } from '@data-stores/analytics/queue'
 import type { JobOptions, Queue } from 'glide-mq'
 import { retryTransientEnqueue } from './glide-mq-retry.mts'
 import { assertQueuePriority, type QueuePriorityKind } from './queue-priority.mts'
+import type {
+  CreateBulkEnqueueFunction,
+  CreateBulkEnqueueFunctionOptions,
+  CreateEnqueueFunction,
+  CreateEnqueueFunctionOptions,
+  EnqueueErrorContext,
+  ErrorWithReportingContext,
+} from './glide-mq-enqueue-types.mts'
 
 type AddQueue = Pick<Queue, 'add'> & { readonly priorityKind: QueuePriorityKind }
 type AddBulkQueue = Pick<Queue, 'addBulk'> & {
   readonly priorityKind: QueuePriorityKind
   readonly name?: string
-}
-
-type ErrorWithReportingContext = Error & {
-  extra?: Record<string, unknown> | null
-  tags?: Record<string, string | number | boolean> | null
-}
-
-type EnqueueErrorContext<TCallContext = unknown> = {
-  queueName: string
-  jobName: string
-  count: number
-  callContext?: TCallContext
-}
-
-type CreateEnqueueFunctionOptions<TName extends string, TCallContext = unknown> = {
-  queue: AddQueue
-  queueName: string
-  jobName: TName
-  defaults?: Partial<JobOptions>
-  decorateError?: (
-    error: ErrorWithReportingContext,
-    context: EnqueueErrorContext<TCallContext>,
-  ) => Error
-  retry?: boolean
-  trackJobEnqueue?: typeof trackJobEnqueue
-}
-
-type CreateBulkEnqueueFunctionOptions<
-  TInput,
-  TData,
-  TName extends string,
-  TCallContext = unknown,
-> = {
-  queue: AddBulkQueue
-  queueName: string
-  jobName: TName
-  defaults?: Partial<JobOptions>
-  buildJob: (
-    input: TInput,
-    index: number,
-  ) => {
-    data: TData
-    opts?: Partial<JobOptions>
-  }
-  decorateError?: (
-    error: ErrorWithReportingContext,
-    context: EnqueueErrorContext<TCallContext>,
-  ) => Error
-  retry?: boolean
-  /** Isolated real queues in tests may override the production queue namespace. */
-  queuePrefix?: string
-  trackJobEnqueue?: typeof trackJobEnqueue
 }
 
 export const ENQUEUE_BASE_DEFAULTS = {
@@ -76,16 +32,19 @@ export const ENQUEUE_BASE_DEFAULTS = {
   priority: 10,
 } satisfies JobOptions
 
-export function createEnqueueFunction<TData, TName extends string, TCallContext = unknown>(
-  options: CreateEnqueueFunctionOptions<TName, TCallContext>,
-) {
+const createEnqueueFunctionImpl = <TData, TName extends string, TCallContext = unknown>(
+  options: CreateEnqueueFunctionOptions<TName, TCallContext> & { sensitive?: boolean },
+) => {
   return (
     data: TData,
     perCallOpts?: Partial<JobOptions>,
     callContext?: TCallContext,
   ): ReturnType<AddQueue['add']> => {
     const kind = options.queue.priorityKind
-    const merged = mergeJobOptions(kind, options.defaults, perCallOpts)
+    const merged = enforceSensitiveJobRetention(
+      mergeJobOptions(kind, options.defaults, perCallOpts),
+      options.sensitive,
+    )
     assertQueuePriority(options.queueName, kind, merged.priority ?? (kind === 'none' ? 0 : 10))
     const job =
       options.retry !== false
@@ -105,12 +64,13 @@ export function createEnqueueFunction<TData, TName extends string, TCallContext 
   }
 }
 
-export function createBulkEnqueueFunction<
-  TInput,
-  TData,
-  TName extends string,
-  TCallContext = unknown,
->(options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName, TCallContext>) {
+export const createEnqueueFunction = createEnqueueFunctionImpl as CreateEnqueueFunction
+
+const createBulkEnqueueFunctionImpl = <TInput, TData, TName extends string, TCallContext = unknown>(
+  options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName, TCallContext> & {
+    sensitive?: boolean
+  },
+) => {
   return (
     inputs: TInput[],
     perCallOpts?: Partial<JobOptions>,
@@ -127,7 +87,10 @@ export function createBulkEnqueueFunction<
         options.queueName,
         options.jobName,
         job.data,
-        mergeJobOptions(kind, options.defaults, job.opts, perCallOpts),
+        enforceSensitiveJobRetention(
+          mergeJobOptions(kind, options.defaults, job.opts, perCallOpts),
+          options.sensitive,
+        ),
       )
       assertQueuePriority(options.queueName, kind, opts.priority ?? (kind === 'none' ? 0 : 10))
       return {
@@ -155,6 +118,13 @@ export function createBulkEnqueueFunction<
     trackJobEnqueueFn(options.queueName, options.jobName, inputs.length)
     return promise as ReturnType<AddBulkQueue['addBulk']>
   }
+}
+
+export const createBulkEnqueueFunction = createBulkEnqueueFunctionImpl as CreateBulkEnqueueFunction
+
+function enforceSensitiveJobRetention(options: JobOptions, sensitive?: boolean): JobOptions {
+  if (!sensitive) return options
+  return { ...options, removeOnComplete: true, removeOnFail: true }
 }
 
 function mergeJobOptions(

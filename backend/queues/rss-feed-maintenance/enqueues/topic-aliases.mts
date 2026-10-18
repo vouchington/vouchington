@@ -46,15 +46,11 @@ const enqueueInvalidatePostsForTopicAliasesJob = createEnqueueFunction<
   jobName: 'processInvalidatePostsForTopicAliases',
 })
 
-const enqueueBulkTopicAliasesUpdateJobs = createBulkEnqueueFunction<
-  string,
-  { topicId: string },
-  TopicAliasJobs
->({
+const enqueueBulkTopicAliasesUpdateJobs = createBulkEnqueueFunction({
   queue: rssFeedMaintenance,
   queueName: QUEUE_NAME,
   jobName: JOB_NAME,
-  buildJob: topicId => ({
+  buildJob: (topicId: string) => ({
     data: { topicId },
   }),
 })

@@ -6,7 +6,6 @@ import {
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
 import { EMAIL_DIGESTS_SEND_FOLLOW_TOPICS_JOB } from '@queues/background/enqueues/email-digests-jobs'
-import { getEmailSendJobOptions } from '@queues/emails/enqueues/job-options'
 import {
   startBackgroundHarness,
   type BackgroundHarness,
@@ -65,7 +64,8 @@ describe('transactional emails beside a flooded email-digests domain through rea
         { input: { emailAddress: 'tests@voucha.ai' }, variables: { token: 'ABC123' } },
         {
           ...ENQUEUE_BASE_DEFAULTS,
-          ...getEmailSendJobOptions('processSendEmailAddressLoginToken'),
+          removeOnComplete: true,
+          removeOnFail: true,
           priority: 0,
         },
       )

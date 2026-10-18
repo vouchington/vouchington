@@ -33,4 +33,4 @@ export type DeleteUserBookmarkBloomFilterData = {
   userId: string
 }
 
-export type RebuildEmbeddingBloomFilterData = object
+export type RebuildEmbeddingBloomFilterData = Record<string, never>

@@ -62,7 +62,7 @@ describe('glide-mq factory', () => {
       expect(() => ranked.add('raw', {}, { priority: 2049 })).toThrow(RangeError)
       expect(checkedPriorityOptions(name, 'ranked')).toMatchObject({ priority: 10 })
       expect(checkedPriorityOptions(`${name}-none`, 'none')).toMatchObject({ priority: 0 })
-      const enqueue = createEnqueueFunction({
+      const enqueue = createEnqueueFunction<Record<string, never>, 'wrapped'>({
         queue: ranked,
         queueName: name,
         jobName: 'wrapped',
@@ -117,7 +117,7 @@ describe('glide-mq factory', () => {
 describe('createEnqueueFunction', () => {
   it('merges base defaults, system defaults, and per-call options in order', async () => {
     const stub = createQueueStub<{ id: string }>()
-    const enqueue = createEnqueueFunction({
+    const enqueue = createEnqueueFunction<{ id: string }, 'job'>({
       queue: stub.queue,
       queueName: 'queue',
       jobName: 'job',
@@ -147,12 +147,12 @@ describe('createEnqueueFunction', () => {
 describe('createBulkEnqueueFunction', () => {
   it('merges per-job options before per-call options', async () => {
     const stub = createQueueStub<{ id: string }>()
-    const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'job'>({
+    const enqueueBulk = createBulkEnqueueFunction({
       queue: stub.queue,
       queueName: 'queue',
       jobName: 'job',
       defaults: { priority: 50 },
-      buildJob: input => ({
+      buildJob: (input: { id: string }) => ({
         data: input,
         opts: {
           priority: 25,
@@ -172,11 +172,11 @@ describe('createBulkEnqueueFunction', () => {
 
   it('does not enqueue empty batches', async () => {
     const stub = createQueueStub<{ id: string }>()
-    const enqueueBulk = createBulkEnqueueFunction<{ id: string }, { id: string }, 'job'>({
+    const enqueueBulk = createBulkEnqueueFunction({
       queue: stub.queue,
       queueName: 'queue',
       jobName: 'job',
-      buildJob: input => ({ data: input }),
+      buildJob: (input: { id: string }) => ({ data: input }),
     })
 
     await enqueueBulk([])
