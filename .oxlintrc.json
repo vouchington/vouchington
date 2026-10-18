@@ -338,6 +338,15 @@
         "name": "next/cache",
         "message": "Direct next/cache imports are not allowed — use the server cache abstraction."
       },
+      {
+        "name": "valkyries/dynamic-config",
+        "allowImportNames": [
+          "getBoundedPositiveIntegerField",
+          "BoundedPositiveIntegerLimits",
+          "dynamicConfigs"
+        ],
+        "message": "Construct DynamicConfig through the registered-key @data-stores/valkey facade."
+      },
       "sanitize-html",
       "markdown-it",
       "marked",

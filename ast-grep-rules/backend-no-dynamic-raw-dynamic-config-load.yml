@@ -1,0 +1,39 @@
+id: backend-no-dynamic-raw-dynamic-config-load
+language: Tsx
+severity: error
+message: 'Use the registered-key @data-stores/valkey DynamicConfig constructor; dynamic loading of the raw provider bypasses its key type.'
+files:
+  - 'backend/**/*.mts'
+rule:
+  any:
+    - pattern: "import('valkyries/dynamic-config')"
+    - pattern: 'import("valkyries/dynamic-config")'
+    - pattern: 'import(`valkyries/dynamic-config`)'
+    - pattern: "require('valkyries/dynamic-config')"
+    - pattern: 'require("valkyries/dynamic-config")'
+    - pattern: 'require(`valkyries/dynamic-config`)'
+examples:
+  - code: "const raw = await import('valkyries/dynamic-config')"
+    isValid: false
+    file: 'backend/services/example/config.mts'
+  - code: 'const raw = await import("valkyries/dynamic-config")'
+    isValid: false
+    file: 'backend/services/example/config.mts'
+  - code: 'const raw = await import(`valkyries/dynamic-config`)'
+    isValid: false
+    file: 'backend/services/example/config.mts'
+  - code: "const raw = require('valkyries/dynamic-config')"
+    isValid: false
+    file: 'backend/services/example/config.mts'
+  - code: 'const raw = require("valkyries/dynamic-config")'
+    isValid: false
+    file: 'backend/services/example/config.mts'
+  - code: 'const raw = require(`valkyries/dynamic-config`)'
+    isValid: false
+    file: 'backend/services/example/config.mts'
+  - code: "const typed = await import('@data-stores/valkey/dynamic-config')"
+    isValid: true
+    file: 'backend/services/example/config.mts'
+  - code: "import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'"
+    isValid: true
+    file: 'backend/services/example/config.mts'

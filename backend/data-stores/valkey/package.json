@@ -27,6 +27,7 @@
     "@data-stores/valkey-core": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
+    "@voucha/config": "workspace:^",
     "valkyries": "^0.10.0"
   },
   "devDependencies": {
