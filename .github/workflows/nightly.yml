@@ -19,6 +19,7 @@ jobs:
     uses: ./.github/workflows/static.yml
     permissions:
       contents: read
+      issues: read
 
   backend:
     uses: ./.github/workflows/backend.yml
