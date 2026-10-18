@@ -64,11 +64,11 @@ reclaim_finished_worktrees() {
     fi
     if $AUTO_YES; then
         args+=(--yes)
-        if worktree_resource_acquire_operation_lock 2>/dev/null; then
+        if worktree_resource_acquire_operation_lock; then
             locked=true
             trap worktree_resource_release_operation_lock EXIT
         else
-            echo -e "${YELLOW}Skipping worktree reclaim: another worktree resource operation is running.${NC}\n"
+            echo -e "${YELLOW}Skipping worktree reclaim: the worktree resource operation lock is unavailable (see above).${NC}\n"
             return 0
         fi
     fi

@@ -46,11 +46,11 @@ async function makeRepo({ withCli }: { withCli: boolean }) {
 }
 
 async function runCleanup(dir: string, bin: string, flags: string[]) {
-  const { stdout } = await execFileAsync('bash', [join(dir, 'dev', 'cleanup'), ...flags], {
+  const { stderr, stdout } = await execFileAsync('bash', [join(dir, 'dev', 'cleanup'), ...flags], {
     cwd: dir,
     env: { ...process.env, HOME: dir, PATH: `${bin}:${process.env.PATH}` },
   })
-  return stdout
+  return stdout + stderr
 }
 
 describe('dev/cleanup worktree reclaim', () => {
@@ -113,7 +113,8 @@ describe('dev/cleanup worktree reclaim', () => {
       const { lock, token } = await holdLock(dir)
       const out = await runCleanup(dir, bin, ['--yes'])
 
-      expect(out).toContain('Skipping worktree reclaim: another worktree resource operation')
+      expect(out).toContain('Skipping worktree reclaim: the worktree resource operation lock')
+      expect(out).toContain('another worktree resource operation is running')
       expect(out).not.toContain('reclaim-args')
       await expect(readlink(lock)).resolves.toBe(token)
     })
