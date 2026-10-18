@@ -3,11 +3,7 @@ import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { indexById } from '@modules/utils'
 import { COMMENT_DESCENDANTS_LIMIT, getCommentDescendantsPage } from '@services/comments'
 import { maybeSanitizeElections } from '@services/elections-votes/shared/sanitize-election'
-import {
-  getPostByAnyCached,
-  getPostByAnyCachedBatch,
-  getPostMetricsByAnyCachedBatch,
-} from '@services/entity-fetch'
+import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -32,7 +28,7 @@ import {
   indexPostModerationsByPostId,
   getPostElectionVotesWithModerations,
 } from '../admin-moderation-data.mts'
-import { getRouteAccessPost } from '@services/posts/route-access'
+import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 import { createPaginationParser } from '@modules/pagination'
 
 const descendantsParser = createPaginationParser({
@@ -46,11 +42,11 @@ app.route('/api/v1/posts/:idOrSlug/descendants').get(async (ctx: Context) => {
     ctx,
     'GET:/api/v1/posts/:idOrSlug/descendants',
   )
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
+  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
 
-  const rootPost = await getRouteAccessPost(post)
+  const rootPost = await getRouteAccessPost(post, root)
   ctx.assert(rootPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, rootPost), 404, 'Post not found')
 

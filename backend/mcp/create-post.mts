@@ -3,7 +3,6 @@ import { validateUUID } from '@modules/utils'
 import { isAdminUser } from '@services/users'
 import {
   loadCommunityForViewer,
-  getCommunityOrThrow,
   communityAllowsPostType,
   isCommunityRootPostType,
 } from '@services/communities'
@@ -113,8 +112,9 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         )
         assert(body.url == null || body.url_id == null, 422, 'Send either url or url_id, not both')
         if (communityId) {
-          await loadCommunityForViewer(user, communityId)
-          const currentCommunity = await getCommunityOrThrow(communityId, { readOnly: false })
+          const { community: currentCommunity } = await loadCommunityForViewer(user, communityId, {
+            readOnly: false,
+          })
           assert(
             isCommunityRootPostType(postType) &&
               communityAllowsPostType(currentCommunity, postType),

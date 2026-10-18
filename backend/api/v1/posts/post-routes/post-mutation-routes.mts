@@ -2,7 +2,6 @@ import type { Context } from '@jongleberry/api-server'
 import { getCommunityMember } from '@services/communities/members/get'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
-import { getPostByAnyCached } from '@services/entity-fetch'
 import { setPostLock } from '@services/posts/lock-action'
 import {
   canViewPost,
@@ -16,7 +15,11 @@ import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiRequestContract } from '../../../response-contract.mts'
-import { getRouteAccessPost, getRouteRootAccessPost } from '@services/posts/route-access'
+import {
+  getRouteAccessPost,
+  getRoutePostByAnyCached,
+  getRouteRootAccessPost,
+} from '@services/posts/route-access'
 
 app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
   apiRequestContract<'PATCH:/api/v1/posts/:idOrSlug', UpdatePostChanges>(
@@ -24,10 +27,10 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
   )
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/posts/:idOrSlug')
   assertNotSuspended(currentUser)
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
+  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
-  const privacyPost = await getRouteAccessPost(post)
+  const privacyPost = await getRouteAccessPost(post, root)
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
   ctx.assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
@@ -63,7 +66,7 @@ app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {
   assertNotSuspended(currentUser)
   validateRequestContract(ctx, 'DELETE:/api/v1/posts/:idOrSlug', { path: ctx.params })
 
-  const post = await getPostByAnyCached(ctx.params.idOrSlug!)
+  const { post, root } = await getRoutePostByAnyCached(ctx.params.idOrSlug!)
   ctx.assert(post, 404, 'Post not found')
   ctx.assert(!post.deleted_at, 404, 'Post not found')
   // For community-scoped comments, fetch membership to check moderation rights
@@ -77,8 +80,8 @@ app.route('/api/v1/posts/:idOrSlug').delete(async (ctx: Context) => {
     post.post_type === 'comment' &&
     (communityMemberRole === 'owner' || communityMemberRole === 'moderator')
   const privacyPost = canModerateHiddenComment
-    ? await getRouteRootAccessPost(post)
-    : await getRouteAccessPost(post)
+    ? await getRouteRootAccessPost(post, root)
+    : await getRouteAccessPost(post, root)
   ctx.assert(privacyPost, 404, 'Post not found')
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
 

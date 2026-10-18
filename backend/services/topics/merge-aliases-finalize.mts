@@ -19,14 +19,13 @@ export async function finalizeTopicAliasMerge(input: {
   const { merger, sourceTopic, destinationTopic, movedAliases, movedAliasIds } = input
   void addEntityBloomKeys('topics', movedAliases.map(normalizeKey))
   await Promise.all([
-    invalidate.topics(
+    invalidate.topicsWithMetrics(
       sourceTopic.id,
       sourceTopic.slug,
       destinationTopic.id,
       destinationTopic.slug,
       movedAliases,
     ),
-    invalidate.topic_metrics(sourceTopic.id, destinationTopic.id),
     invalidatePostsForTopicAliases(movedAliasIds),
   ])
   void enqueueBulkTopicAliasesUpdate([sourceTopic.id, destinationTopic.id])

@@ -45,20 +45,22 @@ export async function resolveReadableThread(
   const chain = post.post_type === 'comment' ? await loadCommentChain(post) : [post]
   if (!chain || chain.some(node => BLOCKED_POST_TYPES.has(node.post_type))) return null
 
-  const privateUser = await requirePrivateToolUser(currentUser)
-  const [asOwner, asSignedOut] = await Promise.all([
-    canViewPostsBatch(privateUser, chain),
-    canViewPostsBatch(null, chain),
-  ])
-  if (!chain.every(node => asOwner.get(node.id) && asSignedOut.get(node.id))) return null
+  // Anonymous access is a subset of authenticated access; still verify the credential owner exists.
+  await requirePrivateToolUser(currentUser)
+  const asSignedOut = await canViewPostsBatch(null, chain)
+  if (!chain.every(node => asSignedOut.get(node.id))) return null
   return { post, ancestors: chain.slice(0, -1) }
 }
 
 /** The live thread root down to `post`, inclusive, or null when a member cannot be loaded. */
 async function loadCommentChain(post: Post): Promise<Post[] | null> {
   const nodes = (await getCommentAncestorsByAny(post.id)).filter(node => !node.deleted_at)
-  const posts = await getPostByAnyCachedBatch(nodes.map(node => node.id))
-  const chain = posts.filter((node): node is Post => Boolean(node))
+  const posts = await getPostByAnyCachedBatch(
+    nodes.filter(node => node.id !== post.id).map(node => node.id),
+  )
+  const loaded = new Map(posts.flatMap(node => (node ? [[node.id, node]] : [])))
+  loaded.set(post.id, post)
+  const chain = nodes.flatMap(node => loaded.get(node.id) ?? [])
   if (chain.length !== nodes.length || chain.at(-1)?.id !== post.id) return null
   return chain
 }
@@ -69,7 +71,7 @@ const live = (node: { deleted_at: Date | null }) => !node.deleted_at
  * Resolves many posts at once with exactly the visibility `resolveReadableThread` gives each one,
  * in the order of `postIds`: the thread, or null where it answers as not found. A page costs one
  * ancestors query, one cached post read, one `requirePrivateToolUser` and one `canViewPostsBatch`
- * pair over the union of the thread chains, however many posts it holds. Takes post ids only; an
+ * over the union of the thread chains, however many posts it holds. Takes post ids only; an
  * entry that is not a UUID is not found.
  */
 export async function resolveReadableThreads(
@@ -99,14 +101,11 @@ export async function resolveReadableThreads(
   }
   const readable = new Set<string>()
   if (chains.size > 0) {
-    const privateUser = await requirePrivateToolUser(currentUser)
+    await requirePrivateToolUser(currentUser)
     const union = [...new Map([...chains.values()].flat().map(node => [node.id, node])).values()]
-    const [asOwner, asSignedOut] = await Promise.all([
-      canViewPostsBatch(privateUser, union),
-      canViewPostsBatch(null, union),
-    ])
+    const asSignedOut = await canViewPostsBatch(null, union)
     for (const [id, chain] of chains) {
-      if (chain.every(node => asOwner.get(node.id) && asSignedOut.get(node.id))) readable.add(id)
+      if (chain.every(node => asSignedOut.get(node.id))) readable.add(id)
     }
   }
   return postIds.map(id => {

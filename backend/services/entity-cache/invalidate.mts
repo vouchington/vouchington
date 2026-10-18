@@ -41,31 +41,10 @@ type CacheDeleteGroups = Parameters<typeof ValkeyCache.deleteFromCaches>[0]
 export const startPostCacheInvalidation = createPostCacheInvalidator(deleteFromCachesInChunks)
 
 export const invalidate = {
-  users: wrap(async (...keys: unknown[]): Promise<void> => {
-    // getUserCacheKeys returns both UUIDs and usernames. We pass only the slug (username)
-    // portion to users_lookup, which never keys on UUIDs. Input slugs are preserved in
-    // userKeys even when the user no longer exists in the DB, so deleted usernames are
-    // still invalidated.
-    const userKeys = await getUserCacheKeys(...keys)
-    await deleteFromCachesInChunks([
-      { cache: caches.users_private, keys: userKeys },
-      { cache: caches.users_public, keys: userKeys },
-      { cache: caches.users_lookup, keys: [...getCacheKeys(userKeys).slugs] },
-    ])
-    void enqueueBulkPurgeCacheTags(userKeys.map(userTag))
-  }),
-  topics: wrap(async (...keys: unknown[]): Promise<void> => {
-    // Topic lookup caches UUIDs, slugs, and aliases because merged source UUIDs redirect
-    // through the lookup layer. Input slugs are preserved in topicKeys even when the
-    // topic/alias no longer exists in the DB, so deleted aliases are still invalidated.
-    const topicKeys = await getTopicCacheKeys(...keys)
-    await deleteFromCachesInChunks([
-      { cache: caches.topics, keys: topicKeys },
-      { cache: caches.topics_with_redirect, keys: topicKeys },
-      { cache: caches.topics_lookup, keys: topicKeys },
-    ])
-    void enqueueBulkPurgeCacheTags(topicKeys.map(topicTag))
-  }),
+  users: wrap(async (...keys: unknown[]) => invalidateUserCaches(keys, false)),
+  usersWithMetrics: wrap(async (...keys: unknown[]) => invalidateUserCaches(keys, true)),
+  topics: wrap(async (...keys: unknown[]) => invalidateTopicCaches(keys, false)),
+  topicsWithMetrics: wrap(async (...keys: unknown[]) => invalidateTopicCaches(keys, true)),
   topic_metrics: wrap(async (...keys: unknown[]): Promise<void> => {
     const topicKeys = await getTopicCacheKeys(...keys)
     await caches.topic_metrics.invalidateCacheGetByAny(...topicKeys)
@@ -159,6 +138,30 @@ export const invalidate = {
     const urlHostnameKeys = await getUrlHostnameCacheKeys(...keys)
     await caches.hostname_elections.invalidateCacheGetByAny(...urlHostnameKeys)
   }),
+}
+
+async function invalidateUserCaches(keys: unknown[], includeMetrics: boolean): Promise<void> {
+  const userKeys = await getUserCacheKeys(...keys)
+  await deleteFromCachesInChunks([
+    { cache: caches.users_private, keys: userKeys },
+    { cache: caches.users_public, keys: userKeys },
+    // UUIDs do not key the username lookup cache; retain old input usernames after deletion.
+    { cache: caches.users_lookup, keys: [...getCacheKeys(userKeys).slugs] },
+    ...(includeMetrics ? [{ cache: caches.user_metrics, keys: userKeys }] : []),
+  ])
+  void enqueueBulkPurgeCacheTags(userKeys.map(userTag))
+}
+
+async function invalidateTopicCaches(keys: unknown[], includeMetrics: boolean): Promise<void> {
+  // Resolve aliases and merged source identities after the mutation, once for all affected caches.
+  const topicKeys = await getTopicCacheKeys(...keys)
+  await deleteFromCachesInChunks([
+    { cache: caches.topics, keys: topicKeys },
+    { cache: caches.topics_with_redirect, keys: topicKeys },
+    { cache: caches.topics_lookup, keys: topicKeys },
+    ...(includeMetrics ? [{ cache: caches.topic_metrics, keys: topicKeys }] : []),
+  ])
+  void enqueueBulkPurgeCacheTags(topicKeys.map(topicTag))
 }
 
 /** Publication reconciliation cannot acknowledge best-effort cache work. */

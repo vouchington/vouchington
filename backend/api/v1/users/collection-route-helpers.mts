@@ -37,7 +37,7 @@ export async function resolveTargetUser(
   const currentUser = await ctx.getCurrentUser()
   const idOrSlug = ctx.params.idOrSlug!
   const isSelf =
-    currentUser?.id === idOrSlug ||
+    currentUser?.id.toLowerCase() === idOrSlug.toLowerCase() ||
     (currentUser?.username && idOrSlug.toLowerCase() === currentUser.username.toLowerCase())
 
   if (options.privateCollection) {
@@ -45,9 +45,11 @@ export async function resolveTargetUser(
   }
 
   const target =
-    options.privateCollection || isSelf
-      ? await getPrivateUserByIdOrSlug(idOrSlug)
-      : await getPublicUserByIdOrSlug(idOrSlug)
+    isSelf && currentUser
+      ? currentUser
+      : options.privateCollection
+        ? await getPrivateUserByIdOrSlug(idOrSlug)
+        : await getPublicUserByIdOrSlug(idOrSlug)
 
   ctx.assert(target, 404, 'User not found')
   const targetUser = target

@@ -38,6 +38,7 @@ import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mt
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
 import { runVoteWeightDispatchScenarios } from './run-scenarios/vote-weight-dispatch.mts'
 import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
+import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 
 async function main() {
   prepareOutputDir()
@@ -58,6 +59,7 @@ async function main() {
     await runViewDrivenReadScenarios()
     await runTopicImportAttemptScenarios()
     await runHotPathLoaderScenarios()
+    await runSharedLoaderScenarios()
     await runMembershipRefundScenarios()
     await runRemoteFollowerScenarios()
     await runReviewSuccessionScenarios()

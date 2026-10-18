@@ -2,7 +2,7 @@ import createHttpError from 'http-errors'
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users/suspension-guard'
 import { loadPostWriteThread } from './write-thread.mts'
-import { canViewPostsBatch } from './check-privacy-access.mts'
+import { canViewDelegatedPostsBatch } from './check-delegated-access-batch.mts'
 import type { QueryOptions } from '@data-stores/psql'
 import { getCommunityOrThrow } from '@services/communities/get'
 import {
@@ -120,16 +120,8 @@ export async function loadWritablePost(
     throw createHttpError(404, 'Post not found')
   if (nodes.some(node => node.post_type === 'topic_recommendation'))
     throw createHttpError(404, 'Post not found')
-  const [asOwner, asPublic] = await Promise.all([
-    canViewPostsBatch(user, posts, options),
-    canViewPostsBatch(null, posts, options),
-  ])
-  if (
-    !posts.every(
-      node => asOwner.get(node.id) && (asPublic.get(node.id) || node.created_by_id === user.id),
-    )
-  )
-    throw createHttpError(404, 'Post not found')
+  const visible = await canViewDelegatedPostsBatch(user, posts, options)
+  if (!posts.every(node => visible.get(node.id))) throw createHttpError(404, 'Post not found')
   if (requireOwnership && post.created_by_id !== user.id) throw createHttpError(403, 'Forbidden')
   return post
 }
