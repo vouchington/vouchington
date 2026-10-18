@@ -1,4 +1,5 @@
-import { checkoutRepository, repositoryOfRepoSelector } from './github-checkout-repositories.mts'
+import { checkoutRepository } from './github-checkout-repositories.mts'
+import { repositoryOfRepoSelector } from './github-repository-identities.mts'
 import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
 import { plainShellAssignment } from './shell-token-utils.mts'
 

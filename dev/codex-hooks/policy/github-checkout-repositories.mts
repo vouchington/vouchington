@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { gitConfiguredRemoteDefaults, gitRemoteVerbose } from '../local-process.mts'
+import {
+  repositoryOfRemotePath,
+  repositoryOfRemoteUrl,
+  repositoryOfRepoSelector,
+} from './github-repository-identities.mts'
 
-// GitHub's owner-name characters. A shell expansion (`$OWNER`, a glob, `~`) never matches, so an
-// repository the hook can't read literally is never mistaken for a different one.
-const GITHUB_OWNER = /^[a-z\d_][a-z\d_-]*$/i
-const REPO_SELECTOR_CHARACTERS = /^[\w.:@/-]+$/
 // One `git remote -v` line: `<name>\t<url> (fetch|push)`, which a partial clone suffixes with its
 // ` [<filter>]`.
 const REMOTE_LINE = /^[^\t]+\t(.+) \((fetch|push)\)(?: \[[^\]]*\])?$/
@@ -71,27 +72,6 @@ export function sessionHomeRepositories(worktreeRoot: string): ReadonlySet<strin
   return home.size === 0 ? undefined : home
 }
 
-// gh's `[HOST/]OWNER/REPO` or repository URL form. Unknown hosts stay unproven.
-export function repositoryOfRepoSelector(value: string): string | undefined {
-  const isUrl = /^https?:\/\//i.test(value)
-  const path = value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
-  const segments = path.split('/')
-  if (!REPO_SELECTOR_CHARACTERS.test(path) || segments.includes('')) return undefined
-  if (isUrl && segments.length !== 3) return undefined
-  if (segments.length === 3 && segments.shift()?.toLowerCase() !== 'github.com') return undefined
-  return segments.length === 2 ? githubRepository(segments[0], segments[1]) : undefined
-}
-
-function githubRepository(owner: string, name: string): string | undefined {
-  const repository = name.replace(/\.git$/i, '')
-  return GITHUB_OWNER.test(owner) &&
-    /^[a-z\d_.-]+$/i.test(repository) &&
-    repository !== '.' &&
-    repository !== '..'
-    ? `${owner}/${repository}`.toLowerCase()
-    : undefined
-}
-
 // null when package.json is absent or declares no repository; undefined when it can't be read or
 // the declaration isn't a hosted OWNER/REPO URL (npm's bare `owner/repo` shorthand included).
 function declaredRepository(root: string): string | null | undefined {
@@ -119,28 +99,4 @@ function remoteLineRepository(line: string): string | null | undefined {
     return undefined
   }
   return match[2] === 'push' ? null : repositoryOfRemoteUrl(match[1])
-}
-
-// null for a hostless remote gh ignores (a local path or file://); undefined for a hosted URL that
-// isn't OWNER/REPO.
-function repositoryOfRemoteUrl(url: string): string | null | undefined {
-  const withScheme = /^([a-z][a-z\d+.-]*):\/\/([^/]*)(.*)$/i.exec(url)
-  if (withScheme !== null) {
-    const [, scheme, host, path] = withScheme
-    if (scheme.toLowerCase() === 'file' || host === '') return null
-    return /^(?:[^@/]+@)?github\.com(?::\d+)?$/i.test(host)
-      ? repositoryOfRemotePath(path)
-      : undefined
-  }
-  // git's scp-like `[user@]host:path` form needs a colon before any slash.
-  const scpLike = /^([^/:]+):(.*)$/.exec(url)
-  if (scpLike === null) return null
-  return /^(?:[^@/]+@)?github\.com$/i.test(scpLike[1])
-    ? repositoryOfRemotePath(scpLike[2])
-    : undefined
-}
-
-function repositoryOfRemotePath(path: string): string | undefined {
-  const segments = path.replace(/^\/+|\/+$/g, '').split('/')
-  return segments.length === 2 ? githubRepository(segments[0], segments[1]) : undefined
 }

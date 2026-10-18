@@ -1,5 +1,5 @@
 import type { GitHubWorkflowPolicyOptions } from './core.mts'
-import { repositoryOfRepoSelector } from './github-checkout-repositories.mts'
+import { repositoryOfRepoSelector } from './github-repository-identities.mts'
 import { implicitRepository, invocationRepositorySelector } from './github-implicit-repository.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import type { ShellWord } from './shell-tokenizer.mts'
