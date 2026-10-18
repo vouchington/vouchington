@@ -17,7 +17,7 @@
 
 Refreshed materialized-view contracts run in native CI preflights against the migrated database.
 They exercise real PostgreSQL refreshes together with their HTTP, service, and queue consumers;
-the database unit suite keeps DML and injected-fault checks. This preserves snapshot behavior
+the database unit suite keeps DML and non-DDL validation checks. This preserves snapshot behavior
 without introducing schema mutation into shared unit fixtures. A failed snapshot contract is a
 projection or eligibility failure to diagnose, not a reason to reset unit resources.
 
