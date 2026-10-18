@@ -48,6 +48,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/postgres": "^0.0.16",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
@@ -58,7 +59,6 @@
     "@ts-shared/url-signing": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/postgres": "^0.0.16",
     "vitest": "^5.0.5"
   }
 }

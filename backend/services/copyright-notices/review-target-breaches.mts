@@ -1,6 +1,7 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { heldCopyrightDeadlineSql } from './held-deadline-sql.mts'
 import { copyrightStaffQueueKeysSql } from './read-models-staff-queue-sql.mts'
 import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'

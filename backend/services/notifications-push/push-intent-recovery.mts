@@ -1,10 +1,7 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  observeSharedDbScope,
-  sharedDbCursorScope,
-  sharedDbIdsScope,
-} from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 
 export type NotificationPushIntentRecoveryCursor = {
   updatedAt: string

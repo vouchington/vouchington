@@ -4,7 +4,7 @@ import {
   getEntityRelationIntegrityTargetColumn,
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
-import { buildConstraintAddAndValidateSql } from './catalog-guarded-ddl.mts'
+import { buildConstraintAddAndValidateSql } from '@vouchington/postgres/catalog-guarded-ddl'
 
 export function createEntityRelationVoteIntegrityTargets(
   electionRelations: EntityRelationMetadata[],

@@ -18,7 +18,7 @@ import {
   type RequestQuery,
 } from './request-query-profile-summary.mts'
 import { createRequestQueryProfile } from './request-query-profile.mts'
-import { recordQueryTiming } from './query-telemetry.mts'
+import { recordQueryTiming } from './query-timing.mts'
 
 function query(annotation: string | null, startMs: number, endMs: number, excluded = false) {
   return { annotation, startMs, endMs, excludedFromRepeats: excluded } satisfies RequestQuery
@@ -159,7 +159,7 @@ describe('request query profile baseline', () => {
   it('attributes queries recorded by a module instance loaded after vi.resetModules()', async () => {
     const profile = createRequestQueryProfile()
     vi.resetModules()
-    const fresh = await import('./query-telemetry.mts')
+    const fresh = await import('./query-timing.mts')
     profile.run(() => {
       fresh.recordQueryTiming({
         pool: 'read',

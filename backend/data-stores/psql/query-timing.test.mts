@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import * as analytics from '@data-stores/analytics'
 import { flush } from '@data-stores/analytics/backend-local'
 import { query } from '@data-stores/analytics/query'
-import { recordQueryTiming } from './query-telemetry.mts'
+import { recordQueryTiming } from './query-timing.mts'
 
 const uid = () => crypto.randomUUID()
 
@@ -207,8 +207,8 @@ describe('recordQueryTiming', () => {
     await assertNoEmit(annotation)
   })
   // This file runs under vitest, so NODE_ENV === 'test' is always true here — exactly the branch
-  // under test. See query-telemetry.mts for why durationMs, not the (unavailable) SQLSTATE, is the
-  // discriminator between a routine fast constraint-violation failure and a genuine stall.
+  // under test. The published timing input supplies durationMs, but not SQLSTATE; duration separates
+  // a routine fast constraint-violation failure from a genuine stall.
   //
   // Nested inside this describe (not a sibling) so it inherits the afterEach(vi.restoreAllMocks())
   // above — a sibling describe would leak process.stderr.write's mock/call-history across these

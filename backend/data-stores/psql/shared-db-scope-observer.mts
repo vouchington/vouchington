@@ -1,4 +1,7 @@
-import type { QueryExecutor } from './types.mts'
+import {
+  createSharedDbScopeObserver,
+  type SharedDbScopeEvent as PlatformScopeEvent,
+} from '@vouchington/postgres/query-telemetry'
 
 /** Explicit SQL-backed service calls whose shared tests must use an owned bound or keyset. */
 export const sharedDbScopeTables = {
@@ -36,57 +39,15 @@ export const sharedDbScopeTables = {
 } as const
 
 export type SharedDbScopeOperation = keyof typeof sharedDbScopeTables
-export type SharedDbScope =
-  | { kind: 'ids'; ids: readonly string[] }
-  | { kind: 'cursor'; id: string }
-  | { kind: 'global' }
-export type SharedDbKeysetRead =
-  | {
-      phase: 'start'
-      identity: symbol
-      actorId: string
-      after: { timestamp: unknown; id: unknown } | undefined
-      limit: number
-      sqlLimit: unknown
-    }
-  | {
-      phase: 'completed'
-      identity: symbol
-      rowCount: number
-      first: { id: string; timestamp: string } | undefined
-    }
-
-export type SharedDbScopeEvent = {
-  operation: SharedDbScopeOperation
-  table: (typeof sharedDbScopeTables)[SharedDbScopeOperation]
-  scope: SharedDbScope
-  keysetRead?: SharedDbKeysetRead
-  transaction?: QueryExecutor
-}
+export type SharedDbScopeEvent = PlatformScopeEvent<
+  SharedDbScopeOperation,
+  (typeof sharedDbScopeTables)[SharedDbScopeOperation]
+>
 export type SharedDbScopeObserver = (event: SharedDbScopeEvent) => void
 
-const observerKey = Symbol.for('voucha.shared-db-scope-observer')
-type ObserverHost = Record<symbol, SharedDbScopeObserver | undefined>
+const scopeObserver = createSharedDbScopeObserver({
+  tables: sharedDbScopeTables,
+  key: 'voucha.shared-db-scope-observer',
+})
 
-export function observeSharedDbScope(
-  operation: SharedDbScopeOperation,
-  scope: SharedDbScope,
-  keysetRead?: SharedDbKeysetRead,
-  transaction?: QueryExecutor,
-): void {
-  ;(globalThis as unknown as ObserverHost)[observerKey]?.({
-    operation,
-    table: sharedDbScopeTables[operation],
-    scope,
-    ...(keysetRead ? { keysetRead } : {}),
-    ...(transaction ? { transaction } : {}),
-  })
-}
-
-export function sharedDbIdsScope(ids?: readonly string[]): SharedDbScope {
-  return ids ? { kind: 'ids', ids } : { kind: 'global' }
-}
-
-export function sharedDbCursorScope(id?: string | null): SharedDbScope {
-  return id ? { kind: 'cursor', id } : { kind: 'global' }
-}
+export const observeSharedDbScope = scopeObserver.observe

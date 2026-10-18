@@ -4,7 +4,8 @@ import {
   withTransactionOptions,
   type QueryOptions,
 } from '@data-stores/psql'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import {
   electedRelationMetadata,
   getElectedRelationTargetColumn,

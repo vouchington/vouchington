@@ -4,7 +4,7 @@
  * Explicit range partitions are added manually when operational size warrants it.
  */
 
-import { generateDefaultPartitions } from './utils/partition-utils.mts'
+import { generateDefaultPartitions } from '@vouchington/postgres/partitions'
 import { USER_SESSION_PARTITION_TABLES } from './utils/partition-config.mts'
 
 /** @public loaded by path by the config-driven migration runner */

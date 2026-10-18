@@ -1,5 +1,5 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
-import { getUtcDayUuidv7Bounds } from '@data-stores/psql/config-driven/utils/partition-utils'
+import { getUtcDayUuidv7Bounds } from '@vouchington/postgres/partitions'
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 import type { SitemapPostType, SitemapPostWithId } from './types.mts'

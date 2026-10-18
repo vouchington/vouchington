@@ -3,11 +3,8 @@ import {
   mediaDeliverySafetyWorkMaxValues,
 } from './work-limits.mts'
 import { beginTransaction, write } from '@data-stores/psql'
-import {
-  observeSharedDbScope,
-  sharedDbCursorScope,
-  sharedDbIdsScope,
-} from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
 import sql from 'sql-template-strings'

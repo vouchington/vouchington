@@ -6,7 +6,7 @@ import {
   type TransactionQuery,
 } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
-import { parseMonthlyPartitionName } from '../data-stores/psql/config-driven/utils/partition-utils.mts'
+import { parseMonthlyPartitionName } from '@vouchington/postgres/partitions'
 
 type Mode = 'force_custom_plan' | 'force_generic_plan'
 type Partition = { name: string; bound: string; oid: string }

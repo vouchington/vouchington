@@ -4,10 +4,9 @@ import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   observeSharedDbScope,
-  sharedDbCursorScope,
-  sharedDbIdsScope,
   type SharedDbScopeOperation,
 } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 
 /** One UUID-keyset page of the immutable IDs a copyright reconcile sweep acts on. */
 export type CopyrightSweepIdPage = {

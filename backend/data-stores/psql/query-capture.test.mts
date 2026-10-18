@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import type { QueryCompletion } from '@vouchington/postgres/query-telemetry'
 import type { QueryExecutor } from './types.mts'
 import { stopTestQueryCapture, withCapturedTestQueries } from '../../test-helpers/query-capture.mts'
 import {
   captureTransactionQuery,
-  type QueryCompletion,
   clearCapturedQueries,
   disableQueryCapture,
   enableQueryCapture,

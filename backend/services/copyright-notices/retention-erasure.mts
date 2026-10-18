@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { read } from '@data-stores/psql'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import sql from 'sql-template-strings'
 import {
   getCopyrightEvidenceRetentionDays,

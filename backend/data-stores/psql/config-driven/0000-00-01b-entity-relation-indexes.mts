@@ -3,7 +3,7 @@ import {
   type EntityRelationMetadata,
 } from '@voucha/types/entities/entity-relations-metadata'
 import { getElectionIndexName } from './utils/election-sql-identifiers.mts'
-import { buildConstraintAddAndValidateSql } from './utils/catalog-guarded-ddl.mts'
+import { buildConstraintAddAndValidateSql } from '@vouchington/postgres/catalog-guarded-ddl'
 
 const ACTIVE_SUBJECT_BEST_INDEX_COLUMNS =
   'subject_id, votes_score_sort DESC, created_at DESC, object_id DESC'

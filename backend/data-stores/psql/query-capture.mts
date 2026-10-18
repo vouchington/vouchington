@@ -1,12 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import onError from '@modules/on-error'
 import {
   observeQueryCompletion,
   reportQueryCaptureFailure,
   runWithQueryCompletionDiagnostics,
   type QueryCompletion,
-} from './query-completion.mts'
-export type { QueryCompletion } from './query-completion.mts'
-
+} from '@vouchington/postgres/query-telemetry'
 import type { QueryExecutor, QueryInput, QueryValues } from './types.mts'
 interface CapturedQuery {
   text: string
@@ -44,21 +43,24 @@ export async function runWithCapturedQueries<Result>(
   }) => Promise<Result>,
 ) {
   const bucket: CapturedQuery[] = []
-  const diagnostics = await runWithQueryCompletionDiagnostics(async context => {
-    const result = await captureAudiences.run(bucket, () =>
-      handler({ subscribe: context.subscribe }),
-    )
-    context.deactivate()
-    const queries = bucket.flatMap(query => {
-      try {
-        return [{ ...query, values: [...query.values] }]
-      } catch (err) {
-        context.report(err)
-        return []
-      }
-    })
-    return { result, queries }
-  })
+  const diagnostics = await runWithQueryCompletionDiagnostics(
+    async context => {
+      const result = await captureAudiences.run(bucket, () =>
+        handler({ subscribe: context.subscribe }),
+      )
+      context.deactivate()
+      const queries = bucket.flatMap(query => {
+        try {
+          return [{ ...query, values: [...query.values] }]
+        } catch (err) {
+          context.report(err)
+          return []
+        }
+      })
+      return { result, queries }
+    },
+    { reportError: onError },
+  )
   return {
     ...diagnostics.result,
     completedTransactions: diagnostics.completedTransactions,

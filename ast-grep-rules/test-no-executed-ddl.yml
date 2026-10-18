@@ -52,7 +52,7 @@ ignores:
   - 'backend/data-stores/psql/migration-runner/config-driven-statements.test.mts'
   - 'backend/data-stores/psql/migration-runner/migrations.test.mts'
   - 'backend/data-stores/psql/migration-runner/monthly-partitions.test.mts'
-  - 'backend/data-stores/psql/migration-runner/views.hardening.test.mts'
+  - 'backend/data-stores/psql/migrate.hardening.test.mts'
   - 'backend/test-helpers/data-stores/psql/forced-views.mts'
   - 'backend/test-helpers/data-stores/psql/shared-mutation-trigger.mts'
   - 'backend/test-helpers/entities/moderation-transparency-date-reservation.mts'

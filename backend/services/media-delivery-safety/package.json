@@ -25,6 +25,7 @@
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/postgres": "^0.0.16",
     "sql-template-strings": "^2.2.2",
     "valkyries": "^0.10.0"
   },

@@ -221,7 +221,7 @@ examples:
       import { query } from '@data-stores/analytics/query'
       await expect(client.query('SELECT value FROM test_values ORDER BY value')).resolves.toBeDefined()
     isValid: true
-    file: 'backend/data-stores/psql/query-telemetry.test.mts'
+    file: 'backend/data-stores/psql/query-timing.test.mts'
   - code: |-
       import { query } from '../query.mts'
       const rows = await query<{ item_id: string }>(

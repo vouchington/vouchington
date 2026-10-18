@@ -9,11 +9,11 @@ import {
   dropForcedViewGraph,
   hasUnmanagedForcedViewDependent,
   readForcedViewGraph,
-} from '../../../test-helpers/data-stores/psql/forced-views.mts'
+} from '../../test-helpers/data-stores/psql/forced-views.mts'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { initSqlAst, loadSqlParserModule } from './sql-statements.mts'
-import { runViews } from './views.mts'
+import { initSqlAst, loadSqlParserModule } from './migration-runner/sql-statements.mts'
+import { runViews } from './migrate.mts'
 
 describe('forced view rebuilding', () => {
   const testDirs: string[] = []
@@ -31,14 +31,14 @@ describe('forced view rebuilding', () => {
     const viewsDir = await writeForcedViewFiles(graph)
     await createForcedViewGraphBase(graph)
 
-    await runViews('/unused-root', { folder: viewsDir, forced: true })
+    await runViews({ folder: viewsDir, forced: true })
     expect(await readForcedViewGraph(graph)).toEqual({
       comment: 'forced graph',
       hasIndex: true,
       ids: [1],
     })
 
-    await runViews('/unused-root', { folder: viewsDir, forced: true })
+    await runViews({ folder: viewsDir, forced: true })
     expect(await readForcedViewGraph(graph)).toEqual({
       comment: 'forced graph',
       hasIndex: true,
@@ -52,8 +52,8 @@ describe('forced view rebuilding', () => {
     const viewsDir = await writeForcedViewFiles(graph)
     await createForcedViewGraphBase(graph)
 
-    await runViews('/unused-root', { folder: viewsDir, forced: true })
-    await runViews('/unused-root', { folder: viewsDir, forced: true })
+    await runViews({ folder: viewsDir, forced: true })
+    await runViews({ folder: viewsDir, forced: true })
 
     expect(await readForcedViewGraph(graph)).toEqual({
       comment: 'forced graph',
@@ -67,14 +67,14 @@ describe('forced view rebuilding', () => {
     graphs.push(graph)
     const viewsDir = await writeForcedViewFiles(graph)
     await createForcedViewGraphBase(graph)
-    await runViews('/unused-root', { folder: viewsDir })
+    await runViews({ folder: viewsDir })
     await createUnmanagedForcedViewDependent(graph)
 
     const error = await getForcedRebuildError(viewsDir)
-    expect(() => {
-      throw error
-    }).toThrow(`blocked views: ${graph.dependentView}`)
-    expect(error).toMatchObject({ detail: expect.stringContaining(graph.unmanagedView) })
+    expect(error).toMatchObject({
+      code: '2BP01',
+      detail: expect.stringContaining(graph.unmanagedView),
+    })
     expect(await hasUnmanagedForcedViewDependent(graph)).toBe(true)
   })
 
@@ -88,12 +88,13 @@ describe('forced view rebuilding', () => {
       createForcedViewGraphBase(unblockedGraph),
       createForcedViewGraphBase(blockedGraph),
     ])
-    await runViews('/unused-root', { folder: viewsDir })
+    await runViews({ folder: viewsDir })
     await createUnmanagedForcedViewDependent(blockedGraph)
 
-    await expect(runViews('/unused-root', { folder: viewsDir, forced: true })).rejects.toThrow(
-      `blocked views: ${blockedGraph.dependentView}`,
-    )
+    await expect(runViews({ folder: viewsDir, forced: true })).rejects.toMatchObject({
+      code: '2BP01',
+      detail: expect.stringContaining(blockedGraph.unmanagedView),
+    })
     await expect(readForcedViewGraph(unblockedGraph)).resolves.toEqual({
       comment: 'forced graph',
       hasIndex: true,
@@ -136,7 +137,7 @@ describe('forced view rebuilding', () => {
 
 async function getForcedRebuildError(viewsDir: string): Promise<Error> {
   try {
-    await runViews('/unused-root', { folder: viewsDir, forced: true })
+    await runViews({ folder: viewsDir, forced: true })
   } catch (err) {
     if (err instanceof Error && 'detail' in err && typeof err.detail === 'string') return err
     throw err

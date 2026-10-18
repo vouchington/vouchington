@@ -1,5 +1,6 @@
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
-import { observeSharedDbScope, sharedDbIdsScope } from '@data-stores/psql/shared-db-scope-observer'
+import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
+import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 
 export type RetainedMediaBindingCleanupPage = {
   scanned: number

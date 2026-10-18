@@ -1,30 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ALL_MONTHLY_PARTITION_TABLES } from '../config-driven/utils/partition-config.mts'
-import { generateMonthlyPartitions } from '../config-driven/utils/partition-utils.mts'
+import { retireMonthlyPartition } from '@vouchington/postgres/partitions'
 import type { QueryExecutor } from '../types.mts'
 import {
   createMonthlyPartitions,
   dropRssFeedCrawlsDefaultPartition,
-  selectExpiredMonthlyPartitions,
 } from './monthly-partitions.mts'
-import { retireMonthlyPartition } from './retire-monthly-partitions.mts'
-
-describe('selectExpiredMonthlyPartitions', () => {
-  it('selects an RSS month once its upper bound is older than the 30-day cutoff', () => {
-    const expired = selectExpiredMonthlyPartitions(
-      [
-        { parent_table: 'rss_feed_crawls', partition_table: 'rss_feed_crawls__p_2026_01' },
-        { parent_table: 'rss_feed_crawls', partition_table: 'rss_feed_crawls__p_2026_03' },
-      ],
-      [{ table: 'rss_feed_crawls', retentionDays: 30 }],
-      new Date('2026-03-04T00:00:00.000Z'),
-    )
-
-    expect(expired.map(partition => partition.partitionName)).toEqual([
-      'rss_feed_crawls__p_2026_01',
-    ])
-  })
-})
+import { beforeRetireMonthlyPartition } from './before-retire-monthly-partition.mts'
 
 describe('dropRssFeedCrawlsDefaultPartition', () => {
   it('drops the leftover default child with an idempotent statement', async () => {
@@ -55,11 +36,10 @@ describe('dropRssFeedCrawlsDefaultPartition', () => {
 
     await createMonthlyPartitions(writer)
 
-    expect(statements).toHaveLength(2)
+    expect(statements.length).toBeGreaterThan(1)
     expect(statements[0]).toBe(
       '/* dropRssFeedCrawlsDefaultPartition */ DROP TABLE IF EXISTS rss_feed_crawls__default',
     )
-    expect(statements[1]).toBe(generateMonthlyPartitions({ tables: ALL_MONTHLY_PARTITION_TABLES }))
     expect(statements[1]).toContain('CREATE')
   })
 })
@@ -68,13 +48,17 @@ describe('retireMonthlyPartition', () => {
   it('clears referral-link crawl pointers before dropping an expired crawls partition', async () => {
     const statements: string[] = []
 
-    await retireMonthlyPartition(recordStatements(statements), {
-      table: 'crawls',
-      partitionName: 'crawls__p_2019_01',
-      dropPriority: 0,
-      year: 2019,
-      month: 1,
-    })
+    await retireMonthlyPartition(
+      recordStatements(statements),
+      {
+        table: 'crawls',
+        partitionName: 'crawls__p_2019_01',
+        dropPriority: 0,
+        year: 2019,
+        month: 1,
+      },
+      beforeRetireMonthlyPartition,
+    )
 
     const clearIndex = statements.findIndex(statement =>
       statement.includes('retireMonthlyPartition:clearReferralCrawls'),
@@ -148,12 +132,16 @@ describe('monthly partition retirement SQL', () => {
 
 async function collectMonthlyRetirementStatements(table: string, partitionName: string) {
   const statements: string[] = []
-  await retireMonthlyPartition(recordStatements(statements), {
-    table,
-    partitionName,
-    year: 2019,
-    month: 1,
-    dropPriority: 0,
-  })
+  await retireMonthlyPartition(
+    recordStatements(statements),
+    {
+      table,
+      partitionName,
+      year: 2019,
+      month: 1,
+      dropPriority: 0,
+    },
+    beforeRetireMonthlyPartition,
+  )
   return statements
 }

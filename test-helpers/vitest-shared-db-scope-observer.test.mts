@@ -5,10 +5,9 @@ import {
   markSharedDbScopeViolationsReported,
 } from './vitest-shared-db-scope-violations.mts'
 import { describe, expect, it, vi } from 'vitest'
+import { sharedDbCursorScope, sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import {
   observeSharedDbScope,
-  sharedDbCursorScope,
-  sharedDbIdsScope,
   type SharedDbScopeEvent,
 } from '../backend/data-stores/psql/shared-db-scope-observer.mts'
 import { installSharedDbScopeObserver } from './vitest-shared-db-scope-observer.mts'

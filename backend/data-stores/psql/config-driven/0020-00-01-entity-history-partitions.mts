@@ -4,7 +4,7 @@
  * - topic_revisions: not partitioned (small table)
  */
 
-import { generateDefaultPartitions } from './utils/partition-utils.mts'
+import { generateDefaultPartitions } from '@vouchington/postgres/partitions'
 import { REVISION_PARTITION_TABLES } from './utils/partition-config.mts'
 
 /** @public loaded by path by the config-driven migration runner */

@@ -4,7 +4,7 @@
  * Drop order: crawl_chunks first (FK dependency), then crawls.
  */
 
-import { generateMonthlyPartitions } from './utils/partition-utils.mts'
+import { generateMonthlyPartitions } from '@vouchington/postgres/partitions'
 import { CRAWL_PARTITION_TABLES } from './utils/partition-config.mts'
 
 /** @public loaded by path by the config-driven migration runner */

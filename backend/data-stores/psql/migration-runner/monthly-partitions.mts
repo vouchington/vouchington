@@ -1,25 +1,16 @@
-import { write } from '../setup.mts'
+import onError from '@modules/on-error'
 import {
-  generateMonthlyPartitions,
-  isMonthlyPartitionExpired,
-  parseMonthlyPartitionName,
-} from '../config-driven/utils/partition-utils.mts'
+  assertSafeSqlIdentifier,
+  cleanupMonthlyPartitions,
+  createMonthlyPartitions as createPlatformMonthlyPartitions,
+} from '@vouchington/postgres/partitions'
 import {
   ALL_MONTHLY_PARTITION_TABLES,
   MONTHLY_PARTITION_RETENTION_TABLES,
-  type MonthlyPartitionTableConfig,
 } from '../config-driven/utils/partition-config.mts'
+import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
-import {
-  assertSafeSqlIdentifier,
-  retireExpiredMonthlyPartitions,
-  type ExpiredMonthlyPartition,
-} from './retire-monthly-partitions.mts'
-
-type ExistingMonthlyPartitionRow = {
-  parent_table: string
-  partition_table: string
-}
+import { beforeRetireMonthlyPartition } from './before-retire-monthly-partition.mts'
 
 const RSS_FEED_CRAWLS_DEFAULT_PARTITION = 'rss_feed_crawls__default'
 
@@ -30,102 +21,18 @@ export async function dropRssFeedCrawlsDefaultPartition(
   await writer(`/* dropRssFeedCrawlsDefaultPartition */ DROP TABLE IF EXISTS ${table}`)
 }
 
-export function getMonthlyPartitionCutoffDate(referenceDate: Date, retentionDays: number): Date {
-  return new Date(referenceDate.getTime() - retentionDays * 24 * 60 * 60 * 1000)
-}
-
-export function selectExpiredMonthlyPartitions(
-  existingPartitions: ExistingMonthlyPartitionRow[],
-  tableConfigs: MonthlyPartitionTableConfig[],
-  referenceDate: Date,
-): ExpiredMonthlyPartition[] {
-  const configByTable = new Map(tableConfigs.map(config => [config.table, config]))
-  const expiredPartitions: ExpiredMonthlyPartition[] = []
-
-  for (const existingPartition of existingPartitions) {
-    const config = configByTable.get(existingPartition.parent_table)
-    if (config?.retentionDays === undefined) {
-      continue
-    }
-
-    const parsedPartition = parseMonthlyPartitionName(existingPartition.partition_table)
-    if (!parsedPartition || parsedPartition.table !== existingPartition.parent_table) {
-      continue
-    }
-
-    const cutoffDate = getMonthlyPartitionCutoffDate(referenceDate, config.retentionDays)
-    if (
-      !isMonthlyPartitionExpired(
-        { year: parsedPartition.year, month: parsedPartition.month },
-        cutoffDate,
-      )
-    ) {
-      continue
-    }
-
-    expiredPartitions.push({
-      table: config.table,
-      partitionName: existingPartition.partition_table,
-      dropPriority: config.dropPriority ?? Number.MAX_SAFE_INTEGER,
-      year: parsedPartition.year,
-      month: parsedPartition.month,
-    })
-  }
-
-  return expiredPartitions.toSorted((left, right) => {
-    if (left.dropPriority !== right.dropPriority) {
-      return left.dropPriority - right.dropPriority
-    }
-    if (left.year !== right.year) {
-      return left.year - right.year
-    }
-    if (left.month !== right.month) {
-      return left.month - right.month
-    }
-    return left.partitionName.localeCompare(right.partitionName)
-  })
-}
-
-async function getExistingManagedMonthlyPartitions(
-  tableConfigs: MonthlyPartitionTableConfig[],
-): Promise<ExistingMonthlyPartitionRow[]> {
-  const tableNames = tableConfigs.map(config => assertSafeSqlIdentifier(config.table))
-  if (tableNames.length === 0) {
-    return []
-  }
-
-  const { rows } = await write<ExistingMonthlyPartitionRow>(
-    `/* getExistingManagedMonthlyPartitions */
-      SELECT
-        parent.relname AS parent_table,
-        child.relname AS partition_table
-      FROM pg_inherits
-      JOIN pg_class AS parent ON pg_inherits.inhparent = parent.oid
-      JOIN pg_class AS child ON pg_inherits.inhrelid = child.oid
-      JOIN pg_namespace AS namespace ON parent.relnamespace = namespace.oid
-      WHERE namespace.nspname = current_schema()
-        AND parent.relname = ANY($1::text[])
-    `,
-    [tableNames],
-  )
-
-  return rows
-}
-
 export async function createMonthlyPartitions(writer: QueryExecutor = write): Promise<void> {
   await dropRssFeedCrawlsDefaultPartition(writer)
-  await writer(generateMonthlyPartitions({ tables: ALL_MONTHLY_PARTITION_TABLES }))
+  await createPlatformMonthlyPartitions(writer, { tables: ALL_MONTHLY_PARTITION_TABLES })
 }
 
 export async function cleanupPartitions(referenceDate: Date = new Date()): Promise<void> {
-  const existingPartitions = await getExistingManagedMonthlyPartitions(
-    MONTHLY_PARTITION_RETENTION_TABLES,
-  )
-  const expiredPartitions = selectExpiredMonthlyPartitions(
-    existingPartitions,
-    MONTHLY_PARTITION_RETENTION_TABLES,
+  await cleanupMonthlyPartitions({
+    query: write,
+    tables: MONTHLY_PARTITION_RETENTION_TABLES,
     referenceDate,
-  )
-
-  await retireExpiredMonthlyPartitions(expiredPartitions)
+    startTransaction: beginTransaction,
+    reportError: onError,
+    beforeDetach: beforeRetireMonthlyPartition,
+  })
 }

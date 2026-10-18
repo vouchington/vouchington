@@ -2,7 +2,7 @@
  * Creates default partitions for the deferred-RANGE growth ledgers.
  */
 
-import { generateDefaultPartitions } from './utils/partition-utils.mts'
+import { generateDefaultPartitions } from '@vouchington/postgres/partitions'
 import { DEFERRED_LEDGER_PARTITION_TABLES } from './utils/partition-config.mts'
 
 /** @public loaded by path by the config-driven migration runner */
