@@ -99448,7 +99448,7 @@
       "migratedFrom": ["backend/api/v1/appeals/appeals.mts"],
       "path": "/api/v1/appeals",
       "requestBody": {
-        "appeal_reason": "Please review this again.",
+        "appeal_reason": "[other] Please review this again.",
         "target_type": "suspension"
       },
       "responseSchema": {

@@ -44,7 +44,7 @@ export const moderationParityEndpointRegistry: Record<string, ManifestEndpoint> 
   'native.moderation.appeals.create.member.default': {
     method: 'POST',
     path: '/api/v1/appeals',
-    requestBody: { target_type: 'suspension', appeal_reason: 'Please review this again.' },
+    requestBody: { target_type: 'suspension', appeal_reason: '[other] Please review this again.' },
   },
 
   'native.moderation.disputes.detail.default': {

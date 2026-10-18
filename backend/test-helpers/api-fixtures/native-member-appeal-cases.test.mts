@@ -16,6 +16,14 @@ describe('native member appeal fixtures', () => {
     const list = body('native.moderation.appeals.member.default')
     const detail = body('native.moderation.appeals.detail.member.default')
     const submission = body('native.moderation.appeals.create.member.default')
+    expect(
+      nativeModerationApiFixtureCases.find(
+        fixture => fixture.id === 'native.moderation.appeals.create.member.default',
+      )?.requestBody,
+    ).toEqual({
+      target_type: 'suspension',
+      appeal_reason: '[other] Please review this again.',
+    })
     const staff = responseBody('native.moderation.appeals.default') as {
       appeals: Parameters<typeof redactModerationAppeal>[0][]
     }

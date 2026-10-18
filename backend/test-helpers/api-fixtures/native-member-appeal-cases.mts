@@ -53,7 +53,7 @@ export const nativeMemberAppealApiFixtureCases = [
     backendResponseContractKey: 'POST:/api/v1/appeals#member',
     method: 'POST',
     path: '/api/v1/appeals',
-    requestBody: { target_type: 'suspension', appeal_reason: 'Please review this again.' },
+    requestBody: { target_type: 'suspension', appeal_reason: '[other] Please review this again.' },
     route: { routeTemplate: '/api/v1/appeals' },
     auth: 'fixture-user',
     status: 201,
