@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createQueue, createWorker } from '../glide-mq-factory.mts'
 import { workerQueueCommandClient } from '../glide-mq-shared-client.mts'
+import { withScheduledRunLease } from '../scheduled-run-lease.mts'
 
 // Keep the real GlideMQ transport in the dedicated integration project.
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
@@ -34,6 +35,28 @@ describe('GlideMQ runtime guards', () => {
       )
       expect(await queue.searchJobs({ name: 'different-name' })).toHaveLength(0)
     } finally {
+      await worker.close(true)
+      await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
+
+  it('reports and rejects self-add in production without failing the processor', async () => {
+    const name = `self-prod-${crypto.randomUUID()}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const completed = Promise.withResolvers<void>()
+    const worker = createWorker(name, async job => {
+      await queue.add('duplicate', {}, { jobId: job.id })
+    })
+    worker.on('completed', () => completed.resolve())
+    try {
+      vi.stubEnv('NODE_ENV', 'production')
+      await worker.waitUntilReady()
+      await queue.add('first', {}, { jobId: 'active-job', attempts: 1 })
+      await completed.promise
+      expect(await queue.searchJobs({ name: 'duplicate' })).toHaveLength(0)
+    } finally {
+      vi.unstubAllEnvs()
       await worker.close(true)
       await queue.obliterate({ force: true })
       await queue.close()
@@ -96,6 +119,39 @@ describe('GlideMQ runtime guards', () => {
     } finally {
       await worker.close(true)
       await queue.obliterate({ force: true })
+      await queue.close()
+    }
+  })
+
+  it('bounds leases from scheduler timestamps and malformed entries', async () => {
+    const name = `lease-entry-${crypto.randomUUID()}`
+    const base = `${workerQueuePrefix ?? 'glide'}:{${name}}`
+    const queue = createQueue(name, { priorityKind: 'ranked' })
+    const job = await queue.add('work', {}, { jobId: 'scheduled-root' })
+    if (!job) throw new Error('Expected a scheduled root')
+    Object.assign(job, { schedulerName: 'repeat' })
+    const leaseKey = `${base}:run:repeat`
+    try {
+      await workerQueueCommandClient.hset(`${base}:schedulers`, {
+        repeat: JSON.stringify({ lastRun: 1000, nextRun: 11000 }),
+      })
+      const releaseFirst = await withScheduledRunLease(name, job, { lockDuration: 20000 })
+      expect(releaseFirst).not.toBeNull()
+      const boundedTtl = await workerQueueCommandClient.pttl(leaseKey)
+      expect(boundedTtl).toBeGreaterThan(0)
+      expect(boundedTtl).toBeLessThanOrEqual(10000)
+      await releaseFirst?.()
+
+      await workerQueueCommandClient.hset(`${base}:schedulers`, { repeat: '{malformed' })
+      const releaseMalformed = await withScheduledRunLease(name, job, { lockDuration: 20000 })
+      expect(releaseMalformed).not.toBeNull()
+      const fallbackTtl = await workerQueueCommandClient.pttl(leaseKey)
+      expect(fallbackTtl).toBeGreaterThan(10000)
+      expect(fallbackTtl).toBeLessThanOrEqual(60000)
+      await releaseMalformed?.()
+    } finally {
+      await queue.obliterate({ force: true })
+      await workerQueueCommandClient.unlink([leaseKey, `${leaseKey}:previous`])
       await queue.close()
     }
   })
