@@ -3,9 +3,10 @@
 `@ts-shared/env-contract` is the typed metadata source of truth for environment variables that
 need shared static-analysis, local setup, or deployment policy checks.
 
-The package lives at [`ts-shared/env-contract/`](../../../ts-shared/env-contract/) and has no
-external npm dependencies. It is safe for Vouchington tooling to import without pulling backend, web,
-Lambda, or Cloudflare Worker runtime packages into static analysis.
+Voucha owns the variable table at [`ts-shared/env-contract/`](../../../ts-shared/env-contract/).
+Generic grouping, lookup, normalization, and manifest projection come from
+`@vouchington/utils/env-contract`, which remains safe for Vouchington tooling to import without
+pulling backend, web, Lambda, or Cloudflare Worker runtime packages into static analysis.
 
 ## Contract Shape
 
