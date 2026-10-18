@@ -4,7 +4,8 @@ import {
   type PutMetricDataCommandInput,
   type PutMetricDataCommandOutput,
 } from '@aws-sdk/client-cloudwatch'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
+import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 
 export type { PutMetricDataCommandInput, PutMetricDataCommandOutput }
 
@@ -34,7 +35,7 @@ function getClientProperty(target: object, prop: string | symbol): unknown {
 function getCloudWatchClient(): CloudWatchClient {
   cloudWatchClient ??= new CloudWatchClient({
     region: AWS_REGION,
-    requestHandler: createAwsRequestHandler(),
+    requestHandler: createResponseBodyBoundAwsRequestHandler(),
     ...AWS_DUALSTACK_CLIENT_CONFIG,
   })
   return cloudWatchClient

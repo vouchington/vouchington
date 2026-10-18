@@ -20,6 +20,11 @@ page says which layer owns what.
 
 ## Decisions worth knowing
 
+- **AWS delivery separates platform mechanics from application policy.** Published AWS primitives
+  own command construction and SDK handler configuration. Provider modules own credentials, routing,
+  email identity and audit recipients, and response-body lifetime. Keeping the body timeout at this
+  boundary prevents a response that has delivered headers from holding a worker indefinitely.
+
 - **Worker concurrency is sized in one place.** The worker process hosts many queue workers, and a
   shared sizing helper keeps one scale knob and one hard ceiling instead of per-worker hard-coded
   values, so deployment shapes of different sizes scale together.

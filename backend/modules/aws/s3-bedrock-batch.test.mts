@@ -1,6 +1,7 @@
 import { S3Client } from '@aws-sdk/client-s3'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AWS_DUALSTACK_CLIENT_CONFIG, BEDROCK_AWS_REGION } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
+import { BEDROCK_AWS_REGION } from './config.mts'
 import { S3BedrockBatchClient } from './s3-bedrock-batch.mts'
 
 describe('S3BedrockBatchClient', () => {

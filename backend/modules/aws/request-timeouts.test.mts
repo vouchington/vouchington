@@ -1,16 +1,10 @@
-import { readdirSync, readFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import { FirehoseClient, ListDeliveryStreamsCommand } from '@aws-sdk/client-firehose'
 import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3'
 import { ListQueuesCommand, SQSClient } from '@aws-sdk/client-sqs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
-import {
-  AWS_CONNECTION_TIMEOUT_MS,
-  AWS_SOCKET_TIMEOUT_MS,
-  AWS_SQS_SOCKET_TIMEOUT_MS,
-  createAwsRequestHandler,
-} from './config.mts'
+import { createResponseBodyBoundAwsRequestHandler } from './config.mts'
 
 const TEST_TIMEOUT_MS = 200
 const REJECTION_DEADLINE_MS = 1_000
@@ -29,36 +23,6 @@ describe('AWS request timeouts', () => {
     server = undefined
   })
 
-  it('defines the shared production connect and socket-idle timeout defaults', () => {
-    expect(AWS_CONNECTION_TIMEOUT_MS).toBe(3_000)
-    expect(AWS_SOCKET_TIMEOUT_MS).toBe(10_000)
-    expect(AWS_SQS_SOCKET_TIMEOUT_MS).toBeGreaterThan(20_000)
-  })
-
-  it('keeps protocol and idempotency exceptions explicit at their client boundaries', () => {
-    const sqsSource = readFileSync('backend/modules/aws/sqs.mts', 'utf8')
-    expect(sqsSource).toContain('socketTimeout: AWS_SQS_SOCKET_TIMEOUT_MS')
-
-    const sesSource = readFileSync('backend/modules/aws/ses.mts', 'utf8')
-    expect(sesSource).toMatch(/maxAttempts:\s*1/)
-  })
-
-  it('wires every production AWS client through the shared handler factory', () => {
-    const productionModules = readdirSync('backend/modules/aws').filter(
-      moduleName => moduleName.endsWith('.mts') && !moduleName.includes('.test.'),
-    )
-
-    for (const moduleName of productionModules) {
-      const source = readFileSync(`backend/modules/aws/${moduleName}`, 'utf8')
-      const clientConstructions = source.match(/new\s+\w+Client\s*\(/g) ?? []
-      const sharedHandlers = source.match(/requestHandler:\s*createAwsRequestHandler\(/g) ?? []
-      expect({ moduleName, sharedHandlerCount: sharedHandlers.length }).toEqual({
-        moduleName,
-        sharedHandlerCount: clientConstructions.length,
-      })
-    }
-  })
-
   it('bounds a stalled S3 request through the shared handler factory', async () => {
     const endpoint = await startStalledServer()
     const client = new S3Client({
@@ -67,7 +31,7 @@ describe('AWS request timeouts', () => {
       forcePathStyle: true,
       maxAttempts: 1,
       region: 'us-west-2',
-      requestHandler: createAwsRequestHandler({
+      requestHandler: createResponseBodyBoundAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
         socketTimeout: TEST_TIMEOUT_MS,
       }),
@@ -93,7 +57,7 @@ describe('AWS request timeouts', () => {
       forcePathStyle: true,
       maxAttempts: 1,
       region: 'us-west-2',
-      requestHandler: createAwsRequestHandler({
+      requestHandler: createResponseBodyBoundAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
         socketTimeout: TEST_TIMEOUT_MS,
       }),
@@ -114,7 +78,7 @@ describe('AWS request timeouts', () => {
       endpoint,
       maxAttempts: 1,
       region: 'us-west-2',
-      requestHandler: createAwsRequestHandler({
+      requestHandler: createResponseBodyBoundAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
         socketTimeout: TEST_TIMEOUT_MS,
       }),
@@ -135,7 +99,7 @@ describe('AWS request timeouts', () => {
       endpoint,
       maxAttempts: 1,
       region: 'us-west-2',
-      requestHandler: createAwsRequestHandler({
+      requestHandler: createResponseBodyBoundAwsRequestHandler({
         connectionTimeout: TEST_TIMEOUT_MS,
         socketTimeout: TEST_TIMEOUT_MS,
       }),

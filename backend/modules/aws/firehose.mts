@@ -4,7 +4,8 @@ import {
   type PutRecordBatchCommandInput,
   type PutRecordBatchCommandOutput,
 } from '@aws-sdk/client-firehose'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
+import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 import { getFirehoseCredentials, hasFirehoseCredentials } from './credentials.mts'
 
 export type { PutRecordBatchCommandInput, PutRecordBatchCommandOutput }
@@ -41,7 +42,7 @@ function getFirehoseClient(): FirehoseClient {
     firehoseClient = new FirehoseClient({
       ...(credentials ? { credentials } : {}),
       region: AWS_REGION,
-      requestHandler: createAwsRequestHandler(),
+      requestHandler: createResponseBodyBoundAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
     })
   }

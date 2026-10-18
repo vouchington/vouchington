@@ -116,6 +116,7 @@ describe('sendEmail against recorded SES responses', () => {
       subject: 'Raw subject',
       text: 'Raw text',
       source: 'tests+sender@voucha.ai',
+      replyToAddress: 'tests+reply-override@voucha.ai',
       configurationSetName: 'replay-config-set',
       headers: { 'List-Unsubscribe': '<https://example.com/unsubscribe?token=replay>' },
     })
@@ -130,6 +131,9 @@ describe('sendEmail against recorded SES responses', () => {
       ConfigurationSetName: 'replay-config-set',
     })
     const raw = Buffer.from(form['RawMessage.Data'] ?? '', 'base64').toString('utf8')
+    // Raw MIME uses the app's default identities independently of the SES envelope sender.
+    expect(raw).toContain('From: no-reply@voucha.ai\r\n')
+    expect(raw).toContain('Reply-To: support@voucha.ai\r\n')
     expect(raw).toContain(
       '\r\nList-Unsubscribe: <https://example.com/unsubscribe?token=replay>\r\n',
     )

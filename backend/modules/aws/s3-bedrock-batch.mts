@@ -1,9 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3'
-import {
-  AWS_DUALSTACK_CLIENT_CONFIG,
-  BEDROCK_AWS_REGION,
-  createAwsRequestHandler,
-} from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
+import { BEDROCK_AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 import { getBedrockCredentials, hasBedrockCredentials } from './credentials.mts'
 
 let bedrockBatchClient: S3Client | undefined
@@ -40,7 +37,7 @@ function getBedrockBatchS3Client(): S3Client {
     bedrockBatchClient = new S3Client({
       ...(credentials ? { credentials } : {}),
       region: BEDROCK_AWS_REGION,
-      requestHandler: createAwsRequestHandler(),
+      requestHandler: createResponseBodyBoundAwsRequestHandler(),
       ...AWS_DUALSTACK_CLIENT_CONFIG,
     })
   }
