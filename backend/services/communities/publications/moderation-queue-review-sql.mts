@@ -84,6 +84,7 @@ function buildCommunityPostQueueQuery(source: CommunityPostQueueSource, where: S
       0::integer AS report_count,
       0::integer AS cursor_report_count,
       0::integer AS cursor_severity_rank,
+      false AS automatic_judgement_enabled,
       (rp.broadcast <> 'everyone' OR rp.privacy <> 'public') AS target_is_restricted,
       rp.is_anonymous AS target_is_anonymous,
       '${source}'::text AS queue_source

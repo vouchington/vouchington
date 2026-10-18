@@ -141,6 +141,34 @@ describe('ReportsClient keyboard shortcuts', () => {
     )
   })
 
+  it('blocks review, dismiss, and selection hotkeys while the entity rerun is pending', async () => {
+    const judgement = {
+      id: '00000000-0000-7000-8000-000000000001',
+      recommended_action: 'remove' as const,
+      public_response: 'Saved response',
+      internal_response: 'Saved rationale',
+      is_stale: false,
+      judged_report_count: 1,
+      current_report_count: 1,
+    }
+    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeReportsResponse([makeReport({ judgement })])}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
+    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
+    fireEvent.keyDown(window, { key: 'r' })
+    fireEvent.keyDown(window, { key: 'd' })
+    fireEvent.keyDown(window, { key: 'x' })
+
+    expect(mockResolveModerationReport).not.toHaveBeenCalled()
+    expect(screen.queryByText('1 item selected')).not.toBeInTheDocument()
+  })
+
   it('does not run ordinary shortcuts for closed or system-generated reports', () => {
     const first = render(
       <ReportsClient

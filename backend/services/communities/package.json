@@ -68,6 +68,7 @@
   "devDependencies": {
     "@queues/background": "workspace:^",
     "@queues/cache-purge": "workspace:^",
+    "@services/moderation-ai-config": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"

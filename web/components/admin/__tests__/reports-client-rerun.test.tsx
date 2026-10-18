@@ -1,8 +1,9 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockNav,
   mockRerunReportJudgement,
+  mockResolveModerationReport,
   mockOnError,
   mockOnSuccess,
   mockUsePendingAiRefresh,
@@ -54,6 +55,77 @@ describe('ReportsClient re-run judgement button', () => {
         expect.any(Function),
       ),
     )
+  })
+
+  it('clusters skip disabled automatic polling but retain a manual rerun key', async () => {
+    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    const response = makeClusteredReportsResponse()
+    const cluster = response.results[0]!
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={{
+          ...response,
+          results: [
+            {
+              ...cluster,
+              reports: cluster.reports.map(report => ({
+                ...report,
+                automatic_judgement_enabled: false,
+              })),
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      '',
+      expect.any(Function),
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: /re-run judgement/i })[0]!)
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+        true,
+        expect.any(Function),
+        `rerun:${cluster.reports[0]!.id}:new`,
+        expect.any(Function),
+      ),
+    )
+  })
+
+  it('skips a bulk action for a selected report while its entity rerun is pending', async () => {
+    const judgement = {
+      id: '00000000-0000-7000-8000-000000000001',
+      recommended_action: 'remove' as const,
+      public_response: 'Saved response',
+      internal_response: 'Saved rationale',
+      is_stale: false,
+      judged_report_count: 1,
+      current_report_count: 1,
+    }
+    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeReportsResponse({ judgement })}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /select reported post report/i }))
+    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
+    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalledWith('report-1'))
+    await waitFor(() =>
+      expect(within(getBulkToolbar()).getByRole('button', { name: 'Dismiss' })).toBeEnabled(),
+    )
+    fireEvent.click(within(getBulkToolbar()).getByRole('button', { name: 'Dismiss' }))
+    fireEvent.click(within(getBulkToolbar()).getByRole('button', { name: 'Confirm' }))
+
+    await waitFor(() => expect(screen.getByText('0 succeeded, 1 skipped')).toBeVisible())
+    expect(mockResolveModerationReport).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -196,3 +268,7 @@ describe('ReportsClient re-run judgement button', () => {
     expect(screen.getByText(/AI judgement is taking longer than expected/)).toBeVisible()
   })
 })
+
+function getBulkToolbar(): HTMLElement {
+  return screen.getByText(/\d+ item(?:s)? selected/).parentElement!.parentElement!
+}

@@ -83,6 +83,7 @@ app.route('/api/v1/communities/:idOrSlug/moderation-queue').get(async (ctx: Cont
             target_content,
             target_path,
             judgement: _j,
+            automatic_judgement_enabled: _aje,
             post_moderation_context,
             ...entry
           }) => {

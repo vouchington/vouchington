@@ -84,6 +84,10 @@ export function ClusteredReportsClient({
     [data.duplicate_clusters, removedClusterKeys],
   )
   const visibleReports = clusters.flatMap(cluster => cluster.reports)
+  const pendingAutomaticJudgementReports = visibleReports.filter(
+    report =>
+      isOrdinaryPendingReport(report) && report.automatic_judgement_enabled && !report.judgement,
+  )
   const pendingRerunEntities = new Set<string>()
   const pendingRerunKeys: string[] = []
   for (const report of visibleReports) {
@@ -96,15 +100,9 @@ export function ClusteredReportsClient({
     }
   }
   const pollingTimedOut = usePendingAiRefresh(
-    visibleReports.some(report => isOrdinaryPendingReport(report) && !report.judgement) ||
-      pendingRerunEntities.size > 0,
+    pendingAutomaticJudgementReports.length > 0 || pendingRerunEntities.size > 0,
     () => router.refresh(),
-    [
-      ...visibleReports.flatMap(report =>
-        isOrdinaryPendingReport(report) && !report.judgement ? [report.id] : [],
-      ),
-      ...pendingRerunKeys,
-    ].join('|'),
+    [...pendingAutomaticJudgementReports.map(report => report.id), ...pendingRerunKeys].join('|'),
     expiredKeys => {
       const expired = new Set(expiredKeys)
       if (![...expired].some(key => key.startsWith('rerun:'))) return
@@ -253,11 +251,14 @@ export function ClusteredReportsClient({
     })
   }
 
-  function handleWarn() {
+  function handleWarn(report: AdminModerationReport) {
+    if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
     router.refresh()
   }
 
-  function handleBanEvasionAction() {
+  function handleBanEvasionAction(reportId: string) {
+    const report = visibleReports.find(candidate => candidate.id === reportId)
+    if (report && pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
     startRefreshTransition(() => {
       router.refresh()
     })

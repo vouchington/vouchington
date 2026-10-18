@@ -4,7 +4,9 @@ import {
   insertTestPost,
   insertTestModerationReport,
   insertTestCommunity,
+  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
+import { moderationAiConfig } from '@services/moderation-ai-config'
 import type { PrivateUser } from '@services/users/types'
 import { searchCommunityModerationQueue } from './moderation-queue.mts'
 import { insertReportJudgement } from '@services/moderation-reports/judgements'
@@ -84,5 +86,43 @@ describe('searchCommunityModerationQueue judgement attachment', () => {
     const entry = result.entries.find(e => e.entity_id === postId)
     expect(entry).toBeDefined()
     expect(entry!.judgement).toBeNull()
+  })
+
+  it('returns the current automatic AI eligibility for community report entries', async () => {
+    const community = await insertTestCommunity({ createdById: author.id })
+    const postId = await insertTestPost({
+      createdById: author.id,
+      communityId: community.id,
+      slug: `mq-ai-gate-${crypto.randomUUID()}`,
+      title: 'Community AI gate report',
+      markdown: 'body',
+    })
+    await insertTestModerationReport({
+      reporterUserId: reporter.id,
+      entityType: 'post',
+      entityId: postId,
+      reason: 'spam',
+    })
+    const load = async () => {
+      const result = await searchCommunityModerationQueue(community.id, { limit: 50 })
+      return result.entries.find(entry => entry.entity_id === postId)
+    }
+
+    const restoreDisabled = overrideDynamicConfigFieldsForTest(moderationAiConfig, {
+      community_judgement_enabled: false,
+    })
+    try {
+      expect(await load()).toMatchObject({ automatic_judgement_enabled: false })
+    } finally {
+      restoreDisabled()
+    }
+    const restoreEnabled = overrideDynamicConfigFieldsForTest(moderationAiConfig, {
+      community_judgement_enabled: true,
+    })
+    try {
+      expect(await load()).toMatchObject({ automatic_judgement_enabled: true })
+    } finally {
+      restoreEnabled()
+    }
   })
 })

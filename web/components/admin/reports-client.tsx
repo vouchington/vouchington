@@ -138,17 +138,22 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     )
   const hotkeyItems =
     viewerTier === 'staff'
-      ? (reports as AdminModerationReport[]).map(report => ({
-          key: report.id,
-          // Ban-evasion reports must be resolved via the dedicated confirm/dismiss
-          // actions so that community_members.suspected_ban_evader_* is cleared.
-          onDismiss: !isOrdinaryPendingReport(report)
-            ? undefined
-            : () => handleResolve(report.id, 'dismissed'),
-          onReview: !isOrdinaryPendingReport(report)
-            ? undefined
-            : () => handleResolve(report.id, 'reviewed'),
-        }))
+      ? (reports as AdminModerationReport[]).map(report => {
+          const rerunPending = pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)
+          return {
+            key: report.id,
+            // Ban-evasion reports must be resolved via the dedicated confirm/dismiss
+            // actions so that community_members.suspected_ban_evader_* is cleared.
+            onDismiss:
+              !isOrdinaryPendingReport(report) || rerunPending
+                ? undefined
+                : () => handleResolve(report.id, 'dismissed'),
+            onReview:
+              !isOrdinaryPendingReport(report) || rerunPending
+                ? undefined
+                : () => handleResolve(report.id, 'reviewed'),
+          }
+        })
       : []
   const {
     activeKey,
@@ -167,6 +172,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   }, [reports, viewerTier])
 
   async function handleResolve(reportId: string, status: ResolveStatus) {
+    if (isReportRerunPending(reportId)) return
     // Disable all rows while one resolve is in flight (prevents concurrent double-submits).
     setLoadingId(reportId)
     try {
@@ -186,17 +192,23 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   }
 
   function handleWarn(reportId: string) {
+    if (isReportRerunPending(reportId)) return
     // The backend already resolved the report as 'actioned'; just remove it from the list.
     setResolvedIds(current => new Set(current).add(reportId))
   }
 
   function handleBanEvasionAction(reportId: string) {
+    if (isReportRerunPending(reportId)) return
     setResolvedIds(current => new Set(current).add(reportId))
   }
 
-  function handleRerun(reportId: string) {
+  function isReportRerunPending(reportId: string): boolean {
     const target = (reports as AdminModerationReport[]).find(report => report.id === reportId)
-    if (target && pendingRerunEntities.has(`${target.entity_type}:${target.entity_id}`)) return
+    return Boolean(target && pendingRerunEntities.has(`${target.entity_type}:${target.entity_id}`))
+  }
+
+  function handleRerun(reportId: string) {
+    if (isReportRerunPending(reportId)) return
     clearRerunTimeout()
     setRerunningId(reportId)
     // Wrap the entire async sequence so controls stay disabled until both the POST
@@ -225,6 +237,7 @@ function FlatReportsClient(props: FlatReportsClientProps) {
     if (viewerTier !== 'staff' || bulkLoading) return
     setBulkMessage(null)
     setSelectedIds(current => {
+      if (isReportRerunPending(reportId) && !current.has(reportId)) return current
       const next = new Set(current)
       if (next.has(reportId)) next.delete(reportId)
       else next.add(reportId)
@@ -244,6 +257,17 @@ function FlatReportsClient(props: FlatReportsClientProps) {
   async function handleBulkConfirm(action: ModerationBulkAction) {
     if (viewerTier !== 'staff') return
 
+    const staffReports = reports as AdminModerationReport[]
+    const rerunSkippedIds = new Set<string>()
+    for (const report of staffReports) {
+      if (selectedIds.has(report.id) && isReportRerunPending(report.id)) {
+        rerunSkippedIds.add(report.id)
+      }
+    }
+    const actionableSelectedIds = new Set(
+      [...selectedIds].filter(reportId => !rerunSkippedIds.has(reportId)),
+    )
+
     const deletePromises = new Map<string, Promise<void>>()
     const deleteEntityOnce = (entityId: string) => {
       const existing = deletePromises.get(entityId)
@@ -257,10 +281,11 @@ function FlatReportsClient(props: FlatReportsClientProps) {
       canBulkRemove,
       deleteEntityOnce,
       onResolved: reportId => setResolvedIds(current => new Set(current).add(reportId)),
-      reports: reports as AdminModerationReport[],
+      reports: staffReports,
       resolveReport: resolveModerationReport,
-      selectedIds,
+      selectedIds: actionableSelectedIds,
     })
+    for (const reportId of rerunSkippedIds) skippedIds.add(reportId)
 
     setBulkLoading(true)
     try {

@@ -4925,6 +4925,9 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../moderation-ai-config
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
