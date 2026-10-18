@@ -58,7 +58,9 @@ describe('checks-backend-smoke workflow', () => {
   it('allocates the backend port with the shared Fetch-safe allocator and verifies it is free', () => {
     const steps = smoke?.steps ?? []
     const allocation = steps.find(step => step.name === 'Allocate backend port')
-    expect(allocation?.run).toContain('ci/allocate-browser-safe-ports.py 1')
+    expect(allocation?.run).toContain(
+      'node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1',
+    )
     expect(allocation?.run).toContain('lsof -ti:"$PORT"')
     expect(allocation?.run).toContain('deterministic allocation will not retry')
     expect(allocation?.run).toContain('PORT=$PORT')

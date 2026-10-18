@@ -10,7 +10,6 @@ on:
       - '.github/actions/**'
       - 'cloudflare-worker/**'
       - 'backend/config/**'
-      - 'ci/allocate-browser-safe-ports.py'
       - 'ci/cloudflare-worker-staging-*.mts'
       - 'ci/write-private-json.mts'
       - 'ts-shared/**'

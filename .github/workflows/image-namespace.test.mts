@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 
 const read = (path: string) => readFileSync(path, 'utf8')
-const firstPartyGhcrPaths = ['.github/workflows/ghcr-cleanup.yml', 'ci/ghcr-package-retention.sh']
+const firstPartyGhcrPaths = ['.github/workflows/ghcr-cleanup.yml']
 // publish-backend-images.yml and publish-web-images.yml are deliberately absent. Since
 // vouchington/vouchington-infra#274 they publish the deployable backend and web images to GHCR on
 // main; their narrower invariants live in the "backend image publication" and "web image

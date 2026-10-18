@@ -22,11 +22,11 @@ function ciBackendFilter(): string[] {
 }
 
 describe('main-backend workflow', () => {
-  it('runs when shared port allocation inputs change', () => {
+  it('runs when the published port allocator version changes', () => {
     const workflow = readFileSync('.github/workflows/main-backend.yml', 'utf8')
 
     expect(workflow).toContain("- 'ts-shared/**'")
-    expect(workflow).toContain("- 'ci/allocate-browser-safe-ports.py'")
+    expect(workflow).toContain("- 'pnpm-lock.yaml'")
   })
 
   it('selects backend PR validation and main publication when the CI package boundary changes', () => {
