@@ -102,6 +102,14 @@ describe('copyright email intake queue pagination', () => {
     expect(page.copyright_email_intakes.map(intake => intake.id)).toEqual([ids[1]])
     expect(page.copyright_email_intakes.map(intake => intake.id)).not.toContain(foreignId)
     expect(page.page_info.has_next_page).toBe(false)
+
+    const request = createRequest()
+    await request.authenticateAs(moderator)
+    const httpTie = await readOwnedCopyrightEmailQueue(request, moderator, {
+      id: ids[1]!,
+      receivedAt,
+    })
+    expect(httpTie.body).toMatchObject({ copyright_email_intakes: [{ id: ids[1] }] })
   })
 
   it('rejects malformed and cross-scope cursors and a non-positive limit', async () => {
