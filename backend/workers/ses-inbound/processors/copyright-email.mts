@@ -2,6 +2,7 @@ import type {
   createCopyrightEmailIntake,
   recordCopyrightEmailParse,
 } from '@services/copyright-notices'
+// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 import type { enqueueCopyrightEmailIntakeAndWait } from '@queues/ai-agents/enqueues/copyright-email-intake'
 import type { SesInboundProcessJobData } from '@ts-shared/ses-inbound-contract'
 import { SesInboundTerminalError, type parseSesInboundMime } from './mime.mts'
@@ -56,6 +57,7 @@ export async function processCopyrightInboundEmail(
     })
     return
   }
+  // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
   await dependencies.enqueueCopyrightEmailIntakeAndWait(intake.id)
 }
 

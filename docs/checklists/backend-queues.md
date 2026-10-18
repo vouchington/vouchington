@@ -65,9 +65,9 @@ For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents
 
 - **Replay only idempotent "ensure" effects.** A reconciler or sweep re-runs forever, so an on-create effect in it repeats (an hourly vote-weight loop once re-followed unfollowed referrers).
 - **A sweep never writes the rows it selects by `updated_at`.** The write bumps its own trigger and the sweep never ends.
-- **Every sweep, reconciler, and scheduled job has a convergence test:** a second run writes and enqueues nothing.
+- **Every state-driven sweep and reconciler has a convergence test:** a second run writes and enqueues nothing. Recurring jobs that do unconditional periodic work (such as a scheduled materialized-view refresh) are exempt.
 - **Persist a receipt or state row before a paid or external call.** A stall retries the job and pays twice.
-- **No secrets or PII in payloads.** `removeOnComplete`/`removeOnFail` retention keeps payloads in Valkey, readable by anyone with queue access, and `scrubJobData` scrubs only failure logs, not stored data. Pass ids and load the data in the processor; login tokens, invite codes, and presigned URLs stay in the processor, or the job sets `removeOnComplete/Fail: true`.
+- **No secrets or PII in payloads.** `removeOnComplete`/`removeOnFail` retention keeps payloads in Valkey, readable by anyone with queue access, and `scrubJobData` scrubs only failure logs, not stored data. Pass ids and load the data in the processor; login tokens, invite codes, and presigned URLs stay in the processor. Terminal removal does not protect a payload: a job that stalls past its limit stays in the failed set; see the [replay-safe job reference](reference-backend-queues-define-a-replay-safe-job.md) for the narrow exception.
 
 ## Placement and validation
 

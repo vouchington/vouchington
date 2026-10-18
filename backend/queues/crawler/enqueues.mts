@@ -112,6 +112,7 @@ export const enqueueBulkCrawlUrls = (
   )
 }
 
+// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #2853
 export async function enqueueCrawlUrlAndWait(
   entry: EnqueueCrawlUrlEntry,
   options: EnqueueCrawlerJobOptions & { waitTimeoutMs?: number } = {},

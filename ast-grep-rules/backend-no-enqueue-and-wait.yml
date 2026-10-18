@@ -5,40 +5,31 @@ message: Never block a request or job on another job's result; write state and l
 note: >-
   See the queue checklist's never-wait rule (docs/checklists/backend-queues.md#queue-boundaries).
   This covers addAndWait, waitUntilFinished, and any enqueue...AndWait function or call. Return a
-  pending resource and let the client poll it. The ignores below are existing violations, each tied
-  to the issue that removes it; drop an entry when its issue lands.
+  pending resource and let the client poll it. This also covers aliases such as destructuring
+  `{ addAndWait: waitForJob }`. Existing violations carry a scoped ast-grep-ignore comment naming
+  the issue that removes them; drop the comment when that issue lands.
 files:
   - 'backend/**/*.mts'
 ignores:
   - 'backend/**/*.test.mts'
   - 'backend/**/__tests__/**'
   - 'backend/test-helpers/**'
-  # #3264: the addAndWait wrapper and the copyright, appeal, dispute, and report-judgement waits
-  # with their callers.
-  - 'backend/data-stores/valkey-glide-mq/glide-mq-factory.mts'
-  - 'backend/queues/ai-agents/enqueues/appeal-resolution.mts'
-  - 'backend/queues/ai-agents/enqueues/copyright-appeal-recommendation.mts'
-  - 'backend/queues/ai-agents/enqueues/copyright-email-intake.mts'
-  - 'backend/queues/ai-agents/enqueues/copyright-form-screening.mts'
-  - 'backend/queues/ai-agents/enqueues/copyright-submission-guidance.mts'
-  - 'backend/queues/ai-agents/enqueues/dispute-resolution.mts'
-  - 'backend/queues/ai-agents/enqueues/report-judgement.mts'
-  - 'backend/api/v1/copyright-notices/submission-guidance-enqueue.mts'
-  - 'backend/api/v1/copyright-notices/submission-routes.mts'
-  - 'backend/services/copyright-notices/copyright-email-decision-actions.mts'
-  - 'backend/services/moderation-appeals/rerun-resolution-draft.mts'
-  - 'backend/services/moderation-reports/create.mts'
-  - 'backend/services/moderation-reports/rerun-judgement.mts'
-  - 'backend/services/review-disputes/rerun-resolution-draft.mts'
-  - 'backend/workers/ses-inbound/processors/copyright-email.mts'
-  # #2853: the crawler wait path and its caller.
-  - 'backend/queues/crawler/enqueues.mts'
-  - 'backend/services/rss-feeds/discover-feed.mts'
 rule:
   any:
-    - pattern: $QUEUE.addAndWait($$$)
-    - pattern: $QUEUE.addAndWait = $$$
-    - pattern: $JOB.waitUntilFinished($$$)
+    - kind: member_expression
+      has:
+        field: property
+        regex: ^(addAndWait|waitUntilFinished)$
+    - kind: pair_pattern
+      has:
+        field: key
+        regex: ^(addAndWait|waitUntilFinished)$
+    - kind: shorthand_property_identifier_pattern
+      regex: ^(addAndWait|waitUntilFinished)$
+    - kind: import_specifier
+      has:
+        field: name
+        regex: ^enqueue\w*AndWait$
     - kind: function_declaration
       has:
         field: name
@@ -54,6 +45,22 @@ rule:
               field: property
               regex: ^enqueue\w*AndWait$
 examples:
+  - file: backend/services/example/rerun.mts
+    code: |
+      const { addAndWait: waitForJob } = queue
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      const { waitUntilFinished } = job
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      const wait = queue.addAndWait
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      import { enqueueReviewAndWait as enqueueReview } from './enqueues.mts'
+    isValid: false
   - file: backend/services/example/rerun.mts
     code: |
       await queue.addAndWait('judge', data)

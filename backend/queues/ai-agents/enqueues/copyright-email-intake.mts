@@ -59,6 +59,7 @@ export async function enqueueOrRetryCopyrightEmailIntake(
   await dependencies.enqueue(intakeId)
 }
 
+// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 export async function enqueueCopyrightEmailIntakeAndWait(intakeId: string): Promise<void> {
   const { data, opts } = buildCopyrightEmailIntakeJob(intakeId)
   await ai_agents.add('copyright-email-intake', data, opts)

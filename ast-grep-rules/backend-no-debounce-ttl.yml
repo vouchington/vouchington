@@ -19,7 +19,15 @@ rule:
   all:
     - has:
         kind: pair
-        regex: ^mode\s*:\s*['"]debounce['"]
+        all:
+          - has:
+              field: key
+              regex: ^mode$
+          - has:
+              field: value
+              stopBy: end
+              kind: string
+              regex: ^['"]debounce['"]$
     - has:
         any:
           - kind: pair
@@ -29,6 +37,18 @@ rule:
           - kind: shorthand_property_identifier
             regex: ^ttl$
 examples:
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: { id, mode: isCrawl ? ('simple' as const) : ('debounce' as const), ttl: 1 },
+      }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: { id, mode: isCrawl ? ('simple' as const) : ('debounce' as const) },
+      }
+    isValid: true
   - file: backend/queues/moderation-signals/enqueues/ban-evasion.mts
     code: |
       const opts = { deduplication: { id: dedupId, mode: 'debounce', ttl: DEDUPLICATION_TTL_MS } }

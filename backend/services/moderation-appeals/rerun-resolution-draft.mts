@@ -19,6 +19,7 @@ export async function rerunModerationAppealResolutionDraft(
   await recordStaffOperation(
     staffUserId,
     { actionType: 'appeal_resolution_draft_rerun', moderationAppealId: appealId },
+    // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
     () => enqueueAppealResolutionAndWait(appealId, staffUserId),
   )
 }

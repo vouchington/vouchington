@@ -5,6 +5,7 @@ import { ai_agents } from '../queues.mts'
 
 const jobIdFor = (submissionId: string) => `copyright_form_screening_${submissionId}`
 
+// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 export async function enqueueCopyrightFormScreeningAndWait(submissionId: string): Promise<void> {
   const opts: JobOptions = {
     ...AI_AGENTS_DEFAULTS,
