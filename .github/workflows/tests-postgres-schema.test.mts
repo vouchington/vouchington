@@ -57,6 +57,22 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(workflow.match(/node data-stores\/psql\/migrate\.mts/gu)).toHaveLength(1)
   })
 
+  it('checks the refreshed platform-stats snapshot before running Vitest', () => {
+    const migrateStep = workflow.indexOf('node data-stores/psql/migrate.mts')
+    const rssBootstrapCheck = workflow.indexOf(
+      'node data-stores/psql/check-staging-rss-bootstrap.mts',
+    )
+    const platformStatsCheck = workflow.indexOf('node scripts/check-platform-stats-snapshot.mts')
+    const schemaTests = workflow.indexOf(
+      'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',
+    )
+
+    expect(migrateStep).toBeGreaterThanOrEqual(0)
+    expect(rssBootstrapCheck).toBeGreaterThan(migrateStep)
+    expect(platformStatsCheck).toBeGreaterThan(rssBootstrapCheck)
+    expect(schemaTests).toBeGreaterThan(platformStatsCheck)
+  })
+
   it('checks the schema snapshot after schema tests, even when Vitest is skipped', () => {
     const tests = workflow.indexOf(
       'vitest run --bail=3 --no-file-parallelism --project backend-postgres-schema',

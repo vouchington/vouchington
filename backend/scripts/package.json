@@ -101,7 +101,8 @@
     "@vouchington/rss-parser": "^0.1.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "valkyries": "^0.10.0"
   },
   "devDependencies": {
     "husky": "^9.1.7"
