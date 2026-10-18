@@ -10,17 +10,35 @@ import {
 
 type Document = { jobs?: Record<string, { steps?: WorkflowStep[] }> }
 
-// Only a checkout of this repository into the workspace root fills the workspace; a `path:` or a
-// foreign `repository:` leaves `./.github/actions` unresolved.
-function populatesWorkspaceRoot(step: WorkflowStep): boolean {
+const rootPath = (path: unknown): boolean => path === undefined || path === '.' || path === './'
+const ownRepository = (repository: unknown): boolean =>
+  repository === undefined ||
+  /^\$\{\{\s*github\.repository\s*\}\}$/u.test(typeof repository === 'string' ? repository : '')
+
+// A sparse checkout only fills `.github/actions` when a pattern covers it.
+function sparseCoversActions(sparse: unknown): boolean {
+  if (sparse === undefined) return true
+  if (typeof sparse !== 'string') return false
+  return sparse.split('\n').some(line => {
+    const pattern = line.trim().replace(/^\/+|\/+$/gu, '')
+    return (
+      pattern === '.github' ||
+      pattern === '.github/actions' ||
+      pattern.startsWith('.github/actions/')
+    )
+  })
+}
+
+// Returns whether the checkout leaves the workspace root populated with this repository's
+// `.github/actions` (true), replaces the root with another repository (false), or leaves the
+// state unchanged (undefined): a conditional step, a `path:` checkout, or a non-covering sparse one.
+function checkoutEffect(step: WorkflowStep): boolean | undefined {
   // A conditional checkout may be skipped while a later local action still runs.
-  if (!step.uses?.startsWith('actions/checkout@') || step.if !== undefined) return false
-  const { path, repository } = step.with ?? {}
-  const rootPath = path === undefined || path === '.' || path === './'
-  const ownRepository =
-    repository === undefined ||
-    /^\$\{\{\s*github\.repository\s*\}\}$/u.test(typeof repository === 'string' ? repository : '')
-  return rootPath && ownRepository
+  if (!step.uses?.startsWith('actions/checkout@') || step.if !== undefined) return undefined
+  const { path, repository, 'sparse-checkout': sparse } = step.with ?? {}
+  if (!rootPath(path)) return undefined
+  if (!ownRepository(repository)) return false
+  return sparseCoversActions(sparse) ? true : undefined
 }
 
 // A local composite action resolves from $GITHUB_WORKSPACE, which only an earlier checkout fills.
@@ -29,7 +47,8 @@ function localActionBeforeCheckoutViolations(path: string, document: Document): 
     let checkedOut = false
     const violations: string[] = []
     for (const [index, step] of (job.steps ?? []).entries()) {
-      if (populatesWorkspaceRoot(step)) checkedOut = true
+      const effect = checkoutEffect(step)
+      if (effect !== undefined) checkedOut = effect
       else if (step.uses?.startsWith('./.github/actions/') && !checkedOut) {
         violations.push(`${path}#${jobId} step ${step.name ?? index}: ${step.uses} before checkout`)
       }
@@ -70,6 +89,14 @@ describe('local composite actions require a checkout', () => {
     expect(
       localActionBeforeCheckoutViolations('wf', {
         jobs: { a: { steps: [{ ...checkout({}), if: "github.event_name == 'push'" }, local] } },
+      }),
+    ).toHaveLength(1)
+    expect(violationCount({ 'sparse-checkout': 'src' })).toBe(1)
+    expect(violationCount({ 'sparse-checkout': 'src\n.github/actions' })).toBe(0)
+    expect(violationCount({ 'sparse-checkout': '.github' })).toBe(0)
+    expect(
+      localActionBeforeCheckoutViolations('wf', {
+        jobs: { a: { steps: [checkout({}), checkout({ repository: 'other/repo' }), local] } },
       }),
     ).toHaveLength(1)
     expect(violationCount({ path: 'candidate' })).toBe(1)

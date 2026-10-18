@@ -27,7 +27,7 @@ type Document = {
       steps?: Step[]
     }
   >
-  runs?: { steps?: Step[] }
+  runs?: { steps?: Step[]; image?: string }
 }
 
 function isHubImage(reference: string): boolean {
@@ -70,9 +70,16 @@ function stepImages(step: Step): string[] {
   const driverImage = /(?:^|[\s,])image=(\S+)/u.exec(
     typeof driverOptions === 'string' ? driverOptions : '',
   )
+  // setup-buildx-action's docker-container driver defaults to moby/buildkit from Docker Hub.
+  const driver = step.with?.driver
+  const defaultsToHub =
+    step.uses?.startsWith('docker/setup-buildx-action') === true &&
+    !driverImage &&
+    (driver === undefined || driver === 'docker-container')
   return [
     ...dockerCommandImages(step.run ?? ''),
     ...(driverImage ? [driverImage[1]!] : []),
+    ...(defaultsToHub ? ['moby/buildkit'] : []),
     ...(step.uses?.startsWith('docker://') ? [step.uses.slice('docker://'.length)] : []),
   ]
 }
@@ -89,6 +96,10 @@ function workflowImageViolations(path: string, document: Document): string[] {
       found.push(...stepImages(step).map((image): [string, string] => [jobId, image]))
     }
   }
+  const actionImage = document.runs?.image
+  if (actionImage?.startsWith('docker://')) {
+    found.push(['action image', actionImage.slice('docker://'.length)])
+  }
   for (const step of document.runs?.steps ?? []) {
     found.push(...stepImages(step).map((image): [string, string] => ['composite', image]))
   }
@@ -103,6 +114,10 @@ function dockerfileViolations(path: string, source: string): string[] {
   const syntax = /^#\s*syntax\s*=\s*(\S+)/imu.exec(source)?.[1]
   if (syntax && isHubImage(syntax)) violations.push(`${path}: # syntax=${syntax}`)
   for (const line of source.replace(/\\\r?\n/gu, ' ').split('\n')) {
+    const copyFrom = /^\s*COPY\s+(?:--\S+\s+)*--from=(\S+)/iu.exec(line)?.[1]
+    if (copyFrom && !/^\d+$/u.test(copyFrom) && !stages.has(copyFrom.toLowerCase())) {
+      if (isHubImage(copyFrom)) violations.push(`${path}: COPY --from=${copyFrom}`)
+    }
     const from = /^\s*FROM\s+(?:--\S+\s+)*(\S+)(?:\s+AS\s+(\S+))?/iu.exec(line)
     if (!from) continue
     if (!stages.has(from[1]!.toLowerCase()) && isHubImage(from[1]!)) {
@@ -134,6 +149,8 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
             { run: 'docker run -d --name x -e A=b -p 127.0.0.1::80 otel/collector' },
             { run: 'docker pull \\\n  docker.io/library/redis' },
             { uses: 'docker://alpine', with: {} },
+            { uses: 'docker/setup-buildx-action', with: {} },
+            { uses: 'docker/setup-buildx-action', with: { driver: 'docker-container' } },
             { run: 'docker image pull ubuntu' },
             { run: 'docker container create --name y busybox' },
             { run: 'docker run --platform "$PLATFORM" ubuntu' },
@@ -156,6 +173,8 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
       'otel/collector must come from mirror.gcr.io/',
       'docker.io/library/redis must come from mirror.gcr.io/',
       'alpine must come from mirror.gcr.io/',
+      'moby/buildkit must come from mirror.gcr.io/',
+      'moby/buildkit must come from mirror.gcr.io/',
       'ubuntu must come from mirror.gcr.io/',
       'busybox must come from mirror.gcr.io/',
       'ubuntu must come from mirror.gcr.io/',
@@ -168,13 +187,20 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
     expect(
       dockerfileViolations(
         'Dockerfile',
-        '# syntax=docker/dockerfile\nFROM node AS a\nFROM a AS b\nFROM node:${NODE_VERSION}\n',
+        '# syntax=docker/dockerfile\nFROM node AS a\nFROM a AS b\nFROM node:${NODE_VERSION}\nCOPY --chown=1 --from=nginx /x /y\nCOPY --from=a /x /y\nCOPY --from=0 /x /y\n',
       ),
     ).toEqual([
       'Dockerfile: # syntax=docker/dockerfile',
       'Dockerfile: FROM node',
       'Dockerfile: FROM node:${NODE_VERSION}',
+      'Dockerfile: COPY --from=nginx',
     ])
+    expect(
+      workflowImageViolations('action.yml', { runs: { image: 'docker://alpine' } }).map(
+        entry => entry.split(': ')[1],
+      ),
+    ).toEqual(['alpine must come from mirror.gcr.io/'])
+    expect(workflowImageViolations('action.yml', { runs: { image: 'Dockerfile' } })).toEqual([])
   })
 
   it('matches Dockerfile names at any depth and ignores lookalikes', () => {
@@ -199,6 +225,8 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
             { run: 'docker pull --platform linux/arm64 mirror.gcr.io/library/ubuntu' },
             { run: 'docker run --platform "$PLATFORM" -u 0 mirror.gcr.io/library/ubuntu' },
             { with: { 'driver-opts': 'image=mirror.gcr.io/moby/buildkit' } },
+            { uses: 'docker/setup-buildx-action', with: { driver: 'docker' } },
+            { uses: 'docker/setup-buildx-action', with: { 'driver-opts': 'image=ghcr.io/o/b' } },
           ],
         },
       },
