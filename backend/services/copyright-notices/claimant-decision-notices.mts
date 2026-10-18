@@ -1,6 +1,10 @@
 import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import {
+  claimantDecisionIsOwed,
+  selectCopyrightClaimantDecisionFlags,
+} from './claimant-decision-flags.mts'
 import { getCopyrightClaimantEmail } from './claimant-email.mts'
 import {
   selectCopyrightStatementFacts,
@@ -24,12 +28,6 @@ export type CopyrightClaimantDecisionNoticeInput = {
   assessmentId?: string
 }
 
-export type CopyrightClaimantDecisionState = {
-  claimant_user_id: string | null
-  already_rejected: boolean
-  later_restricted: boolean
-}
-
 export async function createCopyrightClaimantDecisionNoticeInTransaction(
   input: CopyrightClaimantDecisionNoticeInput,
   transaction: TransactionQuery,
@@ -43,49 +41,39 @@ export async function buildCopyrightClaimantDecisionDelivery(
   input: CopyrightClaimantDecisionNoticeInput,
   transaction: TransactionQuery,
 ): Promise<CopyrightStatementDeliveryInput | null> {
-  const state = await lockCopyrightClaimantDecisionState(input.noticeId, transaction)
-  if (!claimantDecisionIsOwed(state, input.event)) return null
+  const { claimant_user_id } = await lockCopyrightNoticeForClaimantDecision(
+    input.noticeId,
+    transaction,
+  )
+  const flags = await selectCopyrightClaimantDecisionFlags(input.noticeId, transaction)
+  if (!claimantDecisionIsOwed(flags, input.event)) return null
   const facts = await selectCopyrightStatementFacts(input.noticeId, transaction, input)
   return claimantDecisionDelivery(
     input,
-    state,
+    claimant_user_id,
     facts,
     await getCopyrightClaimantEmail(input.noticeId, transaction),
   )
 }
 
-/** Locks the notice and reads which claimant decisions it already carries. */
-export async function lockCopyrightClaimantDecisionState(
+/** Locks the notice. The decision flags are read after it, in their own statement. */
+export async function lockCopyrightNoticeForClaimantDecision(
   noticeId: string,
   transaction: TransactionQuery,
-): Promise<CopyrightClaimantDecisionState> {
-  const { rows } = await transaction<CopyrightClaimantDecisionState>(
+): Promise<{ claimant_user_id: string | null }> {
+  const { rows } = await transaction<{ claimant_user_id: string | null }>(
     sql`/* createCopyrightClaimantDecisionNoticeInTransaction:recipient */
-    SELECT claimant_user_id, EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items
-      WHERE idempotency_key IN (${`copyright-decision:${noticeId}:not_accepted:claimant`}, ${`copyright-decision:${noticeId}:not_accepted:claimant:email`})) AS already_rejected,
-      EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items restricted_intent
-        WHERE restricted_intent.idempotency_key IN (
-          ${`copyright-decision:${noticeId}:restricted:claimant`},
-          ${`copyright-decision:${noticeId}:restricted:claimant:email`}
-        )) AS later_restricted
-    FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
+    SELECT claimant_user_id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `,
   )
   assert(rows[0], 404, 'Copyright notice not found')
   return rows[0]
 }
 
-export function claimantDecisionIsOwed(
-  state: CopyrightClaimantDecisionState,
-  event: CopyrightClaimantDecisionEvent,
-): boolean {
-  return !(event === 'reversed' && state.already_rejected && !state.later_restricted)
-}
-
 /** The claimant statement never uses the facts' target URLs, so any authority's facts serve. */
 export function claimantDecisionDelivery(
   input: CopyrightClaimantDecisionNoticeInput,
-  state: CopyrightClaimantDecisionState,
+  claimantUserId: string | null,
   facts: CopyrightStatementFacts,
   email: string | null,
 ): CopyrightStatementDeliveryInput {
@@ -97,7 +85,7 @@ export function claimantDecisionDelivery(
   })
   return {
     noticeId: input.noticeId,
-    recipientUserId: state.claimant_user_id,
+    recipientUserId: claimantUserId,
     recipientRole: 'claimant',
     recipientEmail: email,
     deliveryKind: 'claimant_decision_notice',
