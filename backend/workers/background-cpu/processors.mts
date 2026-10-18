@@ -5,6 +5,10 @@ import {
   getBackgroundCpuJob,
 } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
+import {
+  extendCpuProviderCooldownMs,
+  getCpuProviderCooldownRemainingMs,
+} from '@services/bedrock-embeddings/provider-cooldown'
 import { isQueueDomainPaused } from '@services/queue-domain-controls'
 import { Worker, type Job } from 'glide-mq'
 
@@ -23,26 +27,53 @@ export function createBackgroundCpuProcessor(handlers: ReadonlyMap<string, Backg
     if (!handler) return rejectUnservedJob(job)
     const { domain } = handler.job
     if (await isQueueDomainPaused(domain)) return deferJob(job, domain, getPauseRecheckMs())
-    try {
-      return await handler.handle(job)
-    } catch (err) {
-      if (!(err instanceof Worker.RateLimitError)) throw err
-      return deferJob(job, domain, clampRateLimitDelayMs((err as { delayMs?: number }).delayMs))
-    }
+    return runWithProviderCooldown(job, handler)
+  }
+}
+
+async function runWithProviderCooldown(job: Job, handler: BackgroundCpuHandler): Promise<unknown> {
+  // Only Bedrock handlers use an external provider lane. Other CPU domains must remain
+  // independent of the rate-limiter Valkey connection.
+  const groupKey = handler.job.domain === 'bedrock-embeddings' ? job.groupKey : undefined
+  const remainingMs = groupKey ? await getCpuProviderCooldownRemainingMs(groupKey) : null
+  if (remainingMs) return job.moveToDelayed(Date.now() + remainingMs)
+  try {
+    return await handler.handle(job)
+  } catch (err) {
+    if (!(err instanceof Worker.RateLimitError)) throw err
+    return deferProviderRateLimitedJob(
+      job,
+      clampRateLimitDelayMs((err as { delayMs?: number }).delayMs),
+      groupKey,
+      handler.job.domain,
+    )
   }
 }
 
 /**
- * Defers one job without spending an attempt. A domain whose group shares one external limit parks
- * the group, so its other jobs wait too and nothing activates in the meantime; any other domain,
- * including a domain group with job-scoped deferral, delays only this job, which re-checks on its
- * next activation.
+ * A paused domain with a shared group parks that group; a domain with independent lanes delays
+ * only the current job. The job rechecks the durable pause control when it activates again.
  */
 function deferJob(job: Job, domain: BackgroundCpuDomain, delayMs: number): Promise<never> {
   const { group } = getBackgroundCpuDomainDefinition(domain)
   if (group?.kind === 'domain' && group.deferral !== 'job' && job.groupKey === domain) {
     return job.rateLimitGroup(delayMs)
   }
+  return job.moveToDelayed(Date.now() + delayMs)
+}
+
+/** A provider 429 persists the lane's cooldown without idling the shared worker. */
+async function deferProviderRateLimitedJob(
+  job: Job,
+  delayMs: number,
+  groupKey: string | undefined,
+  domain: BackgroundCpuDomain,
+): Promise<never> {
+  if (groupKey) {
+    const remainingMs = await extendCpuProviderCooldownMs(groupKey, delayMs)
+    return job.moveToDelayed(Date.now() + remainingMs)
+  }
+  if (domain !== 'bedrock-embeddings') return deferJob(job, domain, delayMs)
   return job.moveToDelayed(Date.now() + delayMs)
 }
 

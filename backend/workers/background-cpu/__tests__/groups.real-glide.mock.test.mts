@@ -1,13 +1,23 @@
 import { randomUUID } from 'node:crypto'
+import { once } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { QueueEvents } from 'glide-mq'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
+import {
+  extendCpuProviderCooldownMs,
+  getCpuProviderCooldownRemainingMs,
+} from '@services/bedrock-embeddings/provider-cooldown'
+import type { BackgroundCpuHandler, BackgroundCpuJobDefinition } from '@queues/background-cpu/types'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { enqueueBulkCrawlReferralLinks } from '@queues/crawl-referral-links/enqueues'
+import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
 import {
   startBackgroundCpuHarness,
   type BackgroundCpuHarness,
 } from '@voucha/test-helpers/real-glide-background-cpu'
+import { createBackgroundCpuProcessor } from '../processors.mts'
+import { withBedrockRateLimit } from '../processors/bedrock-rate.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -17,11 +27,15 @@ const referral = requireBackgroundCpuJob('crawl.crawl_referral_link')
 const single = requireBackgroundCpuJob('bedrock-embeddings.post')
 const singleTopic = requireBackgroundCpuJob('bedrock-embeddings.topic')
 const creation = requireBackgroundCpuJob('bedrock-embeddings.create_posts')
+const contentPost = requireBackgroundCpuJob('content-analysis.post')
 
 describe('background-cpu groups through real GlideMQ', () => {
   let harness: BackgroundCpuHarness | undefined
+  let events: QueueEvents | undefined
 
   afterEach(async () => {
+    await events?.close()
+    events = undefined
     await harness?.close()
     harness = undefined
   })
@@ -100,6 +114,85 @@ describe('background-cpu groups through real GlideMQ', () => {
     const ordered = started.toSorted((a, b) => a - b)
     expect(ordered).toHaveLength(4)
     expect(ordered[2]! - ordered[0]!).toBeGreaterThanOrEqual(300)
+  })
+
+  it('cools the throttled Bedrock ordering group while another CPU domain keeps running', async () => {
+    const startedBedrock: string[] = []
+    const defaultOrdering = single.options.ordering
+    if (!defaultOrdering) throw new Error('Expected Bedrock ordering lane')
+    const ordering = {
+      ...defaultOrdering,
+      key: `bedrock-embeddings:single:${randomUUID()}`,
+    }
+    const throttle = Object.assign(new Error('Bedrock request throttled'), {
+      name: 'ThrottlingException',
+      $metadata: { httpStatusCode: 429 },
+    })
+    const handlers = new Map<string, BackgroundCpuHandler>([
+      [
+        single.name,
+        {
+          job: single,
+          handle: job => {
+            startedBedrock.push(job.id)
+            if (startedBedrock.length === 1)
+              return withBedrockRateLimit(async () => {
+                throw throttle
+              })
+            return undefined
+          },
+        },
+      ],
+      [singleTopic.name, { job: singleTopic, handle: job => startedBedrock.push(job.id) }],
+      [contentPost.name, { job: contentPost, handle: () => undefined }],
+    ])
+    harness = await startRealGlideBackgroundLifecycle<BackgroundCpuJobDefinition>({
+      queueNamePrefix: 'background_cpu_bedrock_cooldown',
+      connection,
+      processor: createBackgroundCpuProcessor(handlers),
+    })
+    events = new QueueEvents(harness.queue.name, {
+      ...connection,
+      lastEventId: '0',
+      blockTimeout: 1_000,
+    })
+    const delayedEvents: Array<{ jobId?: string }> = []
+    const failedEvents: Array<{ jobId?: string; failedReason?: string }> = []
+    events.on('delay-changed', event => delayedEvents.push(event))
+    events.on('failed', event => failedEvents.push(event))
+    await events.waitUntilReady()
+
+    const limited = await harness.add(single, { id: randomUUID() }, { ordering })
+    await harness.activated(limited, 1)
+    // With one worker, the other-domain completion proves the first job's 429 was processed.
+    const firstUnrelatedCompleted = once(events, 'completed')
+    const firstUnrelated = await harness.add(contentPost, { id: randomUUID() })
+    await expect(harness.settled(firstUnrelated)).resolves.toBe('completed')
+    const [completionEvent] = await firstUnrelatedCompleted
+    expect(completionEvent).toMatchObject({ jobId: firstUnrelated.id })
+    const limitedAfterThrottle = await harness.queue.getJob(limited.id)
+    expect(limitedAfterThrottle).toMatchObject({
+      groupKey: ordering.key,
+      attemptsMade: 0,
+    })
+    expect(await limitedAfterThrottle?.getState()).toBe('delayed')
+    expect(delayedEvents).toContainEqual(expect.objectContaining({ jobId: limited.id }))
+    expect(await getCpuProviderCooldownRemainingMs(ordering.key)).toBeGreaterThan(1_000)
+    await extendCpuProviderCooldownMs(ordering.key, 1_000)
+    expect(await getCpuProviderCooldownRemainingMs(ordering.key)).toBeGreaterThan(1_000)
+    expect(failedEvents).toEqual([])
+
+    const sameGroup = await harness.add(singleTopic, { id: randomUUID() }, { ordering })
+    const secondUnrelatedCompleted = once(events, 'completed')
+    const secondUnrelated = await harness.add(contentPost, { id: randomUUID() })
+    await expect(harness.settled(secondUnrelated)).resolves.toBe('completed')
+    const [secondCompletionEvent] = await secondUnrelatedCompleted
+    expect(secondCompletionEvent).toMatchObject({ jobId: secondUnrelated.id })
+    expect(startedBedrock).toEqual([limited.id])
+    expect((await harness.queue.getJob(limited.id))?.attemptsMade).toBe(0)
+    expect((await harness.queue.getJob(sameGroup.id))?.attemptsMade).toBe(0)
+    expect(await (await harness.queue.getJob(sameGroup.id))?.getState()).toBe('delayed')
+    expect(delayedEvents).toContainEqual(expect.objectContaining({ jobId: sameGroup.id }))
   })
 
   it('keeps batch creation concurrency at one across two workers', async () => {
