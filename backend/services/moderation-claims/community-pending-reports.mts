@@ -1,5 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { reportAutomaticJudgementEnabledSql } from '@services/moderation-reports/automatic-judgement-eligibility'
 import {
   appendReportTargetColumns,
   moderationReportsWithEntitySql,
@@ -98,6 +99,9 @@ async function fetchPostCommentReports(
       false AS is_system_generated,
       report_counts.report_count,
       report_counts.report_count AS cursor_report_count,
+      `)
+  query.append(reportAutomaticJudgementEnabledSql())
+  query.append(sql` AS automatic_judgement_enabled,
       `)
   query.append(severityRankSql())
   query.append(sql` AS cursor_severity_rank,

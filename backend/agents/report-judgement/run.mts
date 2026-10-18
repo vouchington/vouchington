@@ -13,6 +13,7 @@ import {
 import onError from '@modules/on-error'
 import { fetchEntityContent } from '@services/moderation'
 import { moderationAiConfig } from '@services/moderation-ai-config'
+import { withPrimaryReads } from '@services/moderation-reports/primary-reads'
 import { callJudgementModel, type JudgementModelCaller } from './model.mts'
 
 interface JudgementInput {
@@ -37,35 +38,41 @@ export async function runReportJudgementAgent(
 ): Promise<JudgementAgentResult | null> {
   const { entityType, entityId, triggeringReportId, rerunById } = input
 
-  const entityContent = await fetchEntityContent(entityType, entityId)
-  if (!entityContent) {
-    onError(
-      new Error(`runReportJudgementAgent: entity not found or deleted: ${entityType}/${entityId}`),
+  const loadCurrentInput = async (): Promise<{
+    entityContent: NonNullable<Awaited<ReturnType<typeof fetchEntityContent>>>
+    context: ReportJudgementContext
+    reports: Awaited<ReturnType<typeof getAllReportsForEntity>>
+  } | null> => {
+    const entityContent = await fetchEntityContent(entityType, entityId)
+    if (!entityContent) {
+      onError(
+        new Error(
+          `runReportJudgementAgent: entity not found or deleted: ${entityType}/${entityId}`,
+        ),
+      )
+      return null
+    }
+    // Manual re-runs bypass the community AI gate so staff tools always return a result.
+    if (
+      entityContent.communityId &&
+      !moderationAiConfig.getFields().community_judgement_enabled &&
+      !rerunById
     )
-    return null
+      return null
+    // Automatic runs skip only when the latest judgement matches current context.
+    const context = rerunById
+      ? await getReportJudgementContextForEntity(entityType, entityId)
+      : await shouldRefreshReportJudgementForEntity(entityType, entityId).then(state =>
+          state.refresh ? state.context : null,
+        )
+    if (!context) return null
+    const reports = await getAllReportsForEntity(entityType, entityId)
+    return { entityContent, context, reports }
   }
-
-  // Manual re-runs bypass the community AI gate so staff tools always return a result.
-  if (
-    entityContent.communityId &&
-    !moderationAiConfig.getFields().community_judgement_enabled &&
-    !rerunById
-  )
-    return null
-
-  let context: ReportJudgementContext
-
-  // Idempotency: automatic runs skip only when the latest judgement matches current context.
-  // Manual re-runs (rerunById set) intentionally insert a fresh judgement.
-  if (!rerunById) {
-    const refreshState = await shouldRefreshReportJudgementForEntity(entityType, entityId)
-    if (!refreshState.refresh) return null
-    context = refreshState.context
-  } else {
-    context = await getReportJudgementContextForEntity(entityType, entityId)
-  }
-
-  const reports = await getAllReportsForEntity(entityType, entityId)
+  // Scope only the reads: paid model I/O and the conditional write run after the primary read scope.
+  const current = rerunById ? await withPrimaryReads(loadCurrentInput) : await loadCurrentInput()
+  if (!current) return null
+  const { entityContent, context, reports } = current
 
   const sanitizedContent = await sanitizePromptInjection(entityContent.text)
   const wrappedContent = wrapExternalContent(sanitizedContent, {

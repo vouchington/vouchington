@@ -12248,7 +12248,7 @@
     },
     "GET:/api/v1/communities/:idOrSlug/reports/pending": {
       "bodyKind": "content",
-      "hash": "7ffd9104ac4cb195630ebe8f01d89caa883f4f52f2b4b7020f17ea82a55b25f6",
+      "hash": "2f613b7eac16e3e14db23e2a64c49ce50b9bdb9768f1586130b5b1e0412478cb",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -12903,6 +12903,12 @@
                                 "type": "string"
                               }
                             ]
+                          }
+                        },
+                        "automatic_judgement_enabled": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
                           }
                         },
                         "case_id": {
@@ -91357,7 +91363,7 @@
         "sort": "created_at_desc"
       },
       "responseSchema": {
-        "hash": "719aeb07d437561056048c7ccd2aa328393169c437cfa0f6114aa82171ebc50b",
+        "hash": "e50d0e43b8d7c9b8b1d31a98593248bc1f5754cbf3687ea03ff2729e32825b2f",
         "key": "native.community.pending-reports.paginated"
       },
       "route": {

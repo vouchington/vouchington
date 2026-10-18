@@ -3,10 +3,10 @@ import sql from 'sql-template-strings'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { ModerationReportStatus } from './config.mts'
 export type { CommunityBanEvasionContext } from './config.mts'
+import { reportAutomaticJudgementEnabledSql } from './automatic-judgement-eligibility.mts'
 import {
   appendReportTargetColumns,
   moderationReportsWithEntitySql,
-  reportAutomaticJudgementEnabledSql,
   reportTargetIsRestrictedSql,
   reportTargetJoinsSql,
 } from './target-metadata.mts'

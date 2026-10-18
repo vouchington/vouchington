@@ -34,4 +34,22 @@ describe('CopyrightEmailReview pending detail', () => {
     expect(get).toHaveBeenCalledTimes(2)
     expect(screen.getByRole('heading', { name: 'Staff-private evidence' })).toBeVisible()
   })
+
+  it('fills the approval draft when the selected recommendation arrives after selection', async () => {
+    const get = intakesClient.getCopyrightEmailIntake
+    get
+      .mockResolvedValueOnce({
+        copyright_email_intake: makeIntake(intakeId, { recommendation: null }),
+      })
+      .mockResolvedValue({ copyright_email_intake: makeIntake(intakeId) })
+    render(<CopyrightEmailReview data={makeQueuePage()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(intakeId) }))
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2))
+    await waitFor(() =>
+      expect(screen.getByLabelText('Claimant email')).toHaveValue(
+        'tests+copyright-claimant@voucha.ai',
+      ),
+    )
+  })
 })

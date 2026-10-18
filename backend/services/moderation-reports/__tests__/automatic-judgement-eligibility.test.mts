@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
+  deleteTestPost,
   insertTestCommunity,
   insertTestModerationReport,
   insertTestPost,
@@ -88,6 +89,13 @@ describe('automatic report judgement eligibility', () => {
         expect(redacted.reports.find(report => report.id === communityReportId)).not.toHaveProperty(
           'automatic_judgement_enabled',
         )
+
+        await deleteTestPost(platformPostId)
+        const unavailable = await listFlat()
+        expect(unavailable.reports.find(report => report.id === platformReportId)).toMatchObject({
+          target_available: false,
+          automatic_judgement_enabled: false,
+        })
       } finally {
         restoreEnabled()
       }

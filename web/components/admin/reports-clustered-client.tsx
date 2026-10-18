@@ -133,6 +133,7 @@ export function ClusteredReportsClient({
   })
 
   function handleResolveCluster(cluster: AdminModerationReportCluster, status: ResolveStatus) {
+    if (pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`)) return
     const pendingReports = selectOrdinaryPendingReports(cluster)
     if (pendingReports.length === 0) return
     setLoadingClusterId(cluster.id)
@@ -173,6 +174,7 @@ export function ClusteredReportsClient({
   }
 
   function handleRemoveClusterTarget(cluster: AdminModerationReportCluster) {
+    if (pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`)) return
     if (!canBulkRemove || (cluster.entity_type !== 'post' && cluster.entity_type !== 'comment')) {
       return
     }
@@ -197,6 +199,12 @@ export function ClusteredReportsClient({
 
   function handleRemoveDuplicateCluster(duplicate: AdminModerationReportDuplicateCluster) {
     if (!canBulkRemove || !isPendingFilter) return
+    if (
+      duplicate.clusters.some(cluster =>
+        pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`),
+      )
+    )
+      return
     const postIds = [...new Set(duplicate.clusters.map(cluster => cluster.entity_id))]
     if (postIds.length === 0) return
     setLoadingDuplicateId(duplicate.id)

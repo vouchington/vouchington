@@ -15,6 +15,7 @@ export function usePendingAiRefresh(
   const latestTimeout = useRef(onTimeout)
   const deadlines = useRef(new Map<string, number>())
   const expired = useRef(new Set<string>())
+  const finalRefreshRequested = useRef(new Set<string>())
   const [expiredVisible, setExpiredVisible] = useState<ReadonlySet<string>>(() => new Set())
   const pendingKeys = useMemo(
     () => (pending ? (pendingKey ? pendingKey.split('|') : ['pending']) : []),
@@ -32,6 +33,9 @@ export function usePendingAiRefresh(
     }
     for (const key of expired.current) {
       if (!visible.has(key)) expired.current.delete(key)
+    }
+    for (const key of finalRefreshRequested.current) {
+      if (!visible.has(key)) finalRefreshRequested.current.delete(key)
     }
     queueMicrotask(() => {
       if (!active) return
@@ -54,16 +58,19 @@ export function usePendingAiRefresh(
       const newlyExpired = pendingKeys.filter(
         key => now >= deadlines.current.get(key)! && !expired.current.has(key),
       )
-      if (newlyExpired.length > 0) {
+      if (inFlight) return
+      const needsFinalRefresh = newlyExpired.some(key => !finalRefreshRequested.current.has(key))
+      if (needsFinalRefresh) {
+        for (const key of newlyExpired) finalRefreshRequested.current.add(key)
+      } else if (newlyExpired.length > 0) {
         for (const key of newlyExpired) expired.current.add(key)
         setExpiredVisible(new Set(expired.current))
         latestTimeout.current?.(newlyExpired)
       }
-      if (pendingKeys.every(key => now >= deadlines.current.get(key)!)) {
+      if (!needsFinalRefresh && pendingKeys.every(key => now >= deadlines.current.get(key)!)) {
         window.clearInterval(interval)
         return
       }
-      if (inFlight) return
       inFlight = true
       void Promise.resolve()
         .then(() => latestRefresh.current())

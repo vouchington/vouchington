@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS review_disputes (
   ai_internal_response text,
   model text,
   ai_drafted_at timestamptz,
-  ai_draft_request_token uuid NOT NULL DEFAULT uuidv7(),
+  ai_draft_request_token uuid NOT NULL DEFAULT uuidv7() UNIQUE,
   ai_draft_run_id text,
 
   -- Human-owned outbound message (the ONLY thing ever delivered to the disputant)

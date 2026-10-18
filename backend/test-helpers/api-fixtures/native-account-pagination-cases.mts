@@ -107,6 +107,7 @@ export const nativeAccountPaginationApiFixtureCases: ApiFixtureCase[] = [
           resolved_by_id: null,
           admin_action_path: '/admin/posts/00000000-0000-7000-8000-000000000603',
           target_available: true,
+          automatic_judgement_enabled: false,
           judgement: null,
           community_ban_evasion: null,
           claim: {

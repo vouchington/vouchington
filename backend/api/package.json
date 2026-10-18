@@ -163,7 +163,6 @@
     "@services/messaging": "workspace:^",
     "@services/mfa": "workspace:^",
     "@services/moderation": "workspace:^",
-    "@services/moderation-ai-config": "workspace:^",
     "@services/moderation-analytics": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/moderation-claims": "workspace:^",

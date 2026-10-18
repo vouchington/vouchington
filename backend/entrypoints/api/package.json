@@ -43,7 +43,6 @@
     "@services/fediverse-instances": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/localization": "workspace:^",
-    "@services/moderation-ai-config": "workspace:^",
     "@services/post-classifier": "workspace:^",
     "@services/queue-monitoring": "workspace:^",
     "@services/users": "workspace:^",

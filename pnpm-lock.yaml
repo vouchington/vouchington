@@ -616,6 +616,9 @@ importers:
         specifier: ^7.32.0
         version: 7.32.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
@@ -1050,9 +1053,6 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../services/moderation
-      '@services/moderation-ai-config':
-        specifier: workspace:^
-        version: link:../services/moderation-ai-config
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../services/moderation-analytics
@@ -1624,9 +1624,6 @@ importers:
       '@services/localization':
         specifier: workspace:^
         version: link:../../services/localization
-      '@services/moderation-ai-config':
-        specifier: workspace:^
-        version: link:../../services/moderation-ai-config
       '@services/post-classifier':
         specifier: workspace:^
         version: link:../../services/post-classifier

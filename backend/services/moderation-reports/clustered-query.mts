@@ -4,10 +4,10 @@ import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { ModerationReportStatus } from './config.mts'
 import type { PendingModerationReport } from './pending-moderation-report.mts'
 import { enrichClusteredReports } from './clustered-report-enrichment.mts'
+import { reportAutomaticJudgementEnabledSql } from './automatic-judgement-eligibility.mts'
 import {
   appendReportTargetColumns,
   moderationReportsWithEntitySql,
-  reportAutomaticJudgementEnabledSql,
   reportTargetIsRestrictedSql,
   reportTargetJoinsSql,
 } from './target-metadata.mts'

@@ -10,7 +10,10 @@ import type {
   CopyrightEmailIntakeQueueItem,
   CopyrightEmailIntakeQueuePage,
 } from '@/types/copyright-notices'
-import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
+import {
+  createCopyrightEmailApprovalDraft,
+  type CopyrightEmailApprovalDraft,
+} from './copyright-email-approval-model'
 import {
   createCopyrightEmailCorrespondenceDraft,
   type CopyrightEmailCorrespondenceDraft,
@@ -59,6 +62,16 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     pendingItems.map(item => item.id).join('|'),
   )
   const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
+  const [draft, setDraft] = useState<CopyrightEmailApprovalDraft | null>(null)
+  const draftEdited = useRef(false)
+  const seededRecommendation = useRef<string | null>(null)
+  function seedRecommendation(next: CopyrightEmailIntake) {
+    const recommendation = next.recommendation
+    if (!recommendation || seededRecommendation.current === recommendation.id) return
+    seededRecommendation.current = recommendation.id
+    if (!draftEdited.current)
+      setDraft(createCopyrightEmailApprovalDraft(recommendation.structured_output))
+  }
   const detailId = detail?.id
   const selectedRecommendationId = items.find(item => item.id === detailId)?.recommendation_id
   const detailKey = `${detailId ?? ''}:${selectedRecommendationId ?? ''}`
@@ -74,15 +87,16 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     async () => {
       if (!detail) return
       const response = await getCopyrightEmailIntake(detail.id)
-      if (latestDetailKey.current === detailKey)
+      if (latestDetailKey.current === detailKey) {
+        seedRecommendation(response.copyright_email_intake)
         setDetail(current =>
           current?.id === detail.id ? response.copyright_email_intake : current,
         )
+      }
     },
     `detail:${detailKey}`,
   )
   const [rationale, setRationale] = useState('')
-  const [draft, setDraft] = useState<CopyrightEmailApprovalDraft | null>(null)
   const [correspondenceDraft, setCorrespondenceDraft] = useState<CopyrightEmailCorrespondenceDraft>(
     createCopyrightEmailCorrespondenceDraft,
   )
@@ -96,10 +110,12 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     let current = true
     void getCopyrightEmailIntake(detailId)
       .then(response => {
-        if (current)
+        if (current) {
+          seedRecommendation(response.copyright_email_intake)
           setDetail(previous =>
             previous?.id === detailId ? response.copyright_email_intake : previous,
           )
+        }
       })
       .catch(() => {
         if (current) setError('Could not refresh the email recommendation.')
@@ -175,7 +191,11 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
                     key={item.id}
                     item={item}
                     disabled={loading}
-                    onSelect={selectIntake}
+                    onSelect={id => {
+                      draftEdited.current = false
+                      seededRecommendation.current = null
+                      return selectIntake(id)
+                    }}
                     resetQueue={page => resetToFirstPage?.(page)}
                     setError={setError}
                     setSuccess={setSuccess}
@@ -196,7 +216,10 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
               manualFallbackReason={manualFallbackReason}
               replyEmail={replyEmail}
               correspondenceDraft={correspondenceDraft}
-              onChangeDraft={setDraft}
+              onChangeDraft={value => {
+                draftEdited.current = true
+                setDraft(value)
+              }}
               onChangeRationale={setRationale}
               onChangeManualFallbackReason={setManualFallbackReason}
               onChangeReplyEmail={setReplyEmail}

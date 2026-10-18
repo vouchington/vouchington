@@ -767,7 +767,7 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40053,
+          "list": 40102,
           "core": 6473
         },
         "max": {
@@ -940,11 +940,11 @@
       },
       "list_moderation_reports": {
         "measured": {
-          "list": 20509,
+          "list": 20746,
           "core": 529
         },
         "max": {
-          "list": 21000,
+          "list": 22000,
           "core": 1000
         }
       },
@@ -1240,7 +1240,7 @@
       },
       "read_review_dispute": {
         "measured": {
-          "list": 7215,
+          "list": 7371,
           "core": 814
         },
         "max": {
@@ -1280,7 +1280,7 @@
       },
       "rerun_review_resolution_draft": {
         "measured": {
-          "list": 1021,
+          "list": 1239,
           "core": 632
         },
         "max": {

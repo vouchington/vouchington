@@ -20801,7 +20801,6 @@
                           "target_label",
                           "target_path",
                           "target_user_id",
-                          "automatic_judgement_enabled",
                           "escalated_at",
                           "escalated_by_id",
                           "claim"
