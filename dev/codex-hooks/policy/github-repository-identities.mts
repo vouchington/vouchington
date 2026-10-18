@@ -9,8 +9,13 @@ export function repositoryOfRepoSelector(value: string): string | undefined {
   const path = value.replace(/^https?:\/\//i, '').replace(/\/$/, '')
   const segments = path.split('/')
   if (!REPO_SELECTOR_CHARACTERS.test(path) || segments.includes('')) return undefined
-  if (isUrl && segments.length !== 3) return undefined
-  if (segments.length === 3 && segments.shift()?.toLowerCase() !== 'github.com') return undefined
+  if (isUrl) {
+    if (segments.length !== 3 || !/^github\.com(?::\d+)?$/i.test(segments.shift() ?? '')) {
+      return undefined
+    }
+  } else if (segments.length === 3 && segments.shift()?.toLowerCase() !== 'github.com') {
+    return undefined
+  }
   return segments.length === 2 ? githubRepository(segments[0], segments[1], isUrl) : undefined
 }
 

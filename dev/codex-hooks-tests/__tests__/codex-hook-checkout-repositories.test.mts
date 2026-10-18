@@ -58,6 +58,18 @@ describe('github checkout repositories', () => {
       })
     })
 
+    it('uses a GitHub push URL when its fetch URL is hostless', async () => {
+      await withRepo(
+        { origin: '/srv/git/tool.git', upstream: 'https://github.com/acme/other.git' },
+        dir => {
+          git(dir, 'remote', 'set-url', '--push', 'origin', 'git@github.com:widgets-inc/tool.git')
+          git(dir, 'config', 'remote.origin.gh-resolved', 'base')
+          expect(checkoutRepository(dir)).toBe('widgets-inc/tool')
+          expect(checkoutRepositories(dir)).toEqual(new Set(['widgets-inc/tool', 'acme/other']))
+        },
+      )
+    })
+
     it.each([
       [
         'only hostless remotes',
@@ -125,6 +137,22 @@ describe('github checkout repositories', () => {
           )
         },
         setDefault,
+      )
+    })
+
+    it('ignores stale set-default entries when their named remote is gone or hostless', async () => {
+      await withRepo(FORK_REMOTE, dir => {
+        git(dir, 'config', 'remote.missing.gh-resolved', 'widgets-inc/stale')
+        expect(checkoutRepository(dir)).toBe('forker/tool')
+        expect(checkoutRepositories(dir)).toEqual(new Set(['forker/tool']))
+      })
+      await withRepo(
+        { origin: '/srv/git/tool.git', upstream: 'https://github.com/acme/tool.git' },
+        dir => {
+          expect(checkoutRepository(dir)).toBe('acme/tool')
+          expect(checkoutRepositories(dir)).toEqual(new Set(['acme/tool']))
+        },
+        { 'remote.origin.gh-resolved': 'widgets-inc/stale' },
       )
     })
 

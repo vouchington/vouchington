@@ -1,23 +1,18 @@
-import { repositoryOfRemoteUrl, repositoryOfRepoSelector } from './github-repository-identities.mts'
-
-// One `git remote -v` line: `<name>\t<url> (fetch|push)`, which a partial clone suffixes with its
-// ` [<filter>]`.
-const REMOTE_LINE = /^([^\t]+)\t(.+) \((fetch|push)\)(?: \[[^\]]*\])?$/
-
-export function remoteLineRepository(line: string): string | null | undefined {
-  const match = REMOTE_LINE.exec(line)
-  if (match === null) return undefined
-  return match[3] === 'push' ? null : repositoryOfRemoteUrl(match[2])
-}
+import { repositoryOfRepoSelector } from './github-repository-identities.mts'
+import { repositoryForRemoteName } from './github-checkout-remote-target.mts'
 
 export function repositoriesFromConfiguredDefaults(
+  remotes: string,
   defaults: string,
 ): ReadonlySet<string> | undefined {
   const entries = remoteDefaultEntries(defaults)
   if (entries === undefined) return undefined
   const repositories = new Set<string>()
-  for (const { selector } of entries) {
+  for (const { remoteName, selector } of entries) {
     if (selector === 'base') continue
+    const remoteRepository = repositoryForRemoteName(remotes, remoteName)
+    if (remoteRepository === null) continue
+    if (remoteRepository === undefined) return undefined
     const repository = repositoryOfRepoSelector(selector)
     if (repository === undefined) return undefined
     repositories.add(repository)
@@ -35,7 +30,8 @@ export function selectedRepositoryFromDefaults(
   if (entries.length !== 1) return undefined
 
   const [{ remoteName, selector }] = entries
-  const remoteRepository = remoteRepositoryForName(remotes, remoteName)
+  const remoteRepository = repositoryForRemoteName(remotes, remoteName)
+  if (remoteRepository === null) return null
   if (remoteRepository === undefined) return undefined
   return selector === 'base' ? remoteRepository : repositoryOfRepoSelector(selector)
 }
@@ -55,19 +51,4 @@ function remoteDefaultEntries(
     entries.push({ remoteName, selector })
   }
   return entries
-}
-
-function remoteRepositoryForName(remotes: string, remoteName: string): string | undefined {
-  const repositories = new Set<string>()
-  let found = false
-  for (const line of remotes.split('\n').filter(Boolean)) {
-    const match = REMOTE_LINE.exec(line)
-    if (match === null) return undefined
-    if (match[1] !== remoteName || match[3] === 'push') continue
-    found = true
-    const repository = repositoryOfRemoteUrl(match[2])
-    if (repository === undefined) return undefined
-    if (repository !== null) repositories.add(repository)
-  }
-  return found && repositories.size === 1 ? [...repositories][0] : undefined
 }

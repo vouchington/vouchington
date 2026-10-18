@@ -3,10 +3,10 @@ import { join } from 'node:path'
 
 import { gitConfiguredRemoteDefaults, gitRemoteVerbose } from '../local-process.mts'
 import {
-  remoteLineRepository,
   repositoriesFromConfiguredDefaults,
   selectedRepositoryFromDefaults,
 } from './github-checkout-remote-config.mts'
+import { repositoriesFromRemoteList } from './github-checkout-remote-repositories.mts'
 import { repositoryOfRemotePath, repositoryOfRemoteUrl } from './github-repository-identities.mts'
 
 /**
@@ -21,20 +21,11 @@ export function checkoutRepositories(cwd: string): ReadonlySet<string> | undefin
   if (remotes === undefined || defaults === undefined) {
     return undefined
   }
-  const repositories = new Set<string>()
-  for (const line of remotes.split('\n').filter(Boolean)) {
-    const repository = remoteLineRepository(line)
-    if (repository === undefined) {
-      return undefined
-    }
-    if (repository !== null) {
-      repositories.add(repository)
-    }
-  }
-  const configured = repositoriesFromConfiguredDefaults(defaults)
+  const repositories = repositoriesFromRemoteList(remotes)
+  if (repositories === undefined) return undefined
+  const configured = repositoriesFromConfiguredDefaults(remotes, defaults)
   if (configured === undefined) return undefined
-  for (const repository of configured) repositories.add(repository)
-  return repositories
+  return new Set([...repositories, ...configured])
 }
 
 /**

@@ -70,7 +70,7 @@ export function editSelectorRepositories(
     repositoryUrl === undefined
       ? undefined
       : repositoryOfRepoSelector(
-          repositoryUrl.replace(/^https?:\/\/github\.com\//i, 'github.com/'),
+          repositoryUrl.replace(/^https?:\/\/github\.com(?::\d+)?\//i, 'github.com/'),
         ),
   ]
 }

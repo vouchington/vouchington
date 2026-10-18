@@ -63,11 +63,31 @@ describe('same-owner repositories keep their own content policy', () => {
     expect(reasonOf(nonDraftPr('', 'GH_REPO=acme/platform '))).toBeUndefined()
   })
 
+  it.each([
+    'HOME=/srv/other ',
+    'XDG_CONFIG_HOME=/srv/other ',
+    'env -u HOME ',
+    'env --unset=XDG_CONFIG_HOME ',
+  ])('keeps cwd targeting unproven when %s can change Git configuration', async prefix =>
+    withRepo({ origin: 'git@github.com:acme/platform.git' }, dir => {
+      vi.stubEnv('GH_HOST', 'github.com')
+      expect(reasonOf(nonDraftPr('', prefix), dir)).toContain('pr_create')
+    }),
+  )
+
   it('preserves .git in non-URL gh repository selectors', () => {
     vi.stubEnv('GH_HOST', 'github.com')
     expect(reasonOf(nonDraftPr('--repo acme/app.git'))).toBeUndefined()
     expect(reasonOf(nonDraftPr('--repo github.com/acme/app.git'))).toBeUndefined()
     expect(reasonOf(nonDraftPr('--repo https://github.com/acme/app.git'))).toContain('pr_create')
+  })
+
+  it('accepts the default HTTPS port in repository and PR URL selectors', () => {
+    expect(reasonOf(nonDraftPr('--repo https://github.com:443/acme/platform'))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo https://github.com:443/acme/app'))).toContain('pr_create')
+    expect(
+      reasonOf(editPr('https://github.com:443/acme/platform/pull/5', '--repo acme/app')),
+    ).toBeUndefined()
   })
 
   it.each(['GH_HOST=other.example ', 'GH_HOST="$HOST" ', 'export GH_HOST=other.example; '])(

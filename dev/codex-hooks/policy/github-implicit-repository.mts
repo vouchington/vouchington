@@ -13,7 +13,7 @@ const GIT_VARIABLE = /^GIT_[A-Z\d_]*=/
  * The GitHub repository gh resolves without `--repo`: a non-empty `GH_REPO`, else the cwd's remotes —
  * or undefined unless the hook provably sees what gh will. gh's own prefix may only set or unset
  * variables, and the inherited `GH_REPO` and `cwd` count only for a top-level gh reached through
- * nothing but `&&`-joined literal `cd`s, with no `GIT_*` prefix for the cwd.
+ * nothing but `&&`-joined literal `cd`s, with no Git or config-root override for the cwd.
  */
 export function implicitRepository(
   tokens: string[],
@@ -35,7 +35,7 @@ export function implicitRepository(
   if (ghRepo !== undefined && ghRepo !== '') {
     return invocationRepositorySelector(ghRepo, tokens, index, isTopLevelCommand)
   }
-  const cwdIsProven = inherited && cwd !== undefined && !prefix.some(isGitVariable)
+  const cwdIsProven = inherited && cwd !== undefined && !Object.keys(env).some(isGitContextOverride)
   return cwdIsProven && githubHostIsProven(tokens, index, isTopLevelCommand)
     ? checkoutRepository(cwd)
     : undefined
@@ -100,6 +100,6 @@ function followsOnlyChainedCds(tokens: string[], index: number): boolean {
   return true
 }
 
-function isGitVariable(word: string): boolean {
-  return GIT_VARIABLE.test(word)
+function isGitContextOverride(name: string): boolean {
+  return GIT_VARIABLE.test(`${name}=`) || /^(?:HOME|XDG_CONFIG_HOME)$/.test(name)
 }
