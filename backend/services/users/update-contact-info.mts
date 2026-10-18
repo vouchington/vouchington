@@ -1,19 +1,10 @@
 import { verifyEmailAddressLoginToken, verifyPhoneNumberLoginToken } from './authentication.mts'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { getPrivateUserByAny } from './get.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
-
-async function replacePrimaryContact(
-  query: TransactionQuery,
-  clearPrimaryQuery: ReturnType<typeof sql>,
-  upsertPrimaryQuery: ReturnType<typeof sql>,
-): Promise<void> {
-  await query(clearPrimaryQuery)
-  await query(upsertPrimaryQuery)
-}
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
@@ -47,7 +38,8 @@ export const updateUserPhoneNumber = async (userId: string, phoneNumber: string,
       ON CONFLICT (user_id, phone_number)
       DO UPDATE SET is_primary = TRUE
     `
-  await replacePrimaryContact(query, clearPrimaryPhone, upsertPrimaryPhone)
+  await query(clearPrimaryPhone)
+  await query(upsertPrimaryPhone)
   await query.commit()
 
   void enqueueOnUserUpdated(userId)
@@ -92,7 +84,8 @@ export const updateUserEmailAddress = async (
       DO UPDATE SET is_primary = TRUE,
         email_domain_hostname_id = EXCLUDED.email_domain_hostname_id
     `
-  await replacePrimaryContact(query, clearPrimaryEmail, upsertPrimaryEmail)
+  await query(clearPrimaryEmail)
+  await query(upsertPrimaryEmail)
   await query.commit()
 
   void enqueueOnUserUpdated(userId)

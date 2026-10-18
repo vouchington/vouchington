@@ -77,10 +77,6 @@ async function readUrlHostnameBatchRows(
 ): Promise<ReadonlyArray<ViewHostname & { input_order: number }>> {
   const prefix = '/* getUrlHostnamesByAnyBatch */\n    WITH '
   if (!sql.startsWith(prefix)) throw new Error('Unexpected URL hostname batch query')
-  const { rows } = await read<ViewHostname & { input_order: number }>(
-    `/* getUrlHostnamesByAnyBatch */\n    WITH ${sql.slice(prefix.length)}`,
-    values,
-    options,
-  )
+  const { rows } = await read<ViewHostname & { input_order: number }>(sql, values, options)
   return rows
 }

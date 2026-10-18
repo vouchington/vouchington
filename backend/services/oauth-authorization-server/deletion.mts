@@ -25,14 +25,13 @@ async function revokeOwnedClients(
   batchSize: number,
   query: TransactionQuery,
 ): Promise<boolean> {
-  return mutatePage(
+  const result = await query(
     `/* revokeOAuthCredentialsForDeletedUser:clients */ UPDATE oauth_clients
      SET revoked_at = CURRENT_TIMESTAMP
      WHERE id IN (SELECT id FROM oauth_clients WHERE owner_user_id = $1 AND revoked_at IS NULL ORDER BY id LIMIT $2)`,
-    userId,
-    batchSize,
-    query,
+    [userId, batchSize],
   )
+  return (result.rowCount ?? 0) > 0
 }
 
 async function revokeGrants(
@@ -40,14 +39,13 @@ async function revokeGrants(
   batchSize: number,
   query: TransactionQuery,
 ): Promise<boolean> {
-  return mutatePage(
+  const result = await query(
     `/* revokeOAuthCredentialsForDeletedUser:grants */ UPDATE oauth_grants
      SET revoked_at = CURRENT_TIMESTAMP
      WHERE id IN (SELECT id FROM oauth_grants WHERE user_id = $1 AND revoked_at IS NULL ORDER BY id LIMIT $2)`,
-    userId,
-    batchSize,
-    query,
+    [userId, batchSize],
   )
+  return (result.rowCount ?? 0) > 0
 }
 
 async function revokeFamilies(
@@ -81,14 +79,13 @@ async function revokeAccessTokens(
   batchSize: number,
   query: TransactionQuery,
 ): Promise<boolean> {
-  return mutatePage(
+  const result = await query(
     `/* revokeOAuthCredentialsForDeletedUser:access */ UPDATE oauth_access_tokens SET revoked_at = CURRENT_TIMESTAMP
      WHERE id IN (SELECT access.id FROM oauth_access_tokens access JOIN oauth_grants oauth_grant ON oauth_grant.id = access.grant_id
        WHERE oauth_grant.user_id = $1 AND access.revoked_at IS NULL ORDER BY access.id LIMIT $2)`,
-    userId,
-    batchSize,
-    query,
+    [userId, batchSize],
   )
+  return (result.rowCount ?? 0) > 0
 }
 
 async function revokeRefreshTokens(
@@ -96,21 +93,11 @@ async function revokeRefreshTokens(
   batchSize: number,
   query: TransactionQuery,
 ): Promise<boolean> {
-  return mutatePage(
+  const result = await query(
     `/* revokeOAuthCredentialsForDeletedUser:refresh */ UPDATE oauth_refresh_tokens SET revoked_at = CURRENT_TIMESTAMP
      WHERE id IN (SELECT refresh.id FROM oauth_refresh_tokens refresh JOIN oauth_refresh_token_families family ON family.id = refresh.family_id
        JOIN oauth_grants oauth_grant ON oauth_grant.id = family.grant_id WHERE oauth_grant.user_id = $1 AND refresh.revoked_at IS NULL ORDER BY refresh.id LIMIT $2)`,
-    userId,
-    batchSize,
-    query,
+    [userId, batchSize],
   )
-}
-
-async function mutatePage(
-  statement: string,
-  userId: string,
-  batchSize: number,
-  query: TransactionQuery,
-): Promise<boolean> {
-  return ((await query(statement, [userId, batchSize])).rowCount ?? 0) > 0
+  return (result.rowCount ?? 0) > 0
 }

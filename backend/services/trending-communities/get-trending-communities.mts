@@ -150,13 +150,7 @@ export async function getTrendingCommunities(
     LIMIT ${safeLimit + 1}
   `)
 
-  const prefix = '/* getTrendingCommunities */\n    WITH '
-  if (!query.text.startsWith(prefix)) throw new Error('Trending communities SQL prefix changed')
-  const execute = (executor: QueryExecutor) =>
-    executor(
-      `/* getTrendingCommunities */\n    WITH ${query.text.slice(prefix.length)}`,
-      query.values,
-    )
+  const execute = (executor: QueryExecutor) => executor(query.text, query.values)
   const { rows } = await execute(dependencies.read)
 
   const hasNextPage = rows.length > safeLimit

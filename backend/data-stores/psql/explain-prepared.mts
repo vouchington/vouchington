@@ -1,3 +1,4 @@
+// no-mistakes-disable-file postgres-required-predicates: EXPLAIN parameter quoting uses PostgreSQL catalog types rather than application relation reads
 import type { PoolClient } from 'pg'
 
 export function buildExplainPreparedStatementText(

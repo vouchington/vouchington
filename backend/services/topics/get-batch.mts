@@ -164,14 +164,6 @@ async function readTopicAnyBatchRows(
     -- and merged_into_topic_id, following merge chains via destination_topic.
     WITH `
   if (!sql.startsWith(prefix)) throw new Error('Unexpected topic batch query')
-  const { rows } = await read<Topic & { input_order: number }>(
-    `/* getTopicsByAnyBatch */
-    -- no-mistakes-disable-next-line postgres-required-predicates: dynamic \${inputCtes} interpolation breaks structural
-    -- SQL parsing; id_lookups/slug_lookups below are manually verified to filter both deleted_at
-    -- and merged_into_topic_id, following merge chains via destination_topic.
-    WITH ${sql.slice(prefix.length)}`,
-    values,
-    options,
-  )
+  const { rows } = await read<Topic & { input_order: number }>(sql, values, options)
   return rows
 }

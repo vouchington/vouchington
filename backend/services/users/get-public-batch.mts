@@ -73,10 +73,6 @@ async function readPublicUserBatchRows(
 ): Promise<ReadonlyArray<PublicUser & { input_order: number }>> {
   const prefix = '/* getPublicUsersByAnyBatch */\n    WITH '
   if (!sql.startsWith(prefix)) throw new Error('Unexpected public user batch query')
-  const { rows } = await read<PublicUser & { input_order: number }>(
-    `/* getPublicUsersByAnyBatch */\n    WITH ${sql.slice(prefix.length)}`,
-    values,
-    options,
-  )
+  const { rows } = await read<PublicUser & { input_order: number }>(sql, values, options)
   return rows
 }
