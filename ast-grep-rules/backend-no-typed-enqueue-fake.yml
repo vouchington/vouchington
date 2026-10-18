@@ -9,6 +9,7 @@ note: >-
 files:
   - 'backend/workers/**/*.test.mts'
   - 'backend/services/**/*.test.mts'
+  - 'backend/queues/**/*.test.mts'
 rule:
   any:
     - kind: call_expression
@@ -38,6 +39,10 @@ rule:
             kind: unary_expression
             regex: ^typeof\s+import\(.*\)\.enqueue[A-Z]
 examples:
+  - file: backend/queues/example/enqueues.test.mts
+    code: |
+      const enqueue = vi.fn<typeof enqueueBulkExample>()
+    isValid: false
   - file: backend/workers/example/processors.test.mts
     code: |
       const enqueue = vi.fn<NonNullable<Deps['enqueueContinuation']>>()

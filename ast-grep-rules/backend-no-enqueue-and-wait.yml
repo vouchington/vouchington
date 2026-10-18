@@ -19,7 +19,7 @@ rule:
     - kind: member_expression
       has:
         field: property
-        regex: ^(addAndWait|waitUntilFinished)$
+        regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
     - kind: subscript_expression
       has:
         field: index
@@ -28,9 +28,9 @@ rule:
     - kind: pair_pattern
       has:
         field: key
-        regex: ^(addAndWait|waitUntilFinished)$
+        regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
     - kind: shorthand_property_identifier_pattern
-      regex: ^(addAndWait|waitUntilFinished)$
+      regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
     - kind: import_specifier
       all:
         - has:
@@ -65,6 +65,10 @@ rule:
               field: property
               regex: ^enqueue\w*AndWait$
 examples:
+  - file: backend/services/example/rerun.mts
+    code: |
+      const { enqueueReviewAndWait: enqueueReview } = dependencies
+    isValid: false
   - file: backend/queues/example/enqueues.mts
     code: |
       export const enqueueReviewAndWait = async (id: string) => {

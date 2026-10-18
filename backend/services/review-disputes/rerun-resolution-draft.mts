@@ -14,6 +14,7 @@ export async function rerunReviewDisputeResolutionDraft(
     'Only unapproved, unsent pending disputes can rerun resolution drafts',
   )
 
+  // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
   const { enqueueDisputeResolutionAndWait } =
     await import('@queues/ai-agents/enqueues/dispute-resolution')
   await recordStaffOperation(

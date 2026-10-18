@@ -14,6 +14,7 @@ export async function rerunModerationAppealResolutionDraft(
     'Only unapproved, unsent pending appeals can rerun resolution drafts',
   )
 
+  // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
   const { enqueueAppealResolutionAndWait } =
     await import('@queues/ai-agents/enqueues/appeal-resolution')
   await recordStaffOperation(
