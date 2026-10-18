@@ -5,7 +5,7 @@ import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/no
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { listNotifications } from '@services/notifications/list'
-import { notificationsWorkConfig } from '@services/notifications/work-limits'
+import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import {
   createRandomString,
   createTestUser,
@@ -24,8 +24,8 @@ describe('notifications background handler', () => {
   })
 
   it('reconciles a post one recipient page per job and chains the pages through the queue', async () => {
-    const restore = overrideDynamicConfigFieldsForTest(notificationsWorkConfig, {
-      reconcile_recipient_page_size: 2,
+    const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      notifications_page_size: 2,
     })
     try {
       const author = await createTestUser()

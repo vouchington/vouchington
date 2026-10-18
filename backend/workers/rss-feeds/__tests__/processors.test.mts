@@ -67,7 +67,7 @@ describe('processRssFeedsDispatcher', () => {
 
     await runDispatcher()
 
-    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith()
+    expect(mockGetRssFeedsToFetch).toHaveBeenCalledWith({})
     expect(mockEnqueueBulkFetchRssFeeds).toHaveBeenCalledWith(['feed-tier1'], {
       priority: TIER_PRIORITY[1],
       ttl: TIER_SLA[1],
