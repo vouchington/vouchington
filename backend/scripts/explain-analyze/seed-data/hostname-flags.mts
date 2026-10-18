@@ -26,18 +26,23 @@ export async function seedHostnameFlags(): Promise<void> {
   await transaction.commit()
 }
 
-/** A large work backlog with one bounded due page for the indexed claim scenario. */
+/** A large due backlog and future work for the indexed, bounded claim scenario. */
 export async function seedHostnameCacheInvalidationWork(): Promise<void> {
   await write(
     `/* seedExplainHostnameCacheInvalidationWork */
     INSERT INTO url_hostname_cache_invalidation_work_items (url_hostname_id, available_at)
     SELECT id,
-      CASE WHEN ordinal <= 1000 THEN CURRENT_TIMESTAMP
+      CASE WHEN ordinal <= 10000 THEN CURRENT_TIMESTAMP
         ELSE CURRENT_TIMESTAMP + INTERVAL '1 day' END
     FROM (
       SELECT id, row_number() OVER (ORDER BY hostname) AS ordinal
       FROM url_hostnames WHERE hostname LIKE 'seed-blocked-%.example.net'
     ) seed
     ON CONFLICT (url_hostname_id) DO NOTHING`,
+  )
+  // This also restores rows deleted by the captured drain. Refresh both claim relations before
+  // the first replay rather than letting autovacuum timing choose the measured plan.
+  await write(
+    '/* seedExplainHostnameCacheInvalidationWork */ ANALYZE url_hostname_cache_invalidation_work_items, url_hostnames',
   )
 }
