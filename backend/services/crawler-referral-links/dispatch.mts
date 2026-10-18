@@ -20,6 +20,7 @@ type ComputeHostnameRateLimitMs = typeof computeHostnameRateLimitMs
 type ReferralLinkDispatchDependencies = {
   enqueueBulkCrawlReferralLinks?: EnqueueBulkCrawlReferralLinks
   computeHostnameRateLimitMs?: ComputeHostnameRateLimitMs
+  now?: Date
 }
 
 type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
@@ -35,7 +36,13 @@ export async function dispatchReferralLinkCrawls(
   const CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS =
     getCrawlerReferralLinksWorkLimit('failure_retry_hours')
   const limits = getDispatchLimits()
-  const sweepStartedAt = options.cursor?.sweepStartedAt ?? new Date().toISOString()
+  let sweepStartedAt = options.cursor?.sweepStartedAt
+  if (sweepStartedAt === undefined) {
+    const now = options.now ? new Date(options.now.getTime()) : new Date()
+    if (!Number.isFinite(now.getTime()))
+      throw new TypeError('Referral dispatch clock must be valid')
+    sweepStartedAt = now.toISOString()
+  }
   const scope = {
     ...(options.urlId && { urlId: options.urlId }),
     ...(options.referralLinkIds && { referralLinkIds: options.referralLinkIds }),
