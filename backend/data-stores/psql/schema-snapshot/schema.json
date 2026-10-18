@@ -130799,6 +130799,217 @@
       },
       "uniqueConstraints": {}
     },
+    "user_rss_feed_import_row_discoveries": {
+      "checkConstraints": {
+        "user_rss_feed_import_row_discoveries_check": "CHECK (((discovered_feed_url_id IS NULL) OR (failed_at IS NULL)))"
+      },
+      "columns": {
+        "crawl_id": {
+          "collation": null,
+          "comment": "Completed crawl used to resolve the feed link, if retained.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "discovered_feed_url_id": {
+          "collation": null,
+          "comment": "URL registry row for the feed found in the completed HTML crawl.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "discovery_url_id": {
+          "collation": null,
+          "comment": "HTML page URL whose crawl is pending or completed for feed discovery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "failed_at": {
+          "collation": null,
+          "comment": "When the HTML crawl completed without a usable feed link.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        },
+        "generation": {
+          "collation": null,
+          "comment": "Stable pending-crawl fence for this import row and page URL.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "import_row_id": {
+          "collation": null,
+          "comment": "The RSS import row that requested this HTML page discovery.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Durable per-page HTML feed discovery outcomes for an RSS import row.",
+      "foreignKeys": {
+        "user_rss_feed_import_row_discoverie_discovered_feed_url_id_fkey": {
+          "columns": ["discovered_feed_url_id"],
+          "definition": "FOREIGN KEY (discovered_feed_url_id) REFERENCES urls(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        },
+        "user_rss_feed_import_row_discoveries_crawl_id_fkey": {
+          "columns": ["crawl_id"],
+          "definition": "FOREIGN KEY (crawl_id) REFERENCES crawls(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "crawls",
+          "validated": true
+        },
+        "user_rss_feed_import_row_discoveries_discovery_url_id_fkey": {
+          "columns": ["discovery_url_id"],
+          "definition": "FOREIGN KEY (discovery_url_id) REFERENCES urls(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "urls",
+          "validated": true
+        },
+        "user_rss_feed_import_row_discoveries_import_row_id_fkey": {
+          "columns": ["import_row_id"],
+          "definition": "FOREIGN KEY (import_row_id) REFERENCES user_rss_feed_import_rows(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_rss_feed_import_rows",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_rss_feed_import_row_discoveries__discovered_feed_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_import_row_discoveries__discovered_feed_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "discovered_feed_url_id",
+              "descending": false,
+              "expression": "discovered_feed_url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(discovered_feed_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_rss_feed_import_row_discoveries__crawl_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_row_discoveries__crawl_id ON public.user_rss_feed_import_row_discoveries USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "crawl_id",
+              "descending": false,
+              "expression": "crawl_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(crawl_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_rss_feed_import_row_discoveries__discovery_url_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_rss_feed_import_row_discoveries__discovery_url_id ON public.user_rss_feed_import_row_discoveries USING btree (discovery_url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "discovery_url_id",
+              "descending": false,
+              "expression": "discovery_url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "user_rss_feed_import_row_discoveries_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_rss_feed_import_row_discoveries_pkey ON public.user_rss_feed_import_row_discoveries USING btree (import_row_id, discovery_url_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "import_row_id",
+              "descending": false,
+              "expression": "import_row_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "discovery_url_id",
+              "descending": false,
+              "expression": "discovery_url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["import_row_id", "discovery_url_id"],
+        "definition": "PRIMARY KEY (import_row_id, discovery_url_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "user_rss_feed_import_rows": {
       "checkConstraints": {
         "chk_user_rss_feed_import_rows__lifecycle": "CHECK ((((outcome IS NULL) AND (completed_at IS NULL) AND (failed_at IS NULL)) OR ((outcome = 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NULL) AND (failed_at IS NOT NULL) AND (error_message IS NOT NULL)) OR ((outcome <> 'error'::user_rss_feed_import_row_outcomes) AND (completed_at IS NOT NULL) AND (failed_at IS NULL) AND (rss_feed_id IS NOT NULL))))",
@@ -130827,7 +131038,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -130838,63 +131049,8 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
-        },
-        "discovered_feed_url_id": {
-          "collation": null,
-          "comment": "URL registry row for the feed found in the completed HTML crawl.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "uuid"
-        },
-        "discovery_crawl_id": {
-          "collation": null,
-          "comment": "Completed crawl used to resolve the feed link.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7,
-          "type": "uuid"
-        },
-        "discovery_failed_at": {
-          "collation": null,
-          "comment": "Time the HTML crawl completed without a usable feed link.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9,
-          "type": "timestamp with time zone"
-        },
-        "discovery_generation": {
-          "collation": null,
-          "comment": "Per-attempt fence that rejects stale crawl outcomes after recovery or another HTML page.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6,
-          "type": "uuid"
-        },
-        "discovery_url_id": {
-          "collation": null,
-          "comment": "HTML page URL whose crawl is pending for feed discovery.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "uuid"
         },
         "error_message": {
           "collation": null,
@@ -130904,7 +131060,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 9,
           "type": "text"
         },
         "failed_at": {
@@ -130915,7 +131071,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -130948,7 +131104,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 5,
           "type": "user_rss_feed_import_row_outcomes"
         },
         "row_index": {
@@ -130970,7 +131126,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "updated_at": {
@@ -130981,7 +131137,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 16,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         }
       },
@@ -130994,33 +131150,6 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "user_rss_feed_import_batches",
-          "validated": true
-        },
-        "user_rss_feed_import_rows_discovered_feed_url_id_fkey": {
-          "columns": ["discovered_feed_url_id"],
-          "definition": "FOREIGN KEY (discovered_feed_url_id) REFERENCES urls(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "urls",
-          "validated": true
-        },
-        "user_rss_feed_import_rows_discovery_crawl_id_fkey": {
-          "columns": ["discovery_crawl_id"],
-          "definition": "FOREIGN KEY (discovery_crawl_id) REFERENCES crawls(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "crawls",
-          "validated": true
-        },
-        "user_rss_feed_import_rows_discovery_url_id_fkey": {
-          "columns": ["discovery_url_id"],
-          "definition": "FOREIGN KEY (discovery_url_id) REFERENCES urls(id) ON DELETE SET NULL",
-          "onDelete": "set null",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "urls",
           "validated": true
         },
         "user_rss_feed_import_rows_rss_feed_id_fkey": {
@@ -131057,66 +131186,6 @@
             }
           ],
           "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_user_rss_feed_import_rows__discovered_feed_url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_rss_feed_import_rows__discovered_feed_url_id ON public.user_rss_feed_import_rows USING btree (discovered_feed_url_id) WHERE (discovered_feed_url_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "discovered_feed_url_id",
-              "descending": false,
-              "expression": "discovered_feed_url_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(discovered_feed_url_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_user_rss_feed_import_rows__discovery_crawl_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_rss_feed_import_rows__discovery_crawl_id ON public.user_rss_feed_import_rows USING btree (discovery_crawl_id) WHERE (discovery_crawl_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "discovery_crawl_id",
-              "descending": false,
-              "expression": "discovery_crawl_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(discovery_crawl_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_user_rss_feed_import_rows__discovery_url_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_rss_feed_import_rows__discovery_url_id ON public.user_rss_feed_import_rows USING btree (discovery_url_id) WHERE (discovery_url_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "discovery_url_id",
-              "descending": false,
-              "expression": "discovery_url_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(discovery_url_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
