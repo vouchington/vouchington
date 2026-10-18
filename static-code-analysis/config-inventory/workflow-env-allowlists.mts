@@ -20,6 +20,13 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'GIT_CONFIG_COUNT',
   'GIT_CONFIG_KEY_0',
   'GIT_CONFIG_VALUE_0',
+  // The published vouchington-tooling GHCR retention script reads these values; its npm package
+  // source is outside the repository inventory, and the cleanup workflow passes them directly.
+  'GHCR_KEEP_MAIN',
+  'GHCR_OWNER',
+  'GHCR_OWNER_TYPE',
+  'GHCR_PACKAGES',
+  'GHCR_UNMERGED_MIN_AGE_DAYS',
   'CI_PROJECT',
   'CI_SHARD',
   'CLAUDE_CODE_EFFORT_LEVEL',
