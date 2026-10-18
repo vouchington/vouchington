@@ -59,7 +59,8 @@ export async function setPostImages(
         clearance_private_note,
         clearance_platform_override,
       } = postState
-      const { rows: previousImages } = await query<PersistedPostImage>(sql`/* setPostImages */
+      const { rows: previousImages } =
+        await query<PersistedPostImage>(sql`/* setPostImages:previousImages */
       SELECT image_id, order_index, caption
       FROM post_images
       WHERE post_id = ${post.id}
@@ -74,10 +75,12 @@ export async function setPostImages(
         ai_summary_markdown: ai_summary_markdown ?? undefined,
       })
 
-      await query(sql`/* setPostImages */ DELETE FROM post_images WHERE post_id = ${post.id}`)
+      await query(
+        sql`/* setPostImages:deleteImages */ DELETE FROM post_images WHERE post_id = ${post.id}`,
+      )
 
       if (images.length > 0) {
-        await query(sql`/* setPostImages */
+        await query(sql`/* setPostImages:insertImages */
         INSERT INTO post_images (post_id, image_id, order_index, caption)
         SELECT ${post.id}, image_id, order_index, caption
         FROM UNNEST(
@@ -96,7 +99,7 @@ export async function setPostImages(
             query,
           ),
         () =>
-          query(sql`/* setPostImages */
+          query(sql`/* setPostImages:moderationContentSha */
       UPDATE posts
       SET llm_moderation_content_sha256 = ${moderationSha}
       WHERE id = ${post.id}
@@ -110,7 +113,7 @@ export async function setPostImages(
         },
       ])
 
-      const { rows } = await query<PostImage>(sql`/* setPostImages */
+      const { rows } = await query<PostImage>(sql`/* setPostImages:savedImages */
       SELECT post_image.image_id, post_image.order_index, post_image.caption,
         placement.id AS placement_id, placement.revision AS placement_revision
       FROM post_images post_image

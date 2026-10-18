@@ -14,7 +14,7 @@ export {
   lockImageAssetAdmission,
   assertImagesReadyForSurface,
   prepareImageSurfaceAdmission,
-  markImageDeliveryAuthorityStarted,
+  imageDeliveryAuthorityStartedSql,
 } from './asset-admission-lock.mts'
 export { lockImageDeliveryMutation } from './delivery-lock.mts'
 export { assertImageDeliveryTransaction } from './transaction-contract.mts'
@@ -99,7 +99,7 @@ export async function prepublishImageSurfaceDenials(
         revision: current.placement_revision,
         imageId: current.image_id,
       },
-      { query },
+      { query, placementLocked: true },
     )
   }
 }

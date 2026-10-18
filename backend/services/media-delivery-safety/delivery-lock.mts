@@ -1,6 +1,9 @@
 import type { QueryExecutor } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { markImageDeliveryAuthorityStarted } from './asset-admission-lock.mts'
+import {
+  imageDeliveryAuthorityStartedSql,
+  markImageDeliveryAuthorityStarted,
+} from './asset-admission-lock.mts'
 import { assertImageDeliveryTransaction } from './transaction-contract.mts'
 
 /**
@@ -22,7 +25,6 @@ export async function lockImageDeliveryMutation(
   },
 ): Promise<void> {
   assertImageDeliveryTransaction(query)
-  await markImageDeliveryAuthorityStarted(query)
   const requestedPostIds = [...new Set(input.postIds ?? [])]
   const requestedImageIds = [...new Set(input.imageIds ?? [])]
   const requestedPlacementIds = [...new Set(input.placementIds ?? [])]
@@ -30,8 +32,10 @@ export async function lockImageDeliveryMutation(
     requestedPostIds.length === 0 &&
     requestedImageIds.length === 0 &&
     requestedPlacementIds.length === 0
-  )
+  ) {
+    await markImageDeliveryAuthorityStarted(query)
     return
+  }
   const { rows } = await query<{
     placement_id: string
     post_id: string | null
@@ -58,12 +62,15 @@ export async function lockImageDeliveryMutation(
     // revision and the edge transition one serialization domain.
     keys.add(`image-placement:${row.placement_id}`)
   }
-  for (const key of [...keys].toSorted()) {
-    // oxlint-disable-next-line no-await-in-loop -- lock order is the deadlock-prevention protocol.
-    await query(sql`/* lockImageDeliveryMutation:advisory */
-      SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))
-    `)
-  }
+  // One statement takes every key in sorted (code-unit) order, which is the deadlock-prevention
+  // protocol, and records that delivery authority has started.
+  const advisory = sql`/* lockImageDeliveryMutation:advisory */
+    SELECT count(pg_advisory_xact_lock(hashtextextended(key, 0))) AS locked, `
+  advisory.append(imageDeliveryAuthorityStartedSql())
+  advisory.append(sql` AS authority_started
+    FROM (SELECT key FROM unnest(${[...keys]}::text[]) AS requested(key) ORDER BY key COLLATE "C") ordered
+  `)
+  await query(advisory)
   // All writers acquire the post/image advisory identities above before changing a binding, so
   // this row lock happens after (never before) the shared copyright placement fence.
   await query(sql`/* lockImageDeliveryMutation:lockPlacements */

@@ -2,8 +2,8 @@ import type { TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import {
+  imageDeliveryAuthorityStartedSql,
   lockImageAssetAdmission,
-  markImageDeliveryAuthorityStarted,
 } from '@services/media-delivery-safety'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
@@ -26,21 +26,22 @@ export async function lockActivePostAuthorImageAdmission(
     },
     () => lockAuthorPublicationLifecycle(query, creatorId),
     () => lockImageAssetAdmission(imageIds, query),
-    () => markImageDeliveryAuthorityStarted(query),
   ])
   return assertActivePostAuthor(query, creatorId)
 }
 
+/** Also records the image-delivery "authority started" marker in the same statement. */
 export async function assertActivePostAuthor(
   query: TransactionQuery,
   creatorId: string,
 ): Promise<void> {
-  const { rows } = await query<{ id: string }>(
-    sql`/* createPost:activeAuthor */
-      SELECT id
+  const statement = sql`/* createPost:activeAuthor */
+      SELECT id, `
+  statement.append(imageDeliveryAuthorityStartedSql())
+  statement.append(sql` AS authority_started
       FROM users
       WHERE id = ${creatorId}
-        AND deleted_at IS NULL`,
-  )
+        AND deleted_at IS NULL`)
+  const { rows } = await query<{ id: string }>(statement)
   if (!rows[0]) throw createHttpError(409, 'Author is not active')
 }
