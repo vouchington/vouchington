@@ -101,7 +101,7 @@ describe('topics', () => {
           // malformed entry aborts the response instead of returning a partial topic record.
           await expect(
             request.get(`/api/v1/topics?q=Topic+with+stale+cached+shape+${random}`),
-          ).rejects.toThrow('aborted')
+          ).rejects.toHaveProperty('code', 'ECONNRESET')
         } finally {
           await caches.topics.delete(topicId)
         }
