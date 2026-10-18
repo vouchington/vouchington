@@ -32,7 +32,6 @@ import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getAdminUserIdsFromEntities } from '@services/markdown/admin-users'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { apiQuery } from '../../api-query-contract.mts'
-import { classifyFediverseInstance as classifyInstance } from '@services/fediverse-search/adapters/instance-classification'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 import {
   fediverseInstancesQuery,

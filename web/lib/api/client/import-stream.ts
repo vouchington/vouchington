@@ -15,8 +15,10 @@ export interface ImportProgress {
 /** Consecutive transient poll failures tolerated while a task is replaced (Spot, deploy). */
 export const IMPORT_POLL_MAX_TRANSIENT_ERRORS = 3
 
-function isTransientPollError(err: unknown): boolean {
-  if (err instanceof ApiError) return err.status >= 500 || err.status === 429
+function isTransientPollError(err: unknown, retryNotFound: boolean): boolean {
+  if (err instanceof ApiError) {
+    return err.status >= 500 || err.status === 429 || (retryNotFound && err.status === 404)
+  }
   return err instanceof TypeError
 }
 
@@ -55,20 +57,21 @@ export async function streamImportProgress(
   }
 
   let transientErrors = 0
-  const poll = async (): Promise<boolean> => {
+  const poll = async (retryNotFound = false): Promise<boolean> => {
     try {
       const done = await fetchProgress()
       transientErrors = 0
       return done
     } catch (err) {
-      if (!isTransientPollError(err)) throw err
+      if (!isTransientPollError(err, retryNotFound)) throw err
       transientErrors += 1
       if (transientErrors >= IMPORT_POLL_MAX_TRANSIENT_ERRORS) throw err
       return false
     }
   }
 
-  if (signal?.aborted || (await poll())) return
+  // The initial read may reach a replica before the import creation is visible.
+  if (signal?.aborted || (await poll(true))) return
 
   await new Promise<void>((resolve, reject) => {
     let inFlight = false

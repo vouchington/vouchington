@@ -45,6 +45,7 @@
     "sql-template-strings": "^2.2.2"
   },
   "devDependencies": {
+    "@services/topics": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }
