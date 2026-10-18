@@ -6,10 +6,10 @@
 
 ```mermaid
 flowchart TD
-  D[Weekly Sunday 4:00 UTC dispatcher] --> Q[crawl_referral_links_dispatcher]
-  Q --> C{Hostname crawler_type}
-  C -- fetch --> F[crawl_referral_link -> crawlUrl]
-  C -- automation --> A[crawl_referral_link -> crawl_browser]
+  D[Scheduled dispatcher] --> Q[Shared background-cpu worker]
+  Q --> C{Hostname crawler type}
+  C -- fetch --> F[Standard crawler handler]
+  C -- automation --> A[Browser crawler handler]
 ```
 
 Referral links use a full HTML crawl with markdown and no embeddings. The `automation` path is for client-side rendered pages; the `fetch` path uses the standard crawler.
@@ -38,7 +38,7 @@ Auto-deactivation sets `activated_at = NULL`, `deactivated_at = CURRENT_TIMESTAM
 ## Related
 
 - Workspace instructions: [backend/AGENTS.md](../../../backend/AGENTS.md)
-- Worker entry point: [backend/workers/crawler/workers.mts](../../../backend/workers/crawler/workers.mts)
+- Shared CPU handler: [backend/workers/background-cpu/processors/handlers.mts](../../../backend/workers/background-cpu/processors/handlers.mts)
 - docs/overview/architecture/services/README.md — error recording, embeddings workflow
 - [backend/AGENTS.md](../../../backend/AGENTS.md) — backend workspace conventions
 - [backend/services/crawler-html/index.mts](../../../backend/services/crawler-html/index.mts) — secure HTML fetch policy, upstream extraction, crawler error classification, and metrics

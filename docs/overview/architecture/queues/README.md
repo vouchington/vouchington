@@ -112,17 +112,9 @@ Replaying an event can reactivate its retained completed or failed queue record;
 running record keeps its claim. Election replay has its own
 bounded dispatcher and does not recalculate weights or change administrator overrides.
 
-## Where to look by domain
+## Related architecture
 
-- Content and publication: `post-publication`, `post-mentions`, `content-analysis`, `image-uploads`,
-  `sitemaps`, `cache-purge`, `story-post-related-url-projections`.
-- Imports: user RSS feed imports and admin topic imports, on the shared `background` queue.
-- Crawling: `crawler`, `crawl-*`, `rss-feed*`, `rss-feeds`, `kagi-smallweb`, `unfurl-referral-links`,
-  `urls-domains-blacklist`.
-- AI: `ai-agents`, `openai-moderation`, `bedrock-embeddings*`. See the [AI platform](../ai-platform.md).
-- Moderation and trust: `report-integrity`, `vote-*`, `elections`, and the `moderation-signals` domain on `background` (spam and ban-evasion detection).
-- Accounts and money: `account-lifecycle`, `user-deletions`, `account-data-requests`, `memberships`,
-  `emails`, `email-digests`, `notifications`, `oauth-authorization-exchange`.
-- Federation: `activitypub*`, `bluesky-follow-propagation`, `follower-distributions`. See
-  [fediverse federation](../fediverse-federation.md).
-- Platform: `heartbeat`, `bloom-filters`, `entity-listeners`, `entity-metrics-cache-refresh`, `psql`.
+- [Crawling](../reference-crawling-components.md) explains how URL and referral crawling share CPU
+  execution while embed enrichment keeps its destination-host-limited I/O path.
+- [AI platform](../ai-platform.md) describes model and embedding work.
+- [Fediverse federation](../fediverse-federation.md) describes federation work.

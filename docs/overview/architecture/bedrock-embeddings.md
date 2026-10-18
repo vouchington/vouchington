@@ -8,8 +8,8 @@
 flowchart LR
   subgraph single ["Single — real-time"]
     direction TB
-    EQ[enqueueCreate*Embedding] --> Q1[(bedrock_embeddings_nova_multimodal_v1_single)]
-    Q1 --> W1[worker · concurrency 10 · 10/s]
+    EQ[enqueueCreate*Embedding] --> Q1[(background-cpu)]
+    Q1 --> W1[shared CPU worker]
     W1 --> US["upsert*Embedding\n(short-circuit if up-to-date)"]
     US --> CS[createSingleEmbedding]
   end
@@ -18,13 +18,15 @@ flowchart LR
     CD["creation dispatcher\n*/5 * * * *"] --> CJ["creation jobs\n(posts/topics/rss/crawl-chunks/images)"]
     PD["poll dispatcher\n* * * * *"] --> PJ[polling jobs]
     BD["backlog dispatcher\n* * * * *\n(triggers creation when single backlog >= threshold)"] --> CD
-    CJ --> BR[Bedrock batch API]
-    PJ --> BR
+    CJ --> Q1
+    PJ --> Q1
+    W1 --> BR[Bedrock batch API]
     BR --> AU[applyBatchUpdates]
   end
   subgraph reconciliation ["Provider-free reconciliation"]
     direction TB
-    RR["four scheduled roots<br/>minute production · hourly staging"] --> RP["bounded copy and trigger pages<br/>100 candidates maximum"]
+    RR["scheduled roots"] --> Q1
+    W1 --> RP["bounded copy and trigger pages"]
     RP -->|full page| RC[opaque cursor continuation]
     RC --> RP
     RP --> DT[post ban-evasion delivery]
