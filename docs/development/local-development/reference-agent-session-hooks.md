@@ -7,7 +7,8 @@ Every hook entrypoint under `dev/codex-hooks/` reads its stdin payload through
 policy. Cursor and Grok run the `.claude/settings.json` hooks through Claude-compat, and the payload
 reader maps Cursor's dialect to Claude's ([harness parity](../agent-harness-parity.md)).
 
-- **SessionStart** (`dev/check-fresh-base`, `dev/check-web-init`, `dev/check-blackboard.mts`,
+- **SessionStart** (`dev/check-fresh-base`, `dev/check-web-init`,
+  `vouchington agent-blackboard session-start`,
   `persist-session-id.mts`): advisory context only. They report whether the branch is fresh against
   `origin/main` (unknown freshness is reported, never silently trusted, and the reset-or-rebase
   decision is made after Plan Mode), nudge `./dev/initialize web` before UI work, print the

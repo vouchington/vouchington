@@ -82,8 +82,8 @@ so run it serially, or use `node_modules/.bin/<tool>` for parallelism.
 Claude's OS sandbox unsets every name in the user config's `sandbox.credentials.envVars` before a
 sandboxed command starts, and Codex's `shell_environment_policy.exclude` hides the same names from
 its shell commands. Each Claude entry is `mode` `deny`. A command that bypasses the sandbox still
-receives the variables. `dev/check-blackboard.mts` runs outside it for that reason: a sandboxed
-probe cannot tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
+receives the variables. The `vouchington agent-blackboard session-start` hook runs outside it for
+that reason: a sandboxed probe cannot tell a withheld `AGENT_BLACKBOARD_TOKEN` from an outage
 ([SessionStart availability check](agent-blackboard.md#sessionstart-availability-check)).
 
 The machine-registered `vouchington-tooling` server receives `AGENT_BLACKBOARD_URL` and

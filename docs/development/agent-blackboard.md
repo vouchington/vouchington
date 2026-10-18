@@ -67,9 +67,12 @@ refuses later delivery and would strand a retained record.
 
 ## SessionStart availability check
 
-`dev/check-blackboard.mts` runs at every SessionStart and emits advisory context only; it cannot
-stop an agent. It prints the `Blackboard sessionId:` line from the hook's own payload (no inherited
-environment or persisted file can leak in) and probes the hosted deployment, asking the user to fix
-a missing credential or unreachable service. A sandboxed probe reports "unavailable" instead of a
-false outage because the credential and egress are deliberately withheld. It cannot see whether a
-harness connected the MCP server; an agent finds out by searching for `journal_append`.
+The hook runs `vouchington agent-blackboard session-start` at every SessionStart. If tooling has not
+been initialized, or the installed CLI lacks this command, it gives a fixed setup advisory; run
+`./dev/initialize monorepo` from the worktree root. Until then, use the harness session id as the
+[blackboard skill](../../.agents/skills/blackboard/SKILL.md) directs. Once available, the CLI
+prints the `Blackboard sessionId:` line from the hook's own payload (no inherited environment or
+persisted file can leak in) and probes the hosted deployment, asking the user to fix a missing
+credential or unreachable service. In a sandbox it skips the probe and reports the withheld
+credential and egress instead of a false outage. It cannot see whether a harness connected the MCP
+server; an agent finds out by searching for `journal_append`.
