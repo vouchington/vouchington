@@ -157,24 +157,25 @@ describe('Microsoft Store authoritative state', () => {
       observation: { lifecycle: 'expired', terminalAt: expiredAt, expiresAt: expiredAt },
     })
   })
-  it('advances the revision when an unchanged Active response crosses its expiry', () => {
+  it.each(['2026-08-17', '2027-01-01', '2028-03-01'])('expires at %s UTC midnight', date => {
+    const expiry = new Date(`${date}T00:00:00.000Z`)
     const options = {
       ...base,
-      collection: { ...base.collection, endDate: '2026-09-01T00:00:00Z' },
-      recurrence: { ...base.recurrence, expirationTime: '2026-09-01T00:00:00Z' },
+      collection: { ...base.collection, endDate: expiry.toISOString() },
+      recurrence: { ...base.recurrence, expirationTime: expiry.toISOString() },
     }
-    vi.useFakeTimers()
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(expiry.getTime() - 1) })
     try {
-      vi.setSystemTime(new Date('2026-08-31T00:00:00Z'))
-      const before = verifyMicrosoftStoreAuthoritativeState(options)
-      vi.setSystemTime(new Date('2026-09-02T00:00:00Z'))
-      const after = verifyMicrosoftStoreAuthoritativeState(options)
-      expect(before).toMatchObject({ accepted: true, observation: { lifecycle: 'active' } })
-      expect(after).toMatchObject({ accepted: true, observation: { lifecycle: 'expired' } })
-      const beforeObservation = acceptedObservation(before)
-      const afterObservation = acceptedObservation(after)
-      expect(afterObservation.providerRevision).not.toBe(beforeObservation.providerRevision)
-      expect(afterObservation.providerOrder).toBe(beforeObservation.providerOrder)
+      const before = acceptedObservation(verifyMicrosoftStoreAuthoritativeState(options))
+      vi.setSystemTime(expiry)
+      const at = acceptedObservation(verifyMicrosoftStoreAuthoritativeState(options))
+      vi.setSystemTime(new Date(expiry.getTime() + 1))
+      const after = acceptedObservation(verifyMicrosoftStoreAuthoritativeState(options))
+      expect(before.lifecycle).toBe('active')
+      expect([at.lifecycle, after.lifecycle]).toEqual(['expired', 'expired'])
+      expect([before.terminalAt, at.terminalAt, after.terminalAt]).toEqual([null, expiry, expiry])
+      expect(after.providerRevision).not.toBe(before.providerRevision)
+      expect(after.providerOrder).toBe(before.providerOrder)
     } finally {
       vi.useRealTimers()
     }
@@ -217,7 +218,6 @@ describe('Microsoft Store authoritative state', () => {
       ...base,
       collection: { ...base.collection, status, endDate: '2026-01-01T12:00:00Z' },
     })
-
     expect(result).toMatchObject({
       accepted: true,
       observation: { lifecycle, autoRenews: false, terminalAt: expect.any(Date) },
@@ -230,7 +230,6 @@ describe('Microsoft Store authoritative state', () => {
         ...base,
         recurrence: { ...base.recurrence, recurrenceState },
       })
-
       expect(result).toMatchObject({
         accepted: true,
         observation: { lifecycle: 'expired', autoRenews: false, terminalAt: expect.any(Date) },
