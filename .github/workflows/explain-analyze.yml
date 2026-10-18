@@ -94,6 +94,14 @@ jobs:
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
+      - name: Verify native EXPLAIN contracts
+        timeout-minutes: 2
+        env:
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
+        run: |
+          mkdir -p backend/scripts/explain-analyze/output/pruning-v8
+          node backend/scripts/explain-analyze/assert-native-contracts.mts
       - name: Seed development data
         # The copyright seed encrypts its review rows and hashes thread references.
         env:

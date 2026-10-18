@@ -1,7 +1,6 @@
-import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 
-import { read, write } from './index.mts'
+import { read } from './index.mts'
 import {
   buildExplainAnalyzeText,
   buildExplainPreparedStatementText,
@@ -72,69 +71,6 @@ describe('buildExplainAnalyzeText', () => {
     expect(planned.execution_time_ms).toBe(0)
   })
 
-  it('captures distinct target plans under forced custom and generic plan modes', async () => {
-    const table = `explain_plan_cache_${randomUUID().replaceAll('-', '')}`
-    try {
-      await write(`/* explainPlanCacheTest */
-        CREATE TABLE ${table} AS
-        SELECT CASE WHEN value = 100000 THEN 2 ELSE 1 END AS lookup_key
-        FROM generate_series(1, 100000) value`)
-      await write(`/* explainPlanCacheTest */ CREATE INDEX ON ${table} (lookup_key)`)
-      await write(`/* explainPlanCacheTest */ ANALYZE ${table}`)
-
-      const query = `/* explainPlanCacheTest */ SELECT count(*) FROM ${table} WHERE lookup_key = $1`
-      const [custom, generic] = await Promise.all([
-        explainAnalyze('custom', query, [2], { planCacheMode: 'force_custom_plan' }),
-        explainAnalyze('generic', query, [2], { planCacheMode: 'force_generic_plan' }),
-      ])
-
-      const customScan = collectPlanNodes(custom.plan).find(node => node['Relation Name'] === table)
-      const genericScan = collectPlanNodes(generic.plan).find(
-        node => node['Relation Name'] === table,
-      )
-      const customPlanRows = Number(customScan?.['Plan Rows'])
-      const genericPlanRows = Number(genericScan?.['Plan Rows'])
-
-      expect(customScan?.['Node Type']).toBe('Index Only Scan')
-      expect(customPlanRows).toBeLessThanOrEqual(10)
-      expect(genericPlanRows).toBeGreaterThan(10_000)
-      expect(genericPlanRows).toBeGreaterThan(customPlanRows * 1_000)
-    } finally {
-      await write(`/* explainPlanCacheTest */ DROP TABLE IF EXISTS ${table}`)
-    }
-  }, 30_000)
-
-  it('applies local planner settings to the call that passes them and no other', async () => {
-    const table = `explain_random_page_cost_${randomUUID().replaceAll('-', '')}`
-    try {
-      await write(`/* explainRandomPageCostTest */
-        CREATE TABLE ${table} AS
-        SELECT CASE WHEN value = 100000 THEN 2 ELSE 1 END AS lookup_key
-        FROM generate_series(1, 100000) value`)
-      await write(`/* explainRandomPageCostTest */ CREATE INDEX ON ${table} (lookup_key)`)
-      await write(`/* explainRandomPageCostTest */ ANALYZE ${table}`)
-
-      const query = `/* explainRandomPageCostTest */ SELECT count(*) FROM ${table} WHERE lookup_key = $1`
-      const planCacheMode = 'force_custom_plan'
-      const scanType = (plan: unknown) =>
-        collectPlanNodes(plan).find(node => node['Relation Name'] === table)?.['Node Type']
-
-      const stock = await explainAnalyze('stock', query, [2], { planCacheMode })
-      const priced = await explainAnalyze('priced', query, [2], {
-        planCacheMode,
-        localSettings: { random_page_cost: '1000000' },
-      })
-      // The setting is transaction-local, so a later call on the pool plans with stock costs.
-      const after = await explainAnalyze('after', query, [2], { planCacheMode })
-
-      expect(scanType(stock.plan)).toBe('Index Only Scan')
-      expect(scanType(priced.plan)).toBe('Seq Scan')
-      expect(scanType(after.plan)).toBe('Index Only Scan')
-    } finally {
-      await write(`/* explainRandomPageCostTest */ DROP TABLE IF EXISTS ${table}`)
-    }
-  }, 30_000)
-
   it('deallocates the prepared target after an EXPLAIN execution error', async () => {
     await expect(
       explainAnalyze('failing-target', '/* failingExplainTarget */ SELECT 1 / $1::integer', [0]),
@@ -147,32 +83,6 @@ describe('buildExplainAnalyzeText', () => {
         WHERE name LIKE 'explain_%'`,
     )
     expect(rows).toEqual([{ count: 0 }])
-  })
-
-  it('rolls back mutating statements after capturing the plan', async () => {
-    const tableName = `test_explain_analyze_rollback_${randomUUID().replaceAll('-', '')}`
-
-    await write(
-      `/* explainAnalyzeRollbackTestSetup */ CREATE TABLE "${tableName}" (value int PRIMARY KEY)`,
-    )
-
-    try {
-      const result = await explainAnalyze(
-        'explainAnalyzeRollbackTest',
-        `/* explainAnalyzeRollbackTest */ INSERT INTO "${tableName}" (value) VALUES ($1)`,
-        [1],
-      )
-
-      expect(result.name).toBe('explainAnalyzeRollbackTest')
-      expect(result.execution_time_ms).toBeGreaterThanOrEqual(0)
-
-      const { rows } = await read<{ count: number }>(
-        `/* explainAnalyzeRollbackTestCount */ SELECT COUNT(*)::int AS count FROM "${tableName}"`,
-      )
-      expect(rows).toEqual([{ count: 0 }])
-    } finally {
-      await write(`/* explainAnalyzeRollbackTestCleanup */ DROP TABLE IF EXISTS "${tableName}"`)
-    }
   })
 
   it('rejects prepared targets with mismatched parameter values', async () => {
@@ -194,10 +104,3 @@ describe('buildExplainAnalyzeText', () => {
     }
   })
 })
-
-function collectPlanNodes(value: unknown): Array<Record<string, unknown>> {
-  if (Array.isArray(value)) return value.flatMap(collectPlanNodes)
-  if (typeof value !== 'object' || value === null) return []
-  const record = value as Record<string, unknown>
-  return [record, ...Object.values(record).flatMap(collectPlanNodes)]
-}
