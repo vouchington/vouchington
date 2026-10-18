@@ -6,8 +6,10 @@ import {
   insertTestRssFeedDirect,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { jobSerializationPool } from '@data-stores/psql'
-import { getRssFeedImportRowIds } from '@voucha/test-helpers/rss-feed-import-rows'
+import {
+  getRssFeedImportRowIds,
+  getRssFeedImportSerializationPoolForTest,
+} from '@voucha/test-helpers/rss-feed-import-rows'
 import { importSingleRssFeed } from './import-rss-feeds.mts'
 import {
   getRssFeedImport,
@@ -51,7 +53,7 @@ describe('RSS feed import row serialization', () => {
   })
 
   it('completes nested automatic votes while serialization clients occupy their pool', async () => {
-    const capacity = Math.min(4, jobSerializationPool.options.max ?? 4)
+    const capacity = Math.min(4, getRssFeedImportSerializationPoolForTest().capacity)
     const users = await Promise.all(Array.from({ length: capacity }, () => createTestUser()))
     const rssFeedUrl = `https://serialization-vote-${randomUUID()}.example.com/feed.xml`
     const rssFeed = await insertTestRssFeedDirect({ rssFeedUrl })
@@ -69,7 +71,7 @@ describe('RSS feed import row serialization', () => {
 
     try {
       await allAcquired.promise
-      expect(jobSerializationPool.idleCount).toBe(0)
+      expect(getRssFeedImportSerializationPoolForTest().idle).toBe(0)
       proceed.resolve()
       const results = await Promise.all(imports)
       for (const result of results) {

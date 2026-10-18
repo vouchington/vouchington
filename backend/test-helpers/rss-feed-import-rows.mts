@@ -1,5 +1,12 @@
-import { write } from '@data-stores/psql'
+import { jobSerializationPool, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+
+/** Pool occupancy for the RSS import row-lock concurrency regression. */
+export function getRssFeedImportSerializationPoolForTest(): { capacity: number; idle: number } {
+  const capacity = jobSerializationPool.options.max
+  if (capacity === undefined) throw new Error('RSS import serialization pool has no maximum')
+  return { capacity, idle: jobSerializationPool.idleCount }
+}
 
 /** The row ids of a user RSS feed import, in input order. */
 export async function getRssFeedImportRowIds(importId: string): Promise<string[]> {
