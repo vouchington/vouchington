@@ -61423,6 +61423,28 @@
         "moderation_appeals_created_via_oauth_client_id_check": "CHECK (((created_via_oauth_client_id IS NULL) OR ((created_via IS NOT NULL) AND (created_via = ANY (ARRAY['api'::content_creation_channels, 'mcp'::content_creation_channels])))))"
       },
       "columns": {
+        "ai_draft_request_token": {
+          "collation": null,
+          "comment": "Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 21,
+          "type": "uuid"
+        },
+        "ai_draft_run_id": {
+          "collation": null,
+          "comment": "Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "text"
+        },
         "ai_drafted_at": {
           "collation": null,
           "comment": "When the AI agent drafted the recommended_action and responses.",
@@ -61486,7 +61508,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "approved_by_id": {
@@ -61497,7 +61519,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "uuid"
         },
         "case_id": {
@@ -61508,7 +61530,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33,
+          "ordinalPosition": 35,
           "type": "uuid"
         },
         "community_ban_id": {
@@ -61541,7 +61563,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "created_via": {
@@ -61574,7 +61596,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "timestamp with time zone"
         },
         "edited_at": {
@@ -61585,7 +61607,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "timestamp with time zone"
         },
         "edited_by_id": {
@@ -61596,7 +61618,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "uuid"
         },
         "id": {
@@ -61618,7 +61640,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "text"
         },
         "latest_lifecycle_change_id": {
@@ -61629,7 +61651,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 34,
           "type": "uuid"
         },
         "model": {
@@ -61717,7 +61739,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "recommended_action": {
@@ -61739,7 +61761,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 33,
           "type": "moderation_appeal_actions"
         },
         "resolved_at": {
@@ -61750,7 +61772,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "resolved_by_id": {
@@ -61761,7 +61783,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 32,
           "type": "uuid"
         },
         "sent_at": {
@@ -61772,7 +61794,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -61783,7 +61805,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "user_suspension_id": {
@@ -62280,6 +62302,26 @@
           "unique": false,
           "valid": true
         },
+        "moderation_appeals_ai_draft_request_token_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_appeals_ai_draft_request_token_key ON public.moderation_appeals USING btree (ai_draft_request_token)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "ai_draft_request_token",
+              "descending": false,
+              "expression": "ai_draft_request_token",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "moderation_appeals_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -62319,7 +62361,12 @@
         "trigger_moderation_transparency_appeals_scope_stamp": "CREATE TRIGGER trigger_moderation_transparency_appeals_scope_stamp BEFORE INSERT ON public.moderation_appeals FOR EACH ROW EXECUTE FUNCTION fn_update_transparency_scope('moderation_transparency_community_id', 'community_id')",
         "trigger_moderation_transparency_appeals_update_rollup": "CREATE TRIGGER trigger_moderation_transparency_appeals_update_rollup AFTER UPDATE ON public.moderation_appeals REFERENCING OLD TABLE AS old_appeals NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_update_rollup()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "moderation_appeals_ai_draft_request_token_key": {
+          "columns": ["ai_draft_request_token"],
+          "definition": "UNIQUE (ai_draft_request_token)"
+        }
+      }
     },
     "moderation_cases": {
       "checkConstraints": {

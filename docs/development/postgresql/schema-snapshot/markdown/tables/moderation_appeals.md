@@ -28,6 +28,8 @@ Not partitioned — growth: unbounded.
 | `ai_internal_response`                 | `text`                                 | yes      |                              |          |           |           | AI-drafted internal reasoning for moderators.                                                                                      |
 | `model`                                | `text`                                 | yes      |                              |          |           |           | OpenAI model used for the AI draft.                                                                                                |
 | `ai_drafted_at`                        | `timestamp with time zone`             | yes      |                              |          |           |           | When the AI agent drafted the recommended_action and responses.                                                                    |
+| `ai_draft_request_token`               | `uuid`                                 | no       | `uuidv7()`                   |          |           |           | Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.                         |
+| `ai_draft_run_id`                      | `text`                                 | yes      |                              |          |           |           | Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.                       |
 | `public_response`                      | `text`                                 | yes      |                              |          |           |           | Human-owned public message. The ONLY field ever delivered to the appellant.                                                        |
 | `internal_notes`                       | `text`                                 | yes      |                              |          |           |           | Internal moderator notes, never shared with the appellant.                                                                         |
 | `drafted_at`                           | `timestamp with time zone`             | yes      |                              |          |           |           | When the moderator first seeded public_response from the AI draft.                                                                 |
@@ -47,7 +49,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `moderation_appeals_ai_draft_request_token_key`: `UNIQUE (ai_draft_request_token)`
 
 **Check constraints:**
 
@@ -90,6 +93,7 @@ _none_
 - `idx_moderation_appeals__status_created`: `CREATE INDEX idx_moderation_appeals__status_created ON public.moderation_appeals USING btree (resolved_at, id DESC)`
 - `idx_moderation_appeals__user_suspension_id`: `CREATE INDEX idx_moderation_appeals__user_suspension_id ON public.moderation_appeals USING btree (user_suspension_id) WHERE (user_suspension_id IS NOT NULL)`
 - `idx_moderation_appeals__user_warning`: `CREATE INDEX idx_moderation_appeals__user_warning ON public.moderation_appeals USING btree (user_warning_id) WHERE (user_warning_id IS NOT NULL)`
+- `moderation_appeals_ai_draft_request_token_key`: `CREATE UNIQUE INDEX moderation_appeals_ai_draft_request_token_key ON public.moderation_appeals USING btree (ai_draft_request_token)`
 - `moderation_appeals_pkey`: `CREATE UNIQUE INDEX moderation_appeals_pkey ON public.moderation_appeals USING btree (id)`
 
 **Triggers:**
