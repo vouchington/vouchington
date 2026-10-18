@@ -117,6 +117,7 @@ export async function eraseCopyrightRetentionCase(
   }
   // Receipt ciphertext duplicates guidance/appeal output before the domain write. Its submission
   // FK identifies the case even when that write never completed.
+  // ast-grep-ignore: no-three-sequential-awaits -- one transaction erases receipts and evidence before inserting the completion marker.
   await transaction(sql`/* eraseCopyrightAgentCallReceipts */
     UPDATE ai_agent_call_receipts SET result_ciphertext = 'erased'
     WHERE copyright_notice_submission_id IN
