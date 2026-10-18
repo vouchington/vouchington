@@ -22,7 +22,6 @@ function makeJobOpts(
     deduplication: {
       id: `content-analysis:language:${entityType}:${id}`,
       mode: 'debounce' as const,
-      ttl: LANGUAGE_DETECTION_DEFAULTS.deduplicationTtlMs,
     },
   }
 }

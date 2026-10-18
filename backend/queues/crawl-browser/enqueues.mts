@@ -23,7 +23,6 @@ export function enqueueCrawlBrowser(data: CrawlBrowserJobData): EnqueueReturnTyp
     deduplication: {
       id: `crawl_browser__${data.linkId}__${data.urlId}`,
       mode: 'debounce' as const,
-      ttl: 120_000,
     },
   })
 }

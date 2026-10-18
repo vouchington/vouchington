@@ -36,7 +36,6 @@ export const enqueueCreatePostModeration = (
     deduplication: {
       id: deduplicationId,
       mode: 'debounce',
-      ttl: ONE_MINUTE_MS,
     },
   } satisfies Partial<JobOptions>)
 }
@@ -47,7 +46,6 @@ export const enqueueCreateImageModeration = (imageId: string, priority?: number)
     deduplication: {
       id: `image_moderation_${imageId}`,
       mode: 'debounce',
-      ttl: ONE_MINUTE_MS,
     },
   } satisfies Partial<JobOptions>)
 }
@@ -61,7 +59,7 @@ export const enqueueCreatePostModerationBatch = createBackgroundBulkEnqueue(
   (postId: string) => ({
     data: { id: postId },
     opts: {
-      deduplication: { id: `post_moderation_${postId}`, mode: 'debounce', ttl: ONE_MINUTE_MS },
+      deduplication: { id: `post_moderation_${postId}`, mode: 'debounce' },
     } satisfies Partial<JobOptions>,
   }),
 )
@@ -71,7 +69,7 @@ export const enqueueCreateImageModerationBatch = createBackgroundBulkEnqueue(
   (imageId: string) => ({
     data: { id: imageId },
     opts: {
-      deduplication: { id: `image_moderation_${imageId}`, mode: 'debounce', ttl: ONE_MINUTE_MS },
+      deduplication: { id: `image_moderation_${imageId}`, mode: 'debounce' },
     } satisfies Partial<JobOptions>,
   }),
 )

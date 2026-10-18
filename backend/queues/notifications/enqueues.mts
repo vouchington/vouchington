@@ -47,7 +47,6 @@ export const enqueueBulkFollowNotification = createBackgroundBulkEnqueue(
       deduplication: {
         id: `processFollowNotification__${data.followeeId}__${data.followerId}`,
         mode: 'debounce' as const,
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
       },
     },
   }),
@@ -108,7 +107,6 @@ export function enqueueReferralClickNotification(
     deduplication: {
       id: `processReferralClickNotification__${referrerId}`,
       mode: 'debounce',
-      ttl: FIVE_MINUTES_MS,
     },
   } satisfies Partial<JobOptions>)
 }
@@ -121,7 +119,6 @@ export function enqueueDeleteNotification(
     deduplication: {
       id: `processDeleteNotification__${userId}__${notificationId}`,
       mode: 'debounce',
-      ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
     },
   } satisfies Partial<JobOptions>)
 }

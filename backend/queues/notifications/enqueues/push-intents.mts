@@ -9,7 +9,6 @@ import {
 } from '@queues/background/enqueues/notifications-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from '../config.mts'
 
 export type { ReconcileNotificationPushIntentsData }
 const FIVE_MINUTES_MS = 5 * 60 * 1000
@@ -26,7 +25,6 @@ const enqueueBulkDeliverNotificationPushIntentJobs = createBackgroundBulkEnqueue
       deduplication: {
         id: `processDeliverNotificationPushIntent__${data.userId}__${data.notificationId}`,
         mode: 'debounce' as const,
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
       },
     },
   }),
@@ -44,7 +42,6 @@ export function enqueueDeliverNotificationPushIntent(
     deduplication: {
       id: `processDeliverNotificationPushIntent__${userId}__${notificationId}`,
       mode: 'debounce',
-      ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
     },
   } satisfies Partial<JobOptions>)
 }

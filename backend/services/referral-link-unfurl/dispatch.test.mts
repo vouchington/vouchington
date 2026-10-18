@@ -18,7 +18,6 @@ import {
 } from '@services/user-referral-program-links/unfurl-state'
 import {
   PRIORITY_DEFAULT,
-  UNFURL_REFERRAL_LINKS_DEFAULTS,
   UNFURL_REFERRAL_LINKS_ORDERING,
 } from '@queues/unfurl-referral-links/config'
 import { unfurlReferralLinksQueue } from '@queues/unfurl-referral-links/queues'
@@ -123,7 +122,6 @@ describe('dispatchUnfurlReferralLinks', () => {
         deduplication: {
           id: `unfurl_referral_link__${parentLinkId}`,
           mode: 'debounce',
-          ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
         },
       })
     }

@@ -10,7 +10,6 @@ type EnqueueBoilerplateRemovalEntry = {
   parentPath: string
 }
 
-const ONE_MINUTE_MS = 60_000
 const REMOVAL_JOB_NAME: BoilerplateRemovalJobs = 'boilerplate_removal'
 const DISPATCHER_JOB_NAME: BoilerplateRemovalJobs = 'boilerplate_removal_dispatcher'
 
@@ -28,7 +27,6 @@ const enqueueBulkBoilerplateRemovalJobs = createBulkEnqueueFunction<
       deduplication: {
         id: `${REMOVAL_JOB_NAME}__${hostnameId}__${parentPath}`,
         mode: 'debounce',
-        ttl: ONE_MINUTE_MS,
       },
     },
   }),

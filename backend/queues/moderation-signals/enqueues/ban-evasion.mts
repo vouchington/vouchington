@@ -1,7 +1,7 @@
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import type { JobOptions } from 'glide-mq'
-import { DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from '../config.mts'
+import { PRIORITY_DEFAULT } from '../config.mts'
 
 type BanEvasionPostEmbeddingTrigger = {
   communityId: string
@@ -13,7 +13,7 @@ type BanEvasionPostEmbeddingTrigger = {
 function makeJobOpts(dedupId: string): Partial<JobOptions> {
   return {
     priority: PRIORITY_DEFAULT,
-    deduplication: { id: dedupId, mode: 'debounce', ttl: DEDUPLICATION_TTL_MS },
+    deduplication: { id: dedupId, mode: 'debounce' },
   }
 }
 

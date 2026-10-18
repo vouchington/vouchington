@@ -62,7 +62,6 @@ function unfurlReferralLinkJobOptions(data: UnfurlReferralLinkEntry) {
     deduplication: {
       id: `unfurl_referral_link__${data.parentLinkId}`,
       mode: 'debounce' as const,
-      ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
     },
   } satisfies Partial<JobOptions>
 }
@@ -104,7 +103,6 @@ export function enqueueRemoveUnfurledChildrenForUser(userId: string): EnqueueRet
     deduplication: {
       id: `remove_unfurled_children_for_user__${userId}`,
       mode: 'debounce' as const,
-      ttl: UNFURL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
     },
   } satisfies Partial<JobOptions>)
 }

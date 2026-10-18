@@ -5,7 +5,6 @@ import {
   NOTIFICATIONS_RECONCILE_RSS_FEED_ITEM_JOB,
 } from '@queues/background/enqueues/notifications-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
-import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from '../config.mts'
 
 type ReconcilePostData = { postId: string; afterUserId?: string }
 type ReconcileRssFeedItemData = { rssFeedItemId: string; afterUserId?: string }
@@ -25,7 +24,6 @@ const enqueueBulkReconcilePostNotificationJobs = createBackgroundBulkEnqueue(
       deduplication: {
         id: `processReconcilePostNotifications__${data.postId}`,
         mode: 'debounce' as const,
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
       },
     },
   }),
@@ -42,7 +40,6 @@ const enqueueBulkReconcileRssFeedItemNotificationJobs = createBackgroundBulkEnqu
       deduplication: {
         id: `processReconcileRssFeedItemNotifications__${data.rssFeedItemId}`,
         mode: 'debounce' as const,
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
       },
     },
   }),

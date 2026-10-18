@@ -37,9 +37,8 @@ export const CLEANUP_PARTITIONS_CRON = '0 2 * * *'
 export const DATA_RETENTION_CRON = '0 4 * * *'
 // Daily at 1:00 AM UTC
 export const REFRESH_RSS_FEED_CRAWL_TIERS_CRON = '0 1 * * *'
-// Hourly safety-net refresh. Content changes enqueue the same view with a five-minute debounce.
+// Hourly safety-net refresh. Content changes enqueue the same view with a debounce.
 export const REFRESH_TOP_HASHTAGS_CRON = '0 * * * *'
-export const TOP_HASHTAGS_DEDUPLICATION_TTL_MS = 5 * 60_000
 // Stagger the four refreshes across five-minute cycles to avoid the shared advisory lock.
 export const REFRESH_PLATFORM_STATS_CRON = '0,5,10,15,20,25,30,35,40,45,50,55 * * * *'
 export const REFRESH_TRENDING_RSS_FEEDS_CRON = '1,6,11,16,21,26,31,36,41,46,51,56 * * * *'

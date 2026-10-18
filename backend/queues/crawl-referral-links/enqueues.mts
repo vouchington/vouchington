@@ -40,7 +40,6 @@ const enqueueBulkCrawlReferralLinkJobs = createBulkEnqueueFunction<
       deduplication: {
         id: `crawl_referral_link__${data.linkId}`,
         mode: 'debounce' as const,
-        ttl: CRAWL_REFERRAL_LINKS_DEFAULTS.deduplicationTtlMs,
       },
     },
   }),

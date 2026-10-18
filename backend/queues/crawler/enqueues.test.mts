@@ -21,7 +21,7 @@ describe('enqueueBulkCrawlUrls', () => {
     expect(job).toBeDefined()
     expect(job!.opts).toMatchObject({
       priority: 10,
-      deduplication: { id: 'crawl_url__url-1', mode: 'debounce', ttl: 1234 },
+      deduplication: { id: 'crawl_url__url-1', mode: 'debounce' },
       ordering: { key: 'hostname-1', rateLimit: { max: 1, duration: 1234 } },
     })
   })

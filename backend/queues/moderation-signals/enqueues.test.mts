@@ -27,7 +27,6 @@ describe('enqueueSpamDetection', () => {
       deduplication: {
         id: `spam_detection_${postId}_${contentSha256Hex}`,
         mode: 'debounce',
-        ttl: 60_000,
       },
     })
     expect(job!.opts.ordering).toBeUndefined()

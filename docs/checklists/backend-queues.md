@@ -61,6 +61,14 @@ flowchart LR
 
 For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents/skills/bounded-iteration/SKILL.md).
 
+## Replay and payload safety
+
+- **Replay only idempotent "ensure" effects.** A reconciler or sweep re-runs forever, so an on-create effect in it repeats (an hourly vote-weight loop once re-followed unfollowed referrers).
+- **A sweep never writes the rows it selects by `updated_at`.** The write bumps its own trigger and the sweep never ends.
+- **Every sweep, reconciler, and scheduled job has a convergence test:** a second run writes and enqueues nothing.
+- **Persist a receipt or state row before a paid or external call.** A stall retries the job and pays twice.
+- **No secrets or PII in payloads.** `removeOnComplete`/`removeOnFail` retention keeps payloads in Valkey, readable by anyone with queue access, and `scrubJobData` scrubs only failure logs, not stored data. Pass ids and load the data in the processor; login tokens, invite codes, and presigned URLs stay in the processor, or the job sets `removeOnComplete/Fail: true`.
+
 ## Placement and validation
 
 - Queue configuration, payload types, enqueue APIs, and scheduler registration live in

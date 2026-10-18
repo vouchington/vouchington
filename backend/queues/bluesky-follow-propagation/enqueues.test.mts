@@ -46,7 +46,6 @@ describe('bluesky follow propagation enqueue helpers', () => {
       deduplication: {
         id: `reconcile_${followerUserId}__${followeeUserId}`,
         mode: 'debounce',
-        ttl: 5000,
       },
     })
   })

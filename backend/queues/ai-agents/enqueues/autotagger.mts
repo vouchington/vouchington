@@ -24,7 +24,6 @@ export function enqueueBulkAutotaggerRssFeedItems(
       deduplication: {
         id: `autotagger_rss_feed_item_${item.rss_feed_item_id}`,
         mode: 'debounce' as const,
-        ttl: FIVE_SECONDS_MS,
       },
     } satisfies JobOptions,
   }))

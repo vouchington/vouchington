@@ -76,7 +76,6 @@ async function expectExactCrawlJob(urlId: string, hostnameId: string): Promise<v
       deduplication: {
         id: `crawl_url__${urlId}`,
         mode: 'debounce',
-        ttl: RATE_LIMIT_MS,
       },
       ordering: {
         key: hostnameId,
@@ -92,7 +91,6 @@ async function expectExactCrawlJob(urlId: string, hostnameId: string): Promise<v
     deduplication: {
       id: `crawl_url__${urlId}`,
       mode: 'debounce',
-      ttl: RATE_LIMIT_MS,
     },
     ordering: {
       key: hostnameId,

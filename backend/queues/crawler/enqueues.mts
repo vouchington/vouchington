@@ -92,7 +92,6 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
               ? `${JOB_NAME}_ratelimit__${urlId}__${rateLimitRetryCount}`
               : `${JOB_NAME}__${urlId}`,
           mode: 'debounce',
-          ttl: Math.max(rateLimitMs, delay),
         },
         ...(delay > 0 ? { delay } : {}),
         ...(hostnameId

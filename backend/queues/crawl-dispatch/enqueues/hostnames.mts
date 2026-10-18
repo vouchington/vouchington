@@ -24,7 +24,6 @@ function createBulkHostnameEnqueue(jobName: CrawlHostnamesJobs, defaultPriority:
         deduplication: {
           id: `${jobName}__${hostnameId}`,
           mode: jobName === CRAWL_HOSTNAME_JOB_NAME ? ('simple' as const) : ('debounce' as const),
-          ...(jobName === CRAWL_HOSTNAME_JOB_NAME ? {} : { ttl: ONE_MINUTE_MS }),
         },
       },
     }),
