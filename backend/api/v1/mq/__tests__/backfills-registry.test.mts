@@ -26,7 +26,10 @@ const EXPECTED_EXISTING_DISPATCHER_BACKFILL_IDS = new Set([
   'bloom-filters-users',
   'bloom-filters-communities',
   'bloom-filters-rss-feed-items',
-  'vote-weight-dispatch',
+  'vote-weight-age-milestones',
+  'vote-weight-membership-expirations',
+  'vote-weight-family-source-changes',
+  'vote-weight-dirty-markers',
   'relation-election-updates',
   'find-your-friends-dispatch',
   'oauth-authorization-exchange-dispatch',
@@ -155,13 +158,29 @@ describe('BACKFILL_REGISTRY', () => {
     })
   })
 
-  it('enqueues the vote-weight dispatcher backfill', async () => {
-    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'vote-weight-dispatch')
-    if (!entry) throw new Error('Vote-weight backfill missing')
+  it.each([
+    ['vote-weight-age-milestones', 'processVoteWeightAgeMilestones'],
+    ['vote-weight-membership-expirations', 'processVoteWeightMembershipExpirations'],
+    ['vote-weight-family-source-changes', 'processVoteWeightFamilySourceChanges'],
+  ])('enqueues the %s backfill', async (id, jobName) => {
+    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === id)
+    if (!entry) throw new Error(`${id} backfill missing`)
     const enqueued = await entry.trigger()
     if (isDeduplicatedEnqueue(enqueued)) return
     await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
-      name: 'vote-aggregation.processRecalculateVoteWeightDispatcher',
+      name: `vote-aggregation.${jobName}`,
+      data: { fullReplay: true },
+    })
+  })
+
+  it('starts the dirty-marker recovery backfill', async () => {
+    const entry = BACKFILL_REGISTRY.find(candidate => candidate.id === 'vote-weight-dirty-markers')
+    if (!entry) throw new Error('Dirty-marker backfill missing')
+    const enqueued = await entry.trigger()
+    if (isDeduplicatedEnqueue(enqueued)) return
+    await expect(readEnqueuedJob(voteAggregation, enqueued)).resolves.toMatchObject({
+      name: 'vote-aggregation.processVoteWeightDirtyMarkers',
+      data: {},
     })
   })
 })

@@ -1,5 +1,9 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
+    'vote_weight_recalculation_cursors',
+    'One cursor row per finite vote-weight dispatcher enum value.',
+  ],
+  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

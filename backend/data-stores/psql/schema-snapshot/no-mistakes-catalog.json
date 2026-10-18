@@ -1228,6 +1228,9 @@
     },
     "vote_integrity_resolutions": {
       "values": ["dismissed", "penalized", "suspended"]
+    },
+    "vote_weight_recalculation_dispatchers": {
+      "values": ["age_milestones", "membership_expirations", "family_source_changes"]
     }
   },
   "formatVersion": 2,
@@ -59358,6 +59361,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_membership_provider_evidence_records__rejected_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_provider_evidence_records__rejected_at ON public.membership_provider_evidence_records USING btree (rejected_at, id) WHERE (rejected_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rejected_at",
+              "descending": false,
+              "expression": "rejected_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(rejected_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "membership_provider_evidence_records_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -62475,6 +62510,102 @@
         }
       },
       "indexes": {
+        "idx_membership_source_states__family_effective_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_source_states__family_effective_at ON public.membership_source_states USING btree (effective_at, membership_source_id) WHERE (source_kind = 'family'::membership_source_kinds)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "effective_at",
+              "descending": false,
+              "expression": "effective_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(source_kind = 'family'::membership_source_kinds)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_source_states__family_expires_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_source_states__family_expires_at ON public.membership_source_states USING btree (expires_at, membership_source_id) WHERE ((source_kind = 'family'::membership_source_kinds) AND (expires_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((source_kind = 'family'::membership_source_kinds) AND (expires_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_source_states__family_updated_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_source_states__family_updated_at ON public.membership_source_states USING btree (updated_at, membership_source_id) WHERE (source_kind = 'family'::membership_source_kinds)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "updated_at",
+              "descending": false,
+              "expression": "updated_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(source_kind = 'family'::membership_source_kinds)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_source_states__lineage_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -62813,7 +62944,7 @@
         "idx_membership_sources__lineage_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_sources__lineage_id ON public.membership_sources USING btree (membership_provider_lineage_id) WHERE (membership_provider_lineage_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_membership_sources__lineage_id ON public.membership_sources USING btree (membership_provider_lineage_id, source_kind, id) INCLUDE (user_id) WHERE (membership_provider_lineage_id IS NOT NULL)",
           "immediate": true,
           "keys": [
             {
@@ -62821,6 +62952,24 @@
               "column": "membership_provider_lineage_id",
               "descending": false,
               "expression": "membership_provider_lineage_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "source_kind",
+              "descending": false,
+              "expression": "source_kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -63767,6 +63916,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_memberships__live_source": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_memberships__live_source ON public.memberships USING btree (membership_source_id) WHERE (projection_ended_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(projection_ended_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_memberships__product_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -63831,6 +64003,38 @@
           ],
           "live": true,
           "predicate": "(user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_memberships__vote_weight_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_memberships__vote_weight_expiry ON public.memberships USING btree (expires_at, id) WHERE ((projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (past_due_at IS NULL) AND (paused_at IS NULL) AND (expires_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (past_due_at IS NULL) AND (paused_at IS NULL) AND (expires_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -139879,24 +140083,47 @@
           "unique": false,
           "valid": true
         },
-        "idx_users__vote_weight_recalculation": {
+        "idx_users__vote_weight_age_milestone": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_users__vote_weight_recalculation ON public.users USING btree (vote_weight_recalculated_at) WHERE ((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
+          "definition": "CREATE INDEX idx_users__vote_weight_age_milestone ON public.users USING btree (id) WHERE ((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "vote_weight_recalculated_at",
+              "column": "id",
               "descending": false,
-              "expression": "vote_weight_recalculated_at",
+              "expression": "id",
               "nullsFirst": false,
-              "opclass": "pg_catalog.timestamptz_ops",
+              "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
           ],
           "live": true,
           "predicate": "((deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_users__vote_weight_dirty_marker": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_users__vote_weight_dirty_marker ON public.users USING btree (id) WHERE ((vote_weight_recalculated_at IS NULL) AND (deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((vote_weight_recalculated_at IS NULL) AND (deleted_at IS NULL) AND (vote_weight_admin_set_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -142868,6 +143095,79 @@
       "triggers": {
         "trigger_vote_weight_penalties_updated_at": {
           "definition": "CREATE TRIGGER trigger_vote_weight_penalties_updated_at BEFORE UPDATE ON public.vote_weight_penalties FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "vote_weight_recalculation_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "changes_through_at": {
+          "comment": "Latest completed sweep boundary; NULL means the dispatcher has not advanced.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "dispatcher": {
+          "comment": "The finite vote-weight signal dispatcher advanced by this cursor.",
+          "dataType": "vote_weight_recalculation_dispatchers",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "When this cursor row was last updated.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "One durable high-water mark for each vote-weight signal dispatcher.",
+      "foreignKeys": {},
+      "indexes": {
+        "vote_weight_recalculation_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX vote_weight_recalculation_cursors_pkey ON public.vote_weight_recalculation_cursors USING btree (dispatcher)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "dispatcher",
+              "descending": false,
+              "expression": "dispatcher",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["dispatcher"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_vote_weight_recalculation_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_vote_weight_recalculation_cursors_updated_at BEFORE UPDATE ON public.vote_weight_recalculation_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}

@@ -26,4 +26,15 @@ truth. Two requirements enforce this.
 - The registry test validates structure, not completeness against the queue list; keeping the
   registry complete is a review responsibility.
 
+Vote-weight dispatchers persist independent positions for age, membership expiry, and family-source
+signals. Their operator backfills replay full history in bounded pages, including every eligible
+live user through the age backfill; child jobs use entity-and-event ids and can
+reactivate retained terminal records. Family timestamp branches retain their own keysets until
+all branches finish, and only then commit the dispatch position. Direct account changes enqueue a
+new event, while an operator force request can reactivate its stable id.
+
+OAuth and family mutations retain a transactional dirty marker until recalculation succeeds, so
+recovery does not depend on publication success or a commit falling within an overlap. Its indexed
+recovery dispatcher reactivates a stable per-user job and restarts from the dirty set on each run.
+
 See also the [backend queue reference](../../overview/architecture/queues/README.md).

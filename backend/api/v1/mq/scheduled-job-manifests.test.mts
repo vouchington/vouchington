@@ -98,13 +98,16 @@ const EXPECTED_SCHEDULED_JOBS = [
   'unfurl_referral_links/unfurl_referral_links_dispatcher',
   'background/blacklistDispatcher',
   'background/userDeletionRecovery',
-  'background/dailyVoteWeightRecalculation',
+  'background/voteWeightAgeMilestones',
+  'background/voteWeightMembershipExpirations',
+  'background/voteWeightFamilySourceChanges',
+  'background/voteWeightDirtyMarkers',
 ].toSorted()
 
 describe('scheduled job manifest catalog', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('imports the exact 13 manifests and 79 live jobs', () => {
+  it('imports the exact 13 manifests and 82 live jobs', () => {
     expect(SCHEDULED_JOB_MANIFESTS).toHaveLength(13)
     expect(
       SCHEDULED_JOB_MANIFESTS.flatMap(manifest =>
@@ -154,7 +157,7 @@ describe('scheduled job manifest catalog', () => {
   })
 
   it('projects every scheduled API surface', () => {
-    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(74)
+    expect(SCHEDULED_JOBS_REGISTRY).toHaveLength(77)
     expect(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).toEqual(SCHEDULED_JOB_API_ORDER)
     expect(new Set(SCHEDULED_JOBS_REGISTRY.map(job => job.id)).size).toBe(
       SCHEDULED_JOBS_REGISTRY.length,

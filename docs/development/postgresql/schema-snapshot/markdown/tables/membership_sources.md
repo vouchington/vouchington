@@ -35,7 +35,7 @@ _none_
 - `idx_membership_sources__id_lineage_id`: `CREATE UNIQUE INDEX idx_membership_sources__id_lineage_id ON public.membership_sources USING btree (id, membership_provider_lineage_id)`
 - `idx_membership_sources__id_source_kind`: `CREATE UNIQUE INDEX idx_membership_sources__id_source_kind ON public.membership_sources USING btree (id, source_kind)`
 - `idx_membership_sources__id_user_id`: `CREATE UNIQUE INDEX idx_membership_sources__id_user_id ON public.membership_sources USING btree (id, user_id)`
-- `idx_membership_sources__lineage_id`: `CREATE INDEX idx_membership_sources__lineage_id ON public.membership_sources USING btree (membership_provider_lineage_id) WHERE (membership_provider_lineage_id IS NOT NULL)`
+- `idx_membership_sources__lineage_id`: `CREATE INDEX idx_membership_sources__lineage_id ON public.membership_sources USING btree (membership_provider_lineage_id, source_kind, id) INCLUDE (user_id) WHERE (membership_provider_lineage_id IS NOT NULL)`
 - `idx_membership_sources__user_id`: `CREATE INDEX idx_membership_sources__user_id ON public.membership_sources USING btree (user_id, id DESC)`
 - `membership_sources_pkey`: `CREATE UNIQUE INDEX membership_sources_pkey ON public.membership_sources USING btree (id)`
 

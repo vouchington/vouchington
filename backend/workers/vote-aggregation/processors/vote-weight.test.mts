@@ -1,13 +1,14 @@
 import { adminSetVoteWeight } from '@services/vote-weight/admin-set'
 import { readAdminWorkflowVoteWeight } from '@voucha/test-helpers/admin-workflow-fixtures'
-import { describe, expect, it } from 'vitest'
-import { createTestUser, readAllQueueJobs } from '@voucha/test-helpers'
-import { VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import { createTestUser } from '@voucha/test-helpers'
+import { createFailedOAuthVoteWeightEnqueueFixture } from '@voucha/test-helpers/vote-weight-dirty-marker'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { voteWeightWorkConfig } from '@services/vote-weight/work-limits'
+import { gatherVoteWeightFactors } from '@services/vote-weight/gather-factors'
+import { calculateVoteWeight } from '@services/vote-weight/calculate'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
-import {
-  processRecalculateUserVoteWeight,
-  processRecalculateVoteWeightDispatcher,
-} from './vote-weight.mts'
+import { processRecalculateUserVoteWeight, processVoteWeightDirtyMarkers } from './vote-weight.mts'
 
 describe('vote weight dispatcher processor', () => {
   it('replays election targets without clearing an administrator weight override', async () => {
@@ -19,24 +20,25 @@ describe('vote weight dispatcher processor', () => {
     await expect(readAdminWorkflowVoteWeight(user.id)).resolves.toEqual(before)
   })
 
-  it('enqueues users needing vote-weight recalculation before returning', async () => {
-    // The dispatcher scans users by id ASC in batches of 500, re-enqueueing itself for the
-    // rest. UUIDv7 ids are time-ordered, so on a populated test DB a cursor-less dispatch
-    // covers only the oldest 500 users and never reaches a fresh fixture. Anchor the cursor
-    // at a user created just before the target so the target lands in the first batch.
-    const cursorUser = await createTestUser()
-    const user = await createTestUser()
-    expect(user).toBeTruthy()
+  it('recovers a committed OAuth link after its post-commit enqueue fails', async () => {
+    const fixture = await createFailedOAuthVoteWeightEnqueueFixture()
+    onTestFinished(fixture.cleanup)
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, { dispatch_batch_size: 1 }),
+    )
+    expect(fixture.reportedErrors).toHaveLength(1)
+    expect((await fixture.getUser())?.vote_weight_recalculated_at).toBeNull()
 
-    await processRecalculateVoteWeightDispatcher({ afterId: cursorUser!.id })
+    await processVoteWeightDirtyMarkers({ afterId: fixture.afterId })
+    const job = await voteAggregation.getJob(`voteWeight__${fixture.userId}__dirtyMarker`)
+    expect(job?.data).toMatchObject({ userId: fixture.userId })
+    await processRecalculateUserVoteWeight({ userId: fixture.userId })
 
-    const waiting = await readAllQueueJobs(voteAggregation)
-    expect(
-      waiting.some(
-        job =>
-          job.name === VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB.name &&
-          (job.data as { userId?: string }).userId === user!.id,
-      ),
-    ).toBe(true)
+    const user = await fixture.getUser()
+    expect(user?.vote_weight_recalculated_at).toBeInstanceOf(Date)
+    const factors = await gatherVoteWeightFactors(fixture.userId, { readFromWriter: true })
+    expect(factors).not.toBeNull()
+    const savedWeight = await readAdminWorkflowVoteWeight(fixture.userId)
+    expect(savedWeight.vote_weight).toBe(calculateVoteWeight(factors!))
   })
 })

@@ -11,6 +11,10 @@ import {
   VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB,
   VOTE_AGGREGATION_VOTE_INTEGRITY_JOB,
   VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
+  VOTE_AGGREGATION_AGE_MILESTONES_JOB,
+  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
+  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
 import { enqueueElectionUpdatesForUser } from '@services/vote-weight/enqueue-election-updates'
 import { processElection } from './processors/elections.mts'
@@ -22,6 +26,10 @@ import { processVoteIntegrityCheck } from './processors/vote-integrity.mts'
 import {
   processRecalculateUserVoteWeight,
   processRecalculateVoteWeightDispatcher,
+  processVoteWeightAgeMilestones,
+  processVoteWeightMembershipExpirations,
+  processVoteWeightFamilySourceChanges,
+  processVoteWeightDirtyMarkers,
 } from './processors/vote-weight.mts'
 import {
   processRefreshPostMetrics,
@@ -37,6 +45,18 @@ export const voteAggregationHandlers = [
   ),
   backgroundHandler(VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB, job =>
     processRecalculateVoteWeightDispatcher(job.data),
+  ),
+  backgroundHandler(VOTE_AGGREGATION_AGE_MILESTONES_JOB, job =>
+    processVoteWeightAgeMilestones(job.data),
+  ),
+  backgroundHandler(VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB, job =>
+    processVoteWeightMembershipExpirations(job.data),
+  ),
+  backgroundHandler(VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB, job =>
+    processVoteWeightFamilySourceChanges(job.data),
+  ),
+  backgroundHandler(VOTE_AGGREGATION_DIRTY_MARKERS_JOB, job =>
+    processVoteWeightDirtyMarkers(job.data),
   ),
   // One bounded page of the user's votes becomes election recomputes; a full page continues.
   backgroundHandler(VOTE_AGGREGATION_USER_ELECTION_FAN_OUT_JOB, job =>

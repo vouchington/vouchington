@@ -14,6 +14,7 @@ export async function deletePasskey(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )
     assert(rowCount === 1, 404, 'Passkey not found')
+    await markPasskeyVoteWeightDirty(currentUserId, lockedUserTransaction)
     // enqueue deferred to caller so it runs after the outer transaction commits
   } else {
     await using query = await beginTransaction()
@@ -22,7 +23,13 @@ export async function deletePasskey(
       sql`/* deletePasskey */ DELETE FROM user_passkeys WHERE id = ${passkeyId} AND user_id = ${currentUserId}`,
     )
     assert(rowCount === 1, 404, 'Passkey not found')
+    await markPasskeyVoteWeightDirty(currentUserId, query)
     await query.commit()
     void enqueueRecalculateUserVoteWeight(currentUserId)
   }
+}
+
+async function markPasskeyVoteWeightDirty(userId: string, query: TransactionQuery): Promise<void> {
+  await query(sql`/* deletePasskey: mark vote weight dirty */
+    UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}`)
 }

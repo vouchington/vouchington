@@ -112,6 +112,35 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+DO $$ BEGIN
+  CREATE TYPE vote_weight_recalculation_dispatchers AS ENUM (
+    'age_milestones', 'membership_expirations', 'family_source_changes'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS vote_weight_recalculation_cursors (
+  dispatcher vote_weight_recalculation_dispatchers PRIMARY KEY,
+  changes_through_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE TRIGGER trigger_vote_weight_recalculation_cursors_updated_at
+BEFORE UPDATE ON vote_weight_recalculation_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+COMMENT ON TABLE vote_weight_recalculation_cursors IS 'One durable high-water mark for each vote-weight signal dispatcher.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+COMMENT ON COLUMN vote_weight_recalculation_cursors.dispatcher IS 'The finite vote-weight signal dispatcher advanced by this cursor.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+COMMENT ON COLUMN vote_weight_recalculation_cursors.changes_through_at IS 'Latest completed sweep boundary; NULL means the dispatcher has not advanced.';
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+COMMENT ON COLUMN vote_weight_recalculation_cursors.updated_at IS 'When this cursor row was last updated.';
+
 -- ============================================================================
 -- users
 -- ============================================================================
@@ -256,11 +285,18 @@ CREATE INDEX IF NOT EXISTS idx_users__deleted_at
   ON users (deleted_at)
   WHERE deleted_at IS NOT NULL;
 
--- vote weight recalculation candidates
+-- Age-milestone UUIDv7 ranges for users without an admin override.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_users__vote_weight_recalculation
-  ON users (vote_weight_recalculated_at)
+CREATE INDEX IF NOT EXISTS idx_users__vote_weight_age_milestone
+  ON users (id)
   WHERE deleted_at IS NULL AND vote_weight_admin_set_at IS NULL;
+
+-- Unrecalculated users, including OAuth links whose post-commit enqueue failed.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_users__vote_weight_dirty_marker
+  ON users (id)
+  WHERE vote_weight_recalculated_at IS NULL
+    AND deleted_at IS NULL AND vote_weight_admin_set_at IS NULL;
 
 -- find users pending language detection (bio)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

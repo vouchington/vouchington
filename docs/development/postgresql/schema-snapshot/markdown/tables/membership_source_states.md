@@ -48,6 +48,9 @@ _none_
 
 **Indexes:**
 
+- `idx_membership_source_states__family_effective_at`: `CREATE INDEX idx_membership_source_states__family_effective_at ON public.membership_source_states USING btree (effective_at, membership_source_id) WHERE (source_kind = 'family'::membership_source_kinds)`
+- `idx_membership_source_states__family_expires_at`: `CREATE INDEX idx_membership_source_states__family_expires_at ON public.membership_source_states USING btree (expires_at, membership_source_id) WHERE ((source_kind = 'family'::membership_source_kinds) AND (expires_at IS NOT NULL))`
+- `idx_membership_source_states__family_updated_at`: `CREATE INDEX idx_membership_source_states__family_updated_at ON public.membership_source_states USING btree (updated_at, membership_source_id) WHERE (source_kind = 'family'::membership_source_kinds)`
 - `idx_membership_source_states__lineage_id`: `CREATE INDEX idx_membership_source_states__lineage_id ON public.membership_source_states USING btree (membership_provider_lineage_id) WHERE (membership_provider_lineage_id IS NOT NULL)`
 - `idx_membership_source_states__observation_id`: `CREATE INDEX idx_membership_source_states__observation_id ON public.membership_source_states USING btree (membership_provider_observation_id) WHERE (membership_provider_observation_id IS NOT NULL)`
 - `idx_membership_source_states__product_id`: `CREATE INDEX idx_membership_source_states__product_id ON public.membership_source_states USING btree (membership_product_id)`

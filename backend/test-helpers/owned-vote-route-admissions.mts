@@ -178,7 +178,6 @@ export function observeOwnedPenaltyAdmissions(ownedUserIds: Set<string>) {
     false,
   )
 }
-
 function voteAdmissionKind(name: string): string {
   switch (name) {
     case 'vote-aggregation.processUpdateElectionVoteStats':
@@ -189,6 +188,10 @@ function voteAdmissionKind(name: string): string {
       return 'vote-integrity'
     case 'vote-aggregation.processRecalculateUserVoteWeight':
     case 'vote-aggregation.processRecalculateVoteWeightDispatcher':
+    case 'vote-aggregation.processVoteWeightAgeMilestones':
+    case 'vote-aggregation.processVoteWeightMembershipExpirations':
+    case 'vote-aggregation.processVoteWeightFamilySourceChanges':
+    case 'vote-aggregation.processVoteWeightDirtyMarkers':
     case 'vote-aggregation.enqueueUserElectionUpdates':
       return 'vote-weight'
     default:

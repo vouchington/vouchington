@@ -8,18 +8,28 @@ import { enqueueKagiSmallWebSync } from '@queues/kagi-smallweb/enqueues'
 import { enqueueBackfillBloomFilter } from '@queues/bloom-filters/enqueues'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { KAGI_SMALLWEB_SYNC_JOB } from '@queues/background/enqueues/kagi-smallweb-jobs'
-import { VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { enqueueRecalculateVoteWeightDispatcher } from '@queues/vote-aggregation/enqueues/vote-weight'
+import {
+  VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB,
+  VOTE_AGGREGATION_AGE_MILESTONES_JOB,
+  VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB,
+  VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
+  VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
+} from '@queues/background/enqueues/vote-aggregation-jobs'
+import {
+  enqueueRecalculateVoteWeightDispatcher,
+  enqueueVoteWeightAgeMilestones,
+  enqueueVoteWeightMembershipExpirations,
+  enqueueVoteWeightFamilySourceChanges,
+  enqueueVoteWeightDirtyMarkers,
+} from '@queues/vote-aggregation/enqueues/vote-weight'
 import { enqueueReconcileTopicAliasCategoryMappings } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import type { BloomFilterEntityType } from '@queues/bloom-filters/types'
 
-function createVoteWeightTrigger(replayElectionsOnly = false): () => Promise<unknown> {
+function createVoteWeightTrigger(): () => Promise<unknown> {
   return async () =>
     enqueueRecalculateVoteWeightDispatcher(undefined, {
-      deduplicationId: replayElectionsOnly
-        ? 'backfill:relation-election-updates'
-        : 'backfill:vote-weight-dispatch',
-      replayElectionsOnly,
+      deduplicationId: 'backfill:relation-election-updates',
+      replayElectionsOnly: true,
     })
 }
 
@@ -85,15 +95,54 @@ export const EXISTING_RECURRING_DISPATCHER_BACKFILLS: BackfillEntry[] = [
     job_name: VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB.name,
     description: 'Replay relation election updates from all users and concrete vote ledgers',
     source_table: 'users',
-    trigger: createVoteWeightTrigger(true),
+    trigger: createVoteWeightTrigger(),
   },
   {
-    id: 'vote-weight-dispatch',
+    id: 'vote-weight-age-milestones',
     queue_name: BACKGROUND_QUEUE_NAME,
-    job_name: VOTE_AGGREGATION_VOTE_WEIGHT_DISPATCHER_JOB.name,
-    description: 'Dispatch vote-weight recalculation from users',
+    job_name: VOTE_AGGREGATION_AGE_MILESTONES_JOB.name,
+    description: 'Dispatch vote-weight age milestones from users',
     source_table: 'users',
-    trigger: createVoteWeightTrigger(),
+    trigger: createBackfillDispatcherTrigger('vote-weight-age-milestones', async options => {
+      const result = await enqueueVoteWeightAgeMilestones({ fullReplay: true }, options)
+      return result
+    }),
+  },
+  {
+    id: 'vote-weight-membership-expirations',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_MEMBERSHIP_EXPIRATIONS_JOB.name,
+    description: 'Dispatch vote-weight membership expirations',
+    source_table: 'memberships',
+    trigger: createBackfillDispatcherTrigger(
+      'vote-weight-membership-expirations',
+      async options => {
+        const result = await enqueueVoteWeightMembershipExpirations({ fullReplay: true }, options)
+        return result
+      },
+    ),
+  },
+  {
+    id: 'vote-weight-family-source-changes',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB.name,
+    description: 'Dispatch vote-weight family source changes',
+    source_table: 'membership_source_states, membership_provider_evidence_records',
+    trigger: createBackfillDispatcherTrigger('vote-weight-family-source-changes', async options => {
+      const result = await enqueueVoteWeightFamilySourceChanges({ fullReplay: true }, options)
+      return result
+    }),
+  },
+  {
+    id: 'vote-weight-dirty-markers',
+    queue_name: BACKGROUND_QUEUE_NAME,
+    job_name: VOTE_AGGREGATION_DIRTY_MARKERS_JOB.name,
+    description: 'Recover vote-weight recalculation dirty markers',
+    source_table: 'users',
+    trigger: createBackfillDispatcherTrigger('vote-weight-dirty-markers', async options => {
+      const result = await enqueueVoteWeightDirtyMarkers({}, options)
+      return result
+    }),
   },
   {
     id: 'find-your-friends-dispatch',

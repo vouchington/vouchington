@@ -61,6 +61,7 @@ export const backgroundWorkRegistryEntries9 = {
     label: 'Vote weight dispatch',
     maxValues: voteWeightWorkMaxValues,
     descriptions: {
+      window_overlap_seconds: 'Seconds re-read before the committed vote-weight dispatch cursor.',
       dispatch_batch_size: 'Users per vote weight dispatcher page.',
       election_fan_out_page_size: 'Votes per user election fan-out page after a weight change.',
     },

@@ -15,6 +15,8 @@ export async function createPasskey(
 
   await using query = await beginTransaction()
   await query(sql`/* createPasskey */ SELECT fn_lock_active_user_for_mutation(${userId})`)
+  await query(sql`/* createPasskey: mark vote weight dirty */
+    UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}`)
   const { rows } = await query<PublicPasskey>(sql`/* createPasskey */
       INSERT INTO user_passkeys (user_id, credential_id, public_key, counter, device_type, is_backed_up, transports, name)
       VALUES (

@@ -1,10 +1,25 @@
-import { describe, it, expect } from 'vitest'
-import { randomBytes } from 'node:crypto'
+import { describe, it, expect, onTestFinished } from 'vitest'
+import { randomBytes, randomInt, randomUUID } from 'node:crypto'
 import { v7 } from 'uuid'
-import { createTestUserDirect } from '@voucha/test-helpers'
+import {
+  createTestUserDirect,
+  deleteTestOAuthAuthorizationFixtures,
+  getTestUserRaw,
+} from '@voucha/test-helpers'
+import { createVoteWeightDispatchUserAt } from '@voucha/test-helpers/vote-weight-dispatch'
+import { createVoteWeightRecalculationRaceQuery } from '@voucha/test-helpers/vote-weight-recalculation-race'
+import {
+  connectOAuthAccountToUser,
+  runOAuthAccountConnectionPostCommitEffects,
+} from '../oauth-accounts/connect.mts'
+import { upsertOAuthAccount } from '../oauth-accounts/upsert.mts'
 import { recalculateUserVoteWeight } from './update.mts'
 import { adminSetVoteWeight } from './admin-set.mts'
 import { gatherVoteWeightFactors } from './gather-factors.mts'
+import { calculateVoteWeight } from './calculate.mts'
+import { dispatchVoteWeightDirtyMarkers } from './dispatch-dirty-markers.mts'
+import { voteWeightWorkConfig } from './work-limits.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 const randomUsername = () => `test-vote-weight-${randomBytes(4).toString('hex')}`
 
@@ -80,5 +95,73 @@ describe('recalculateUserVoteWeight', () => {
     const result = await recalculateUserVoteWeight(fakeId)
     expect(result.weight).toBe(1)
     expect(result.changed).toBe(false)
+  })
+
+  it('keeps a newer OAuth dirty marker when an earlier factor gather races its connection', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(voteWeightWorkConfig, { dispatch_batch_size: 1 }),
+    )
+    const at = new Date(Date.UTC(2001, 1, 1) + randomInt(0, 30_000_000))
+    const userId = await createVoteWeightDispatchUserAt(at)
+    const afterId = v7({ msecs: at.getTime() - 1 })
+    const providerUserId = `github-vote-weight-race-${randomUUID()}`
+    onTestFinished(() =>
+      deleteTestOAuthAuthorizationFixtures({ githubUserIds: [providerUserId], userIds: [userId] }),
+    )
+    const baseline = await recalculateUserVoteWeight(userId)
+    await upsertOAuthAccount('github', providerUserId, `tests+${providerUserId}@voucha.ai`, {
+      login: providerUserId,
+    })
+    const reported: Error[] = []
+    const query = createVoteWeightRecalculationRaceQuery(async () => {
+      await connectOAuthAccountToUser('github', userId, providerUserId)
+      await runOAuthAccountConnectionPostCommitEffects(userId, {
+        enqueueVoteWeightRecalculation: async () => {
+          throw new Error('queue unavailable')
+        },
+        invalidateVerifiedEmail: async () => 0,
+        reportError: error => {
+          reported.push(error)
+        },
+      })
+    })
+
+    await expect(recalculateUserVoteWeight(userId, { query })).rejects.toThrow(/raced/)
+    expect(reported).toHaveLength(1)
+    const latestFactors = await gatherVoteWeightFactors(userId, { readFromWriter: true })
+    expect(latestFactors?.oauthCount).toBe(1)
+    expect(latestFactors?.current_weight).toBe(baseline.weight)
+    expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
+
+    const dirtyEvent = { userId, jobId: `voteWeight__${userId}__dirtyMarker` }
+    expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
+    const repaired = await recalculateUserVoteWeight(userId)
+    expect(repaired.weight).toBe(calculateVoteWeight(latestFactors!))
+    const savedFactors = await gatherVoteWeightFactors(userId, { readFromWriter: true })
+    expect(savedFactors?.current_weight).toBe(repaired.weight)
+    expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeInstanceOf(Date)
+    expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).not.toContainEqual(
+      dirtyEvent,
+    )
+  })
+
+  it('retries a forced recalculation from current facts after a concurrent administrator write', async () => {
+    const user = await createTestUserDirect({ username: randomUsername() })
+    await recalculateUserVoteWeight(user.id)
+    const query = createVoteWeightRecalculationRaceQuery(() =>
+      adminSetVoteWeight(user.id, user.id, 999),
+    )
+
+    await expect(
+      recalculateUserVoteWeight(user.id, { forceRecalculate: true, query }),
+    ).rejects.toThrow(/raced/)
+    const factors = await gatherVoteWeightFactors(user.id, { readFromWriter: true })
+    expect(factors?.current_weight).toBe(999)
+    expect(factors?.vote_weight_admin_set_at).toBeInstanceOf(Date)
+    expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at).toBeNull()
+    await recalculateUserVoteWeight(user.id, { forceRecalculate: true })
+    const retried = await gatherVoteWeightFactors(user.id, { readFromWriter: true })
+    expect(retried?.vote_weight_admin_set_at).toBeNull()
+    expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at).toBeInstanceOf(Date)
   })
 })
