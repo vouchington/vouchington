@@ -4,48 +4,35 @@ Use this checklist when adding, removing, or modifying a workflow (`.github/work
 
 ## Checklist
 
-- **Runner preference** — use only the closed GitHub-hosted label set enforced by `runner-policy.test.mts`: `ubuntu-slim` (default — `gh api`/prompt-rendering/aggregator jobs with no Docker, no `services:`, and no `setup-node-pnpm`/`setup-backend`), `ubuntu-latest` (Docker, `services:`, or Node/pnpm/backend setup), `ubuntu-24.04-arm` (native ARM64, the production architecture — the image builds in `publish-web-images.yml`/`publish-backend-images.yml`, `tests-web.yml` (`prep` and the pure `web` Vitest shards in `web-tests`), `tests-web-api.yml` (`prep` and the shards, whose digest-pinned Postgres and Valkey service images must stay multi-arch with `linux/arm64`), the shared web build with every job that restores it: `checks-static.yml#static-web`, web integration, and Playwright; and `checks-static.yml#static-lambdas`, whose image-resize deployment package smoke test must load the packaged `linux-arm64` `sharp` binary; `runner-policy.test.mts` pins the exact list).
-- **Runner label changes** — update the closed `ALLOWED_LABELS` allowlist in `runner-policy-classify.mts` (`runner-policy.test.mts` imports it).
-- **Job runner or timeout changes** — run `node ci/check-live-workflow-topology.mts` before pushing. It is a separate static CI step; `pnpm run no-mistakes` alone does not check it.
-- **Runner-demand budget** — state which hosted label a new or changed job draws from and prefer the smallest runner that fits the workload. Keep new fan-out bounded and justify any increase in parallel jobs.
-- **Pin remote Actions** to a 40-hex commit SHA with a `# vX` version comment, including first-party `actions/*` and `github/*`. Local `./` composite paths stay unpinned. Owner: no-mistakes `github-actions-pinned-hash`; the SHA keeps a re-pointed tag from silently changing what runs.
-- **Local composite actions require a checkout** — `uses: ./.github/actions/<name>` only resolves once `$GITHUB_WORKSPACE` has been populated by an `actions/checkout` step; a job with no checkout cannot call one. Do not add a checkout to a job deliberately kept checkout-free (for example, a required fan-in gate) merely to deduplicate inline script; weigh the real runner-demand and registry-reachability cost first. Do not add an unconditional whole-workspace `find`/`chown`/`chmod` traversal before checkout. Repair the producer or runner isolation, or use a targeted post-failure repair when logs demonstrate the need.
-- **Concurrency** — every standalone workflow must declare a concurrency group; a reusable workflow inherits its caller's. An area workflow's group starts with a literal area prefix, because under `workflow_call` `github.workflow` names the caller (`nightly.yml`). PR workflows cancel in-progress; merge-group, nightly, and per-unit main workflows use `cancel-in-progress: false`. PR workflows do not subscribe to `ready_for_review` or `converted_to_draft`: no job reads draft state, so a draft transition must not start a run.
-- **Deploys stay decoupled** — no cross-workflow deploy-order wait/poll. Only api↔workers may couple (shared DB/code/image). Application-owned schema and its current producers and consumers do not use an expand/contract app rollout; follow [One current contract](../../AGENTS.md). Keep expand/contract for an external protocol or security key rotation that already has an independent consumer. See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
-- **Script expressions** — pass anything that is not a constant context through `env:` instead of interpolating `${{ }}` into a `run:` or `github-script` body.
-- **Checkout credentials** — when the job's `GITHUB_TOKEN` can write, set `actions/checkout` `persist-credentials: false`. `id-token: write` is the OIDC token, not the git credential.
-- **`actionlint`** — run on all changed `.github/workflows/*.yml` files before pushing. CI enforces it.
-- **Auto Harness admission** — Harness workflows keep only their per-target workflow concurrency
-  (one group per issue, branch, run, or SHA), which prevents duplicate sessions for one target.
-  [`harness-dispatch.yml`](../../.github/workflows/harness-dispatch.yml) only creates a session;
-  the Harness scheduler keeps it queued until a host has capacity, ordered by `HARNESS_PRIORITY` and
-  expiring after `HARNESS_QUEUE_TTL_SECONDS`. Do not add a GitHub-side global concurrency group
-  across Harness jobs: it would serialize the short GitHub jobs without limiting running sessions.
-- **Workflow policy tests** — run
-  `pnpm exec vitest run --project github-actions` for every workflow or composite action change.
-- **Cache the pnpm store, Playwright browsers, and shared CI web runtime output only** — every job runs on a fresh, ephemeral runner. `setup-node-pnpm`/`setup-backend` cache the resolved `pnpm store path --silent` directory and `setup-playwright` caches `~/.cache/ms-playwright`, both via a SHA-pinned `actions/cache` step keyed on `runner.os`, `runner.arch`, and a shell-computed SHA-256 of `pnpm-lock.yaml` exposed through a step output. The Playwright cache omits `restore-keys` so a stale browser build fails loudly at install time instead of silently restoring. `build-web-targets` alone may cache its standalone Next.js server, copied static assets, and Cloudflare Worker bundle under an exact run/attempt/source/platform key; consumers validate the restore and build locally on a miss or incomplete result. Because the key includes `runner.arch` and the build holds native packages, every job calling it must run on the same runner label, or consumers silently rebuild in each shard (enforced by `build-web-targets-runner-parity.test.mts`). Never cache `node_modules` directly or enable `actions/setup-node`'s built-in package-manager `cache:` input. Enforced by `cache-path-policy.test.mts`.
-- **Sparse checkout is allowed** — every job runs on a fresh, ephemeral runner with its own disposable `_work` directory, so the old self-hosted concern (a persistent checkout directory reused across unrelated job runs, silently inheriting a prior job's narrowed sparse-checkout config) no longer applies. `actions/checkout`'s `sparse-checkout`/`sparse-checkout-cone-mode` inputs may be used where they help; there is no repo-wide ban and no `no-mistakes` rule enforcing one.
-- **Writable Docker workspace mounts** — a Docker container that bind-mounts `$GITHUB_WORKSPACE` read-write must pass the host UID/GID with `--user "$(id -u):$(id -g)"`; read-only workspace mounts are exempt. Enforced by the YAML-aware repo-file-policy Docker workspace user guard.
-- **pnpm install lifecycle** — every job runs on a fresh, ephemeral runner, so `setup-node-pnpm`/`setup-backend` always perform one full `pnpm install --frozen-lockfile` against a restored pnpm store cache (see the caching bullet above); there is no reconciliation or warm-state fingerprinting to configure. Set `install-scripts: 'false'` only for control-plane jobs per `pnpm-install-policy.test.mts`'s allowlist. Do not add a second direct `pnpm install` after either action, and call only one of them per job: `setup-backend` already runs `setup-node-pnpm`, so a job that needs the email-template build calls `setup-backend` once, at the point where it first needs dependencies (enforced by `pnpm-activation.test.mts`).
-  The isolated `postgresql-snapshot-update.yml#generate` job is the single direct-install exception:
-  it uses pinned public setup actions and a restore-only pnpm cache, avoiding candidate-owned
-  composites and cache-save hooks. Its workflow tests enforce this boundary.
-- **Docker Hub images** — pull Docker Hub images through `mirror.gcr.io/<namespace>/<image>`
-  (official images use `mirror.gcr.io/library/<image>`) in `services:`, `docker run` steps,
-  Dockerfile `FROM` and `# syntax=` lines, and the buildx BuildKit image. Anonymous Docker Hub
-  pulls from hosted runners hit its rate limit and eject unrelated merge-queue entries
-  ([#2653](https://github.com/vouchington/vouchington/issues/2653)); the mirror needs no
-  credentials and serves the pinned digest unchanged. The [Valkey acquisition helper](../../.github/actions/start-valkey/pull-image.sh)
-  may fall back once to Docker Hub with the exact same repository, version, and digest only when
-  the explicit mirror pull exits 1 with a recognized final `unknown blob` error (bare or
-  image-configuration download failure). Docker’s implicit `run` pull reported these errors as
-  exit 125; container creation itself is never retried.
-  Preserve both attempt logs and fail closed for authentication, network, timeout, and other errors;
-  this exception does not permit mutable-tag fallback or job reruns.
-- **Docker host ports** — normally let Docker allocate the host-side port (use `-p "127.0.0.1::<container_port>"`); never hardcode a literal host port. A workflow that needs coordination inside one job may use `ci/allocate-browser-safe-ports.py`. Allocate immediately before binding and let the allocator print and exit; GitHub-hosted jobs are single-tenant VMs, so do not add port holds, reapers, or collision diagnostics. A caller that can choose a new port may reallocate once on `EADDRINUSE`.
-- **Script portability** — CI runs on Linux. Scripts shared with local development must also support macOS hosts. In shared scripts, avoid Bash features unavailable in the macOS system `/bin/bash` unless the caller explicitly installs and invokes a newer shell.
-- **Binary downloads** — when downloading binary archives, include the tool version or resolved revision in the downloaded filename/directory so updates cannot reuse stale generic `/tmp` paths.
-- **Security-guard migrations** — before replacing or deleting a workflow/security guard, enumerate the old threat cases, port the old fixture corpus to the replacement, and make the replacement pass those fixtures before removing the old guard. Bind policy decisions to immutable SHAs, and verify which inputs are runner-owned versus repo-owned so an untrusted PR cannot rewrite the policy being enforced.
+Enforced rules name their check; the check owns the detail. Judgment calls stay here.
+
+### Enforced
+
+- **Runner labels** — a closed label set keeps hosted-runner demand and architecture deliberate. `runner-policy.test.mts` (allowlist in `runner-policy-classify.mts`) and `build-web-targets-runner-parity.test.mts`.
+- **Pinned actions** — a commit SHA stops a re-pointed tag from silently changing what runs. no-mistakes `github-actions-pinned-hash`.
+- **Script expressions** — free-form event text interpolated into a script is code injection, so it travels through `env:`. `workflow-script-expressions.test.mts`.
+- **Checkout credentials** — a write-capable token must not stay in `.git` for later steps. `checkout-credentials.test.mts`.
+- **Docker host ports** — fixed host ports collide on shared hosts. `docker-port-policy.test.mts`.
+- **Docker workspace user** — a root-owned write into a bind-mounted workspace breaks later cleanup. The Docker workspace user check in `vouchington-tooling/gha-workspace-policy`, run by `static-code-analysis/repo-file-policy`.
+- **Downloads** — unverified binaries are a supply-chain hole. `workflow-download-integrity.test.mts`. Also put the tool version in the downloaded filename or directory so a generic `/tmp` path cannot serve a stale binary (unenforced).
+- **Caching** — ephemeral runners make `node_modules` and ad-hoc caches a stale-state risk. `cache-path-policy.test.mts`, `cache-policy.test.mts`.
+- **pnpm install** — one install per job, from the shared setup actions, keeps installs fast and script-free where required. `pnpm-install-policy.test.mts` and `pnpm-activation.test.mts`.
+- **Concurrency** — an unlocked workflow duplicates runs and a wrong cancel policy drops merge-queue or main work. The `workflow-topology-policy` rule in `.no-mistakes.yml` (reasoned exceptions, cancel intent, group collisions) and the literal area prefix in `area-workflows.test.mts`.
+- **Docker Hub images** — anonymous Docker Hub pulls hit its rate limit and ejected unrelated merge-queue entries ([#2653](https://github.com/vouchington/vouchington/issues/2653)); `mirror.gcr.io` serves the same pinned digest without credentials. `docker-hub-mirror.test.mts`. The [Valkey helper](../../.github/actions/start-valkey/pull-image.sh) owns the one documented Docker Hub fallback.
+- **No draft-transition triggers** — no job reads draft state, so a draft transition must not start a run. `draft-event-triggers.test.mts`.
+- **Local composite actions follow a checkout** — `./` actions resolve from the workspace, which only a checkout fills. `local-action-checkout.test.mts`. Do not add a checkout to a job deliberately kept checkout-free (a required fan-in gate) just to dedupe script; weigh runner demand and registry reachability first.
+- **Workflow syntax** — `actionlint` runs in CI; run it on changed workflows before pushing.
+
+The three interim tests above are deleted once jonathanong/no-mistakes#2182 ships the generic rule.
+
+### Judgment
+
+- **Runner demand** — name the hosted label a new or changed job draws from, prefer the smallest that fits, and justify extra fan-out. Choose `ubuntu-slim` for `gh api`, prompt rendering, and aggregator jobs (no Docker, no `services:`, no Node/pnpm/backend setup); `ubuntu-latest` for Docker, `services:`, or Node/pnpm/backend setup; `ubuntu-24.04-arm` for native ARM64 work matching production (image builds, native-binary smoke tests) and every job sharing a restored web build. `runner-policy.test.mts` pins which jobs. Run `node ci/check-live-workflow-topology.mts` after runner or timeout changes; `pnpm run no-mistakes` alone does not check it.
+- **Deploys stay decoupled** — no cross-workflow deploy-order wait or poll; only api and workers share a deploy unit. Application-owned schema follows [One current contract](../../AGENTS.md), not expand/contract. See [deploy decoupling](../overview/infrastructure/deployment.md#deploy-decoupling--independent-safety).
+- **Auto Harness admission** — Harness workflows keep only per-target concurrency, which prevents duplicate sessions for one target. The scheduler, not GitHub, bounds running sessions; a global GitHub concurrency group would serialize short jobs without limiting them. See [`harness-dispatch.yml`](../../.github/workflows/harness-dispatch.yml).
+- **Script portability** — CI is Linux, but scripts shared with local development must also run on the macOS system `/bin/bash`.
+- **Security-guard migrations** — before replacing or deleting a security guard, port its old fixture corpus to the replacement and pass it first. Bind policy to immutable SHAs and confirm which inputs an untrusted PR cannot rewrite.
+- **Verify** — run `pnpm exec vitest run --project github-actions` for every workflow or composite action change.
 
 ## See Also
 
