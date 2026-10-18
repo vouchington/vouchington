@@ -179,7 +179,7 @@ jobs:
         timeout-minutes: 1
       - uses: ./.github/actions/setup-node-pnpm
         timeout-minutes: 5
-      - uses: jonathanong/auto-harness/actions/harness-prompt-context@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
+      - uses: jonathanong/auto-harness/actions/harness-prompt-context@8325525ec675f738a3969cb92ce20477f38dcf71 # v1.0.2
         timeout-minutes: 2
         id: loop-breaker
         with:
@@ -222,7 +222,7 @@ jobs:
         timeout-minutes: 2
         id: render
         if: steps.source-state.outputs.current == 'true'
-        uses: jonathanong/auto-harness/actions/harness-render-prompt@77caf36363b74987ea5c7d48a3b71b4f87f27fe5 # v1.0.1
+        uses: jonathanong/auto-harness/actions/harness-render-prompt@8325525ec675f738a3969cb92ce20477f38dcf71 # v1.0.2
         with:
           template: docs/prompts/automation/fix-dependabot.md
           merge-authority-doc: docs/development/merge-authority.md
