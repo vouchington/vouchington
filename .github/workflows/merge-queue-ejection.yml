@@ -66,7 +66,7 @@ jobs:
   dispatch:
     name: Harness dispatch
     needs: [render-prompt]
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@e03757214e53bd2adf0888b32d08a3dc762da186 # v0.52.1
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@65310ad7da87fd8d3619ca7868107d46c9c607d9 # v0.53.0
     permissions:
       contents: read
     secrets:
@@ -102,7 +102,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@e03757214e53bd2adf0888b32d08a3dc762da186 # v0.52.1
+      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@65310ad7da87fd8d3619ca7868107d46c9c607d9 # v0.53.0
         timeout-minutes: 1
         with:
           target: ${{ github.event.pull_request.number }}
