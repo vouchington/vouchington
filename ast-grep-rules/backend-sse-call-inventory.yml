@@ -1,0 +1,57 @@
+id: backend-sse-call-inventory
+language: Tsx
+severity: error
+message: >-
+  Only the reviewed SSE routes may call startSSE(ctx). Add a new route to the canonical
+  inventory after reviewing its stream lifecycle.
+files:
+  - 'backend/api/**/*.mts'
+ignores:
+  - 'backend/api/**/__tests__/**'
+  - 'backend/api/**/*.test.mts'
+  - 'backend/api/sse-helpers.mts'
+  - 'backend/api/v1/admin/article-syncs.mts'
+  - 'backend/api/v1/admin/index-routes/snapshot-stream.mts'
+  - 'backend/api/v1/images/index-routes/images-by-imageid-state-stream-get.mts'
+  - 'backend/api/v1/mq/index-routes/mq-stream-get.mts'
+  - 'backend/api/v1/my/imports/stream.mts'
+  - 'backend/api/v1/users/data-request.mts'
+rule:
+  all:
+    - kind: program
+    - regex: '\bstartSSE\s*\(\s*ctx\s*(?:,|\))'
+examples:
+  - code: 'startSSE(ctx)'
+    isValid: false
+    file: 'backend/api/new-stream.mts'
+  - code: 'const module = await import("./sse-helpers.mts"); module.startSSE(ctx)'
+    isValid: false
+    file: 'backend/api/new-stream.mts'
+  - code: 'const { startSSE } = await import("./sse-helpers.mts"); startSSE(ctx)'
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: |
+      startSSE(
+        ctx,
+        { cycleDurationMs: 60_000 },
+      )
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: '// startSSE(ctx) must not be copied into a new route'
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: 'restartSSE(ctx)'
+    isValid: true
+    file: 'backend/api/v1/new-stream.mts'
+  - code: 'startSSE(context)'
+    isValid: true
+    file: 'backend/api/v1/new-stream.mts'
+  - code: 'startSSE(ctx)'
+    isValid: true
+    file: 'backend/api/v1/admin/article-syncs.mts'
+  - code: 'startSSE(ctx)'
+    isValid: true
+    file: 'backend/api/sse-helpers.mts'
+  - code: 'startSSE(ctx)'
+    isValid: true
+    file: 'backend/api/__tests__/stream.test.mts'

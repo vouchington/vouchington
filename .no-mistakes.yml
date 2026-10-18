@@ -1492,6 +1492,32 @@ rules:
       - '**/yarn.lock'
       - '**/Cargo.lock'
       - '**/Package.resolved'
+  - name: Only canonical API routes may start an SSE response
+    rule: forbidden-calls
+    scope: repository
+    # The AST-grep call-inventory rule also catches raw calls through unresolved dynamic imports.
+    message: >-
+      New SSE routes must join the reviewed route inventory before calling startSSE.
+    exclude:
+      - 'backend/api/**/__tests__/**'
+      - 'backend/api/**/*.test.mts'
+      - 'backend/api/v1/admin/article-syncs.mts'
+      - 'backend/api/v1/admin/index-routes/snapshot-stream.mts'
+      - 'backend/api/v1/images/index-routes/images-by-imageid-state-stream-get.mts'
+      - 'backend/api/v1/mq/index-routes/mq-stream-get.mts'
+      - 'backend/api/v1/my/imports/stream.mts'
+      - 'backend/api/v1/users/data-request.mts'
+    options:
+      roots:
+        - glob:
+            - 'backend/api/**/*.mts'
+      traversal: file
+      unknownCalls: ignore
+      targets:
+        - function:
+            file: backend/api/sse-helpers.mts
+            symbol: startSSE
+
   - name: Durable app-owned IDs in creation paths use UUIDv7
     rule: forbidden-calls
     scope: repository

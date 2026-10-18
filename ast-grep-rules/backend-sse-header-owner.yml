@@ -1,0 +1,49 @@
+id: backend-sse-header-owner
+language: Tsx
+severity: error
+message: >-
+  startSSE owns the SSE response Content-Type header. Route modules must not set or copy
+  text/event-stream; the MCP helper uses it only in a request Accept header.
+files:
+  - 'backend/api/**/*.mts'
+ignores:
+  - 'backend/api/**/__tests__/**'
+  - 'backend/api/**/*.test.mts'
+  - 'backend/api/sse-helpers.mts'
+  - 'backend/api/mcp-helpers.mts'
+rule:
+  any:
+    - all:
+        - kind: string
+        - regex: 'text/event-stream'
+    - all:
+        - kind: template_string
+        - regex: 'text/event-stream'
+    - all:
+        - kind: comment
+        - regex: 'text/event-stream'
+examples:
+  - code: "ctx.setType('text/event-stream')"
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: 'const contentType = `text/event-stream`'
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: 'const contentType = html`text/event-stream`'
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: '// text/event-stream response type'
+    isValid: false
+    file: 'backend/api/v1/new-stream.mts'
+  - code: "ctx.setType('text/event-stream')"
+    isValid: true
+    file: 'backend/api/sse-helpers.mts'
+  - code: "const headers = { Accept: 'application/json, text/event-stream' }"
+    isValid: true
+    file: 'backend/api/mcp-helpers.mts'
+  - code: "expect(response.headers['content-type']).toContain('text/event-stream')"
+    isValid: true
+    file: 'backend/api/__tests__/stream.test.mts'
+  - code: "ctx.setType('application/json')"
+    isValid: true
+    file: 'backend/api/v1/new-route.mts'
