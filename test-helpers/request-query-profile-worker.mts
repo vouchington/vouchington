@@ -70,12 +70,22 @@ export function wrapRequestQueryProfileProcessor(
         return undefined
       },
     )
+    const finish = () => {
+      if (
+        worker.profile
+          .reportingFailures()
+          .some(failure => failure.stage.startsWith('profile-owner'))
+      ) {
+        publishWorkerProfileViolation(worker.profile)
+      }
+      reportWorkerProfile(worker.profile)
+    }
     try {
       const result = await worker.completion
-      reportWorkerProfile(worker.profile)
+      finish()
       return result
     } catch (err) {
-      reportWorkerProfile(worker.profile)
+      finish()
       throw err
     }
   }
@@ -107,10 +117,24 @@ function recordWorkerProfileFailure(
   reason: unknown,
 ): void {
   profile.reportFailure(stage, reason)
+  publishWorkerProfileViolation(profile)
+}
+
+function publishWorkerProfileViolation(profile: WorkerQueryProfile): void {
   try {
     recordRequestQueryProfileViolation('Independent worker query profile reporting failed')
   } catch (err) {
     profile.reportFailure('violation-collector', err)
+  }
+}
+
+function workerProfileSnapshot(profile: WorkerQueryProfile): unknown {
+  return {
+    identity: profile.identity,
+    queries: profile.queries(),
+    summary: profile.summarize(),
+    reportingFailureStages: profile.reportingFailures().map(failure => failure.stage),
+    children: profile.workerProfiles().map(workerProfileSnapshot),
   }
 }
 
@@ -121,18 +145,7 @@ function reportWorkerProfile(profile: WorkerQueryProfile): void {
       `${JSON.stringify({
         kind: 'pg-worker-profile',
         pid: process.pid,
-        profile: {
-          identity: profile.identity,
-          queries: profile.queries(),
-          summary: profile.summarize(),
-          reportingFailureStages: profile.reportingFailures().map(failure => failure.stage),
-          children: profile.workerProfiles().map(child => ({
-            identity: child.identity,
-            queries: child.queries(),
-            summary: child.summarize(),
-            reportingFailureStages: child.reportingFailures().map(failure => failure.stage),
-          })),
-        },
+        profile: workerProfileSnapshot(profile),
       })}\n`,
     )
   } catch (err) {

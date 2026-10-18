@@ -12,6 +12,11 @@ import {
 } from '../backend/data-stores/psql/request-query-profile.mts'
 import { takeRequestQueryProfileViolations } from '../backend/test-helpers/api/request-query-profile-violations.mts'
 
+type WorkerQueryProfileSnapshot = {
+  identity: WorkerQueryProfile['identity']
+  children: WorkerQueryProfileSnapshot[]
+}
+
 function own() {
   const workers: { close(): Promise<void> }[] = []
   const queues: { close(): Promise<void> }[] = []
@@ -148,6 +153,39 @@ describe('owned worker query profiles', () => {
     expect(child.queries().map(query => query.annotation)).toEqual(['childProcessor'])
   })
 
+  it('reports grandchildren in the diagnostic profile tree', async () => {
+    const owned = own()
+    const queues = [0, 1, 2].map(i => new TestQueue(`depth-${i}-${crypto.randomUUID()}`))
+    owned.queues.push(...queues)
+    const jobs = await Promise.all(
+      queues.map((queue, index) => owned.run(() => queue.add(`level-${index}`, {}))),
+    )
+    owned.jobs.push(...jobs.filter((job): job is TestJob => job !== null))
+    const [rootQueue, childQueue, grandchildQueue] = queues as [TestQueue, TestQueue, TestQueue]
+    const [rootJob, childJob, grandchildJob] = jobs as [TestJob, TestJob, TestJob]
+    const writes: string[] = []
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(chunk => {
+      writes.push(String(chunk))
+      return true
+    })
+    owned.cleanups.push(() => {
+      stderr.mockRestore()
+      vi.unstubAllEnvs()
+    })
+    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
+    const grandchild = wrapRequestQueryProfileProcessor(() => 'done', grandchildQueue.name)
+    const child = wrapRequestQueryProfileProcessor(() => grandchild(grandchildJob), childQueue.name)
+    const root = wrapRequestQueryProfileProcessor(() => child(childJob), rootQueue.name)
+
+    await expect(root(rootJob)).resolves.toBe('done')
+    const reports = writes.map(line => JSON.parse(line) as { profile: WorkerQueryProfileSnapshot })
+    const rootReport = reports.find(report => report.profile.identity.queue === rootQueue.name)
+    expect(rootReport?.profile.children[0]?.children[0]?.identity).toEqual({
+      queue: grandchildQueue.name,
+      jobs: [{ id: grandchildJob.id, name: grandchildJob.name }],
+    })
+  })
+
   it('rejects a malformed batch member before invoking the processor beside a real admitted job', async () => {
     const owned = own()
     const queue = new TestQueue(`batch-${crypto.randomUUID()}`)
@@ -193,6 +231,31 @@ describe('owned worker query profiles', () => {
     expect(observed[0]!.queries()).toHaveLength(1)
     expect(observed[0]!.reportingFailures()).toEqual([
       { stage: 'profile-observer', reason: failure },
+    ])
+    expect(takeRequestQueryProfileViolations()).toEqual([
+      'Independent worker query profile reporting failed',
+    ])
+  })
+
+  it('records a failing profile owner for the afterEach collector without losing the result', async () => {
+    const owned = own()
+    const queue = new TestQueue(`profile-owner-${crypto.randomUUID()}`)
+    owned.queues.push(queue)
+    const job = await owned.run(() => queue.add('owned', { value: 3 }))
+    if (job) owned.jobs.push(job)
+    const failure = new Error('profile owner failed')
+    const processor = wrapRequestQueryProfileProcessor(
+      () => 3,
+      queue.name,
+      () => {
+        throw failure
+      },
+    )
+    const request = createRequestQueryProfile()
+
+    await expect(request.run(() => processor(job))).resolves.toBe(3)
+    expect(request.workerProfiles()[0]!.reportingFailures()).toEqual([
+      { stage: 'profile-owner', reason: failure },
     ])
     expect(takeRequestQueryProfileViolations()).toEqual([
       'Independent worker query profile reporting failed',

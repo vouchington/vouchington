@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
+import { setTestWorkerProcessorDecorator } from '../test-worker-processor-decorator.mts'
 
 type WorkerConstructor = typeof import('glide-mq').Worker
 
@@ -47,6 +48,7 @@ describe('createWorker stall budget', () => {
     vi.resetModules()
     mockWorker.mockClear()
   })
+  afterEach(() => setTestWorkerProcessorDecorator(undefined))
 
   it.each([
     ['no override', {}, 2],
@@ -96,6 +98,38 @@ describe('createWorker stall budget', () => {
     expect(wrapProcessor?.(original, 'profiled-queue')).toBe(original)
     expect(callerWrapped).toHaveBeenCalledWith(original, 'profiled-queue')
     expect(decorated).toHaveBeenCalledWith(original)
+  })
+
+  it('keeps the setup profile decorator on factory workers after vi.resetModules()', async () => {
+    const { setTestWorkerProcessorDecorator } = await importFactory()
+    const [{ wrapRequestQueryProfileProcessor }, { createRequestQueryProfile }] = await Promise.all(
+      [
+        import('../../../../test-helpers/request-query-profile-worker.mts'),
+        import('../../psql/request-query-profile.mts'),
+      ],
+    )
+    setTestWorkerProcessorDecorator(wrapRequestQueryProfileProcessor)
+
+    vi.resetModules()
+    const { createWorker } = await importFactory()
+    createWorker('profiled-after-reset', processor)
+    const wrapProcessor = lastWorkerOptions().wrapProcessor as
+      | ((
+          processor: (job: { id: string; name: string }) => string,
+          queueName: string,
+        ) => (job: { id: string; name: string }) => Promise<string>)
+      | undefined
+    expect(wrapProcessor).toBeTypeOf('function')
+    const profile = createRequestQueryProfile()
+    const wrapped = wrapProcessor!(() => 'processed', 'profiled-after-reset')
+
+    await expect(
+      profile.run(() => wrapped({ id: 'admitted-1', name: 'profiled-job' })),
+    ).resolves.toBe('processed')
+    expect(profile.workerProfiles()[0]?.identity).toEqual({
+      queue: 'profiled-after-reset',
+      jobs: [{ id: 'admitted-1', name: 'profiled-job' }],
+    })
   })
 })
 
