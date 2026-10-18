@@ -20,6 +20,7 @@ export async function checkHashtagSearchRankingContracts(): Promise<void> {
   const literalHashtag = `literal-like-${literalSuffix}`
   const literalAlias = await createUnlinkedTopicAlias(literalHashtag)
   for (let index = 0; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- persist the contributor before its post, then attach that post to the alias
     const contributor = await createTestUser()
     const post = await createTestPost({
       user: contributor!,
@@ -44,6 +45,7 @@ export async function checkHashtagSearchRankingContracts(): Promise<void> {
   const alias = await createUnlinkedTopicAlias(hashtag)
   const posts = []
   for (let index = 0; index < 4; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- persist the author before the post and its indexed hashtag source
     const user = await createTestUser()
     const post = await createTestPost({
       user: user!,
@@ -59,8 +61,11 @@ export async function checkHashtagSearchRankingContracts(): Promise<void> {
     })
     posts.push({ post, user: user! })
   }
-  await archivePostForTopHashtagTest(posts[3]!.post.id, posts[3]!.user.id)
-  const rssOwner = await createTestUser({ administrator: true })
+  const [, rssOwner] = await Promise.all([
+    archivePostForTopHashtagTest(posts[3]!.post.id, posts[3]!.user.id),
+    createTestUser({ administrator: true }),
+  ])
+  // ast-grep-ignore: no-three-sequential-awaits -- the feed needs its topic and the RSS item needs that feed
   const rssTopicId = await insertTestTopic({
     name: `Old RSS hashtag source ${suffix}`,
     slug: `old-rss-hashtag-source-${suffix}`,
@@ -99,6 +104,7 @@ export async function checkHashtagSearchRankingContracts(): Promise<void> {
   assert.deepEqual(secondPage.results, [])
 
   const deletedSuffix = crypto.randomUUID()
+  // ast-grep-ignore: no-three-sequential-awaits -- the topic owner precedes its topic and the alias is created for that topic
   const owner = await createTestUser({ administrator: true })
   const topicId = await insertTestTopic({
     name: `Deleted Top Hashtag ${deletedSuffix}`,
@@ -110,6 +116,7 @@ export async function checkHashtagSearchRankingContracts(): Promise<void> {
     `deleted-top-hashtag-alias-${deletedSuffix}`,
   )
   for (let index = 0; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- persist each contributor before the post and alias relation
     const contributor = await createTestUser()
     const post = await createTestPost({
       user: contributor!,

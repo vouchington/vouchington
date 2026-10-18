@@ -62,6 +62,7 @@ async function createRssHashtagItem(
   topicAliasId: string,
   hashtag: string,
 ): Promise<{ ownerId: string; topicId: string }> {
+  // ast-grep-ignore: no-three-sequential-awaits -- the RSS topic needs its owner before feed and item fixture writes
   const owner = await createTestUser({ administrator: true })
   const topicId = await insertTestTopic({
     name: `Eligibility RSS source ${index} ${suffix}`,
@@ -106,12 +107,14 @@ export async function checkHashtagEligibilityContracts(): Promise<void> {
   const sources = await Promise.all(
     [0, 1, 2].map(index => createRssHashtagItem(suffix, index, alias.id, hashtag)),
   )
-  await softDeleteTopic(sources[0]!.topicId, sources[0]!.ownerId)
-  const mergeDestinationId = await insertTestTopic({
-    name: `RSS merge destination ${suffix}`,
-    slug: `rss-merge-destination-${suffix}`,
-    createdById: sources[1]!.ownerId,
-  })
+  const [, mergeDestinationId] = await Promise.all([
+    softDeleteTopic(sources[0]!.topicId, sources[0]!.ownerId),
+    insertTestTopic({
+      name: `RSS merge destination ${suffix}`,
+      slug: `rss-merge-destination-${suffix}`,
+      createdById: sources[1]!.ownerId,
+    }),
+  ])
   await mergeTopicForTest(sources[1]!.topicId, mergeDestinationId, sources[1]!.ownerId)
   await refreshMaterializedView('mv_top_hashtags')
   assert.deepEqual((await searchTopHashtags({ q: hashtag })).results, [], 'inactive RSS owner')

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { v7 } from 'uuid'
 import { refreshMaterializedView } from '@data-stores/psql/migrate'
+import { getExternalFetch } from '@modules/utils/http-dispatchers'
 import { encodeCursor } from '@modules/pagination'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { updateRssFeedById } from '@services/rss-feeds/update'
@@ -53,6 +54,7 @@ export async function checkTrendingHttpContracts(): Promise<void> {
     deviceContext: { user_agent: userAgent },
   })
   const cookie = `dt=${deviceToken.token}; st=${sessionToken.token}`
+  const requestFetch = getExternalFetch()
   let requestCounter = 0
 
   await withRequestQueryProfileGuard(() =>
@@ -79,7 +81,7 @@ export async function checkTrendingHttpContracts(): Promise<void> {
           headers.cookie = cookie
           headers['sec-fetch-site'] = 'same-origin'
         }
-        const response = await fetch(url, { headers })
+        const response = await requestFetch(url, { headers })
         if (response.status !== 200) {
           throw new Error(
             `${url.pathname}${url.search}: HTTP ${response.status}: ${await response.text()}`,

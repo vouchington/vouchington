@@ -20,10 +20,12 @@ function assertNear(actual: number | undefined, expected: number, label: string)
 }
 
 export async function checkCrawlTierContracts(): Promise<void> {
-  const freeFollower = await createLocalTestUser()
-  const plusFollower = await createLocalTestUser()
-  const proFollower = await createLocalTestUser()
-  const weightedFeed = await insertLocalTestRssFeed()
+  const [freeFollower, plusFollower, proFollower, weightedFeed] = await Promise.all([
+    createLocalTestUser(),
+    createLocalTestUser(),
+    createLocalTestUser(),
+    insertLocalTestRssFeed(),
+  ])
   await Promise.all([
     createLocalTestMembership(plusFollower.id, { plan: 'plus' }),
     createLocalTestMembership(proFollower.id, { plan: 'pro' }),
@@ -32,13 +34,23 @@ export async function checkCrawlTierContracts(): Promise<void> {
   await refreshMaterializedView('mv_rss_feed_crawl_tiers')
   assertNear(await getRssFeedCrawlScore(weightedFeed.id), Math.log(7), 'free/Plus/Pro weighting')
 
-  const pastDueFollower = await createLocalTestUser()
-  const pausedFollower = await createLocalTestUser()
-  const cancelledFollower = await createLocalTestUser()
-  const expiredFollower = await createLocalTestUser()
-  const elapsedFollower = await createLocalTestUser()
-  const endedProjectionFollower = await createLocalTestUser()
-  const membershipFeed = await insertLocalTestRssFeed()
+  const [
+    pastDueFollower,
+    pausedFollower,
+    cancelledFollower,
+    expiredFollower,
+    elapsedFollower,
+    endedProjectionFollower,
+    membershipFeed,
+  ] = await Promise.all([
+    createLocalTestUser(),
+    createLocalTestUser(),
+    createLocalTestUser(),
+    createLocalTestUser(),
+    createLocalTestUser(),
+    createLocalTestUser(),
+    insertLocalTestRssFeed(),
+  ])
   await Promise.all([
     createLocalTestMembership(pastDueFollower.id, { plan: 'plus', status: 'past_due' }),
     createLocalTestMembership(pausedFollower.id, { plan: 'pro', status: 'paused' }),
@@ -80,11 +92,15 @@ export async function checkCrawlTierContracts(): Promise<void> {
   assert.equal(tiers.length, 1, 'every tied score must share one tier')
   assert.ok(tiers[0]! > 1, 'the tied group must receive a capped tier')
 
-  const redirectedFollower = await createLocalTestUser()
-  await createLocalTestMembership(redirectedFollower.id, { plan: 'pro' })
-  const canonicalFeed = await insertLocalTestRssFeed()
-  const sourceFeed = await insertLocalTestRssFeed()
-  await setCanonicalRssFeed(sourceFeed.id, canonicalFeed.id)
+  const [redirectedFollower, canonicalFeed, sourceFeed] = await Promise.all([
+    createLocalTestUser(),
+    insertLocalTestRssFeed(),
+    insertLocalTestRssFeed(),
+  ])
+  await Promise.all([
+    createLocalTestMembership(redirectedFollower.id, { plan: 'pro' }),
+    setCanonicalRssFeed(sourceFeed.id, canonicalFeed.id),
+  ])
   await followRssFeed([redirectedFollower.id], canonicalFeed.id)
   await followRssFeed([redirectedFollower.id], sourceFeed.id)
   await refreshMaterializedView('mv_rss_feed_crawl_tiers')

@@ -24,6 +24,7 @@ export async function checkRevenueContracts(): Promise<void> {
     provider_application_id: applicationId,
   })
   const scope = { userIds: [user.id] }
+  // ast-grep-ignore: no-three-sequential-awaits -- read the pre-membership revenue before creating the membership and attaching its provider fact
   const before = await getRevenue('all', new Date(0), scope, context)
   const membership = await createTestMembership({
     user_id: user.id,
@@ -62,6 +63,7 @@ export async function checkRevenueContracts(): Promise<void> {
     provider_application_id: familyApplicationId,
   })
   const familyScope = { userIds: [familyUser.id] }
+  // ast-grep-ignore: no-three-sequential-awaits -- compare the pre-membership value before the family write and refreshed MV read
   const familyBefore = await getRevenue('all', new Date(0), familyScope, familyContext)
   await createTestFamilyMembership({
     applicationId: familyApplicationId,

@@ -23,6 +23,7 @@ async function createRssHashtagItem(options: {
   authoredToken: string
   publishedAt: Date
 }): Promise<{ rssFeedItemId: string }> {
+  // ast-grep-ignore: no-three-sequential-awaits -- the owner, topic and feed have foreign-key dependencies before the RSS item exists
   const owner = await createTestUser({ administrator: true })
   const topicId = await insertTestTopic({
     name: `RSS hashtag source ${options.index} ${options.suffix}`,
@@ -54,13 +55,16 @@ async function createRssHashtagItem(options: {
 
 export async function checkHashtagSearchRssContracts(): Promise<void> {
   const pendingSuffix = crypto.randomUUID()
-  const pendingOwner = await createTestUser()
+  const [pendingOwner, pendingAlias] = await Promise.all([
+    createTestUser(),
+    createUnlinkedTopicAlias(`pending-community-${pendingSuffix}`),
+  ])
   const community = await insertTestCommunity({
     createdById: pendingOwner!.id,
     visibility: 'public',
   })
-  const pendingAlias = await createUnlinkedTopicAlias(`pending-community-${pendingSuffix}`)
   for (let index = 0; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- each pending post requires its author before review and hashtag source writes
     const contributor = await createTestUser()
     const post = await createTestPost({
       user: contributor!,
@@ -98,6 +102,7 @@ export async function checkHashtagSearchRssContracts(): Promise<void> {
     publishedAt: new Date(),
   })
   for (let index = 1; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- the feed needs its owner and topic before joining the existing item
     const owner = await createTestUser({ administrator: true })
     const topicId = await insertTestTopic({
       name: `Syndicated feed ${index} ${suffix}`,

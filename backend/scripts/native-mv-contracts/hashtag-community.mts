@@ -12,9 +12,9 @@ import { searchTopHashtags } from '@services/topics/top-hashtags'
 export async function checkHashtagCommunityContracts(): Promise<void> {
   const suffix = crypto.randomUUID()
   const hashtag = `approved-community-comments-${suffix}`
-  const owner = await createTestUser()
+  const [owner, rootAuthor] = await Promise.all([createTestUser(), createTestUser()])
+  // ast-grep-ignore: no-three-sequential-awaits -- the community precedes its root post and review row
   const community = await insertTestCommunity({ createdById: owner!.id, visibility: 'public' })
-  const rootAuthor = await createTestUser()
   const rootPost = await createTestPost({
     user: rootAuthor!,
     title: `Approved community root ${suffix}`,
@@ -29,6 +29,7 @@ export async function checkHashtagCommunityContracts(): Promise<void> {
   })
   const alias = await createUnlinkedTopicAlias(hashtag)
   for (let index = 0; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- persist commenter, comment and hashtag source in foreign-key order
     const commenter = await createTestUser()
     const comment = await createTestPost({
       user: commenter!,
@@ -54,13 +55,16 @@ export async function checkHashtagCommunityContracts(): Promise<void> {
   assert.equal(approved[0]?.contributor_count, 3)
 
   const archivedSuffix = crypto.randomUUID()
-  const archivedOwner = await createTestUser()
+  const [archivedOwner, archivedAlias] = await Promise.all([
+    createTestUser(),
+    createUnlinkedTopicAlias(`archived-community-${archivedSuffix}`),
+  ])
   const archivedCommunity = await insertTestCommunity({
     createdById: archivedOwner!.id,
     visibility: 'public',
   })
-  const archivedAlias = await createUnlinkedTopicAlias(`archived-community-${archivedSuffix}`)
   for (let index = 0; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- persist contributor, post and review before attaching its hashtag source
     const contributor = await createTestUser()
     const post = await createTestPost({
       user: contributor!,

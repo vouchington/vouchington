@@ -22,9 +22,8 @@ export async function checkHashtagAuthorDeletionContract(): Promise<void> {
     createTestUserWithAge(CONTRIBUTING_USER_AGE_MS),
     createTestUserWithAge(CONTRIBUTING_USER_AGE_MS),
   ])
-  const viewer = await createTestUser()
+  const [viewer, alias] = await Promise.all([createTestUser(), createUnlinkedTopicAlias(hashtag)])
   const topic = await createTestTopic({ user: viewer })
-  const alias = await createUnlinkedTopicAlias(hashtag)
   const sourcePost = await createPost(author, WEB_PROVENANCE, {
     post_type: 'discussion',
     title: `Retained source #${hashtag}`,

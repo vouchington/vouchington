@@ -13,8 +13,10 @@ type RootRestriction = 'private' | 'rejected' | 'suspended-author'
 async function checkRootRestriction(restriction: RootRestriction): Promise<void> {
   const suffix = crypto.randomUUID()
   const hashtag = `${restriction}-root-comment-${suffix}`
-  const alias = await createUnlinkedTopicAlias(hashtag)
-  const rootAuthor = await createTestUser()
+  const [alias, rootAuthor] = await Promise.all([
+    createUnlinkedTopicAlias(hashtag),
+    createTestUser(),
+  ])
   const rootPost = await createTestPost({
     user: rootAuthor!,
     title: `${restriction} root post ${suffix}`,
@@ -22,6 +24,7 @@ async function checkRootRestriction(restriction: RootRestriction): Promise<void>
     broadcast: restriction === 'private' ? 'followers' : 'everyone',
   })
   for (let index = 0; index < 3; index++) {
+    // ast-grep-ignore: no-three-sequential-awaits -- the comment needs its author and the hashtag source needs that persisted comment
     const commenter = await createTestUser()
     const comment = await createTestPost({
       user: commenter!,
@@ -46,6 +49,7 @@ async function checkRootRestriction(restriction: RootRestriction): Promise<void>
 }
 
 export async function checkHashtagRootVisibilityContracts(): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- each case refreshes the same MV before the next visibility case begins
   await checkRootRestriction('private')
   await checkRootRestriction('rejected')
   await checkRootRestriction('suspended-author')

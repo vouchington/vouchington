@@ -40,6 +40,7 @@ export async function checkRssWorkerContracts(): Promise<void> {
   let failed = false
   let failure: unknown
   try {
+    // ast-grep-ignore: no-three-sequential-awaits -- write the score before refreshing the MV and reading its tier
     await setRssFeedOwningTopicVoteScore(newer.id, 1_000_000_000, 0)
     await refreshMaterializedView('mv_rss_feed_crawl_tiers')
     const [olderTier] = await getRssFeedCrawlTiers([older.id])
@@ -52,14 +53,16 @@ export async function checkRssWorkerContracts(): Promise<void> {
     })
     assert.ok(job, 'RSS dispatcher job admission')
     await dispatcher.handle(job as Job<never>)
-    const due = await background.searchJobs({
-      name: RSS_FEEDS_FETCH_JOB.name,
-      data: { rssFeedId: newer.id },
-    })
-    const backfill = await background.searchJobs({
-      name: RSS_FEEDS_FETCH_JOB.name,
-      data: { rssFeedId: older.id },
-    })
+    const [due, backfill] = await Promise.all([
+      background.searchJobs({
+        name: RSS_FEEDS_FETCH_JOB.name,
+        data: { rssFeedId: newer.id },
+      }),
+      background.searchJobs({
+        name: RSS_FEEDS_FETCH_JOB.name,
+        data: { rssFeedId: older.id },
+      }),
+    ])
     assert.equal(due.length, 1, 'the newer due feed must consume the single run slot')
     assert.equal(backfill.length, 0, 'the older backfill feed must wait')
   } catch (err) {
