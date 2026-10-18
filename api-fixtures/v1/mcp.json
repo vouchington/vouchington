@@ -28735,9 +28735,12 @@
                 },
                 "rerun_by_id": {
                   "type": "string"
+                },
+                "run_id": {
+                  "type": "string"
                 }
               },
-              "required": ["queued", "rerun_by_id"],
+              "required": ["queued", "rerun_by_id", "run_id"],
               "type": "object"
             },
             "annotations": {

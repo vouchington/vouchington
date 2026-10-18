@@ -32,7 +32,7 @@ describe('dispute AI draft reads', () => {
     expect(await reconcileDisputeAIDraft(before)).toEqual(saved)
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/disputes/dispute-1',
+      '/api/v1/disputes/dispute-1?consistency=primary',
       expect.objectContaining({ method: 'GET', credentials: 'include' }),
     )
   })

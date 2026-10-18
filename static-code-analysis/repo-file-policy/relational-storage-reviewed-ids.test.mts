@@ -53,16 +53,27 @@ describe('reviewed token and audit snapshot identifiers', () => {
         noFreshness,
       ),
     ).toEqual([])
+    expect(
+      checkRelationalStorage(
+        snapshot('moderation_report_judgements', { run_id: column('uuid') }),
+        noFreshness,
+      ),
+    ).toEqual([])
   })
 
   it('reviews exact columns only, so the same names on a new table are still rejected', () => {
     const errors = checkRelationalStorage(
-      snapshot('new_records', { device_id: column('uuid'), client_id: column('uuid') }),
+      snapshot('new_records', {
+        device_id: column('uuid'),
+        client_id: column('uuid'),
+        run_id: column('uuid'),
+      }),
       noFreshness,
     )
     expect(errors).toEqual([
       expect.stringContaining('new_records.device_id'),
       expect.stringContaining('new_records.client_id'),
+      expect.stringContaining('new_records.run_id'),
     ])
   })
 
@@ -81,6 +92,7 @@ describe('reviewed token and audit snapshot identifiers', () => {
   it.each([
     ['post_votes', 'device_id', 'token, cursor or protocol identifier'],
     ['oauth_authorization_server_events', 'client_id', 'audit snapshot identifier'],
+    ['moderation_report_judgements', 'run_id', 'token, cursor or protocol identifier'],
   ])('reports %s.%s as stale once the column gains a foreign key', (table, name, label) => {
     const value = snapshot(table, { [name]: column('uuid') })
     value.tables[table]!.foreignKeys[`${name}_fk`] = foreignKey(name)

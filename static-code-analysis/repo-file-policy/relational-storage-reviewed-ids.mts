@@ -78,6 +78,10 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'mcp_call_audit_events.correlation_id',
     'Server-minted id shared by the audit rows of one MCP request; it names no Voucha entity.',
   ],
+  [
+    'moderation_report_judgements.run_id',
+    'GlideMQ report-judgement run identity; queue jobs live outside PostgreSQL, while this unique correlation key supports exact result polling and retry replay.',
+  ],
 ])
 
 // Ids recorded at write time and never joined for authorization. They outlive their source row.

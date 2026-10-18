@@ -5,6 +5,10 @@ const removedPostsPageTwoCursor =
   'eyJ0aW1lc3RhbXAiOiIyMDI2LTA3LTAxVDA5OjAwOjAwLjAwMDAwMFoiLCJ0aWVyIjowLCJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDIwMSIsInNjb3BlIjoidXNlci1yZW1vdmVkLXBvc3RzOjAwMDAwMDAwLTAwMDAtNzAwMC04NzAwLTAwMDAwMDAwMDEwMTpyZW1vdmVkLWRlc2Mta2luZC1kZXNjLXBvc3QtZGVzYzp2MiJ9'
 
 export const moderationParityEndpointRegistry: Record<string, ManifestEndpoint> = {
+  'native.moderation.report-judgement-run.pending': {
+    method: 'GET',
+    path: '/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303',
+  },
   'native.moderation.disputes.detail.default': {
     method: 'GET',
     path: disputePath,
