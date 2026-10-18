@@ -19,7 +19,6 @@ import {
 export { JobPayloadError }
 
 const parsers = {
-  enqueueReconcileEntities: emptyPayload,
   reconcileEntity: parseReconcileEntity,
   reconcileEntities: parseReconciliationDispatch,
   processUrlCreated: idPayload,
@@ -48,13 +47,6 @@ export function parseEntityJob(
 
 function isEntityJob(name: string): name is EntityJobs {
   return Object.hasOwn(parsers, name)
-}
-
-function emptyPayload(data: unknown): Record<string, unknown> {
-  if (data == null) return {}
-  const record = asRecord(data, 'payload')
-  assertExactKeys(record, [])
-  return record
 }
 
 function idPayload(data: unknown): Record<string, unknown> {

@@ -1,7 +1,4 @@
 export type CrawlHostnamesJobs =
-  | 'enqueueCrawlHostnamesDispatcher'
-  | 'enqueueCrawlTier1Dispatcher'
-  | 'enqueueCrawlTier2Dispatcher'
   | 'crawl_hostnames_dispatcher'
   | 'crawl_urls_per_hostname_dispatcher'
   | 'crawl_tier1_dispatcher'

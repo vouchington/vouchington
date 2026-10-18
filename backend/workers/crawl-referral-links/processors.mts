@@ -1,5 +1,4 @@
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
-import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
 import { dispatchReferralLinkCrawls } from '@services/crawler-referral-links'
 import { getCrawlerForReferralProgram } from '@services/crawlers'
 import { crawlUrl } from '@services/crawls/crawl-url'
@@ -12,8 +11,6 @@ import {
 } from './processors/outcomes.mts'
 
 export async function processCrawlReferralLinksJob(job: Job): Promise<unknown> {
-  if (job.name === 'crawl.enqueueCrawlReferralLinksDispatcher')
-    return enqueueCrawlReferralLinksDispatcher()
   if (job.name === 'crawl.crawl_referral_links_dispatcher')
     return processRetainedSweep(job, save =>
       dispatchReferralLinkCrawls({ ...job.data, saveProgress: save }),

@@ -1,4 +1,3 @@
-import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
 import { createWorker, processRetainedSweep } from '@data-stores/valkey-glide-mq'
 import { getWorkerConcurrency } from '@modules/queue-config'
 import { QUEUE_NAME } from '@queues/find-your-friends/config'
@@ -16,8 +15,6 @@ import type { Job } from 'glide-mq'
 export const findYourFriends = createWorker(
   QUEUE_NAME,
   (job: Job) => {
-    // oxlint-disable-next-line no-mistakes/async-call-disposition -- glide-mq awaits the value this processor returns.
-    if (job.name === 'enqueueDispatchFindYourFriends') return enqueueDispatchFindYourFriends()
     if (job.name === 'dispatchFindYourFriends')
       return processRetainedSweep(job, save =>
         processFindYourFriendsDispatcher(undefined, job.data, save),

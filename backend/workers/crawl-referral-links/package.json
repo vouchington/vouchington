@@ -20,7 +20,6 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/crawl-browser": "workspace:^",
-    "@queues/crawl-referral-links": "workspace:^",
     "@services/crawler-referral-links": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",

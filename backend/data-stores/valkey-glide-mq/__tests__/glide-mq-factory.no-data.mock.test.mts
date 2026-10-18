@@ -43,12 +43,12 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), () => ({
   Queue: mockQueue,
   FlowProducer: mockFlowProducer,
 }))
-vi.mock<typeof import('@glidemq/speedkey')>(import('@glidemq/speedkey'), () => ({
+vi.mock<typeof import('@glidemq/speedkey')>(import('@glidemq/speedkey'), async importOriginal => ({
+  ...(await importOriginal()),
   GlideClient: {
     createClient: mockCreateSpeedkeyClient,
   } as unknown as typeof import('@glidemq/speedkey').GlideClient,
 }))
-
 const importGlideMqRegistry = () => import('@data-stores/valkey-core/glide-mq-registry')
 function createRejectingQueueStub<TData>(error: Error) {
   return {

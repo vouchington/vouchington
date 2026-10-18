@@ -269,7 +269,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "entityListenerReconciliation",
     "template": {
       "data": {},
-      "name": "entity-listeners.enqueueReconcileEntities",
+      "name": "entity-listeners.reconcileEntities",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -1469,7 +1469,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "crawl:crawl_hostnames_dispatcher",
     "template": {
       "data": {},
-      "name": "crawl.enqueueCrawlHostnamesDispatcher",
+      "name": "crawl.crawl_hostnames_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -1506,7 +1506,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "crawl:crawl_tier1_dispatcher",
     "template": {
       "data": {},
-      "name": "crawl.enqueueCrawlTier1Dispatcher",
+      "name": "crawl.crawl_tier1_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -1543,7 +1543,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "crawl:crawl_tier2_dispatcher",
     "template": {
       "data": {},
-      "name": "crawl.enqueueCrawlTier2Dispatcher",
+      "name": "crawl.crawl_tier2_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -1675,7 +1675,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "crawl:referral-links-dispatcher",
     "template": {
       "data": {},
-      "name": "crawl.enqueueCrawlReferralLinksDispatcher",
+      "name": "crawl.crawl_referral_links_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -1708,7 +1708,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "crawl:unfurl-referral-links-dispatcher",
     "template": {
       "data": {},
-      "name": "crawl.enqueueUnfurlReferralLinksDispatcher",
+      "name": "crawl.unfurl_referral_links_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -2097,7 +2097,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "schedulerId": "dispatchFindYourFriends",
     "template": {
       "data": {},
-      "name": "enqueueDispatchFindYourFriends",
+      "name": "dispatchFindYourFriends",
       "opts": {
         "attempts": 3,
         "backoff": {
@@ -3314,7 +3314,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch "find your friends" social matching",
     "id": "dispatchFindYourFriends",
-    "job_name": "enqueueDispatchFindYourFriends",
+    "job_name": "dispatchFindYourFriends",
     "queue_name": "find-your-friends",
     "schedule": "0 3 * * *",
     "triggerName": "enqueueDispatchFindYourFriends",
@@ -3570,7 +3570,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch due hostname crawl jobs (hourly)",
     "id": "crawl:crawl_hostnames_dispatcher",
-    "job_name": "crawl.enqueueCrawlHostnamesDispatcher",
+    "job_name": "crawl.crawl_hostnames_dispatcher",
     "queue_name": "background-cpu",
     "schedule": "0 * * * *",
     "triggerName": "[anonymous]",
@@ -3578,7 +3578,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch tier-1 hostname crawls (daily)",
     "id": "crawl:crawl_tier1_dispatcher",
-    "job_name": "crawl.enqueueCrawlTier1Dispatcher",
+    "job_name": "crawl.crawl_tier1_dispatcher",
     "queue_name": "background-cpu",
     "schedule": "30 2 * * *",
     "triggerName": "[anonymous]",
@@ -3602,7 +3602,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch tier-2 hostname crawls (weekly)",
     "id": "crawl:crawl_tier2_dispatcher",
-    "job_name": "crawl.enqueueCrawlTier2Dispatcher",
+    "job_name": "crawl.crawl_tier2_dispatcher",
     "queue_name": "background-cpu",
     "schedule": "0 3 * * 0",
     "triggerName": "[anonymous]",
@@ -3610,7 +3610,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Dispatch referral link crawling (weekly)",
     "id": "crawl:referral-links-dispatcher",
-    "job_name": "crawl.enqueueCrawlReferralLinksDispatcher",
+    "job_name": "crawl.crawl_referral_links_dispatcher",
     "queue_name": "background-cpu",
     "schedule": "0 4 * * 0",
     "triggerName": "enqueueCrawlReferralLinksDispatcher",
@@ -3626,7 +3626,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
     "id": "crawl:unfurl-referral-links-dispatcher",
-    "job_name": "crawl.enqueueUnfurlReferralLinksDispatcher",
+    "job_name": "crawl.unfurl_referral_links_dispatcher",
     "queue_name": "background-cpu",
     "schedule": "0 * * * *",
     "triggerName": "enqueueUnfurlReferralLinksDispatcher",

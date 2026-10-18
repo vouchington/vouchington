@@ -38,8 +38,6 @@ const RECONCILE_ENTITY_DEPENDENCIES: ReconcileEntityDependencies = {
   processUserUpdated,
 }
 
-export { enqueueReconcileEntities } from '@queues/entity-listeners/enqueues/reconciliation'
-
 export async function reconcileEntities(
   data: EntityReconciliationDispatchData = {},
   saveProgress: (data: EntityReconciliationDispatchData) => Promise<void> = async () => {},

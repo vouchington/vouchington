@@ -2,7 +2,9 @@ import { backgroundCpu } from '@queues/background-cpu/queues'
 import { Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  createWorker,
   processRetainedSweep,
+  workerQueueCommandClient,
   workerQueueConnection,
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
@@ -10,21 +12,12 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
 } from '@modules/scheduled-job-manifest'
-import {
-  enqueueBulkCrawlHostname,
-  enqueueCrawlHostnamesDispatcher,
-  enqueueCrawlTier1Dispatcher,
-  enqueueCrawlTier2Dispatcher,
-} from '@queues/crawl-dispatch/enqueues/hostnames'
+import { enqueueBulkCrawlHostname } from '@queues/crawl-dispatch/enqueues/hostnames'
 import { scheduledJobManifest as crawlManifest } from '@queues/crawl-dispatch/enqueues/schedules'
-import { enqueueCrawlReferralLinksDispatcher } from '@queues/crawl-referral-links/enqueues'
 import { scheduledJobManifest as referralManifest } from '@queues/crawl-referral-links/enqueues/schedules'
-import { enqueueUnfurlReferralLinksDispatcher } from '@queues/unfurl-referral-links/enqueues'
 import { scheduledJobManifest as unfurlManifest } from '@queues/unfurl-referral-links/enqueues/schedules'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
-import { enqueueDispatchFindYourFriends } from '@queues/find-your-friends/enqueues'
 import { scheduledJobManifest as friendsManifest } from '@queues/find-your-friends/enqueues/schedules'
-import { processCrawlDispatchJob } from './processors.mts'
 
 vi.hoisted(() => {
   const url = new URL(process.env.VALKEY_URL || 'redis://localhost:6379')
@@ -42,7 +35,6 @@ const fixtures = [
     manifest: crawlManifest,
     schedulerId: 'crawl:crawl_hostnames_dispatcher',
     work: 'crawl.crawl_hostnames_dispatcher',
-    root: enqueueCrawlHostnamesDispatcher,
   },
   {
     label: 'tier1',
@@ -50,7 +42,6 @@ const fixtures = [
     manifest: crawlManifest,
     schedulerId: 'crawl:crawl_tier1_dispatcher',
     work: 'crawl.crawl_tier1_dispatcher',
-    root: enqueueCrawlTier1Dispatcher,
   },
   {
     label: 'tier2',
@@ -58,7 +49,6 @@ const fixtures = [
     manifest: crawlManifest,
     schedulerId: 'crawl:crawl_tier2_dispatcher',
     work: 'crawl.crawl_tier2_dispatcher',
-    root: enqueueCrawlTier2Dispatcher,
   },
   {
     label: 'referral',
@@ -66,7 +56,6 @@ const fixtures = [
     manifest: referralManifest,
     schedulerId: 'crawl:referral-links-dispatcher',
     work: 'crawl.crawl_referral_links_dispatcher',
-    root: enqueueCrawlReferralLinksDispatcher,
   },
   {
     label: 'unfurl',
@@ -74,7 +63,6 @@ const fixtures = [
     manifest: unfurlManifest,
     schedulerId: 'crawl:unfurl-referral-links-dispatcher',
     work: 'crawl.unfurl_referral_links_dispatcher',
-    root: enqueueUnfurlReferralLinksDispatcher,
   },
   {
     label: 'friends',
@@ -82,78 +70,24 @@ const fixtures = [
     manifest: friendsManifest,
     schedulerId: 'dispatchFindYourFriends',
     work: 'dispatchFindYourFriends',
-    root: enqueueDispatchFindYourFriends,
   },
 ] as const
 
 describe('periodic sweep coalescing', () => {
-  it.each(fixtures)('retains one $label job through repeated scheduler roots', async fixture => {
+  it.each(fixtures)('runs $label scheduler root directly', async fixture => {
     const { queue } = fixture
     const started = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    const repeated = Promise.withResolvers<void>()
-    const completed = Promise.withResolvers<void>()
-    const manual = Promise.withResolvers<void>()
-    const seen: { id: string; data: unknown }[] = []
-    const cursorId = crypto.randomUUID()
-    const initial =
-      fixture.label === 'friends'
-        ? {
-            sweepStartedAt,
-            upperIds: { facebook: 'tail', x: null, github: null },
-            afterIds: {},
-            finishedProviders: [],
-          }
-        : { cursor: { sweepStartedAt } }
-    const advanced =
-      fixture.label === 'friends'
-        ? { ...initial, afterIds: { facebook: 'tail' } }
-        : fixture.label === 'referral'
-          ? { cursor: { sweepStartedAt, afterWork: { dueAt: '-infinity', id: cursorId } } }
-          : fixture.label === 'unfurl'
-            ? { cursor: { sweepStartedAt, after: { requestedAt: sweepStartedAt, id: cursorId } } }
-            : { cursor: { sweepStartedAt, afterId: cursorId } }
-    let roots = 0
-    const worker = new Worker(
+    const seen: string[] = []
+    const worker = createWorker(
       queue.name,
       async (job: Job) => {
-        if (job.name !== fixture.work) {
-          const result =
-            fixture.label === 'tier1' || fixture.label === 'tier2' || fixture.label === 'hostnames'
-              ? await processCrawlDispatchJob(job)
-              : await fixture.root()
-          if (++roots >= 2) repeated.resolve()
-          return result
-        }
-        if (job.data?.urlId) {
-          manual.resolve()
-          return
-        }
-        seen.push({ id: job.id, data: job.data })
-        return processRetainedSweep(job, async save => {
-          if (seen.length === 1) {
-            await save(initial)
-            started.resolve()
-            await release.promise
-            await save(advanced)
-            return { hasMore: true }
-          }
-          return { hasMore: false }
-        })
+        seen.push(job.name)
+        started.resolve()
+        await release.promise
       },
-      {
-        connection: workerQueueConnection,
-        prefix: workerQueuePrefix,
-        concurrency: 5,
-        blockTimeout: 1000,
-        // Repeat entries are evaluated on promotion ticks (5 s by default), so without a short tick
-        // each repeated root waits on a 5 s boundary however small `every` is.
-        promotionInterval: PROMOTION_INTERVAL_MS,
-      },
+      { concurrency: 5, blockTimeout: 1000, promotionInterval: PROMOTION_INTERVAL_MS },
     )
-    worker.on('completed', job => {
-      if (job.name === fixture.work && !job.data?.urlId) completed.resolve()
-    })
     const template = fixture.manifest.jobs.find(job => job.schedulerId === fixture.schedulerId)!
     try {
       await worker.waitUntilReady()
@@ -168,29 +102,18 @@ describe('periodic sweep coalescing', () => {
         ]),
       )
       await started.promise
-      await repeated.promise
-      expect(seen).toHaveLength(1)
-      const active = await queue.getJob(seen[0]!.id)
-      expect(active?.data).toEqual(initial)
-      expect(active?.opts.deduplication?.mode).toBe('simple')
-      expect(active?.opts.ordering).toBeUndefined()
-      if (fixture.label === 'referral') {
-        await enqueueCrawlReferralLinksDispatcher({
-          urlId: crypto.randomUUID(),
-          cursor: { sweepStartedAt },
-        })
-        await manual.promise
-      }
+      expect(seen[0]).toBe(fixture.work)
       await upsertScheduledJobManifest(queue, defineScheduledJobManifest(queue.name, []))
-      release.resolve()
-      await completed.promise
-      expect(seen.map(item => item.id)).toEqual([active!.id, active!.id])
-      expect(seen[1]!.data).toEqual(advanced)
-      expect((await queue.getJob(active!.id))?.attemptsMade).toBe(0)
     } finally {
       release.resolve()
       await worker.close(true)
       await queue.obliterate({ force: true })
+      const base = `${workerQueuePrefix ?? 'glide'}:{${queue.name}}`
+      await workerQueueCommandClient.unlink([
+        `${base}:run:${fixture.schedulerId}`,
+        `${base}:run:${fixture.schedulerId}:previous`,
+        `${base}:run-metrics`,
+      ])
     }
   })
 
@@ -243,12 +166,7 @@ describe('periodic sweep coalescing', () => {
       release.resolve()
       await worker.close(true)
       await queue.obliterate({ force: true })
-      await Promise.all([
-        queue.close(),
-        backgroundCpu.close(),
-        backgroundCpu.close(),
-        findYourFriendsQueue.close(),
-      ])
+      await Promise.all([queue.close(), findYourFriendsQueue.close()])
     }
   })
 })

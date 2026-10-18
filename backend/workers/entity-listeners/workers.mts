@@ -4,7 +4,6 @@ import {
   ENTITY_LISTENERS_COMMUNITY_AGENT_PROMPTS_DEACTIVATED_JOB,
   ENTITY_LISTENERS_CONVERSATION_MESSAGE_CREATED_JOB,
   ENTITY_LISTENERS_DOMAIN,
-  ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB,
   ENTITY_LISTENERS_IMAGE_CREATED_JOB,
   ENTITY_LISTENERS_POST_CREATED_JOB,
   ENTITY_LISTENERS_POST_DELETED_JOB,
@@ -26,7 +25,7 @@ import { processConversationMessageCreated } from './processors/conversations.mt
 import { processImageCreated } from './processors/images.mts'
 import { processPostCreated, processPostDeleted, processPostUpdated } from './processors/posts.mts'
 import { processReconciliationJob } from './processors/process-reconciliation-job.mts'
-import { enqueueReconcileEntities, reconcileEntity } from './processors/reconciliation.mts'
+import { reconcileEntity } from './processors/reconciliation.mts'
 import {
   processTopicCreated,
   processTopicDeleted,
@@ -50,7 +49,6 @@ function listener<TData>(job: BackgroundJobDefinition<TData>, run: (data: TData)
 }
 
 export const entityListenersHandlers = [
-  listener(ENTITY_LISTENERS_ENQUEUE_RECONCILE_ENTITIES_JOB, () => enqueueReconcileEntities()),
   // Validates its own payload: the sweep persists its cursor through the job.
   backgroundHandler(ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB, job => processReconciliationJob(job)),
   listener(ENTITY_LISTENERS_RECONCILE_ENTITY_JOB, reconcileEntity),

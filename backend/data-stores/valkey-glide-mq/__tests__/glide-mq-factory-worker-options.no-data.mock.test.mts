@@ -17,7 +17,8 @@ const { mockWorker, mockSpeedkeyClient, mockCreateSpeedkeyClient } = vi.hoisted(
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), () => ({
   Worker: mockWorker,
 }))
-vi.mock<typeof import('@glidemq/speedkey')>(import('@glidemq/speedkey'), () => ({
+vi.mock<typeof import('@glidemq/speedkey')>(import('@glidemq/speedkey'), async importOriginal => ({
+  ...(await importOriginal()),
   GlideClient: {
     createClient: mockCreateSpeedkeyClient,
   } as unknown as typeof import('@glidemq/speedkey').GlideClient,
@@ -69,7 +70,7 @@ describe('createWorker stall budget', () => {
 
     createBatchWorker('batch-queue', batchProcessor, { batch: { size: 3, timeout: 100 } })
 
-    expect(mockWorker.mock.calls.at(-1)?.[1]).toBe(batchProcessor)
+    expect(mockWorker.mock.calls.at(-1)?.[1]).toBeTypeOf('function')
     expect(lastWorkerOptions()).toMatchObject({
       maxStalledCount: 2,
       batch: { size: 3, timeout: 100 },

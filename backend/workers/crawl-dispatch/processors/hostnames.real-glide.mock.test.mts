@@ -29,7 +29,6 @@ import {
 import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/crawl-dispatch-plans'
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
-import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 const fetchWithTimeoutSimpleMock = vi.hoisted(() =>
   vi.fn<typeof import('@modules/utils/http').fetchWithTimeoutSimple>(),
@@ -128,24 +127,6 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     ['crawl.unknown_job', 'not found'],
   ])('rejects malformed or unknown %s work', async (name, message) => {
     await expect(runJob(name, {}, processCrawlHostnamesJob)).rejects.toThrow(message)
-  })
-  it('routes the three enqueue trigger jobs to durable dispatcher children', async () => {
-    const routes = [
-      ['crawl.enqueueCrawlHostnamesDispatcher', 'crawl.crawl_hostnames_dispatcher'],
-      ['crawl.enqueueCrawlTier1Dispatcher', 'crawl.crawl_tier1_dispatcher'],
-      ['crawl.enqueueCrawlTier2Dispatcher', 'crawl.crawl_tier2_dispatcher'],
-    ] as const
-    const ownedChildren = [] as Array<{ remove: () => Promise<unknown> }>
-    try {
-      for (const [name, child] of routes) {
-        const enqueued = await runJob(name, { deduplication_id: randomUUID() })
-        const childJob = await readEnqueuedJob(backgroundCpu, enqueued)
-        ownedChildren.push(childJob)
-        expect(childJob.name).toBe(child)
-      }
-    } finally {
-      await Promise.all(ownedChildren.map(childJob => childJob.remove()))
-    }
   })
   it('dispatches a due hostname into the per-hostname queue job', async () => {
     const hostname = `sweep-${randomUUID()}.example.com`

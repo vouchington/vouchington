@@ -12946,9 +12946,6 @@ importers:
       '@queues/crawl-browser':
         specifier: workspace:^
         version: link:../../queues/crawl-browser
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/crawl-referral-links
       '@services/crawler-referral-links':
         specifier: workspace:^
         version: link:../../services/crawler-referral-links
@@ -13203,9 +13200,6 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
-      '@modules/scheduled-job-manifest':
-        specifier: workspace:^
-        version: link:../../modules/scheduled-job-manifest
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../../services/entity-fetch
@@ -13872,9 +13866,6 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../../queues/background-cpu
-      '@queues/unfurl-referral-links':
-        specifier: workspace:^
-        version: link:../../queues/unfurl-referral-links
       '@services/referral-link-unfurl':
         specifier: workspace:^
         version: link:../../services/referral-link-unfurl

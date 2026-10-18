@@ -6,7 +6,6 @@ export type {
 
 /** Local job names of the `entity-listeners` domain (the queue-wide name is `entity-listeners.<name>`). */
 export type EntityJobs =
-  | 'enqueueReconcileEntities'
   | 'reconcileEntity'
   | 'reconcileEntities'
   | 'processUrlCreated'

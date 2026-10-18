@@ -12,7 +12,8 @@
 - Scheduler templates cannot carry `delay`, `deduplication`, `parent`, or `jobId`: GlideMQ
   rejects them in `upsertJobScheduler` because the scheduler tick never applies them. Build template
   options with `toSchedulerTemplateOptions` (`@modules/scheduled-job-manifest/template-options`) and
-  put deduplication on the producer's own enqueue instead.
+  put deduplication on the producer's own manual enqueue instead. Use the real processor job as the
+  scheduler template; the factory skips overlapping runs.
 - Give central scheduled-job surfaces a normal enqueue API. Domain-specific backfill, PostgreSQL,
   and Valkey controls may remain on their existing admin routes.
 - Register every replayable queue in `BACKFILL_REGISTRY`. Stream an exhaustive durable source with a

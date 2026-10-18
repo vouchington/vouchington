@@ -12,12 +12,7 @@ import { dispatchCrawlHostnames } from '@services/crawls/dispatch-crawl-hostname
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
 import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
 import { createEnqueueFunction, processRetainedSweep } from '@data-stores/valkey-glide-mq'
-import {
-  enqueueBulkRefreshHostnameCrawler,
-  enqueueCrawlHostnamesDispatcher,
-  enqueueCrawlTier1Dispatcher,
-  enqueueCrawlTier2Dispatcher,
-} from '@queues/crawl-dispatch/enqueues/hostnames'
+import { enqueueBulkRefreshHostnameCrawler } from '@queues/crawl-dispatch/enqueues/hostnames'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
 import type { Job } from 'glide-mq'
@@ -111,15 +106,7 @@ export async function processCrawlHostnamesJob(
   dependencies?: Partial<CrawlHostnamesProcessorDependencies>,
 ): Promise<unknown> {
   const deps = getDependencies(dependencies)
-  const deduplicationId =
-    typeof job.data?.deduplication_id === 'string' ? job.data.deduplication_id : undefined
   switch (job.name) {
-    case 'crawl.enqueueCrawlHostnamesDispatcher':
-      return enqueueCrawlHostnamesDispatcher(deduplicationId ? { deduplicationId } : undefined)
-    case 'crawl.enqueueCrawlTier1Dispatcher':
-      return enqueueCrawlTier1Dispatcher(deduplicationId ? { deduplicationId } : undefined)
-    case 'crawl.enqueueCrawlTier2Dispatcher':
-      return enqueueCrawlTier2Dispatcher(deduplicationId ? { deduplicationId } : undefined)
     case 'crawl.crawl_hostnames_dispatcher':
       return processPagedDispatcher<{ cursor?: CrawlHostnameDispatchCursor }, unknown>(job, {
         dispatcher: 'hostnames',
