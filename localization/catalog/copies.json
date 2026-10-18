@@ -3900,7 +3900,6 @@
 {"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.aiAgents"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.allocate"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.allocated"},
-{"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.anyoneWithCode"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.applicationId"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.applications"},
 {"descriptor":null,"id":"copy.native.dotnet.csharpCommunities.apply"},
