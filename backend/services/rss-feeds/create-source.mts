@@ -41,6 +41,8 @@ async function createSource(
     hopCount = 0,
     originalUrl,
     fetchAndClassifyFeedImpl,
+    crawlerRssOptions,
+    importRowId,
     signal,
   }: CreateSourceOptions,
 ): Promise<CreateSourceResult> {
@@ -70,7 +72,6 @@ async function createSource(
     }
   }
 
-  // Resolve the effective URL (prefer https, fall back to http) and classify the feed
   let firstAttempt = true
   const { resolvedUrl, classification } = await raceFeedBudget(
     signal,
@@ -82,6 +83,8 @@ async function createSource(
         return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url, { signal })
       },
       fetchAndClassifyFeedImpl,
+      crawlerRssOptions,
+      importRowId,
       signal,
     }),
   )
@@ -93,8 +96,6 @@ async function createSource(
     assert(resolvedRedirectUrl, 422, 'RSS feed URL returned an unparseable redirect location')
     assert(resolvedRedirectUrl !== resolvedUrl, 422, 'RSS feed URL redirects to itself')
 
-    // For permanent redirects: record the canonical URL mapping so future uploads of the
-    // pre-redirect URL resolve here automatically.
     if (classification.isPermanent) {
       const originalRssFeedUrl = originalUrl ?? rssFeedUrl
       const originalUrlId = await createRssFeedUrlId(originalRssFeedUrl, {
@@ -115,13 +116,14 @@ async function createSource(
       hopCount: hopCount + 1,
       originalUrl: originalUrl ?? rssFeedUrl,
       fetchAndClassifyFeedImpl,
+      crawlerRssOptions,
+      importRowId,
       signal,
     })
   }
 
   const { title: feedTitle, feedType } = classification
 
-  // Normalize for consistent naming/slugging relative to the stored URL.
   const normalizedUrl = normalizeUrlForUrlTable(resolvedUrl, { preserveHttp: isHttpUrl })
   const normalizedFeedUrl = normalizedUrl.href
   const rawHostname = normalizedUrl.hostname
@@ -154,7 +156,6 @@ async function createSource(
   const hostnameId = await resolveHostname(currentUser.id, rawHostname)
   assert(hostnameId, 500, 'Failed to resolve hostname')
 
-  // Attempt creation with up to 3 retries; null means a URL race condition was detected.
   const created = await createSourceWithRetry({
     provenance,
     currentUser,
@@ -169,7 +170,6 @@ async function createSource(
   })
 
   if (!created) {
-    // Race condition: another request created this URL concurrently — switch to upvote path.
     const raceExisting = await findExistingFeedByUrlId(rssFeedUrlId)
     assert(raceExisting, 500, 'Concurrent source creation race condition')
     await upsertAutomaticTopicUpvote(currentUser, raceExisting.topic_id)

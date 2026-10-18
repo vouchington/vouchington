@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  enqueueCopyrightSubmissionGuidanceAndWait,
+  enqueueCopyrightSubmissionGuidance,
   enqueueOrRetryCopyrightSubmissionGuidance,
 } from './copyright-submission-guidance.mts'
 import {
-  enqueueCopyrightAppealRecommendationAndWait,
+  enqueueCopyrightAppealRecommendation,
   enqueueOrRetryCopyrightAppealRecommendation,
 } from './copyright-appeal-recommendation.mts'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS, type AIAgentJobName } from '../config.mts'
@@ -13,29 +13,29 @@ import { ai_agents } from '../queues.mts'
 const enqueues: Array<{
   name: Extract<AIAgentJobName, 'copyright-submission-guidance' | 'copyright-appeal-recommendation'>
   prefix: string
-  enqueueAndWait: (submissionId: string) => Promise<void>
+  enqueue: (submissionId: string) => Promise<void>
   recover: typeof enqueueOrRetryCopyrightSubmissionGuidance
 }> = [
   {
     name: 'copyright-submission-guidance',
     prefix: 'copyright_submission_guidance_',
-    enqueueAndWait: enqueueCopyrightSubmissionGuidanceAndWait,
+    enqueue: enqueueCopyrightSubmissionGuidance,
     recover: enqueueOrRetryCopyrightSubmissionGuidance,
   },
   {
     name: 'copyright-appeal-recommendation',
     prefix: 'copyright_appeal_recommendation_',
-    enqueueAndWait: enqueueCopyrightAppealRecommendationAndWait,
+    enqueue: enqueueCopyrightAppealRecommendation,
     recover: enqueueOrRetryCopyrightAppealRecommendation,
   },
 ]
 
-describe.each(enqueues)('$name enqueue recovery', ({ name, prefix, enqueueAndWait, recover }) => {
+describe.each(enqueues)('$name enqueue recovery', ({ name, prefix, enqueue, recover }) => {
   it('persists an ordered, deduplicated guidance job', async () => {
     const submissionId = crypto.randomUUID()
     const jobId = `${prefix}${submissionId}`
     try {
-      await enqueueAndWait(submissionId)
+      await enqueue(submissionId)
 
       // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
       // Valkey deduplication or ordering.

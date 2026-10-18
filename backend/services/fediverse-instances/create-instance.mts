@@ -6,14 +6,8 @@ import assert from 'http-assert'
 import onError from '@modules/on-error'
 import { createInstanceWithRetry } from './create-instance-helpers.mts'
 import { findExistingInstanceByHostnameId } from './find-existing-instance.mts'
-import {
-  classifyFediverseInstance,
-  type InstanceClassificationMetadata,
-  type InstanceClassificationResult,
-} from '@services/fediverse-search/adapters/instance-classification'
+import { enqueueCreatedFediverseInstanceClassification } from './classify-created-instance.mts'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-
-export type ClassifyFediverseInstance = (hostname: string) => Promise<InstanceClassificationResult>
 
 export type CreateInstanceResult = {
   status: 'created' | 'upvoted'
@@ -33,7 +27,6 @@ export async function createInstanceFromHostname(
   currentUser: BasicUser,
   provenance: ContentProvenance,
   hostname: string,
-  classifyInstance: ClassifyFediverseInstance = classifyFediverseInstance,
 ): Promise<CreateInstanceResult> {
   const normalizedHostname = normalizeHostname(hostname)
   assert(normalizedHostname, 422, 'hostname must be a valid hostname')
@@ -47,15 +40,13 @@ export async function createInstanceFromHostname(
     return { status: 'upvoted', topic_id: existing.topic_id, topic_slug: existing.topic_slug }
   }
 
-  const metadata = await classifyNewInstanceHostname(normalizedHostname, classifyInstance)
-
   const created = await createInstanceWithRetry({
     provenance,
     currentUser,
     hostnameId,
     hostname: normalizedHostname,
     attempt: 0,
-    metadata,
+    metadata: null,
   })
 
   if (!created) {
@@ -71,25 +62,7 @@ export async function createInstanceFromHostname(
   }
 
   upsertAutomaticTopicUpvote(currentUser, created.topicId).catch(onError)
+  enqueueCreatedFediverseInstanceClassification(created.topicId, hostnameId).catch(onError)
 
   return { status: 'created', topic_id: created.topicId, topic_slug: created.slug }
-}
-
-/**
- * Best-effort: classification only succeeds for the handful of hosts this deployment's
- * NodeInfo adapters already talk to (see classifyFediverseInstance), so almost every
- * user-suggested hostname degrades to null here — the instance topic still gets created with
- * unclassified extension columns rather than failing.
- */
-async function classifyNewInstanceHostname(
-  hostname: string,
-  classifyInstance: ClassifyFediverseInstance,
-): Promise<InstanceClassificationMetadata | null> {
-  try {
-    const result = await classifyInstance(hostname)
-    return result.status === 'ok' ? result.metadata : null
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)))
-    return null
-  }
 }

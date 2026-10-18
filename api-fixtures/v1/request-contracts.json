@@ -36922,13 +36922,23 @@
         "entity_id": {
           "type": "string"
         },
-        "error": {
+        "error_code": {
+          "enum": [
+            "INVALID_URL",
+            "INVALID_FEED_CONTENT",
+            "FEED_FETCH_TIMEOUT",
+            "CONTRIBUTION_LIMIT_EXCEEDED",
+            "IMPORT_FAILED"
+          ],
           "type": "string"
         },
         "id": {
           "type": "string"
         },
         "input": {
+          "type": "string"
+        },
+        "topic_slug": {
           "type": "string"
         },
         "status": {
@@ -49667,7 +49677,13 @@
       "additionalProperties": false
     },
     "POST:/api/v1/rss-feeds": {
-      "$ref": "#/components/schemas/CreateSourceResult"
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "import": { "$ref": "#/components/schemas/UserRssFeedImportSummary" },
+        "status_url": { "type": "string" }
+      },
+      "required": ["import", "status_url"]
     },
     "POST:/api/v1/stories/:storyId/discussions": {
       "$ref": "#/components/schemas/StoryPostResult"

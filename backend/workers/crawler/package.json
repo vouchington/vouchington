@@ -22,6 +22,7 @@
     "@modules/queue-config": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@services/crawls": "workspace:^",
+    "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
     "glide-mq": "^0.18.0"
   },

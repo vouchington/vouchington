@@ -89,7 +89,7 @@ describe('RSS feed import batches', () => {
     })
     expect(status?.rows[0]).toMatchObject({
       status: 'error',
-      error: 'Import user not found',
+      error_code: 'IMPORT_FAILED',
     })
   })
 
@@ -166,7 +166,7 @@ describe('RSS feed import batches', () => {
     expect(status?.rows[0]).toMatchObject({
       input: 'not-a-url',
       status: 'error',
-      error: 'Invalid URL format',
+      error_code: 'INVALID_URL',
     })
   })
 
@@ -192,7 +192,7 @@ describe('RSS feed import batches', () => {
     expect(status?.import.pending_rows).toBe(1)
     expect(status?.rows[0]).toMatchObject({
       status: 'pending',
-      error: 'temporary failure',
+      error_code: 'IMPORT_FAILED',
     })
   })
 
@@ -238,7 +238,7 @@ describe('RSS feed import batches', () => {
     })
     expect(status?.rows[0]).toMatchObject({
       status: 'error',
-      error: 'terminal failure',
+      error_code: 'IMPORT_FAILED',
     })
   })
 
@@ -259,7 +259,7 @@ describe('RSS feed import batches', () => {
     })
     expect(status?.rows[0]).toMatchObject({
       status: 'error',
-      error: 'terminal failure',
+      error_code: 'IMPORT_FAILED',
     })
   })
 
@@ -281,7 +281,7 @@ describe('RSS feed import batches', () => {
     })
     expect(status?.rows[0]).toMatchObject({
       status: 'error',
-      error: 'terminal failure',
+      error_code: 'IMPORT_FAILED',
     })
   })
 })

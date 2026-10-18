@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { createSource } from '@/lib/api/client'
+import { waitForSourceImport } from '@/lib/api/client/source-import'
 import onError, { onSuccess as onSuccessToast } from '@/lib/on-error'
 import { topicHref } from '@/lib/links/entity-href'
 import { ADD_SOURCE_CONTENT, type AddSourceKind } from './add-source-content'
@@ -22,18 +23,25 @@ export function AddSourceForm({
   const { push } = useRouter()
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  const controllerRef = useRef<AbortController | null>(null)
   const content = ADD_SOURCE_CONTENT[kind]
+
+  useEffect(() => () => controllerRef.current?.abort(), [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (loading || !url.trim()) return
     setLoading(true)
+    const controller = new AbortController()
+    controllerRef.current = controller
     try {
       const result = await createSource({ rss_feed_url: url.trim(), follow: true })
+      const slug = await waitForSourceImport(result, controller.signal)
       onSuccess?.()
       onSuccessToast(t('extracted.sources.addSourceForm.sourceAddedSuccessfully_1817e3b7'))
-      push(topicHref({ topic_type: 'rss_feed', slug: result.topic_slug }))
+      push(topicHref({ topic_type: 'rss_feed', slug }))
     } catch (err) {
+      if (controller.signal.aborted) return
       onError(err, {
         fallback: t('extracted.sources.addSourceForm.failedToAddSource_206b335b'),
         tags: { form: 'add-source' },

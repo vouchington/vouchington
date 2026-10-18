@@ -161,7 +161,7 @@ describe('RSS participation tools — real store and REST parity', () => {
     else await request.post(route).send({ audience: 'all_followers' }).expect(404)
   })
 
-  it('creates a new feed with the REST source result', async () => {
+  it('submits a new feed with the REST pending result shape', async () => {
     vi.stubEnv('PLAYWRIGHT_TEST', 'true')
     try {
       const user = await createTestPlusMcpCaller()
@@ -175,28 +175,27 @@ describe('RSS participation tools — real store and REST parity', () => {
         FEED_SCOPES,
       )
       expect(result).toMatchObject({
-        status: 'created',
-        rss_feed_id: expect.any(String),
-        topic_id: expect.any(String),
-        topic_slug: expect.any(String),
+        import: { id: expect.any(String), total_rows: 1, pending_rows: 1 },
+        status_url: expect.any(String),
       })
     } finally {
       vi.unstubAllEnvs()
     }
   })
 
-  it('submits an existing feed idempotently and rejects the same invalid URL as REST', async () => {
+  it('submits an existing feed as pending and rejects the same invalid URL as REST', async () => {
     const user = await createTestPlusMcpCaller()
     const feedUrl = `http://feed-${crypto.randomUUID()}.example.com/feed.xml`
-    const feed = await createTestRssFeed({
+    await createTestRssFeed({
       rssFeedUrl: feedUrl,
       topicHostname: new URL(feedUrl).hostname,
     })
     const args = optionArgs('submit', { rss_feed_url: feedUrl, follow: false })
     const first = await callStructuredMcpTool(user, 'submit_rss_feed', args, FEED_SCOPES)
     const second = await callStructuredMcpTool(user, 'submit_rss_feed', args, FEED_SCOPES)
-    expect(first).toMatchObject({ status: 'upvoted', rss_feed_id: feed.id })
-    expect(second).toEqual(first)
+    expect(first).toMatchObject({ import: { pending_rows: 1 }, status_url: expect.any(String) })
+    expect(second).toMatchObject({ import: { pending_rows: 1 }, status_url: expect.any(String) })
+    expect((second.import as { id: string }).id).not.toBe((first.import as { id: string }).id)
     const invalid = optionArgs('submit', { rss_feed_url: 'not-a-url' })
     const error = JSON.parse(
       await callRejectedMcpTool(user, 'submit_rss_feed', invalid, FEED_SCOPES),

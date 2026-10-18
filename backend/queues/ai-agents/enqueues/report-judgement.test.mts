@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 import { ai_agents } from '../queues.mts'
-import { enqueueReportJudgementAndWait } from './report-judgement.mts'
+import { enqueueReportJudgement } from './report-judgement.mts'
 
-describe('enqueueReportJudgementAndWait', () => {
+describe('enqueueReportJudgement', () => {
   beforeEach(async () => {
     await ai_agents.obliterate({ force: true })
   })
@@ -13,13 +13,7 @@ describe('enqueueReportJudgementAndWait', () => {
     const entityId = randomUUID()
     const triggeringReportId = randomUUID()
 
-    await enqueueReportJudgementAndWait(
-      'post',
-      entityId,
-      triggeringReportId,
-      null,
-      `ctx-${randomUUID()}`,
-    )
+    await enqueueReportJudgement('post', entityId, triggeringReportId, null, `ctx-${randomUUID()}`)
 
     const job = (await getReportJudgementJobs()).find(isReportJudgementJobFor(entityId))
     expect(job?.opts).toMatchObject({
@@ -35,7 +29,7 @@ describe('enqueueReportJudgementAndWait', () => {
     const entityId = randomUUID()
     const triggeringReportId = randomUUID()
 
-    await enqueueReportJudgementAndWait(
+    await enqueueReportJudgement(
       'post',
       entityId,
       triggeringReportId,

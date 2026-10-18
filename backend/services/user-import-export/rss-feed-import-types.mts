@@ -19,9 +19,17 @@ export type UserRssFeedImportRowResult = {
   id: string
   input: string
   status: ImportRssFeedStatus | 'pending'
-  error?: string
+  error_code?: RssFeedImportErrorCode
   entity_id?: string
+  topic_slug?: string
 }
+
+export type RssFeedImportErrorCode =
+  | 'INVALID_URL'
+  | 'INVALID_FEED_CONTENT'
+  | 'FEED_FETCH_TIMEOUT'
+  | 'CONTRIBUTION_LIMIT_EXCEEDED'
+  | 'IMPORT_FAILED'
 
 export type UserRssFeedImport = {
   import: UserRssFeedImportSummary
@@ -83,13 +91,34 @@ export function toImportSummary(batch: UserRssFeedImportBatchRow): UserRssFeedIm
 }
 
 export function toImportRowResult(
-  row: Pick<UserRssFeedImportRow, 'id' | 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'>,
+  row: Pick<
+    UserRssFeedImportRow,
+    'id' | 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'
+  > & { topic_slug?: string | null },
 ): UserRssFeedImportRowResult {
   return {
     id: row.id,
     input: row.input_url,
     status: row.outcome ?? 'pending',
-    ...(row.error_message ? { error: row.error_message } : {}),
+    ...(row.error_message ? { error_code: publicImportErrorCode(row.error_message) } : {}),
     ...(row.rss_feed_id ? { entity_id: row.rss_feed_id } : {}),
+    ...(row.topic_slug ? { topic_slug: row.topic_slug } : {}),
   }
+}
+
+function publicImportErrorCode(message: string): RssFeedImportErrorCode {
+  if (
+    message === 'Invalid URL format' ||
+    message === 'URL is empty' ||
+    message === 'RSS feed URLs must not contain fragments'
+  )
+    return 'INVALID_URL'
+  if (
+    message === 'RSS feed URL did not return feed content' ||
+    message === 'RSS feed URL must return a valid RSS, Atom, or JSON feed'
+  )
+    return 'INVALID_FEED_CONTENT'
+  if (message === 'RSS feed processing exceeded its time budget') return 'FEED_FETCH_TIMEOUT'
+  if (message.startsWith('Contribution limit exceeded')) return 'CONTRIBUTION_LIMIT_EXCEEDED'
+  return 'IMPORT_FAILED'
 }

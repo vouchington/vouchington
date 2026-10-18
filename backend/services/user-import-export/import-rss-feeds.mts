@@ -8,6 +8,7 @@ import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { createSourceFromUrl } from '@services/rss-feeds/create-source'
+import type { CreateSourceOptions } from '@services/rss-feeds/create-source-types'
 import { validateRssFeedUrl } from './validate-rss-feed-url.mts'
 
 export type ImportRssFeedResult = {
@@ -31,9 +32,11 @@ const followRssFeedRelation = getEntityRelationMetadataOrThrow({
 })
 
 export type ImportSingleRssFeedOptions = {
+  importRowId?: string
   assertRssFeedLimit?: () => Promise<void>
   follow?: boolean
   createSourceFromUrlImpl?: typeof createSourceFromUrl
+  crawlerRssOptions?: CreateSourceOptions['crawlerRssOptions']
   /** One deadline for the feed's network work; see `createSourceFromUrl`. */
   signal?: AbortSignal
 }
@@ -46,7 +49,9 @@ export async function importSingleRssFeed(
     assertRssFeedLimit,
     follow = true,
     createSourceFromUrlImpl,
+    crawlerRssOptions,
     signal,
+    importRowId,
   }: ImportSingleRssFeedOptions = {},
 ): Promise<ImportRssFeedResult> {
   const validation = validateRssFeedUrl(rawUrl)
@@ -95,6 +100,8 @@ export async function importSingleRssFeed(
       assertContributionLimit: assertRssFeedLimit,
       follow,
       signal,
+      importRowId,
+      crawlerRssOptions,
     },
   )
   if (follow) {

@@ -49,7 +49,6 @@ describe('glide-mq factory', () => {
         RangeError,
       )
       expect(() => none.add('raw', {}, { priority: 10 })).toThrow(RangeError)
-      expect(() => ranked.addAndWait('raw', {}, { priority: 0 })).toThrow(RangeError)
       expect(() =>
         ranked.upsertJobScheduler(
           'raw',

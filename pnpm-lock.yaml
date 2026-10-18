@@ -2093,6 +2093,9 @@ importers:
       '@services/user-financial-profiles':
         specifier: workspace:^
         version: link:../services/user-financial-profiles
+      '@services/user-import-export':
+        specifier: workspace:^
+        version: link:../services/user-import-export
       '@services/user-mod-notes':
         specifier: workspace:^
         version: link:../services/user-mod-notes
@@ -6559,6 +6562,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
@@ -9879,6 +9885,9 @@ importers:
       '@queues/rss-feeds':
         specifier: workspace:^
         version: link:../../queues/rss-feeds
+      '@queues/user-rss-feed-imports':
+        specifier: workspace:^
+        version: link:../../queues/user-rss-feed-imports
       '@services/analytics':
         specifier: workspace:^
         version: link:../analytics
@@ -12241,6 +12250,9 @@ importers:
       '@queues/ses-inbound':
         specifier: workspace:^
         version: link:../../queues/ses-inbound
+      '@services/fediverse-instances':
+        specifier: workspace:^
+        version: link:../../services/fediverse-instances
       '@services/queue-domain-controls':
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
@@ -12811,6 +12823,9 @@ importers:
       '@services/crawls':
         specifier: workspace:^
         version: link:../../services/crawls
+      '@services/rss-feeds':
+        specifier: workspace:^
+        version: link:../../services/rss-feeds
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls

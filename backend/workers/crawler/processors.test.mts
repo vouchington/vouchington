@@ -153,7 +153,7 @@ describe('crawler processor', () => {
       skipCanonicalUrl: true,
       skipChunks: true,
       skipCreatedEventsForRedirects: true,
-      waitForResult: true,
+      importRowId: urlId,
     })
 
     expect(observer.ownedPromises()).toHaveLength(1)
@@ -180,7 +180,7 @@ describe('crawler processor', () => {
               skip_canonical_url?: boolean
               skip_chunks?: boolean
               skip_created_events_for_redirects?: boolean
-              wait_for_result?: boolean
+              import_row_id?: string
             }
           ).crawl_timeout_ms === 10_000 &&
           (job.data as { ensure_crawler_for_redirects?: boolean }).ensure_crawler_for_redirects ===
@@ -193,8 +193,7 @@ describe('crawler processor', () => {
           (job.data as { skip_chunks?: boolean }).skip_chunks === true &&
           (job.data as { skip_created_events_for_redirects?: boolean })
             .skip_created_events_for_redirects === true &&
-          (job.data as { wait_for_result?: boolean }).wait_for_result === true &&
-          JSON.stringify(job.opts.removeOnComplete) === JSON.stringify({ age: 60, count: 100 }),
+          (job.data as { import_row_id?: string }).import_row_id === urlId,
       ),
     ).toBe(true)
   })

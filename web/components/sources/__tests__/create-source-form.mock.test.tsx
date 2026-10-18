@@ -42,6 +42,10 @@ vi.mock(import('@/lib/api/client'), () => ({
   createSource: vi.fn<VitestLooseMock>(),
 }))
 
+vi.mock(import('@/lib/api/client/source-import'), () => ({
+  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue('test-feed'),
+}))
+
 vi.mock(import('@/lib/api/client/import-export'), () => ({
   importRssFeeds: vi.fn<VitestLooseMock>(),
 }))
@@ -82,10 +86,8 @@ describe('CreateSourceForm', () => {
 
   it('always calls createSource with follow: true', async () => {
     vi.mocked(clientApi.createSource).mockResolvedValue({
-      status: 'created',
-      rss_feed_id: 'rss-feed-id-1',
-      topic_id: 'topic-id-1',
-      topic_slug: 'test-feed',
+      import: { ...mockImport, total_rows: 1, pending_rows: 1 },
+      status_url: `/api/v1/my/import/rss-feeds/${mockImport.id}`,
     })
 
     render(<CreateSourceForm />)
@@ -137,10 +139,8 @@ describe('CreateSourceForm', () => {
 
   it('Cmd+Enter and Ctrl+Enter on the URL textarea submit the form; plain Enter does not', () => {
     vi.mocked(clientApi.createSource).mockResolvedValue({
-      status: 'created',
-      rss_feed_id: 'rss-feed-id-1',
-      topic_id: 'topic-id-1',
-      topic_slug: 'test-feed',
+      import: { ...mockImport, total_rows: 1, pending_rows: 1 },
+      status_url: `/api/v1/my/import/rss-feeds/${mockImport.id}`,
     })
 
     render(<CreateSourceForm />)

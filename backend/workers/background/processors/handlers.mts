@@ -16,6 +16,9 @@ import { openAiModerationHandlers } from '@workers/openai-moderation/workers'
 import { postMentionsHandlers } from '@workers/post-mentions/workers'
 import { postPublicationHandlers } from '@workers/post-publication/workers'
 import { rssFeedsHandlers } from '@workers/rss-feeds/workers'
+import { FEDIVERSE_INSTANCES_CLASSIFY_JOB } from '@queues/background/enqueues/fediverse-instances-jobs'
+import { backgroundHandler } from '@queues/background/enqueues/define-handler'
+import { classifyCreatedFediverseInstance } from '@services/fediverse-instances/classify-created-instance'
 import { sesInboundHandlers } from '@workers/ses-inbound/workers'
 import { sitemapsHandlers } from '@workers/sitemaps/workers'
 import { storyPostRelatedUrlProjectionsHandlers } from '@workers/story-post-related-url-projections/workers'
@@ -40,6 +43,11 @@ export const BACKGROUND_HANDLERS: readonly BackgroundHandler[] = [
   ...followerDistributionsHandlers,
   ...blueskyFollowPropagationHandlers,
   ...rssFeedsHandlers,
+  backgroundHandler(FEDIVERSE_INSTANCES_CLASSIFY_JOB, job => {
+    const { topicId, hostnameId } = job.data ?? {}
+    if (!topicId || !hostnameId) throw new Error('Fediverse classification job IDs are required')
+    return classifyCreatedFediverseInstance(topicId, hostnameId)
+  }),
   ...urlsDomainsBlacklistHandlers,
   ...sitemapsHandlers,
   ...cachePurgeHandlers,

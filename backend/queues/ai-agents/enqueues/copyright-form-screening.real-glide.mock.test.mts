@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { ai_agents } from '../queues.mts'
-import { enqueueCopyrightFormScreeningAndWait } from './copyright-form-screening.mts'
+import { enqueueCopyrightFormScreening } from './copyright-form-screening.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
@@ -11,8 +11,8 @@ describe('copyright screening wakeup on real GlideMQ', () => {
     const jobId = `copyright_form_screening_${submissionId}`
     try {
       await Promise.all([
-        enqueueCopyrightFormScreeningAndWait(submissionId),
-        enqueueCopyrightFormScreeningAndWait(submissionId),
+        enqueueCopyrightFormScreening(submissionId),
+        enqueueCopyrightFormScreening(submissionId),
       ])
       const job = await ai_agents.getJob(jobId)
       expect(job?.name).toBe('copyright-form-screening')

@@ -1,4 +1,3 @@
-/* oxlint-disable max-lines -- post/topic/feed response contracts stay colocated for fixture exactness checks */
 import type * as Api from './shared'
 import type { PaginatedResponse } from './pagination-and-entities'
 
@@ -163,12 +162,8 @@ export interface RssFeedRefreshResponseBody {
   force: boolean
 }
 
-export interface CreateSourceResponseBody {
-  status: 'created' | 'upvoted'
-  rss_feed_id: string
-  topic_id: string
-  topic_slug: string
-}
+export type CreateSourceResponseBody =
+  import('@/lib/api/client/import-export').RssFeedImportSubmission
 
 export interface FollowContextUsers {
   total: number

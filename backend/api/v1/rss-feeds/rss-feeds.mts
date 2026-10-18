@@ -2,7 +2,7 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { buildRssFeedSidecars, searchRssFeeds } from '@services/rss-feeds'
-import { createSourceFromUrl } from '@services/rss-feeds/create-source'
+import { submitRssFeedSource } from '@services/user-import-export/submit-rss-feed-source'
 import { attachRssFeedProvenance } from '@services/content-provenance'
 import { searchRssFeedsCached } from '@services/entity-fetch'
 import { assertNotSuspended } from '@services/users'
@@ -21,7 +21,6 @@ import {
 import { apiRequestContract, apiResponse } from '@vouchington/utils/api-response-contract'
 import { apiQuery } from '../../api-query-contract.mts'
 import { parseCreateSourceBody } from '@services/rss-feeds/request-body'
-import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import { parseBooleanish } from '@ts-shared/utils/query'
 import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { proxyRssFeedCoverArt } from '@services/rss-feeds/proxy-cover-art'
@@ -141,13 +140,13 @@ app
     const rawBody = (await ctx.request.json('1mb')) as CreateRssFeedBody
     validateRequestContract(ctx, 'POST:/api/v1/rss-feeds', { body: rawBody })
     const body = parseCreateSourceBody(rawBody)
-    const membershipPlan = currentUser.membership_plan ?? null
-    const result = await createSourceFromUrl(currentUser, provenance, body.rss_feed_url, {
-      assertContributionLimit: () =>
-        assertWithinContributionActionLimit(currentUser, membershipPlan, 'rss_feed'),
-      follow: body.follow,
-    })
-
-    ctx.setStatus(result.status === 'created' ? 201 : 200)
-    ctx.json(result)
+    const result = await submitRssFeedSource(
+      currentUser,
+      provenance,
+      body.rss_feed_url,
+      body.follow,
+    )
+    ctx.setStatus(202)
+    ctx.set('Location', result.status_url)
+    ctx.json(apiResponse('POST:/api/v1/rss-feeds', result))
   })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  enqueueCopyrightEmailIntakeAndWait,
+  enqueueCopyrightEmailIntake,
   enqueueOrRetryCopyrightEmailIntake,
 } from './copyright-email-intake.mts'
 import { AGENT_PRIORITY, AI_AGENTS_DEFAULTS } from '../config.mts'
@@ -15,7 +15,7 @@ describe('copyright email intake enqueue recovery', () => {
     const intakeId = crypto.randomUUID()
     const jobId = `copyright_email_intake_${intakeId}`
     try {
-      await enqueueCopyrightEmailIntakeAndWait(intakeId)
+      await enqueueCopyrightEmailIntake(intakeId)
       // The in-memory GlideMQ shim records the options the enqueue passed. It does not prove
       // Valkey deduplication or ordering.
       await expect(ai_agents.getJob(jobId)).resolves.toMatchObject({

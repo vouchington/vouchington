@@ -1,9 +1,13 @@
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { fetchAndClassifyFeed, type FeedClassification } from './validate.mts'
+import { RssFeedDiscoveryPendingError } from './discovery-pending.mts'
+import type CrawlerRss from '@services/crawler-rss'
 
 type ResolveProtocolOptions = {
   beforeFetch?: (url: string) => Promise<void>
   fetchAndClassifyFeedImpl?: typeof fetchAndClassifyFeed
+  importRowId?: string
+  crawlerRssOptions?: Parameters<typeof CrawlerRss>[1]
   /** Aborts the fetch, and stops the HTTP fallback from starting once the budget is spent. */
   signal?: AbortSignal
 }
@@ -15,7 +19,11 @@ export async function resolveProtocolAndClassify(
   const fetchAndClassifyFeedImpl = options.fetchAndClassifyFeedImpl ?? fetchAndClassifyFeed
   const { signal } = options
   const fetchAndClassifyFeedFn = (url: string) =>
-    signal ? fetchAndClassifyFeedImpl(url, { signal }) : fetchAndClassifyFeedImpl(url)
+    fetchAndClassifyFeedImpl(url, {
+      signal,
+      importRowId: options.importRowId,
+      crawlerRssOptions: options.crawlerRssOptions,
+    })
 
   // Use the WHATWG-parsed protocol so uppercase schemes (HTTP://) are handled correctly
   const protocol = new URL(rssFeedUrl).protocol
@@ -39,6 +47,7 @@ export async function resolveProtocolAndClassify(
     }
     return { resolvedUrl: httpsUrl, classification }
   } catch (err) {
+    if (err instanceof RssFeedDiscoveryPendingError) throw err
     // A spent budget is not an HTTPS failure: do not spend more of it on the HTTP fallback.
     if (signal?.aborted) throw err
     const httpUrl = normalizeUrlForUrlTable(rssFeedUrl, { preserveHttp: true }).href

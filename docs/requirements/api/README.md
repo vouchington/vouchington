@@ -15,6 +15,11 @@ contracts. This page records only the decisions code cannot show.
 
 ## Response patterns
 
+Submitting an RSS feed returns a pending, user-owned import with a status URL. The URL is also the
+polling contract for MCP. Feed validation, including HTML discovery, runs in workers; the crawler
+persists its outcome before resuming the import row. A client uses the returned feed ID only after
+the row completes. This keeps request latency independent of remote feed hosts.
+
 - Never return a raw entity or raw array at the top level. Wrap single entities, and wrap lists as
   `{ results, page_info }`.
 - Entity payloads carry no nested election summaries or raw vote aggregates. Elections are

@@ -36,6 +36,7 @@
     "@queues/psql": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",
     "@queues/rss-feeds": "workspace:^",
+    "@queues/user-rss-feed-imports": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/bookmarks": "workspace:^",
     "@services/crawler-rss": "workspace:^",

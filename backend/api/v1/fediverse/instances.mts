@@ -184,12 +184,7 @@ app
     const membershipPlan = currentUser.membership_plan ?? null
     await assertWithinContributionActionLimit(currentUser, membershipPlan, 'fediverse_instance')
 
-    const result = await createInstanceFromHostname(
-      currentUser,
-      provenance,
-      body.hostname,
-      classifyInstance,
-    )
+    const result = await createInstanceFromHostname(currentUser, provenance, body.hostname)
 
     ctx.setStatus(result.status === 'created' ? 201 : 200)
     ctx.json(result)

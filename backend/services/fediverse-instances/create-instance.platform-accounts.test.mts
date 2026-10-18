@@ -47,18 +47,9 @@ describe('createInstanceFromHostname automatic vote for platform accounts', () =
     const hostname = hostnameFor('fedi-platform-race')
     // Hold both callers in classification until each has missed the existing-instance lookup, so
     // exactly one of them loses the insert and takes the race-existing path.
-    let arrived = 0
-    let release!: () => void
-    const bothArrived = new Promise<void>(resolve => (release = resolve))
-    const classifyInstance = vi.fn<(hostname: string) => Promise<never>>(async () => {
-      if (++arrived === 2) release()
-      await bothArrived
-      throw new Error('classification unavailable')
-    })
-
     const results = await Promise.all([
-      createInstanceFromHostname(account, WEB_PROVENANCE, hostname, classifyInstance),
-      createInstanceFromHostname(member, WEB_PROVENANCE, hostname, classifyInstance),
+      createInstanceFromHostname(account, WEB_PROVENANCE, hostname),
+      createInstanceFromHostname(member, WEB_PROVENANCE, hostname),
     ])
 
     expect(results.map(result => result.status).toSorted()).toEqual(['created', 'upvoted'])

@@ -23,6 +23,10 @@ vi.mock(
     }) as unknown as typeof import('next/navigation'),
 )
 
+vi.mock(import('@/lib/api/client/source-import'), () => ({
+  waitForSourceImport: vi.fn<VitestLooseMock>().mockResolvedValue('test-feed'),
+}))
+
 vi.mock(import('@/lib/links/entity-href'), () => ({
   topicHref: mockTopicHref,
 }))
@@ -39,7 +43,18 @@ describe('AddSourceForm', () => {
     mockCreateSource.mockReset()
     mockPush.mockReset()
     mockTopicHref.mockReturnValue('/topics/test-feed')
-    mockCreateSource.mockResolvedValue({ topic_slug: 'test-feed' })
+    mockCreateSource.mockResolvedValue({
+      import: {
+        id: 'import-id',
+        total_rows: 1,
+        pending_rows: 1,
+        completed_rows: 0,
+        failed_rows: 0,
+        completed_at: null,
+        created_at: '2026-01-01T00:00:00.000Z',
+      },
+      status_url: '/api/v1/my/import/rss-feeds/import-id',
+    })
   })
 
   it('renders with correct input label for news kind', () => {
