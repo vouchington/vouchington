@@ -36,7 +36,7 @@ describe('crawler RSS import discovery completion', () => {
     const feedUrl = `https://${feedHostname}/${blocked ? 'feed.xml' : 'a'.repeat(2048)}`
     const job = {
       attemptsMade: 0,
-      name: 'crawl_url',
+      name: 'crawl.crawl_url',
       opts: { attempts: 1 },
       data: {
         url_id: urlId,
