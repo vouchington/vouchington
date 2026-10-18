@@ -16,6 +16,7 @@ import { referralUnfurlDispatchConfig } from './work-limits.mts'
 import { dispatchUnfurlReferralLinks } from './dispatch.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
+const UNFURL_JOB_NAME = 'crawl.unfurl_referral_link'
 
 describe('bounded referral unfurl dispatch', () => {
   afterAll(() => unfurlReferralLinksQueue.close())
@@ -86,19 +87,19 @@ describe('bounded referral unfurl dispatch', () => {
     for (const parentLinkId of ids)
       expect(
         await unfurlReferralLinksQueue.searchJobs({
-          name: 'unfurl_referral_link',
+          name: UNFURL_JOB_NAME,
           data: { parentLinkId },
         }),
       ).toHaveLength(1)
     expect(
       await unfurlReferralLinksQueue.searchJobs({
-        name: 'unfurl_referral_link',
+        name: UNFURL_JOB_NAME,
         data: { parentLinkId: later },
       }),
     ).toEqual([])
     expect(
       await unfurlReferralLinksQueue.searchJobs({
-        name: 'unfurl_referral_link',
+        name: UNFURL_JOB_NAME,
         data: { parentLinkId: excluded },
       }),
     ).toEqual([])

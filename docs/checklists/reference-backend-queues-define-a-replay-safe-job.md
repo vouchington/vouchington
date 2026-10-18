@@ -32,10 +32,9 @@
 - Choose deduplication by semantics: `throttle` for dispatchers, `debounce` only for delay-reset work
   without ordering keys, and `simple` for one-shot suppression. Deduplication never replaces
   processor idempotency.
-- Measure a queue's backlog with `getQueueBacklogDepth` (`waiting + active + delayed`), not `waiting`
-  alone: a fresh `priority > 0` job waits in the scheduled set until the scheduler promotes it
-  and `getJobCounts()` reports it as `delayed`, so a guard on `waiting + active`
-  misses it.
+- Scope backlog guards on shared queues to the relevant jobs, including waiting, active, and
+  scheduled work. Fresh priority jobs and retries can remain scheduled before promotion, so a guard
+  that counts only waiting and active work can admit more jobs than intended.
 - Classify terminal failures with `UnrecoverableError`; translate retryable HTTP failures through the
   shared queue-error helpers. Do not swallow enqueue or child failures.
 - Await, return, aggregate, or explicitly `void` every fan-out enqueue. Persist intent before fan-out,

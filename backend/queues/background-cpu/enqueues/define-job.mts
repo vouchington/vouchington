@@ -1,5 +1,4 @@
 import type { JobOptions } from 'glide-mq'
-import type { BackgroundCpuDomain } from '../config.mts'
 import type {
   BackgroundCpuDomainDefinition,
   BackgroundCpuJobDefinition,
@@ -55,11 +54,6 @@ function domainOrdering(
   return {
     ordering: { key: domain.domain, concurrency, ...(rateLimit ? { rateLimit } : {}) },
   }
-}
-
-/** A namespaced singleton-lane key: for a `lanes` domain, or beside a `domain` group. */
-export function entityOrderingKey(domain: BackgroundCpuDomain, entity: string): string {
-  return `${domain}:${entity}`
 }
 
 function assertPositiveInteger(label: string, value: number): void {

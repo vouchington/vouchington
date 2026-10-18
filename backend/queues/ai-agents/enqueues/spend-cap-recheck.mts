@@ -5,9 +5,6 @@ import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registr
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { SpendCapRecheckJobData } from '../types.mts'
 
-export const SPEND_CAP_RECHECK_MAX_ATTEMPTS = 2_880
-export const SPEND_CAP_RECHECK_RETRY_DELAY_MS = 60_000
-
 const enqueueRecheck = createEnqueueFunction<SpendCapRecheckJobData, string>({
   queue: backgroundCpu,
   queueName: BACKGROUND_CPU_QUEUE_NAME,

@@ -13,6 +13,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { backgroundCpu as crawlUrls } from '@queues/background-cpu/queues'
+import { createEntityRelationCrawlObserver } from '@voucha/test-helpers/entity-relation-crawl-observer'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { POST_MENTIONS_PROCESS_JOB } from '@queues/background/enqueues/post-mentions-jobs'
@@ -99,107 +100,99 @@ describe('post entity listener creation dispatch', () => {
   })
 
   it('recovers canonical and immutable source URL effects after the source relation is removed', async () => {
-    try {
-      await crawlUrls.obliterate()
-      const creator = await createTestUser()
-      const canonicalUrlId = await createTestUrlWithHostname()
-      const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
-      const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
-      const post = await createPost(creator, WEB_PROVENANCE, {
-        title: `Redirect recovery ${randomUUID()}`,
-        markdown: 'Link post recovery body',
-        post_type: 'link',
-        url: sourceUrl,
-      })
-      const postRelatedUrl = getEntityRelationMetadataOrThrow({
-        subjectType: 'post',
-        objectType: 'url',
-        predicate: 'related',
-      })
-      await softDeleteEntityRelation(creator, postRelatedUrl, post, [{ id: sourceUrlId }])
-      await crawlUrls.obliterate()
+    const creator = await createTestUser()
+    const canonicalUrlId = await createTestUrlWithHostname()
+    const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
+    const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
+    await using observer = createEntityRelationCrawlObserver(new Set([canonicalUrlId, sourceUrlId]))
+    const post = await createPost(creator, WEB_PROVENANCE, {
+      title: `Redirect recovery ${randomUUID()}`,
+      markdown: 'Link post recovery body',
+      post_type: 'link',
+      url: sourceUrl,
+    })
+    const postRelatedUrl = getEntityRelationMetadataOrThrow({
+      subjectType: 'post',
+      objectType: 'url',
+      predicate: 'related',
+    })
+    await softDeleteEntityRelation(creator, postRelatedUrl, post, [{ id: sourceUrlId }])
+    await Promise.all(observer.ownedPromises())
+    await removeCrawlJobs([canonicalUrlId, sourceUrlId])
 
-      await processPostCreated({ id: post.id })
+    await processPostCreated({ id: post.id })
 
-      const jobs = await readAllQueueJobs(crawlUrls)
-      const recoveredUrlIds = new Set(
-        jobs.map(job => (job.data as { url_id?: string }).url_id).filter(Boolean),
-      )
-      expect(recoveredUrlIds.has(canonicalUrlId)).toBe(true)
-      expect(recoveredUrlIds.has(sourceUrlId)).toBe(true)
-    } finally {
-      await crawlUrls.obliterate()
-    }
+    const recoveredUrlIds = new Set(
+      (await crawlJobs([canonicalUrlId, sourceUrlId])).map(
+        job => (job.data as { url_id?: string }).url_id,
+      ),
+    )
+    expect(recoveredUrlIds.has(canonicalUrlId)).toBe(true)
+    expect(recoveredUrlIds.has(sourceUrlId)).toBe(true)
   })
 
   it('ignores an elected relation when immutable source provenance is absent', async () => {
-    try {
-      await crawlUrls.obliterate()
-      const creator = await createTestUser()
-      const canonicalUrlId = await createTestUrlWithHostname()
-      const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
-      const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
-      const postId = await insertTestPost({
-        title: `Relation-only redirect recovery ${randomUUID()}`,
-        slug: `relation-only-redirect-recovery-${randomUUID()}`,
-        createdById: creator.id,
-        markdown: 'Relation-only link post recovery body',
-        postType: 'link',
-        urlId: canonicalUrlId,
-      })
-      await createEntityRelationWithElection(postId, sourceUrlId, creator.id, 1)
+    const creator = await createTestUser()
+    const canonicalUrlId = await createTestUrlWithHostname()
+    const { urlString: sourceUrl } = await createTestRedirectUrl({ canonicalUrlId })
+    const sourceUrlId = (await getUrlByAny(sourceUrl))!.id
+    await using observer = createEntityRelationCrawlObserver(new Set([canonicalUrlId, sourceUrlId]))
+    const postId = await insertTestPost({
+      title: `Relation-only redirect recovery ${randomUUID()}`,
+      slug: `relation-only-redirect-recovery-${randomUUID()}`,
+      createdById: creator.id,
+      markdown: 'Relation-only link post recovery body',
+      postType: 'link',
+      urlId: canonicalUrlId,
+    })
+    await createEntityRelationWithElection(postId, sourceUrlId, creator.id, 1)
 
-      await processPostCreated({ id: postId })
+    await processPostCreated({ id: postId })
+    await Promise.all(observer.ownedPromises())
 
-      const jobs = await readAllQueueJobs(crawlUrls)
-      const recoveredUrlIds = new Set(
-        jobs.map(job => (job.data as { url_id?: string }).url_id).filter(Boolean),
-      )
-      expect(recoveredUrlIds.has(canonicalUrlId)).toBe(true)
-      expect(recoveredUrlIds.has(sourceUrlId)).toBe(false)
-    } finally {
-      await crawlUrls.obliterate()
-    }
+    const recoveredUrlIds = new Set(
+      (await crawlJobs([canonicalUrlId, sourceUrlId])).map(
+        job => (job.data as { url_id?: string }).url_id,
+      ),
+    )
+    expect(recoveredUrlIds.has(canonicalUrlId)).toBe(true)
+    expect(recoveredUrlIds.has(sourceUrlId)).toBe(false)
   })
 
   it('recovers the canonical URL for a link without a raw source', async () => {
-    try {
-      await crawlUrls.obliterate()
-      const creator = await createTestUser()
-      const urlId = await createTestUrlWithHostname()
-      const postId = await insertTestPost({
-        title: `Pre-existing URL recovery ${randomUUID()}`,
-        slug: `pre-existing-url-recovery-${randomUUID()}`,
-        createdById: creator.id,
-        markdown: 'Stored link post recovery body',
-        postType: 'link',
-        urlId,
-      })
+    const creator = await createTestUser()
+    const urlId = await createTestUrlWithHostname()
+    await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
+    const postId = await insertTestPost({
+      title: `Pre-existing URL recovery ${randomUUID()}`,
+      slug: `pre-existing-url-recovery-${randomUUID()}`,
+      createdById: creator.id,
+      markdown: 'Stored link post recovery body',
+      postType: 'link',
+      urlId,
+    })
 
-      await processPostCreated({ id: postId })
+    await processPostCreated({ id: postId })
+    await Promise.all(observer.ownedPromises())
 
-      const jobs = await readAllQueueJobs(crawlUrls)
-      expect(jobs.some(job => (job.data as { url_id?: string }).url_id === urlId)).toBe(true)
-    } finally {
-      await crawlUrls.obliterate()
-    }
+    expect(
+      (await crawlJobs([urlId])).some(job => (job.data as { url_id?: string }).url_id === urlId),
+    ).toBe(true)
   })
 
   it('idempotently recovers crawl work for a pre-resolved link URL', async () => {
-    try {
-      await crawlUrls.obliterate()
-      const creator = await createTestUser()
-      const urlId = await createTestUrlWithHostname()
-      const post = await createPost(creator, WEB_PROVENANCE, { post_type: 'link', url_id: urlId })
-      await crawlUrls.obliterate()
+    const creator = await createTestUser()
+    const urlId = await createTestUrlWithHostname()
+    await using observer = createEntityRelationCrawlObserver(new Set([urlId]))
+    const post = await createPost(creator, WEB_PROVENANCE, { post_type: 'link', url_id: urlId })
+    await Promise.all(observer.ownedPromises())
+    await removeCrawlJobs([urlId])
 
-      await processPostCreated({ id: post.id })
+    await processPostCreated({ id: post.id })
 
-      const jobs = await readAllQueueJobs(crawlUrls)
-      expect(jobs.some(job => (job.data as { url_id?: string }).url_id === urlId)).toBe(true)
-    } finally {
-      await crawlUrls.obliterate()
-    }
+    expect(
+      (await crawlJobs([urlId])).some(job => (job.data as { url_id?: string }).url_id === urlId),
+    ).toBe(true)
   })
 
   it('propagates a recovered story-agent enqueue failure for retry', async () => {
@@ -253,4 +246,15 @@ describe('post entity listener creation dispatch', () => {
 async function readSpamDetectionJobs() {
   const jobs = await readAllQueueJobs(moderationSignalsQueue)
   return jobs.filter(job => job.name === MODERATION_SIGNALS_SPAM_DETECTION_JOB.name)
+}
+
+async function crawlJobs(urlIds: string[]) {
+  return Promise.all(
+    urlIds.map(url_id => crawlUrls.searchJobs({ name: 'crawl.crawl_url', data: { url_id } })),
+  ).then(results => results.flat())
+}
+
+async function removeCrawlJobs(urlIds: string[]): Promise<void> {
+  const jobs = await crawlJobs(urlIds)
+  await Promise.all(jobs.map(job => job.remove()))
 }

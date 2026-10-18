@@ -66,7 +66,10 @@ describe('bounded referral crawl dispatch', () => {
     ).toEqual({ count: 1, hasMore: false })
     for (const linkId of ids)
       expect(
-        await crawlReferralLinksQueue.searchJobs({ name: 'crawl_referral_link', data: { linkId } }),
+        await crawlReferralLinksQueue.searchJobs({
+          name: 'crawl.crawl_referral_link',
+          data: { linkId },
+        }),
       ).toHaveLength(1)
   })
 
@@ -96,7 +99,7 @@ describe('bounded referral crawl dispatch', () => {
       hasMore: true,
     })
     const jobs = await crawlReferralLinksQueue.searchJobs({
-      name: 'crawl_referral_links_dispatcher',
+      name: 'crawl.crawl_referral_links_dispatcher',
       data: { urlId },
     })
     const data = jobs[0]!.data as ReferralCrawlDispatchData
@@ -110,7 +113,10 @@ describe('bounded referral crawl dispatch', () => {
     )
     for (const linkId of ids)
       expect(
-        await crawlReferralLinksQueue.searchJobs({ name: 'crawl_referral_link', data: { linkId } }),
+        await crawlReferralLinksQueue.searchJobs({
+          name: 'crawl.crawl_referral_link',
+          data: { linkId },
+        }),
       ).toHaveLength(1)
   })
 })

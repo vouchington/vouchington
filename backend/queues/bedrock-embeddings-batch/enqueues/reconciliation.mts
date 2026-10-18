@@ -1,7 +1,6 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { PRIORITY_DEFAULT } from '../config.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
@@ -12,7 +11,6 @@ export function reconciliationJobOptions(flow: ReconciliationFlow, after?: strin
   const id = `bedrock-embeddings:reconciliation:${flow}`
   return {
     ...requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options,
-    priority: PRIORITY_DEFAULT,
     deduplication:
       after === undefined
         ? { id, mode: 'throttle', ttl: RECONCILIATION_ROOT_THROTTLE_MS }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isDeduplicatedEnqueue, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
 import { enqueueReconcileExistingEmbeddings, reconciliationJobOptions } from './enqueues.mts'
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
-import { PRIORITY_DEFAULT } from './config.mts'
+import { PRIORITY_DISPATCHER } from './config.mts'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { reconciliationScheduleEntries } from './enqueues/reconciliation-schedules.mts'
 
@@ -41,7 +41,7 @@ describe('embedding reconciliation enqueues', () => {
       const options = reconciliationJobOptions(flow)
       expect(options).toMatchObject({
         attempts: 3,
-        priority: PRIORITY_DEFAULT,
+        priority: PRIORITY_DISPATCHER,
         ordering: requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options.ordering,
         removeOnComplete: 100,
         removeOnFail: 100,
@@ -63,7 +63,7 @@ describe('embedding reconciliation enqueues', () => {
       name: 'bedrock-embeddings.reconcile_existing',
       data: { entityType: 'topics', after },
       opts: {
-        priority: PRIORITY_DEFAULT,
+        priority: PRIORITY_DISPATCHER,
         ordering: requireBackgroundCpuJob('bedrock-embeddings.reconcile_existing').options.ordering,
         deduplication: {
           id: `bedrock-embeddings:reconciliation:copy:topics:${after}`,

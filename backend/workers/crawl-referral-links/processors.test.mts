@@ -56,7 +56,7 @@ describe('crawl referral links processor', () => {
     })
 
     await processCrawlReferralLinksJob(
-      makeJob('crawl_referral_link', {
+      makeJob('crawl.crawl_referral_link', {
         linkId,
         urlId: url.id,
         referralProgramId: fixture.referralProgramId,
@@ -72,15 +72,15 @@ describe('crawl referral links processor', () => {
   })
 
   it('rejects malformed referral-link jobs', async () => {
-    await expect(processCrawlReferralLinksJob(makeJob('crawl_referral_link', {}))).rejects.toThrow(
-      'Crawl referral link job .linkId is required',
-    )
     await expect(
-      processCrawlReferralLinksJob(makeJob('crawl_referral_link', { linkId: randomUUID() })),
+      processCrawlReferralLinksJob(makeJob('crawl.crawl_referral_link', {})),
+    ).rejects.toThrow('Crawl referral link job .linkId is required')
+    await expect(
+      processCrawlReferralLinksJob(makeJob('crawl.crawl_referral_link', { linkId: randomUUID() })),
     ).rejects.toThrow('Crawl referral link job .urlId is required')
     await expect(
       processCrawlReferralLinksJob(
-        makeJob('crawl_referral_link', { linkId: randomUUID(), urlId: randomUUID() }),
+        makeJob('crawl.crawl_referral_link', { linkId: randomUUID(), urlId: randomUUID() }),
       ),
     ).rejects.toThrow('Crawl referral link job .referralProgramId is required')
     await expect(processCrawlReferralLinksJob(makeJob('unexpected', {}))).rejects.toThrow(
@@ -128,7 +128,7 @@ describe('crawl referral links processor', () => {
     await updateUrlHostnameCrawlable(skipped.url.hostname.id, false)
     await expect(
       processCrawlReferralLinksJob(
-        makeJob('crawl_referral_link', {
+        makeJob('crawl.crawl_referral_link', {
           linkId: skipped.linkId,
           urlId: skipped.url.id,
           referralProgramId: skipped.fixture.referralProgramId,
@@ -140,7 +140,7 @@ describe('crawl referral links processor', () => {
     await setDomainRateLimited(limited.url.hostname.id, 1_000)
     await expect(
       processCrawlReferralLinksJob(
-        makeJob('crawl_referral_link', {
+        makeJob('crawl.crawl_referral_link', {
           linkId: limited.linkId,
           urlId: limited.url.id,
           referralProgramId: limited.fixture.referralProgramId,

@@ -89,7 +89,7 @@ describe('required entrypoint reachability configuration', () => {
             'backend/entrypoints/worker-cpu/schedule-definitions.mts',
             'backend/entrypoints/worker-io/definitions.mts',
           ],
-          maxDepth: 1,
+          maxDepth: 2,
         },
       },
       {

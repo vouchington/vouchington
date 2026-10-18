@@ -144,7 +144,7 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
 
       for (const row of rows) {
         const jobs = await backgroundCpu.searchJobs({
-          name: 'rss_feed_item',
+          name: 'content-analysis.rss_feed_item',
           data: { id: row.id },
         })
         expect(jobs).toHaveLength(1)
@@ -188,7 +188,10 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
         name: 'notifications.processReconcileRssFeedItemNotifications',
         data: { rssFeedItemId: skippedItemId },
       }),
-      backgroundCpu.searchJobs({ name: 'rss_feed_item', data: { id: fanoutItemId } }),
+      backgroundCpu.searchJobs({
+        name: 'content-analysis.rss_feed_item',
+        data: { id: fanoutItemId },
+      }),
     ])
     expect({
       languageDetection: languageDetectionJobs.length > 0,

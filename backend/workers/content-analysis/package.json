@@ -15,17 +15,12 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
-    "@queues/background": "workspace:^",
-    "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@services/copyright-notices": "workspace:^",
     "@services/images": "workspace:^",
     "@services/language-detection": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
     "@vouchington/media": "^0.2.0",
-    "glide-mq": "^0.18.0",
     "sharp": "^0.35.5"
   },
   "devDependencies": {

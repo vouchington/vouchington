@@ -5,8 +5,6 @@ import type { AIAgentJobData, SpendCapRecheckJobData } from '@queues/ai-agents/t
 import {
   enqueueSpendCapRecheck,
   spendCapRecheckDeduplicationId,
-  SPEND_CAP_RECHECK_MAX_ATTEMPTS,
-  SPEND_CAP_RECHECK_RETRY_DELAY_MS,
 } from '@queues/ai-agents/enqueues/spend-cap-recheck'
 import { registerSpendCapDelayedJob as registerDelayedJob } from '@services/ai-usage'
 import { getDayBounds } from '@ts-shared/utils/dates'
@@ -266,14 +264,9 @@ describe('AI spend-cap coordinated rechecks', () => {
     expect(job.moveToDelayed).not.toHaveBeenCalled()
   })
 
-  it('uses generation-scoped deduplication across the full registry recovery window', () => {
+  it('uses generation-scoped deduplication', () => {
     expect(spendCapRecheckDeduplicationId('2026-08-16', 'a')).not.toBe(
       spendCapRecheckDeduplicationId('2026-08-16', 'b'),
-    )
-    expect(SPEND_CAP_RECHECK_MAX_ATTEMPTS).toBe(2 * 24 * 60)
-    expect(SPEND_CAP_RECHECK_RETRY_DELAY_MS).toBe(60_000)
-    expect(SPEND_CAP_RECHECK_MAX_ATTEMPTS * SPEND_CAP_RECHECK_RETRY_DELAY_MS).toBe(
-      2 * 24 * 60 * 60_000,
     )
   })
 })

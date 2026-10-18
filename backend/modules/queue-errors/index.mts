@@ -1,6 +1,5 @@
-import { UnrecoverableError, Worker, type Worker as GlideWorker } from 'glide-mq'
+import { UnrecoverableError } from 'glide-mq'
 import {
-  handleRateLimitedError,
   unrecoverable as markUnrecoverable,
   wrapHttpForRetry as wrapUpstreamHttpForRetry,
 } from '@vouchington/queue-errors'
@@ -9,8 +8,6 @@ import { getRetryAfterMs, throwRateLimited } from './rate-limit.mts'
 export { UnrecoverableError }
 export * from './rate-limit.mts'
 export * from './postgres-connection-timeout.mts'
-
-const BEDROCK_COOLDOWN_MS = 60_000
 
 // Throws an UnrecoverableError, skipping remaining retry attempts.
 export function unrecoverable(error: unknown, message?: string): never {
@@ -32,19 +29,6 @@ export function wrapHttpForRetry(error: unknown): never {
     if (retryAfterMs !== null) throwRateLimited(retryAfterMs, error)
   }
   return wrapUpstreamHttpForRetry(error, { getStatus: getHttpStatus, UnrecoverableError })
-}
-
-export async function handleBedrockRateLimit(
-  error: unknown,
-  worker: Pick<GlideWorker, 'rateLimit'>,
-): Promise<never> {
-  return handleRateLimitedError(error, worker, {
-    cooldownMs: BEDROCK_COOLDOWN_MS,
-    isRateLimited: isBedrockRateLimitError,
-    onUnhandled: wrapHttpForRetry,
-    UnrecoverableError,
-    RateLimitError: Worker.RateLimitError,
-  })
 }
 
 // SES reports "Maximum sending rate exceeded" (and its daily quota) as HTTP 400 with the code

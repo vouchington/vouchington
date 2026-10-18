@@ -1,5 +1,6 @@
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { combineBackgroundManifests } from '@queues/background/enqueues/schedules'
+import { combineBackgroundCpuManifests } from '@queues/background-cpu/enqueues/schedules'
 import { scheduledJobManifest as accountLifecycle } from '@queues/account-lifecycle/enqueues/schedules'
 import { scheduledJobManifest as activitypub } from '@queues/activitypub/enqueues/schedules'
 import { scheduledJobManifest as aiAgents } from '@queues/ai-agents/enqueues/schedules'
@@ -49,18 +50,22 @@ const background = combineBackgroundManifests([
   userRssFeedImports,
 ])
 
+const backgroundCpu = combineBackgroundCpuManifests([
+  crawlDispatch,
+  crawlReferralLinks,
+  unfurlReferralLinks,
+  contentAnalysis,
+  bedrockEmbeddingsBatch,
+])
+
 export const SCHEDULED_JOB_MANIFESTS = [
   aiAgents,
   background,
-  bedrockEmbeddingsBatch,
+  backgroundCpu,
   bloomFilters,
-  crawlDispatch,
-  crawlReferralLinks,
   findYourFriends,
   heartbeat,
-  contentAnalysis,
   memberships,
   psql,
   rssFeedMaintenance,
-  unfurlReferralLinks,
 ] satisfies readonly ScheduledJobManifest[]

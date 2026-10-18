@@ -1,9 +1,5 @@
 import type { JobOptions } from 'glide-mq'
-import {
-  defineScheduledJobManifest,
-  upsertScheduledJobManifest,
-} from '@modules/scheduled-job-manifest'
-import { backgroundCpu } from '@queues/background-cpu/queues'
+import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { reconciliationScheduleEntries } from './reconciliation-schedules.mts'
@@ -100,7 +96,3 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QU
     ],
   },
 ])
-
-export async function upsertSchedules(): Promise<void> {
-  await upsertScheduledJobManifest(backgroundCpu, scheduledJobManifest)
-}

@@ -142,6 +142,18 @@ describe('bedrock embeddings batch worker processor', () => {
     await expect(
       processBedrockEmbeddingsBatchJob(
         makeJob(
+          'bedrock-embeddings.reconcile_existing',
+          {
+            entityType: 'topics',
+            after: encodeScopedUuidCursor(randomUUID(), 'embedding-reconciliation:posts:id-asc'),
+          },
+          'bedrock-embeddings:reconciliation',
+        ),
+      ),
+    ).rejects.toThrow(UnrecoverableError)
+    await expect(
+      processBedrockEmbeddingsBatchJob(
+        makeJob(
           'bedrock-embeddings.post_trigger_recovery',
           { after: '' },
           'bedrock-embeddings:reconciliation',
