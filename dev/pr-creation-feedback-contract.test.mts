@@ -6,10 +6,14 @@ const ROOT_URL = new URL('../', import.meta.url)
 const readRepoFile = (path: string): string => readFileSync(new URL(path, ROOT_URL), 'utf8')
 const normalized = (path: string): string => readRepoFile(path).replace(/\s+/g, ' ')
 
-const MONOLITHIC_TRIAGE_SKILLS = ['triage-prs', 'triage-security'] as const
+const TRIAGE_SKILLS = ['triage-prs', 'triage-security'] as const
+const packagedTriage = normalized('node_modules/vouchington-tooling/skills/triage-prs/SKILL.md')
+const packagedFeedback = normalized(
+  'node_modules/vouchington-tooling/skills/triage-prs/references/feedback.md',
+)
 
 describe('agent-authored PR creation feedback contract', () => {
-  it.each(MONOLITHIC_TRIAGE_SKILLS)(
+  it.each(TRIAGE_SKILLS)(
     'wires %s directly to the canonical rubric and retrospective flow',
     skill => {
       const contents = normalized(`.agents/skills/${skill}/SKILL.md`)
@@ -21,65 +25,17 @@ describe('agent-authored PR creation feedback contract', () => {
     },
   )
 
-  it('refreshes queue feedback after triage actions without waiting on the async shepherd', () => {
-    const triage = normalized('.agents/skills/triage-prs/SKILL.md')
-    const initialAssessment = triage.indexOf('PR creation feedback:')
-    // 'Step 6a' is the recurring section-label identifier for the action-time-refresh step; scoped
-    // past initialAssessment so it can't match an earlier unrelated mention.
-    const actionTimeRefresh = triage.indexOf('Step 6a', initialAssessment)
-    const retrospective = triage.indexOf('[retrospective]')
+  it('retains local feedback authority while the package owns queue procedure', () => {
+    const adapter = normalized('.agents/skills/triage-prs/SKILL.md')
 
-    expect(initialAssessment).toBeGreaterThan(-1)
-    expect(actionTimeRefresh).toBeGreaterThan(initialAssessment)
-    expect(retrospective).toBeGreaterThan(actionTimeRefresh)
-  })
-
-  it('authorizes one provenance-checked draft feedback PR before the retrospective', () => {
-    const triage = normalized('.agents/skills/triage-prs/SKILL.md')
-    // Scoped past the intro's forward reference to Step 6a so this lands on the section itself,
-    // matching the earlier 'refreshes queue feedback' test's scoping.
-    const initialAssessment = triage.indexOf('PR creation feedback:')
-    const actionTimeRefresh = triage.indexOf('Step 6a', initialAssessment)
-    const feedbackPublication = triage.indexOf('pr-creation-feedback-origin: triage-prs')
-    const duplicateResolution = triage.indexOf('Duplicate resolution')
-    const disposition = triage.indexOf('Retrospective disposition')
-    const retrospective = triage.indexOf('[retrospective]')
-
-    expect(triage).toContain('docs/prompts/**')
-    expect(initialAssessment).toBeGreaterThan(-1)
-    expect(actionTimeRefresh).toBeGreaterThan(initialAssessment)
-    expect(feedbackPublication).toBeGreaterThan(actionTimeRefresh)
-    expect(duplicateResolution).toBeGreaterThan(feedbackPublication)
-    expect(disposition).toBeGreaterThan(duplicateResolution)
-    expect(retrospective).toBeGreaterThan(disposition)
-    expect(triage).toContain('origin/main')
-    expect(triage).toContain('`automation`')
-  })
-
-  it('suppresses feedback creation when the durable origin marker is present', () => {
-    const triage = normalized('.agents/skills/triage-prs/SKILL.md')
-    const marker = triage.indexOf('pr-creation-feedback-origin: triage-prs')
-    const duplicateResolution = triage.indexOf('Duplicate resolution')
-    const markerRule = triage.slice(marker, duplicateResolution)
-
-    expect(marker).toBeGreaterThan(-1)
-    expect(markerRule).toContain('`none`')
-  })
-
-  it('has deterministic duplicate and retrospective-disposition branches', () => {
-    const triage = normalized('.agents/skills/triage-prs/SKILL.md')
-
-    for (const token of [
-      'duplicate: zero-overlap',
-      'duplicate: exact-match',
-      'duplicate: ambiguous',
-      'disposition: published',
-      'disposition: deferred',
-      'disposition: user-choice',
-      'preauthorized-pr #N',
-      '`deferred`',
-    ])
-      expect(triage).toContain(token)
+    expect(adapter).toContain('vouchington-workflow:triage-prs')
+    expect(adapter).toContain('docs/prompts/**')
+    expect(adapter).toContain('pr-creation-feedback-origin: triage-prs')
+    expect(packagedTriage).toContain('references/feedback.md')
+    expect(packagedTriage).toContain('headRefOid')
+    expect(packagedFeedback).toContain('duplicate: ambiguous')
+    expect(packagedFeedback).toContain('Disposition: preauthorized-pr #N')
+    expect(packagedFeedback).toContain('return `none`')
   })
 
   it('delegates retrospective feedback structure to the canonical workflow and retains local persistence', () => {
