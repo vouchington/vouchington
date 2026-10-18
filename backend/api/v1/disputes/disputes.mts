@@ -86,7 +86,12 @@ app.route('/api/v1/disputes').get(async (ctx: Context) => {
     return
   }
 
-  ctx.json({ disputes: listRedactedReviewDisputes(viewerDisputes), page_info })
+  ctx.json(
+    apiResponse('GET:/api/v1/disputes#member', {
+      disputes: listRedactedReviewDisputes(viewerDisputes),
+      page_info,
+    }),
+  )
 })
 
 // GET /api/v1/disputes/:id — get a single dispute
@@ -105,5 +110,9 @@ app.route('/api/v1/disputes/:id').get(async (ctx: Context) => {
     return
   }
 
-  ctx.json({ dispute: redactReviewDispute(viewerDispute!) })
+  ctx.json(
+    apiResponse('GET:/api/v1/disputes/:id#member', {
+      dispute: redactReviewDispute(viewerDispute!),
+    }),
+  )
 })

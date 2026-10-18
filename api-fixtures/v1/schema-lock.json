@@ -350,9 +350,17 @@
       "fixtureIds": ["shared.currencies.list.default"],
       "hash": "c741658b0f89e883e57fc6fc975c26bb3c5898cbed5282cb8916102d7cc5753c"
     },
+    "GET:/api/v1/disputes#member": {
+      "fixtureIds": ["native.moderation.disputes.member.default"],
+      "hash": "43c98239ab5caf2e239a28a5f5a3e35d569c26f0e6ab39ca311064218e5ed599"
+    },
     "GET:/api/v1/disputes#staff": {
       "fixtureIds": ["native.moderation.disputes.default"],
       "hash": "c2fb7e843803f003e553c4d68e7fd2e7b8177041bb50b3d2d17019c509345cea"
+    },
+    "GET:/api/v1/disputes/:id#member": {
+      "fixtureIds": ["native.moderation.disputes.detail.member.default"],
+      "hash": "4e34a2fb31f1dd9a19cc7e84419190d6e94877bccd22c001288357510e3ea7a8"
     },
     "GET:/api/v1/disputes/:id#staff": {
       "fixtureIds": ["native.moderation.disputes.detail.default"],
@@ -2150,6 +2158,14 @@
     "native.moderation.disputes.detail.default": {
       "fixtureIds": ["native.moderation.disputes.detail.default"],
       "hash": "bc6d86d33506ec2b71542d6525c0745cd400169a511fb2d6a89830735d52e198"
+    },
+    "native.moderation.disputes.detail.member.default": {
+      "fixtureIds": ["native.moderation.disputes.detail.member.default"],
+      "hash": "1356bfa4b91aa268fa6aebda1f3bbdfecdc7587ecebe4a0fc31b96d083dea97b"
+    },
+    "native.moderation.disputes.member.default": {
+      "fixtureIds": ["native.moderation.disputes.member.default"],
+      "hash": "48fce60bad67cdc041d33bd4c6b29f5c915af03141ce2f480e8c0c78f28277c0"
     },
     "native.moderation.disputes.resolution-drafts.default": {
       "fixtureIds": ["native.moderation.disputes.resolution-drafts.default"],
