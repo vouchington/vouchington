@@ -7,16 +7,19 @@ import { readFileSync } from 'node:fs'
 import {
   buildStaleReport,
   MIN_STALE_EVIDENCE_LOGS,
-  type RepeatBaselineEntry,
+  parseRepeatBaseline,
 } from '@data-stores/psql/request-query-profile-baseline'
 
-const baseline = JSON.parse(
-  readFileSync(new URL('./request-query-profile-baseline.json', import.meta.url), 'utf8'),
-) as RepeatBaselineEntry[]
+const baseline = parseRepeatBaseline(
+  JSON.parse(
+    readFileSync(new URL('./request-query-profile-baseline.json', import.meta.url), 'utf8'),
+  ),
+)
 const logs = process.argv.slice(2).map(path => readFileSync(path, 'utf8'))
 const { logCount, sufficient, stale } = buildStaleReport(baseline, logs)
-for (const { annotation, issue } of stale) {
-  process.stdout.write(`stale baseline entry: ${annotation} (#${issue})\n`)
+for (const entry of stale) {
+  const owner = 'issue' in entry ? `#${entry.issue}` : `permanent, ${entry.code}`
+  process.stdout.write(`stale baseline entry: ${entry.annotation} (${owner})\n`)
 }
 process.stdout.write(
   `${stale.length} of ${baseline.length} baseline entries are absent from all ${logCount} logs\n`,
