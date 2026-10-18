@@ -42,12 +42,10 @@ export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql
 
 export async function runViews(options: RunViewsOptions = {}) {
   if (options.forced) await initializeMigrationSql()
-  await runPlatformViews({
-    ...options,
-    folder: options.folder ?? path.resolve(__dirname, 'views'),
-    writer: options.writer ?? write,
-    logger: options.logger ?? console,
-  })
+  const folder = options.folder ?? path.resolve(__dirname, 'views')
+  const writer = options.writer ?? write
+  const logger = options.logger ?? console
+  await runPlatformViews({ ...options, folder, writer, logger })
 }
 
 export async function runConfigDriven(options: RunConfigDrivenOptions = {}) {

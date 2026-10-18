@@ -1,7 +1,15 @@
+import { randomInt } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { retireMonthlyPartition } from '@vouchington/postgres/partitions'
+import {
+  buildMonthlyPartitionName,
+  createMonthlyPartitions as seedMonthlyPartitions,
+  retireMonthlyPartition,
+} from '@vouchington/postgres/partitions'
+import sql from 'sql-template-strings'
+import { read, write } from '../index.mts'
 import type { QueryExecutor } from '../types.mts'
 import {
+  cleanupPartitions,
   createMonthlyPartitions,
   dropRssFeedCrawlsDefaultPartition,
 } from './monthly-partitions.mts'
@@ -41,6 +49,50 @@ describe('dropRssFeedCrawlsDefaultPartition', () => {
       '/* dropRssFeedCrawlsDefaultPartition */ DROP TABLE IF EXISTS rss_feed_crawls__default',
     )
     expect(statements[1]).toContain('CREATE')
+  })
+})
+
+describe('cleanupPartitions', () => {
+  it('retires an expired RSS child while retaining the current month', async () => {
+    const year = randomInt(1971, 2000)
+    const month = randomInt(1, 13)
+    const expired = buildMonthlyPartitionName('rss_feed_crawls', year, month)
+    const now = new Date()
+    // Keep other test fixtures newer than the cleanup cutoff untouched.
+    const referenceDate = new Date('2001-01-01T00:00:00.000Z')
+    const current = buildMonthlyPartitionName(
+      'rss_feed_crawls',
+      now.getUTCFullYear(),
+      now.getUTCMonth() + 1,
+    )
+
+    await seedMonthlyPartitions(write, {
+      tables: [{ table: 'rss_feed_crawls', pastMonths: 0, futureMonths: 0 }],
+      baseDate: new Date(Date.UTC(year, month - 1, 1)),
+    })
+    await expect(
+      read<{ name: string | null }>(
+        sql`/* testCleanupPartitions:expiredBefore */ SELECT to_regclass(${expired})::text AS name`,
+      ),
+    ).resolves.toMatchObject({ rows: [{ name: expired }] })
+    await expect(
+      read<{ name: string | null }>(
+        sql`/* testCleanupPartitions:currentBefore */ SELECT to_regclass(${current})::text AS name`,
+      ),
+    ).resolves.toMatchObject({ rows: [{ name: current }] })
+
+    await cleanupPartitions(referenceDate)
+
+    await expect(
+      read<{ name: string | null }>(
+        sql`/* testCleanupPartitions:expiredAfter */ SELECT to_regclass(${expired})::text AS name`,
+      ),
+    ).resolves.toMatchObject({ rows: [{ name: null }] })
+    await expect(
+      read<{ name: string | null }>(
+        sql`/* testCleanupPartitions:currentAfter */ SELECT to_regclass(${current})::text AS name`,
+      ),
+    ).resolves.toMatchObject({ rows: [{ name: current }] })
   })
 })
 
