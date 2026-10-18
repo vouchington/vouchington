@@ -1467,6 +1467,9 @@ importers:
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -5936,6 +5939,9 @@ importers:
       '@services/web-risk':
         specifier: workspace:^
         version: link:../web-risk
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       '@workers/ses-inbound':
         specifier: workspace:^
         version: link:../../workers/ses-inbound

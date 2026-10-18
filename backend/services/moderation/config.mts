@@ -22,7 +22,7 @@ export function getAiGeneratedConfidenceThreshold(): number {
 }
 
 export async function getFreshAiGeneratedConfidenceThreshold(
-  config: Pick<DynamicConfig, 'key'> = moderationConfig,
+  config: Pick<typeof moderationConfig, 'key'> = moderationConfig,
 ): Promise<number> {
   const raw = await dynamicConfigPrimaryValkeyClient.hget(
     config.key,

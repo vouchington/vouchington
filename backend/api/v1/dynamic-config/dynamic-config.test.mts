@@ -3,9 +3,10 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
 import {
   closeScopedDynamicConfigContext,
+  createDynamicConfigForTest,
   createDynamicConfigTestKey,
 } from '@voucha/test-helpers/dynamic-config'
-import { DynamicConfig } from '@data-stores/valkey'
+import type { DynamicConfigInstance } from '@data-stores/valkey'
 import type { getDynamicConfigRegistryEntry } from '@services/dynamic-config-admin'
 import { dynamicConfigRegistry } from '@services/dynamic-config-admin/registry'
 import type { PrivateUser } from '@services/users/types'
@@ -26,7 +27,7 @@ describe('dynamic-config', () => {
     for (const entry of temporaryEntries.splice(0)) {
       const index = dynamicConfigRegistry.indexOf(entry)
       if (index >= 0) dynamicConfigRegistry.splice(index, 1)
-      await closeScopedDynamicConfigContext([entry.config as DynamicConfig])
+      await closeScopedDynamicConfigContext([entry.config as DynamicConfigInstance])
     }
   })
 
@@ -262,7 +263,7 @@ describe('dynamic-config', () => {
     defaultFields: Record<string, boolean | number | string>,
   ): Promise<DynamicConfigRegistryEntry> {
     const namespace = createDynamicConfigTestKey('api')
-    const config = new DynamicConfig({
+    const config = createDynamicConfigForTest({
       key: namespace,
       fieldTypes: Object.fromEntries(
         Object.entries(defaultFields).map(([name, value]) => [name, typeof value]),

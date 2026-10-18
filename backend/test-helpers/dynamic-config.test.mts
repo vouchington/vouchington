@@ -1,4 +1,14 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+} from 'vitest'
+import { DynamicConfig } from '@data-stores/valkey/dynamic-config'
 import {
   createDynamicConfigTestBaseline,
   deleteDynamicConfigFieldsForTest,
@@ -43,6 +53,13 @@ const baselineCases: BaselineCase[] = [
 ]
 
 describe('DynamicConfig test isolation helpers', () => {
+  it('keeps the public constructor key restricted to registered namespaces', () => {
+    type Key = ConstructorParameters<typeof DynamicConfig>[0]['key']
+    expectTypeOf<'feature-flags'>().toExtend<Key>()
+    expectTypeOf<'orphan'>().not.toExtend<Key>()
+    expectTypeOf<string>().not.toExtend<Key>()
+  })
+
   it('applies the shared test baseline without production-default regressions', () => {
     const routeConfig = makeConfig('route-rate-limit-config', {
       enabled: true,

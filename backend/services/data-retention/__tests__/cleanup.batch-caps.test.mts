@@ -8,9 +8,10 @@ import {
 } from '@voucha/test-helpers'
 import {
   createDynamicConfigTestKey,
+  createDynamicConfigForTest,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
-import { DynamicConfig, dynamicConfigValkeyClient } from '@data-stores/valkey'
+import { dynamicConfigValkeyClient } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 import {
   insertTestRetainedIdentityRoot,
@@ -114,11 +115,11 @@ describe('data retention per-run caps', () => {
       fieldTypes: dataRetentionConfig.fieldTypes,
       defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
     }
-    const writer = new DynamicConfig(configOptions)
+    const writer = createDynamicConfigForTest(configOptions)
     try {
       await writer.waitForInitialization()
       await writer.setFields({ batch_size: 7, max_batches_per_run: 3 })
-      const coldReader = new DynamicConfig(configOptions)
+      const coldReader = createDynamicConfigForTest(configOptions)
       try {
         await coldReader.waitForInitialization()
         expect(
