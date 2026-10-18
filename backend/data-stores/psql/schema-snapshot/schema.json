@@ -125886,7 +125886,7 @@
     },
     "user_import_requests": {
       "checkConstraints": {
-        "user_import_requests_check": "CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))",
+        "user_import_requests_check": "CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND (rss_feed_import_row_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))",
         "user_import_requests_check1": "CHECK ((((followed_at IS NULL) AND (topic_id IS NULL) AND (rss_feed_id IS NULL)) OR ((followed_at IS NOT NULL) AND ((topic_id IS NOT NULL) OR (rss_feed_id IS NOT NULL)))))",
         "user_import_requests_input_value_check": "CHECK ((input_value = TRIM(BOTH FROM input_value)))",
         "user_import_requests_input_value_check1": "CHECK ((char_length(input_value) > 0))"
@@ -125900,7 +125900,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "entity_type": {
@@ -125922,7 +125922,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -125944,7 +125944,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "rss_feed_id": {
@@ -125956,6 +125956,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "rss_feed_import_row_id": {
+          "collation": null,
+          "comment": "Durable RSS import row whose follow this audit records.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "topic_id": {
@@ -125977,7 +125988,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "uuid"
         },
         "updated_at": {
@@ -125988,7 +125999,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -126012,6 +126023,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "rss_feeds",
+          "validated": true
+        },
+        "user_import_requests_rss_feed_import_row_id_fkey": {
+          "columns": ["rss_feed_import_row_id"],
+          "definition": "FOREIGN KEY (rss_feed_import_row_id) REFERENCES user_rss_feed_import_rows(id) ON DELETE SET NULL",
+          "onDelete": "set null",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_rss_feed_import_rows",
           "validated": true
         },
         "user_import_requests_topic_id_fkey": {
@@ -126062,6 +126082,26 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_user_import_requests__rss_feed_import_row_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "rss_feed_import_row_id",
+              "descending": false,
+              "expression": "rss_feed_import_row_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rss_feed_import_row_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "idx_user_import_requests__topic_id": {

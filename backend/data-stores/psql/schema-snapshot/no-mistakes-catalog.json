@@ -132133,7 +132133,7 @@
     "user_import_requests": {
       "checkConstraints": {
         "user_import_requests_check": {
-          "definition": "CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))",
+          "definition": "CHECK ((((entity_type = 'topic'::import_entity_types) AND (rss_feed_id IS NULL) AND (rss_feed_import_row_id IS NULL) AND ((topic_id IS NOT NULL) OR (topic_recommendation_post_id IS NOT NULL))) OR ((entity_type = 'rss_feed'::import_entity_types) AND (topic_id IS NULL) AND (topic_recommendation_post_id IS NULL) AND (rss_feed_id IS NOT NULL))))",
           "validated": true
         },
         "user_import_requests_check1": {
@@ -132158,7 +132158,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "entity_type": {
           "comment": "The imported entity family.",
@@ -132178,7 +132178,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "id": {
           "comment": null,
@@ -132198,7 +132198,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "rss_feed_id": {
           "comment": "RSS feed followed directly or after recommendation approval.",
@@ -132209,6 +132209,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5
+        },
+        "rss_feed_import_row_id": {
+          "comment": "Durable RSS import row whose follow this audit records.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
         },
         "topic_id": {
           "comment": "Topic followed directly or after recommendation approval.",
@@ -132228,7 +132238,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "updated_at": {
           "comment": null,
@@ -132238,7 +132248,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "The user who submitted the import request.",
@@ -132259,6 +132269,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "rss_feeds",
+          "validated": true
+        },
+        "user_import_requests_rss_feed_import_row_id_fkey": {
+          "columns": ["rss_feed_import_row_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_rss_feed_import_rows",
           "validated": true
         },
         "user_import_requests_topic_id_fkey": {
@@ -132308,6 +132326,29 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "idx_user_import_requests__rss_feed_import_row_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_user_import_requests__rss_feed_import_row_id ON public.user_import_requests USING btree (rss_feed_import_row_id) WHERE (rss_feed_import_row_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "rss_feed_import_row_id",
+              "descending": false,
+              "expression": "rss_feed_import_row_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(rss_feed_import_row_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "idx_user_import_requests__topic_id": {
