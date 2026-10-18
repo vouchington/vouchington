@@ -30,20 +30,16 @@ type ScheduledReferralLinkDispatchOptions = ReferralLinkDispatchDependencies & {
   saveProgress?: (data: ReferralCrawlDispatchData) => Promise<void>
 }
 
-function captureSweepStartedAt(now?: Date): string {
-  const instant = now ? new Date(now.getTime()) : new Date()
-  if (!Number.isFinite(instant.getTime()))
-    throw new TypeError('Referral dispatch clock must be valid')
-  return instant.toISOString()
-}
-
 export async function dispatchReferralLinkCrawls(
   options: ScheduledReferralLinkDispatchOptions = {},
 ) {
   const CRAWLER_REFERRAL_LINKS_FAILURE_RETRY_HOURS =
     getCrawlerReferralLinksWorkLimit('failure_retry_hours')
   const limits = getDispatchLimits()
-  const sweepStartedAt = options.cursor?.sweepStartedAt ?? captureSweepStartedAt(options.now)
+  const clock = options.cursor?.sweepStartedAt ?? new Date((options.now ?? new Date()).getTime())
+  if (typeof clock !== 'string' && !Number.isFinite(clock.getTime()))
+    throw new TypeError('Referral dispatch clock must be valid')
+  const sweepStartedAt = typeof clock === 'string' ? clock : clock.toISOString()
   const scope = {
     ...(options.urlId && { urlId: options.urlId }),
     ...(options.referralLinkIds && { referralLinkIds: options.referralLinkIds }),
