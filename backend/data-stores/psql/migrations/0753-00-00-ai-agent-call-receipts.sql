@@ -78,7 +78,7 @@ CREATE INDEX idx_ai_agent_call_receipts__rss_feed_item
 
 -- A deleted report target erases the encrypted answer without forgetting that the operation
 -- was paid. SET NULL takes the receipt row lock, serializing deletion with result completion.
-CREATE OR REPLACE FUNCTION fn_erase_report_agent_call_receipt_target() RETURNS trigger
+CREATE OR REPLACE FUNCTION fn_update_report_agent_call_receipt_target() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -95,10 +95,10 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-COMMENT ON FUNCTION fn_erase_report_agent_call_receipt_target() IS 'Requires an initial report target and irreversibly tombstones a receipt when its target is hard-deleted.';
+COMMENT ON FUNCTION fn_update_report_agent_call_receipt_target() IS 'Requires an initial report target and irreversibly tombstones a receipt when its target is hard-deleted.';
 CREATE TRIGGER trigger_erase_report_agent_call_receipt_target
   BEFORE INSERT OR UPDATE ON ai_agent_call_receipts
-  FOR EACH ROW EXECUTE FUNCTION fn_erase_report_agent_call_receipt_target();
+  FOR EACH ROW EXECUTE FUNCTION fn_update_report_agent_call_receipt_target();
 
 COMMENT ON TABLE ai_agent_call_receipts IS 'Pre-dispatch receipts for paid agent decisions. A null result is an ambiguous in-flight attempt and never authorizes an automatic provider retry.';
 COMMENT ON COLUMN ai_agent_call_receipts.id IS 'UUIDv7 receipt identity and creation order.';
