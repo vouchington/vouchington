@@ -73,11 +73,16 @@ export async function getRssFeedImport(
     FROM user_rss_feed_import_batches batch
     LEFT JOIN LATERAL (
       SELECT import_row.id, import_row.row_index, import_row.input_url, import_row.outcome,
-        import_row.error_message, import_row.rss_feed_id, topic.slug AS topic_slug
+        import_row.error_message, import_row.rss_feed_id,
+        CASE WHEN topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
+          THEN topic.slug ELSE merge_target.slug END AS topic_slug
       FROM user_rss_feed_import_rows import_row
       LEFT JOIN rss_feeds feed ON feed.id = import_row.rss_feed_id
       LEFT JOIN topics topic ON topic.id = feed.topic_id
-        AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
+      -- A merged feed topic resolves to the topic that replaced it, so a resubmitted feed still
+      -- navigates; a deleted topic has no page to open.
+      LEFT JOIN topics merge_target ON merge_target.id = topic.merged_into_topic_id
+        AND merge_target.deleted_at IS NULL AND merge_target.merged_into_topic_id IS NULL
       WHERE import_row.batch_id = batch.id`
   if (afterRowId) {
     query.append(sql`

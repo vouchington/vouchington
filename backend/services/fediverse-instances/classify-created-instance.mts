@@ -36,7 +36,13 @@ export async function classifyCreatedFediverseInstance(
   const hostname = rows[0]?.hostname
   if (!hostname) return
   const classified = await classifyInstance(hostname)
-  if (classified.status !== 'ok') return
+  if (classified.status !== 'ok') {
+    // An unsupported host never classifies; a provider failure throws so the queue retries it.
+    if (classified.error_code === 'provider_error') {
+      throw new Error('Fediverse instance classification failed')
+    }
+    return
+  }
   const metadata = classified.metadata
   const updated = await write(sql`/* classifyCreatedFediverseInstance:update */
     UPDATE fediverse_instance_topics fi

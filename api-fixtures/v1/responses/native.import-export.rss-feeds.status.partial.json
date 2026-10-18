@@ -18,10 +18,11 @@
       "entity_id": "70000000-0000-7000-8000-000000000004",
       "id": "70000000-0000-7000-8000-000000000002",
       "input": "https://example.test/feed.xml",
-      "status": "followed"
+      "status": "followed",
+      "topic_slug": "example-feed"
     },
     {
-      "error": "No RSS or Atom feed was found.",
+      "error_code": "INVALID_FEED_CONTENT",
       "id": "70000000-0000-7000-8000-000000000003",
       "input": "https://invalid.example.test/feed.xml",
       "status": "error"

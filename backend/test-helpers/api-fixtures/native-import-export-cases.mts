@@ -72,7 +72,7 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           id: firstRowId,
           input: 'https://example.test/feed.xml',
           status: 'pending',
-          error: 'Temporary source fetch failure. Retrying.',
+          error_code: 'IMPORT_FAILED',
         },
         {
           id: secondRowId,
@@ -109,12 +109,13 @@ export const nativeImportExportApiFixtureCases: ApiFixtureCase[] = [
           input: 'https://example.test/feed.xml',
           status: 'followed',
           entity_id: feedId,
+          topic_slug: 'example-feed',
         },
         {
           id: secondRowId,
           input: 'https://invalid.example.test/feed.xml',
           status: 'error',
-          error: 'No RSS or Atom feed was found.',
+          error_code: 'INVALID_FEED_CONTENT',
         },
       ],
       page_info: { has_next_page: false, start_cursor: firstRowCursor, end_cursor: null },

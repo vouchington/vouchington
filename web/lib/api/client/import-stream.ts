@@ -15,8 +15,10 @@ export interface ImportProgress {
 /** Consecutive transient poll failures tolerated while a task is replaced (Spot, deploy). */
 export const IMPORT_POLL_MAX_TRANSIENT_ERRORS = 3
 
-function isTransientPollError(err: unknown): boolean {
-  if (err instanceof ApiError) return err.status >= 500 || err.status === 429
+function isTransientPollError(err: unknown, retryNotFound: boolean): boolean {
+  if (err instanceof ApiError) {
+    return err.status >= 500 || err.status === 429 || (retryNotFound && err.status === 404)
+  }
   return err instanceof TypeError
 }
 
@@ -25,6 +27,8 @@ export async function streamImportProgress(
   onProgress: (progress: ImportProgress) => void,
   signal?: AbortSignal,
   onCompleted?: (status: RssFeedImportStatus) => void,
+  /** A just-submitted import can 404 until the read replica replays it; retry that. */
+  { retryNotFound = false }: { retryNotFound?: boolean } = {},
 ): Promise<void> {
   const fetchProgress = async () => {
     const response = await fetch(`/api/v1/my/import/rss-feeds/${encodeURIComponent(importId)}`, {
@@ -61,7 +65,7 @@ export async function streamImportProgress(
       transientErrors = 0
       return done
     } catch (err) {
-      if (!isTransientPollError(err)) throw err
+      if (!isTransientPollError(err, retryNotFound)) throw err
       transientErrors += 1
       if (transientErrors >= IMPORT_POLL_MAX_TRANSIENT_ERRORS) throw err
       return false

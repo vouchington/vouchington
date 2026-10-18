@@ -35,19 +35,30 @@ export function getContributionLimitTier(
   return 'free'
 }
 
+function assertAllowed(status: ContributionActionLimitStatus): void {
+  if (status.allowed) return
+  throw createCodedError(
+    429,
+    'Contribution limit exceeded. Please try again later.',
+    CONTRIBUTION_QUOTA_EXCEEDED,
+  )
+}
+
 export async function assertWithinContributionActionLimit(
   currentUser: BasicUser,
   membershipPlan: ContributionLimitMembershipPlan,
   action: ContributionLimitAction,
 ): Promise<void> {
-  const status = await checkContributionActionLimit(currentUser, membershipPlan, action, true)
-  if (!status.allowed) {
-    throw createCodedError(
-      429,
-      'Contribution limit exceeded. Please try again later.',
-      CONTRIBUTION_QUOTA_EXCEEDED,
-    )
-  }
+  assertAllowed(await checkContributionActionLimit(currentUser, membershipPlan, action, true))
+}
+
+/** Charges only the short window; the daily window is charged where the contribution lands. */
+export async function assertWithinContributionShortLimit(
+  currentUser: BasicUser,
+  membershipPlan: ContributionLimitMembershipPlan,
+  action: ContributionLimitAction,
+): Promise<void> {
+  assertAllowed(await checkContributionWindowLimit(currentUser, membershipPlan, action, 'short'))
 }
 
 export async function assertWithinContributionDailyLimit(
@@ -55,14 +66,7 @@ export async function assertWithinContributionDailyLimit(
   membershipPlan: ContributionLimitMembershipPlan,
   action: ContributionLimitAction,
 ): Promise<void> {
-  const status = await checkContributionDailyLimit(currentUser, membershipPlan, action, true)
-  if (!status.allowed) {
-    throw createCodedError(
-      429,
-      'Contribution limit exceeded. Please try again later.',
-      CONTRIBUTION_QUOTA_EXCEEDED,
-    )
-  }
+  assertAllowed(await checkContributionWindowLimit(currentUser, membershipPlan, action, 'daily'))
 }
 
 export function getContributionActionLimitStatus(
@@ -166,20 +170,23 @@ async function checkContributionActionLimit(
   }
 }
 
-async function checkContributionDailyLimit(
+/** Increments only `window`; the other window is read but never gates the result. */
+async function checkContributionWindowLimit(
   currentUser: BasicUser,
   membershipPlan: ContributionLimitMembershipPlan,
   action: ContributionLimitAction,
-  increment: boolean,
+  window: 'short' | 'daily',
 ): Promise<ContributionActionLimitStatus> {
   const tier = getContributionLimitTier(currentUser, membershipPlan)
   const key = limitKey(currentUser.id, action)
-  const shortWindow = await checkWindow(shortLimiter, key, action, tier, 'short', false)
-  const dailyWindow = await checkWindow(dailyLimiter, key, action, tier, 'daily', increment)
+  const [shortWindow, dailyWindow] = await Promise.all([
+    checkWindow(shortLimiter, key, action, tier, 'short', window === 'short'),
+    checkWindow(dailyLimiter, key, action, tier, 'daily', window === 'daily'),
+  ])
   return {
     action,
     tier,
-    allowed: isWindowAllowed(dailyWindow, increment),
+    allowed: isWindowAllowed(window === 'short' ? shortWindow : dailyWindow, true),
     short_window: shortWindow,
     daily_window: dailyWindow,
   }

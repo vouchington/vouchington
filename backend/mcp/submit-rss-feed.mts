@@ -22,7 +22,7 @@ const source: MergedToolSource<Args, Awaited<ReturnType<typeof submitRssFeedSour
     title: 'Submit RSS Feed',
     plan: 'plus',
     requiredScopes: ['rss-feeds:read', 'rss-feeds:write'],
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/rss-feeds' }],
     outputSchema: routeResponseSchema({ method: 'POST', path: '/api/v1/rss-feeds' }),
   },

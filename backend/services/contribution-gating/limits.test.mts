@@ -12,6 +12,7 @@ import { limitKey } from './limits-helpers.mts'
 import {
   assertWithinContributionActionLimit,
   assertWithinContributionDailyLimit,
+  assertWithinContributionShortLimit,
   getContributionActionLimitStatus,
   getContributionLimitTier,
 } from './limits.mts'
@@ -135,6 +136,25 @@ describe('contribution action limits', () => {
       code: CONTRIBUTION_QUOTA_EXCEEDED,
       status: 429,
     })
+  })
+
+  it('can enforce the short cooldown without charging the daily quota', async () => {
+    const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
+    overrideDynamicConfigFieldsForTest(contributionLimitConfig, {
+      topic_recommendation_free_short_limit: 1,
+      topic_recommendation_free_daily_limit: 2,
+    })
+
+    await assertWithinContributionShortLimit(user, null, 'topic_recommendation')
+    await expect(
+      getContributionActionLimitStatus(user, null, 'topic_recommendation'),
+    ).resolves.toMatchObject({
+      short_window: { limit: 1, used: 1 },
+      daily_window: { limit: 2, used: 0 },
+    })
+    await expect(
+      assertWithinContributionShortLimit(user, null, 'topic_recommendation'),
+    ).rejects.toMatchObject({ code: CONTRIBUTION_QUOTA_EXCEEDED, status: 429 })
   })
 
   it('reports action-specific status without incrementing counters', async () => {
