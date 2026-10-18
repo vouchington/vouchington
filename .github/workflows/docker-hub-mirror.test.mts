@@ -1,4 +1,5 @@
 // Interim: remove once jonathanong/no-mistakes#2182 ships the generic rule.
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
@@ -11,7 +12,7 @@ import { assertNoWorkflowViolations } from '../test-helpers/workflow-fixtures.mt
 // documented one-shot Docker Hub fallback is outside this scan.
 const HUB_HOSTS = ['docker.io', 'index.docker.io', 'registry-1.docker.io']
 const VALUE_FLAGS = new Set(
-  '-e --env -p --publish -v --volume --name --network --net --add-host --entrypoint -u --user -w --workdir --tmpfs --platform --mount --label -l --env-file --health-cmd --health-interval --health-retries --health-timeout --health-start-period -m --memory --cpus --restart --cap-add --cap-drop --shm-size --log-driver --ulimit -h --hostname'.split(
+  '-e --env -p --publish -v --volume --name --network --net --add-host --entrypoint -u --user -w --workdir --tmpfs --platform --mount --label -l --env-file --health-cmd --health-interval --health-retries --health-timeout --health-start-period -m --memory --cpus --restart --cap-add --cap-drop --shm-size --log-driver --ulimit -h --hostname --pull --pids-limit --group-add --device --dns --ipc --pid --cgroupns --stop-signal --stop-timeout'.split(
     ' ',
   ),
 )
@@ -41,13 +42,13 @@ function isHubImage(reference: string): boolean {
 function dockerCommandImages(script: string): string[] {
   const logical = script.replace(/\\\r?\n/gu, ' ')
   return [
-    ...logical.matchAll(/\bdocker\s+(?:container\s+)?(run|pull|create)\b([^\n;&|]*)/gu),
-  ].flatMap(([, verb, rest]) => {
+    ...logical.matchAll(/\bdocker\s+(?:(?:container|image)\s+)?(?:run|pull|create)\b([^\n;&|]*)/gu),
+  ].flatMap(([, rest]) => {
     const tokens = rest!.match(/(?:[^\s"']|"[^"]*"|'[^']*')+/gu) ?? []
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i]!
       if (!token.startsWith('-')) return [token]
-      if (verb !== 'pull' && VALUE_FLAGS.has(token)) i++
+      if (VALUE_FLAGS.has(token)) i++
     }
     return []
   })
@@ -101,18 +102,12 @@ function dockerfileViolations(path: string, source: string): string[] {
   return violations
 }
 
+const isDockerfilePath = (path: string): boolean =>
+  /(?:^|\/)(?:Dockerfile(?:\.[^/]+)?|[^/]+\.Dockerfile)$/u.test(path)
+
 function dockerfilePaths(): string[] {
-  const directories = [
-    '.',
-    ...readdirSync('.', { withFileTypes: true }).flatMap(entry =>
-      entry.isDirectory() && !/^(?:node_modules|\.)/u.test(entry.name) ? [entry.name] : [],
-    ),
-  ]
-  return directories.flatMap(directory =>
-    readdirSync(directory).flatMap(file =>
-      /^Dockerfile(?:\..+)?$/u.test(file) ? [`${directory}/${file}`] : [],
-    ),
-  )
+  const tracked = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 1 << 28 })
+  return tracked.split('\0').filter(isDockerfilePath)
 }
 
 describe('Docker Hub images come through mirror.gcr.io', () => {
@@ -126,6 +121,10 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
             { run: 'docker run -d --name x -e A=b -p 127.0.0.1::80 otel/collector' },
             { run: 'docker pull \\\n  docker.io/library/redis' },
             { uses: 'docker://alpine', with: {} },
+            { run: 'docker image pull ubuntu' },
+            { run: 'docker container create --name y busybox' },
+            { run: 'docker run --platform "$PLATFORM" ubuntu' },
+            { run: 'docker pull --platform=linux/arm64 debian' },
             {
               uses: 'docker/setup-buildx-action',
               with: { 'driver-opts': 'image=moby/buildkit' },
@@ -141,6 +140,10 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
       'otel/collector must come from mirror.gcr.io/',
       'docker.io/library/redis must come from mirror.gcr.io/',
       'alpine must come from mirror.gcr.io/',
+      'ubuntu must come from mirror.gcr.io/',
+      'busybox must come from mirror.gcr.io/',
+      'ubuntu must come from mirror.gcr.io/',
+      'debian must come from mirror.gcr.io/',
       'moby/buildkit must come from mirror.gcr.io/',
     ])
     expect(
@@ -149,6 +152,13 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
         '# syntax=docker/dockerfile\nFROM node AS a\nFROM a AS b\n',
       ),
     ).toEqual(['Dockerfile: # syntax=docker/dockerfile', 'Dockerfile: FROM node'])
+  })
+
+  it('matches Dockerfile names at any depth and ignores lookalikes', () => {
+    const names = ['Dockerfile', 'a/b/c/Dockerfile.dev', 'x/app.Dockerfile', 'x/Dockerfile.md.bak']
+    const skipped = ['x/NotDockerfile', 'x/Dockerfile/readme']
+    const matches = [...names, ...skipped].filter(isDockerfilePath)
+    expect(matches).toEqual(names)
   })
 
   it('allows the mirror, other registries, variables, scratch, and earlier stages', () => {
@@ -160,6 +170,8 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
             { run: 'CID=$(docker run -d -p "$PORT:3000" -e A "$IMAGE")' },
             { run: 'docker run --rm public.ecr.aws/x/y && docker pull ghcr.io/o/i' },
             { run: 'docker pull "$reference"' },
+            { run: 'docker pull --platform linux/arm64 mirror.gcr.io/library/ubuntu' },
+            { run: 'docker run --platform "$PLATFORM" -u 0 mirror.gcr.io/library/ubuntu' },
             { with: { 'driver-opts': 'image=mirror.gcr.io/moby/buildkit' } },
           ],
         },
@@ -184,7 +196,10 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
   it('uses the mirror in every workflow, composite action, and Dockerfile', () => {
     const yamlPaths = [
       ...readdirSync('.github/workflows').map(file => `.github/workflows/${file}`),
-      ...readdirSync('.github/actions').map(name => `.github/actions/${name}/action.yml`),
+      ...readdirSync('.github/actions').flatMap(name => [
+        `.github/actions/${name}/action.yml`,
+        `.github/actions/${name}/action.yaml`,
+      ]),
     ].filter(path => /\.ya?ml$/u.test(path) && existsSync(path))
     const violations = [
       ...yamlPaths.flatMap(path =>

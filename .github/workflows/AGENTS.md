@@ -1,7 +1,7 @@
 # CI/CD workflows
 
 - Load [github-actions-checklist](../../.agents/skills/github-actions-checklist/SKILL.md) before changing workflows or composite actions.
-- Choose each job's runner by the requirement split in the [canonical checklist](../../docs/checklists/github-actions.md); `runner-policy.test.mts` enforces the closed label set.
+- Choose each job's runner with the decision procedure in the checklist's [Runner demand](../../docs/checklists/github-actions.md#judgment) bullet; `runner-policy.test.mts` enforces the closed label set and which jobs use which.
 - Update `fix-main.yml` when unrestricted or direct-main `push` triggers change; its subscription regression test must pass.
 - Preserve exactly these required `Main` gates: `static`, `backend`, `web`, `cloudflare-worker`, `lambdas`, `tooling`, `gitleaks`. Each area gate keeps its area name, runs with `!cancelled()`, and passes when its area is skipped. Other scans are report-only unless they feed a gate.
 - Area DAGs are `changes` → optional `static-<area>` → parallel suites → `coverage` (pull requests only), `codecov`, and gate. Suites never depend on sibling suites; `changes` output selects areas instead of trigger `paths:`. `static.yml` has no `changes` job; `nightly.yml` calls every area. Preserve `area-workflows.test.mts` and `area-coverage.test.mts` contracts.
