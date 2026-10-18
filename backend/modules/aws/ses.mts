@@ -1,16 +1,15 @@
 import createHttpError from 'http-errors'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
+import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 import { getSESCredentials, hasSESCredentials } from './credentials.mts'
-import { buildRawEmailMessage } from './ses-mime.mts'
+import {
+  buildRawEmailMessage,
+  buildSendEmailCommand,
+  SES_CLIENT_CONFIG,
+} from '@vouchington/aws/ses'
 import onError from '@modules/on-error'
 import { assertValidSendEmailOptions, type SendEmailOptions } from '@modules/utils/email'
 import { isProductionEnvironment } from '@ts-shared/deploy-environment'
-import {
-  SendEmailCommand,
-  SendRawEmailCommand,
-  SESClient as CreateSESClient,
-  type Body,
-} from '@aws-sdk/client-ses'
+import { SendRawEmailCommand, SESClient as CreateSESClient } from '@aws-sdk/client-ses'
 
 let client: CreateSESClient | undefined
 
@@ -54,7 +53,17 @@ export const sendEmail = (options: SendEmailOptions) => {
 
   if (options.headers) {
     const command = new SendRawEmailCommand({
-      RawMessage: { Data: Buffer.from(buildRawEmailMessage(options), 'utf8') },
+      RawMessage: {
+        Data: Buffer.from(
+          buildRawEmailMessage({
+            ...options,
+            source: process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
+            replyTo: 'support@voucha.ai',
+            boundaryPrefix: 'voucha',
+          }),
+          'utf8',
+        ),
+      },
       Destinations: [
         ...(Array.isArray(options.to) ? options.to : [options.to]),
         ...getBccAddresses(options),
@@ -69,39 +78,12 @@ export const sendEmail = (options: SendEmailOptions) => {
     return promise
   }
 
-  const input = {
-    Destination: {
-      BccAddresses: getBccAddresses(options),
-      ToAddresses: Array.isArray(options.to) ? options.to : [options.to],
-    },
-    Source: options.source || process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
-    Message: {
-      Subject: {
-        // oxlint-disable-next-line unicorn/text-encoding-identifier-case -- Preserve the SES wire charset label.
-        Charset: 'UTF-8',
-        Data: options.subject,
-      },
-      Body: {} as Body,
-    },
-    ReplyToAddresses: [options.replyToAddress || 'support@voucha.ai'],
-    ...(options.configurationSetName ? { ConfigurationSetName: options.configurationSetName } : {}),
-  }
-  if (options.text) {
-    input.Message.Body.Text = {
-      // oxlint-disable-next-line unicorn/text-encoding-identifier-case -- Preserve the SES wire charset label.
-      Charset: 'UTF-8',
-      Data: options.text,
-    }
-  }
-  if (options.html) {
-    input.Message.Body.Html = {
-      // oxlint-disable-next-line unicorn/text-encoding-identifier-case -- Preserve the SES wire charset label.
-      Charset: 'UTF-8',
-      Data: options.html,
-    }
-  }
-
-  const command = new SendEmailCommand(input)
+  const command = buildSendEmailCommand({
+    ...options,
+    source: options.source || process.env.SES_SOURCE_EMAIL || 'no-reply@voucha.ai',
+    replyTo: options.replyToAddress || 'support@voucha.ai',
+    bcc: getBccAddresses(options),
+  })
   const promise = SESClient.send(command)
   promise.catch(onError)
   return promise
@@ -115,10 +97,9 @@ function getSESClient(): CreateSESClient {
       // deliver the same email twice, so callers own any deliberate retry as a new attempt. A
       // `Throttling` rejection (HTTP 400, "Maximum sending rate exceeded") is the exception: SES
       // refused it before sending, so the email queue's `wrapHttpForRetry` retries it.
-      maxAttempts: 1,
+      ...SES_CLIENT_CONFIG,
       region: AWS_REGION,
-      requestHandler: createAwsRequestHandler(),
-      ...AWS_DUALSTACK_CLIENT_CONFIG,
+      requestHandler: createResponseBodyBoundAwsRequestHandler(),
     })
   }
 

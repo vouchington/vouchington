@@ -74,6 +74,7 @@ minimumReleaseAgeExclude:
   - '@jongleberry/vurst-prompt'
   - '@jongleberry/vurst-runtime'
   - '@vouchington/auth'
+  - '@vouchington/aws'
   - '@vouchington/csv'
   - '@vouchington/crawler-html'
   - '@vouchington/embeds'

@@ -6,7 +6,8 @@ import {
 import { DynamoDBClient, PutItemCommand, type PutItemCommandOutput } from '@aws-sdk/client-dynamodb'
 import { randomUUID } from 'node:crypto'
 import { parseMediaDeliveryEdgeEnforcementMode } from '@ts-shared/url-signing'
-import { AWS_DUALSTACK_CLIENT_CONFIG, AWS_REGION, createAwsRequestHandler } from './config.mts'
+import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
+import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 
 export type MediaDeliveryRegistryState = 'allow' | 'withheld'
 
@@ -117,7 +118,7 @@ function getDynamoDbClient(region: string): DynamoDBClient {
   if (dynamoDbClient && dynamoDbClientRegion === region) return dynamoDbClient
   dynamoDbClient = new DynamoDBClient({
     region,
-    requestHandler: createAwsRequestHandler(),
+    requestHandler: createResponseBodyBoundAwsRequestHandler(),
     ...AWS_DUALSTACK_CLIENT_CONFIG,
   })
   dynamoDbClientRegion = region
@@ -127,7 +128,7 @@ function getDynamoDbClient(region: string): DynamoDBClient {
 function getCloudFrontClient(): CloudFrontClient {
   cloudFrontClient ??= new CloudFrontClient({
     region: AWS_REGION,
-    requestHandler: createAwsRequestHandler(),
+    requestHandler: createResponseBodyBoundAwsRequestHandler(),
     ...AWS_DUALSTACK_CLIENT_CONFIG,
   })
   return cloudFrontClient
