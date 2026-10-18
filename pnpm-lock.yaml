@@ -798,12 +798,6 @@ importers:
       '@queues/content-analysis':
         specifier: workspace:^
         version: link:../queues/content-analysis
-      '@queues/crawl-dispatch':
-        specifier: workspace:^
-        version: link:../queues/crawl-dispatch
-      '@queues/crawl-referral-links':
-        specifier: workspace:^
-        version: link:../queues/crawl-referral-links
       '@queues/emails':
         specifier: workspace:^
         version: link:../queues/emails
@@ -849,9 +843,6 @@ importers:
       '@queues/story-post-related-url-projections':
         specifier: workspace:^
         version: link:../queues/story-post-related-url-projections
-      '@queues/unfurl-referral-links':
-        specifier: workspace:^
-        version: link:../queues/unfurl-referral-links
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../queues/urls-domains-blacklist
