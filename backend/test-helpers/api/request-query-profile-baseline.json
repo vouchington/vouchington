@@ -240,24 +240,10 @@
     "issue": 3121
   },
   {
-    "annotation": "getRetainedPostCategories hashtags",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
-    "annotation": "getRetainedPostCategories topics",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
-  },
-  {
-    "annotation": "getRssFeedImport",
-    "reason": "The user RSS import SSE request polls owned progress until completion or disconnect",
-    "issue": 3122
-  },
-  {
     "annotation": "getRssFeedItemById",
-    "reason": "Post, feed and import steps repeat per item",
-    "issue": 3122
+    "reason": "POST /api/v1/rss-feed-items/:id/sends reads the item before the request body is parsed so a missing item answers 404 before a malformed body answers 400 (share-send.mts:62); createDistribution reads it again inside its write transaction, before the advisory lock, so the distribution insert never reaches the item foreign key for a removed item (create-guards.mts:36)",
+    "permanent": true,
+    "code": "backend/api/v1/rss-feed-items/share-send.mts:62"
   },
   {
     "annotation": "getTopicAliasesForMergeRevision",
