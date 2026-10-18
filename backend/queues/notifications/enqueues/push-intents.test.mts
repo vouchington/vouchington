@@ -5,7 +5,6 @@ import {
   enqueueReconcileNotificationPushIntents,
 } from './push-intents.mts'
 import { notifications } from '../queues.mts'
-import { NOTIFICATIONS_DEDUPLICATION_TTL_MS } from '../config.mts'
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
@@ -28,7 +27,6 @@ describe('notification push intent queue wiring', () => {
       deduplication: {
         id: `processDeliverNotificationPushIntent__${userId}__${notificationId}`,
         mode: 'debounce',
-        ttl: NOTIFICATIONS_DEDUPLICATION_TTL_MS,
       },
     })
   })

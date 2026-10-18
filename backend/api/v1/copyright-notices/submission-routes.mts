@@ -59,6 +59,7 @@ app.route('/api/v1/copyright-notices').post(async (ctx: Context) => {
     idempotencyKey,
     request: { ...input, claimantTargets: input.targets },
   })
+  // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
   await enqueueCopyrightFormScreeningAndWait(intake.copyright_notice_submission_id)
   ctx.setStatus(isDuplicate ? 200 : 202)
   ctx.json({ copyright_notice: { id: intake.copyright_notice_id }, is_duplicate: isDuplicate })
@@ -79,6 +80,7 @@ app.route('/api/v1/copyright-notices/:id/appeals').post(async (ctx: Context) => 
     body,
   })
   const result = await createCopyrightAppeal(currentUser, noticeId, idempotencyKey, input)
+  // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
   if (!result.isDuplicate) await enqueueCopyrightAppealRecommendationAndWait(result.submission.id)
   ctx.setStatus(result.isDuplicate ? 200 : 201)
   ctx.json({ copyright_submission: { id: result.submission.id }, is_duplicate: result.isDuplicate })

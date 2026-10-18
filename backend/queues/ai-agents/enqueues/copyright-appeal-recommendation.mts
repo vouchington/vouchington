@@ -5,6 +5,7 @@ import { ai_agents } from '../queues.mts'
 
 const jobIdFor = (submissionId: string) => `copyright_appeal_recommendation_${submissionId}`
 
+// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
 export async function enqueueCopyrightAppealRecommendationAndWait(
   submissionId: string,
 ): Promise<void> {

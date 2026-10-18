@@ -1,0 +1,143 @@
+id: backend-no-enqueue-and-wait
+language: Tsx
+severity: error
+message: Never block a request or job on another job's result; write state and let clients poll.
+note: >-
+  See the queue checklist's never-wait rule (docs/checklists/backend-queues.md#queue-boundaries).
+  This covers addAndWait, waitUntilFinished, and any enqueue...AndWait function or call. Return a
+  pending resource and let the client poll it. This also covers aliases such as destructuring
+  `{ addAndWait: waitForJob }`. Existing violations carry a scoped ast-grep-ignore comment naming
+  the issue that removes them; drop the comment when that issue lands.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/__tests__/**'
+  - 'backend/test-helpers/**'
+rule:
+  any:
+    - kind: member_expression
+      has:
+        field: property
+        regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
+    - kind: subscript_expression
+      has:
+        field: index
+        kind: string
+        regex: ^['"](addAndWait|waitUntilFinished|enqueue\w*AndWait)['"]$
+    - kind: pair_pattern
+      has:
+        field: key
+        regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
+    - kind: shorthand_property_identifier_pattern
+      regex: ^(addAndWait|waitUntilFinished|enqueue\w*AndWait)$
+    - kind: import_specifier
+      all:
+        - has:
+            field: name
+            regex: ^enqueue\w*AndWait$
+        - has:
+            field: alias
+            kind: identifier
+    - kind: function_declaration
+      has:
+        field: name
+        regex: ^enqueue\w*AndWait$
+    - kind: variable_declarator
+      all:
+        - has:
+            field: name
+            kind: identifier
+            regex: ^enqueue\w*AndWait$
+        - has:
+            field: value
+            any:
+              - kind: arrow_function
+              - kind: function_expression
+    - kind: call_expression
+      has:
+        field: function
+        any:
+          - kind: identifier
+            regex: ^enqueue\w*AndWait$
+          - kind: member_expression
+            has:
+              field: property
+              regex: ^enqueue\w*AndWait$
+examples:
+  - file: backend/services/example/rerun.mts
+    code: |
+      const { enqueueReviewAndWait: enqueueReview } = dependencies
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      export const enqueueReviewAndWait = async (id: string) => {
+        await queue.add('review', { id })
+      }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const enqueueReviewAndWait = function (id: string) {}
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await dependencies['enqueueReviewAndWait'](id)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await queue['addAndWait']('judge', data)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await job['waitUntilFinished'](queueEvents)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      const { addAndWait: waitForJob } = queue
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      const { waitUntilFinished } = job
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      const wait = queue.addAndWait
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      import { enqueueReviewAndWait as enqueueReview } from './enqueues.mts'
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await queue.addAndWait('judge', data)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await job.waitUntilFinished(queueEvents)
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      export async function enqueueReviewAndWait(id: string): Promise<void> {
+        await queue.add('review', { id })
+      }
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await dependencies.enqueueCrawlUrlAndWait(url)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await enqueueReviewAndWait(id)
+    isValid: false
+  - file: backend/services/example/rerun.mts
+    code: |
+      await invalidateRssFeedItemsAndWaitForPurge(...keys)
+    isValid: true
+  - file: backend/services/example/rerun.mts
+    code: |
+      await enqueueReview(id)
+    isValid: true
+  - file: backend/services/example/rerun.test.mts
+    code: |
+      await queue.addAndWait('judge', data)
+    isValid: true

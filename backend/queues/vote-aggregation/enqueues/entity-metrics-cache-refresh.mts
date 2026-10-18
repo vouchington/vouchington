@@ -5,7 +5,6 @@ import {
   VOTE_AGGREGATION_REFRESH_TOPIC_METRICS_JOB,
   VOTE_AGGREGATION_REFRESH_USER_METRICS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { DEDUPLICATION_TTL_MS } from './config-entity-metrics-cache-refresh.mts'
 
 function makeEnqueueBulkRefresh(
   job: typeof VOTE_AGGREGATION_REFRESH_TOPIC_METRICS_JOB,
@@ -17,7 +16,6 @@ function makeEnqueueBulkRefresh(
       deduplication: {
         id: `${deduplicationPrefix}__${id}`,
         mode: 'debounce' as const,
-        ttl: DEDUPLICATION_TTL_MS,
       },
     },
   }))

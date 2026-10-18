@@ -1,0 +1,89 @@
+id: backend-no-typed-enqueue-fake
+language: Tsx
+severity: warning
+message: Do not fake an internal enqueue with `vi.fn<typeof enqueueFoo>()`; exercise the real queue in a real-boundary test.
+note: >-
+  A typed fake of an internal enqueue hides continuation bugs, such as a job that re-adds itself
+  under its own active dedup id and gets silently dropped. Exercise the real queue in real-boundary
+  tests instead; see the queue checklist in docs/checklists/backend-queues.md.
+files:
+  - 'backend/workers/**/*.test.mts'
+  - 'backend/services/**/*.test.mts'
+  - 'backend/queues/**/*.test.mts'
+rule:
+  any:
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            pattern: vi.fn
+        - has:
+            field: type_arguments
+            has:
+              stopBy: end
+              any:
+                - kind: type_query
+                  regex: ^typeof\s+(.*\.)?enqueue[A-Z]
+                - kind: lookup_type
+                  has:
+                    kind: literal_type
+                    regex: ^['"]enqueue[A-Z]
+    # The Tsx grammar parses `vi.fn<typeof import('x').enqueueFoo>()` as a comparison.
+    - kind: binary_expression
+      all:
+        - has:
+            field: left
+            pattern: vi.fn
+        - has:
+            field: right
+            kind: unary_expression
+            regex: ^typeof\s+import\(.*\)\.enqueue[A-Z]
+examples:
+  - file: backend/queues/example/enqueues.test.mts
+    code: |
+      const enqueue = vi.fn<typeof enqueueBulkExample>()
+    isValid: false
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const enqueue = vi.fn<NonNullable<Deps['enqueueContinuation']>>()
+    isValid: false
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const enqueue = vi.fn<typeof import('@queues/example/enqueues').enqueueFoo>()
+    isValid: false
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const enqueue = vi.fn<Deps['enqueueContinuation']>(async () => undefined)
+    isValid: false
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const email = vi.fn<ReconcileDeps['enqueueEmail']>(async () => {})
+    isValid: false
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const send = vi.fn<Deps['sendEmail']>()
+    isValid: true
+  - file: backend/workers/example/processors.test.mts
+    code: |
+      const enqueue = vi.fn<typeof enqueueApplyCopyrightAction>(async () => undefined)
+    isValid: false
+  - file: backend/services/example/service.test.mts
+    code: |
+      const enqueue = vi.fn<typeof queues.enqueueApplyCopyrightAction>()
+    isValid: false
+  - file: backend/services/example/service.test.mts
+    code: |
+      const send = vi.fn<typeof sendEmail>()
+    isValid: true
+  - file: backend/services/example/service.test.mts
+    code: |
+      const enqueue = vi.fn()
+    isValid: true
+  - file: backend/services/example/service.test.mts
+    code: |
+      const send = vi.fn<typeof sendEmail>(() => enqueueApplyCopyrightAction('id'))
+    isValid: true
+  - file: backend/services/example/service.mts
+    code: |
+      const enqueue = vi.fn<typeof enqueueApplyCopyrightAction>()
+    isValid: true

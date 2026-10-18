@@ -92,6 +92,7 @@ export async function discoverFeedUrlFromHtml(
     if (!url || !hostnameId) return null
 
     await dependencies.getOrCreateCrawlerForHostname(null, hostnameId)
+    // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #2853
     const result = await dependencies.enqueueCrawlUrlAndWait(
       { urlId: url.id },
       {

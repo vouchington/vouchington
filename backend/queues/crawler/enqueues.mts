@@ -92,7 +92,6 @@ const enqueueBulkCrawlUrlJobs = createBulkEnqueueFunction<
               ? `${JOB_NAME}_ratelimit__${urlId}__${rateLimitRetryCount}`
               : `${JOB_NAME}__${urlId}`,
           mode: 'debounce',
-          ttl: Math.max(rateLimitMs, delay),
         },
         ...(delay > 0 ? { delay } : {}),
         ...(hostnameId
@@ -113,6 +112,7 @@ export const enqueueBulkCrawlUrls = (
   )
 }
 
+// ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #2853
 export async function enqueueCrawlUrlAndWait(
   entry: EnqueueCrawlUrlEntry,
   options: EnqueueCrawlerJobOptions & { waitTimeoutMs?: number } = {},

@@ -56,6 +56,7 @@ export async function processCopyrightInboundEmail(
     })
     return
   }
+  // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
   await dependencies.enqueueCopyrightEmailIntakeAndWait(intake.id)
 }
 

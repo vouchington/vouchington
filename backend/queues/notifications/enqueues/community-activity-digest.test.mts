@@ -81,7 +81,6 @@ describe('community activity digest queue wiring', () => {
     expect(pushIntents[0]?.opts.deduplication).toEqual({
       id: `processDeliverNotificationPushIntent__${notification.userId}__${notification.notificationId}`,
       mode: 'debounce',
-      ttl: 30_000,
     })
   })
 

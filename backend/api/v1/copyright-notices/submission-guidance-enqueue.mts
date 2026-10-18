@@ -6,6 +6,7 @@ export async function enqueueCopyrightSubmissionGuidanceBestEffort(
   submissionId: string,
 ): Promise<void> {
   try {
+    // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
     await enqueueCopyrightSubmissionGuidanceAndWait(submissionId)
   } catch (err) {
     onError(

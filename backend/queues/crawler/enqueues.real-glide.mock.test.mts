@@ -33,7 +33,7 @@ describe('crawl_urls priority under backlog', () => {
       const opts = {
         priority: 1,
         delay: 60_000,
-        deduplication: { id: randomUUID(), mode: 'debounce' as const, ttl: 60_000 },
+        deduplication: { id: randomUUID(), mode: 'debounce' as const },
       }
       const first = await queue.add('crawl_url', { url_id: 'same-url' }, opts)
       const replacement = await queue.add('crawl_url', { url_id: 'same-url' }, opts)

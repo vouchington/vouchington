@@ -4,7 +4,6 @@ import {
   VOTE_AGGREGATION_BACKFILL_REPORT_INTEGRITY_JOB,
   VOTE_AGGREGATION_REPORT_INTEGRITY_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
-import { REPORT_INTEGRITY_DEDUPLICATION_TTL_MS } from './config-report-integrity.mts'
 
 type PendingReportEntity = { entityType: string; entityId: string }
 
@@ -12,7 +11,6 @@ function reportIntegrityDeduplication(entityType: string, entityId: string) {
   return {
     id: `processReportIntegrityCheck__${entityType}__${entityId}`,
     mode: 'debounce' as const,
-    ttl: REPORT_INTEGRITY_DEDUPLICATION_TTL_MS,
   }
 }
 

@@ -1,11 +1,6 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
-import {
-  PRIORITY_DEFAULT,
-  QUEUE_NAME,
-  TOP_HASHTAGS_DEDUPLICATION_TTL_MS,
-  TOP_HASHTAGS_VIEW,
-} from './config.mts'
+import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
 import { psql } from './queues.mts'
 import type { PsqlJobs, RefreshMaterializedViewData } from './types.mts'
 
@@ -57,7 +52,6 @@ export const enqueueRefreshTopHashtags = (): EnqueueReturnType =>
       deduplication: {
         id: 'refresh-materialized-view__mv_top_hashtags',
         mode: 'debounce' as const,
-        ttl: TOP_HASHTAGS_DEDUPLICATION_TTL_MS,
       },
       ordering: { key: 'mv_refresh', concurrency: 1 },
       attempts: 3,

@@ -9,7 +9,7 @@ import {
 } from '@queues/background/enqueues/bluesky-follow-propagation-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
-import { BACKFILL_DEDUPLICATION_TTL_MS, RECONCILE_FOLLOW_DEDUPLICATION_TTL_MS } from './config.mts'
+import { BACKFILL_DEDUPLICATION_TTL_MS } from './config.mts'
 
 export type { DisconnectRequestedData, ReconcileFollowData }
 
@@ -37,7 +37,6 @@ function reconcileFollowJobOptions(
     deduplication: {
       id: `reconcile_${followerUserId}__${followeeUserId}`,
       mode: 'debounce',
-      ttl: RECONCILE_FOLLOW_DEDUPLICATION_TTL_MS,
     },
   }
 }

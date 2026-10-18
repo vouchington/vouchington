@@ -10,6 +10,7 @@ export async function rerunReportJudgement(staffUserId: string, id: string): Pro
     staffUserId,
     { actionType: 'report_judgement_rerun', reportId: report.id },
     async () => {
+      // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
       await enqueueReportJudgementAndWait(
         report.entity_type,
         report.entity_id,

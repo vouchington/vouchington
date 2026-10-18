@@ -2,7 +2,7 @@ import { createBackgroundBulkEnqueue } from '@queues/background/enqueues'
 import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import type { EnqueueReturnType } from '@voucha/types'
 import { MAX_TAGS_PER_REQUEST } from '@ts-shared/cache'
-import { DEDUPLICATION_TTL_MS } from './config.mts'
+import { DEDUPLICATION_TAG_SEPARATOR } from './config.mts'
 
 // Splits `tags` into `<= MAX_TAGS_PER_REQUEST`-sized groups so each enqueued job maps to a single
 // outbound purge HTTP call (see purge.mts's `purgeCacheTags`, which already accepts an array and
@@ -27,9 +27,8 @@ const enqueue = createBackgroundBulkEnqueue(CACHE_PURGE_TAGS_JOB, (chunk: string
     // (e.g. one post edit producing 3 tags: 3 jobs/3 calls before, 1 job/1 call now). Worst case
     // of the narrower dedup is a few extra purge calls, never fewer purges than needed.
     deduplication: {
-      id: `${CACHE_PURGE_TAGS_JOB.name}__${chunk.toSorted().join(',')}`,
+      id: `${CACHE_PURGE_TAGS_JOB.name}__${chunk.toSorted().join(DEDUPLICATION_TAG_SEPARATOR)}`,
       mode: 'debounce' as const,
-      ttl: DEDUPLICATION_TTL_MS,
     },
   },
 }))

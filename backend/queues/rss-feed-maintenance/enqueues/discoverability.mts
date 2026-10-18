@@ -25,7 +25,6 @@ const enqueueBulkEvaluateJobs = createBulkEnqueueFunction<
       deduplication: {
         id: `${JOB_NAME}__${rssFeedId}`,
         mode: 'debounce' as const,
-        ttl: RSS_FEED_DISCOVERABILITY_DEFAULTS.deduplicationTtl,
       },
     },
   }),

@@ -90,7 +90,7 @@ describe('entity listener enqueues', () => {
       data: { id: urlId },
       opts: {
         priority: 10,
-        deduplication: { id: `processUrlCreated__${urlId}`, mode: 'debounce', ttl: 60_000 },
+        deduplication: { id: `processUrlCreated__${urlId}`, mode: 'debounce' },
       },
     })
   })

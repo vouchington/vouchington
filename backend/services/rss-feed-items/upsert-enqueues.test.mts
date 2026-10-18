@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { ai_agents } from '@queues/ai-agents/queues'
 import { bedrock_embeddings_nova_multimodal_v1_single } from '@queues/bedrock-embeddings/queues'
 import { EMBEDDINGS_NOVA_MULTIMODAL_V1_SINGLE_QUEUE_NAME } from '@queues/bedrock-embeddings/config'
-import { LANGUAGE_DETECTION_DEFAULTS, PRIORITY_DEFAULT } from '@queues/content-analysis/config'
+import { PRIORITY_DEFAULT } from '@queues/content-analysis/config'
 import { contentAnalysisQueue } from '@queues/content-analysis/queues'
 import { notifications } from '@queues/notifications/queues'
 import { enqueueRssFeedItemPostUpsertJobsWithCompletion } from './upsert-enqueues.mts'
@@ -152,7 +152,6 @@ describe('RSS feed item post-upsert enqueue fanout', () => {
           deduplication: {
             id: `content-analysis:language:rss_feed_item:${row.id}`,
             mode: 'debounce',
-            ttl: LANGUAGE_DETECTION_DEFAULTS.deduplicationTtlMs,
           },
         })
       }

@@ -165,8 +165,10 @@ function enqueueReportJudgementIfContextChanged(
         entityId,
       )
       if (!refresh) return
+      // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
       const { enqueueReportJudgementAndWait } =
         await import('@queues/ai-agents/enqueues/report-judgement')
+      // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
       await enqueueReportJudgementAndWait(entityType, entityId, reportId, null, context.contextHash)
     })
     /* v8 ignore start -- fire-and-forget error handler; covered by process-level onError integration */

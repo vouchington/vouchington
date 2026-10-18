@@ -50,7 +50,6 @@ describe('language-detection enqueues', () => {
       deduplication: {
         id: `content-analysis:language:${entityType}:${id}`,
         mode: 'debounce',
-        ttl: LANGUAGE_DETECTION_DEFAULTS.deduplicationTtlMs,
       },
     })
   })

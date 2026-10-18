@@ -68,7 +68,6 @@ const enqueueBulkCreateRssFeedItemEmbeddingJobs = createBulkEnqueueFunction<
       deduplication: {
         id: `rss_feed_item_embedding_${item.rss_feed_item_id}`,
         mode: 'debounce' as const,
-        ttl: BEDROCK_EMBEDDINGS_DEFAULTS.deduplicationTtlMs,
       },
     },
   }),
@@ -88,7 +87,6 @@ export const enqueueCreateTopicEmbedding = async (
       deduplication: {
         id: `topic_embedding_${topicId}`,
         mode: 'debounce' as const,
-        ttl: BEDROCK_EMBEDDINGS_DEFAULTS.deduplicationTtlMs,
       },
     } satisfies Partial<JobOptions>)
   } catch (err) {
@@ -110,7 +108,6 @@ export const enqueueCreatePostEmbedding = async (
       deduplication: {
         id: `post_embedding_${postId}`,
         mode: 'debounce' as const,
-        ttl: BEDROCK_EMBEDDINGS_DEFAULTS.deduplicationTtlMs,
       },
     } satisfies Partial<JobOptions>)
   } catch (err) {

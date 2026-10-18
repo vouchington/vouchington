@@ -65,6 +65,7 @@ export async function admitCopyrightEmailCorrespondenceDecision(
     (input.kind === 'counter_notice' || input.kind === 'court_or_ccb_hold')
   ) {
     try {
+      // ast-grep-ignore: backend-no-enqueue-and-wait -- existing wait removed by #3264
       await enqueueCopyrightSubmissionGuidanceAndWait(admitted.submissionId)
     } catch (err) {
       onError(

@@ -49,7 +49,6 @@ const enqueueBulkSendRenewalPriceIncreaseEmailJobs = createBulkEnqueueFunction<
       deduplication: {
         id: `processSendRenewalPriceIncreaseEmail__${data.membershipId}__${data.membershipProviderObservationId}__${data.generation}`,
         mode: 'debounce' as const,
-        ttl: 86_400_000,
       },
     },
   }),

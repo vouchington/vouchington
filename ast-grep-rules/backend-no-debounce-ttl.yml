@@ -1,0 +1,101 @@
+id: backend-no-debounce-ttl
+language: Tsx
+severity: error
+message: A debounce deduplication ignores `ttl`; remove it. Only `throttle` mode reads `ttl`.
+note: >-
+  glide-mq's glidemq_dedup (node_modules/glide-mq/dist/functions/glidemq.lua) reads the dedup ttl
+  only in the `throttle` branch (line 2541); the `debounce` branch (lines 2550-2575) replaces the
+  tracked job while it is delayed or prioritized and skips while it is waiting or active, with no
+  time window. A `ttl` beside `mode: 'debounce'` reads like a debounce window and is dead. Drop it,
+  or use `mode: 'throttle'` when a time window is intended.
+files:
+  - 'backend/**/*.mts'
+ignores:
+  - 'backend/**/*.test.mts'
+  - 'backend/**/__tests__/**'
+  - 'backend/test-helpers/**'
+rule:
+  kind: object
+  all:
+    - has:
+        kind: pair
+        all:
+          - has:
+              field: key
+              regex: ^mode$
+          - has:
+              field: value
+              stopBy: end
+              kind: string
+              regex: ^['"]debounce['"]$
+    - has:
+        any:
+          - kind: pair
+            has:
+              field: key
+              regex: ^ttl$
+          - kind: shorthand_property_identifier
+            regex: ^ttl$
+          - kind: spread_element
+            has:
+              stopBy: end
+              any:
+                - kind: pair
+                  has:
+                    field: key
+                    regex: ^ttl$
+                - kind: shorthand_property_identifier
+                  regex: ^ttl$
+examples:
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: { id, mode: 'debounce', ...(isCrawl ? {} : { ttl: ONE_MINUTE_MS }) },
+      }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: { id, mode: isCrawl ? ('simple' as const) : ('debounce' as const), ttl: 1 },
+      }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: { id, mode: isCrawl ? ('simple' as const) : ('debounce' as const) },
+      }
+    isValid: true
+  - file: backend/queues/moderation-signals/enqueues/ban-evasion.mts
+    code: |
+      const opts = { deduplication: { id: dedupId, mode: 'debounce', ttl: DEDUPLICATION_TTL_MS } }
+    isValid: false
+  - file: backend/queues/openai-moderation/enqueues.mts
+    code: |
+      const opts = {
+        deduplication: {
+          id: `image_moderation_${imageId}`,
+          mode: 'debounce' as const,
+          ttl: ONE_MINUTE_MS,
+        },
+      }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = { deduplication: { id, ttl, mode: 'debounce' } }
+    isValid: false
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = { deduplication: { id: dedupId, mode: 'debounce' } }
+    isValid: true
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = { deduplication: { id: dedupId, mode: 'throttle', ttl: ONE_MINUTE_MS } }
+    isValid: true
+  - file: backend/queues/example/enqueues.mts
+    code: |
+      const opts = { deduplication: { id: dedupId, mode: 'debounce' }, ttl: ONE_MINUTE_MS }
+    isValid: true
+  - file: backend/queues/crawler/enqueues.test.mts
+    code: |
+      const opts = { deduplication: { id: 'crawl_url__url-1', mode: 'debounce', ttl: 1234 } }
+    isValid: true

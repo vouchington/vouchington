@@ -25,8 +25,6 @@ import {
 import type { BackgroundJobDefinition } from '@queues/background/types'
 import type { EnqueueReturnType } from '@voucha/types'
 
-const ONE_MINUTE_MS = 60_000
-
 function createEntityEnqueue<TData>(job: BackgroundJobDefinition<TData>) {
   const enqueue = createBackgroundEnqueue(job)
   return (data: TData, priority?: number): EnqueueReturnType => {
@@ -60,7 +58,6 @@ export const enqueueBulkProcessUrlCreated = createBackgroundBulkEnqueue(
       deduplication: {
         id: `processUrlCreated__${id}`,
         mode: 'debounce',
-        ttl: ONE_MINUTE_MS,
       },
     },
   }),

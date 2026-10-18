@@ -10,7 +10,6 @@ const enqueueBulkUpdateTopicRatingStatsJobs = createBackgroundBulkEnqueue(
       deduplication: {
         id: `processUpdateTopicRatingStats__${topicId}`,
         mode: 'debounce' as const,
-        ttl: 1000 * 60 * 60 * 24,
       },
     },
   }),

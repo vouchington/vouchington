@@ -1,7 +1,7 @@
 import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import { MODERATION_SIGNALS_SPAM_DETECTION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import type { JobOptions } from 'glide-mq'
-import { DEDUPLICATION_TTL_MS, PRIORITY_DEFAULT } from './config.mts'
+import { PRIORITY_DEFAULT } from './config.mts'
 
 export {
   enqueueBulkDetectBanEvasionAfterPostEmbeddings,
@@ -32,7 +32,6 @@ function makeJobOpts(
         ? `spam_detection_${postId}_${deduplicationKey}`
         : `spam_detection_${postId}`,
       mode: 'debounce',
-      ttl: DEDUPLICATION_TTL_MS,
     },
   }
 }
