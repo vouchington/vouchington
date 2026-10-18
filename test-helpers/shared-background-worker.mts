@@ -6,8 +6,8 @@ import { createBackgroundWorker } from '../backend/workers/background/workers/cr
 type SharedBackgroundWorker = ReturnType<typeof createBackgroundWorker>
 
 // The in-memory test worker's own state: its queue, the workers attached to that queue, and the
-// gate `processAvailable` honours. They are internal to `glide-mq/testing`, which this shim layer
-// already reaches into (see `glide-mq-vitest-internals.mts`).
+// gate `processAvailable` honours. They are internal to `glide-mq/testing`; this product-specific
+// setup relies on the same worker state when coordinating the shared background queue.
 type TestWorkerInternals = {
   paused: boolean
   wake(): void

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { isDeduplicatedEnqueue, readEnqueuedJob } from '@voucha/test-helpers'
 import { holdBackgroundDomain } from '../../../../test-helpers/shared-background-worker.mts'
-import { runInsideTestWorkerProcessor as withoutFlush } from '../../../../test-helpers/glide-mq-vitest-flush.mts'
+import { runInsideTestWorkerProcessor as withoutFlush } from '@vouchington/worker-runtime/testing'
 import { voteAggregation } from '../queues.mts'
 import {
   enqueueVoteWeightAgeMilestones,
