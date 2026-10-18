@@ -401,6 +401,10 @@ checks:
       command: [pnpm, run, no-mistakes]
       fileArgs: none
       always: true
+    - name: lint-links-internal
+      command: [./ci/lint-links.sh, --offline]
+      fileArgs: none
+      always: true
     - name: repo-node-static-checks
       command:
         - node

@@ -15,6 +15,7 @@ describe('embedding reconciliation on real GlideMQ', () => {
       const rootOptions = reconciliationJobOptions('copy:topics')
       const root = await queue.add('reconcile_existing', { entityType: 'topics' }, rootOptions)
       expect(root).not.toBeNull()
+      expect(root?.opts.priority).toBe(100)
       const duplicateRoot = await queue.add(
         'reconcile_existing',
         { entityType: 'topics' },
@@ -30,6 +31,7 @@ describe('embedding reconciliation on real GlideMQ', () => {
         pageOptions,
       )
       expect(page).not.toBeNull()
+      expect(page?.opts.priority).toBe(100)
       const duplicatePage = await queue.add(
         'reconcile_existing',
         { entityType: 'topics', after },
@@ -38,7 +40,7 @@ describe('embedding reconciliation on real GlideMQ', () => {
       expect(duplicatePage).toBeNull()
       expect(page?.opts.ordering).toEqual(rootOptions.ordering)
       expect(page?.opts.deduplication).toEqual({
-        id: `bedrock-embedding-reconciliation:copy:topics:${after}`,
+        id: `bedrock-embeddings:reconciliation:copy:topics:${after}`,
         mode: 'simple',
       })
     } finally {

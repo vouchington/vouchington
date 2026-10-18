@@ -35,7 +35,6 @@
     "@queues/content-analysis": "workspace:^",
     "@queues/crawl-dispatch": "workspace:^",
     "@queues/crawl-embeds": "workspace:^",
-    "@queues/crawl-referral-links": "workspace:^",
     "@queues/crawler": "workspace:^",
     "@queues/rss-feeds": "workspace:^",
     "@services/analytics": "workspace:^",

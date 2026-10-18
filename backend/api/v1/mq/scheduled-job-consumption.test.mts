@@ -4,20 +4,25 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { ScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
+import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { background } from '@queues/background/queues'
 import { SCHEDULE_DEFINITIONS } from '../../../entrypoints/worker-cpu/schedule-definitions.mts'
 import { SCHEDULED_JOB_MANIFESTS } from '@services/queue-monitoring/scheduled-job-manifests'
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
-// The background package owns the combined registration, not a manifest of its own.
+// Shared queue packages own combined registrations, not domain manifests of their own.
 const schedulePaths = globSync('backend/queues/*/enqueues/schedules.mts', {
   cwd: repoRoot,
 })
-  .filter(path => !path.startsWith('backend/queues/background/'))
+  .filter(
+    path =>
+      !path.startsWith('backend/queues/background/') &&
+      !path.startsWith('backend/queues/background-cpu/'),
+  )
   .toSorted()
 
-// A background domain contributes its manifest to one combined registration, so it has no
-// `upsertSchedules` of its own: registering a domain's manifest alone would prune the others.
+// Shared-queue domains contribute manifests to one combined registration, so they have no
+// `upsertSchedules` of their own: registering a domain's manifest alone would prune the others.
 type ScheduleModule = {
   scheduledJobManifest: ScheduledJobManifest
   upsertSchedules?: () => Promise<void>
@@ -30,11 +35,10 @@ async function loadScheduleModules(): Promise<ScheduleModule[]> {
         pathToFileURL(join(repoRoot, path)).href
       )) as ScheduleModule
       expect(loadedModule.scheduledJobManifest).toBeDefined()
-      expect(typeof loadedModule.upsertSchedules).toBe(
-        loadedModule.scheduledJobManifest.queueName === BACKGROUND_QUEUE_NAME
-          ? 'undefined'
-          : 'function',
-      )
+      const combinedQueue =
+        loadedModule.scheduledJobManifest.queueName === BACKGROUND_QUEUE_NAME ||
+        loadedModule.scheduledJobManifest.queueName === BACKGROUND_CPU_QUEUE_NAME
+      expect(typeof loadedModule.upsertSchedules).toBe(combinedQueue ? 'undefined' : 'function')
       return loadedModule
     }),
   )
@@ -43,23 +47,28 @@ async function loadScheduleModules(): Promise<ScheduleModule[]> {
 describe('scheduled job export consumption', () => {
   it('consumes every discovered manifest in the API catalog', async () => {
     const modules = await loadScheduleModules()
+    const combinedQueues = [BACKGROUND_QUEUE_NAME, BACKGROUND_CPU_QUEUE_NAME]
     const own = modules.filter(
-      module => module.scheduledJobManifest.queueName !== BACKGROUND_QUEUE_NAME,
+      module => !combinedQueues.includes(module.scheduledJobManifest.queueName),
     )
-    const domainJobs = modules
-      .filter(module => module.scheduledJobManifest.queueName === BACKGROUND_QUEUE_NAME)
-      .flatMap(module => module.scheduledJobManifest.jobs)
-    const combined = SCHEDULED_JOB_MANIFESTS.filter(
-      manifest => manifest.queueName === BACKGROUND_QUEUE_NAME,
+    const combined = SCHEDULED_JOB_MANIFESTS.filter(manifest =>
+      combinedQueues.includes(manifest.queueName),
     )
 
     expect(
       new Set(SCHEDULED_JOB_MANIFESTS.filter(manifest => !combined.includes(manifest))),
     ).toEqual(new Set(own.map(module => module.scheduledJobManifest)))
-    expect(combined).toHaveLength(1)
-    expect(combined[0]!.jobs.map(job => job.schedulerId).toSorted()).toEqual(
-      domainJobs.map(job => job.schedulerId).toSorted(),
-    )
+    expect(combined).toHaveLength(combinedQueues.length)
+    for (const queueName of combinedQueues) {
+      const domainSchedulerIds = modules
+        .filter(module => module.scheduledJobManifest.queueName === queueName)
+        .flatMap(module => module.scheduledJobManifest.jobs.map(job => job.schedulerId))
+        .toSorted()
+      const catalogManifest = combined.find(manifest => manifest.queueName === queueName)
+      expect(catalogManifest?.jobs.map(job => job.schedulerId).toSorted()).toEqual(
+        domainSchedulerIds,
+      )
+    }
   })
 
   it('consumes every discovered upsert function in a worker runtime definition', async () => {
@@ -76,7 +85,15 @@ describe('scheduled job export consumption', () => {
       register => !ownRegistrations.includes(register),
     )
 
-    expect(combinedRegistrations).toHaveLength(1)
+    // Both shared queues register their domain manifests through one runtime schedule function.
+    expect(combinedRegistrations).toHaveLength(2)
+    expect(
+      SCHEDULE_DEFINITIONS.filter((_, index) =>
+        combinedRegistrations.includes(runtimeRegistrations[index]!),
+      )
+        .map(definition => definition.queueName)
+        .toSorted(),
+    ).toEqual([BACKGROUND_CPU_QUEUE_NAME, BACKGROUND_QUEUE_NAME].toSorted())
     expect(new Set(runtimeRegistrations)).toEqual(
       new Set([...ownRegistrations, ...combinedRegistrations]),
     )

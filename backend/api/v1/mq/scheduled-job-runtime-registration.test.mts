@@ -1,4 +1,3 @@
-import { backgroundCpu } from '@queues/background-cpu/queues'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   scheduledJobManifest as aiAgentsManifest,
@@ -6,31 +5,15 @@ import {
 } from '@queues/ai-agents/enqueues/schedules'
 import { ai_agents } from '@queues/ai-agents/queues'
 import {
-  scheduledJobManifest as bedrockManifest,
-  upsertSchedules as registerBedrock,
-} from '@queues/bedrock-embeddings-batch/enqueues/schedules'
-import {
   scheduledJobManifest as bloomManifest,
   upsertSchedules as registerBloom,
 } from '@queues/bloom-filters/enqueues/schedules'
 import { bloomFilters } from '@queues/bloom-filters/queues'
 import {
-  scheduledJobManifest as crawlDispatchManifest,
-  upsertSchedules as registerCrawlDispatch,
-} from '@queues/crawl-dispatch/enqueues/schedules'
-import {
-  scheduledJobManifest as crawlReferralManifest,
-  upsertSchedules as registerCrawlReferral,
-} from '@queues/crawl-referral-links/enqueues/schedules'
-import {
   scheduledJobManifest as findYourFriendsManifest,
   upsertSchedules as registerFindYourFriends,
 } from '@queues/find-your-friends/enqueues/schedules'
 import { findYourFriendsQueue } from '@queues/find-your-friends/queues'
-import {
-  scheduledJobManifest as contentAnalysisManifest,
-  upsertSchedules as registerContentAnalysis,
-} from '@queues/content-analysis/enqueues/schedules'
 import {
   combineBackgroundManifests,
   upsertBackgroundSchedules,
@@ -43,10 +26,6 @@ import { scheduledJobManifest as storyProjectionManifest } from '@queues/story-p
 import { scheduledJobManifest as kagiManifest } from '@queues/kagi-smallweb/enqueues/schedules'
 import { scheduledJobManifest as rssFeedsManifest } from '@queues/rss-feeds/enqueues/schedules'
 import { scheduledJobManifest as sitemapsManifest } from '@queues/sitemaps/enqueues/schedules'
-import {
-  scheduledJobManifest as unfurlManifest,
-  upsertSchedules as registerUnfurl,
-} from '@queues/unfurl-referral-links/enqueues/schedules'
 import { scheduledJobManifest as blacklistManifest } from '@queues/urls-domains-blacklist/enqueues/schedules'
 import { scheduledJobManifest as voteWeightManifest } from '@queues/vote-aggregation/enqueues/schedules'
 
@@ -62,17 +41,11 @@ const BACKGROUND_MANIFESTS = [
   blacklistManifest,
 ]
 const registerBackground = () => upsertBackgroundSchedules(BACKGROUND_MANIFESTS)
-
 const REGISTRATIONS = [
   [registerAiAgents, ai_agents, aiAgentsManifest],
-  [registerBedrock, backgroundCpu, bedrockManifest],
   [registerBloom, bloomFilters, bloomManifest],
-  [registerCrawlDispatch, backgroundCpu, crawlDispatchManifest],
-  [registerCrawlReferral, backgroundCpu, crawlReferralManifest],
   [registerFindYourFriends, findYourFriendsQueue, findYourFriendsManifest],
-  [registerContentAnalysis, backgroundCpu, contentAnalysisManifest],
   [registerBackground, background, combineBackgroundManifests(BACKGROUND_MANIFESTS)],
-  [registerUnfurl, backgroundCpu, unfurlManifest],
 ] as const
 
 describe('scheduled job runtime registration', () => {

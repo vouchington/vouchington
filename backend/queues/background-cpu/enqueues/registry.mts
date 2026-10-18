@@ -1,4 +1,9 @@
-import { BACKGROUND_CPU_DOMAINS, type BackgroundCpuDomain } from '../config.mts'
+import {
+  BACKGROUND_CPU_DOMAINS,
+  PRIORITY_DISPATCH,
+  PRIORITY_TASK,
+  type BackgroundCpuDomain,
+} from '../config.mts'
 import type {
   BackgroundCpuDomainDefinition,
   BackgroundCpuJobDefinition,
@@ -41,13 +46,13 @@ const RETRY_1S = {
 type JobOverrides = Omit<Partial<BackgroundCpuJobSpec>, 'name' | 'priority'>
 const task = (name: string, options: JobOverrides = {}): BackgroundCpuJobSpec => ({
   name,
-  priority: 10,
+  priority: PRIORITY_TASK,
   ...RETRY_5S,
   ...options,
 })
 const dispatch = (name: string, options: JobOverrides = {}): BackgroundCpuJobSpec => ({
   name,
-  priority: 100,
+  priority: PRIORITY_DISPATCH,
   ...RETRY_5S,
   ...options,
 })
@@ -122,7 +127,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
   ),
   ...['reconcile_existing', 'post_trigger_recovery'].map(name =>
     bedrockJob(
-      task(name, {
+      dispatch(name, {
         lockDuration: 300_000,
         ordering: { key: 'bedrock-embeddings:reconciliation', concurrency: 1 },
       }),
@@ -130,7 +135,7 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
   ),
   defineBackgroundCpuJob(spendCap, {
     name: 'recheck',
-    priority: 10,
+    priority: PRIORITY_TASK,
     attempts: 2_880,
     backoff: { type: 'fixed', delay: 60_000, jitter: 0 },
     removeOnComplete: true,

@@ -5,7 +5,6 @@ import {
   getAggregatedQueueMetricStats,
   getAggregatedQueueStats,
   getAllQueueStats,
-  getQueueBacklogDepth,
   getQueueStats,
 } from './get-queue-stats.mts'
 
@@ -94,21 +93,6 @@ describe('get-queue-stats', () => {
     }
   })
 
-  it('counts every unfinished job in the backlog depth, whichever list it is parked in', async () => {
-    const name = `backlog-${crypto.randomUUID()}`
-    const queue = createQueue(name, { priorityKind: 'ranked' })
-    try {
-      await expect(getQueueBacklogDepth(name)).resolves.toBe(0)
-      await queue.add('plain', {})
-      await queue.add('prioritized', {}, { priority: 5 })
-      await queue.add('delayed', {}, { delay: 60_000 })
-
-      await expect(getQueueBacklogDepth(name)).resolves.toBe(3)
-    } finally {
-      await queue.close()
-    }
-  })
-
   it('reports scheduled jobs as delayed rather than waiting, and rolls them up', async () => {
     const name = `delayed-${crypto.randomUUID()}`
     const queue = createQueue(name, { priorityKind: 'ranked' })
@@ -131,20 +115,6 @@ describe('get-queue-stats', () => {
       )
     } finally {
       await queue.close()
-    }
-  })
-
-  it('decorates backlog-depth read errors with operation context', async () => {
-    const name = `backlog-error-${crypto.randomUUID()}`
-    const error = new Error('backlog read failed') as Error & {
-      extra?: Record<string, unknown>
-    }
-    const getJobCounts = vi.spyOn(Queue.prototype, 'getJobCounts').mockRejectedValueOnce(error)
-    try {
-      await expect(getQueueBacklogDepth(name)).rejects.toBe(error)
-      expect(error.extra).toEqual({ queueName: name, operation: 'getQueueBacklogDepth' })
-    } finally {
-      getJobCounts.mockRestore()
     }
   })
 

@@ -46,10 +46,10 @@ describe('BACKFILL_REGISTRY', () => {
     const enqueued = await entry.trigger()
     if (!Array.isArray(enqueued)) throw new Error('Expected all four root enqueues')
     const expected = [
-      { name: 'reconcile_existing', data: { entityType: 'topics' } },
-      { name: 'reconcile_existing', data: { entityType: 'posts' } },
-      { name: 'reconcile_existing', data: { entityType: 'rss_feed_items' } },
-      { name: 'post_trigger_recovery', data: {} },
+      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'topics' } },
+      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'posts' } },
+      { name: 'bedrock-embeddings.reconcile_existing', data: { entityType: 'rss_feed_items' } },
+      { name: 'bedrock-embeddings.post_trigger_recovery', data: {} },
     ]
     expect(enqueued).toHaveLength(expected.length)
     expect(

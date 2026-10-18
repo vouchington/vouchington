@@ -23,8 +23,5 @@
     "@services/analytics": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "glide-mq": "^0.18.0"
-  },
-  "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
   }
 }

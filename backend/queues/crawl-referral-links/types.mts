@@ -1,8 +1,3 @@
-export type CrawlReferralLinksJobs =
-  | 'enqueueCrawlReferralLinksDispatcher'
-  | 'crawl_referral_links_dispatcher'
-  | 'crawl_referral_link'
-
 export type ReferralCrawlDispatchCursor = {
   sweepStartedAt: string
   afterId?: string

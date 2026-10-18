@@ -45,7 +45,7 @@ async function registrationHashJobs(imageIds: readonly string[]) {
   const groups = await Promise.all(
     imageIds.map(imageId =>
       contentAnalysisQueue.searchJobs({
-        name: 'staydown-hash',
+        name: 'content-analysis.staydown-hash',
         data: { id: imageId },
       }),
     ),

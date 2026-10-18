@@ -1450,318 +1450,8 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "environment": "all",
     "operatorSurfaces": [
       {
-        "description": "Copy reusable topic embeddings from the centralized table",
-        "id": "reconcile_existing_topics",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "bedrock-embedding-reconciliation",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "reconcile_existing_topics",
-    "template": {
-      "data": {
-        "entityType": "topics",
-      },
-      "name": "reconcile_existing",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "reconciliation",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Copy reusable post embeddings from the centralized table",
-        "id": "reconcile_existing_posts",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "reconcile_existing_posts",
-    "template": {
-      "data": {
-        "entityType": "posts",
-      },
-      "name": "reconcile_existing",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "reconciliation",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Copy reusable RSS item embeddings from the centralized table",
-        "id": "reconcile_existing_rss_feed_items",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "reconcile_existing_rss_feed_items",
-    "template": {
-      "data": {
-        "entityType": "rss_feed_items",
-      },
-      "name": "reconcile_existing",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "reconciliation",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Recover ban-evasion delivery for current first-community-post embeddings",
-        "id": "post_trigger_recovery",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "post_trigger_recovery",
-    "template": {
-      "data": {},
-      "name": "post_trigger_recovery",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "reconciliation",
-        },
-        "priority": 10,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Poll Bedrock batch embeddings status",
-        "id": "poll_dispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-      {
-        "backfillId": "bedrock-embeddings-poll-dispatch",
-        "kind": "backfill",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "poll_dispatcher",
-    "template": {
-      "data": {},
-      "name": "poll_dispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Create new Bedrock batch embedding requests",
-        "id": "creation_dispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "*/5 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "*/5 * * * *",
-    },
-    "schedulerId": "creation_dispatcher",
-    "template": {
-      "data": {},
-      "name": "creation_dispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Trigger creation_dispatcher when single embeddings backlog exceeds the backlog_threshold (default 1000, configurable via Dynamic Config)",
-        "id": "backlog_dispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "* * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "* * * * *",
-    },
-    "schedulerId": "backlog_dispatcher",
-    "template": {
-      "data": {},
-      "name": "backlog_dispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
-        "id": "stale_cleanup_dispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "bedrock-embeddings-batch",
-    "registration": "sequential",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "stale_cleanup_dispatcher",
-    "template": {
-      "data": {},
-      "name": "stale_cleanup_dispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "ordering": {
-          "concurrency": 1,
-          "key": "dispatcher",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
         "description": "Dispatch due hostname crawl jobs (hourly)",
-        "id": "crawl_hostnames_dispatcher",
+        "id": "crawl:crawl_hostnames_dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 * * * *",
         "trigger": "[function]",
@@ -1771,19 +1461,19 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "crawl-dispatch",
+    "queueName": "background-cpu",
     "registration": "sequential",
     "repeat": {
       "pattern": "0 * * * *",
     },
-    "schedulerId": "crawl_hostnames_dispatcher",
+    "schedulerId": "crawl:crawl_hostnames_dispatcher",
     "template": {
       "data": {},
-      "name": "enqueueCrawlHostnamesDispatcher",
+      "name": "crawl.enqueueCrawlHostnamesDispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
-          "delay": 1000,
+          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -1798,7 +1488,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Dispatch tier-1 hostname crawls (daily)",
-        "id": "crawl_tier1_dispatcher",
+        "id": "crawl:crawl_tier1_dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "30 2 * * *",
         "trigger": "[function]",
@@ -1808,19 +1498,19 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "crawl-dispatch",
+    "queueName": "background-cpu",
     "registration": "sequential",
     "repeat": {
       "pattern": "30 2 * * *",
     },
-    "schedulerId": "crawl_tier1_dispatcher",
+    "schedulerId": "crawl:crawl_tier1_dispatcher",
     "template": {
       "data": {},
-      "name": "enqueueCrawlTier1Dispatcher",
+      "name": "crawl.enqueueCrawlTier1Dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
-          "delay": 1000,
+          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -1835,7 +1525,7 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Dispatch tier-2 hostname crawls (weekly)",
-        "id": "crawl_tier2_dispatcher",
+        "id": "crawl:crawl_tier2_dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 3 * * 0",
         "trigger": "[function]",
@@ -1845,19 +1535,19 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
         "kind": "backfill",
       },
     ],
-    "queueName": "crawl-dispatch",
+    "queueName": "background-cpu",
     "registration": "sequential",
     "repeat": {
       "pattern": "0 3 * * 0",
     },
-    "schedulerId": "crawl_tier2_dispatcher",
+    "schedulerId": "crawl:crawl_tier2_dispatcher",
     "template": {
       "data": {},
-      "name": "enqueueCrawlTier2Dispatcher",
+      "name": "crawl.enqueueCrawlTier2Dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
-          "delay": 1000,
+          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -1872,25 +1562,25 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Refresh hostname crawler config (weekly)",
-        "id": "refresh_hostname_crawler_dispatcher",
+        "id": "crawl:refresh_hostname_crawler_dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 4 * * 1",
         "trigger": "[function]",
       },
     ],
-    "queueName": "crawl-dispatch",
+    "queueName": "background-cpu",
     "registration": "sequential",
     "repeat": {
       "pattern": "0 4 * * 1",
     },
-    "schedulerId": "refresh_hostname_crawler_dispatcher",
+    "schedulerId": "crawl:refresh_hostname_crawler_dispatcher",
     "template": {
       "data": {},
-      "name": "refresh_hostname_crawler_dispatcher",
+      "name": "crawl.refresh_hostname_crawler_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
-          "delay": 1000,
+          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -1905,29 +1595,29 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Clean up old crawl data (daily)",
-        "id": "crawl_cleanup",
+        "id": "crawl:crawl_cleanup",
         "kind": "scheduled-jobs",
         "schedule": "30 3 * * *",
         "trigger": "[function]",
       },
     ],
-    "queueName": "crawl-dispatch",
+    "queueName": "background-cpu",
     "registration": "sequential",
     "repeat": {
       "pattern": "30 3 * * *",
     },
-    "schedulerId": "crawl_cleanup",
+    "schedulerId": "crawl:crawl_cleanup",
     "template": {
       "data": {},
-      "name": "crawl_cleanup",
+      "name": "crawl.crawl_cleanup",
       "opts": {
         "attempts": 3,
         "backoff": {
-          "delay": 1000,
+          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
-        "priority": 10,
+        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -1938,25 +1628,25 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Dispatch HTML boilerplate removal",
-        "id": "boilerplate_removal_dispatcher",
+        "id": "crawl:boilerplate-removal-dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 5 * * *",
         "trigger": "[function]",
       },
     ],
-    "queueName": "crawl-dispatch",
+    "queueName": "background-cpu",
     "registration": "parallel",
     "repeat": {
       "pattern": "0 5 * * *",
     },
-    "schedulerId": "boilerplate_removal_dispatcher",
+    "schedulerId": "crawl:boilerplate-removal-dispatcher",
     "template": {
       "data": {},
-      "name": "boilerplate_removal_dispatcher",
+      "name": "crawl.boilerplate_removal_dispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
-          "delay": 1000,
+          "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
         },
@@ -1971,27 +1661,412 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     "operatorSurfaces": [
       {
         "description": "Dispatch referral link crawling (weekly)",
-        "id": "crawl_referral_links_dispatcher",
+        "id": "crawl:referral-links-dispatcher",
         "kind": "scheduled-jobs",
         "schedule": "0 4 * * 0",
         "trigger": "[function]",
       },
     ],
-    "queueName": "crawl_referral_links",
+    "queueName": "background-cpu",
     "registration": "parallel",
     "repeat": {
       "pattern": "0 4 * * 0",
     },
-    "schedulerId": "crawl_referral_links_dispatcher",
+    "schedulerId": "crawl:referral-links-dispatcher",
     "template": {
       "data": {},
-      "name": "enqueueCrawlReferralLinksDispatcher",
+      "name": "crawl.enqueueCrawlReferralLinksDispatcher",
       "opts": {
         "attempts": 3,
         "backoff": {
           "delay": 5000,
           "jitter": 0.5,
           "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
+        "id": "crawl:unfurl-referral-links-dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "parallel",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "crawl:unfurl-referral-links-dispatcher",
+    "template": {
+      "data": {},
+      "name": "crawl.enqueueUnfurlReferralLinksDispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Clean up abandoned image uploads",
+        "id": "content-analysis:cleanup-abandoned-uploads-schedule",
+        "kind": "scheduled-jobs",
+        "schedule": "every 1h",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "parallel",
+    "repeat": {
+      "every": 3600000,
+    },
+    "schedulerId": "content-analysis:cleanup-abandoned-uploads-schedule",
+    "template": {
+      "data": {},
+      "name": "content-analysis.cleanup-abandoned-uploads",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 1000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 120000,
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Copy reusable topic embeddings from the centralized table",
+        "id": "bedrock-embeddings:reconcile_existing_topics",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "bedrock-embedding-reconciliation",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:reconcile_existing_topics",
+    "template": {
+      "data": {
+        "entityType": "topics",
+      },
+      "name": "bedrock-embeddings.reconcile_existing",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Copy reusable post embeddings from the centralized table",
+        "id": "bedrock-embeddings:reconcile_existing_posts",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:reconcile_existing_posts",
+    "template": {
+      "data": {
+        "entityType": "posts",
+      },
+      "name": "bedrock-embeddings.reconcile_existing",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Copy reusable RSS item embeddings from the centralized table",
+        "id": "bedrock-embeddings:reconcile_existing_rss_feed_items",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:reconcile_existing_rss_feed_items",
+    "template": {
+      "data": {
+        "entityType": "rss_feed_items",
+      },
+      "name": "bedrock-embeddings.reconcile_existing",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Recover ban-evasion delivery for current first-community-post embeddings",
+        "id": "bedrock-embeddings:post_trigger_recovery",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:post_trigger_recovery",
+    "template": {
+      "data": {},
+      "name": "bedrock-embeddings.post_trigger_recovery",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:reconciliation",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Poll Bedrock batch embeddings status",
+        "id": "bedrock-embeddings:poll-dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+      {
+        "backfillId": "bedrock-embeddings-poll-dispatch",
+        "kind": "backfill",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:poll-dispatcher",
+    "template": {
+      "data": {},
+      "name": "bedrock-embeddings.poll_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Create new Bedrock batch embedding requests",
+        "id": "bedrock-embeddings:creation-dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "*/5 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "*/5 * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:creation-dispatcher",
+    "template": {
+      "data": {},
+      "name": "bedrock-embeddings.creation_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Trigger creation_dispatcher when single embeddings backlog exceeds the backlog_threshold (default 1000, configurable via Dynamic Config)",
+        "id": "bedrock-embeddings:backlog-dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "* * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "* * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:backlog-dispatcher",
+    "template": {
+      "data": {},
+      "name": "bedrock-embeddings.backlog_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:dispatcher",
+        },
+        "priority": 100,
+        "removeOnComplete": 100,
+        "removeOnFail": 100,
+      },
+    },
+  },
+  {
+    "environment": "all",
+    "operatorSurfaces": [
+      {
+        "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
+        "id": "bedrock-embeddings:stale-cleanup-dispatcher",
+        "kind": "scheduled-jobs",
+        "schedule": "0 * * * *",
+        "trigger": "[function]",
+      },
+    ],
+    "queueName": "background-cpu",
+    "registration": "sequential",
+    "repeat": {
+      "pattern": "0 * * * *",
+    },
+    "schedulerId": "bedrock-embeddings:stale-cleanup-dispatcher",
+    "template": {
+      "data": {},
+      "name": "bedrock-embeddings.stale_cleanup_dispatcher",
+      "opts": {
+        "attempts": 3,
+        "backoff": {
+          "delay": 5000,
+          "jitter": 0.5,
+          "type": "exponential",
+        },
+        "lockDuration": 300000,
+        "ordering": {
+          "concurrency": 1,
+          "key": "bedrock-embeddings:dispatcher",
         },
         "priority": 100,
         "removeOnComplete": 100,
@@ -2063,39 +2138,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
           "jitter": 0.5,
           "type": "exponential",
         },
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Clean up abandoned image uploads",
-        "id": "content-analysis:cleanup-abandoned-uploads-schedule",
-        "kind": "scheduled-jobs",
-        "schedule": "every 1h",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "content-analysis",
-    "registration": "parallel",
-    "repeat": {
-      "every": 3600000,
-    },
-    "schedulerId": "content-analysis:cleanup-abandoned-uploads-schedule",
-    "template": {
-      "data": {},
-      "name": "cleanup-abandoned-uploads",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 1000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
         "removeOnComplete": 100,
         "removeOnFail": 100,
       },
@@ -3000,39 +3042,6 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
       },
     },
   },
-  {
-    "environment": "all",
-    "operatorSurfaces": [
-      {
-        "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
-        "id": "unfurl_referral_links_dispatcher",
-        "kind": "scheduled-jobs",
-        "schedule": "0 * * * *",
-        "trigger": "[function]",
-      },
-    ],
-    "queueName": "unfurl_referral_links",
-    "registration": "parallel",
-    "repeat": {
-      "pattern": "0 * * * *",
-    },
-    "schedulerId": "unfurl_referral_links_dispatcher",
-    "template": {
-      "data": {},
-      "name": "enqueueUnfurlReferralLinksDispatcher",
-      "opts": {
-        "attempts": 3,
-        "backoff": {
-          "delay": 5000,
-          "jitter": 0.5,
-          "type": "exponential",
-        },
-        "priority": 100,
-        "removeOnComplete": 100,
-        "removeOnFail": 100,
-      },
-    },
-  },
 ]
 `;
 
@@ -3217,8 +3226,8 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   {
     "description": "Clean up abandoned image uploads",
     "id": "content-analysis:cleanup-abandoned-uploads-schedule",
-    "job_name": "cleanup-abandoned-uploads",
-    "queue_name": "content-analysis",
+    "job_name": "content-analysis.cleanup-abandoned-uploads",
+    "queue_name": "background-cpu",
     "schedule": "every 1h",
     "triggerName": "enqueueCleanupAbandonedUploads",
   },
@@ -3496,129 +3505,129 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
   },
   {
     "description": "Poll Bedrock batch embeddings status",
-    "id": "poll_dispatcher",
-    "job_name": "poll_dispatcher",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:poll-dispatcher",
+    "job_name": "bedrock-embeddings.poll_dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "* * * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Create new Bedrock batch embedding requests",
-    "id": "creation_dispatcher",
-    "job_name": "creation_dispatcher",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:creation-dispatcher",
+    "job_name": "bedrock-embeddings.creation_dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "*/5 * * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Trigger creation_dispatcher when single embeddings backlog exceeds the backlog_threshold (default 1000, configurable via Dynamic Config)",
-    "id": "backlog_dispatcher",
-    "job_name": "backlog_dispatcher",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:backlog-dispatcher",
+    "job_name": "bedrock-embeddings.backlog_dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "* * * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Stop and cancel Bedrock batches stuck in Submitted/InProgress past stale_ttl_hours (default 24h, configurable via Dynamic Config)",
-    "id": "stale_cleanup_dispatcher",
-    "job_name": "stale_cleanup_dispatcher",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:stale-cleanup-dispatcher",
+    "job_name": "bedrock-embeddings.stale_cleanup_dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 * * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Copy reusable topic embeddings from the centralized table",
-    "id": "reconcile_existing_topics",
-    "job_name": "reconcile_existing",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:reconcile_existing_topics",
+    "job_name": "bedrock-embeddings.reconcile_existing",
+    "queue_name": "background-cpu",
     "schedule": "* * * * *",
     "triggerName": "trigger",
   },
   {
     "description": "Copy reusable post embeddings from the centralized table",
-    "id": "reconcile_existing_posts",
-    "job_name": "reconcile_existing",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:reconcile_existing_posts",
+    "job_name": "bedrock-embeddings.reconcile_existing",
+    "queue_name": "background-cpu",
     "schedule": "* * * * *",
     "triggerName": "trigger",
   },
   {
     "description": "Copy reusable RSS item embeddings from the centralized table",
-    "id": "reconcile_existing_rss_feed_items",
-    "job_name": "reconcile_existing",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:reconcile_existing_rss_feed_items",
+    "job_name": "bedrock-embeddings.reconcile_existing",
+    "queue_name": "background-cpu",
     "schedule": "* * * * *",
     "triggerName": "trigger",
   },
   {
     "description": "Recover ban-evasion delivery for current first-community-post embeddings",
-    "id": "post_trigger_recovery",
-    "job_name": "post_trigger_recovery",
-    "queue_name": "bedrock-embeddings-batch",
+    "id": "bedrock-embeddings:post_trigger_recovery",
+    "job_name": "bedrock-embeddings.post_trigger_recovery",
+    "queue_name": "background-cpu",
     "schedule": "* * * * *",
     "triggerName": "enqueuePostEmbeddingTriggerRecovery",
   },
   {
     "description": "Dispatch due hostname crawl jobs (hourly)",
-    "id": "crawl_hostnames_dispatcher",
-    "job_name": "enqueueCrawlHostnamesDispatcher",
-    "queue_name": "crawl-dispatch",
+    "id": "crawl:crawl_hostnames_dispatcher",
+    "job_name": "crawl.enqueueCrawlHostnamesDispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 * * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Dispatch tier-1 hostname crawls (daily)",
-    "id": "crawl_tier1_dispatcher",
-    "job_name": "enqueueCrawlTier1Dispatcher",
-    "queue_name": "crawl-dispatch",
+    "id": "crawl:crawl_tier1_dispatcher",
+    "job_name": "crawl.enqueueCrawlTier1Dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "30 2 * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Clean up old crawl data (daily)",
-    "id": "crawl_cleanup",
-    "job_name": "crawl_cleanup",
-    "queue_name": "crawl-dispatch",
+    "id": "crawl:crawl_cleanup",
+    "job_name": "crawl.crawl_cleanup",
+    "queue_name": "background-cpu",
     "schedule": "30 3 * * *",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Dispatch HTML boilerplate removal",
-    "id": "boilerplate_removal_dispatcher",
-    "job_name": "boilerplate_removal_dispatcher",
-    "queue_name": "crawl-dispatch",
+    "id": "crawl:boilerplate-removal-dispatcher",
+    "job_name": "crawl.boilerplate_removal_dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 5 * * *",
     "triggerName": "enqueueBoilerplateRemovalDispatcher",
   },
   {
     "description": "Dispatch tier-2 hostname crawls (weekly)",
-    "id": "crawl_tier2_dispatcher",
-    "job_name": "enqueueCrawlTier2Dispatcher",
-    "queue_name": "crawl-dispatch",
+    "id": "crawl:crawl_tier2_dispatcher",
+    "job_name": "crawl.enqueueCrawlTier2Dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 3 * * 0",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Dispatch referral link crawling (weekly)",
-    "id": "crawl_referral_links_dispatcher",
-    "job_name": "enqueueCrawlReferralLinksDispatcher",
-    "queue_name": "crawl_referral_links",
+    "id": "crawl:referral-links-dispatcher",
+    "job_name": "crawl.enqueueCrawlReferralLinksDispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 4 * * 0",
     "triggerName": "enqueueCrawlReferralLinksDispatcher",
   },
   {
     "description": "Refresh hostname crawler config (weekly)",
-    "id": "refresh_hostname_crawler_dispatcher",
-    "job_name": "refresh_hostname_crawler_dispatcher",
-    "queue_name": "crawl-dispatch",
+    "id": "crawl:refresh_hostname_crawler_dispatcher",
+    "job_name": "crawl.refresh_hostname_crawler_dispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 4 * * 1",
     "triggerName": "[anonymous]",
   },
   {
     "description": "Self-heal requested-but-not-completed Amex referral link unfurls (hourly)",
-    "id": "unfurl_referral_links_dispatcher",
-    "job_name": "enqueueUnfurlReferralLinksDispatcher",
-    "queue_name": "unfurl_referral_links",
+    "id": "crawl:unfurl-referral-links-dispatcher",
+    "job_name": "crawl.enqueueUnfurlReferralLinksDispatcher",
+    "queue_name": "background-cpu",
     "schedule": "0 * * * *",
     "triggerName": "enqueueUnfurlReferralLinksDispatcher",
   },

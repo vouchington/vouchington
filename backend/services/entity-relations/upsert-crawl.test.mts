@@ -23,6 +23,7 @@ const postCategoryTopicMetadata = getEntityRelationMetadataOrThrow({
   objectType: 'topic',
   predicate: 'category',
 })
+const CRAWL_URL_JOB_NAME = 'crawl.crawl_url'
 
 describe('upsert-crawl', () => {
   describe('upsertEntityRelation with object_type=url', () => {
@@ -45,7 +46,7 @@ describe('upsert-crawl', () => {
       expect(jobs).toHaveLength(1)
       expect(jobs[0]!.data.url_id).toBe(url!.id)
       await expect(crawlUrls.getJob(jobs[0]!.id)).resolves.toMatchObject({
-        name: 'crawl_url',
+        name: CRAWL_URL_JOB_NAME,
         data: { url_id: url!.id },
       })
     })
@@ -78,7 +79,7 @@ describe('upsert-crawl', () => {
       expect(jobs.map(job => job.data.url_id).toSorted()).toEqual([url1!.id, url2!.id].toSorted())
       for (const job of jobs) {
         await expect(crawlUrls.getJob(job.id)).resolves.toMatchObject({
-          name: 'crawl_url',
+          name: CRAWL_URL_JOB_NAME,
           data: { url_id: job.data.url_id },
         })
       }
@@ -102,7 +103,7 @@ describe('upsert-crawl', () => {
       const jobs = (await Promise.all(ownedPromises())).flat().filter(job => job != null)
       expect(jobs).toHaveLength(1)
       await expect(crawlUrls.getJob(jobs[0]!.id)).resolves.toMatchObject({
-        name: 'crawl_url',
+        name: CRAWL_URL_JOB_NAME,
         data: { url_id: url!.id },
       })
 
@@ -136,7 +137,7 @@ describe('upsert-crawl', () => {
       expect(firstJobs).toHaveLength(1)
       const firstJob = firstJobs[0]!
       await expect(crawlUrls.getJob(firstJob.id)).resolves.toMatchObject({
-        name: 'crawl_url',
+        name: CRAWL_URL_JOB_NAME,
         data: { url_id: url!.id },
       })
       await softDeleteEntityRelation(user, postRelatedUrlMetadata, post, [{ id: url!.id }])
@@ -150,7 +151,7 @@ describe('upsert-crawl', () => {
       expect(secondJobs).toHaveLength(1)
       expect(secondJobs[0]!.id).not.toBe(firstJob.id)
       await expect(crawlUrls.getJob(secondJobs[0]!.id)).resolves.toMatchObject({
-        name: 'crawl_url',
+        name: CRAWL_URL_JOB_NAME,
         data: { url_id: url!.id },
       })
     })

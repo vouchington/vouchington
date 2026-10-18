@@ -18,7 +18,7 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@modules/queue-errors": "workspace:^",
     "@queues/bedrock-embeddings": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
@@ -30,7 +30,6 @@
   },
   "devDependencies": {
     "@modules/aws": "workspace:^",
-    "@modules/pagination": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

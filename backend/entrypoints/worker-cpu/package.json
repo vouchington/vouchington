@@ -41,14 +41,11 @@
     "@queues/unfurl-referral-links": "workspace:^",
     "@workers/ai-agents": "workspace:^",
     "@workers/background-cpu": "workspace:^",
-    "@workers/bedrock-embeddings": "workspace:^",
-    "@workers/bedrock-embeddings-batch": "workspace:^",
-    "@workers/content-analysis": "workspace:^",
     "@workers/crawl-browser": "workspace:^",
-    "@workers/crawl-dispatch": "workspace:^",
-    "@workers/crawl-referral-links": "workspace:^",
-    "@workers/crawler": "workspace:^",
-    "@workers/image-uploads": "workspace:^",
-    "@workers/unfurl-referral-links": "workspace:^"
+    "@workers/image-uploads": "workspace:^"
+  },
+  "devDependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
+    "glide-mq": "^0.18.0"
   }
 }

@@ -17,11 +17,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@data-stores/valkey-glide-mq": "workspace:^",
-    "@modules/queue-config": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@queues/ai-agents": "workspace:^",
-    "@queues/bedrock-embeddings": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",
     "@services/communities": "workspace:^",
     "@services/posts": "workspace:^",

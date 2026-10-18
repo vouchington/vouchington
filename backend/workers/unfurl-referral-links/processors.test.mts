@@ -29,7 +29,7 @@ describe('unfurl referral links processor', () => {
     // PostgreSQL retains sub-millisecond precision; bound the sweep around the database
     // timestamp instead of racing it against Node's millisecond wall clock.
     await processUnfurlReferralLinksJob(
-      makeJob('unfurl_referral_links_dispatcher', {
+      makeJob('crawl.unfurl_referral_links_dispatcher', {
         cursor: {
           sweepStartedAt: new Date(requestedAtMs + 1).toISOString(),
           after: {
@@ -44,7 +44,7 @@ describe('unfurl referral links processor', () => {
     expect(
       waiting.some(
         job =>
-          job.name === 'unfurl_referral_link' &&
+          job.name === 'crawl.unfurl_referral_link' &&
           (job.data as { parentLinkId?: string }).parentLinkId === parent.id,
       ),
     ).toBe(true)
@@ -67,7 +67,9 @@ describe('unfurl referral links processor', () => {
     })
 
     await expect(
-      processUnfurlReferralLinksJob(makeJob('unfurl_referral_link', { parentLinkId: parent.id })),
+      processUnfurlReferralLinksJob(
+        makeJob('crawl.unfurl_referral_link', { parentLinkId: parent.id }),
+      ),
     ).resolves.toBeUndefined()
 
     const updated = await getUserReferralLink(parent.id)
@@ -77,7 +79,7 @@ describe('unfurl referral links processor', () => {
 
   it('rejects an unfurl_referral_link job missing parentLinkId', async () => {
     await expect(
-      processUnfurlReferralLinksJob(makeJob('unfurl_referral_link', {})),
+      processUnfurlReferralLinksJob(makeJob('crawl.unfurl_referral_link', {})),
     ).rejects.toThrow('Unfurl referral link job .parentLinkId is required')
   })
 
@@ -99,7 +101,7 @@ describe('unfurl referral links processor', () => {
     })
 
     await processUnfurlReferralLinksJob(
-      makeJob('remove_unfurled_children_for_user', { userId: owner!.id }),
+      makeJob('crawl.remove_unfurled_children_for_user', { userId: owner!.id }),
     )
 
     const removed = await getUserReferralLink(child.id)
@@ -108,7 +110,7 @@ describe('unfurl referral links processor', () => {
 
   it('rejects a remove_unfurled_children_for_user job missing userId', async () => {
     await expect(
-      processUnfurlReferralLinksJob(makeJob('remove_unfurled_children_for_user', {})),
+      processUnfurlReferralLinksJob(makeJob('crawl.remove_unfurled_children_for_user', {})),
     ).rejects.toThrow('Remove unfurled children for user job .userId is required')
   })
 

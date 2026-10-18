@@ -61,15 +61,15 @@ describe('crawler rate-limit replacements with real GlideMQ', () => {
       await enqueueBulkCrawlUrls([{ urlId }])
       await completed.promise
       expect(retryCounts).toEqual([0, 1, 2, 3])
-      const jobs = await crawlUrls.searchJobs({ name: 'crawl_url', data: { url_id: urlId } })
+      const jobs = await crawlUrls.searchJobs({ name: 'crawl.crawl_url', data: { url_id: urlId } })
       const dedupIds = jobs
         .flatMap(job => job.opts.deduplication?.id ?? [])
         .toSorted((a, b) => a.localeCompare(b))
       expect(dedupIds).toEqual([
-        `crawl_url__${urlId}`,
-        `crawl_url_ratelimit__${urlId}__1`,
-        `crawl_url_ratelimit__${urlId}__2`,
-        `crawl_url_ratelimit__${urlId}__3`,
+        `crawl.crawl_url__${urlId}`,
+        `crawl.crawl_url_ratelimit__${urlId}__1`,
+        `crawl.crawl_url_ratelimit__${urlId}__2`,
+        `crawl.crawl_url_ratelimit__${urlId}__3`,
       ])
     } finally {
       await worker.close(true)

@@ -10,6 +10,7 @@ import {
 } from '../processors.mts'
 import type { Job } from 'glide-mq'
 import { UnrecoverableError } from '@vouchington/queue-errors'
+import { decodeScopedUuidCursor } from '@modules/pagination'
 
 type JobData = Record<string, unknown>
 
@@ -57,6 +58,7 @@ export const processBedrockEmbeddingsBatchJob = async (
           ) {
             throw new UnrecoverableError('Invalid reconciliation entity type')
           }
+          assertReconciliationCursor(data.after, `embedding-reconciliation:${entityType}:id-asc`)
           return processExistingEmbeddingReconciliation(
             entityType as ReconciliationEntityType,
             data.after as string | undefined,
@@ -65,6 +67,7 @@ export const processBedrockEmbeddingsBatchJob = async (
         }
         case 'bedrock-embeddings.post_trigger_recovery': {
           const data = assertReconciliationPayload(job.data, [], ['after'])
+          assertReconciliationCursor(data.after, 'ban-evasion:post-embedding:pending:id-asc')
           return processPostEmbeddingTriggerRecovery(data.after as string | undefined)
         }
         default:
@@ -73,6 +76,15 @@ export const processBedrockEmbeddingsBatchJob = async (
     }
     default:
       throw new Error(`Unknown ordering key: ${orderingKey}`)
+  }
+}
+
+function assertReconciliationCursor(after: unknown, scope: string): void {
+  if (after === undefined) return
+  try {
+    decodeScopedUuidCursor(after as string, scope, 'Invalid reconciliation cursor')
+  } catch {
+    throw new UnrecoverableError('Invalid reconciliation cursor')
   }
 }
 

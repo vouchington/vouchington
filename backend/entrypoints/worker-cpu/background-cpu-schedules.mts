@@ -1,5 +1,6 @@
-/** Register every CPU domain manifest on the one shared queue. */
-export async function upsertBackgroundCpuSchedules(): Promise<void> {
+import { upsertBackgroundCpuSchedules as upsertBackgroundCpuSchedulesOnQueue } from '@queues/background-cpu/enqueues/schedules'
+
+export async function loadBackgroundCpuScheduleManifests() {
   const [crawlDispatch, crawlReferral, crawlUnfurl, contentAnalysis, bedrock] = await Promise.all([
     import('@queues/crawl-dispatch/enqueues/schedules'),
     import('@queues/crawl-referral-links/enqueues/schedules'),
@@ -7,9 +8,15 @@ export async function upsertBackgroundCpuSchedules(): Promise<void> {
     import('@queues/content-analysis/enqueues/schedules'),
     import('@queues/bedrock-embeddings-batch/enqueues/schedules'),
   ])
-  await crawlDispatch.upsertSchedules()
-  await crawlReferral.upsertSchedules()
-  await crawlUnfurl.upsertSchedules()
-  await contentAnalysis.upsertSchedules()
-  await bedrock.upsertSchedules()
+  return [
+    crawlDispatch.scheduledJobManifest,
+    crawlReferral.scheduledJobManifest,
+    crawlUnfurl.scheduledJobManifest,
+    contentAnalysis.scheduledJobManifest,
+    bedrock.scheduledJobManifest,
+  ]
+}
+
+export async function upsertBackgroundCpuSchedules(): Promise<void> {
+  await upsertBackgroundCpuSchedulesOnQueue(await loadBackgroundCpuScheduleManifests())
 }

@@ -25,7 +25,6 @@
   "dependencies": {
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
-    "@data-stores/valkey-glide-mq": "workspace:^",
     "@jongleberry/vurst-html": "^0.4.3",
     "@modules/feed-query-builders": "workspace:^",
     "@modules/on-error": "workspace:^",

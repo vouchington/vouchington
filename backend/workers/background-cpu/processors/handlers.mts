@@ -81,7 +81,7 @@ const LANGUAGE_BACKFILL = new Set([
 ])
 
 /** Selects the production runner before reading a job payload. */
-export function resolveCpuJobRoute(name: string): string | undefined {
+function resolveCpuJobRoute(name: string): string | undefined {
   if (name === 'crawl.crawl_url') return 'crawler'
   if (CRAWL_DISPATCH.has(name)) return 'crawl-dispatch'
   if (CRAWL_REFERRAL.has(name)) return 'crawl-referral'
@@ -142,7 +142,10 @@ async function runCpuJob(job: Job): Promise<unknown> {
   throw new Error(`No CPU handler for ${job.name}`)
 }
 
-/** Registry coverage is checked when the worker starts; every registered job has a handler. */
+/** Every registered name must resolve before the shared worker starts. */
 export const BACKGROUND_CPU_HANDLERS: readonly BackgroundCpuHandler[] = BACKGROUND_CPU_JOBS.map(
-  job => backgroundHandler(job, runCpuJob),
+  job => {
+    if (!resolveCpuJobRoute(job.name)) throw new Error(`No CPU handler for ${job.name}`)
+    return backgroundHandler(job, runCpuJob)
+  },
 )
