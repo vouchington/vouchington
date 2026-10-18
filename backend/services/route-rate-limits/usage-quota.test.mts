@@ -89,7 +89,6 @@ describe('usage quota', () => {
     }
     await settleUsage(settlement(identity, 200))
 
-    // Five refused or failed requests left the quota at one of two, so it is still open.
     await expect(checkUsageQuota('mcp_user', identity.userId, QUOTA)).resolves.toMatchObject({
       limited: false,
     })
