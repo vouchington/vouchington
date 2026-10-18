@@ -65,6 +65,7 @@ async function copyRawDomains(client: PoolClient, response: Response): Promise<v
   await client.query(
     `/* syncDomainsWithDatabase */ CREATE TEMP TABLE ${RAW_DOMAINS_TABLE} (domain TEXT NOT NULL)`,
   )
+  // no-mistakes-disable-next-line postgres-required-predicates: COPY FROM STDIN transports bound batch data into a temporary staging table; it is not a guarded-relation read
   const copyStream = client.query(
     copyFrom(
       `/* syncDomainsWithDatabase */ COPY ${RAW_DOMAINS_TABLE} (domain) FROM STDIN WITH (FORMAT CSV)`,

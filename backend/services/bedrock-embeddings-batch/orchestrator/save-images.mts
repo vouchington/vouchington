@@ -22,6 +22,7 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
       ) ON COMMIT DROP`,
   )
 
+  // no-mistakes-disable-next-line postgres-required-predicates: COPY FROM STDIN transports bound batch data into a temporary staging table; it is not a guarded-relation read
   const copyStream = query.client.query(
     copyFrom(
       `COPY ${tempTable} (entity_id, image_sha_256, embedding) FROM STDIN WITH (FORMAT CSV)`,

@@ -71,21 +71,7 @@ async function queryCommunityWithViewer(
     : selectCommunityWithOwner(sql`/* getCommunityWithViewerBySlug */ SELECT `, extra).append(
         sql` WHERE c.slug = ${idOrSlug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
       )
-  const prefix = byId
-    ? '/* getCommunityWithViewerById */ SELECT '
-    : '/* getCommunityWithViewerBySlug */ SELECT '
-  if (!query.text.startsWith(prefix)) throw new Error('Community viewer SQL prefix changed')
-  const { rows } = byId
-    ? await read(
-        `/* getCommunityWithViewerById */ SELECT ${query.text.slice(prefix.length)}`,
-        query.values,
-        options,
-      )
-    : await read(
-        `/* getCommunityWithViewerBySlug */ SELECT ${query.text.slice(prefix.length)}`,
-        query.values,
-        options,
-      )
+  const { rows } = await read(query.text, query.values, options)
   const row = rows[0] as ViewerRow | undefined
   if (!row) return null
   const {

@@ -32,13 +32,7 @@ export const getPostMetricsByAnyBatch = async (
   const slugInputs = normalizedInputs.filter(i => !i.isId)
 
   const query = buildPostMetricsBatchQuery(idInputs, slugInputs)
-  const prefix = '/* getPostMetricsByAnyBatch */\n    WITH RECURSIVE '
-  if (!query.text.startsWith(prefix)) throw new Error('Post metrics SQL prefix changed')
-  const { rows } = await read(
-    `/* getPostMetricsByAnyBatch */\n    WITH RECURSIVE ${query.text.slice(prefix.length)}`,
-    query.values,
-    options,
-  )
+  const { rows } = await read(query.text, query.values, options)
 
   // Build result array with nulls for missing entries
   const results: Array<PostMetrics | null | undefined> = new Array(idsOrSlugs.length).fill(null)

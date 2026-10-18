@@ -94,12 +94,7 @@ export async function getCommunityBySlugOnly(slug: string): Promise<CommunityWit
   const query = selectCommunityWithOwner(sql`/* getCommunityBySlugOnly */ SELECT `).append(
     sql` WHERE c.slug = ${slug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
   )
-  const prefix = '/* getCommunityBySlugOnly */ SELECT '
-  if (!query.text.startsWith(prefix)) throw new Error('Community slug SQL prefix changed')
-  const { rows } = await read(
-    `/* getCommunityBySlugOnly */ SELECT ${query.text.slice(prefix.length)}`,
-    query.values,
-  )
+  const { rows } = await read(query.text, query.values)
   if (!rows[0]) return null
   return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
 }
@@ -117,19 +112,7 @@ export async function getCommunity(
         sql` WHERE c.slug = ${idOrSlug.toLowerCase()}`,
       )
   query.append(sql` AND c.deleted_at IS NULL LIMIT 1`)
-  const prefix = byId ? '/* getCommunityById */ SELECT ' : '/* getCommunityBySlug */ SELECT '
-  if (!query.text.startsWith(prefix)) throw new Error('Community SQL prefix changed')
-  const { rows } = byId
-    ? await read(
-        `/* getCommunityById */ SELECT ${query.text.slice(prefix.length)}`,
-        query.values,
-        options,
-      )
-    : await read(
-        `/* getCommunityBySlug */ SELECT ${query.text.slice(prefix.length)}`,
-        query.values,
-        options,
-      )
+  const { rows } = await read(query.text, query.values, options)
   if (!rows[0]) return null
   return mapCommunityWithOwner(rows[0] as CommunityRowWithOwner)
 }
