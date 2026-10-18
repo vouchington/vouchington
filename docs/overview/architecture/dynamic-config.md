@@ -15,6 +15,10 @@ public identifiers, and test controls. Dynamic Config is intended for runtime be
 changed without redeploying. The [local environment variable guide](../../development/local-env-vars.md)
 helps identify candidates for that boundary.
 
+Before changing environment-variable or Dynamic Config usage, run the
+[`./dev/config-inventory`](../../overview/infrastructure/environment-variables.md) command to review the
+repository's current configuration inventory.
+
 ## Related
 
 - [DynamicConfig test isolation](../../development/reference-dynamicconfig-cleanup.md)
