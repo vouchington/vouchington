@@ -13054,6 +13054,9 @@ importers:
         specifier: workspace:^
         version: link:../emails
     devDependencies:
+      '@services/ses-bounce-events':
+        specifier: workspace:^
+        version: link:../../services/ses-bounce-events
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

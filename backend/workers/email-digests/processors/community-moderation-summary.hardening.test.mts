@@ -7,7 +7,11 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import { claimModerationEmailSend } from '@services/communities/moderation-summary-emails'
+import {
+  claimModerationEmailSend,
+  hasModerationEmailSent,
+} from '@services/communities/moderation-summary-emails'
+import { createSesBounceEvent } from '@services/ses-bounce-events'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
 
 describe('moderation summary definitive SES rejection', () => {
@@ -21,6 +25,53 @@ describe('moderation summary definitive SES rejection', () => {
   })
 
   afterEach(() => vi.unstubAllEnvs())
+
+  it('keeps the send unmarked when classification suppresses it before SES', async () => {
+    const user = await createTestUser()
+    const community = await insertTestCommunity({ createdById: user!.id })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: user!.id,
+      role: 'owner',
+      approvedById: user!.id,
+    })
+    const postId = await insertTestPost({
+      title: 'Suppressed moderator post',
+      slug: `suppressed-moderator-post-${user!.id}`,
+      createdById: user!.id,
+      markdown: 'Needs review.',
+      communityId: community.id,
+    })
+    await insertTestPendingCommunityPostReview({
+      communityId: community.id,
+      postId,
+      submittedById: user!.id,
+    })
+    const trackingKey = 'daily:2026-07-14'
+    const emailAddress = user!.email_address!
+    await claimModerationEmailSend(user!.id, trackingKey)
+    await createSesBounceEvent({
+      notification_type: 'bounce',
+      bounce_type: 'permanent',
+      recipients: [emailAddress],
+      raw_message: {},
+    })
+
+    await expect(
+      processSendCommunityModerationSummaryEmail(
+        { emailAddress, userId: user!.id, trackingKey },
+        {
+          generatedForDate: '2026-07-14',
+          settingsUrl: 'https://voucha.ai/my/notification-settings',
+          unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
+          physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
+          communities: [],
+        },
+      ),
+    ).resolves.toBeNull()
+    await expect(hasModerationEmailSent(user!.id, trackingKey)).resolves.toBe(false)
+    expect(ses.sendEmail).not.toHaveBeenCalled()
+  })
 
   it('retries a summary after SES definitively rejects it before sending', async () => {
     const user = await createTestUser()

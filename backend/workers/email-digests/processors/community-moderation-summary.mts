@@ -62,11 +62,7 @@ export const processSendCommunityModerationSummaryEmail = async (
     physicalAddress: renderVariables.physicalAddress ?? getMarketingPostalAddress(),
     uiLocale: input.uiLocale ?? renderVariables.uiLocale,
   })
-  // Claim the at-most-once send before SES. A crash or ambiguous SES response can lose this
-  // summary, but retrying it could send a duplicate to the moderator.
-  if (input.userId && input.trackingKey) {
-    if (!(await markModerationEmailSent(input.userId, input.trackingKey))) return null
-  }
+  const { userId, trackingKey } = input
   try {
     return await sendClassifiedEmail('processSendCommunityModerationSummaryEmail', {
       to: emailAddress,
@@ -74,6 +70,10 @@ export const processSendCommunityModerationSummaryEmail = async (
       html,
       text,
       userId: input.userId,
+      // Preference and suppression reads happen before this callback. Mark immediately before
+      // SES so a pre-dispatch failure may retry, while an ambiguous SES outcome remains at-most-once.
+      beforeDispatch:
+        userId && trackingKey ? () => markModerationEmailSent(userId, trackingKey) : undefined,
     })
   } catch (err) {
     // SES sending-rate rejection is definitive: no mail was accepted. Unknown outcomes keep the

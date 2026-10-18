@@ -15,6 +15,7 @@ export type SendClassifiedEmailOptions = {
   source?: string
   replyToAddress?: string
   allowGlobalBcc?: boolean
+  beforeDispatch?: () => Promise<boolean>
 }
 
 export async function sendClassifiedEmail(
@@ -35,6 +36,8 @@ export async function sendClassifiedEmail(
   const params = buildClassifiedSendParams(type, {
     userId: options.userId,
   })
+
+  if (options.beforeDispatch && !(await options.beforeDispatch())) return null
 
   if (options.provider === 'gmail_smtp') {
     return sendGmailEmail({
