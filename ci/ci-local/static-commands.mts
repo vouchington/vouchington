@@ -123,4 +123,9 @@ export const staticCommands: CiLocalCommand[] = [
     'node static-code-analysis/run-node-checks.mts --checks config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy',
     'static-code-analysis.yml',
   ),
+  workflowCommand(
+    'live repository policies',
+    'node ci/check-repository-policy-scans.mts',
+    'static-code-analysis.yml',
+  ),
 ]

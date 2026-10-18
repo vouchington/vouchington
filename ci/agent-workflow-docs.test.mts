@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -8,7 +8,10 @@ import { promisify } from 'node:util'
 
 import { describe, expect, it } from 'vitest'
 
-import { trackedFiles } from './test-helpers/tracked-files.mts'
+import {
+  agentWorkflowDocViolations,
+  hasPrShepherdDeadlineRegression,
+} from './agent-workflow-doc-policy.mts'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
 const execFileAsync = promisify(execFile)
@@ -83,12 +86,6 @@ function normalizedMarkdownListItem(path: string, marker: string): string {
   return listItem?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
-function hasPrShepherdDeadlineRegression(paragraph: string): boolean {
-  return (
-    /\bpr-shepherd\b/u.test(paragraph) && /\b(?:one-hour|session[ -]deadline)\b/iu.test(paragraph)
-  )
-}
-
 describe('agent workflow documentation', () => {
   it('scopes pr-shepherd session deadline wording to pr-shepherd docs', () => {
     expect(
@@ -103,23 +100,21 @@ describe('agent workflow documentation', () => {
     ).toBe(true)
   })
 
-  it('never caps a documented pr-shepherd invocation with a session-hour deadline', () => {
-    const paths = trackedFiles(repoRoot, ['*.md']).filter(path => existsSync(join(repoRoot, path)))
-
-    const deadlineRegressions: string[] = []
-    for (const path of paths) {
-      const paragraphs = readRepoFile(path).split(/\n\s*\n/u)
-      for (const [index, paragraph] of paragraphs.entries()) {
-        if (hasPrShepherdDeadlineRegression(paragraph)) {
-          deadlineRegressions.push(`${path}:paragraph-${index + 1}`)
-        }
-      }
-    }
-
-    // Regression guard: the one-hour session deadline was removed. Agents stop when pr-shepherd
-    // reaches a terminal action, never on a caller-enforced wall clock; which actions are terminal
-    // belongs to pr-shepherd's own skill, so Voucha docs defer to it instead of restating them.
-    expect(deadlineRegressions).toEqual([])
+  it('rejects deadline and separator regressions in finite Markdown inputs', () => {
+    const files = new Map([
+      ['web/AGENTS.md', 'Use pr-shepherd until its terminal action.'],
+      [
+        'docs/agent.md',
+        'Run pr-shepherd until a one-hour session deadline.\n\nRun pr:attach-screenshots -- --check-upload-credentials.',
+      ],
+    ])
+    expect(agentWorkflowDocViolations([...files.keys()], path => files.get(path)!)).toEqual([
+      'docs/agent.md:paragraph-1: pr-shepherd session deadline',
+      'docs/agent.md: pnpm separator for screenshot CLI',
+    ])
+    expect(agentWorkflowDocViolations(['docs/agent.md'], path => files.get(path)!)).toContain(
+      'web/AGENTS.md is missing from tracked Markdown',
+    )
   })
 
   it('preflights screenshot upload credentials before initializing the web stack', () => {
@@ -157,15 +152,6 @@ describe('agent workflow documentation', () => {
     expect(result.exitCode).not.toBe(0)
     expect(result.output).toContain('cannot be combined with attachment arguments')
     expect(result.ghLog).toBeUndefined()
-  })
-
-  it('does not document a pnpm separator for screenshot CLI arguments', () => {
-    const paths = trackedFiles(repoRoot, ['*.md']).filter(path => existsSync(join(repoRoot, path)))
-
-    expect(paths).toContain('web/AGENTS.md')
-    for (const path of paths) {
-      expect(readRepoFile(path)).not.toContain('pr:attach-screenshots -- ')
-    }
   })
 
   it('documents screenshot preflight fallback and split reporting', () => {
