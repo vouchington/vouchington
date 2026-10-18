@@ -7,8 +7,8 @@ import {
   insertTestPost,
 } from '@voucha/test-helpers'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
+import { observePostgresReadRoutingForTest } from '@voucha/test-helpers/postgres-read-routing'
 import { moderationAiConfig } from '@services/moderation-ai-config'
-import { read, readPool, writePool } from '@data-stores/psql'
 import { getLatestJudgementForEntity } from '@services/moderation-reports/judgements'
 import { runReportJudgementAgent } from './run.mts'
 import {
@@ -133,16 +133,7 @@ describe('runReportJudgementAgent manual reruns', () => {
       entityId: postId,
       reason: 'spam',
     })
-    let primaryAcquisitions = 0
-    let replicaAcquisitions = 0
-    const onPrimaryAcquire = () => {
-      primaryAcquisitions += 1
-    }
-    const onReplicaAcquire = () => {
-      replicaAcquisitions += 1
-    }
-    writePool.on('acquire', onPrimaryAcquire)
-    readPool.on('acquire', onReplicaAcquire)
+    const routing = observePostgresReadRoutingForTest()
     try {
       await runReportJudgementAgent(
         {
@@ -153,10 +144,10 @@ describe('runReportJudgementAgent manual reruns', () => {
         },
         TEST_MODEL_SELECTION,
         async () => {
-          expect(primaryAcquisitions).toBeGreaterThan(0)
-          expect(replicaAcquisitions).toBe(0)
-          await read('/* reportJudgementManualRerunPrimaryScope */ SELECT 1')
-          expect(replicaAcquisitions).toBeGreaterThan(0)
+          expect(routing.primaryAcquisitions()).toBeGreaterThan(0)
+          expect(routing.replicaAcquisitions()).toBe(0)
+          await routing.probeReplicaRead()
+          expect(routing.replicaAcquisitions()).toBeGreaterThan(0)
           return makeModelCallResult({
             recommended_action: 'warn',
             public_response: 'Warning issued.',
@@ -165,8 +156,7 @@ describe('runReportJudgementAgent manual reruns', () => {
         },
       )
     } finally {
-      writePool.off('acquire', onPrimaryAcquire)
-      readPool.off('acquire', onReplicaAcquire)
+      routing.close()
     }
   })
 })
