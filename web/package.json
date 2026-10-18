@@ -49,7 +49,7 @@
     "@radix-ui/react-toggle": "^1.2.1",
     "@radix-ui/react-toggle-group": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
-    "@sentry/nextjs": "^11.7.0",
+    "@sentry/nextjs": "^11.8.0",
     "@simplewebauthn/browser": "^14.0.0",
     "@ts-shared/cache": "workspace:^",
     "@ts-shared/data-points": "workspace:^",
