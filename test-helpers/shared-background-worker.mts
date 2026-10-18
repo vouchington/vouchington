@@ -2,6 +2,8 @@ import type { BackgroundDomain } from '../backend/queues/background/config.mts'
 import { entityListenersHandlers } from '../backend/workers/entity-listeners/workers.mts'
 import { voteAggregationHandlers } from '../backend/workers/vote-aggregation/workers.mts'
 import { createBackgroundWorker } from '../backend/workers/background/workers/create-worker.mts'
+import { DEFAULT_FLUSH_TIMEOUT_MS, type FlushQueue } from './glide-mq-vitest-flush-wait.mts'
+import { settleRunnableQueueJobs } from './vitest-fork-leak-background-settle.mts'
 
 type SharedBackgroundWorker = ReturnType<typeof createBackgroundWorker>
 
@@ -59,6 +61,25 @@ export function getSharedBackgroundWorker(): SharedBackgroundWorker {
     throw new Error('The shared background worker is not running: load the glide-mq workers setup')
   }
   return sharedWorker
+}
+
+/**
+ * Wait for jobs the shared background worker can still run, so a later socket snapshot does not
+ * count connections those jobs have checked out. Returns false when this fork never started the
+ * worker. A worker paused because another file attached its own worker is not going to pick up
+ * waiting jobs; only jobs already active can still hold a connection, and parked jobs never can.
+ */
+export async function settleSharedBackgroundJobs(
+  flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
+): Promise<boolean> {
+  if (!sharedWorker) return false
+  const internals = sharedWorker as unknown as { paused?: boolean; queue: FlushQueue }
+  if ((await internals.queue.getWorkers()).length === 0) return false
+  await settleRunnableQueueJobs(internals.queue, {
+    includeWaiting: internals.paused !== true,
+    flushTimeoutMs,
+  })
+  return true
 }
 
 type JobProcessor = (job: { name: string }) => Promise<unknown>
