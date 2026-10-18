@@ -16,6 +16,7 @@ Not partitioned — growth: unbounded.
 | `case_id`                 | `uuid`                         | yes      |                              |          |           |           | The moderation case this judgement belongs to, if any.                                                                          |
 | `triggering_report_id`    | `uuid`                         | yes      |                              |          |           |           | The moderation report that triggered this judgement run, if any.                                                                |
 | `rerun_by_id`             | `uuid`                         | yes      |                              |          |           |           | Moderator who requested a re-run of the judgement, if applicable.                                                               |
+| `run_id`                  | `uuid`                         | yes      |                              |          |           |           | Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.                    |
 | `recommended_action`      | `moderation_judgement_actions` | no       |                              |          |           |           | AI-recommended moderation action.                                                                                               |
 | `public_response`         | `text`                         | no       |                              |          |           |           | Public-facing explanation of the judgement.                                                                                     |
 | `internal_response`       | `text`                         | no       |                              |          |           |           | Internal reasoning visible to staff only.                                                                                       |
@@ -30,7 +31,8 @@ Not partitioned — growth: unbounded.
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `moderation_report_judgements_run_id_key`: `UNIQUE (run_id)`
 
 **Check constraints:**
 
@@ -56,6 +58,7 @@ _none_
 - `idx_moderation_report_judgements__undispatched`: `CREATE INDEX idx_moderation_report_judgements__undispatched ON public.moderation_report_judgements USING btree (id) WHERE ((dispatched_at IS NULL) AND (rerun_by_id IS NULL))`
 - `idx_moderation_report_judgements__user_id`: `CREATE INDEX idx_moderation_report_judgements__user_id ON public.moderation_report_judgements USING btree (reported_user_id, id DESC) WHERE (reported_user_id IS NOT NULL)`
 - `moderation_report_judgements_pkey`: `CREATE UNIQUE INDEX moderation_report_judgements_pkey ON public.moderation_report_judgements USING btree (id)`
+- `moderation_report_judgements_run_id_key`: `CREATE UNIQUE INDEX moderation_report_judgements_run_id_key ON public.moderation_report_judgements USING btree (run_id)`
 
 **Triggers:**
 _none_

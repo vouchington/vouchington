@@ -30,6 +30,7 @@ export function ReportClusterCard({
   onWarn,
   onBanEvasionAction,
   rerunningReportId,
+  pendingRerunEntities,
   uiLocale,
 }: {
   active: boolean
@@ -45,6 +46,7 @@ export function ReportClusterCard({
   onWarn: (report: AdminModerationReport) => void
   onBanEvasionAction: (reportId: string) => void
   rerunningReportId: string | null
+  pendingRerunEntities?: ReadonlySet<string>
   uiLocale: string
 }) {
   const t = useTranslations()
@@ -53,6 +55,8 @@ export function ReportClusterCard({
   const isPartialReportSet = cluster.reports.length < cluster.report_count
   const canRemoveTarget =
     canRemove && (cluster.entity_type === 'post' || cluster.entity_type === 'comment')
+  const entityRerunPending =
+    pendingRerunEntities?.has(`${cluster.entity_type}:${cluster.entity_id}`) ?? false
   const adminHref = cluster.admin_action_path ?? cluster.target_path
   const showTargetLink =
     cluster.target_path !== null &&
@@ -140,7 +144,7 @@ export function ReportClusterCard({
             </Link>
           ) : null}
           <ReportClusterActions
-            disabled={disabled}
+            disabled={disabled || entityRerunPending}
             loadingAction={loadingAction}
             canRemoveTarget={canRemoveTarget}
             hasPendingReports={hasPendingReports}
@@ -157,7 +161,7 @@ export function ReportClusterCard({
                 <ReportDetail
                   key={report.id}
                   report={report}
-                  disabled={disabled}
+                  disabled={disabled || entityRerunPending}
                   rerunning={rerunningReportId === report.id}
                   onRerun={() => onRerun(report)}
                   onWarn={() => onWarn(report)}

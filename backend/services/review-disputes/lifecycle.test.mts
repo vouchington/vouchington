@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
+  getReviewDisputeAiRequestToken,
   insertTestTopic,
   insertTestPost,
   insertTestPostReview,
@@ -68,6 +69,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
 
     await createReviewDisputeDraft({
       disputeId: dispute.id,
+      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'AI response here.',
       aiInternalResponse: 'Internal notes.',
@@ -85,6 +87,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
 
     await createReviewDisputeDraft({
       disputeId: dispute.id,
+      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'We reviewed your dispute.',
       aiInternalResponse: 'No violation found.',
@@ -101,6 +104,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
     const dispute = await makeDispute(postId, crypto.randomUUID())
     await createReviewDisputeDraft({
       disputeId: dispute.id,
+      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'Approved response.',
       aiInternalResponse: 'Approved internal notes.',
@@ -111,6 +115,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
     await expect(
       createReviewDisputeDraft({
         disputeId: dispute.id,
+        requestToken: await getReviewDisputeAiRequestToken(dispute.id),
         recommendedAction: 'remove',
         aiPublicResponse: 'Late rerun response.',
         aiInternalResponse: 'Late rerun internal notes.',
@@ -129,6 +134,7 @@ describe('review dispute lifecycle - send-requires-approval invariant', () => {
     const dispute = await makeDispute(postId, crypto.randomUUID())
     await createReviewDisputeDraft({
       disputeId: dispute.id,
+      requestToken: await getReviewDisputeAiRequestToken(dispute.id),
       recommendedAction: 'no_action',
       aiPublicResponse: 'Response.',
       aiInternalResponse: 'Internal.',

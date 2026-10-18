@@ -24,8 +24,11 @@ export async function insertModerationAppeal(
 ): Promise<{ appeal: ModerationAppealResponse; isDuplicate: boolean }> {
   const result = await insertOrFindOpenAppeal(query, currentUser, provenance, appealReason, target)
   assert(result, 500, 'Failed to create appeal')
-  const { inserted, ...appeal } = result
-  if (inserted) registerPostCommitAction(query, async () => enqueueAppealResolutionAsync(appeal.id))
+  const { inserted, ai_draft_request_token: requestToken, ...appeal } = result
+  if (inserted)
+    registerPostCommitAction(query, async () =>
+      enqueueAppealResolutionAsync(appeal.id, requestToken),
+    )
   return {
     appeal: await getModerationAppealAfterMutation(appeal.id, { query }),
     isDuplicate: !inserted,
@@ -38,10 +41,10 @@ async function insertOrFindOpenAppeal(
   provenance: ContentProvenance,
   appealReason: string,
   target: AppealTargetContext,
-): Promise<(ModerationAppeal & { inserted: boolean }) | undefined> {
-  const { rows } = await query<ModerationAppeal & { inserted: boolean }>(
-    insertStatement(currentUser, provenance, appealReason, target),
-  )
+): Promise<(ModerationAppeal & { inserted: boolean; ai_draft_request_token: string }) | undefined> {
+  const { rows } = await query<
+    ModerationAppeal & { inserted: boolean; ai_draft_request_token: string }
+  >(insertStatement(currentUser, provenance, appealReason, target))
   if (rows[0]) return rows[0]
   // Nothing was inserted, so another open appeal for this target won; read it as the duplicate.
   const existing = await findOpenAppeal(query, currentUser.id, target)
@@ -93,6 +96,7 @@ function insertStatement(
   statement.append(sql`
       RETURNING
         (xmax = 0) AS inserted,
+        ai_draft_request_token,
         id, case_id, appellant_user_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
         appeal_reason,
         CASE
@@ -125,6 +129,7 @@ function insertStatement(
     )
     SELECT
       inserted,
+      ai_draft_request_token,
       id, case_id, appellant_user_id, user_warning_id, community_ban_id, post_id, user_suspension_id, community_id, post_removal_kind,
       appeal_reason, status, recommended_action, ai_public_response, ai_internal_response,
       model, ai_drafted_at, public_response, internal_notes, drafted_at, edited_at, edited_by_id,
@@ -139,9 +144,9 @@ async function findOpenAppeal(
   query: TransactionQuery,
   appellantId: string,
   { userWarningId, communityBanId, postId, userSuspensionId, postRemovalKind }: AppealTargetContext,
-): Promise<ModerationAppeal | null> {
+): Promise<(ModerationAppeal & { ai_draft_request_token: string }) | null> {
   const duplicateQuery = sql`/* createModerationAppeal:conflict */
-        SELECT id FROM moderation_appeals
+        SELECT id, ai_draft_request_token FROM moderation_appeals
         WHERE appellant_user_id = ${appellantId}
           AND resolved_at IS NULL
       `
@@ -158,9 +163,8 @@ async function findOpenAppeal(
     duplicateQuery.append(sql` AND user_suspension_id = ${userSuspensionId}`)
   }
   duplicateQuery.append(sql` LIMIT 1`)
-  const { rows } = await query<{ id: string }>(duplicateQuery)
+  const { rows } = await query<{ id: string; ai_draft_request_token: string }>(duplicateQuery)
   if (!rows[0]) return null
-  return (await getModerationAppealByIdFromPrimary(rows[0].id, {
-    query,
-  })) as ModerationAppeal | null
+  const appeal = await getModerationAppealByIdFromPrimary(rows[0].id, { query })
+  return appeal ? { ...appeal, ai_draft_request_token: rows[0].ai_draft_request_token } : null
 }

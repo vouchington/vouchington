@@ -7,8 +7,10 @@ import {
 } from '../reports-client'
 
 const mockRefresh = vi.fn<() => void>()
-const { mockConfirmBanEvasion } = vi.hoisted(() => ({
+const { mockConfirmBanEvasion, mockRerunJudgement, mockResolveReport } = vi.hoisted(() => ({
   mockConfirmBanEvasion: vi.fn<VitestLooseMock>(),
+  mockRerunJudgement: vi.fn<VitestLooseMock>(),
+  mockResolveReport: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/lib/api/client/community-ban-evasion'), () => ({
@@ -17,8 +19,9 @@ vi.mock(import('@/lib/api/client/community-ban-evasion'), () => ({
 }))
 vi.mock(import('@/lib/api/client/posts'), () => ({ deletePost: vi.fn<VitestLooseMock>() }))
 vi.mock(import('@/lib/api/client/reports'), () => ({
-  resolveModerationReport: vi.fn<VitestLooseMock>(),
-  rerunReportJudgement: vi.fn<VitestLooseMock>(),
+  resolveModerationReport: mockResolveReport,
+  rerunReportJudgement: mockRerunJudgement,
+  getReportJudgementRun: vi.fn<VitestLooseMock>(),
 }))
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),
@@ -51,6 +54,23 @@ describe('clustered ban-evasion refresh', () => {
     )
     expect(mockRefresh).toHaveBeenCalled()
     expect(screen.getByText('Suspect')).toBeInTheDocument()
+  })
+
+  it('keeps clustered resolve actions disabled while an admitted rerun has not saved', async () => {
+    mockRerunJudgement.mockResolvedValue({ admitted: true })
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeResponse()}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: /re-run judgement/i })[1]!)
+    await waitFor(() => expect(mockRerunJudgement).toHaveBeenCalledWith('ordinary-report'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /review all/i })).toBeDisabled())
+    expect(screen.getByRole('button', { name: /dismiss all/i })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /review all/i }))
+    expect(mockResolveReport).not.toHaveBeenCalled()
   })
 })
 
@@ -97,6 +117,7 @@ function makeSystemReport(): AdminModerationReport {
     ...makeOrdinaryReport(),
     id: 'ban-evasion-report',
     is_system_generated: true,
+    automatic_judgement_enabled: true,
     community_ban_evasion: {
       community_id: 'community-1',
       community_slug: 'community',
@@ -131,6 +152,7 @@ function makeOrdinaryReport(): AdminModerationReport {
     report_count: 2,
     resolved_by_id: null,
     is_system_generated: false,
+    automatic_judgement_enabled: true,
     judgement: null,
     post_moderation_context: null,
   }

@@ -29,6 +29,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/openai-utils": "workspace:^",
     "@services/moderation": "workspace:^",
+    "@services/moderation-ai-config": "workspace:^",
     "@services/moderation-reports": "workspace:^",
     "openai": "^7.32.0"
   },

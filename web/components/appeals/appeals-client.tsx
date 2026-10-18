@@ -57,7 +57,7 @@ export function AppealsClient({
     )
   const [state, dispatch] = useReducer(appealsClientReducer, initialAppealsClientState)
   const { loadingIds, runWithLoadingId } = useLoadingIds()
-  const rerunEnqueuesRef = useRef(new Map<string, Promise<void>>())
+  const rerunEnqueuesRef = useRef(new Map<string, ReturnType<typeof enqueueAppealAIDraftRerun>>())
   const appeals = uniqueAppeals(pages.flatMap(page => page.appeals)).map(
     appeal => state.appealOverrides[appeal.id] ?? appeal,
   )

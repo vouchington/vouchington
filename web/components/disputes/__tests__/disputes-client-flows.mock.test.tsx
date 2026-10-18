@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   mockResolveDisputeAnnotate: vi.fn<VitestLooseMock>(),
   mockDismissDispute: vi.fn<VitestLooseMock>(),
   mockRerunDisputeAI: vi.fn<VitestLooseMock>(),
+  mockReconcileDisputeAIDraft: vi.fn<VitestLooseMock>(),
   mockUpdateDisputeDraft: vi.fn<VitestLooseMock>(),
   mockListReviewDisputesClient: vi.fn<VitestLooseMock>(),
   mockOnError: vi.fn<VitestLooseMock>(),
@@ -21,6 +22,7 @@ vi.mock(import('@/lib/api/client/disputes'), () => ({
   resolveDisputeAnnotate: h.mockResolveDisputeAnnotate,
   dismissDispute: h.mockDismissDispute,
   rerunDisputeAI: h.mockRerunDisputeAI,
+  reconcileDisputeAIDraft: h.mockReconcileDisputeAIDraft,
   updateDisputeDraft: h.mockUpdateDisputeDraft,
   listReviewDisputesClient: h.mockListReviewDisputesClient,
 }))
@@ -71,6 +73,106 @@ describe('DisputesClient — error handling, member tier, pagination, reducer', 
         expect.objectContaining({ fallback: 'Failed to send dispute resolution' }),
       ),
     )
+  })
+
+  it('shows the saved AI draft only after queue admission and reconciliation', async () => {
+    const before = makeDispute({ ai_drafted_at: null, ai_public_response: null })
+    const after = makeDispute({
+      ai_drafted_at: '2026-01-02T00:00:00Z',
+      ai_draft_run_id: 'job-1',
+      ai_draft_requested_run_id: 'job-1',
+      ai_public_response: 'Reviewed draft response',
+    })
+    let completeAdmission!: (value: { queued: true; run_id: string }) => void
+    h.mockRerunDisputeAI.mockImplementationOnce(
+      () =>
+        new Promise<{ queued: true; run_id: string }>(resolve => {
+          completeAdmission = resolve
+        }),
+    )
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(after)
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    expect(h.mockReconcileDisputeAIDraft).not.toHaveBeenCalled()
+    completeAdmission({ queued: true, run_id: 'job-1' })
+    await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledWith(before))
+    expect(await screen.findByText('Reviewed draft response')).toBeVisible()
+  })
+
+  it('keeps a manual rerun pending when an earlier job writes a draft', async () => {
+    const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: '101' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        ai_drafted_at: '2026-01-02T00:00:00Z',
+        ai_draft_run_id: '100',
+        ai_draft_requested_run_id: '101',
+        ai_public_response: 'Earlier job draft',
+      }),
+    )
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    await waitFor(() => expect(h.mockReconcileDisputeAIDraft).toHaveBeenCalledOnce())
+    expect(screen.queryByText('Earlier job draft')).not.toBeInTheDocument()
+    expect(screen.getByTitle('Re-run AI')).toBeDisabled()
+  })
+
+  it('reconciles a later run that supersedes the requested draft', async () => {
+    const before = makeDispute({ ai_drafted_at: '2026-01-01T00:00:00Z' })
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: '101' })
+    h.mockReconcileDisputeAIDraft.mockResolvedValueOnce(
+      makeDispute({
+        ai_drafted_at: '2026-01-02T00:00:00Z',
+        ai_draft_run_id: '102',
+        ai_draft_requested_run_id: '102',
+        ai_public_response: 'Later job draft',
+      }),
+    )
+    render(
+      <DisputesClient
+        viewerTier='staff'
+        data={makeDisputesData([before])}
+      />,
+    )
+
+    fireEvent.click(screen.getByTitle('Re-run AI'))
+    expect(await screen.findByText('Later job draft')).toBeVisible()
+    expect(screen.getByTitle('Re-run AI')).toBeEnabled()
+  })
+
+  it('keeps a successfully admitted rerun pending if its first primary read fails', async () => {
+    const error = new Error('Primary read failed')
+    const consoleError = vi.spyOn(console, 'error').mockReturnValue(undefined)
+    h.mockRerunDisputeAI.mockResolvedValueOnce({ queued: true, run_id: 'manual-job' })
+    h.mockReconcileDisputeAIDraft.mockRejectedValueOnce(error)
+    try {
+      render(
+        <DisputesClient
+          viewerTier='staff'
+          data={makeDisputesData()}
+        />,
+      )
+      fireEvent.click(screen.getByTitle('Re-run AI'))
+      await waitFor(() =>
+        expect(consoleError).toHaveBeenCalledWith('Could not refresh queued dispute draft', error),
+      )
+      expect(h.mockOnError).not.toHaveBeenCalled()
+      expect(screen.getByTitle('Re-run AI')).toBeDisabled()
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 
   it.each([

@@ -46,6 +46,7 @@ export async function listRedactedModerationReports(
       judgement: _j,
       community_ban_evasion: _cbe,
       is_system_generated: _sg,
+      automatic_judgement_enabled: _aje,
       ...rest
     } = report
     // Hidden = private/followers-only or soft-deleted: withhold content-derived data.

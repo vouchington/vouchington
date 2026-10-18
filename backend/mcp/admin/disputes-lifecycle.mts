@@ -93,8 +93,8 @@ export const adminDisputesLifecycleTools = [
       openWorldHint: true,
     },
     run: async (user, args) => {
-      await rerunReviewDisputeResolutionDraft(user.id, args.id)
-      return { queued: true, rerun_by_id: user.id }
+      const runId = await rerunReviewDisputeResolutionDraft(user.id, args.id)
+      return { queued: true, rerun_by_id: user.id, run_id: runId }
     },
   }),
 ]

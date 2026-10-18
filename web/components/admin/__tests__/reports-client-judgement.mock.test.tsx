@@ -5,17 +5,24 @@ import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-moc
 
 const mockNav = createNavMock()
 
-const { mockResolveModerationReport, mockRerunReportJudgement, mockOnError, mockOnSuccess } =
-  vi.hoisted(() => ({
-    mockResolveModerationReport: vi.fn<VitestLooseMock>(),
-    mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
-    mockOnError: vi.fn<VitestLooseMock>(),
-    mockOnSuccess: vi.fn<VitestLooseMock>(),
-  }))
+const {
+  mockResolveModerationReport,
+  mockRerunReportJudgement,
+  mockGetReportJudgementRun,
+  mockOnError,
+  mockOnSuccess,
+} = vi.hoisted(() => ({
+  mockResolveModerationReport: vi.fn<VitestLooseMock>(),
+  mockRerunReportJudgement: vi.fn<VitestLooseMock>(),
+  mockGetReportJudgementRun: vi.fn<VitestLooseMock>(),
+  mockOnError: vi.fn<VitestLooseMock>(),
+  mockOnSuccess: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveModerationReport,
   rerunReportJudgement: mockRerunReportJudgement,
+  getReportJudgementRun: mockGetReportJudgementRun,
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError, onSuccess: mockOnSuccess }))
@@ -51,6 +58,7 @@ describe('ReportsClient judgement controls', () => {
   })
 
   const testJudgement = {
+    id: '00000000-0000-7000-8000-000000000001',
     recommended_action: 'remove' as const,
     public_response: 'This content was removed for violating our spam policy.',
     internal_response: 'Clear spam pattern detected across multiple communities.',
@@ -168,6 +176,7 @@ function makeReport(overrides: Partial<AdminModerationReport> = {}): AdminModera
     report_count: 1,
     resolved_by_id: null,
     is_system_generated: false,
+    automatic_judgement_enabled: true,
     judgement: null,
     post_moderation_context: null,
     ...overrides,

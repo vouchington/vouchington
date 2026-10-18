@@ -18,6 +18,7 @@ import {
   resolveCommunityModerationReport,
   resolveModerationReport,
   rerunReportJudgement,
+  getReportJudgementRun,
   submitReport,
 } from '../reports'
 
@@ -59,12 +60,24 @@ describe('reports client api helpers', () => {
   })
 
   it('POSTs to the judgements endpoint to re-run the AI judgement', async () => {
-    const response = { queued: true, rerun_by_id: 'admin-1' }
+    const response = { queued: true, rerun_by_id: 'admin-1', run_id: 'report_judgement_opaque' }
     mockPost.mockResolvedValueOnce(response)
 
     const result = await rerunReportJudgement('report-1')
 
     expect(mockPost).toHaveBeenCalledWith('/api/v1/reports/report-1/judgements')
+    expect(result).toBe(response)
+  })
+
+  it('GETs the exact judgement run result', async () => {
+    const response = { completed: false, judgement_id: null }
+    mockGet.mockResolvedValueOnce(response)
+
+    const result = await getReportJudgementRun('report-1', 'report_judgement_opaque-id')
+
+    expect(mockGet).toHaveBeenCalledWith(
+      '/api/v1/reports/report-1/judgements/report_judgement_opaque-id',
+    )
     expect(result).toBe(response)
   })
 

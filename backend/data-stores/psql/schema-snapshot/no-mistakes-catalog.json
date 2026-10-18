@@ -64603,6 +64603,26 @@
         }
       },
       "columns": {
+        "ai_draft_request_token": {
+          "comment": "Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 21
+        },
+        "ai_draft_run_id": {
+          "comment": "Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22
+        },
         "ai_drafted_at": {
           "comment": "When the AI agent drafted the recommended_action and responses.",
           "dataType": "timestamp with time zone",
@@ -64661,7 +64681,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 28
         },
         "approved_by_id": {
           "comment": "Moderator who approved the public_response for delivery.",
@@ -64671,7 +64691,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 29
         },
         "case_id": {
           "comment": "The moderation case this appeal belongs to.",
@@ -64681,7 +64701,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 33
+          "ordinalPosition": 35
         },
         "community_ban_id": {
           "comment": "The ban being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.",
@@ -64711,7 +64731,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 36
         },
         "created_via": {
           "comment": "Immutable channel that created the row; NULL for rows written before content provenance tracking.",
@@ -64741,7 +64761,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 25
         },
         "edited_at": {
           "comment": "When the moderator last edited public_response.",
@@ -64751,7 +64771,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 26
         },
         "edited_by_id": {
           "comment": "Moderator who last edited the draft public_response.",
@@ -64761,7 +64781,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 27
         },
         "id": {
           "comment": null,
@@ -64781,7 +64801,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 24
         },
         "latest_lifecycle_change_id": {
           "comment": "Denormalized pointer to the most recent lifecycle change row for this appeal.",
@@ -64791,7 +64811,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 34
         },
         "model": {
           "comment": "OpenAI model used for the AI draft.",
@@ -64871,7 +64891,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 23
         },
         "recommended_action": {
           "comment": "AI-recommended action (set by the appeal-resolution agent).",
@@ -64891,7 +64911,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 33
         },
         "resolved_at": {
           "comment": "When the appeal was resolved or dismissed.",
@@ -64901,7 +64921,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 31
         },
         "resolved_by_id": {
           "comment": "Moderator who resolved or dismissed the appeal.",
@@ -64911,7 +64931,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 32
         },
         "sent_at": {
           "comment": "When the approved public_response was delivered to the appellant.",
@@ -64921,7 +64941,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 30
         },
         "updated_at": {
           "comment": null,
@@ -64931,7 +64951,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 35
+          "ordinalPosition": 37
         },
         "user_suspension_id": {
           "comment": "The platform suspension being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.",
@@ -65470,6 +65490,29 @@
           "unique": false,
           "valid": true
         },
+        "moderation_appeals_ai_draft_request_token_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_appeals_ai_draft_request_token_key ON public.moderation_appeals USING btree (ai_draft_request_token)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_request_token",
+              "descending": false,
+              "expression": "ai_draft_request_token",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "moderation_appeals_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -65528,7 +65571,11 @@
           "definition": "CREATE TRIGGER trigger_moderation_transparency_appeals_update_rollup AFTER UPDATE ON public.moderation_appeals REFERENCING OLD TABLE AS old_appeals NEW TABLE AS new_appeals FOR EACH STATEMENT EXECUTE FUNCTION fn_project_moderation_transparency_appeals_update_rollup()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "moderation_appeals_ai_draft_request_token_key": {
+          "columns": ["ai_draft_request_token"]
+        }
+      }
     },
     "moderation_cases": {
       "checkConstraints": {
@@ -66441,7 +66488,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "context_max_reason_rank": {
           "comment": "Highest report reason severity rank in the bounded context when this judgement was generated.",
@@ -66451,7 +66498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "context_note_hash": {
           "comment": "Hash of report notes in the bounded context, used for refresh decisions.",
@@ -66461,7 +66508,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "context_report_count": {
           "comment": "Total number of reports on the judged entity when this judgement was generated.",
@@ -66471,7 +66518,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "created_at": {
           "comment": null,
@@ -66481,7 +66528,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "dispatched_at": {
           "comment": "Timestamp when auto-dispatch successfully processed this judgement. NULL means not yet dispatched or auto-dispatch is disabled.",
@@ -66491,7 +66538,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "hostname_id": {
           "comment": "Judged URL hostname; set when entity is url_hostname.",
@@ -66521,7 +66568,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "model": {
           "comment": "OpenAI model used for this judgement.",
@@ -66531,7 +66578,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "post_id": {
           "comment": "Judged post or comment; set when entity is a post or comment.",
@@ -66551,7 +66598,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "recommended_action": {
           "comment": "AI-recommended moderation action.",
@@ -66561,7 +66608,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "reported_user_id": {
           "comment": "Judged user; set when entity is a user.",
@@ -66592,6 +66639,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5
+        },
+        "run_id": {
+          "comment": "Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
         },
         "triggering_report_id": {
           "comment": "The moderation report that triggered this judgement run, if any.",
@@ -66883,6 +66940,29 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "moderation_report_judgements_run_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_judgements_run_id_key ON public.moderation_report_judgements USING btree (run_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -66891,7 +66971,11 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "moderation_report_judgements_run_id_key": {
+          "columns": ["run_id"]
+        }
+      }
     },
     "moderation_reports": {
       "checkConstraints": {
@@ -114601,6 +114685,26 @@
         }
       },
       "columns": {
+        "ai_draft_request_token": {
+          "comment": "Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13
+        },
+        "ai_draft_run_id": {
+          "comment": "Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14
+        },
         "ai_drafted_at": {
           "comment": "When the AI agent drafted the recommended_action and ai_public_response.",
           "dataType": "timestamp with time zone",
@@ -114639,7 +114743,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 20
         },
         "approved_by_id": {
           "comment": "Moderator who approved the public_response for delivery.",
@@ -114649,7 +114753,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 21
         },
         "claim_text": {
           "comment": "The disputant's explanation of their claim.",
@@ -114669,7 +114773,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 27
         },
         "disputant_user_id": {
           "comment": "The verified topic claimant who filed the dispute.",
@@ -114699,7 +114803,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
         },
         "edited_at": {
           "comment": "When the moderator last edited public_response.",
@@ -114709,7 +114813,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 18
         },
         "edited_by_id": {
           "comment": "Moderator who last edited the draft public_response.",
@@ -114719,7 +114823,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 19
         },
         "id": {
           "comment": null,
@@ -114739,7 +114843,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 16
         },
         "latest_lifecycle_change_id": {
           "comment": "Denormalized pointer to the most recent lifecycle change row for this dispute.",
@@ -114749,7 +114853,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 26
         },
         "model": {
           "comment": "OpenAI model used for the AI draft.",
@@ -114779,7 +114883,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 15
         },
         "reason": {
           "comment": "Legal-angle reason for the dispute.",
@@ -114809,7 +114913,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 25
         },
         "resolved_at": {
           "comment": "When the dispute was resolved or dismissed.",
@@ -114819,7 +114923,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 23
         },
         "resolved_by_id": {
           "comment": "Moderator who resolved or dismissed the dispute.",
@@ -114829,7 +114933,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 24
         },
         "sent_at": {
           "comment": "When the approved public_response was delivered to the disputant.",
@@ -114839,7 +114943,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 22
         },
         "topic_id": {
           "comment": "The topic the disputed review rates (the claimant's topic).",
@@ -114859,7 +114963,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 26
+          "ordinalPosition": 28
         }
       },
       "comment": "Disputes filed by verified topic claimants against reviews of their topic. Goes through a public moderation queue with AI-assisted draft resolution; all messaging is human-approved before delivery.",
@@ -115096,6 +115200,29 @@
           "unique": false,
           "valid": true
         },
+        "review_disputes_ai_draft_request_token_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX review_disputes_ai_draft_request_token_key ON public.review_disputes USING btree (ai_draft_request_token)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "ai_draft_request_token",
+              "descending": false,
+              "expression": "ai_draft_request_token",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "review_disputes_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -115133,7 +115260,11 @@
           "definition": "CREATE TRIGGER trigger_review_disputes_updated_at BEFORE UPDATE ON public.review_disputes FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "review_disputes_ai_draft_request_token_key": {
+          "columns": ["ai_draft_request_token"]
+        }
+      }
     },
     "review_succession_topics": {
       "checkConstraints": {},

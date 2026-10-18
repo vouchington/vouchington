@@ -29,6 +29,52 @@ describe('web lifecycle adapters', () => {
     })
   })
 
+  it('completes appeal reruns only when the current opaque run ID has been saved', () => {
+    expect(
+      webModerationAppealActions(
+        scenarioInput({
+          preconditions: {
+            status: 'pending',
+            viewerRole: 'administrator',
+            requestedRunId: 'appeal_resolution_current-opaque-id',
+            savedRunId: 'appeal_resolution_previous-opaque-id',
+          },
+          action: { type: 'rerun' },
+          serverOutcome: {
+            status: 'pending',
+            requestedRunId: 'appeal_resolution_current-opaque-id',
+            savedRunId: 'appeal_resolution_current-opaque-id',
+          },
+        }),
+      ),
+    ).toMatchObject({
+      visibleState: { latestLifecycleChangeChanged: true },
+    })
+  })
+
+  it('does not complete a superseded appeal rerun from an earlier saved run', () => {
+    expect(
+      webModerationAppealActions(
+        scenarioInput({
+          preconditions: {
+            status: 'pending',
+            viewerRole: 'administrator',
+            requestedRunId: 'appeal_resolution_first-opaque-id',
+            savedRunId: null,
+          },
+          action: { type: 'rerun' },
+          serverOutcome: {
+            status: 'pending',
+            requestedRunId: 'appeal_resolution_second-opaque-id',
+            savedRunId: 'appeal_resolution_first-opaque-id',
+          },
+        }),
+      ),
+    ).toMatchObject({
+      visibleState: { latestLifecycleChangeChanged: false },
+    })
+  })
+
   it('only exposes continuation actions when their cursor is present', async () => {
     expect(
       (

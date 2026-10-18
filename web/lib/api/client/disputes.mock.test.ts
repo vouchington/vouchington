@@ -9,6 +9,7 @@ import {
   resolveDisputeAnnotate,
   dismissDispute,
   rerunDisputeAI,
+  reconcileDisputeAIDraft,
 } from './disputes'
 
 const { mockGet, mockPost, mockPatch } = vi.hoisted(() => ({
@@ -120,9 +121,18 @@ describe('disputes client api helpers', () => {
 
   describe('rerunDisputeAI', () => {
     it('calls POST /api/v1/disputes/:id/resolution-drafts', async () => {
-      mockPost.mockResolvedValueOnce(undefined)
-      await rerunDisputeAI('dispute-1')
+      mockPost.mockResolvedValueOnce({ queued: true, run_id: 'job-1' })
+      await expect(rerunDisputeAI('dispute-1')).resolves.toMatchObject({ run_id: 'job-1' })
       expect(mockPost).toHaveBeenCalledWith('/api/v1/disputes/dispute-1/resolution-drafts', {})
+    })
+  })
+
+  it('reads a saved AI draft from the staff-only primary route', async () => {
+    const saved = { id: 'dispute-1', ai_drafted_at: '2026-10-18T00:00:00Z' }
+    mockGet.mockResolvedValueOnce({ dispute: saved })
+    await expect(reconcileDisputeAIDraft({ id: 'dispute-1' })).resolves.toBe(saved)
+    expect(mockGet).toHaveBeenCalledWith('/api/v1/disputes/dispute-1', {
+      searchParams: { consistency: 'primary' },
     })
   })
 })

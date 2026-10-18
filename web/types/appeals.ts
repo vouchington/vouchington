@@ -76,6 +76,8 @@ export interface ModerationAppeal {
   approved_by_id?: string | null
   resolved_by_id?: string | null
   latest_lifecycle_change_id?: string | null
+  ai_draft_requested_run_id?: string
+  ai_draft_run_id?: string | null
   staff_context?: {
     appellant: ModerationActorSummary
     original_decision: {

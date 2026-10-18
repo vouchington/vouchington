@@ -13,7 +13,7 @@ import {
   insertTestReportJudgement,
 } from '@voucha/test-helpers'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
-import { moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import { markJudgementDispatched } from '@services/moderation-reports'
 import { updateClearanceStatus } from '@services/post-clearance/update-status'
 import { getModerationSystemUserId } from '@services/users/system-users'

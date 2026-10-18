@@ -6,10 +6,12 @@ import { loadServiceModelSelection } from '@services/ai-usage'
 /** The agent persists advice only; moderator action is deliberately outside this processor. */
 export async function processCopyrightAppealRecommendation(
   job: Job<CopyrightAppealRecommendationJobData>,
+  callModel?: NonNullable<Parameters<typeof runCopyrightAppealRecommendationAgent>[2]>,
 ): Promise<{ success: true }> {
   await runCopyrightAppealRecommendationAgent(
     job.data.submission_id,
     await loadServiceModelSelection('copyright-appeal-recommendation'),
+    callModel,
   )
   return { success: true }
 }

@@ -67,6 +67,17 @@ export function dismissDispute(disputeId: string): Promise<{ dispute: ReviewDisp
   return clientApi.post(`/api/v1/disputes/${disputeId}/resolution`, { action: 'dismiss' })
 }
 
-export function rerunDisputeAI(disputeId: string): Promise<void> {
+export function rerunDisputeAI(disputeId: string): Promise<{ queued: true; run_id: string }> {
   return clientApi.post(`/api/v1/disputes/${disputeId}/resolution-drafts`, {})
+}
+
+/** The rerun request only confirms queue admission; each poll reads the saved draft separately. */
+export async function reconcileDisputeAIDraft(
+  before: Pick<ReviewDispute, 'id'>,
+): Promise<ReviewDispute> {
+  const { dispute } = await clientApi.get<{ dispute: ReviewDispute }>(
+    `/api/v1/disputes/${before.id}`,
+    { searchParams: { consistency: 'primary' } },
+  )
+  return dispute
 }

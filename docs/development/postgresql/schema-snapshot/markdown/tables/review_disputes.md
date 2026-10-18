@@ -6,39 +6,42 @@ Disputes filed by verified topic claimants against reviews of their topic. Goes 
 
 Not partitioned — growth: unbounded.
 
-| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                             |
-| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------- |
-| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                     |
-| `post_id`                    | `uuid`                     | no       |                              |          |           |           | The disputed review post.                                                           |
-| `topic_id`                   | `uuid`                     | no       |                              |          |           |           | The topic the disputed review rates (the claimant's topic).                         |
-| `disputed_rating`            | `smallint`                 | no       |                              |          |           |           | Immutable snapshot of the topic rating when the dispute was filed.                  |
-| `disputant_user_id`          | `uuid`                     | no       |                              |          |           |           | The verified topic claimant who filed the dispute.                                  |
-| `reason`                     | `review_dispute_reasons`   | no       |                              |          |           |           | Legal-angle reason for the dispute.                                                 |
-| `claim_text`                 | `text`                     | no       |                              |          |           |           | The disputant's explanation of their claim.                                         |
-| `recommended_action`         | `review_dispute_actions`   | yes      |                              |          |           |           | AI-recommended action (set by the dispute-resolution agent).                        |
-| `ai_public_response`         | `text`                     | yes      |                              |          |           |           | AI-drafted public response (never delivered directly; human must edit and approve). |
-| `ai_internal_response`       | `text`                     | yes      |                              |          |           |           | AI-drafted internal reasoning for moderators.                                       |
-| `model`                      | `text`                     | yes      |                              |          |           |           | OpenAI model used for the AI draft.                                                 |
-| `ai_drafted_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When the AI agent drafted the recommended_action and ai_public_response.            |
-| `public_response`            | `text`                     | yes      |                              |          |           |           | Human-owned public message. The ONLY field ever delivered to the disputant.         |
-| `internal_notes`             | `text`                     | yes      |                              |          |           |           | Internal moderator notes, never shared with the disputant.                          |
-| `drafted_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | When the moderator first seeded public_response from the AI draft.                  |
-| `edited_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the moderator last edited public_response.                                     |
-| `edited_by_id`               | `uuid`                     | yes      |                              |          |           |           | Moderator who last edited the draft public_response.                                |
-| `approved_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When a moderator approved the public_response for delivery.                         |
-| `approved_by_id`             | `uuid`                     | yes      |                              |          |           |           | Moderator who approved the public_response for delivery.                            |
-| `sent_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When the approved public_response was delivered to the disputant.                   |
-| `resolved_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When the dispute was resolved or dismissed.                                         |
-| `resolved_by_id`             | `uuid`                     | yes      |                              |          |           |           | Moderator who resolved or dismissed the dispute.                                    |
-| `resolution_action`          | `review_dispute_actions`   | yes      |                              |          |           |           | Final action taken to resolve the dispute.                                          |
-| `latest_lifecycle_change_id` | `uuid`                     | yes      |                              |          |           |           | Denormalized pointer to the most recent lifecycle change row for this dispute.      |
-| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                     |
-| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                     |
+| Column                       | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                      |
+| ---------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `id`                         | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                              |
+| `post_id`                    | `uuid`                     | no       |                              |          |           |           | The disputed review post.                                                                                    |
+| `topic_id`                   | `uuid`                     | no       |                              |          |           |           | The topic the disputed review rates (the claimant's topic).                                                  |
+| `disputed_rating`            | `smallint`                 | no       |                              |          |           |           | Immutable snapshot of the topic rating when the dispute was filed.                                           |
+| `disputant_user_id`          | `uuid`                     | no       |                              |          |           |           | The verified topic claimant who filed the dispute.                                                           |
+| `reason`                     | `review_dispute_reasons`   | no       |                              |          |           |           | Legal-angle reason for the dispute.                                                                          |
+| `claim_text`                 | `text`                     | no       |                              |          |           |           | The disputant's explanation of their claim.                                                                  |
+| `recommended_action`         | `review_dispute_actions`   | yes      |                              |          |           |           | AI-recommended action (set by the dispute-resolution agent).                                                 |
+| `ai_public_response`         | `text`                     | yes      |                              |          |           |           | AI-drafted public response (never delivered directly; human must edit and approve).                          |
+| `ai_internal_response`       | `text`                     | yes      |                              |          |           |           | AI-drafted internal reasoning for moderators.                                                                |
+| `model`                      | `text`                     | yes      |                              |          |           |           | OpenAI model used for the AI draft.                                                                          |
+| `ai_drafted_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When the AI agent drafted the recommended_action and ai_public_response.                                     |
+| `ai_draft_request_token`     | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Durable opaque request token; only the current request may save an AI draft, independent of queue job IDs.   |
+| `ai_draft_run_id`            | `text`                     | yes      |                              |          |           |           | Queue run that saved the current AI draft; retained across later human lifecycle changes for result polling. |
+| `public_response`            | `text`                     | yes      |                              |          |           |           | Human-owned public message. The ONLY field ever delivered to the disputant.                                  |
+| `internal_notes`             | `text`                     | yes      |                              |          |           |           | Internal moderator notes, never shared with the disputant.                                                   |
+| `drafted_at`                 | `timestamp with time zone` | yes      |                              |          |           |           | When the moderator first seeded public_response from the AI draft.                                           |
+| `edited_at`                  | `timestamp with time zone` | yes      |                              |          |           |           | When the moderator last edited public_response.                                                              |
+| `edited_by_id`               | `uuid`                     | yes      |                              |          |           |           | Moderator who last edited the draft public_response.                                                         |
+| `approved_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When a moderator approved the public_response for delivery.                                                  |
+| `approved_by_id`             | `uuid`                     | yes      |                              |          |           |           | Moderator who approved the public_response for delivery.                                                     |
+| `sent_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When the approved public_response was delivered to the disputant.                                            |
+| `resolved_at`                | `timestamp with time zone` | yes      |                              |          |           |           | When the dispute was resolved or dismissed.                                                                  |
+| `resolved_by_id`             | `uuid`                     | yes      |                              |          |           |           | Moderator who resolved or dismissed the dispute.                                                             |
+| `resolution_action`          | `review_dispute_actions`   | yes      |                              |          |           |           | Final action taken to resolve the dispute.                                                                   |
+| `latest_lifecycle_change_id` | `uuid`                     | yes      |                              |          |           |           | Denormalized pointer to the most recent lifecycle change row for this dispute.                               |
+| `created_at`                 | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                              |
+| `updated_at`                 | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `review_disputes_ai_draft_request_token_key`: `UNIQUE (ai_draft_request_token)`
 
 **Check constraints:**
 
@@ -63,6 +66,7 @@ _none_
 - `idx_review_disputes__post_id`: `CREATE INDEX idx_review_disputes__post_id ON public.review_disputes USING btree (post_id)`
 - `idx_review_disputes__status_created`: `CREATE INDEX idx_review_disputes__status_created ON public.review_disputes USING btree (resolved_at, id DESC)`
 - `idx_review_disputes__topic_id`: `CREATE INDEX idx_review_disputes__topic_id ON public.review_disputes USING btree (topic_id)`
+- `review_disputes_ai_draft_request_token_key`: `CREATE UNIQUE INDEX review_disputes_ai_draft_request_token_key ON public.review_disputes USING btree (ai_draft_request_token)`
 - `review_disputes_pkey`: `CREATE UNIQUE INDEX review_disputes_pkey ON public.review_disputes USING btree (id)`
 
 **Triggers:**

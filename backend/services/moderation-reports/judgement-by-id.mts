@@ -36,3 +36,24 @@ export async function getJudgementById(
   `)
   return (rows[0] as ModerationReportJudgement | undefined) ?? null
 }
+
+export async function getJudgementByRunId(
+  runId: string,
+): Promise<ModerationReportJudgement | null> {
+  const { rows } = await read<{ id: string }>(sql`/* getJudgementByRunId */
+    SELECT id FROM moderation_report_judgements WHERE run_id = ${runId}::uuid LIMIT 1
+  `)
+  return rows[0] ? getJudgementById(rows[0].id) : null
+}
+
+export async function getReportJudgementRunResult(
+  reportId: string,
+  runId: string,
+): Promise<{ completed: boolean; judgement_id: string | null }> {
+  const { rows } = await read<{ id: string }>(sql`/* getReportJudgementRunResult */
+    SELECT id FROM moderation_report_judgements
+    WHERE run_id = ${runId}::uuid AND triggering_report_id = ${reportId}::uuid
+    LIMIT 1
+  `)
+  return { completed: rows.length > 0, judgement_id: rows[0]?.id ?? null }
+}

@@ -181,33 +181,35 @@ describe('registered catalog SDK', () => {
     }
   })
 
-  it('drafts, approves, delivers, and resolves an appeal through four admin options', async () => {
-    const client = await connect(cases[3]!)
-    try {
-      const { id } = await createStaffResolutionFixture('appeal', false)
-      expect(
-        await callAndValidate(client, 'draft_review_response', 'appeal', {
-          id,
-          public_response: 'Reviewed through the SDK',
-          internal_notes: 'Acceptance fixture',
-        }),
-      ).toBeDefined()
-      expect(
-        await callAndValidate(client, 'approve_review_response', 'appeal', { id }),
-      ).toBeDefined()
-      expect(
-        await callAndValidate(client, 'deliver_review_response', 'appeal', { id }),
-      ).toBeDefined()
-      expect(
-        await callAndValidate(client, 'resolve_review_case', 'appeal', {
-          id,
-          action: 'deny',
-        }),
-      ).toBeDefined()
-    } finally {
-      await client.close()
-    }
-  })
+  it.each([
+    { kind: 'appeal', action: 'deny' },
+    { kind: 'dispute', action: 'dismiss' },
+  ] as const)(
+    'drafts, approves, delivers, and resolves a $kind through four admin options',
+    async ({ kind, action }) => {
+      const client = await connect(cases[3]!)
+      try {
+        const { id } = await createStaffResolutionFixture(kind, false)
+        expect(
+          await callAndValidate(client, 'draft_review_response', kind, {
+            id,
+            public_response: 'Reviewed through the SDK',
+            internal_notes: 'Acceptance fixture',
+          }),
+        ).toBeDefined()
+        expect(await callAndValidate(client, 'approve_review_response', kind, { id })).toBeDefined()
+        expect(await callAndValidate(client, 'deliver_review_response', kind, { id })).toBeDefined()
+        expect(
+          await callAndValidate(client, 'resolve_review_case', kind, {
+            id,
+            action,
+          }),
+        ).toBeDefined()
+      } finally {
+        await client.close()
+      }
+    },
+  )
 
   it('reruns a pending appeal resolution draft through the SDK', async () => {
     const client = await connect(cases[3]!)

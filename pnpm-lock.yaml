@@ -523,6 +523,9 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../../services/moderation
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../../services/moderation-ai-config
       '@services/review-disputes':
         specifier: workspace:^
         version: link:../../services/review-disputes
@@ -603,6 +606,9 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../../services/moderation
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../../services/moderation-ai-config
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../../services/moderation-reports
@@ -4916,6 +4922,9 @@ importers:
       '@queues/cache-purge':
         specifier: workspace:^
         version: link:../../queues/cache-purge
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../moderation-ai-config
       '@services/rss-feeds':
         specifier: workspace:^
         version: link:../rss-feeds
@@ -5909,6 +5918,9 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../moderation
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../moderation-ai-config
       '@services/moderation-analytics':
         specifier: workspace:^
         version: link:../moderation-analytics
@@ -7653,6 +7665,12 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/moderation-ai-config:
+    dependencies:
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
+
   backend/services/moderation-analytics:
     dependencies:
       '@data-stores/psql':
@@ -7858,6 +7876,9 @@ importers:
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../moderation-ai-config
       '@services/moderation-cases':
         specifier: workspace:^
         version: link:../moderation-cases
@@ -12210,6 +12231,9 @@ importers:
       '@services/moderation':
         specifier: workspace:^
         version: link:../../services/moderation
+      '@services/moderation-ai-config':
+        specifier: workspace:^
+        version: link:../../services/moderation-ai-config
       '@services/moderation-reports':
         specifier: workspace:^
         version: link:../../services/moderation-reports

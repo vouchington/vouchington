@@ -22,6 +22,7 @@ vi.mock(import('@/lib/api/client/posts'), () => ({
 vi.mock(import('@/lib/api/client/reports'), () => ({
   resolveModerationReport: mockResolveModerationReport,
   rerunReportJudgement: mockRerunReportJudgement,
+  getReportJudgementRun: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(import('@/lib/on-error'), () => ({ default: mockOnError, onSuccess: mockOnSuccess }))
@@ -175,7 +176,11 @@ describe('ReportsClient clustered staff reports', () => {
   })
 
   it('reruns judgement and renders next-page links with filters', async () => {
-    mockRerunReportJudgement.mockResolvedValue({ queued: true, rerun_by_id: 'admin-1' })
+    mockRerunReportJudgement.mockResolvedValue({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
     renderStaffReports(
       {
         ...makeClusteredReportsResponse(),
@@ -202,6 +207,25 @@ describe('ReportsClient clustered staff reports', () => {
     renderStaffReports(makeClusteredReportsResponse(), { statusFilter: 'reviewed' })
 
     expect(screen.queryByRole('button', { name: /remove all/i })).not.toBeInTheDocument()
+  })
+
+  it('disables duplicate removal while a cluster judgement rerun is pending', async () => {
+    mockRerunReportJudgement.mockResolvedValue({
+      queued: true,
+      rerun_by_id: 'admin-1',
+      run_id: 'report_judgement_test-run',
+    })
+    renderStaffReports(
+      makeClusteredReportsResponse({ duplicatePostIds: ['post-1', 'post-2', 'post-3'] }),
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: /re-run judgement/i })[0]!)
+
+    await waitFor(() => expect(mockRerunReportJudgement).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByRole('button', { name: /remove all/i })).toBeDisabled())
+    fireEvent.click(screen.getByRole('button', { name: /remove all/i }))
+    expect(screen.queryByRole('button', { name: /remove posts/i })).not.toBeInTheDocument()
+    expect(mockDeletePost).not.toHaveBeenCalled()
   })
 })
 

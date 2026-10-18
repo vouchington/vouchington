@@ -7,6 +7,7 @@ import {
 } from '@services/moderation-reports/target-metadata'
 import type { ModerationReportStatus } from '@services/moderation-reports/config'
 import { appendModerationReportStatusPredicate } from '@services/moderation-reports/sort-sql'
+import { reportAutomaticJudgementEnabledSql } from '@services/moderation-reports/automatic-judgement-eligibility'
 
 export function buildCommunityReportQueueQuery(
   communityId: string,
@@ -41,6 +42,9 @@ export function buildCommunityReportQueueQuery(
         WHEN 'no_action' THEN 1
         ELSE 0
       END AS cursor_severity_rank,
+      `)
+  reportQuery.append(reportAutomaticJudgementEnabledSql())
+  reportQuery.append(sql` AS automatic_judgement_enabled,
       CASE
         WHEN r.post_id IS NOT NULL AND target_post.post_type = 'comment' THEN
           (root_post.broadcast <> 'everyone' OR root_post.privacy <> 'public'

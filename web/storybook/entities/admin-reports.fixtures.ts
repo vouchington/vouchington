@@ -3,7 +3,6 @@ import type {
   AdminModerationReport,
   AdminModerationReportsResponse,
 } from '@/components/admin/reports-client'
-
 export const report: AdminModerationReport = {
   id: 'report-1',
   case_id: 'case-1',
@@ -26,7 +25,9 @@ export const report: AdminModerationReport = {
   report_count: 3,
   resolved_by_id: null,
   is_system_generated: false,
+  automatic_judgement_enabled: true,
   judgement: {
+    id: '00000000-0000-7000-8000-000000000001',
     recommended_action: 'remove',
     public_response: 'This content was removed for violating our spam policy.',
     internal_response:
@@ -60,6 +61,7 @@ export const banEvasionReport: AdminModerationReport = {
   report_count: 1,
   resolved_by_id: null,
   is_system_generated: true,
+  automatic_judgement_enabled: true,
   judgement: null,
   post_moderation_context: null,
   community_ban_evasion: {
@@ -97,6 +99,7 @@ export const data: AdminModerationReportsResponse = {
       report_count: 1,
       resolved_by_id: null,
       is_system_generated: false,
+      automatic_judgement_enabled: true,
       judgement: null,
       post_moderation_context: null,
     },

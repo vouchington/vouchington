@@ -43,8 +43,10 @@ export interface StaffModerationReport extends ModerationReportListItem {
   note: string | null
   resolved_by_id: string | null
   is_system_generated: boolean
+  automatic_judgement_enabled: boolean
   community_ban_evasion?: CommunityBanEvasionContext | null
   judgement: {
+    id: string
     recommended_action: 'no_action' | 'warn' | 'remove' | 'escalate'
     public_response: string
     internal_response: string
@@ -132,6 +134,12 @@ export interface ModerationReportResolutionResponse {
 }
 
 export interface RerunReportJudgementResponse {
-  queued: boolean
+  queued: true
   rerun_by_id: string
+  run_id: string
+}
+
+export interface ReportJudgementRunResponse {
+  completed: boolean
+  judgement_id: string | null
 }

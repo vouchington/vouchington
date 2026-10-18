@@ -100,4 +100,18 @@ describe('DisputesTable', () => {
     const annotateBtn = screen.getByTitle('Attach the response above as a public rebuttal')
     expect(annotateBtn).toBeInTheDocument()
   })
+
+  it('keeps another dispute actionable while one AI rerun is pending', () => {
+    render(
+      <DisputesTable
+        {...makeProps({
+          disputes: [makeDispute({ id: 'dispute-1' }), makeDispute({ id: 'dispute-2' })],
+          pendingRerunIds: new Set(['dispute-1']),
+        })}
+      />,
+    )
+    const rerunButtons = screen.getAllByTitle('Re-run AI')
+    expect(rerunButtons[0]).toBeDisabled()
+    expect(rerunButtons[1]).toBeEnabled()
+  })
 })

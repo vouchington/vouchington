@@ -8,6 +8,7 @@
   "reports": [
     {
       "admin_action_path": "/admin/posts/00000000-0000-7000-8000-000000000603",
+      "automatic_judgement_enabled": false,
       "case_id": "00000000-0000-7000-8000-000000000602",
       "claim": {
         "claimed_at": "2026-07-06T12:30:00.000Z",

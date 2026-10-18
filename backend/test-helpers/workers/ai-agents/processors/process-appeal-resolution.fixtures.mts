@@ -37,22 +37,30 @@ async function captureAppealResolutionEnqueue(
   appealId: string,
 ): Promise<Job<AppealResolutionJobData>> {
   let job: Job<AppealResolutionJobData> | undefined
+  let admittedRunId: string | undefined
   const add = vi.spyOn(ai_agents, 'add').mockImplementation(async (name, data, opts) => {
     expect(name).toBe('appeal-resolution')
     const appealData = data as AppealResolutionJobData
     expect(appealData).toMatchObject({ appeal_id: appealId, rerun_by_id: staffUserId })
-    expect(opts?.deduplication).toEqual({
-      id: `appeal_resolution_manual_${appealId}`,
-      mode: 'simple',
+    expect(appealData.ai_draft_request_token).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    )
+    const runId = `appeal_resolution_${appealData.ai_draft_request_token}`
+    expect(opts?.jobId).toBe(runId)
+    expect(opts?.deduplication).toBeUndefined()
+    expect(opts?.ordering).toEqual({
+      key: `appeal_resolution_${appealId}`,
+      concurrency: 1,
     })
-    job = { name, data: appealData, opts } as Job<AppealResolutionJobData>
+    job = { id: runId, name, data: appealData, opts } as Job<AppealResolutionJobData>
     return job
   })
   try {
-    await rerunModerationAppealResolutionDraft(staffUserId, appealId)
+    admittedRunId = await rerunModerationAppealResolutionDraft(staffUserId, appealId)
   } finally {
     add.mockRestore()
   }
   if (!job) throw new Error(`Appeal-resolution rerun did not enqueue a job for ${appealId}`)
+  expect(admittedRunId).toBe(job.id)
   return job
 }

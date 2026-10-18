@@ -6,6 +6,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
+import { createStaffResolutionFixture } from '@voucha/test-helpers/staff-resolution-history'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import {
@@ -81,6 +82,29 @@ describe('registered catalog SDK', () => {
     const client = await connect(row.testCase)
     try {
       expect(await callAndValidate(client, row.name, row.option, row.args)).toBeDefined()
+    } finally {
+      await client.close()
+    }
+  })
+
+  it('validates nonempty staff appeal list schema and owned detail run identities', async () => {
+    const fixture = await createStaffResolutionFixture('appeal', false)
+    const client = await connect(cases[3]!)
+    try {
+      const detail = await callAndValidate(client, 'read_moderation_appeal', 'get', {
+        id: fixture.id,
+      })
+      expect(detail).toMatchObject({
+        appeal: {
+          id: fixture.id,
+          ai_draft_requested_run_id: expect.stringMatching(/^appeal_resolution_/),
+          ai_draft_run_id: null,
+        },
+      })
+      const page = await callAndValidate(client, 'read_moderation_appeal', 'list', {})
+      // Staff pages span the dirty database; only detail lookup is scoped to our owned row.
+      expect(page).toMatchObject({ appeals: expect.any(Array) })
+      expect((page as { appeals: unknown[] }).appeals.length).toBeGreaterThan(0)
     } finally {
       await client.close()
     }

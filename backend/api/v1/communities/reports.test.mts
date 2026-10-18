@@ -90,6 +90,7 @@ describe('community moderation reports routes', () => {
       expect(report.reporter_username).toBeUndefined()
       expect(report.note).toBeUndefined()
       expect(report.judgement).toBeNull()
+      expect(report.automatic_judgement_enabled).toBeUndefined()
     }
   })
 
@@ -158,6 +159,7 @@ describe('community moderation reports routes', () => {
       entry => entry.id === reportId,
     )
     expect(report?.note).toBe('Reporter note visible to site staff.')
+    expect(report?.automatic_judgement_enabled).toBe(false)
     expect((report?.judgement as Record<string, unknown>)?.internal_response).toBe(
       'Staff internal judgement.',
     )

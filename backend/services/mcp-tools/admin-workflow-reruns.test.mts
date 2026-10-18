@@ -31,8 +31,20 @@ describe('registered AI rerun writes', () => {
       const { id } = await createStaffResolutionFixture(kind, false)
       const result = await invoke(admin, 'rerun_review_resolution_draft', id, kind)
       expect(result.isError).not.toBe(true)
+      expect(result.structuredContent?.['run_id']).toMatch(
+        new RegExp(`^${kind}_resolution_[0-9a-f-]{36}$`),
+      )
       await expectStaffOperationHistory(admin.id, `${kind}_resolution_draft_rerun`)
       const jobs = await readAllQueueJobs(ai_agents)
+      expect(
+        jobs.find(
+          job =>
+            job.name === `${kind}-resolution` &&
+            'rerun_by_id' in job.data &&
+            job.data.rerun_by_id === admin.id &&
+            job.id === result.structuredContent?.['run_id'],
+        ),
+      ).toBeDefined()
       expect(jobs).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -60,16 +72,21 @@ describe('registered AI rerun writes', () => {
       entityType: 'post',
       entityId: postId,
     })
-    expect((await invoke(admin, 'rerun_report_judgement', id)).isError).not.toBe(true)
+    const result = await invoke(admin, 'rerun_report_judgement', id)
+    expect(result.isError).not.toBe(true)
+    const runId = result.structuredContent?.['run_id']
+    expect(runId).toMatch(/^[0-9a-f-]{36}$/)
     await expectStaffOperationHistory(admin.id, 'report_judgement_rerun')
     expect(await readAllQueueJobs(ai_agents)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          id: `report_judgement_${runId}`,
           name: 'report-judgement',
           data: expect.objectContaining({
             triggering_report_id: id,
             entity_id: postId,
             rerun_by_id: admin.id,
+            run_id: runId,
           }),
         }),
       ]),

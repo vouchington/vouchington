@@ -39,7 +39,6 @@ const pendingReportsPaginationParser = createPaginationParser({
 const pendingReportsFilterQuery = defineQueryContract({
   sort: queryEnum(['severity', 'most_reported', 'created_at_asc', 'created_at_desc'] as const),
 })
-
 app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Context) => {
   apiQuery(
     'GET:/api/v1/communities/:idOrSlug/reports/pending',
@@ -106,6 +105,7 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
         note,
         judgement,
         community_ban_evasion,
+        automatic_judgement_enabled,
         is_system_generated: _sg,
         target_is_restricted: _tr,
         target_is_anonymous,
@@ -114,7 +114,14 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
       }) => ({
         ...report,
         ...(isStaff
-          ? { reporter_user_id, reporter_username, note, judgement, community_ban_evasion }
+          ? {
+              reporter_user_id,
+              reporter_username,
+              note,
+              judgement,
+              community_ban_evasion,
+              automatic_judgement_enabled,
+            }
           : {
               judgement: null,
               community_ban_evasion: community_ban_evasion
@@ -131,7 +138,6 @@ app.route('/api/v1/communities/:idOrSlug/reports/pending').get(async (ctx: Conte
     }),
   })
 })
-
 app.route('/api/v1/communities/:idOrSlug/reports/:reportId/modmail').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await requireAuth(

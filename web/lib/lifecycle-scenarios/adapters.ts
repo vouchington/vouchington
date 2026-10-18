@@ -1,5 +1,5 @@
 import { canResolveModerationAppealAction, type ModerationAppeal } from '@/types/appeals'
-import { hasUpdatedAppealDraftLifecycle } from '@/lib/api/client/appeals'
+import { isAppealDraftReconciliationComplete } from '@/lib/api/client/appeals'
 import type { LifecycleJson } from './manifest'
 import { webForwardPagination } from './pagination-adapter'
 import { webIntegrityReconciliation } from './integrity-adapter'
@@ -38,9 +38,7 @@ function appealFor(source: Record<string, LifecycleJson>): ModerationAppeal {
     post_removal_kind: null,
     status: (stringValue(source, 'status') ?? 'pending') as ModerationAppeal['status'],
     recommended_action: null,
-    ai_drafted_at: booleanValue(source, 'latestLifecycleChangeChanged')
-      ? '2026-01-01T00:01:00.000Z'
-      : '2026-01-01T00:00:00.000Z',
+    ai_drafted_at: null,
     public_response: 'Ready for delivery',
     drafted_at: null,
     edited_at: null,
@@ -51,9 +49,9 @@ function appealFor(source: Record<string, LifecycleJson>): ModerationAppeal {
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     target_context: null,
-    latest_lifecycle_change_id: booleanValue(source, 'latestLifecycleChangeChanged')
-      ? 'change-2'
-      : 'change-1',
+    ai_draft_requested_run_id:
+      stringValue(source, 'requestedRunId') ?? 'appeal_resolution_lifecycle-request',
+    ai_draft_run_id: nullableStringValue(source, 'savedRunId'),
   }
 }
 
@@ -61,7 +59,6 @@ export const webModerationAppealActions: LifecycleAdapter = input => {
   const action = stringValue(input.action, 'type')
   const source = { ...input.preconditions, ...input.serverOutcome }
   const role = lifecycleViewerRole(input.preconditions)
-  const before = appealFor(input.preconditions)
   const appeal = appealFor(source)
   const availableActions =
     role === 'member' || appeal.status !== 'pending'
@@ -87,7 +84,7 @@ export const webModerationAppealActions: LifecycleAdapter = input => {
     status: stringValue(source, 'status') ?? 'pending',
     latestLifecycleChangeChanged:
       action === 'rerun'
-        ? hasUpdatedAppealDraftLifecycle(before, appeal)
+        ? isAppealDraftReconciliationComplete(appeal)
         : booleanValue(source, 'latestLifecycleChangeChanged'),
   }
   if (action === 'approve' || action === 'send') {

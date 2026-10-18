@@ -25,6 +25,7 @@ function makeUserReport(overrides: Partial<PendingModerationReport> = {}): Pendi
     status: 'pending',
     resolved_by_id: null,
     is_system_generated: true,
+    automatic_judgement_enabled: true,
     cursor_created_at: '2026-01-01T00:00:00.000000Z',
     admin_action_path: null,
     target_label: null,

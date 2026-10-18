@@ -1,5 +1,7 @@
 'use client'
 
+/* oxlint-disable max-lines -- cursor page refresh shares the list's request lifecycle. */
+
 /** Client-side cursor-page accumulation for append-only lists. */
 
 import { useLayoutEffect, useMemo, useState } from 'react'
@@ -11,6 +13,7 @@ import {
   createQueryToken,
   deduplicatePages,
   displacedFirstPage,
+  fetchLoadedCursorPages,
   pageInfoKey,
   PaginatedRequestLifecycle,
   type PaginatedData,
@@ -28,6 +31,7 @@ interface UsePaginatedListResult<T> {
   fetchError: Error | null
   clearError: () => void
   replaceFirstPage?: (page: T) => void
+  refreshLoadedPages?: (fetchFirstPage: () => Promise<T>) => Promise<void>
   resetToFirstPage?: (page: T) => void
   resetKey: symbol
 }
@@ -168,6 +172,26 @@ export function usePaginatedList<T extends PaginatedData>(
     })
   }
 
+  async function refreshLoadedPages(fetchFirstPage: () => Promise<T>) {
+    const refreshed = await fetchLoadedCursorPages(
+      pages.length,
+      fetchFirstPage,
+      cursor =>
+        options.fetchPage?.(endpoint, { ...params, after: cursor }) ??
+        options.loadPage?.(cursor) ??
+        getPaginatedPage<T>(endpoint, { ...params, after: cursor }),
+    )
+    setListState(prev =>
+      prev.queryToken === currentQueryToken
+        ? {
+            ...prev,
+            pages: deduplicatePages([...refreshed, ...prev.pages.slice(pages.length)]),
+            fetchError: null,
+          }
+        : prev,
+    )
+  }
+
   function resetToFirstPage(page: T) {
     const replacementQueryToken = createQueryToken()
     setListState(prev =>
@@ -193,6 +217,7 @@ export function usePaginatedList<T extends PaginatedData>(
     fetchError,
     clearError,
     replaceFirstPage,
+    refreshLoadedPages,
     resetToFirstPage,
     resetKey: currentQueryToken,
   }

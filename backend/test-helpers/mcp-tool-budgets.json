@@ -1,5 +1,5 @@
 {
-  "source": "Measured from api-fixtures/v1/mcp.json; per-tool list/core serialized sizes use compact JSON UTF-16 lengths.",
+  "source": "Measured from the generated api-fixtures/v1/mcp.json catalog; per-tool list/core serialized sizes use compact JSON UTF-16 lengths.",
   "formula": "ceil(measured * 1.015 / 1000) * 1000",
   "servers": {
     "user": {
@@ -767,7 +767,7 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40025,
+          "list": 40102,
           "core": 6473
         },
         "max": {
@@ -940,11 +940,11 @@
       },
       "list_moderation_reports": {
         "measured": {
-          "list": 20425,
+          "list": 20746,
           "core": 529
         },
         "max": {
-          "list": 21000,
+          "list": 22000,
           "core": 1000
         }
       },
@@ -960,7 +960,7 @@
       },
       "rerun_report_judgement": {
         "measured": {
-          "list": 615,
+          "list": 651,
           "core": 229
         },
         "max": {
@@ -1230,17 +1230,17 @@
       },
       "read_moderation_appeal": {
         "measured": {
-          "list": 10715,
+          "list": 10871,
           "core": 815
         },
         "max": {
-          "list": 11000,
+          "list": 12000,
           "core": 1000
         }
       },
       "read_review_dispute": {
         "measured": {
-          "list": 7215,
+          "list": 7371,
           "core": 814
         },
         "max": {
@@ -1250,7 +1250,7 @@
       },
       "draft_review_response": {
         "measured": {
-          "list": 8331,
+          "list": 8595,
           "core": 741
         },
         "max": {
@@ -1260,7 +1260,7 @@
       },
       "approve_review_response": {
         "measured": {
-          "list": 8208,
+          "list": 8472,
           "core": 614
         },
         "max": {
@@ -1270,7 +1270,7 @@
       },
       "deliver_review_response": {
         "measured": {
-          "list": 8207,
+          "list": 8471,
           "core": 614
         },
         "max": {
@@ -1280,7 +1280,7 @@
       },
       "rerun_review_resolution_draft": {
         "measured": {
-          "list": 1021,
+          "list": 1057,
           "core": 632
         },
         "max": {
@@ -1290,11 +1290,11 @@
       },
       "resolve_review_case": {
         "measured": {
-          "list": 8609,
+          "list": 8873,
           "core": 1021
         },
         "max": {
-          "list": 9000,
+          "list": 10000,
           "core": 2000
         }
       },

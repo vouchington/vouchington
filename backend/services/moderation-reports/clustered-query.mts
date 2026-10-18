@@ -4,6 +4,7 @@ import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { ModerationReportStatus } from './config.mts'
 import type { PendingModerationReport } from './pending-moderation-report.mts'
 import { enrichClusteredReports } from './clustered-report-enrichment.mts'
+import { reportAutomaticJudgementEnabledSql } from './automatic-judgement-eligibility.mts'
 import {
   appendReportTargetColumns,
   moderationReportsWithEntitySql,
@@ -171,6 +172,7 @@ export async function selectReportsByCluster(
       report_counts.report_count AS cursor_report_count,
       COALESCE(u.username = ${BAN_EVASION_SYSTEM_USERNAME}, false) AS is_system_generated,
       `)
+  query.append(reportAutomaticJudgementEnabledSql()).append(sql` AS automatic_judgement_enabled, `)
   query.append(reportTargetIsRestrictedSql())
   query.append(sql` AS target_is_restricted
     FROM ranked_reports r

@@ -1,4 +1,5 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { withPrimaryReads } from '@data-stores/psql'
 import { rerunReportJudgement } from '@services/moderation-reports/rerun-judgement'
 import { listModerationReportPage } from '@services/moderation-reports/list-page'
 import app from '../../app.mts'
@@ -11,6 +12,8 @@ import {
 } from '../../response-helpers.mts'
 import {
   currentUserCanResolveModerationReport,
+  getModerationReportById,
+  getReportJudgementRunResult,
   type ModerationReportResolutionStatus,
 } from '@services/moderation-reports'
 import { isModerationStaff } from '@services/users'
@@ -60,14 +63,16 @@ app.route('/api/v1/reports').get(async (ctx: Context) => {
     ctx.json(
       apiResponse(
         'GET:/api/v1/reports#clustered',
-        await listModerationReportPage('staff', null, { ...options, cluster: 'entity' }),
+        await withPrimaryReads(() =>
+          listModerationReportPage('staff', null, { ...options, cluster: 'entity' }),
+        ),
       ),
     )
   } else if (isStaff) {
     ctx.json(
       apiResponse(
         'GET:/api/v1/reports#staff',
-        await listModerationReportPage('staff', null, options),
+        await withPrimaryReads(() => listModerationReportPage('staff', null, options)),
       ),
     )
   } else {
@@ -110,8 +115,22 @@ app.route('/api/v1/reports/:id/judgements').post(async (ctx: Context) => {
   const id = validateUUIDParam(ctx, 'id')
   validateRequestContract(ctx, 'POST:/api/v1/reports/:id/judgements', { path: ctx.params })
 
-  await rerunReportJudgement(currentUser.id, id)
+  const runId = await rerunReportJudgement(currentUser.id, id)
 
   ctx.setStatus(202)
-  ctx.json({ queued: true, rerun_by_id: currentUser.id })
+  ctx.json({ queued: true, rerun_by_id: currentUser.id, run_id: runId })
+})
+
+app.route('/api/v1/reports/:id/judgements/:runId').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanResolveModerationReport,
+    'GET:/api/v1/reports/:id/judgements/:runId',
+  )
+  const id = validateUUIDParam(ctx, 'id')
+  const runId = validateUUIDParam(ctx, 'runId')
+  validateRequestContract(ctx, 'GET:/api/v1/reports/:id/judgements/:runId', { path: ctx.params })
+  const report = await getModerationReportById(id, { primary: true })
+  ctx.assert(report, 404, 'Report not found')
+  ctx.json(await withPrimaryReads(() => getReportJudgementRunResult(id, runId)))
 })

@@ -237,6 +237,10 @@ describe('community moderation MCP pending report reads — real PostgreSQL and 
       expect(page.reports).toEqual([expect.objectContaining({ id: reportId })])
       const received = (page.reports as Array<Record<string, unknown>>)[0]!
       expect(received).not.toHaveProperty('case_id')
+      expect(typeof received.automatic_judgement_enabled).toBe(
+        administrator ? 'boolean' : 'undefined',
+      )
+      expect(Object.hasOwn(received, 'automatic_judgement_enabled')).toBe(administrator)
       expect(JSON.stringify(page)).not.toContain(caseId)
       const judgement = received.judgement as Record<string, unknown> | null
       expect(Boolean(judgement)).toBe(administrator)

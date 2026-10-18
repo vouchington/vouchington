@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   triggering_report_id uuid REFERENCES moderation_reports (id) ON DELETE SET NULL,
   -- guardrails-disable-next-line uuid-must-be-key
   rerun_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
+  -- Opaque identity of a manually admitted run; automatic judgements have no run identity.
+  run_id uuid UNIQUE,
   recommended_action moderation_judgement_actions NOT NULL,
   public_response text NOT NULL,
   internal_response text NOT NULL,
@@ -64,6 +66,7 @@ COMMENT ON COLUMN moderation_report_judgements.hostname_id IS 'Judged URL hostna
 COMMENT ON COLUMN moderation_report_judgements.rss_feed_item_id IS 'Judged RSS feed item; set when entity is rss_feed_item.';
 COMMENT ON COLUMN moderation_report_judgements.triggering_report_id IS 'The moderation report that triggered this judgement run, if any.';
 COMMENT ON COLUMN moderation_report_judgements.rerun_by_id IS 'Moderator who requested a re-run of the judgement, if applicable.';
+COMMENT ON COLUMN moderation_report_judgements.run_id IS 'Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.';
 COMMENT ON COLUMN moderation_report_judgements.recommended_action IS 'AI-recommended moderation action.';
 COMMENT ON COLUMN moderation_report_judgements.public_response IS 'Public-facing explanation of the judgement.';
 COMMENT ON COLUMN moderation_report_judgements.internal_response IS 'Internal reasoning visible to staff only.';

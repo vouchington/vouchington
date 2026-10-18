@@ -41,16 +41,19 @@ export type ReportJudgementJobData = {
   entity_id: string
   triggering_report_id: string
   rerun_by_id?: string | null
+  run_id?: string | null
   context_hash?: string | null
 }
 
 export type DisputeResolutionJobData = {
   dispute_id: string
+  ai_draft_request_token: string
   rerun_by_id?: string | null
 }
 
 export type AppealResolutionJobData = {
   appeal_id: string
+  ai_draft_request_token: string
   rerun_by_id?: string | null
 }
 

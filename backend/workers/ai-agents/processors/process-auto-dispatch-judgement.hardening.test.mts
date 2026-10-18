@@ -19,7 +19,7 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
-import { moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import { unpublishPostAsAgent } from '@services/communities/publications/agent-moderate'
 import type { ModerationJudgementAction } from '@ts-shared/utils/moderation-policy-data'
 import type { AutoDispatchJudgementJobData } from '@queues/ai-agents/types'

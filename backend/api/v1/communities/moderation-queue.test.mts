@@ -118,6 +118,7 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue', () => {
       expect(entry).not.toHaveProperty('reporter_username')
       expect(entry).not.toHaveProperty('note')
       expect(entry).not.toHaveProperty('resolved_by_id')
+      expect(entry).not.toHaveProperty('automatic_judgement_enabled')
     }
   })
 
@@ -167,7 +168,6 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue', () => {
     expect(response.body.viewer_tier).toBe('moderator')
     expect(response.body.page_info).toBeDefined()
     expect(typeof response.body.page_info.has_next_page).toBe('boolean')
-    // Community moderators (non-site-staff) review reports without reporter identity.
     const modEntry = (response.body.entries as Array<Record<string, unknown>>).find(
       e => e.entity_id === postId,
     )
@@ -175,6 +175,7 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue', () => {
     expect(modEntry).not.toHaveProperty('reporter_user_id')
     expect(modEntry).not.toHaveProperty('reporter_username')
     expect(modEntry).not.toHaveProperty('note')
+    expect(modEntry).not.toHaveProperty('automatic_judgement_enabled')
     expect(modEntry?.judgement).toBeNull()
   })
 
@@ -216,11 +217,11 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-queue', () => {
       .expect(200)
 
     expect(response.body.viewer_tier).toBe('moderator')
-    // Site staff DO see reporter identity (unlike community moderators).
     const staffEntry = (response.body.entries as Array<Record<string, unknown>>).find(
       e => e.entity_id === postId,
     )
     expect(staffEntry?.reporter_user_id).toBe(reporter.id)
+    expect(typeof staffEntry?.automatic_judgement_enabled).toBe('boolean')
     expect(staffEntry?.note).toBe('Reporter note visible to site staff.')
     expect((staffEntry?.judgement as Record<string, unknown>)?.internal_response).toBe(
       'Staff internal judgement.',

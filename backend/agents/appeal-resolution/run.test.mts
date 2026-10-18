@@ -9,13 +9,13 @@ import {
   insertTestCommunityPostReview,
   updateTestCommunityPostReviewState,
   markPostFlaggedForModeration,
-  suspendTestUserGetId,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createModerationAppeal } from '@services/moderation-appeals/create'
 import { getModerationAppealById } from '@services/moderation-appeals/get'
 import { parseCreateModerationAppealInput } from '@services/moderation-appeals/parse'
 import { runAppealResolutionAgent } from './run.mts'
+import { appealResolutionRunInputForTest } from '@voucha/test-helpers/appeal-resolution-run'
 import {
   makeAgentModelCaller,
   TEST_MODEL_SELECTION,
@@ -54,7 +54,11 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'x',
       internal_response: 'x',
     })
-    await runAppealResolutionAgent({ appealId: randomUUID() }, TEST_MODEL_SELECTION, callModel)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(randomUUID()),
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
     expect(callModel).not.toHaveBeenCalled()
   })
 
@@ -66,7 +70,11 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'First run.',
       internal_response: 'Internal.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, firstCaller)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      firstCaller,
+    )
     expect(firstCaller).toHaveBeenCalledOnce()
 
     const secondCaller = makeModelCaller({
@@ -74,7 +82,11 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'Second run.',
       internal_response: 'Internal.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, secondCaller)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      secondCaller,
+    )
     expect(secondCaller).not.toHaveBeenCalled()
   })
 
@@ -87,7 +99,11 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Moderation action was not justified.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -106,7 +122,11 @@ describe('runAppealResolutionAgent', () => {
       public_response: 'First.',
       internal_response: 'First.',
     })
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, firstCaller)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      firstCaller,
+    )
 
     const secondCaller = makeModelCaller({
       recommended_action: 'reduce',
@@ -114,7 +134,7 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Rerun internal.',
     })
     await runAppealResolutionAgent(
-      { appealId: appeal.id, rerunById: staff.id },
+      await appealResolutionRunInputForTest(appeal.id, staff.id),
       TEST_MODEL_SELECTION,
       secondCaller,
     )
@@ -127,7 +147,7 @@ describe('runAppealResolutionAgent', () => {
   it('replaces an unapproved draft when a queued rerun completes', async () => {
     const appeal = await makeWarningAndAppeal()
     await runAppealResolutionAgent(
-      { appealId: appeal.id },
+      await appealResolutionRunInputForTest(appeal.id),
       TEST_MODEL_SELECTION,
       makeModelCaller({
         recommended_action: 'deny',
@@ -137,7 +157,7 @@ describe('runAppealResolutionAgent', () => {
     )
 
     await runAppealResolutionAgent(
-      { appealId: appeal.id, rerunById: staff.id },
+      await appealResolutionRunInputForTest(appeal.id, staff.id),
       TEST_MODEL_SELECTION,
       makeModelCaller({
         recommended_action: 'reduce',
@@ -173,7 +193,11 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'User violated community rules.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -204,7 +228,11 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Removal was unwarranted.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).toHaveBeenCalledOnce()
     const updated = await getModerationAppealById(appeal.id)
@@ -241,33 +269,13 @@ describe('runAppealResolutionAgent', () => {
       internal_response: 'Community moderation action was appropriate.',
     })
 
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
+    await runAppealResolutionAgent(
+      await appealResolutionRunInputForTest(appeal.id),
+      TEST_MODEL_SELECTION,
+      callModel,
+    )
 
     expect(callModel).toHaveBeenCalledOnce()
     expect(callModel.mock.calls[0][0]).toContain('Original action: Community post removal')
-  })
-
-  it('calls the model for a suspension appeal and includes suspension context', async () => {
-    const suspendedUser = await createTestUser()
-    await suspendTestUserGetId(suspendedUser.id, 'Test suspension reason')
-    const input = parseCreateModerationAppealInput({
-      target_type: 'suspension',
-      appeal_reason: `Suspension appeal reason ${randomUUID()}`,
-    })
-    const { appeal } = await createModerationAppeal(suspendedUser, WEB_PROVENANCE, input)
-
-    const callModel = makeModelCaller({
-      recommended_action: 'deny',
-      public_response: 'The suspension stands.',
-      internal_response: 'User violated platform rules.',
-    })
-
-    await runAppealResolutionAgent({ appealId: appeal.id }, TEST_MODEL_SELECTION, callModel)
-
-    expect(callModel).toHaveBeenCalledOnce()
-    const updated = await getModerationAppealById(appeal.id)
-    expect(updated!.ai_drafted_at).not.toBeNull()
-    expect(updated!.recommended_action).toBe('deny')
-    expect(callModel.mock.calls[0][0]).toContain('Platform suspension')
   })
 })

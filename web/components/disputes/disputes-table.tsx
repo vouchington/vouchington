@@ -12,6 +12,7 @@ interface DisputesTableProps {
   disputes: ReviewDispute[]
   draftEdits: Record<string, string>
   loadingId: string | null
+  pendingRerunIds?: ReadonlySet<string>
   onEdit: (id: string, text: string) => void
   onApprove: (id: string) => void
   onSend: (id: string) => void
@@ -46,6 +47,7 @@ function disputeRows({
   disputes,
   draftEdits,
   loadingId,
+  pendingRerunIds,
   onEdit,
   onApprove,
   onSend,
@@ -61,7 +63,7 @@ function disputeRows({
           ...dispute,
           public_response: draftEdits[dispute.id] ?? dispute.public_response,
         }}
-        disabled={loadingId !== null}
+        disabled={loadingId !== null || Boolean(pendingRerunIds?.has(dispute.id))}
         onEdit={onEdit}
         onApprove={onApprove}
         onSend={onSend}

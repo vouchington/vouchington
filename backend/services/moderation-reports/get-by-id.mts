@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { ModerationReport } from './config.mts'
 
@@ -17,8 +17,12 @@ export async function getReporterForCommunityReport(
   return (rows[0]?.reporter_user_id as string | undefined) ?? null
 }
 
-export async function getModerationReportById(id: string): Promise<ModerationReport | null> {
-  const { rows } = await read(sql`/* getModerationReportById */
+export async function getModerationReportById(
+  id: string,
+  { primary = false }: { primary?: boolean } = {},
+): Promise<ModerationReport | null> {
+  const query = primary ? write : read
+  const { rows } = await query(sql`/* getModerationReportById */
     SELECT
       r.id,
       r.created_at,

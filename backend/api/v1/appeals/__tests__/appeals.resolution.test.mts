@@ -204,6 +204,7 @@ describe('POST /api/v1/appeals/:id/resolution-drafts — rerun AI', () => {
       .expect(202)
     expect(response.body.queued).toBe(true)
     expect(response.body.rerun_by_id).toBe(staff.id)
+    expect(response.body.run_id).toMatch(/^appeal_resolution_[0-9a-f-]{36}$/)
     const history = (await readStaffActionHistory(staff.id)).filter(
       row =>
         row.action_type === 'appeal_resolution_draft_rerun' &&

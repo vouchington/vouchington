@@ -29,6 +29,7 @@ import type {
   AdminModerationReportDuplicateCluster,
 } from './reports-client-types'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { useReportsAiPolling } from './use-reports-ai-polling'
 
 interface ClusteredReportsClientProps {
   data: AdminClusteredModerationReportsResponse
@@ -79,6 +80,9 @@ export function ClusteredReportsClient({
     () => filterVisibleDuplicateClusters(data.duplicate_clusters, removedClusterKeys),
     [data.duplicate_clusters, removedClusterKeys],
   )
+  const visibleReports = clusters.flatMap(cluster => cluster.reports)
+  const { pendingRerunEntities, pollingTimedOut, rerunTimedOut, clearRerunTimeout, markRerun } =
+    useReportsAiPolling(visibleReports, true)
   const disabled =
     Boolean(loadingClusterId || loadingDuplicateId || rerunningReportId) || isRefreshing
   const isPendingFilter = !statusFilter || statusFilter === 'pending'
@@ -94,6 +98,7 @@ export function ClusteredReportsClient({
   })
 
   function handleResolveCluster(cluster: AdminModerationReportCluster, status: ResolveStatus) {
+    if (pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`)) return
     const pendingReports = selectOrdinaryPendingReports(cluster)
     if (pendingReports.length === 0) return
     setLoadingClusterId(cluster.id)
@@ -134,6 +139,7 @@ export function ClusteredReportsClient({
   }
 
   function handleRemoveClusterTarget(cluster: AdminModerationReportCluster) {
+    if (pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`)) return
     if (!canBulkRemove || (cluster.entity_type !== 'post' && cluster.entity_type !== 'comment')) {
       return
     }
@@ -158,6 +164,12 @@ export function ClusteredReportsClient({
 
   function handleRemoveDuplicateCluster(duplicate: AdminModerationReportDuplicateCluster) {
     if (!canBulkRemove || !isPendingFilter) return
+    if (
+      duplicate.clusters.some(cluster =>
+        pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`),
+      )
+    )
+      return
     const postIds = [...new Set(duplicate.clusters.map(cluster => cluster.entity_id))]
     if (postIds.length === 0) return
     setLoadingDuplicateId(duplicate.id)
@@ -187,10 +199,13 @@ export function ClusteredReportsClient({
   }
 
   function handleRerun(report: AdminModerationReport) {
+    if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
+    clearRerunTimeout()
     setRerunningReportId(report.id)
     startRefreshTransition(async () => {
       try {
-        await rerunReportJudgement(report.id)
+        const { run_id: runId } = await rerunReportJudgement(report.id)
+        markRerun(report.id, runId)
         onSuccess(t('extracted.admin.reportsClusteredClient.judgementReRunQueued_ac6c0160'))
         router.refresh()
       } catch (err) {
@@ -203,11 +218,14 @@ export function ClusteredReportsClient({
     })
   }
 
-  function handleWarn() {
+  function handleWarn(report: AdminModerationReport) {
+    if (pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
     router.refresh()
   }
 
-  function handleBanEvasionAction() {
+  function handleBanEvasionAction(reportId: string) {
+    const report = visibleReports.find(candidate => candidate.id === reportId)
+    if (report && pendingRerunEntities.has(`${report.entity_type}:${report.entity_id}`)) return
     startRefreshTransition(() => {
       router.refresh()
     })
@@ -221,11 +239,17 @@ export function ClusteredReportsClient({
       <p className='text-sm text-muted-foreground'>
         {t('shared.countLabel.format', { count: clusters.length, unit: 'queueItem' })}
       </p>
+      {(pollingTimedOut || rerunTimedOut) && (
+        <output className='block text-sm text-muted-foreground'>
+          AI judgement is taking longer than expected. Refresh this page to check again.
+        </output>
+      )}
       <DuplicateClusterList
         duplicateClusters={duplicateClusters}
         canBulkRemove={canBulkRemove && isPendingFilter}
         disabled={disabled}
         loadingDuplicateId={loadingDuplicateId}
+        pendingRerunEntities={pendingRerunEntities}
         onRemove={duplicate => handleRemoveDuplicateCluster(duplicate)}
         uiLocale={uiLocale}
       />
@@ -244,6 +268,7 @@ export function ClusteredReportsClient({
         onWarn={handleWarn}
         onBanEvasionAction={handleBanEvasionAction}
         rerunningReportId={rerunningReportId}
+        pendingRerunEntities={pendingRerunEntities}
         uiLocale={uiLocale}
       />
       <div className='flex gap-4'>

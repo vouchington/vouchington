@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { ModerationReportStatus } from './config.mts'
 export type { CommunityBanEvasionContext } from './config.mts'
+import { reportAutomaticJudgementEnabledSql } from './automatic-judgement-eligibility.mts'
 import {
   appendReportTargetColumns,
   moderationReportsWithEntitySql,
@@ -40,6 +41,7 @@ export type RedactedModerationReport = Omit<
   | 'judgement'
   | 'community_ban_evasion'
   | 'is_system_generated'
+  | 'automatic_judgement_enabled'
 >
 
 export type ListModerationReportsOptions = {
@@ -92,6 +94,9 @@ export async function listModerationReports(options: ListModerationReportsOption
   query.append(sql` AS cursor_severity_rank,
       /* Keep the redaction contract boolean if reporter joins ever become nullable. */
       COALESCE(u.username = ${BAN_EVASION_SYSTEM_USERNAME}, false) AS is_system_generated,
+      `)
+  query.append(reportAutomaticJudgementEnabledSql())
+  query.append(sql` AS automatic_judgement_enabled,
       `)
   query.append(reportTargetIsRestrictedSql())
   query.append(sql` AS target_is_restricted

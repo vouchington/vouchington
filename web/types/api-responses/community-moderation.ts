@@ -47,6 +47,7 @@ export interface CommunityModerationReport {
   report_count: number
   resolved_by_id: string | null
   judgement?: {
+    id: string
     recommended_action: ModerationJudgementAction
     public_response: string
     internal_response: string

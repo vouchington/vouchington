@@ -1,14 +1,19 @@
 'use client'
+/* oxlint-disable max-lines -- review queue coordinates pagination and approval state. */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { usePendingAiRefresh } from '@/hooks/use-pending-ai-refresh'
 import type {
   CopyrightEmailIntakeQueueItem,
   CopyrightEmailIntakeQueuePage,
 } from '@/types/copyright-notices'
-import type { CopyrightEmailApprovalDraft } from './copyright-email-approval-model'
+import {
+  createCopyrightEmailApprovalDraft,
+  type CopyrightEmailApprovalDraft,
+} from './copyright-email-approval-model'
 import {
   createCopyrightEmailCorrespondenceDraft,
   type CopyrightEmailCorrespondenceDraft,
@@ -18,10 +23,10 @@ import { CopyrightEmailQueueItem } from './copyright-email-queue-item'
 import { CopyrightEmailReviewDetail } from './copyright-email-review-detail'
 import {
   listCopyrightEmailIntakes,
+  getCopyrightEmailIntake,
   type CopyrightEmailIntake,
 } from '@/lib/api/client/copyright-email-intakes'
 import { useCopyrightEmailReviewActions } from './copyright-email-review-actions'
-
 export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueuePage }) {
   const {
     pages,
@@ -32,6 +37,7 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     fetchError,
     clearError,
     resetToFirstPage,
+    refreshLoadedPages,
     resetKey,
   } = usePaginatedList(
     data,
@@ -44,9 +50,53 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
     for (const item of page.copyright_email_intakes) itemById.set(item.id, item)
   }
   const items = [...itemById.values()]
+  const pendingItems = items.filter(
+    item =>
+      item.waiting_reason === 'awaiting_review' &&
+      item.parse_status === 'succeeded' &&
+      item.recommendation_id === null,
+  )
+  const refreshTimedOut = usePendingAiRefresh(
+    pendingItems.length > 0,
+    () => refreshLoadedPages?.(() => listCopyrightEmailIntakes()),
+    pendingItems.map(item => item.id).join('|'),
+  )
   const [detail, setDetail] = useState<CopyrightEmailIntake | null>(null)
-  const [rationale, setRationale] = useState('')
   const [draft, setDraft] = useState<CopyrightEmailApprovalDraft | null>(null)
+  const draftEdited = useRef(false)
+  const seededRecommendation = useRef<string | null>(null)
+  function seedRecommendation(next: CopyrightEmailIntake) {
+    const recommendation = next.recommendation
+    if (!recommendation || seededRecommendation.current === recommendation.id) return
+    seededRecommendation.current = recommendation.id
+    if (!draftEdited.current)
+      setDraft(createCopyrightEmailApprovalDraft(recommendation.structured_output))
+  }
+  const detailId = detail?.id
+  const selectedRecommendationId = items.find(item => item.id === detailId)?.recommendation_id
+  const detailKey = `${detailId ?? ''}:${selectedRecommendationId ?? ''}`
+  const latestDetailKey = useRef(detailKey)
+  useEffect(() => {
+    latestDetailKey.current = detailKey
+  }, [detailKey])
+  const detailNeedsRecommendation = Boolean(
+    detail && selectedRecommendationId && detail.recommendation?.id !== selectedRecommendationId,
+  )
+  const detailRefreshTimedOut = usePendingAiRefresh(
+    detailNeedsRecommendation,
+    async () => {
+      if (!detail) return
+      const response = await getCopyrightEmailIntake(detail.id)
+      if (latestDetailKey.current === detailKey) {
+        seedRecommendation(response.copyright_email_intake)
+        setDetail(current =>
+          current?.id === detail.id ? response.copyright_email_intake : current,
+        )
+      }
+    },
+    `detail:${detailKey}`,
+  )
+  const [rationale, setRationale] = useState('')
   const [correspondenceDraft, setCorrespondenceDraft] = useState<CopyrightEmailCorrespondenceDraft>(
     createCopyrightEmailCorrespondenceDraft,
   )
@@ -55,6 +105,25 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    if (!detailId || !detailNeedsRecommendation) return
+    let current = true
+    void getCopyrightEmailIntake(detailId)
+      .then(response => {
+        if (current) {
+          seedRecommendation(response.copyright_email_intake)
+          setDetail(previous =>
+            previous?.id === detailId ? response.copyright_email_intake : previous,
+          )
+        }
+      })
+      .catch(() => {
+        if (current) setError('Could not refresh the email recommendation.')
+      })
+    return () => {
+      current = false
+    }
+  }, [detailId, detailNeedsRecommendation, selectedRecommendationId])
   const {
     admitCorrespondence,
     associateWithNotice,
@@ -88,10 +157,13 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
         Staff must verify each parsed email and approve, reject, or ask the sender for more
         information before any case action.
       </p>
-      {error && (
-        <Alert variant='destructive'>
-          <AlertTitle>Review action failed</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+      {(error || refreshTimedOut || detailRefreshTimedOut) && (
+        <Alert variant={error ? 'destructive' : undefined}>
+          <AlertTitle>{error ? 'Review action failed' : 'AI review is still pending'}</AlertTitle>
+          <AlertDescription>
+            {error ??
+              'The AI recommendation is taking longer than expected. Refresh to check again.'}
+          </AlertDescription>
         </Alert>
       )}
       {success && (
@@ -119,7 +191,11 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
                     key={item.id}
                     item={item}
                     disabled={loading}
-                    onSelect={selectIntake}
+                    onSelect={id => {
+                      draftEdited.current = false
+                      seededRecommendation.current = null
+                      return selectIntake(id)
+                    }}
                     resetQueue={page => resetToFirstPage?.(page)}
                     setError={setError}
                     setSuccess={setSuccess}
@@ -140,7 +216,10 @@ export function CopyrightEmailReview({ data }: { data: CopyrightEmailIntakeQueue
               manualFallbackReason={manualFallbackReason}
               replyEmail={replyEmail}
               correspondenceDraft={correspondenceDraft}
-              onChangeDraft={setDraft}
+              onChangeDraft={value => {
+                draftEdited.current = true
+                setDraft(value)
+              }}
               onChangeRationale={setRationale}
               onChangeManualFallbackReason={setManualFallbackReason}
               onChangeReplyEmail={setReplyEmail}

@@ -11,13 +11,13 @@ import {
   resolveDisputeAnnotate,
   sendDisputeResolution,
   updateDisputeDraft,
-  rerunDisputeAI,
   listReviewDisputesClient,
 } from '@/lib/api/client/disputes'
 import { DisputesTable } from './disputes-table'
 import type { ReviewDispute } from '@/types/review-disputes'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { disputesClientReducer, uniqueDisputes } from './disputes-client-state'
+import { useDisputeAiReruns } from './use-dispute-ai-reruns'
 
 interface DisputesData {
   disputes: ReviewDispute[]
@@ -56,6 +56,7 @@ export function DisputesClient({
   const disputes = uniqueDisputes(pages.flatMap(page => page.disputes)).map(
     dispute => state.disputeOverrides[dispute.id] ?? dispute,
   )
+  const { handleRerunAI, pendingRerunIds } = useDisputeAiReruns(disputes, dispatch)
 
   async function handleApprove(id: string) {
     dispatch({ type: 'set_loading', id })
@@ -81,21 +82,6 @@ export function DisputesClient({
       onError(err, {
         fallback: t('extracted.disputes.disputesClient.failedToSendDisputeResolution_7cdfc475'),
         tags: { form: 'dispute-send' },
-      })
-    } finally {
-      dispatch({ type: 'set_loading', id: null })
-    }
-  }
-
-  async function handleRerunAI(id: string) {
-    dispatch({ type: 'set_loading', id })
-    try {
-      await rerunDisputeAI(id)
-    } catch (err) {
-      /* c8 ignore next -- error path requires injecting a rerun AI failure */
-      onError(err, {
-        fallback: t('extracted.disputes.disputesClient.failedToReRunAi_8c594308'),
-        tags: { form: 'dispute-rerun' },
       })
     } finally {
       dispatch({ type: 'set_loading', id: null })
@@ -174,6 +160,7 @@ export function DisputesClient({
           disputes={disputes}
           draftEdits={state.draftEdits}
           loadingId={state.loadingId}
+          pendingRerunIds={pendingRerunIds}
           onEdit={(id, text) => dispatch({ type: 'edit_draft', id, text })}
           onApprove={handleSaveAndApprove}
           onSend={handleSend}

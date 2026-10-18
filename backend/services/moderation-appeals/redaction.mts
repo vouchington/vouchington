@@ -10,6 +10,8 @@ export type RedactedModerationAppeal = Omit<
   | 'ai_internal_response'
   | 'model'
   | 'ai_drafted_at'
+  | 'ai_draft_run_id'
+  | 'ai_draft_requested_run_id'
   | 'internal_notes'
   | 'drafted_at'
   | 'edited_at'
@@ -36,6 +38,8 @@ export function redactModerationAppeal(appeal: ModerationAppealResponse): Redact
     ai_internal_response: _air,
     model: _m,
     ai_drafted_at: _ada,
+    ai_draft_run_id: _adri,
+    ai_draft_requested_run_id: _adrri,
     internal_notes: _in,
     drafted_at: _da,
     edited_at: _ea,

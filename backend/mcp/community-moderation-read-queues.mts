@@ -118,6 +118,7 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
           note,
           judgement,
           community_ban_evasion,
+          automatic_judgement_enabled,
           is_system_generated: _d,
           target_is_restricted: _e,
           target_is_anonymous,
@@ -133,6 +134,7 @@ export const communityModerationReadQueues: Record<string, CommunityModerationHa
                 note,
                 judgement,
                 community_ban_evasion,
+                automatic_judgement_enabled,
               }
             : {
                 judgement: null,

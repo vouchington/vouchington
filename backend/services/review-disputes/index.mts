@@ -3,9 +3,16 @@ export type { ReviewDisputeResponse } from './types.mts'
 export { REVIEW_DISPUTE_STATUSES } from './config.mts'
 export { parseCreateReviewDisputeInput } from './parse.mts'
 export { createReviewDispute } from './create.mts'
-export { getReviewDisputeById, listDisputesForPost } from './get.mts'
+export {
+  getReviewDisputeById,
+  getReviewDisputeByIdFromPrimary,
+  listDisputesForPost,
+} from './get.mts'
 export { redactReviewDispute, listRedactedReviewDisputes } from './redaction.mts'
-export { createReviewDisputeDraft } from './create-dispute-draft.mts'
+export {
+  createReviewDisputeDraft,
+  isCurrentReviewDisputeDraftRequest,
+} from './create-dispute-draft.mts'
 export { updateReviewDisputeDraft } from './update-dispute-draft.mts'
 export { approveReviewDispute } from './approve-dispute.mts'
 export { sendApprovedReviewDisputeResolution } from './send-dispute-resolution.mts'

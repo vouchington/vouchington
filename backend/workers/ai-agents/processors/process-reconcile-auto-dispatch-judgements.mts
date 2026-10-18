@@ -1,4 +1,4 @@
-import { moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import { getUndispatchedJudgements } from '@services/moderation-reports'
 import { enqueueBulkAutoDispatchJudgements } from '@queues/ai-agents/enqueues/auto-dispatch-judgement'
 

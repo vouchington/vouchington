@@ -4,7 +4,10 @@ export { parseCreateModerationAppealInput } from './parse.mts'
 export { createModerationAppeal } from './create.mts'
 export { getModerationAppealById, getModerationAppealByIdFromPrimary } from './get.mts'
 export { redactModerationAppeal, listRedactedModerationAppeals } from './redaction.mts'
-export { createModerationAppealDraft } from './create-appeal-draft.mts'
+export {
+  createModerationAppealDraft,
+  isCurrentModerationAppealDraftRequest,
+} from './create-appeal-draft.mts'
 export { updateModerationAppealDraft } from './update-appeal-draft.mts'
 export { approveModerationAppeal } from './approve-appeal.mts'
 export { sendApprovedModerationAppealResolution } from './send-appeal-resolution.mts'

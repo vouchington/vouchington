@@ -51,7 +51,13 @@ const pendingReport = () => {
     ...schema,
     required: (schema['required'] as string[]).filter(
       key =>
-        !['reporter_user_id', 'reporter_username', 'note', 'community_ban_evasion'].includes(key),
+        ![
+          'reporter_user_id',
+          'reporter_username',
+          'note',
+          'community_ban_evasion',
+          'automatic_judgement_enabled',
+        ].includes(key),
     ),
   }
 }

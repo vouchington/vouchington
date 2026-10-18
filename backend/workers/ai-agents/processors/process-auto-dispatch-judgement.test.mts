@@ -15,7 +15,7 @@ import {
   safeUsername,
 } from '@voucha/test-helpers'
 import { closeScopedDynamicConfigContext } from '@voucha/test-helpers/dynamic-config'
-import { moderationAiDispatchConfig } from '@services/moderation/ai-config'
+import { moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import type { ModerationJudgementAction } from '@ts-shared/utils/moderation-policy-data'
 import type { AutoDispatchJudgementJobData } from '@queues/ai-agents/types'
 import type { Job } from 'glide-mq'

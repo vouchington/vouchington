@@ -90,8 +90,8 @@ export const adminAppealsLifecycleTools = [
       openWorldHint: true,
     },
     run: async (user, args) => {
-      await rerunModerationAppealResolutionDraft(user.id, args.id)
-      return { queued: true, rerun_by_id: user.id }
+      const runId = await rerunModerationAppealResolutionDraft(user.id, args.id)
+      return { queued: true, rerun_by_id: user.id, run_id: runId }
     },
   }),
 ]

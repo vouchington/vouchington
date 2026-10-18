@@ -84,6 +84,7 @@ const baseReport: AdminModerationReport = {
   report_count: 1,
   resolved_by_id: null,
   is_system_generated: false,
+  automatic_judgement_enabled: true,
   judgement: null,
   post_moderation_context: null,
 }
@@ -187,6 +188,7 @@ describe('AdminReportRow', () => {
     entity_type: 'user',
     entity_id: 'user-suspect',
     is_system_generated: true,
+    automatic_judgement_enabled: true,
     community_ban_evasion: {
       community_id: 'community-1',
       community_slug: 'test-community',
@@ -228,12 +230,10 @@ describe('AdminReportRow', () => {
 
   it('calls confirm/dismiss API and onBanEvasionAction when ban-evasion buttons are clicked', async () => {
     const onBanEvasionAction = vi.fn<VitestLooseMock>()
-
     const { container: confirmContainer } = renderBanEvasionRow({ onBanEvasionAction })
     await settleClick(confirmContainer.querySelector('[data-pw="ban-evasion-confirm"]')!)
     expect(onBanEvasionAction).toHaveBeenCalledWith(banEvasionReport.id)
     expect(confirmCommunityBanEvasion).toHaveBeenCalledWith('community-1', 'user-suspect')
-
     vi.clearAllMocks()
 
     const { container: dismissContainer } = renderBanEvasionRow({ onBanEvasionAction })

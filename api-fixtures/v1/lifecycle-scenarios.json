@@ -11,6 +11,8 @@
           "status": "pending",
           "approvedAt": null,
           "sentAt": null,
+          "requestedRunId": "appeal_resolution_00000000-0000-7000-8000-000000000201",
+          "savedRunId": null,
           "viewerRole": "administrator"
         },
         "action": { "type": "rerun" },
@@ -18,6 +20,8 @@
           "status": "pending",
           "approvedAt": null,
           "sentAt": null,
+          "requestedRunId": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+          "savedRunId": "appeal_resolution_00000000-0000-7000-8000-000000000202",
           "latestLifecycleChangeChanged": true
         }
       },

@@ -1238,8 +1238,10 @@
         "entity_type": "post",
         "id": "019f6559-6b31-7171-b5b1-ccd9d702c45e",
         "is_system_generated": false,
+        "automatic_judgement_enabled": true,
         "judgement": {
           "current_report_count": 3,
+          "id": "00000000-0000-7000-8000-000000000301",
           "internal_response": "Likely spam.",
           "is_stale": false,
           "judged_report_count": 3,
@@ -1296,6 +1298,7 @@
             "entity_type": "post",
             "id": "00000000-0000-7000-8100-000000000101",
             "is_system_generated": false,
+            "automatic_judgement_enabled": true,
             "judgement": null,
             "note": "Looks automated.",
             "post_moderation_context": null,
@@ -1350,6 +1353,7 @@
             "entity_type": "post",
             "id": "00000000-0000-7000-8100-000000000102",
             "is_system_generated": false,
+            "automatic_judgement_enabled": true,
             "judgement": null,
             "note": "Looks automated.",
             "post_moderation_context": null,
@@ -1408,6 +1412,7 @@
             "entity_type": "user",
             "id": "00000000-0000-7000-8100-000000000201",
             "is_system_generated": false,
+            "automatic_judgement_enabled": true,
             "judgement": null,
             "note": "Looks automated.",
             "post_moderation_context": null,
@@ -1441,6 +1446,7 @@
             "entity_type": "user",
             "id": "00000000-0000-7000-8100-000000000202",
             "is_system_generated": true,
+            "automatic_judgement_enabled": true,
             "judgement": null,
             "note": "Suspected ban evasion",
             "post_moderation_context": null,
@@ -1495,6 +1501,7 @@
             "entity_type": "post",
             "id": "00000000-0000-7000-8100-000000000103",
             "is_system_generated": false,
+            "automatic_judgement_enabled": true,
             "judgement": null,
             "note": "Looks automated.",
             "post_moderation_context": null,
@@ -1553,6 +1560,7 @@
                 "entity_type": "post",
                 "id": "00000000-0000-7000-8100-000000000101",
                 "is_system_generated": false,
+                "automatic_judgement_enabled": true,
                 "judgement": null,
                 "note": "Looks automated.",
                 "post_moderation_context": null,
@@ -1607,6 +1615,7 @@
                 "entity_type": "post",
                 "id": "00000000-0000-7000-8100-000000000102",
                 "is_system_generated": false,
+                "automatic_judgement_enabled": true,
                 "judgement": null,
                 "note": "Looks automated.",
                 "post_moderation_context": null,
@@ -1661,6 +1670,7 @@
                 "entity_type": "post",
                 "id": "00000000-0000-7000-8100-000000000103",
                 "is_system_generated": false,
+                "automatic_judgement_enabled": true,
                 "judgement": null,
                 "note": "Looks automated.",
                 "post_moderation_context": null,
@@ -1962,7 +1972,9 @@
         },
         "updated_at": "2026-06-02T12:00:00.000Z",
         "user_suspension_id": null,
-        "user_warning_id": "warning-2"
+        "user_warning_id": "warning-2",
+        "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+        "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
       }
     ],
     "page_info": {
@@ -2003,7 +2015,9 @@
       "status": "pending",
       "updated_at": "2026-06-01T12:05:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.approval.default": {
@@ -2038,7 +2052,9 @@
       "status": "pending",
       "updated_at": "2026-06-01T12:10:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.delivery.default": {
@@ -2073,7 +2089,9 @@
       "status": "pending",
       "updated_at": "2026-06-01T12:15:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution.accept": {
@@ -2108,7 +2126,9 @@
       "status": "resolved",
       "updated_at": "2026-06-01T12:20:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution.reduce": {
@@ -2143,7 +2163,9 @@
       "status": "resolved",
       "updated_at": "2026-06-01T12:20:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution.deny": {
@@ -2178,16 +2200,24 @@
       "status": "dismissed",
       "updated_at": "2026-06-01T12:20:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "native.moderation.appeals.resolution-drafts.default": {
     "queued": true,
-    "rerun_by_id": "admin-1"
+    "rerun_by_id": "admin-1",
+    "run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
   },
   "native.moderation.report-judgement.default": {
     "queued": true,
-    "rerun_by_id": "admin-1"
+    "rerun_by_id": "admin-1",
+    "run_id": "00000000-0000-7000-8000-000000000303"
+  },
+  "native.moderation.report-judgement-run.pending": {
+    "completed": false,
+    "judgement_id": null
   },
   "native.moderation.appeals.default": {
     "appeals": [
@@ -2250,7 +2280,9 @@
         },
         "updated_at": "2026-06-01T12:00:00.000Z",
         "user_suspension_id": null,
-        "user_warning_id": null
+        "user_warning_id": null,
+        "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+        "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
       }
     ],
     "page_info": {
@@ -2265,6 +2297,8 @@
         "claim_text": "Native review dispute",
         "created_at": "2026-06-01T11:45:00.000Z",
         "ai_drafted_at": null,
+        "ai_draft_run_id": null,
+        "ai_draft_requested_run_id": "dispute_resolution_00000000-0000-7000-8000-000000000211",
         "ai_internal_response": null,
         "ai_public_response": null,
         "approved_at": null,
@@ -3442,7 +3476,9 @@
       },
       "updated_at": "2026-06-01T12:00:00.000Z",
       "user_suspension_id": null,
-      "user_warning_id": null
+      "user_warning_id": null,
+      "ai_draft_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202",
+      "ai_draft_requested_run_id": "appeal_resolution_00000000-0000-7000-8000-000000000202"
     }
   },
   "web.admin.mq.queues.domains.default": {

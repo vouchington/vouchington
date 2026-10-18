@@ -14,6 +14,7 @@ export function DuplicateClusterList({
   canBulkRemove,
   disabled,
   loadingDuplicateId,
+  pendingRerunEntities,
   onRemove,
   uiLocale,
 }: {
@@ -21,6 +22,7 @@ export function DuplicateClusterList({
   canBulkRemove: boolean
   disabled: boolean
   loadingDuplicateId: string | null
+  pendingRerunEntities: ReadonlySet<string>
   onRemove: (duplicate: AdminModerationReportDuplicateCluster) => void
   uiLocale: string
 }) {
@@ -36,7 +38,12 @@ export function DuplicateClusterList({
           key={duplicate.id}
           duplicate={duplicate}
           canRemove={canBulkRemove}
-          disabled={disabled}
+          disabled={
+            disabled ||
+            duplicate.clusters.some(cluster =>
+              pendingRerunEntities.has(`${cluster.entity_type}:${cluster.entity_id}`),
+            )
+          }
           loading={loadingDuplicateId === duplicate.id}
           onRemove={() => onRemove(duplicate)}
           uiLocale={uiLocale}
@@ -61,6 +68,7 @@ export function ReportClusterList({
   onWarn,
   onBanEvasionAction,
   rerunningReportId,
+  pendingRerunEntities,
   uiLocale,
 }: {
   clusters: AdminModerationReportCluster[]
@@ -77,6 +85,7 @@ export function ReportClusterList({
   onWarn: (report: AdminModerationReport) => void
   onBanEvasionAction: (reportId: string) => void
   rerunningReportId: string | null
+  pendingRerunEntities?: ReadonlySet<string>
   uiLocale: string
 }) {
   const t = useTranslations()
@@ -106,6 +115,7 @@ export function ReportClusterList({
             onWarn={onWarn}
             onBanEvasionAction={onBanEvasionAction}
             rerunningReportId={rerunningReportId}
+            pendingRerunEntities={pendingRerunEntities}
             uiLocale={uiLocale}
           />
         ))
