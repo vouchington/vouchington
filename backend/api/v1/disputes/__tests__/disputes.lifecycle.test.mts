@@ -262,12 +262,9 @@ describe('POST /api/v1/disputes/:id/approval and /delivery', () => {
       .expect(200)
     expect(deliveryResponse.body.dispute.sent_at).not.toBeNull()
     expectEnrichedStaffContext(deliveryResponse.body.dispute)
-  })
 
-  it('a second delivery returns 422', async () => {
-    const request = createRequest()
-    await request.authenticateAs(staffUser)
-    await request.post(`/api/v1/disputes/${disputeId}/delivery`).expect(422)
+    // The already-sent guard is exercised here, after this test's own approval and delivery.
+    await staffRequest.post(`/api/v1/disputes/${disputeId}/delivery`).expect(422)
   })
 
   it('delivery of an unknown dispute returns 404', async () => {

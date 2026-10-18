@@ -260,11 +260,8 @@ describe('POST /api/v1/appeals/:id/approval and /delivery', () => {
 
     const deliveryResponse = await request.post(`/api/v1/appeals/${appealId}/delivery`).expect(200)
     expect(deliveryResponse.body.appeal.sent_at).not.toBeNull()
-  })
 
-  it('a second delivery returns 422', async () => {
-    const request = createRequest()
-    await request.authenticateAs(staff)
+    // The already-sent guard is exercised here, after this test's own approval and delivery.
     await request.post(`/api/v1/appeals/${appealId}/delivery`).expect(422)
   })
 
