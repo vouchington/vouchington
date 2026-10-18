@@ -19,7 +19,8 @@ import {
   getRouteConfig,
   isRouteRateLimitEnabled,
 } from '../route-rate-limits/config.mts'
-import { buildRateLimitKeys } from '../route-rate-limits/identity.mts'
+import { buildRateLimitKeys as buildPublishedRateLimitKeys } from '@vouchington/rate-limit'
+import { getRateLimitKeyDimensions } from '../route-rate-limits/identity.mts'
 import type { RateLimitIdentities } from '../route-rate-limits/types.mts'
 import { routeRateLimiters } from '../route-rate-limits/check.mts'
 import { chargeMcpToolCalls } from '../../api/mcp-route-rate-limit-helpers.mts'
@@ -32,6 +33,11 @@ import { currentOperationCases, type OperationCase } from '@voucha/test-helpers/
 const CASES = currentOperationCases()
 const ALL_SCOPES = withScopePrerequisites(Object.keys(SCOPE_DEFINITIONS) as ApiScope[])
 const SENTINEL_ROUTE = 'GET:/api/v1/posts'
+
+const buildRateLimitKeys = (routeKey: string, identities: RateLimitIdentities) =>
+  buildPublishedRateLimitKeys(routeKey, getRateLimitKeyDimensions(identities), {
+    hashedDimensions: new Set(['email']),
+  })
 
 type Actor = {
   user: Awaited<ReturnType<typeof createTestUser>> & { membership_plan: 'pro' | null }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { checkIdentityRateLimit } from '../identity-rate-limit.mts'
+import { checkEdgeBuckets } from '@vouchington/rate-limit/edge'
+import { getIdentityRateLimitBuckets } from '../identity-rate-limit.mts'
+
+const checkConfiguredIdentityBuckets = (input: Parameters<typeof getIdentityRateLimitBuckets>[0]) =>
+  checkEdgeBuckets(getIdentityRateLimitBuckets(input), input.ip)
 
 const baseInput = {
   method: 'POST',
@@ -10,17 +14,17 @@ const baseInput = {
   isServerAction: true,
 } as const
 
-describe('checkIdentityRateLimit — nested Server Action quotas', () => {
+describe('checkConfiguredIdentityBuckets — nested Server Action quotas', () => {
   it('passes after consuming generic mutating and Server Action quotas', async () => {
     const keys: string[] = []
     const successfulLimiter = {
-      limit: ({ key }: { key: string }) => {
+      limit: async ({ key }: { key: string }) => {
         keys.push(key)
         return { success: true }
       },
     }
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       ...baseInput,
       env: {
         RATE_LIMITER_ANON_MUTATING: successfulLimiter,
@@ -35,18 +39,18 @@ describe('checkIdentityRateLimit — nested Server Action quotas', () => {
   it('rejects after the generic quota passes and the Server Action quota fails', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       ...baseInput,
       botTier: 'unknown',
       env: {
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
         },
         RATE_LIMITER_SERVER_ACTION: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: false }
           },
@@ -61,17 +65,17 @@ describe('checkIdentityRateLimit — nested Server Action quotas', () => {
   it('does not consume the Server Action quota when the generic mutating quota rejects', async () => {
     const keys: string[] = []
 
-    const result = await checkIdentityRateLimit({
+    const result = await checkConfiguredIdentityBuckets({
       ...baseInput,
       env: {
         RATE_LIMITER_ANON_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: false }
           },
         },
         RATE_LIMITER_SERVER_ACTION: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },

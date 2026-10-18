@@ -1,5 +1,6 @@
 import { getRouteConfig } from '../../../services/route-rate-limits/config.mts'
-import { buildRateLimitKeys } from '../../../services/route-rate-limits/identity.mts'
+import { buildRateLimitKeys } from '@vouchington/rate-limit'
+import { getRateLimitKeyDimensions } from '../../../services/route-rate-limits/identity.mts'
 import { routeRateLimiters } from '../../../services/route-rate-limits/check.mts'
 import type { RateLimitIdentities } from '../../../services/route-rate-limits/types.mts'
 
@@ -58,7 +59,9 @@ export async function deleteRouteRateLimitKeys(
   identities: RateLimitIdentities,
 ): Promise<void> {
   const { category } = getRouteConfig(routeKey)
-  const ids = buildRateLimitKeys(routeKey, identities)
+  const ids = buildRateLimitKeys(routeKey, getRateLimitKeyDimensions(identities), {
+    hashedDimensions: new Set(['email']),
+  })
   if (ids.length === 0) return
   await routeRateLimiters[category].delete(...ids)
 }

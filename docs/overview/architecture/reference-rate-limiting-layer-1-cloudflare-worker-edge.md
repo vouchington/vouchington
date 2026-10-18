@@ -19,7 +19,8 @@ IP-level rate limiting at the CDN edge before requests reach the backend.
 `RATE_LIMITER_SERVER_ACTION` in the private Worker deployment manifest. Optional anonymous and bot
 bindings fall back to the matching shared method-class binding when absent.
 
-**File:** `cloudflare-worker/src/rate-limit.mts`
+Voucha selects which bindings and routes consume each budget. The shared bucket and rejection
+engine lives in `@vouchington/rate-limit/edge`; the Worker keeps its bot and identity policy.
 
 ## Layer 2: Per-Endpoint (Backend)
 

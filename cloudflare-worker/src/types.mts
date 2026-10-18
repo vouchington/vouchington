@@ -4,7 +4,7 @@ import type { UiLocale } from '@ts-shared/languages/ui-locales'
 import type { CacheAudience } from './cache-policy.mts'
 
 interface RateLimiterBinding {
-  limit: (options: { key: string }) => Promise<{ success: boolean }> | { success: boolean }
+  limit: (options: { key: string }) => Promise<{ success: boolean }>
 }
 
 /**

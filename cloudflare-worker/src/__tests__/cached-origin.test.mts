@@ -134,7 +134,7 @@ describe('CachedOrigin.fetch', () => {
       { audience: 'bot', isRsc: false },
       {
         BACKEND_ORIGIN: 'https://backend.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: () => ({ success: false }) },
+        RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
       },
     )
     const dispatchHeaders = {
@@ -152,7 +152,7 @@ describe('CachedOrigin.fetch', () => {
       { audience: 'bot', isRsc: false },
       {
         BACKEND_ORIGIN: 'https://backend.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: () => ({ success: true }) },
+        RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: true }) },
       },
     )
     const allowedResponse = await allowed.fetch(
@@ -173,7 +173,7 @@ describe('CachedOrigin.fetch', () => {
       { audience: 'anon', isRsc: false },
       {
         BACKEND_ORIGIN: 'https://backend.example.com',
-        RATE_LIMITER_BOT_GET_HEAD: { limit: () => ({ success: false }) },
+        RATE_LIMITER_BOT_GET_HEAD: { limit: async () => ({ success: false }) },
       },
     )
     const response = await origin.fetch(new Request('https://voucha.ai/api/v1/posts'))

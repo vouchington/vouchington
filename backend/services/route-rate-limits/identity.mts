@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import type { DeviceClass } from '@ts-shared/session-jwt'
 import type { RateLimitIdentities } from './types.mts'
 
@@ -8,15 +7,6 @@ export interface RateLimitRequest {
   validatedApiKeyId?: string
   deviceClass?: DeviceClass
   getSessionTokenData(): Promise<{ did?: string; sid?: string; uid?: string; tt?: number }>
-}
-
-/**
- * Sanitize a route key for use as a Valkey key segment.
- * Replaces characters unsafe for Valkey keys with underscores.
- */
-function sanitizeRouteKeySegment(routeKey: string): string {
-  // Replace characters that could cause issues in Valkey keys
-  return routeKey.replace(/[{}\s]/g, '_')
 }
 
 function isValidTrustTier(value: unknown): value is number {
@@ -58,34 +48,18 @@ export async function resolveRateLimitIdentities(
   }
 }
 
-/**
- * Build Valkey rate limit keys for all identity dimensions.
- * Key format: `{dimension}:{id}:{routePrefix}`
- *
- * For API key auth: ip + apikey keys only.
- * For browser auth: ip + device + session + user (if authenticated).
- */
-export function buildRateLimitKeys(routeKey: string, identities: RateLimitIdentities): string[] {
-  const routePrefix = sanitizeRouteKeySegment(routeKey)
-  const keys: string[] = []
-
+/** Selects Voucha's rate-limit identity dimensions; API keys exclude browser session keys. */
+export function getRateLimitKeyDimensions(
+  identities: RateLimitIdentities,
+): Record<string, string | undefined> {
   if (identities.apiKeyId) {
-    // API key path: only IP + apikey dimensions
-    if (identities.ip) keys.push(`ip:${identities.ip}:${routePrefix}`)
-    keys.push(`apikey:${identities.apiKeyId}:${routePrefix}`)
-    return keys
+    return { ip: identities.ip, apikey: identities.apiKeyId }
   }
-
-  // Browser session path
-  if (identities.ip) keys.push(`ip:${identities.ip}:${routePrefix}`)
-  if (identities.deviceId) keys.push(`did:${identities.deviceId}:${routePrefix}`)
-  if (identities.sessionId) keys.push(`sid:${identities.sessionId}:${routePrefix}`)
-  if (identities.userId) keys.push(`uid:${identities.userId}:${routePrefix}`)
-  if (identities.email) {
-    // Hash email to avoid storing PII in Valkey keys
-    const emailHash = createHash('sha256').update(identities.email).digest('hex').slice(0, 16)
-    keys.push(`email:${emailHash}:${routePrefix}`)
+  return {
+    ip: identities.ip,
+    did: identities.deviceId,
+    sid: identities.sessionId,
+    uid: identities.userId,
+    email: identities.email,
   }
-
-  return keys
 }

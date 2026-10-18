@@ -8,11 +8,11 @@ import {
 import type { Env } from '../types.mts'
 
 function rejectingRateLimiter(): NonNullable<Env['RATE_LIMITER_MUTATING']> {
-  return { limit: () => ({ success: false }) }
+  return { limit: async () => ({ success: false }) }
 }
 
 function allowingRateLimiter(): NonNullable<Env['RATE_LIMITER_MUTATING']> {
-  return { limit: () => ({ success: true }) }
+  return { limit: async () => ({ success: true }) }
 }
 
 describe('ActivityPub inbox edge rate-limit ownership', () => {

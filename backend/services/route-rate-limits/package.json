@@ -31,6 +31,7 @@
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
+    "@vouchington/rate-limit": "^0.2.0",
     "valkyries": "^0.10.0"
   },
   "devDependencies": {

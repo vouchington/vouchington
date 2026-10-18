@@ -22,10 +22,3 @@ export type RateLimitIdentities = {
   /** Attested device class from Apple App Attest — used to apply the attested multiplier */
   deviceClass?: DeviceClass
 }
-
-export type RouteRateLimitResult = {
-  limited: boolean
-  retryAfterSeconds: number
-  limit: number
-  remaining: number
-}

@@ -42,7 +42,7 @@ describe('worker cache-aware rate-limit exemption', () => {
     ['static web asset', '/favicon.ico'],
   ])('rate-limits a HEAD %s request because HEAD cannot dispatch to cache', async (_name, path) => {
     const env = makeEnv({
-      RATE_LIMITER_GET_HEAD: { limit: () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
     })
 
     const response = await worker.fetch(
@@ -63,7 +63,7 @@ describe('worker cache-aware rate-limit exemption', () => {
     ['an RSC request', { rsc: '1' }],
   ])('rate-limits a fully cached GET bypassed by %s', async (_name, headers) => {
     const env = makeEnv({
-      RATE_LIMITER_GET_HEAD: { limit: () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
     })
 
     const response = await worker.fetch(
@@ -106,7 +106,7 @@ describe('worker cache-aware rate-limit exemption', () => {
   it('rate-limits a static web GET when a missing placeholder nonce prevents dispatch', async () => {
     const env = makeEnv({
       CACHE_PLACEHOLDER_NONCE: undefined,
-      RATE_LIMITER_GET_HEAD: { limit: () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
     })
 
     const response = await worker.fetch(
@@ -142,13 +142,13 @@ describe('worker cache-aware rate-limit exemption', () => {
     const keys: string[] = []
     const env = makeEnv({
       RATE_LIMITER_MUTATING: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           keys.push(key)
           return { success: true }
         },
       },
       RATE_LIMITER_SERVER_ACTION: {
-        limit: ({ key }) => {
+        limit: async ({ key }) => {
           keys.push(key)
           return { success: false }
         },

@@ -8,7 +8,7 @@ import {
   assertRequestContractOperation,
   markRequestContractValidated,
 } from './request-contract-enforcement-helpers.mts'
-import { getCurrentUserWithRateLimit } from './overlapped-rate-limit-helpers.mts'
+import { withOverlappedRateLimit } from '@vouchington/rate-limit'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [
@@ -37,7 +37,9 @@ function assertActiveForRoute(currentUser: PrivateUser | null, routeId: string):
 }
 
 export async function requireAuth(ctx: Context, routeId: string): Promise<PrivateUser> {
-  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
+    ctx.getCurrentUser(),
+  )
   if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
   await settleBeforeSignatureError(settleRateLimit, signatureError)
@@ -50,7 +52,9 @@ export async function requireAuthForSuspendedException(
 ): Promise<PrivateUser> {
   if (!SUSPENDED_EXCEPTION_ROUTES.includes(routeId))
     throw new Error(`Unapproved suspension exception: ${routeId}`)
-  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
+    ctx.getCurrentUser(),
+  )
   if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
   await settleBeforeSignatureError(settleRateLimit, signatureError)
@@ -61,7 +65,9 @@ export async function getOptionalAuthAndRateLimit(
   routeId: string,
 ): Promise<PrivateUser | null> {
   const signatureError = captureSignatureVerificationError(ctx)
-  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
+    ctx.getCurrentUser(),
+  )
   await settleBeforeSignatureError(settleRateLimit, signatureError)
   assertActiveForRoute(currentUser, routeId)
   return currentUser
@@ -73,7 +79,9 @@ export async function getOptionalProtocolAuthAndRateLimit(
   if (!SUSPENDED_PROTOCOL_ROUTES.includes(routeId))
     throw new Error(`Unapproved protocol route: ${routeId}`)
   const signatureError = captureSignatureVerificationError(ctx)
-  const { currentUser, settleRateLimit } = await getCurrentUserWithRateLimit(ctx, routeId)
+  const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
+    ctx.getCurrentUser(),
+  )
   await settleBeforeSignatureError(settleRateLimit, signatureError)
   return currentUser
 }

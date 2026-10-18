@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, it, expect } from 'vitest'
 import { routeRateLimiters } from './check.mts'
-import { buildRateLimitKeys } from './identity.mts'
+import { buildRateLimitKeys as buildPublishedRateLimitKeys } from '@vouchington/rate-limit'
+import { getRateLimitKeyDimensions } from './identity.mts'
 import {
   createRouteRateLimitKeyCleanup,
   deleteRouteRateLimitKeys,
 } from '@voucha/test-helpers/services/route-rate-limits/test-support'
 import type { RateLimitIdentities } from './types.mts'
+
+const buildRateLimitKeys = (routeKey: string, identities: RateLimitIdentities) =>
+  buildPublishedRateLimitKeys(routeKey, getRateLimitKeyDimensions(identities), {
+    hashedDimensions: new Set(['email']),
+  })
 
 describe('deleteRouteRateLimitKeys', () => {
   it("deletes only the targeted identity's keys, leaving a sibling identity's counter untouched", async () => {

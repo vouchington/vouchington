@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { checkBotRateLimit, checkRateLimit } from '../rate-limit.mts'
+import { checkBotRateLimit } from '../rate-limit.mts'
 
 describe('checkBotRateLimit', () => {
   it('uses bot-specific binding when configured', async () => {
@@ -10,13 +10,13 @@ describe('checkBotRateLimit', () => {
     const result = await checkBotRateLimit({
       env: {
         RATE_LIMITER_BOT_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             botKeys.push(key)
             return { success: true }
           },
         },
         RATE_LIMITER_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             normalKeys.push(key)
             return { success: true }
           },
@@ -38,7 +38,7 @@ describe('checkBotRateLimit', () => {
     const result = await checkBotRateLimit({
       env: {
         RATE_LIMITER_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -57,7 +57,7 @@ describe('checkBotRateLimit', () => {
     const result = await checkBotRateLimit({
       env: {
         RATE_LIMITER_BOT_GET_HEAD: {
-          limit: () => ({ success: false }),
+          limit: async () => ({ success: false }),
         },
       },
       method: 'GET',
@@ -83,7 +83,7 @@ describe('checkBotRateLimit', () => {
     const result = await checkBotRateLimit({
       env: {
         RATE_LIMITER_BOT_GET_HEAD: {
-          limit: () => ({ success: true }),
+          limit: async () => ({ success: true }),
         },
       },
       method: 'GET',
@@ -100,7 +100,7 @@ describe('checkBotRateLimit', () => {
     await checkBotRateLimit({
       env: {
         RATE_LIMITER_BOT_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             botKeys.push(key)
             return { success: true }
           },
@@ -120,7 +120,7 @@ describe('checkBotRateLimit', () => {
     await checkBotRateLimit({
       env: {
         RATE_LIMITER_MUTATING: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -138,7 +138,7 @@ describe('checkBotRateLimit', () => {
     const keys: string[] = []
     const env = {
       RATE_LIMITER_BOT_MUTATING: {
-        limit: ({ key }: { key: string }) => {
+        limit: async ({ key }: { key: string }) => {
           keys.push(key)
           return { success: true }
         },
@@ -163,7 +163,7 @@ describe('checkBotRateLimit', () => {
     await checkBotRateLimit({
       env: {
         RATE_LIMITER_BOT_GET_HEAD: {
-          limit: ({ key }) => {
+          limit: async ({ key }) => {
             keys.push(key)
             return { success: true }
           },
@@ -176,6 +176,4 @@ describe('checkBotRateLimit', () => {
 
     expect(keys).toEqual(['bot:web:GET:1.1.1.1'])
   })
-  // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof checkRateLimit)
 })

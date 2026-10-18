@@ -1,5 +1,6 @@
 import type { McpCallAuditEvent, McpCallPlan } from '@services/mcp-tools'
 import { checkRouteRateLimit } from '@services/route-rate-limits'
+import { chargeRoutes } from '@vouchington/rate-limit'
 
 type RouteRateLimitSubject = {
   identities: Parameters<typeof checkRouteRateLimit>[1]
@@ -23,23 +24,19 @@ export async function chargeMcpToolCalls(
   { identities, owner }: RouteRateLimitSubject,
 ): Promise<ChargedMcpCalls> {
   const events = [...plan.events]
-  const rateLimitedCalls = new Map<number, number>()
-  for (const { eventIndex, routeKeys } of plan.charges) {
-    for (const routeKey of routeKeys) {
-      // oxlint-disable-next-line no-await-in-loop -- a batch spends its budget in call order, and a call stops at its first spent route
-      const result = await checkRouteRateLimit(routeKey, identities, owner)
-      if (!result.limited) continue
-      rateLimitedCalls.set(eventIndex, result.retryAfterSeconds)
-      // The refusal is the whole outcome, so a copyright rationale (stored only for an accepted
-      // call) is not carried onto the row.
-      const { jsonrpcMethod, toolName, option } = plan.events[eventIndex] as McpCallAuditEvent
-      events[eventIndex] = {
-        jsonrpcMethod,
-        toolName,
-        ...(option === undefined ? {} : { option }),
-        outcome: 'rate_limited',
-      }
-      break
+  const rateLimitedCalls = await chargeRoutes(
+    plan.charges.map(({ eventIndex, routeKeys }) => ({ index: eventIndex, routeKeys })),
+    routeKey => checkRouteRateLimit(routeKey, identities, owner),
+  )
+  for (const [eventIndex] of rateLimitedCalls) {
+    // The refusal is the whole outcome, so a copyright rationale (stored only for an accepted
+    // call) is not carried onto the row.
+    const { jsonrpcMethod, toolName, option } = plan.events[eventIndex] as McpCallAuditEvent
+    events[eventIndex] = {
+      jsonrpcMethod,
+      toolName,
+      ...(option === undefined ? {} : { option }),
+      outcome: 'rate_limited',
     }
   }
   return { events, rateLimitedCalls }

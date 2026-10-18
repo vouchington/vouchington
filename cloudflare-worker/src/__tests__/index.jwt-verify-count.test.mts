@@ -77,7 +77,7 @@ describe('worker fetch handler — JWT verify-once dedup', () => {
 
     const rateLimitedEnv: Env = {
       ...env,
-      RATE_LIMITER_GET_HEAD: { limit: () => ({ success: false }) },
+      RATE_LIMITER_GET_HEAD: { limit: async () => ({ success: false }) },
     }
 
     const response = await worker.fetch(
