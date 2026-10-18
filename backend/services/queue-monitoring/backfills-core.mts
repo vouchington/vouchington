@@ -94,7 +94,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   {
     id: 'language-detection-posts',
     queue_name: 'background-cpu',
-    job_name: 'backfill_posts',
+    job_name: 'content-analysis.backfill_posts',
     description: 'Backfill language detection for posts missing results',
     source_table: 'posts',
     trigger: createBackfillTrigger(enqueueBackfillLanguageDetectionPosts),
@@ -102,7 +102,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   {
     id: 'language-detection-rss-feed-items',
     queue_name: 'background-cpu',
-    job_name: 'backfill_rss_feed_items',
+    job_name: 'content-analysis.backfill_rss_feed_items',
     description: 'Backfill language detection for RSS feed items missing results',
     source_table: 'rss_feed_items',
     trigger: createBackfillTrigger(enqueueBackfillLanguageDetectionRssFeedItems),
@@ -110,7 +110,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   {
     id: 'language-detection-crawls',
     queue_name: 'background-cpu',
-    job_name: 'backfill_crawls',
+    job_name: 'content-analysis.backfill_crawls',
     description: 'Backfill language detection for crawls missing results',
     source_table: 'crawls',
     trigger: createBackfillTrigger(enqueueBackfillLanguageDetectionCrawls),
@@ -118,7 +118,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   {
     id: 'language-detection-communities',
     queue_name: 'background-cpu',
-    job_name: 'backfill_communities',
+    job_name: 'content-analysis.backfill_communities',
     description: 'Backfill language detection for communities missing results',
     source_table: 'communities',
     trigger: createBackfillTrigger(enqueueBackfillLanguageDetectionCommunities),
@@ -126,7 +126,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   {
     id: 'language-detection-users',
     queue_name: 'background-cpu',
-    job_name: 'backfill_users',
+    job_name: 'content-analysis.backfill_users',
     description: 'Backfill language detection for user bios missing results',
     source_table: 'users',
     trigger: createBackfillTrigger(enqueueBackfillLanguageDetectionUsers),
@@ -134,7 +134,7 @@ export const CORE_BACKFILLS: BackfillEntry[] = [
   {
     id: 'language-detection-topics',
     queue_name: 'background-cpu',
-    job_name: 'backfill_topics',
+    job_name: 'content-analysis.backfill_topics',
     description: 'Backfill language detection for topics missing results',
     source_table: 'topics',
     trigger: createBackfillTrigger(enqueueBackfillLanguageDetectionTopics),
