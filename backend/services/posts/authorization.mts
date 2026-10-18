@@ -23,8 +23,7 @@ import {
 import type { CreatePostInput, Post } from './types.mts'
 import type { CommunityMemberRole } from '@services/communities/types'
 import { isPlatformAccount } from '@services/users'
-import { BLOCKED_POST_TYPES, canViewPost } from './check-privacy-access.mts'
-import { getPostByAny } from './get.mts'
+import { canViewPost } from './check-privacy-access.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from './route-access.mts'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -167,10 +166,11 @@ export function assertDelegatedCommunityWritable(community: { archived_at: unkno
   assert(!community.archived_at, 403, 'Community is archived')
 }
 
-/** A post whose read state the caller may change: it exists, is generic, and the caller can see it. */
+/** A post whose read state the caller may change: it exists, is not under a recommendation, and the caller can see it. */
 export async function assertPostReadStateTarget(user: PrivateUser, id: string): Promise<void> {
-  const post = await getPostByAny(id)
-  assert(post && !post.deleted_at && !BLOCKED_POST_TYPES.has(post.post_type), 404, 'Post not found')
+  const { post, root } = await getRoutePostByAnyCached(id)
+  assert(post && !post.deleted_at, 404, 'Post not found')
+  assert(await getRouteAccessPost(post, root), 404, 'Post not found')
   assert(await canViewPost(user, post), 404, 'Post not found')
 }
 
