@@ -25,23 +25,35 @@ function mockJob() {
 }
 
 describe('handleModelProviderError', () => {
-  it.each([
-    ['rate-limited', 7_000, 7_000],
-    ['overloaded', undefined, 60_000],
-    ['rate-limited', 3_600_000, 900_000],
-  ] as const)(
-    'parks only the job for a %s failure for the provider wait, clamped',
-    async (code, retryAfterMs, expectedMs) => {
+  it.each(
+    [
+      '2024-02-29T23:59:59.999Z',
+      '2024-03-01T00:00:00.001Z',
+      '2024-12-31T23:59:59.999Z',
+      '2025-01-01T00:00:00.001Z',
+    ].flatMap(now =>
+      (
+        [
+          ['rate-limited', 7_000, 7_000],
+          ['overloaded', undefined, 60_000],
+          ['rate-limited', 3_600_000, 900_000],
+        ] as const
+      ).map(scenario => [now, ...scenario] as const),
+    ),
+  )(
+    'parks only the job at %s for a %s failure for the provider wait, clamped',
+    async (now, code, retryAfterMs, expectedMs) => {
       const job = mockJob()
-      const before = Date.now()
-
-      await expect(
-        handleModelProviderError(error(code, { retryAfterMs, status: 429 }), job),
-      ).rejects.toBeInstanceOf(StubDelayedError)
-
-      const [delayedUntil] = job.moveToDelayed.mock.calls[0]
-      expect(delayedUntil).toBeGreaterThanOrEqual(before + expectedMs)
-      expect(delayedUntil).toBeLessThanOrEqual(Date.now() + expectedMs)
+      vi.useFakeTimers({ toFake: ['Date'] })
+      try {
+        vi.setSystemTime(new Date(now))
+        await expect(
+          handleModelProviderError(error(code, { retryAfterMs, status: 429 }), job),
+        ).rejects.toBeInstanceOf(StubDelayedError)
+        expect(job.moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.parse(now) + expectedMs)
+      } finally {
+        vi.useRealTimers()
+      }
     },
   )
 

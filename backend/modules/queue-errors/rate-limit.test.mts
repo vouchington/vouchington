@@ -63,21 +63,27 @@ describe('createRateLimitError', () => {
 })
 
 describe('deferJobForRateLimit', () => {
-  it('parks the job until the clamped wait has passed and never resolves', async () => {
+  it.each([
+    '2024-02-29T23:59:59.999Z',
+    '2024-03-01T00:00:00.001Z',
+    '2024-12-31T23:59:59.999Z',
+    '2025-01-01T00:00:00.001Z',
+  ])('parks the job for exactly the clamped wait at %s', async now => {
     const moveToDelayed = vi
       .fn<(timestamp: number) => Promise<never>>()
       .mockImplementation(async timestamp => {
         throw new StubDelayedError(String(timestamp))
       })
-    const before = Date.now()
-
-    await expect(deferJobForRateLimit({ moveToDelayed }, 20_000)).rejects.toBeInstanceOf(
-      StubDelayedError,
-    )
-
-    const [delayedUntil] = moveToDelayed.mock.calls[0]
-    expect(delayedUntil).toBeGreaterThanOrEqual(before + 20_000)
-    expect(delayedUntil).toBeLessThanOrEqual(Date.now() + 20_000)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(now))
+      await expect(deferJobForRateLimit({ moveToDelayed }, 20_000)).rejects.toBeInstanceOf(
+        StubDelayedError,
+      )
+      expect(moveToDelayed).toHaveBeenCalledExactlyOnceWith(Date.parse(now) + 20_000)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
