@@ -4158,8 +4158,8 @@ rules:
         # largest step. See #11280.
         - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
           maxMinutes: 25
-        # Steps sum to 12m; cap 11m is below it (and under the 15m ubuntu-slim platform cap);
-        # healthy runtime ~0.6m (a handful of GitHub API calls).
+        # Steps sum to 14m including tooling install; cap 11m is below it (and under the 15m
+        # ubuntu-slim platform cap), so a slow step cannot consume all other step allowances.
         - job: '.github/workflows/ghcr-cleanup.yml#cleanup'
           maxMinutes: 11
         # Backend validation and publication share one build path; the 30m cap preserves the
