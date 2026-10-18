@@ -104,7 +104,7 @@ export async function listDynamicConfigNamespaceHistory(
     LEFT JOIN users ON users.id = dcl.revised_by_id AND users.deleted_at IS NULL
     WHERE dcl.configuration_key = ${namespace}
     ORDER BY dcl.id DESC
-    -- API/MCP contract: latest 50 audit rows (docs/requirements/api/v1/dynamic-config/README.md).
+    -- API/MCP contract: latest 50 audit rows.
     LIMIT 50
   `)
 

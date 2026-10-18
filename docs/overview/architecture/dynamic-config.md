@@ -19,5 +19,4 @@ helps identify candidates for that boundary.
 
 - [DynamicConfig test isolation](../../development/reference-dynamicconfig-cleanup.md)
 - [Services architecture](services/README.md)
-- [Dynamic Config API requirements](../../requirements/api/v1/dynamic-config/README.md)
 - [Feature flags](feature-flags.md)
