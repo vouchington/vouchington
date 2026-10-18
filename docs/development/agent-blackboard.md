@@ -51,7 +51,7 @@ for it. A missing server does not stop a run. The run continues its primary work
 final report that journaling was unavailable and why, any pending outbox state, and the findings it
 would have journaled.
 
-`.github/workflows/harness-dispatch.yml` does not provision `AGENT_BLACKBOARD_URL` or
+The published Harness dispatch workflow does not provision `AGENT_BLACKBOARD_URL` or
 `AGENT_BLACKBOARD_TOKEN`; agent-blackboard is orthogonal to Auto Harness.
 
 ## Retrospectives and distillation

@@ -8,12 +8,7 @@ import {
   workflowRunSubscriptions,
   workflowTriggerNames,
 } from '../test-helpers/workflow-fixtures.mts'
-import {
-  fixMain,
-  fixMainPrompt,
-  parsedDispatch,
-  parsedMain,
-} from '../test-helpers/fix-main.fixtures.mts'
+import { fixMain, fixMainPrompt, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
 
 type Workflow = {
   name?: string
@@ -185,8 +180,6 @@ describe('fix-main workflow', () => {
     const dispatchJob = parsedMain.jobs?.['dispatch']
 
     expect(dispatchJob?.secrets).toEqual({ HARNESS_API_KEY: '${{ secrets.HARNESS_API_KEY }}' })
-    expect(Object.keys(parsedDispatch.jobs ?? {})).toEqual(['dispatch'])
-    expect(JSON.stringify(parsedDispatch.jobs)).not.toContain('AUTOMATION_GITHUB_TOKEN')
 
     const triageJob = parsedMain.jobs?.['triage-and-rerun']
     const decideStep = triageJob?.steps?.find(s => s.id === 'decide')
@@ -249,13 +242,5 @@ describe('fix-main workflow', () => {
 
   it('fix-main prompt references the transient-retry rule catalogue', () => {
     expect(fixMainPrompt).toContain('ci/transient-retry/rules.mts')
-  })
-
-  it('runs the immutable built-in client without caller authoring credentials', () => {
-    const dispatchJob = parsedDispatch.jobs?.dispatch
-    expect(
-      dispatchJob?.steps?.some(step => step.run?.includes('ci/harness-session-dispatch.mts')),
-    ).toBe(true)
-    expect(JSON.stringify(dispatchJob)).not.toContain('AUTOMATION_GITHUB_TOKEN')
   })
 })

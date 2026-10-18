@@ -9,7 +9,7 @@ trusted host with repository-scoped git and GitHub CLI credentials.
 ## Flow
 
 The callers are the `fix-*`, `plan`, `shepherd`, `scheduled-prompts`, and
-`merge-queue-ejection` workflows; all dispatch through `harness-dispatch.yml`.
+`merge-queue-ejection` workflows; all call the [published Harness dispatcher](https://github.com/vouchington/vouchington-tooling/blob/main/.github/workflows/harness-dispatch.yml).
 
 ```mermaid
 flowchart LR

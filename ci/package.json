@@ -11,7 +11,6 @@
     "@ts-shared/utils": "workspace:^",
     "@vouchington/localization": "^0.2.1",
     "@vouchington/localization-compiler": "^0.2.2",
-    "auto-harness-client": "^0.8.1",
     "coverage-check": "^0.17.0",
     "jsonc-parser": "^3.3.1",
     "no-mistakes": "^0.92.0",

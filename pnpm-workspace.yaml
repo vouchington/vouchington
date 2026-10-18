@@ -103,7 +103,6 @@ minimumReleaseAgeExclude:
   - '@vouchington/uuid-v7'
   - '@vouchington/worker-runtime'
   - agent-blackboard
-  - auto-harness-client
   - coverage-check
   - eslint-plugin-no-mistakes
   - eslint-plugin-vouchington

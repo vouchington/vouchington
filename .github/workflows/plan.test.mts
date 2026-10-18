@@ -171,7 +171,9 @@ describe('plan workflow', () => {
   it('dispatches in issue-comment completion mode', () => {
     const dispatchJob = workflow.jobs?.['dispatch']
 
-    expect(dispatchJob?.uses).toBe('./.github/workflows/harness-dispatch.yml')
+    expect(dispatchJob?.uses).toMatch(
+      /^vouchington\/vouchington-tooling\/\.github\/workflows\/harness-dispatch\.yml@[0-9a-f]{40}$/u,
+    )
     expect(dispatchJob?.secrets).toEqual({ HARNESS_API_KEY: '${{ secrets.HARNESS_API_KEY }}' })
     expect(dispatchJob?.with?.['completion-mode']).toBe('issue-comment')
     expect(dispatchJob?.with?.['issue-number']).toBe('${{ github.event.issue.number }}')
@@ -180,8 +182,10 @@ describe('plan workflow', () => {
 
   it('posts the session link on the issue after a successful dispatch', () => {
     const commentJob = workflow.jobs?.['comment-session']
-    const commentStep = commentJob?.steps?.find(
-      step => step.uses === './.github/actions/comment-harness-session',
+    const commentStep = commentJob?.steps?.find(step =>
+      step.uses?.startsWith(
+        'vouchington/vouchington-tooling/.github/actions/comment-harness-session@',
+      ),
     )
 
     expect(commentJob?.if).toContain("needs.dispatch.result == 'success'")

@@ -2,7 +2,7 @@ import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { SOURCE_RUN_GUARD_JOB_NAMES } from '../../ci/source-run-guard-shell.mts'
-import { fixMain, parsedDispatch, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
+import { fixMain, parsedMain } from '../test-helpers/fix-main.fixtures.mts'
 
 const NO_CHECKOUT_SOURCE_STATE_JOBS = SOURCE_RUN_GUARD_JOB_NAMES
 
@@ -22,7 +22,6 @@ describe('fix-main source state', () => {
     const renderJob = parsedMain.jobs?.['render-prompt']
     const sourceStateStep = renderJob?.steps?.find(s => s.id === 'source-state')
     const dispatchJob = parsedMain.jobs?.['dispatch']
-    const reusableDispatchJob = parsedDispatch.jobs?.dispatch
     const escalateJob = parsedMain.jobs?.['escalate']
     const escalationSourceStateStep = escalateJob?.steps?.find(s => s.id === 'source-state')
     const escalationIssueStep = escalateJob?.steps?.find(
@@ -43,11 +42,6 @@ describe('fix-main source state', () => {
       'source-run-conclusion': '${{ github.event.workflow_run.conclusion }}',
       'source-run-id': '${{ github.event.workflow_run.id }}',
     })
-
-    expect(Object.keys(parsedDispatch.jobs ?? {})).toEqual(['dispatch'])
-    expect(
-      reusableDispatchJob?.steps?.some(step => step.run?.includes('harness-session-dispatch')),
-    ).toBe(true)
 
     expect(escalateJob?.permissions).toEqual({
       actions: 'read',

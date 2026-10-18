@@ -25,9 +25,7 @@ type Workflow = {
 }
 
 const fixMain = readFileSync('.github/workflows/fix-main.yml', 'utf8')
-const harnessDispatch = readFileSync('.github/workflows/harness-dispatch.yml', 'utf8')
 const parsedMain = load(fixMain) as Workflow
-const parsedDispatch = load(harnessDispatch) as Workflow
 
 describe('fix-main duplicate handling', () => {
   it('requires a related-work audit in the dispatch prompt instead of a topic-scoped skip gate', () => {
@@ -58,6 +56,5 @@ describe('fix-main duplicate handling', () => {
     expect(dispatchJob?.with?.['publish-related-candidates']).toBe(
       "${{ needs.related-candidates.outputs.related-candidates || '[]' }}",
     )
-    expect(Object.keys(parsedDispatch.jobs ?? {})).toEqual(['dispatch'])
   })
 })

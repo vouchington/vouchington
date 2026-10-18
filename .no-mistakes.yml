@@ -2611,8 +2611,6 @@ rules:
           reason: First-party generic worker queue-selection, loading, and scheduling runtime published by the repo author.
         - name: agent-blackboard
           reason: First-party agent session client and MCP server published by the repo author.
-        - name: auto-harness-client
-          reason: First-party Auto Harness dispatch client published by the repo author.
         - name: coverage-check
           reason: First-party test coverage utility published by the repo author.
         - name: eslint-plugin-no-mistakes
@@ -4390,7 +4388,6 @@ rules:
           ]
         .github/workflows/ghcr-cleanup.yml: [cleanup]
         .github/workflows/gitleaks.yml: [gitleaks]
-        .github/workflows/harness-dispatch.yml: [dispatch]
         .github/workflows/initialize-smoke-test.yml: [initialize-smoke-test]
         .github/workflows/label-pr.yml: [label]
         .github/workflows/lambdas.yml:
@@ -4510,14 +4507,6 @@ rules:
           - '.github/workflows/nightly.yml#cloudflare-worker'
         .github/workflows/explain-analyze.yml:
           - '.github/workflows/backend.yml#test-explain-analyze'
-        .github/workflows/harness-dispatch.yml:
-          - '.github/workflows/fix-dependabot.yml#dispatch'
-          - '.github/workflows/fix-issue.yml#dispatch'
-          - '.github/workflows/fix-main.yml#dispatch'
-          - '.github/workflows/merge-queue-ejection.yml#dispatch'
-          - '.github/workflows/plan.yml#dispatch'
-          - '.github/workflows/scheduled-prompts.yml#dispatch'
-          - '.github/workflows/shepherd.yml#dispatch'
         .github/workflows/initialize-smoke-test.yml:
           - '.github/workflows/tooling.yml#initialize-smoke-test'
         .github/workflows/lambdas.yml:
@@ -4624,8 +4613,6 @@ rules:
           { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
         .github/workflows/gitleaks.yml:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha] }
-        .github/workflows/harness-dispatch.yml:
-          { pending: coalesce-latest, cancellation: retain-running, scope: [input-resource] }
         .github/workflows/lambdas.yml:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
         .github/workflows/lint-links.yml:

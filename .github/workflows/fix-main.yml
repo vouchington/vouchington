@@ -199,13 +199,14 @@ jobs:
       needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
       needs.render-prompt.result == 'success' &&
       needs.render-prompt.outputs.source-current == 'true'
-    uses: ./.github/workflows/harness-dispatch.yml
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@e03757214e53bd2adf0888b32d08a3dc762da186 # v0.52.1
     permissions:
       contents: read
     secrets:
       HARNESS_API_KEY: ${{ secrets.HARNESS_API_KEY }}
     with:
       surface-gate: HARNESS_FIX_MAIN_ENABLED
+      additional-gate: HARNESS_AGENT_DISPATCH_ENABLED
       agent-ref: ${{ github.event.workflow_run.head_sha }}
       expected-head-sha: ${{ github.event.workflow_run.head_sha }}
       concurrency-id: vouchington:fix-main:${{ github.event.workflow_run.workflow_id }}:${{ github.event.workflow_run.head_sha }}
