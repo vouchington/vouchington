@@ -176,7 +176,8 @@
   {
     "annotation": "deleteProfileLink",
     "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/my/profile-links.mts:154"
   },
   {
     "annotation": "deleteUserModNote",
@@ -254,7 +255,8 @@
   {
     "annotation": "getLandingPageRowForUser",
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/my/landing-pages/reads.mts:14"
   },
   {
     "annotation": "getLatestJudgementForEntity",
@@ -269,7 +271,8 @@
   {
     "annotation": "getMembershipPurchaseIntent",
     "reason": "Idempotency is checked before locking and rechecked under the user row lock; the inserted intent is hydrated for admission checks and reread after the external provider launch (backend/services/memberships/purchase-intents.mts:55-140)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/memberships/purchase-intents.mts:55"
   },
   {
     "annotation": "getModeratedCommunityIds",
@@ -718,7 +721,8 @@
   {
     "annotation": "setMyLandingPageDefault",
     "reason": "The current default must be cleared before setting the selected page because the partial unique index permits only one default per user (backend/services/my/landing-pages/set-default.mts:35-44)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/my/landing-pages/set-default.mts:35"
   },
   {
     "annotation": "setPrimaryEmailAddress",
@@ -776,7 +780,8 @@
   {
     "annotation": "upsertUserFinancialProfile",
     "reason": "The owner individual and existing financial-profile row are locked in the transaction before validating currency-dependent patches; the second lock read prevents concurrent updates from validating against stale profile data (backend/services/user-financial-profiles/upsert.mts:17-39)",
-    "issue": 3120
+    "permanent": true,
+    "code": "backend/services/user-financial-profiles/upsert.mts:17"
   },
   {
     "annotation": "verifyEmailVerificationToken",
