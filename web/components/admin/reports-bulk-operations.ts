@@ -7,6 +7,7 @@ interface BuildReportBulkOperationsOptions {
   action: ModerationBulkAction
   canBulkRemove: boolean
   selectedIds: ReadonlySet<string>
+  pendingRerunEntities?: ReadonlySet<string>
   reports: AdminModerationReport[]
   deleteEntityOnce: (entityId: string) => Promise<void>
   resolveReport: (reportId: string, status: 'dismissed') => Promise<unknown>
@@ -17,6 +18,7 @@ export function buildReportBulkOperations({
   action,
   canBulkRemove,
   selectedIds,
+  pendingRerunEntities,
   reports,
   deleteEntityOnce,
   resolveReport,
@@ -29,6 +31,10 @@ export function buildReportBulkOperations({
   const skippedIds = new Set<string>()
 
   for (const report of reports.filter(item => selectedIds.has(item.id))) {
+    if (pendingRerunEntities?.has(`${report.entity_type}:${report.entity_id}`)) {
+      skippedIds.add(report.id)
+      continue
+    }
     const operation = buildReportBulkOperation({
       action,
       canBulkRemove,
