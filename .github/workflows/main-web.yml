@@ -36,7 +36,6 @@ on:
       - 'wrangler.*'
       - 'integration-tests/web/**'
       - 'integration-tests/web-api/**'
-      - 'ci/allocate-browser-safe-ports.py'
       - 'ci/playwright/**'
       - 'ci/setup-web-integration.mts'
       - 'ci/run-pnpm-command.mts'

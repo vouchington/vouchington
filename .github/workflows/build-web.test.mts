@@ -31,7 +31,9 @@ describe('web image workflow', () => {
     const steps = readBuildWebImagesSteps()
     const smoke = steps.find(step => step.name === 'Run Docker smoke test')
 
-    expect(smoke?.run).toContain('PORTS=$(python3 ci/allocate-browser-safe-ports.py 2)')
+    expect(smoke?.run).toContain(
+      'PORTS=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 2)',
+    )
   })
 
   it('serves Docker smoke copy from the real localization backend', () => {

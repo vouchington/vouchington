@@ -157,7 +157,7 @@ jobs:
           # Browser mode remains serial despite the two-worker CI fallback.
           VITEST_MAX_WORKERS: '1'
         run: |
-          VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 ci/allocate-browser-safe-ports.py 1)
+          VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)
           export VITEST_STORYBOOK_BROWSER_API_PORT
           pnpm exec ./ci/run-storybook-browser-tests.mts
         # The runner owns one monotonic 300-second session budget across at most three startup

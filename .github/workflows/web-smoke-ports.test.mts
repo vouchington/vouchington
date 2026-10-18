@@ -69,7 +69,12 @@ describe('Web smoke port allocation', () => {
   it('reserves both ports from the browser-safe allocator, not from RANDOM', () => {
     expect(smokeScriptSource).not.toMatch(/\bRANDOM\b/)
     expect(
-      existsSync(join(dirname(smokeScript), '../../../ci/allocate-browser-safe-ports.py')),
+      existsSync(
+        join(
+          dirname(smokeScript),
+          '../../../node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py',
+        ),
+      ),
     ).toBe(true)
   })
 
@@ -81,7 +86,7 @@ describe('Web smoke port allocation', () => {
     expect(run.code).toBe(1)
     expect(run.allocatorArgs).toEqual(['2'])
     expect(run.allocatorPath).toMatch(
-      /voucha-web-smoke-ports-[^/]+\/ci\/allocate-browser-safe-ports\.py$/,
+      /voucha-web-smoke-ports-[^/]+\/node_modules\/vouchington-tooling\/scripts\/allocate-browser-safe-ports\.py$/,
     )
   })
 

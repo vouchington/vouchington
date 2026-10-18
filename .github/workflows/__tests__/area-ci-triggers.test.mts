@@ -191,10 +191,7 @@ describe('Area CI triggers', () => {
 
   it('keeps API fixture changes on their owning test jobs without waking Playwright', () => {
     const apiFixturePaths = ['api-fixtures/v1/manifest.json']
-    const sharedPlaywrightInfrastructure = [
-      'ci/allocate-browser-safe-ports.py',
-      'playwright/config/shared-config.mts',
-    ]
+    const sharedPlaywrightInfrastructure = ['playwright/config/shared-config.mts']
 
     expectFilterMatches('backend', apiFixturePaths)
     expectFilterMatches('web', apiFixturePaths)

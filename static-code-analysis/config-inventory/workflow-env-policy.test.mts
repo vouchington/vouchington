@@ -30,6 +30,12 @@ describe('workflow env policy', () => {
         '          GIT_CONFIG_COUNT: "1"',
         '          GIT_CONFIG_KEY_0: core.hooksPath',
         '          GIT_CONFIG_VALUE_0: /dev/null',
+        '          GHCR_KEEP_MAIN: "30"',
+        '          GHCR_OWNER: vouchington',
+        '          GHCR_OWNER_TYPE: org',
+        '          GHCR_PACKAGES: api',
+        '          GHCR_UNMERGED_MIN_AGE_DAYS: "7"',
+        '          GHCR_KEEP_STALE: "30"',
         '          PORT: "3000"',
         '          PROTECTED_TAG_CONTAINS: buildcache',
         '          PROTECTED_TAG_PREFIX: latest',
@@ -66,6 +72,7 @@ describe('workflow env policy', () => {
       'PROTECTED_TAG_CONTAINS',
       'PROTECTED_TAG_PREFIX',
       'NODE_DISABLE_COMPILE_CACHE_CUSTOM',
+      'GHCR_KEEP_STALE',
     ]) {
       expect(errors).toContain(
         `workflow env ${name} in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
@@ -82,6 +89,11 @@ describe('workflow env policy', () => {
       'POSTGRES_DB',
       'VITEST_REPORT_EXPECTATIONS',
       'NODE_DISABLE_COMPILE_CACHE',
+      'GHCR_KEEP_MAIN',
+      'GHCR_OWNER',
+      'GHCR_OWNER_TYPE',
+      'GHCR_PACKAGES',
+      'GHCR_UNMERGED_MIN_AGE_DAYS',
     ]) {
       expect(errors).not.toEqual(
         expect.arrayContaining([

@@ -107,7 +107,7 @@ jobs:
         run: |
           # One call keeps every app and collector port distinct.
           set -euo pipefail
-          PORTS=$(python3 ci/allocate-browser-safe-ports.py 6)
+          PORTS=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 6)
           read -r PORT NEXT_PORT IMAGE_LAMBDA_PORT WORKER_PORT OTEL_HTTP_PORT OTEL_GRPC_PORT <<< "$PORTS"
           if [ -z "$PORT" ] || [ -z "$NEXT_PORT" ] || [ -z "$IMAGE_LAMBDA_PORT" ] || [ -z "$WORKER_PORT" ] || [ -z "$OTEL_HTTP_PORT" ] || [ -z "$OTEL_GRPC_PORT" ]; then
             echo "::error::Failed to allocate ports"

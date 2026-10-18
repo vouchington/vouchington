@@ -51,8 +51,9 @@ esac
 
 # shellcheck disable=SC1091
 . "$here/curl-to.sh"
-tgz="$(mktemp "${TMPDIR:-/tmp}/vt.XXXXXX")"
-trap 'rm -f -- "$tgz"' EXIT
+tgz_dir="$(mktemp -d "${TMPDIR:-/tmp}/vt.XXXXXX")"
+tgz="$tgz_dir/vouchington-tooling.tgz"
+trap 'rm -rf -- "$tgz_dir"' EXIT
 ci_download_to \
   "https://registry.npmjs.org/vouchington-tooling/-/vouchington-tooling-${locked_version}.tgz" "$tgz" ||
   fail "failed to download vouchington-tooling@${locked_version}"

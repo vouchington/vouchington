@@ -59,7 +59,7 @@ describe('backend image workflow', () => {
     )
 
     expect(step?.env?.VALKEY_URL).toBeUndefined()
-    expect(step?.run).toContain('PORT=$(python3 ci/allocate-browser-safe-ports.py 1)')
+    expect(step?.run).toContain('vouchington-tooling/scripts/allocate-browser-safe-ports.py" 1)')
     const [serverSmoke, diagnosticSmoke] =
       step?.run?.split('Running deployed Valkey diagnostic') ?? []
     expect(serverSmoke).not.toContain('ENVIRONMENT=test')

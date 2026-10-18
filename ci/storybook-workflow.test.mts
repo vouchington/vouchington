@@ -21,7 +21,7 @@ describe('storybook workflow', () => {
       item => item.name === 'Run Storybook browser tests',
     )
     expect(step?.run?.trim().split('\n')).toEqual([
-      'VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 ci/allocate-browser-safe-ports.py 1)',
+      'VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)',
       'export VITEST_STORYBOOK_BROWSER_API_PORT',
       'pnpm exec ./ci/run-storybook-browser-tests.mts',
     ])
