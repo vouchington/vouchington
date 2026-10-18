@@ -28,9 +28,36 @@ const fixtures = {
     rejected: true,
     source: "import { test } from '@playwright/test'\ntest.fixme('known issue', async () => {})\n",
   },
+  'vitest-aliased-import.test.mts': {
+    rejected: true,
+    source: "import { describe as suite } from 'vitest'\nsuite.skip('hidden suite', () => {})\n",
+  },
+  'vitest-namespace-computed.test.mts': {
+    rejected: true,
+    source: "import * as runner from 'vitest'\nrunner['test']['skip']('hidden case', () => {})\n",
+  },
+  'vitest-computed-modifier.test.mts': {
+    rejected: true,
+    source: "import { it as testCase } from 'vitest'\ntestCase['todo']('pending case')\n",
+  },
+  'playwright-aliased-computed.test.mts': {
+    rejected: true,
+    source:
+      "import { test as browserTest } from '@playwright/test'\nbrowserTest['fixme']('known issue', async () => {})\n",
+  },
+  'playwright-namespace-computed.test.mts': {
+    rejected: true,
+    source:
+      "import * as browser from '@playwright/test'\nbrowser['test']['skip']('hidden browser case', async () => {})\n",
+  },
   'runs.test.mts': {
     rejected: false,
     source: "import { expect, it } from 'vitest'\nit('runs', () => {\n  expect(1).toBe(1)\n})\n",
+  },
+  'unrelated-lookalikes.test.mts': {
+    rejected: false,
+    source:
+      "const test = { skip: (label: string) => label }\ntest.skip('field name')\nconst dashboard = { todo: true, fixme: false }\nvoid dashboard.todo\nvoid dashboard.fixme\n",
   },
   'data-field.test.mts': {
     rejected: false,
