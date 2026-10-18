@@ -1,8 +1,6 @@
 import { getRssFeedAutoUpdaterUserId } from '@services/users/system-users'
-import type { PrivateUser } from '@services/users/types'
 import { read, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
 import { insertRssFeedStateChanges, type RssFeedStateKind } from './state-changes.mts'
-import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
 import { recordRssFeedStatePublicationChange } from './publication-change.mts'
 import { lockPostPublicationScope } from '@services/post-publication/lock'
 import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
@@ -52,19 +50,6 @@ async function insertChange(
     input.rssFeedId,
     [{ kind, is_enabled: input.is_enabled, reason: input.reason }],
     input.createdById,
-    options,
-  )
-}
-async function setStateAsCurrentUser(
-  kind: ChangeKind,
-  currentUser: PrivateUser,
-  input: SetRssFeedStateInput,
-  options: QueryOptions = {},
-): Promise<SetStateResult> {
-  return setRssFeedStatesAsCurrentUser(
-    currentUser,
-    input.rssFeedId,
-    [{ kind, is_enabled: input.is_enabled, reason: input.reason }],
     options,
   )
 }
@@ -120,20 +105,6 @@ export function getLatestEnablementChange(
   options?: QueryOptions,
 ): Promise<RssFeedStateChange | null> {
   return getLatestChange('enablement', rssFeedId, options)
-}
-export function setRssFeedDiscoverabilityAsCurrentUser(
-  currentUser: PrivateUser,
-  input: SetRssFeedStateInput,
-  options?: QueryOptions,
-): Promise<SetStateResult> {
-  return setStateAsCurrentUser('discoverability', currentUser, input, options)
-}
-export function setRssFeedEnablementAsCurrentUser(
-  currentUser: PrivateUser,
-  input: SetRssFeedStateInput,
-  options?: QueryOptions,
-): Promise<SetStateResult> {
-  return setStateAsCurrentUser('enablement', currentUser, input, options)
 }
 export function setRssFeedDiscoverabilityAsSystem(
   input: SetRssFeedStateAsSystemInput,

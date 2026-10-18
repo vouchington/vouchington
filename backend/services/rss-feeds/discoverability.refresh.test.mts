@@ -6,10 +6,8 @@ import {
   setRssFeedOwningTopicVoteScore,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import {
-  setRssFeedDiscoverabilityAsCurrentUser,
-  setRssFeedDiscoverabilityAsSystem,
-} from './discoverability.mts'
+import { setRssFeedDiscoverabilityAsSystem } from './discoverability.mts'
+import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
 import { evaluateRssFeedDiscoverability } from './evaluate-discoverability.mts'
 import * as publicationLock from '@services/post-publication/lock'
 
@@ -42,11 +40,9 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     expect(refreshTopHashtags).not.toHaveBeenCalled()
 
     const administrator = await createTestUser({ administrator: true })
-    await setRssFeedDiscoverabilityAsCurrentUser(administrator, {
-      rssFeedId: feed.id,
-      is_enabled: true,
-      reason: 'test: human lock',
-    })
+    await setRssFeedStatesAsCurrentUser(administrator, feed.id, [
+      { kind: 'discoverability', is_enabled: true, reason: 'test: human lock' },
+    ])
     refreshTopHashtags.mockClear()
 
     await expect(
@@ -143,11 +139,9 @@ describe('RSS feed discoverability top-hashtag refresh', () => {
     expect.hasAssertions()
     const administrator = await createTestUser({ administrator: true })
     await assertFeedPublicationLockPrecedesStateRowRead(rssFeedId =>
-      setRssFeedDiscoverabilityAsCurrentUser(administrator, {
-        rssFeedId,
-        is_enabled: false,
-        reason: 'test: publication lock order',
-      }),
+      setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
+        { kind: 'discoverability', is_enabled: false, reason: 'test: publication lock order' },
+      ]),
     )
   })
 
