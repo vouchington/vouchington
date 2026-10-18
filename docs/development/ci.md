@@ -60,8 +60,9 @@ changed files.
   so they stay cheap and reproducible. Private infrastructure owns production image publication.
 - Optional trusted web image publication takes `SENTRY_AUTH_TOKEN` when present; without it the
   validated image still publishes without source maps, and pull-request and Nightly runs never
-  receive the token. See the
-  [deploy and release workflow reference](ci/workflows/reference-deploy-and-release.md).
+  receive the token. A successful deploy dispatch is not deployment evidence; operators verify the
+  matching private receiver run
+  ([deployment CI/CD flow](../overview/infrastructure/reference-deployment-ci-cd-flow.md#operations-and-failure-handling)).
 - GitHub-hosted runners are ephemeral and single-job-per-VM, so workflows use no shared-host locks
   or host-pressure diagnostics. Test listeners allocate ephemeral ports in-job, which is
   coordination within one job, not cross-job scheduling.

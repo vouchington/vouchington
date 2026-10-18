@@ -36,11 +36,9 @@ Review Vitest tests. Pick at most one concrete, bounded improvement that is safe
   `git log` / `git blame` on the failing test file, `vitest.config.mts`, and
   `test-helpers/vitest-config/**`. A signature with
   multiple prior patches needs the fix that closes the pattern, not another partial instance of it.
-- Honor a documented stopping condition before opening a new instrumentation pass. The
-  worker-exit crash diagnostics were removed, and the
-  [Vitest workflow reference](../../development/ci/workflows/reference-vitest.md) records when they
-  may come back (only after a hosted worker exit is actually reproduced) and the escalation to take
-  instead of adding another diagnostic pass.
+- Do not open a new instrumentation pass for worker exits. The worker-exit crash diagnostics were
+  removed; bring them back only after a hosted worker exit is actually reproduced, and otherwise
+  report the signature instead of adding another diagnostic pass.
 - For a post-assertion worker exit (the test passes, then its worker crashes during teardown),
   the failure is Vitest's own `Worker exited unexpectedly` error. Check per-shard RSS/heap and the
   `[vitest-teardown-overrun]` output before assuming a leak. CI reporter mode retains that

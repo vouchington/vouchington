@@ -6,19 +6,10 @@ transient retry, deduplication, prompt rendering, immediate failure reporting, a
 checkpoint ownership. The selected Harness provider runs the task in an isolated worktree on a
 trusted host with repository-scoped git and GitHub CLI credentials.
 
-## Workflow map
+## Flow
 
-| Caller                                                                         | Trigger                                                | Repository-owned controls                                                                                | Agent completion                                                                                                               |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| [Fix Main](../../../../.github/workflows/fix-main.yml)                         | failed main workflow                                   | exact run/attempt/conclusion, transient triage, concurrency-id dedupe                                    | one draft fix PR                                                                                                               |
-| [Fix Main Self Retry](../../../../.github/workflows/fix-main-self-retry.yml)   | Fix Main's own completed run failed                    | run-attempt ceiling, transient triage, no self-resubscription, unhandled-disposition escalation fallback | rerun of Fix Main's failed job(s), or a fallback `needs-human` issue                                                           |
-| [Merge Queue Ejection](../../../../.github/workflows/merge-queue-ejection.yml) | merge queue removed a PR for `CI_FAILURE`/`CI_TIMEOUT` | reason filter, no PR checkout, queue-wide concurrency-id dedupe                                          | per root cause, one issue and fix PR from `main`, or one issue; one comment per ejected PR and stack layer; never changes them |
-| [Fix Dependabot](../../../../.github/workflows/fix-dependabot.yml)             | failed Dependabot PR                                   | bot/fork/ref/SHA checks, transient triage, dedupe                                                        | exact-lease update to that PR branch                                                                                           |
-| [Fix Issue](../../../../.github/workflows/fix-issue.yml)                       | authorized standalone `/fix`                           | association, issue state, concurrency-id dedupe                                                          | one draft fix PR, or one `## Automation stopped` issue comment                                                                 |
-| [Plan](../../../../.github/workflows/plan.yml)                                 | authorized standalone `/plan`                          | association and issue state                                                                              | one issue plan comment, no code changes                                                                                        |
-| [Shepherd](../../../../.github/workflows/shepherd.yml)                         | authorized standalone `/shepherd`                      | association, same-repo PR, exact head, durable checkpoint                                                | iterate the existing PR only                                                                                                   |
-| [Scheduled Prompts](../../../../.github/workflows/scheduled-prompts.yml)       | schedule/manual                                        | catalog selection, completion mode, concurrency-id dedupe                                                | one draft PR or bounded issue maintenance                                                                                      |
-| [Harness Dispatch](../../../../.github/workflows/harness-dispatch.yml)         | reusable call                                          | immutable client checkout, explicit schema, provider routing                                             | session id, URL, and created flag                                                                                              |
+The callers are the `fix-*`, `plan`, `shepherd`, `scheduled-prompts`, and
+`merge-queue-ejection` workflows; all dispatch through `harness-dispatch.yml`.
 
 ```mermaid
 flowchart LR
@@ -109,10 +100,5 @@ the terminal-status authority.
   executes pull-request content; the ejected PR reaches the session only as prompt text. One
   queue-wide concurrency id means later ejections join the running session. It never pushes to,
   edits, merges, enqueues, or dequeues an ejected PR or stack layer.
-- Dependabot revalidates the exact bot-authored PR ref and SHA before dispatch, modifies only that
-  branch, and cannot create a second PR. Every `gh run rerun` it issues is treated as a mutation
-  and is revalidated first.
-- Shepherd records a provenance-bound checkpoint comment before dispatch, and resume accepts only a
-  validated prior checkpoint.
-- Scheduled issue maintenance is capped at a bounded number of idempotent mutations over one stable issue page and
-  never creates labels or milestones.
+- Dependabot automation modifies only the exact bot-authored PR branch it revalidated and cannot create
+  a second PR. Every `gh run rerun` it issues is a mutation and is revalidated first.

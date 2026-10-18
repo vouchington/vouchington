@@ -40,23 +40,13 @@ Each leftover run holds a hosted runner until it finishes or times out.
   subscribes to the undocumented `merge_group` activity type `destroyed` and keys `concurrency` on
   `github.event.merge_group.head_ref`.
 
-Neither workflow here uses `merge_group: destroyed`. The Actions documentation lists only
-`checks_requested` for `merge_group`, and the pinned actionlint rejects `destroyed`. The documented
-`pull_request_target` `dequeued` event covers the removal case instead.
-
-## Two mechanisms
-
-Cancel Replaced Merge Group Runs triggers on `merge_group` `checks_requested` and cancels active
-runs on older `pr-<N>-*` branches of the same pull request. Cancel Dequeued Merge Group Runs triggers
-on `pull_request_target` `dequeued` and cancels active runs on the dequeued pull request's branches.
-Both match by branch prefix with the trailing hyphen so that `pr-14-` never matches `pr-140-`, and
-both skip runs whose id is not lower than their own.
+Neither workflow here uses `merge_group: destroyed`, which Actions does not document and actionlint
+rejects. The documented `pull_request_target` `dequeued` event covers the removal case, and
+`merge_group` `checks_requested` covers the rebuilt-entry case.
 
 ## Dequeued pull requests
 
-The dequeued workflow runs from `main`'s workflow file and checks out nothing. The pull-request
-number and the removal reason reach the script only through `env:`, and the token holds
-`actions: write` and `pull-requests: read` for this one job. Guards, in order:
+The dequeued workflow runs from `main` and checks out no pull-request content. Guards, in order:
 
 1. **Reason allowlist.** Only reasons that mean the entry will not merge cancel runs. `MERGE`,
    `ALREADY_MERGED`, and unexplained reasons never act, and `CI_TIMEOUT` never acts because the
