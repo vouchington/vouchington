@@ -43,7 +43,11 @@ export async function processBackfillReportIntegrity(
   data: BackfillReportIntegrityData = {},
   target?: PendingReportEntity,
 ): Promise<{ enqueued: number }> {
-  const { entities, nextCursor } = await listPendingReportEntityPage(data.afterId, target)
+  const { entities, nextCursor } = await listPendingReportEntityPage(
+    Date.now(),
+    data.afterId,
+    target,
+  )
   if (entities.length > 0) await enqueueReportIntegrityCheckBatch(entities)
   if (nextCursor) await enqueueContinueBackfillReportIntegrity(nextCursor)
   return { enqueued: entities.length }

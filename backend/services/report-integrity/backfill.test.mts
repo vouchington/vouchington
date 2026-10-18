@@ -3,7 +3,10 @@ import {
   createTestUser,
   insertTestPost,
   insertTestModerationReportsForTarget,
+  insertTestUrlHostname,
+  createTestRssFeedItemWithUrl,
 } from '@voucha/test-helpers'
+import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import crypto from 'node:crypto'
 import type { PrivateUser } from '@services/users/types'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
@@ -12,11 +15,11 @@ import { type PendingReportEntity, listPendingReportEntityPage } from './backfil
 import { MASS_REPORT_THRESHOLD } from './config.mts'
 import { reportIntegrityWorkConfig } from './work-limits.mts'
 
-async function collectAll(): Promise<PendingReportEntity[]> {
+async function collectAll(now: number): Promise<PendingReportEntity[]> {
   const results: PendingReportEntity[] = []
   let cursor: string | undefined
   do {
-    const page = await listPendingReportEntityPage(cursor)
+    const page = await listPendingReportEntityPage(now, cursor)
     results.push(...page.entities)
     cursor = page.nextCursor ?? undefined
   } while (cursor)
@@ -46,7 +49,7 @@ describe('listPendingReportEntityPage', () => {
       entityId: postId,
     })
 
-    const results = await collectAll()
+    const results = await collectAll(Date.now())
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeDefined()
     expect(found!.entityType).toBe('post')
@@ -68,7 +71,7 @@ describe('listPendingReportEntityPage', () => {
       entityId: postId,
     })
 
-    const results = await collectAll()
+    const results = await collectAll(Date.now())
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeUndefined()
   })
@@ -91,7 +94,7 @@ describe('listPendingReportEntityPage', () => {
     })
     expect(reportIds.length).toBe(MASS_REPORT_THRESHOLD)
 
-    const results = await collectAll()
+    const results = await collectAll(Date.now())
     const found = results.find(r => r.entityId === postId)
     expect(found).toBeUndefined()
   })
@@ -121,7 +124,7 @@ describe('listPendingReportEntityPage', () => {
       entityId: commentId,
     })
 
-    const results = await collectAll()
+    const results = await collectAll(Date.now())
     const found = results.find(r => r.entityId === commentId)
     expect(found).toBeDefined()
     expect(found!.entityType).toBe('comment')
@@ -150,8 +153,9 @@ describe('listPendingReportEntityPage', () => {
       const seen = new Map<string, number>()
       let cursor: string | undefined = uuidBefore(targets.toSorted()[0]!)
       const walked: string[] = []
+      const now = Date.now()
       while (cursor) {
-        const page = await listPendingReportEntityPage(cursor)
+        const page = await listPendingReportEntityPage(now, cursor)
         const ids = page.entities.map(entity => entity.entityId)
         expect(ids.length).toBeLessThanOrEqual(pageSize)
         expect(page.nextCursor).toBe(ids.length === pageSize ? (ids.at(-1) ?? null) : null)
@@ -181,7 +185,7 @@ describe('listPendingReportEntityPage', () => {
       })
     }
 
-    const page = await listPendingReportEntityPage(undefined, {
+    const page = await listPendingReportEntityPage(Date.now(), undefined, {
       entityType: 'user',
       entityId: target!.id,
     })
@@ -190,5 +194,78 @@ describe('listPendingReportEntityPage', () => {
       entities: [{ entityType: 'user', entityId: target!.id }],
       nextCursor: null,
     })
+  })
+
+  it('includes the exact one-hour cutoff and excludes the next millisecond across UTC calendar boundaries', async () => {
+    const reporterUserIds = await Promise.all(
+      Array.from({ length: MASS_REPORT_THRESHOLD }, () => createTestUser().then(u => u!.id)),
+    )
+    const cases: Array<{
+      entityType: 'post' | 'comment' | 'user' | 'url_hostname' | 'rss_feed_item'
+      referenceNow: string
+    }> = [
+      { entityType: 'post', referenceNow: '2026-02-01T00:30:00.000Z' },
+      { entityType: 'comment', referenceNow: '2028-03-01T00:30:00.000Z' },
+      { entityType: 'user', referenceNow: '2025-01-01T00:30:00.000Z' },
+      { entityType: 'url_hostname', referenceNow: '2026-02-01T00:30:00.000Z' },
+      { entityType: 'rss_feed_item', referenceNow: '2028-03-01T00:30:00.000Z' },
+    ]
+
+    for (const { entityType, referenceNow } of cases) {
+      let entityId: string
+      if (entityType === 'post') {
+        entityId = await insertTestPost({
+          createdById: author.id,
+          slug: `backfill-cutoff-post-${crypto.randomUUID().slice(0, 8)}`,
+          title: 'Backfill cutoff post',
+          markdown: 'body',
+        })
+      } else if (entityType === 'comment') {
+        const rootPostId = await insertTestPost({
+          createdById: author.id,
+          slug: `backfill-cutoff-root-${crypto.randomUUID().slice(0, 8)}`,
+          title: 'Backfill cutoff root',
+          markdown: 'root body',
+        })
+        entityId = await insertTestPost({
+          createdById: author.id,
+          slug: `backfill-cutoff-comment-${crypto.randomUUID().slice(0, 8)}`,
+          title: 'Backfill cutoff comment',
+          markdown: 'comment body',
+          postType: 'comment',
+          rootId: rootPostId,
+          parentId: rootPostId,
+        })
+      } else if (entityType === 'user') {
+        entityId = (await createTestUser())!.id
+      } else if (entityType === 'url_hostname') {
+        entityId = await insertTestUrlHostname({
+          hostname: `backfill-cutoff-${crypto.randomUUID().slice(0, 8)}.example.com`,
+        })
+      } else {
+        const feed = await createTestRssFeed({})
+        entityId = (await createTestRssFeedItemWithUrl(feed.id)).id
+      }
+
+      const referenceNowMs = new Date(referenceNow).getTime()
+      const reportAt = new Date(referenceNowMs - 60 * 60 * 1000)
+      await insertTestModerationReportsForTarget({
+        reporterUserIds,
+        entityType,
+        entityId,
+        createdAt: reportAt,
+      })
+
+      for (const offsetMs of [-1, 0, 1]) {
+        const now = referenceNowMs + offsetMs
+        const page = await listPendingReportEntityPage(now, undefined, { entityType, entityId })
+        expect(page.entities).toEqual(offsetMs <= 0 ? [{ entityType, entityId }] : [])
+        expect(page.nextCursor).toBeNull()
+      }
+    }
+  })
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY])('rejects non-finite now value %s', async now => {
+    await expect(listPendingReportEntityPage(now)).rejects.toThrow('now must be a finite number')
   })
 })

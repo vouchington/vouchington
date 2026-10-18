@@ -29,13 +29,14 @@ const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
  * post vs comment (same FK column).
  */
 export async function listPendingReportEntityPage(
+  now: number,
   afterId?: string,
   target?: PendingReportEntity,
 ): Promise<PendingReportEntityPage> {
+  if (!Number.isFinite(now)) throw new Error('now must be a finite number')
+
   const limit = getReportIntegrityWorkLimit('backfill_batch_size')
-  const windowStartId = getMinUUIDv7ForDate(
-    new Date(Date.now() - MASS_REPORT_WINDOW_MINUTES * 60 * 1000),
-  )
+  const windowStartId = getMinUUIDv7ForDate(new Date(now - MASS_REPORT_WINDOW_MINUTES * 60 * 1000))
   // A known-entity recovery narrows each branch before grouping, never after a global scan.
   const postFilter = target
     ? sql`AND mr.post_id = ${target.entityId}::uuid
