@@ -28,11 +28,6 @@
     "code": "backend/services/referral-program-link-validations/create-and-link.mts:76"
   },
   {
-    "annotation": "assertReportablePost",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
     "annotation": "assertUrlsHaveNoBlockedHostnames",
     "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
     "issue": 3121
@@ -133,11 +128,6 @@
     "issue": 3122
   },
   {
-    "annotation": "createModerationReport",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
     "annotation": "createPost",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 3122
@@ -180,11 +170,6 @@
     "code": "backend/services/my/profile-links.mts:154"
   },
   {
-    "annotation": "deleteUserModNote",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
     "annotation": "disconnectOAuthAccount",
     "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
     "permanent": true,
@@ -223,14 +208,10 @@
     "issue": 3116
   },
   {
-    "annotation": "findOpenCaseForEntity",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
     "annotation": "getAutomodFeedbackContext:agent",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
+    "reason": "The feedback transaction re-reads the automod action after taking its locks to reject a concurrent change (backend/services/moderation-training/automod-feedback.mts:48-70)",
+    "permanent": true,
+    "code": "backend/services/moderation-training/automod-feedback.mts:48-70"
   },
   {
     "annotation": "getBlocklistedDomainKeys",
@@ -259,11 +240,6 @@
     "code": "backend/services/my/landing-pages/reads.mts:14"
   },
   {
-    "annotation": "getLatestJudgementForEntity",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
     "annotation": "getLocalHostnamePolicies",
     "reason": "Relation, vote and topic lookups repeat per target",
     "issue": 3121
@@ -273,16 +249,6 @@
     "reason": "Idempotency is checked before locking and rechecked under the user row lock; the inserted intent is hydrated for admission checks and reread after the external provider launch (backend/services/memberships/purchase-intents.mts:55-140)",
     "permanent": true,
     "code": "backend/services/memberships/purchase-intents.mts:55"
-  },
-  {
-    "annotation": "getModeratedCommunityIds",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
-    "annotation": "getModerationAppealById",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
   },
   {
     "annotation": "getOAuthClient",
@@ -316,16 +282,6 @@
     "issue": 3121
   },
   {
-    "annotation": "getReportJudgementContextsForEntitiesBatch",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
-    "annotation": "getReportResolutionContext",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
     "annotation": "getRetainedPostCategories hashtags",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 3122
@@ -334,11 +290,6 @@
     "annotation": "getRetainedPostCategories topics",
     "reason": "Post, feed and import steps repeat per item",
     "issue": 3122
-  },
-  {
-    "annotation": "getReviewDisputeById",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
   },
   {
     "annotation": "getRssFeedById",
@@ -528,13 +479,9 @@
   },
   {
     "annotation": "maybeResolveCases",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
-  },
-  {
-    "annotation": "openOrGetOpenCase:insert",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
+    "reason": "Issuing a warning commits the warning in its own transaction before the report resolution runs its own, so a failed resolution leaves a retryable pending report (backend/services/user-warnings/issue-warning.mts:26-34)",
+    "permanent": true,
+    "code": "backend/services/user-warnings/issue-warning.mts:26-34"
   },
   {
     "annotation": "orderPostPublicationRetainedKeyInput",
@@ -592,13 +539,15 @@
   },
   {
     "annotation": "recordMcpCallAudit",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
+    "reason": "The write-ahead audit row commits before the MCP call runs and the tool_error or rate_limited follow-up row is written after the call (backend/api/mcp-audit-helpers.mts:40-62)",
+    "permanent": true,
+    "code": "backend/api/mcp-audit-helpers.mts:40-62"
   },
   {
     "annotation": "recordModeratorAction",
-    "reason": "Moderation report and case steps repeat per entity",
-    "issue": 3118
+    "reason": "A staff operation writes its requested row before the external side effect and its finished row after it, and issuing a warning commits the warning and the report resolution in separate transactions (backend/services/moderator-actions/operation.mts:15-38, backend/services/user-warnings/issue-warning.mts:26-34)",
+    "permanent": true,
+    "code": "backend/services/moderator-actions/operation.mts:15-38"
   },
   {
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
