@@ -24,8 +24,8 @@ function buildAppealResolutionJob(
       removeOnComplete: AI_AGENTS_DEFAULTS.removeOnComplete,
       removeOnFail: AI_AGENTS_DEFAULTS.removeOnFail,
       priority: AGENT_PRIORITY['appeal-resolution'],
-      // Manual reruns coalesce with each other, but never with automatic work: an automatic
-      // retry may correctly no-op after persisting its draft while a later staff rerun must run.
+      // Automatic retries coalesce per appeal. Manual generations keep distinct request IDs
+      // so a later staff rerun is not suppressed by an earlier request.
       ...(isManualRerun
         ? {}
         : {
