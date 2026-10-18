@@ -20,6 +20,11 @@ describe('OAuth protected resources', () => {
     expect(getOAuthIssuer()).toBe(issuer)
     expect(getOAuthResourceUrl('user')).toBe(`${issuer}/api/v1/mcp`)
     expect(getOAuthResourceUrl('admin')).toBe(`${issuer}/api/v1/admin/mcp`)
+    expect(getOAuthResourceUrl('community_moderation')).toBe(
+      `${issuer}/api/v1/community-moderation/mcp`,
+    )
+    expect(getOAuthResourceUrl('brand')).toBe(`${issuer}/api/v1/brand/mcp`)
+    expect(getOAuthResourceUrl('legal')).toBe(`${issuer}/api/v1/legal/mcp`)
     expect(getOAuthResourceMetadataUrl('user')).toBe(
       `${issuer}/.well-known/oauth-protected-resource/api/v1/mcp`,
     )
@@ -37,6 +42,7 @@ describe('OAuth protected resources', () => {
       audience: 'admin',
       url: getOAuthResourceUrl('admin'),
     })
+    expect(validateResource(getOAuthResourceUrl('legal')).audience).toBe('legal')
     expect(findOAuthProtectedResource(getOAuthResourceUrl('user').toUpperCase())).toBeNull()
   })
 
@@ -60,6 +66,16 @@ describe('OAuth protected resources', () => {
       expect.objectContaining({ code: 'invalid_scope' }),
     )
     expect(() => assertScopesMatchResource(['mcp.admin:read'], user)).toThrowError(
+      expect.objectContaining({ code: 'invalid_scope' }),
+    )
+    const community = validateResource(getOAuthResourceUrl('community_moderation'))
+    const legal = validateResource(getOAuthResourceUrl('legal'))
+    expect(() => assertScopesMatchResource(['community-moderation:read'], community)).not.toThrow()
+    expect(() => assertScopesMatchResource(['copyright-notices:read'], legal)).not.toThrow()
+    expect(() => assertScopesMatchResource(['community-moderation:read'], user)).toThrowError(
+      expect.objectContaining({ code: 'invalid_scope' }),
+    )
+    expect(() => assertScopesMatchResource(['copyright-notices:read'], admin)).toThrowError(
       expect.objectContaining({ code: 'invalid_scope' }),
     )
   })
@@ -103,5 +119,15 @@ describe('OAuth protected resources', () => {
     expect(admin.resource).toBe(getOAuthResourceUrl('admin'))
     expect(admin.scopes_supported).toContain('mcp.admin:read')
     expect(admin.scopes_supported.some(scope => scope.startsWith('mcp.user:'))).toBe(false)
+    expect(admin.scopes_supported).not.toContain('copyright-notices:read')
+    expect(buildOAuthProtectedResourceMetadata('community_moderation').scopes_supported).toEqual([
+      'community-moderation:read',
+      'community-moderation:write',
+    ])
+    expect(buildOAuthProtectedResourceMetadata('legal').scopes_supported).toEqual([
+      'copyright-notices:read',
+      'copyright-notices:write',
+    ])
+    expect(buildOAuthProtectedResourceMetadata('brand').scopes_supported).toEqual([])
   })
 })

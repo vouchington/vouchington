@@ -6,9 +6,9 @@ import { routeResponseSchema, successResultSchema } from './route-response-schem
 import type { ToolMeta } from '@services/openai-agents/tool-types'
 
 const LIST_META = {
-  surfaces: ['mcp'],
+  audience: 'user',
   title: 'Get My Test Entities',
-  requiredScopes: { mcp: ['cards:read'] },
+  requiredScopes: ['cards:read'],
   annotations: { readOnlyHint: true },
 } satisfies Omit<ToolMeta, 'api' | 'outputSchema'>
 

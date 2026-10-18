@@ -1,3 +1,4 @@
+import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
@@ -8,7 +9,7 @@ import { readCopyrightStaffQueueCursorBefore } from '@voucha/test-helpers/data-s
 import { encodeScopedUuidCursor } from '@modules/pagination'
 import type { PrivateUser } from '@services/users/types'
 import { callMcpTool } from './call-tool.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 
 const invoke = (user: PrivateUser, name: string, args: unknown) =>
   callMcpTool(
@@ -16,7 +17,9 @@ const invoke = (user: PrivateUser, name: string, args: unknown) =>
     args,
     { ...user, membership_plan: null },
     ['analytics:read', 'copyright-notices:read', 'moderation:read'],
-    ADMIN_MCP_SERVER_CONFIG,
+    ALL_MCP_SERVER_CONFIGS.find(
+      config => config.audience === getRegisteredToolByName(name)?.meta?.audience,
+    )!,
   )
 
 async function success(user: PrivateUser, name: string, args: unknown) {

@@ -82,10 +82,10 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'List RSS Feed Items',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feed-items:read'] },
+    requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items' }],
     outputSchema: foundOrNotFoundSchema({
@@ -147,10 +147,10 @@ export const getRssFeedItemTool: MergedToolSource<DetailArgs, DetailResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get RSS Feed Item',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feed-items:read'] },
+    requiredScopes: ['rss-feed-items:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feed-items/:id' }],
     outputSchema: foundOrNotFoundSchema({ rss_feed_item: mcpRssFeedItemSchema() }),

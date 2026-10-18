@@ -54,7 +54,8 @@ export function startMcpUsageMeter(
   authentication: AuthenticatedMcpCredential,
 ): McpUsageMeter {
   const startedAt = performance.now()
-  const surface: UsageSurface = config.audience === 'admin' ? 'mcp_admin' : 'mcp_user'
+  const surface: UsageSurface =
+    config.audience === 'admin' || config.audience === 'legal' ? 'mcp_admin' : 'mcp_user'
   const identity = usageIdentity(authentication)
   const plan = resolveUsagePlan(authentication.owner)
   const scopeClass = resolveUsageScopeClass(authentication.scopes)

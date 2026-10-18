@@ -22,10 +22,10 @@ const tool: MergedToolSource<ListItemToolArgs, { success: true }> = {
     parameters: LIST_ITEM_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Remove List Item',
     plan: 'plus',
-    requiredScopes: { mcp: ['lists:read', 'lists:write'] },
+    requiredScopes: ['lists:read', 'lists:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: Object.values(ENDPOINTS),
     selectApi: selectApiByArgument('item_type', ENDPOINTS),

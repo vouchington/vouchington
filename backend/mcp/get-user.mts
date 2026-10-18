@@ -23,9 +23,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get User',
-    requiredScopes: { mcp: ['users:read'] },
+    requiredScopes: ['users:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/users/:idOrSlug' }],
     outputSchema: foundOrNotFoundSchema({ user: mcpUserSchema() }),

@@ -177,9 +177,9 @@ describe('callMcpTool', () => {
 
   it('throws McpError when tool scope is absent', async () => {
     // find a write-only tool (readOnlyHint !== true)
-    const { listToolsForSurface, isToolMcpEligible } = await import('@voucha/mcp/registry/select')
+    const { listToolsForAudience, isToolMcpEligible } = await import('@voucha/mcp/registry/select')
     const { ALL_TOOLS } = await import('@voucha/mcp/registry/index')
-    const writeTool = listToolsForSurface('mcp', ALL_TOOLS).find(
+    const writeTool = listToolsForAudience('user', ALL_TOOLS).find(
       t => isToolMcpEligible(t) && t.meta?.annotations?.readOnlyHint !== true,
     )
 

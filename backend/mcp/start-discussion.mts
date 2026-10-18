@@ -37,10 +37,10 @@ function source(story: boolean): MergedToolSource<Args, { success: true; post: M
       },
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Start Discussion',
       plan: 'plus',
-      requiredScopes: { mcp: POST_WRITE_SCOPES },
+      requiredScopes: POST_WRITE_SCOPES,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
       api: [
         {

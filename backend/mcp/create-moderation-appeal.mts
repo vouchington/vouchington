@@ -48,11 +48,11 @@ const tool: Tool<Args, Result> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Appeal Moderation Decision',
     plan: 'plus',
     suspendedAccess: true,
-    requiredScopes: { mcp: ['appeals:read', 'appeals:write'] },
+    requiredScopes: ['appeals:read', 'appeals:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/appeals' }],
     outputSchema: successSchema({ appeal: APPEAL_SCHEMA, is_duplicate: { type: 'boolean' } }),

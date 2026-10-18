@@ -8,21 +8,17 @@ import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-accoun
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
 import {
-  ADMIN_SURFACE_PREFIX,
   EXCLUSION_CATEGORIES,
   communityOwnerAiExclusions,
   writeExclusions,
 } from '@voucha/test-helpers/mcp-write-exclusions'
 import { REQUEST_CONTRACT_EXEMPTIONS } from '../../api/request-contract-exemptions-helpers.mts'
+import { ALL_MCP_SERVER_CONFIGS, MOUNTED_MCP_SERVER_CONFIGS } from './config.mts'
 
-// The authoritative inventory of REST writes against the user MCP server (#208).
-//
-// A write is every non-GET operation in api-fixtures/v1/request-contracts.json plus the non-GET
-// routes exempt from a request contract. It is covered when a tool on the user `mcp` surface lists
-// it in `meta.api`, including each option of a merged tool. A tool on the `admin_mcp` surface does
-// not cover it, so staff writes that only an admin tool maps still need a `staff-only` row.
-// Everything else needs one row in backend/test-helpers/mcp-write-exclusions*.mts, except
-// `/api/v1/admin/**`, which the prefix rule excludes. The `undecided` rows are the open #208 work.
+// The authoritative inventory of REST writes exposed through any MCP server (#208).
+// Every non-GET request-contract or exempt operation must map to exactly one tool option on one
+// audience or have an explicit categorized exclusion. The brand
+// audience is part of the catalog but remains unmounted and empty until its tools land.
 
 const requestContracts = JSON.parse(
   readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
@@ -43,12 +39,12 @@ const sources = [
   ...ALL_TOOLS.filter(tool => !mergedNames.has(tool.schema.name)),
   ...mergedGroups.flatMap(group => group.options.map(({ source }) => source)),
 ]
-const userMapped = new Set(
-  sources
-    .filter(source => source.meta?.surfaces.some(surface => surface === 'mcp'))
-    .flatMap(source =>
-      (source.meta?.api ?? []).map(api => `${api.method}:${normalizePath(api.path)}`),
-    ),
+const mappedOperations = new Set(
+  sources.flatMap(source =>
+    source.meta?.audience
+      ? (source.meta.api ?? []).map(api => `${api.method}:${normalizePath(api.path)}`)
+      : [],
+  ),
 )
 
 const operations = [
@@ -57,25 +53,56 @@ const operations = [
     ...Object.keys(REQUEST_CONTRACT_EXEMPTIONS).filter(isWrite),
   ]),
 ].toSorted()
+const protocolOperations = MOUNTED_MCP_SERVER_CONFIGS.flatMap(config =>
+  ['POST', 'GET', 'DELETE'].map(method => `${method}:${config.routePath}`),
+)
+const inventoryOperations = [...new Set([...operations, ...protocolOperations])].toSorted()
 const exclusions = [...writeExclusions, ...communityOwnerAiExclusions(operations)]
 const keyOf = (entry: { method: string; path: string }) => `${entry.method}:${entry.path}`
 const excludedKeys = new Set(exclusions.map(keyOf))
-const isAdminSurface = (key: string) =>
-  key.slice(key.indexOf(':') + 1).startsWith(ADMIN_SURFACE_PREFIX)
 
-describe('user MCP write inventory', () => {
-  it('maps or excludes every non-GET REST operation', () => {
-    const unaccounted = operations.filter(
-      key => !userMapped.has(key) && !excludedKeys.has(key) && !isAdminSurface(key),
+describe('all-audience MCP write inventory', () => {
+  it('maps or explicitly excludes every write and MCP transport operation', () => {
+    const unaccounted = inventoryOperations.filter(
+      key => !mappedOperations.has(key) && !excludedKeys.has(key),
     )
     expect(unaccounted).toEqual([])
   })
 
-  it('has no stale exclusion for a removed route or a route a user tool now maps', () => {
-    const live = new Set(operations)
+  it('lists each tool on exactly one audience', () => {
+    const toolAudiencePairs = [
+      ...ALL_TOOLS.filter(tool => !mergedNames.has(tool.schema.name)).flatMap(tool =>
+        tool.meta?.audience ? [{ tool: tool.schema.name, audience: tool.meta.audience }] : [],
+      ),
+      ...mergedGroups.flatMap(group =>
+        group.options.flatMap(({ source }) =>
+          source.meta?.audience ? [{ tool: group.name, audience: source.meta.audience }] : [],
+        ),
+      ),
+    ]
+    const audiencesByTool = new Map<string, Set<string>>()
+    for (const { tool, audience } of toolAudiencePairs) {
+      const values = audiencesByTool.get(tool) ?? new Set<string>()
+      values.add(audience)
+      audiencesByTool.set(tool, values)
+    }
+    const duplicates = [...audiencesByTool.entries()]
+      .filter(([, audiences]) => audiences.size !== 1)
+      .map(([tool, audiences]) => ({ tool, audiences: [...audiences].toSorted() }))
+    expect(duplicates).toEqual([])
+  })
+
+  it('keeps brand configured but unmounted and empty until its first tools land', () => {
+    expect(ALL_MCP_SERVER_CONFIGS.some(config => config.audience === 'brand')).toBe(true)
+    expect(MOUNTED_MCP_SERVER_CONFIGS.some(config => config.audience === 'brand')).toBe(false)
+    expect(ALL_TOOLS.some(tool => tool.meta?.audience === 'brand')).toBe(false)
+  })
+
+  it('has no stale exclusion for a removed route or a route any audience now maps', () => {
+    const live = new Set(inventoryOperations)
     const stale = exclusions
       .map(keyOf)
-      .filter(key => !live.has(key) || userMapped.has(key))
+      .filter(key => !live.has(key) || mappedOperations.has(key))
       .toSorted()
     expect(stale).toEqual([])
   })
@@ -87,9 +114,5 @@ describe('user MCP write inventory', () => {
       expect(EXCLUSION_CATEGORIES).toContain(entry.category)
       expect(entry.reason.trim()).not.toBe('')
     }
-  })
-
-  it('keeps admin-surface routes out of the explicit table', () => {
-    expect(exclusions.map(keyOf).filter(isAdminSurface)).toEqual([])
   })
 })

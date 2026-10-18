@@ -19,10 +19,10 @@ const tool: Tool<{ id: string }, { success: true }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Delete Own Post',
     plan: 'plus',
-    requiredScopes: { mcp: POST_WRITE_SCOPES },
+    requiredScopes: POST_WRITE_SCOPES,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/posts/:idOrSlug' }],
     outputSchema: successSchema({}),

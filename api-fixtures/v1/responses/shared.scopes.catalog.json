@@ -128,7 +128,7 @@
     },
     {
       "action": "read",
-      "audience": "user",
+      "audience": "community_moderation",
       "description_key": "community_moderation_read",
       "requires": null,
       "resource": "community-moderation",
@@ -137,7 +137,7 @@
     },
     {
       "action": "write",
-      "audience": "user",
+      "audience": "community_moderation",
       "description_key": "community_moderation_write",
       "requires": "community-moderation:read",
       "resource": "community-moderation",
@@ -146,7 +146,7 @@
     },
     {
       "action": "read",
-      "audience": "admin",
+      "audience": "legal",
       "description_key": null,
       "requires": null,
       "resource": "copyright-notices",
@@ -155,7 +155,7 @@
     },
     {
       "action": "write",
-      "audience": "admin",
+      "audience": "legal",
       "description_key": null,
       "requires": "copyright-notices:read",
       "resource": "copyright-notices",

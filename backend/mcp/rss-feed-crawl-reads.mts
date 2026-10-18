@@ -80,10 +80,10 @@ export const listRssFeedCrawlsTool: MergedToolSource<ListArgs, ListResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'List RSS Feed Crawls',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feeds:read'] },
+    requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/:id/crawls' }],
     outputSchema: foundOrNotFoundSchema({
@@ -123,10 +123,10 @@ export const getRssFeedCrawlTool: MergedToolSource<DetailArgs, DetailResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get RSS Feed Crawl',
     plan: 'free',
-    requiredScopes: { mcp: ['rss-feeds:read'] },
+    requiredScopes: ['rss-feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/rss-feeds/:id/crawls/:crawlId' }],
     outputSchema: foundOrNotFoundSchema({ crawl: { oneOf: [summarySchema, detailSchema] } }),

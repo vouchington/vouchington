@@ -12,9 +12,9 @@ const tool: MergedToolSource<Record<string, never>, ToolResult> = {
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Preferences',
-    requiredScopes: { mcp: ['preferences:read'] },
+    requiredScopes: ['preferences:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/users/:idOrSlug' }],
     outputSchema: SETTINGS_RESULT_SCHEMA,

@@ -27,10 +27,10 @@ const tool: Tool<CreateListArgs, { success: true; list: List }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Create List',
     plan: 'plus',
-    requiredScopes: { mcp: ['lists:read', 'lists:write'] },
+    requiredScopes: ['lists:read', 'lists:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/lists' }],
     outputSchema: LIST_RESULT_SCHEMA,

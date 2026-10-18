@@ -13,9 +13,9 @@ const tool: MergedToolSource<Record<string, never>, ToolResult> = {
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get My Profile Links',
-    requiredScopes: { mcp: ['profile:read'] },
+    requiredScopes: ['profile:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/my/profile/links' }],
     outputSchema: PROFILE_LINKS_RESULT_SCHEMA,

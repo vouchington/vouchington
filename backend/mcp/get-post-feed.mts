@@ -37,10 +37,10 @@ const getPostFeedTool: MergedToolSource<PostArgs, FeedResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Post Feed',
     plan: 'free',
-    requiredScopes: { mcp: ['feeds:read'] },
+    requiredScopes: ['feeds:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/feeds/posts/:feed_type' }],
     outputSchema: foundOrNotFoundSchema({

@@ -9,6 +9,7 @@ import {
   findMcpStepUpScopes,
   handleMcpHttpRequest,
   planMcpCalls,
+  MOUNTED_MCP_SERVER_CONFIGS,
   type McpServerConfig,
   type McpHttpResponse,
 } from '@services/mcp-tools'
@@ -20,8 +21,8 @@ import { chargeMcpToolCalls } from './mcp-route-rate-limit-helpers.mts'
 import { validateRequestContract } from './response-helpers.mts'
 import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 
-// Stateless MCP Streamable HTTP for both MCP routes. The bearer credential (an OAuth access token,
-// or a user MCP API key on the user route only) is the identity, so session cookies are never read.
+// Stateless MCP Streamable HTTP for every mounted MCP route. The bearer credential (an OAuth
+// access token or an MCP API key on a key-enabled route) is the identity, so cookies are never read.
 // Each route emits the returned response itself: OpenAPI discovery only attributes an emission to a
 // route when it sits in that route's own handler, not in a helper both routes share.
 //
@@ -29,13 +30,14 @@ import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
 // identities the transport bucket uses, so a user has one budget per route across REST and MCP. A
 // call refused there is answered in-band and audited as rate limited; it never runs.
 //
-// Both routes audit every call of a verified credential (an OAuth access token or, on the user
-// route, an API key) before the call runs: each rejection below and each admitted message writes its
+// Every route audits each call of a verified credential before the call runs: each rejection below and each admitted message writes its
 // own row, all sharing one correlation id.
 export async function dispatchMcpRequest(
   ctx: Context,
-  config: McpServerConfig,
+  audience: McpServerConfig['audience'],
 ): Promise<McpHttpResponse> {
+  const config = MOUNTED_MCP_SERVER_CONFIGS.find(server => server.audience === audience)
+  if (!config) throw new Error(`MCP audience is not mounted: ${audience}`)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const authentication = await authenticateMcpBearer(ctx.req.headers.authorization, config)
   if (authentication.status !== 'authenticated') {
@@ -60,17 +62,20 @@ export async function dispatchMcpRequest(
       })
       // Registered before any rejection below so every outcome of a verified credential is metered.
       const usage = startMcpUsageMeter(ctx, config, authentication)
-      if (config.audience === 'admin' && !isAdminUser(owner)) {
+      const staffAudience = config.audience === 'admin' || config.audience === 'legal'
+      if (staffAudience && !isAdminUser(owner)) {
         await audit?.record([unreadMcpCall('role_denied')])
         ctx.throw(403, 'Administrator role required')
       }
-      if (config.audience === 'admin' && !hasScopeAudience(scopes, 'admin')) {
+      if (staffAudience && !hasScopeAudience(scopes, config.audience)) {
         await audit?.record([unreadMcpCall('insufficient_scope')])
         ctx.set(
           'WWW-Authenticate',
           buildMcpBearerChallenge(config, {
             error: 'insufficient_scope',
-            scopes: withScopePrerequisites(['mcp.admin:read']),
+            scopes: withScopePrerequisites([
+              config.audience === 'legal' ? 'copyright-notices:read' : 'mcp.admin:read',
+            ]),
           }),
         )
         ctx.throw(403, 'Insufficient scope')
@@ -100,7 +105,7 @@ export async function dispatchMcpRequest(
       validateRequestContract(ctx, `POST:${config.routePath}`, { body: parsedBody })
       const user = buildMcpContextUser(owner, authentication.suspended)
       const copyrightDecisionToolsEnabled =
-        config.audience === 'admin' ? await isCopyrightMcpDecisionToolsEnabled() : false
+        config.audience === 'legal' ? await isCopyrightMcpDecisionToolsEnabled() : false
       // Bounds the audit rows and the route charges one request can spend.
       if (exceedsMcpAuditBatchLimit(parsedBody)) {
         await audit?.record([unreadMcpCall('invalid_request')])

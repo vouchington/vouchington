@@ -27,9 +27,9 @@ const failingTool = {
   },
   function: (_currentUser: unknown) => () => Promise.reject(new Error('fixture failure')),
   meta: {
-    surfaces: ['admin_mcp'],
+    audience: 'admin',
     title: FAIL_TOOL,
-    requiredScopes: { admin_mcp: ['mcp.admin:read'] },
+    requiredScopes: ['mcp.admin:read'],
     annotations: { readOnlyHint: true },
     api: null,
   },

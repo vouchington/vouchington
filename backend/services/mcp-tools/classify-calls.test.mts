@@ -7,7 +7,7 @@ import {
   MAX_AUDITED_MCP_MESSAGES,
   planMcpCalls,
 } from './classify-calls.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { ADMIN_MCP_SERVER_CONFIG, LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 
 const admin = { id: 'admin-id', roles: ['administrator'], membership_plan: null } as const
 const READ: ApiScope[] = ['mcp.admin:read']
@@ -29,19 +29,19 @@ function fixtureTool(name: string, meta: Record<string, unknown>, roles?: Record
     },
     // Arity 1 keeps the fixture MCP-eligible, so authorization is what's under test.
     function: (_currentUser: unknown) => () => Promise.resolve({ success: true }),
-    meta: { surfaces: ['admin_mcp'], api: null, ...meta },
+    meta: { audience: 'admin', api: null, ...meta },
   } as unknown as Tool
 }
 
 const FIXTURES = [
-  fixtureTool('classify_read', { requiredScopes: { admin_mcp: ['mcp.admin:read'] } }),
-  fixtureTool('classify_write', { requiredScopes: { admin_mcp: ['mcp.admin:write'] } }),
+  fixtureTool('classify_read', { requiredScopes: ['mcp.admin:read'] }),
+  fixtureTool('classify_write', { requiredScopes: ['mcp.admin:write'] }),
   fixtureTool(
     'classify_moderator_only',
-    { requiredScopes: { admin_mcp: ['mcp.admin:read'] } },
+    { requiredScopes: ['mcp.admin:read'] },
     { moderator: true },
   ),
-  fixtureTool('classify_plus', { plan: 'plus', requiredScopes: { admin_mcp: ['mcp.admin:read'] } }),
+  fixtureTool('classify_plus', { plan: 'plus', requiredScopes: ['mcp.admin:read'] }),
   fixtureTool('classify_undeclared', {}),
 ]
 
@@ -111,7 +111,7 @@ describe('planMcpCalls events', () => {
         }),
         admin,
         ['copyright-notices:read', 'copyright-notices:write'],
-        ADMIN_MCP_SERVER_CONFIG,
+        LEGAL_MCP_SERVER_CONFIG,
         false,
       ).events,
     ).toEqual([{ jsonrpcMethod: 'tools/call', toolName: null, outcome: 'not_found' }])
@@ -132,7 +132,7 @@ describe('planMcpCalls events', () => {
       }),
       admin,
       ['copyright-notices:read', 'copyright-notices:write'],
-      ADMIN_MCP_SERVER_CONFIG,
+      LEGAL_MCP_SERVER_CONFIG,
       true,
     )
     expect(events).toEqual([

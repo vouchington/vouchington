@@ -37,7 +37,7 @@ describe('copyright MCP read catalog', () => {
   it('registers four read-only exact-scope tools with output schemas', () => {
     for (const name of readNames) {
       const tool = ALL_TOOLS.find(item => item.schema.name === name)
-      expect(tool?.meta?.requiredScopes?.admin_mcp).toContain('copyright-notices:read')
+      expect(tool?.meta?.requiredScopes).toContain('copyright-notices:read')
       expect(tool?.meta?.annotations?.readOnlyHint).toBe(true)
       expect(tool?.meta?.outputSchema).toMatchObject({ type: 'object' })
     }
@@ -46,7 +46,7 @@ describe('copyright MCP read catalog', () => {
   it('keeps new untrusted output fields confined to copyright tool schemas', () => {
     const affected = ALL_TOOLS.filter(
       tool =>
-        tool.meta?.surfaces?.includes('admin_mcp') &&
+        tool.meta?.audience === 'legal' &&
         [...propertyNames(tool.meta.outputSchema)].some(key => newUntrustedFields.has(key)),
     ).map(tool => tool.schema.name)
     expect(affected.toSorted()).toEqual(

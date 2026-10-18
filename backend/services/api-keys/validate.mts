@@ -7,7 +7,7 @@ import { checkApiKeyBloomFilter } from './bloom-filter.mts'
 import { getApiKeyByHash } from './get.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import type { ApiKey } from './types.mts'
-import { hasScope, hasScopeAudience, type ApiScope } from '@modules/scopes'
+import { hasScope, hasScopeAudience, type ApiScope, type ScopeAudience } from '@modules/scopes'
 import { validateApiKeyScopeSet } from './permissions.mts'
 import { apiKeyIsValidSql } from './lifetime.mts'
 
@@ -58,8 +58,11 @@ export async function validateApiKey(
   }
 }
 
-// User MCP keys only: admin MCP is OAuth-only, and admin-audience scopes are not API-key scopes.
-export async function validateApiKeyForUserMcp(rawKey: string): Promise<{
+// An MCP key is bound to the audience of its persisted scopes.
+export async function validateApiKeyForMcpAudience(
+  rawKey: string,
+  audience: Extract<ScopeAudience, 'user' | 'community_moderation' | 'brand'>,
+): Promise<{
   valid: boolean
   apiKey?: Omit<ApiKey, 'permissions'> & { permissions: ApiScope[] }
 }> {
@@ -76,12 +79,12 @@ export async function validateApiKeyForUserMcp(rawKey: string): Promise<{
   if (!apiKey) return { valid: false }
 
   const persistedScopes = validateApiKeyScopeSet(apiKey.type, apiKey.permissions)
-  if (!persistedScopes.valid || !hasScopeAudience(persistedScopes.permissions, 'user')) {
+  if (!persistedScopes.valid || !hasScopeAudience(persistedScopes.permissions, audience)) {
     return { valid: false }
   }
 
   write(
-    sql`/* validateApiKeyForUserMcp */
+    sql`/* validateApiKeyForMcpAudience */
     UPDATE api_keys SET last_used_at = NOW()
     WHERE key_hash = ${keyHash} AND `.append(apiKeyIsValidSql()),
   ).catch((err: unknown) => {

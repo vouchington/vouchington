@@ -27,10 +27,10 @@ const tool: Tool<UpdateListArgs, { success: true; list: List }> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update List',
     plan: 'plus',
-    requiredScopes: { mcp: ['lists:read', 'lists:write'] },
+    requiredScopes: ['lists:read', 'lists:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/lists/:id' }],
     outputSchema: LIST_RESULT_SCHEMA,

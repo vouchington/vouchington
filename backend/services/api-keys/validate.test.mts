@@ -4,7 +4,7 @@ import { setTestApiKeyPermissions } from '@voucha/test-helpers/entities/api-keys
 import { createApiKey } from './create.mts'
 import { revokeApiKey } from './revoke.mts'
 import { rebuildApiKeyBloomFilter } from './bloom-filter.mts'
-import { validateApiKey, validateApiKeyForUserMcp } from './validate.mts'
+import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
@@ -104,7 +104,7 @@ describe('validate', () => {
     })
   })
 
-  describe('validateApiKeyForUserMcp', () => {
+  describe('validateApiKeyForMcpAudience', () => {
     it('accepts a user-scoped MCP key after a bloom-filter probe', async () => {
       const user = await createTestUser()
       const { rawKey } = await createApiKey(
@@ -118,7 +118,7 @@ describe('validate', () => {
         apiKeyBloomFilterEnabled: true,
       })
       try {
-        await expect(validateApiKeyForUserMcp(rawKey)).resolves.toMatchObject({
+        await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toMatchObject({
           valid: true,
           apiKey: { permissions: ['mcp.user:read'] },
         })
@@ -137,7 +137,20 @@ describe('validate', () => {
       )
       await setTestApiKeyPermissions(apiKey.id, ['mcp.admin:read'])
 
-      await expect(validateApiKeyForUserMcp(rawKey)).resolves.toEqual({ valid: false })
+      await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toEqual({ valid: false })
+    })
+
+    it('binds a community moderation key to that server', async () => {
+      const user = await createTestUser()
+      const { rawKey } = await createApiKey(user.id, 'mcp', 'Moderation key', [
+        'community-moderation:read',
+      ])
+      await expect(
+        validateApiKeyForMcpAudience(rawKey, 'community_moderation'),
+      ).resolves.toMatchObject({
+        valid: true,
+      })
+      await expect(validateApiKeyForMcpAudience(rawKey, 'user')).resolves.toEqual({ valid: false })
     })
   })
 })

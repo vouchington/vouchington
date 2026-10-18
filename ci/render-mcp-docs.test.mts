@@ -11,7 +11,7 @@ const SAMPLE_CATALOG = {
     {
       name: 'voucha-user-mcp',
       path: '/api/v1/mcp',
-      surface: 'mcp',
+      audience: 'user',
       tools: [
         {
           tool: {
@@ -30,7 +30,7 @@ const SAMPLE_CATALOG = {
     {
       name: 'voucha-admin-mcp',
       path: '/api/v1/admin/mcp',
-      surface: 'admin_mcp',
+      audience: 'admin',
       tools: [
         {
           tool: { name: 'staff_lookup', inputSchema: { type: 'object', properties: {} } },
@@ -59,7 +59,7 @@ describe('catalogMarkdown', () => {
       '# Voucha MCP Servers',
       'Every tool each Voucha Model Context Protocol server can list, generated from the tool registry. A caller sees the subset its plan, roles and granted scopes allow. The machine-readable catalog is [mcp.json](mcp.json).',
       '## `voucha-user-mcp`',
-      'Endpoint: `POST /api/v1/mcp` · Surface: `mcp` · Tools: 1',
+      'Endpoint: `POST /api/v1/mcp` · Audience: `user` · Tools: 1',
       '### `get_topic`',
       'Fetch one topic.',
       [
@@ -76,7 +76,7 @@ describe('catalogMarkdown', () => {
         '````',
       ].join('\n'),
       '## `voucha-admin-mcp`',
-      'Endpoint: `POST /api/v1/admin/mcp` · Surface: `admin_mcp` · Tools: 1',
+      'Endpoint: `POST /api/v1/admin/mcp` · Audience: `admin` · Tools: 1',
       '### `staff_lookup`',
       [
         '- **Roles:** `administrator`, `moderator`',

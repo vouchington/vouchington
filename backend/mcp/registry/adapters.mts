@@ -1,8 +1,8 @@
 import type {
   Tool,
+  ToolMeta,
   ToolAnnotations,
   ToolOutputSchema,
-  ToolSurface,
 } from '@services/openai-agents/tool-types'
 import { getToolRequiredScopes } from './select.mts'
 import { validateOptionOutputPointers } from '../option-output-pointers.mts'
@@ -36,16 +36,19 @@ export function toMcpToolAnnotations(annotations: ToolAnnotations): McpToolAnnot
 
 export function toolToMcpTool(
   tool: Tool,
-  surface: Extract<ToolSurface, 'mcp' | 'admin_mcp'> = 'mcp',
+  audience: NonNullable<ToolMeta['audience']> = 'user',
 ): McpToolShape {
-  const mcpScopes = getToolRequiredScopes(tool, surface)
+  const mcpScopes = getToolRequiredScopes(tool, audience)
   const inputSchema = factorToolSchema(
     closeDeclaredInputObjects(tool.schema.parameters ?? { type: 'object', properties: {} }),
   )
   const outputSchema = tool.meta?.outputSchema
     ? (factorToolSchema(tool.meta.outputSchema) as ToolOutputSchema)
     : undefined
-  const optionOutputPointers = surface === 'mcp' ? tool.meta?.optionOutputPointers : undefined
+  const optionOutputPointers =
+    audience === 'user' || audience === 'community_moderation'
+      ? tool.meta?.optionOutputPointers
+      : undefined
   if (optionOutputPointers)
     validateOptionOutputPointers(tool.schema.name, inputSchema, outputSchema, optionOutputPointers)
   return {

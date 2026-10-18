@@ -10,7 +10,7 @@ import { deleteUser } from '../users/delete.mts'
 import { processUserDeletionCredentialsBatch } from '../users/delete-phase-credentials.mts'
 import { createApiKey } from './create.mts'
 import { rotateApiKey } from './rotate.mts'
-import { validateApiKey, validateApiKeyForUserMcp } from './validate.mts'
+import { validateApiKey, validateApiKeyForMcpAudience } from './validate.mts'
 import { revokeApiKey } from './revoke.mts'
 import { claimApiKeyExpiryReminder, getApiKeysDueForExpiryReminder } from './expiry-reminders.mts'
 
@@ -38,9 +38,9 @@ describe('API key lifetime and rotation', () => {
   it('accepts the exact administrator maximum before and after rotation', async () => {
     const user = await createTestUser({ administrator: true })
     const old = await createApiKey(user.id, 'mcp', 'Maximum lifetime', ['mcp.user:read'], 90)
-    expect((await validateApiKeyForUserMcp(old.rawKey)).valid).toBe(true)
+    expect((await validateApiKeyForMcpAudience(old.rawKey, 'user')).valid).toBe(true)
     const replacement = await rotateApiKey(user.id, old.apiKey.id)
-    expect((await validateApiKeyForUserMcp(replacement.rawKey)).valid).toBe(true)
+    expect((await validateApiKeyForMcpAudience(replacement.rawKey, 'user')).valid).toBe(true)
     expect(Number((await getTestApiKeyLifecycle(replacement.apiKey.id)).lifetime_seconds)).toBe(
       90 * 86400,
     )
@@ -57,7 +57,7 @@ describe('API key lifetime and rotation', () => {
       await revokeApiKey(user.id, revoked.apiKey.id)
       expect(await validateApiKey(expired.rawKey, permission)).toEqual({ valid: false })
       expect(await validateApiKey(revoked.rawKey, permission)).toEqual({ valid: false })
-      expect(await validateApiKeyForUserMcp(expired.rawKey)).toEqual({ valid: false })
+      expect(await validateApiKeyForMcpAudience(expired.rawKey, 'user')).toEqual({ valid: false })
       expect((await getTestApiKeyLifecycle(expired.apiKey.id)).last_used_at).toBeNull()
     },
   )
@@ -67,11 +67,11 @@ describe('API key lifetime and rotation', () => {
     async days => {
       const user = await createTestUser()
       const old = await createApiKey(user.id, 'mcp', 'Promoted', ['mcp.user:read'], days)
-      expect((await validateApiKeyForUserMcp(old.rawKey)).valid).toBe(true)
+      expect((await validateApiKeyForMcpAudience(old.rawKey, 'user')).valid).toBe(true)
       await addUserRole(user.id, 'administrator')
-      expect(await validateApiKeyForUserMcp(old.rawKey)).toEqual({ valid: false })
+      expect(await validateApiKeyForMcpAudience(old.rawKey, 'user')).toEqual({ valid: false })
       const replacement = await rotateApiKey(user.id, old.apiKey.id)
-      expect((await validateApiKeyForUserMcp(replacement.rawKey)).valid).toBe(true)
+      expect((await validateApiKeyForMcpAudience(replacement.rawKey, 'user')).valid).toBe(true)
       expect(
         Number((await getTestApiKeyLifecycle(replacement.apiKey.id)).lifetime_seconds),
       ).toBeCloseTo(30 * 86400, -1)

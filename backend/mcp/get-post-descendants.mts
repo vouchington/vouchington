@@ -45,9 +45,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Post Descendants',
-    requiredScopes: { mcp: ['posts:read'] },
+    requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/posts/:idOrSlug/descendants' }],
     outputSchema: foundOrNotFoundSchema({

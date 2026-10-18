@@ -26,7 +26,7 @@ describe('registered MCP post outputs', () => {
       ...userMergedReadingGroups,
       ...communityModerationGroups,
     ]
-    const postTools = ALL_TOOLS.filter(tool => tool.meta?.surfaces?.includes('mcp'))
+    const postTools = ALL_TOOLS.filter(tool => tool.meta?.audience === 'user')
       .flatMap(tool => {
         const group = groups.find(group => group.name === tool.schema.name)
         const options = group?.options ?? [{ option: null, source: tool }]

@@ -50,9 +50,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Topic Metrics',
-    requiredScopes: { mcp: ['topics:read'] },
+    requiredScopes: ['topics:read'],
     annotations: { readOnlyHint: true },
     api: null,
     outputSchema: outcomeSchema('success', {

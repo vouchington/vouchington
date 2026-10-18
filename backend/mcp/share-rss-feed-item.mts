@@ -53,10 +53,10 @@ function source(
         : { type: 'object', properties: { rss_feed_item_id: id }, required: ['rss_feed_item_id'] },
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: 'Share RSS Feed Item',
       plan: 'plus',
-      requiredScopes: { mcp: ['rss-feed-items:read', 'rss-feed-items:write'] },
+      requiredScopes: ['rss-feed-items:read', 'rss-feed-items:write'],
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
       api: [
         {

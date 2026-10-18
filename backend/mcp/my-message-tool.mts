@@ -57,10 +57,10 @@ export function source<TArgs>(
       },
     },
     meta: {
-      surfaces: ['mcp'],
+      audience: 'user',
       title: write ? 'Manage My Messages' : 'Read My Messages',
       ...(write ? { plan: 'plus' as const } : { suspendedAccess: 'free' as const }),
-      requiredScopes: { mcp: write ? ['messages:read', 'messages:write'] : ['messages:read'] },
+      requiredScopes: write ? ['messages:read', 'messages:write'] : ['messages:read'],
       annotations: write
         ? { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
         : { readOnlyHint: true },

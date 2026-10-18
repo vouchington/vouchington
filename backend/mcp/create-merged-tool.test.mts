@@ -36,10 +36,10 @@ function source(option: 'get' | 'list'): MergedToolSource {
     },
     function: _user => args => invocation(option, args),
     meta: {
-      surfaces: ['internal', 'mcp'],
+      audience: 'user',
       title: `${option} example`,
       plan: 'free',
-      requiredScopes: { mcp: ['topics:read'] },
+      requiredScopes: ['topics:read'],
       annotations: { readOnlyHint: true },
       api: [option === 'get' ? routeA : routeB],
       outputSchema: {
@@ -168,15 +168,15 @@ describe('createMergedTool', () => {
     expect(() => createMergedTool('empty', 'Empty', [])).toThrow('needs at least one option')
   })
 
-  it.each(['plan', 'scopes', 'admin scopes', 'roles', 'annotations', 'switch'] as const)(
+  it.each(['plan', 'scopes', 'audience', 'roles', 'annotations', 'switch'] as const)(
     'rejects incompatible declared %s metadata',
     field => {
       const different = source('list')
       if (!different.meta) throw new Error('missing source meta')
       if (field === 'plan') different.meta.plan = 'plus'
-      if (field === 'scopes') different.meta.requiredScopes = { mcp: ['posts:read'] }
-      if (field === 'admin scopes') {
-        different.meta.requiredScopes = { mcp: ['topics:read'], admin_mcp: ['moderation:read'] }
+      if (field === 'scopes') different.meta.requiredScopes = ['posts:read']
+      if (field === 'audience') {
+        different.meta.audience = 'admin'
       }
       if (field === 'roles') different.roles = { administrator: true }
       if (field === 'annotations')

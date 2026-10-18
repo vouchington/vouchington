@@ -5,14 +5,15 @@ const CATALOG_END = '<!-- END GENERATED -->'
 
 export function renderCatalogTable(tools: readonly Tool[]): string {
   const rows = tools.map(tool => {
-    const surfaces = tool.meta?.surfaces ?? ['internal']
+    const audience = tool.meta?.audience ?? 'internal'
     const cells = [
       `\`${tool.schema.name}\``,
       tool.meta?.title ?? '—',
       tableCell(tool.schema.description ?? '—'),
-      surfaces.join(', '),
-      // Plan gating applies only at the user `mcp` dispatch boundary (see ToolMeta.plan).
-      surfaces.includes('mcp') ? (tool.meta?.plan ?? 'free') : '—',
+      audience,
+      audience === 'user' || audience === 'community_moderation'
+        ? (tool.meta?.plan ?? 'free')
+        : '—',
       declaredScopes(tool).join(', ') || '—',
       hintLabel(tool),
       tool.meta?.api?.map(({ method, path }) => `\`${method} ${path}\``).join(', ') ?? '—',
@@ -20,7 +21,7 @@ export function renderCatalogTable(tools: readonly Tool[]): string {
     return `| ${cells.join(' | ')} |`
   })
   return [
-    '| Tool | Title | Description | Surfaces | Plan | Required scopes | Hints | REST Equivalent |',
+    '| Tool | Title | Description | Audience | Plan | Required scopes | Hints | REST Equivalent |',
     '| ---- | ----- | ----------- | -------- | ---- | --------------- | ----- | --------------- |',
     ...rows,
   ].join('\n')
@@ -36,8 +37,7 @@ export function spliceCatalogTable(markdown: string, table: string): string {
 }
 
 function declaredScopes(tool: Tool): string[] {
-  const perSurface = Object.values(tool.meta?.requiredScopes ?? {})
-  return [...new Set(perSurface.flatMap(scopes => scopes ?? []))]
+  return [...new Set(tool.meta?.requiredScopes ?? [])]
 }
 
 function hintLabel(tool: Tool): string {

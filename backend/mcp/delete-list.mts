@@ -21,10 +21,10 @@ const tool: MergedToolSource<DeleteListArgs, { success: true }> = {
     },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Delete List',
     plan: 'plus',
-    requiredScopes: { mcp: ['lists:read', 'lists:write'] },
+    requiredScopes: ['lists:read', 'lists:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/lists/:id' }],
     outputSchema: SUCCESS_RESULT_SCHEMA,

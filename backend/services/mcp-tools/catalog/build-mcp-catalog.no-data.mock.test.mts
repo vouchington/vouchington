@@ -26,119 +26,106 @@ function fixtureTool({
       ? (_user: unknown, _extra: unknown) => () => ({})
       : (_user: unknown) => () => ({}),
     ...(roles ? { roles } : {}),
-    ...(meta ? { meta: { surfaces: ['internal'], api: null, ...meta } } : {}),
+    ...(meta ? { meta: { api: null, ...meta } } : {}),
   } as unknown as Tool
 }
 
 const TOPICS_SCHEMA = { type: 'object', properties: { query: { type: 'string' } } }
 const WRITE_HINTS = { readOnlyHint: false, destructiveHint: true, idempotentHint: false } as const
-const userRead = fixtureTool({
-  name: 'user_read',
-  parameters: TOPICS_SCHEMA,
-  meta: {
-    surfaces: ['mcp'],
-    title: 'User Read',
-    requiredScopes: { mcp: ['topics:read'] },
-    annotations: { readOnlyHint: true },
-    api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
-  },
-})
-const userWrite = fixtureTool({
-  name: 'user_write',
-  roles: { user: true },
-  meta: {
-    surfaces: ['mcp'],
-    title: 'User Write',
-    plan: 'plus',
-    requiredScopes: { mcp: ['spending:write'] },
-    annotations: WRITE_HINTS,
-  },
-})
-const staffRead = fixtureTool({
-  name: 'staff_read',
-  roles: { moderator: true, administrator: true, user: false },
-  meta: {
-    surfaces: ['internal', 'admin_mcp'],
-    title: 'Staff Read',
-    requiredScopes: { admin_mcp: ['mcp.admin:read'] },
-    annotations: { readOnlyHint: true, openWorldHint: true },
-  },
-})
-const ineligible = [
-  fixtureTool({ name: 'no_meta' }),
-  fixtureTool({ name: 'internal_only', meta: { requiredScopes: { mcp: ['topics:read'] } } }),
+const tools: Tool[] = [
+  fixtureTool({
+    name: 'user_read',
+    parameters: TOPICS_SCHEMA,
+    meta: {
+      audience: 'user',
+      title: 'User Read',
+      outputSchema: { type: 'object' },
+      requiredScopes: ['topics:read'],
+      annotations: { readOnlyHint: true },
+      api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
+    },
+  }),
+  fixtureTool({
+    name: 'user_write',
+    roles: { user: true },
+    meta: {
+      audience: 'user',
+      title: 'User Write',
+      plan: 'plus',
+      requiredScopes: ['spending:write'],
+      annotations: WRITE_HINTS,
+    },
+  }),
+  fixtureTool({
+    name: 'community_read',
+    meta: {
+      audience: 'community_moderation',
+      title: 'Community Read',
+      plan: 'plus',
+      requiredScopes: ['community-moderation:read'],
+      annotations: { readOnlyHint: true },
+    },
+  }),
+  fixtureTool({
+    name: 'staff_read',
+    roles: { moderator: true, administrator: true, user: false },
+    meta: {
+      audience: 'admin',
+      title: 'Staff Read',
+      requiredScopes: ['moderation:read'],
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+  }),
+  fixtureTool({
+    name: 'legal_read',
+    roles: { administrator: true, user: false },
+    meta: {
+      audience: 'legal',
+      title: 'Legal Read',
+      requiredScopes: ['copyright-notices:read'],
+      annotations: { readOnlyHint: true },
+    },
+  }),
+  fixtureTool({ name: 'internal_only', meta: { requiredScopes: ['topics:read'] } }),
   fixtureTool({
     name: 'curried',
     curried: true,
-    meta: { surfaces: ['mcp'], requiredScopes: { mcp: ['topics:read'] } },
+    meta: { audience: 'user', requiredScopes: ['topics:read'] },
   }),
-  fixtureTool({ name: 'unscoped', meta: { surfaces: ['mcp'] } }),
+  fixtureTool({ name: 'unscoped', meta: { audience: 'user' } }),
   fixtureTool({
     name: 'wrong_audience',
-    meta: { surfaces: ['mcp', 'admin_mcp'], requiredScopes: { mcp: ['mcp.admin:read'] } },
+    meta: { audience: 'user', requiredScopes: ['moderation:read'] },
   }),
 ]
 
 describe('buildMcpCatalog', () => {
-  it('lists each eligible, scoped tool on its server with plan, role and REST metadata', () => {
-    const catalog = buildMcpCatalog([...ineligible, userRead, userWrite, staffRead])
+  it('lists eligible scoped tools by audience and emits the unmounted brand row empty', () => {
+    const catalog = buildMcpCatalog(tools)
 
-    expect(catalog).toEqual({
-      servers: [
-        {
-          name: 'voucha-user-mcp',
-          path: '/api/v1/mcp',
-          surface: 'mcp',
-          tools: [
-            {
-              tool: {
-                name: 'user_read',
-                title: 'User Read',
-                description: 'user_read description',
-                inputSchema: { ...TOPICS_SCHEMA, additionalProperties: false },
-                annotations: { readOnlyHint: true, idempotentHint: true },
-                _meta: { 'voucha/requiredScopes': ['topics:read'] },
-              },
-              plan: 'free',
-              roles: null,
-              api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
-            },
-            {
-              tool: {
-                name: 'user_write',
-                title: 'User Write',
-                description: 'user_write description',
-                inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-                annotations: WRITE_HINTS,
-                _meta: { 'voucha/requiredScopes': ['spending:write'] },
-              },
-              plan: 'plus',
-              roles: null,
-              api: null,
-            },
-          ],
-        },
-        {
-          name: 'voucha-admin-mcp',
-          path: '/api/v1/admin/mcp',
-          surface: 'admin_mcp',
-          tools: [
-            {
-              tool: {
-                name: 'staff_read',
-                title: 'Staff Read',
-                description: 'staff_read description',
-                inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-                annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
-                _meta: { 'voucha/requiredScopes': ['mcp.admin:read'] },
-              },
-              roles: ['administrator', 'moderator'],
-              api: null,
-            },
-          ],
-        },
-      ],
+    expect(
+      catalog.servers.map(server => [server.audience, server.tools.map(({ tool }) => tool.name)]),
+    ).toEqual([
+      ['user', ['user_read', 'user_write']],
+      ['community_moderation', ['community_read']],
+      ['brand', []],
+      ['admin', ['staff_read']],
+      ['legal', ['legal_read']],
+    ])
+    expect(catalog.servers[0]?.tools[0]).toMatchObject({
+      plan: 'free',
+      roles: null,
+      api: [{ method: 'GET', path: '/api/v1/topics/:id' }],
+      tool: {
+        title: 'User Read',
+        outputSchema: { type: 'object' },
+        _meta: { 'voucha/requiredScopes': ['topics:read'] },
+      },
     })
-    expect(catalog.servers[1]?.tools[0]).not.toHaveProperty('plan')
+    expect(catalog.servers[0]?.tools[1]).toMatchObject({ plan: 'plus', roles: null })
+    expect(catalog.servers[1]?.tools[0]).toMatchObject({ plan: 'plus' })
+    expect(catalog.servers[3]?.tools[0]).toMatchObject({ roles: ['administrator', 'moderator'] })
+    expect(catalog.servers[3]?.tools[0]).not.toHaveProperty('plan')
+    expect(catalog.servers[4]?.tools[0]).not.toHaveProperty('plan')
   })
 })

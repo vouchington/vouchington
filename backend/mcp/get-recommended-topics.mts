@@ -58,9 +58,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Recommended Topics',
-    requiredScopes: { mcp: ['recommendations:read'] },
+    requiredScopes: ['recommendations:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/recommended-topics' }],
     // The REST twin streams an untyped body and returns more per entry, so the tool owns this.

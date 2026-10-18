@@ -550,6 +550,9 @@
     "list_visibilities": {
       "values": ["private", "unlisted", "public"]
     },
+    "mcp_call_audit_event_audiences": {
+      "values": ["user", "community_moderation", "brand", "admin", "legal"]
+    },
     "mcp_call_audit_event_outcomes": {
       "values": [
         "accepted",
@@ -564,9 +567,6 @@
         "insufficient_scope",
         "rate_limited"
       ]
-    },
-    "mcp_call_audit_event_surfaces": {
-      "values": ["mcp", "admin_mcp"]
     },
     "media_delivery_desired_states": {
       "values": ["allow", "withheld"]
@@ -48960,14 +48960,14 @@
     },
     "mcp_call_audit_events": {
       "checkConstraints": {
+        "mcp_call_audit_events_audience_check": "CHECK ((audience = ANY (ARRAY['user'::mcp_call_audit_event_audiences, 'community_moderation'::mcp_call_audit_event_audiences, 'brand'::mcp_call_audit_event_audiences, 'admin'::mcp_call_audit_event_audiences, 'legal'::mcp_call_audit_event_audiences])))",
         "mcp_call_audit_events_check": "CHECK (((tool_option IS NULL) OR (tool_name IS NOT NULL)))",
         "mcp_call_audit_events_check1": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
-        "mcp_call_audit_events_check2": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((surface = 'admin_mcp'::mcp_call_audit_event_surfaces) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
+        "mcp_call_audit_events_check2": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((audience = 'legal'::mcp_call_audit_event_audiences) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
         "mcp_call_audit_events_check3": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
         "mcp_call_audit_events_jsonrpc_method_check": "CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))",
         "mcp_call_audit_events_outcome_check": "CHECK ((outcome = ANY (ARRAY['accepted'::mcp_call_audit_event_outcomes, 'tool_error'::mcp_call_audit_event_outcomes, 'invalid_request'::mcp_call_audit_event_outcomes, 'invalid_arguments'::mcp_call_audit_event_outcomes, 'not_found'::mcp_call_audit_event_outcomes, 'role_denied'::mcp_call_audit_event_outcomes, 'plan_denied'::mcp_call_audit_event_outcomes, 'suspended'::mcp_call_audit_event_outcomes, 'scopes_undeclared'::mcp_call_audit_event_outcomes, 'insufficient_scope'::mcp_call_audit_event_outcomes, 'rate_limited'::mcp_call_audit_event_outcomes])))",
         "mcp_call_audit_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
-        "mcp_call_audit_events_surface_check": "CHECK ((surface = ANY (ARRAY['mcp'::mcp_call_audit_event_surfaces, 'admin_mcp'::mcp_call_audit_event_surfaces])))",
         "mcp_call_audit_events_tool_name_check": "CHECK ((tool_name ~ '^[A-Za-z0-9_.-]{1,64}$'::text))",
         "mcp_call_audit_events_tool_option_check": "CHECK ((tool_option ~ '^[A-Za-z0-9_.-]{1,64}$'::text))"
       },
@@ -48993,6 +48993,17 @@
           "nullable": true,
           "ordinalPosition": 6,
           "type": "uuid"
+        },
+        "audience": {
+          "collation": null,
+          "comment": "MCP server audience that received the call.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "mcp_call_audit_event_audiences"
         },
         "copyright_rationale_ciphertext": {
           "collation": null,
@@ -49073,7 +49084,7 @@
         },
         "resource": {
           "collation": null,
-          "comment": "Protected resource URL of the MCP surface that received the call.",
+          "comment": "Protected resource URL of the MCP audience that received the call.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -49082,20 +49093,9 @@
           "ordinalPosition": 7,
           "type": "text"
         },
-        "surface": {
-          "collation": null,
-          "comment": "MCP surface that received the call: mcp (user) or admin_mcp.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "mcp_call_audit_event_surfaces"
-        },
         "tool_name": {
           "collation": null,
-          "comment": "Name of a registered tool on the surface for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.",
+          "comment": "Name of a registered tool on the audience for a tools/call; NULL for other calls and for a requested name that is not a registered tool, so caller-supplied text is never stored.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,

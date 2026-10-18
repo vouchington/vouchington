@@ -44,10 +44,10 @@ const tool: Tool<Args, Result> = {
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Dispute Review',
     plan: 'plus',
-    requiredScopes: { mcp: ['disputes:read', 'disputes:write'] },
+    requiredScopes: ['disputes:read', 'disputes:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     api: [{ method: 'POST', path: '/api/v1/disputes' }],
     outputSchema: successSchema({ dispute: DISPUTE_SCHEMA, is_duplicate: { type: 'boolean' } }),

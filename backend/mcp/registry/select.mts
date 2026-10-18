@@ -1,15 +1,15 @@
-import type { Tool, ToolSurface } from '@services/openai-agents/tool-types'
+import type { Tool, ToolMeta } from '@services/openai-agents/tool-types'
 import { parseApiScope, SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 
 type UserForPlanCheck = {
   membership_plan: 'plus' | 'pro' | null
 }
 
-export function listToolsForSurface(surface: ToolSurface, tools: readonly Tool[]): Tool[] {
-  return tools.filter(tool => {
-    const surfaces = tool.meta?.surfaces ?? ['internal']
-    return surfaces.includes(surface)
-  })
+export function listToolsForAudience(
+  audience: NonNullable<ToolMeta['audience']>,
+  tools: readonly Tool[],
+): Tool[] {
+  return tools.filter(tool => tool.meta?.audience === audience)
 }
 
 // A tool is MCP-eligible if it can be called with a single currentUser argument (arity check).
@@ -28,16 +28,16 @@ export function isToolAllowedForPlan(tool: Tool, user: UserForPlanCheck): boolea
 
 export function getToolRequiredScopes(
   tool: Tool,
-  surface: Extract<ToolSurface, 'mcp' | 'admin_mcp'>,
+  audience: NonNullable<ToolMeta['audience']>,
 ): ApiScope[] | null {
-  const declared = tool.meta?.requiredScopes?.[surface]
+  const declared = tool.meta?.requiredScopes
+  if (tool.meta?.audience !== audience) return null
   if (declared == null || declared.length === 0) return null
 
-  const expectedAudience = surface === 'mcp' ? 'user' : 'admin'
   const scopes = declared.map(parseApiScope)
   if (
     scopes.some(scope => scope == null) ||
-    scopes.some(scope => scope != null && SCOPE_DEFINITIONS[scope].audience !== expectedAudience)
+    scopes.some(scope => scope != null && SCOPE_DEFINITIONS[scope].audience !== audience)
   ) {
     return null
   }

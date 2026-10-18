@@ -12,10 +12,10 @@ const tool: MergedToolSource<BookmarkToolArgs, { success: true }> = {
     parameters: BOOKMARK_TOOL_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Remove Bookmark',
     plan: 'plus',
-    requiredScopes: { mcp: ['bookmarks:read', 'bookmarks:write'] },
+    requiredScopes: ['bookmarks:read', 'bookmarks:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/bookmarks/:entityType/:entityId/:predicate' }],
     outputSchema: successSchema({}),

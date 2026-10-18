@@ -10,7 +10,7 @@ import {
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
 // RFC 8414 and RFC 9728 discovery documents, fetched anonymously by OAuth and MCP clients, so these
-// routes intentionally skip the session-auth preamble. Two protected resources share this origin,
+// routes intentionally skip the session-auth preamble. Several protected resources share this origin,
 // so each has a path-derived metadata document and there is no root document.
 app.route('/.well-known/oauth-authorization-server').get((ctx: Context) => {
   sendDiscoveryDocument(ctx, buildOAuthAuthorizationServerMetadata())
@@ -22,6 +22,20 @@ app.route('/.well-known/oauth-protected-resource/api/v1/mcp').get((ctx: Context)
 
 app.route('/.well-known/oauth-protected-resource/api/v1/admin/mcp').get((ctx: Context) => {
   sendDiscoveryDocument(ctx, buildOAuthProtectedResourceMetadata('admin'))
+})
+
+app
+  .route('/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp')
+  .get((ctx: Context) => {
+    sendDiscoveryDocument(ctx, buildOAuthProtectedResourceMetadata('community_moderation'))
+  })
+
+app.route('/.well-known/oauth-protected-resource/api/v1/brand/mcp').get((ctx: Context) => {
+  sendDiscoveryDocument(ctx, buildOAuthProtectedResourceMetadata('brand'))
+})
+
+app.route('/.well-known/oauth-protected-resource/api/v1/legal/mcp').get((ctx: Context) => {
+  sendDiscoveryDocument(ctx, buildOAuthProtectedResourceMetadata('legal'))
 })
 
 app.route('/api/v1/oauth/native-clients/:app').get((ctx: Context) => {

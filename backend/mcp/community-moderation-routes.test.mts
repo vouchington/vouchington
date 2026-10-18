@@ -4,7 +4,7 @@ import { ALL_TOOLS, getRegisteredToolByName } from './registry/index.mts'
 import { communityModerationGroups } from './community-moderation-tools.mts'
 import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
 import { planMcpCalls } from '../services/mcp-tools/classify-calls.mts'
-import { USER_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
+import { COMMUNITY_MODERATION_MCP_SERVER_CONFIG } from '../services/mcp-tools/config.mts'
 
 const prefix = '/api/v1/communities/:idOrSlug'
 const routes = {
@@ -107,14 +107,12 @@ describe('community moderator MCP routes', () => {
         routes[name].map(([option]) => option),
       )
       expect(tool!.meta).toMatchObject({
-        surfaces: expect.arrayContaining(['mcp']),
+        audience: 'community_moderation',
         plan: name === 'read_community_moderation' ? 'free' : 'plus',
-        requiredScopes: {
-          mcp:
-            name === 'read_community_moderation'
-              ? ['community-moderation:read']
-              : ['community-moderation:read', 'community-moderation:write'],
-        },
+        requiredScopes:
+          name === 'read_community_moderation'
+            ? ['community-moderation:read']
+            : ['community-moderation:read', 'community-moderation:write'],
         annotations: expectedFlags[name],
       })
       for (const [option, method, suffix] of routes[name]) {
@@ -158,7 +156,7 @@ describe('community moderator MCP routes', () => {
         { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: input } },
         caller,
         scopes,
-        USER_MCP_SERVER_CONFIG,
+        COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
       )
     const userId = crypto.randomUUID()
     for (const [name, option, args, route] of [
@@ -227,13 +225,10 @@ describe('community moderator MCP routes', () => {
   })
 
   it('makes every excluded operation unreachable from every MCP tool', () => {
-    const excluded = isCommunityOwnerAiOperation
-    const exposed = ALL_TOOLS.filter(tool =>
-      tool.meta?.surfaces.some(surface => surface === 'mcp' || surface === 'admin_mcp'),
-    )
+    const exposed = ALL_TOOLS.filter(tool => tool.meta?.audience != null)
     for (const tool of exposed) {
       for (const route of tool.meta?.api ?? []) {
-        expect(excluded(route.method, route.path)).toBe(false)
+        expect(isCommunityOwnerAiOperation(route.method, route.path)).toBe(false)
       }
     }
   })

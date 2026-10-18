@@ -120,6 +120,14 @@ describe('validateScopeSet', () => {
     ).toEqual({ valid: false, code: 'unsupported-surface', scope: 'mcp.admin:read' })
   })
 
+  it('assigns moderation and copyright scopes to separate audiences without broad-grant coverage', () => {
+    expect(SCOPE_DEFINITIONS['community-moderation:read'].audience).toBe('community_moderation')
+    expect(SCOPE_DEFINITIONS['copyright-notices:read'].audience).toBe('legal')
+    expect(hasScope(['mcp.user:read'], 'community-moderation:read')).toBe(false)
+    expect(hasScope(['mcp.admin:read'], 'copyright-notices:read')).toBe(false)
+    expect(hasScope(['community-moderation:read'], 'community-moderation:read')).toBe(true)
+  })
+
   it('allows OAuth grants to combine resource audiences', () => {
     expect(
       validateScopeSet(['mcp.user:read', 'mcp.admin:read'], {

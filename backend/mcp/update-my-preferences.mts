@@ -18,10 +18,10 @@ const tool: MergedToolSource<SettingsToolArgs, UpdateMyPreferencesResult> = {
     parameters: SETTINGS_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Update My Preferences',
     plan: 'plus',
-    requiredScopes: { mcp: ['preferences:read', 'preferences:write'] },
+    requiredScopes: ['preferences:read', 'preferences:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/users/:idOrSlug' }],
     outputSchema: SETTINGS_RESULT_SCHEMA,

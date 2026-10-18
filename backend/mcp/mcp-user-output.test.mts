@@ -93,9 +93,9 @@ describe('user read tool output schemas', () => {
   })
 
   it.each(TOOLS)('reads with the users:read scope and declares %s read-only', (_n, tool) => {
-    expect(tool.meta?.requiredScopes).toEqual({ mcp: ['users:read'] })
+    expect(tool.meta?.requiredScopes).toEqual(['users:read'])
     expect(tool.meta?.annotations).toEqual({ readOnlyHint: true })
-    expect(tool.meta?.surfaces).toEqual(['internal', 'mcp'])
+    expect(tool.meta?.audience).toBe('user')
     expect(tool.meta?.title).toBeTruthy()
   })
 

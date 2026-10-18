@@ -26,12 +26,12 @@ async function registerActor() {
 }
 
 describe('createMcpCallAuditContext', () => {
-  it('binds the surface, actor, client and protected resource to a fresh correlation id', () => {
+  it('binds the audience, actor, client and protected resource to a fresh correlation id', () => {
     const first = createMcpCallAuditContext(ADMIN_MCP_SERVER_CONFIG, 'actor', oauth('client'))
     const second = createMcpCallAuditContext(ADMIN_MCP_SERVER_CONFIG, 'actor', oauth('client'))
 
     expect(first).toMatchObject({
-      surface: 'admin_mcp',
+      audience: 'admin',
       actorUserId: 'actor',
       credential: { credential: 'oauth', oauthClientId: 'client' },
       resource: getOAuthResourceUrl('admin'),
@@ -40,11 +40,11 @@ describe('createMcpCallAuditContext', () => {
     expect(second.correlationId).not.toBe(first.correlationId)
   })
 
-  it('binds the user surface and the key id for an API-key credential', () => {
+  it('binds the user audience and the key id for an API-key credential', () => {
     const context = createMcpCallAuditContext(USER_MCP_SERVER_CONFIG, 'actor', apiKey('key'))
 
     expect(context).toMatchObject({
-      surface: 'mcp',
+      audience: 'user',
       actorUserId: 'actor',
       credential: { credential: 'api_key', apiKeyId: 'key' },
       resource: getOAuthResourceUrl('user'),
@@ -130,7 +130,7 @@ describe('recordMcpCallAudit', () => {
     const events = await readTestMcpCallAuditEvents(user.id)
     expect(events).toEqual([
       expect.objectContaining({
-        surface: 'mcp',
+        audience: 'user',
         api_key_id: key.id,
         oauth_client_id: null,
         correlation_id: context.correlationId,

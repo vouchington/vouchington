@@ -5,7 +5,7 @@
 - Search/discovery tools exclude internal workflow-only post types, including `topic_recommendation`.
 - Search tools reuse `SearchSystemArgs`, `clampToolLimit`, `normalizeSearchToolArgs`, and `buildSearchToolSchemaProperties` from `search-system.mts`.
 - Paged search options (`read_posts(search)`, `discover_topics(search)`) build their REST query through `paged-search.mts` and parse it with `@services/search-params`, so limits and cursors match the REST twin. Leave `limit` without a schema `maximum`: the REST parser clamps it.
-- Every tool exposed on `mcp` or `admin_mcp` declares `meta.outputSchema`; the catalog test fails for one that does not. A new list of related rows is bounded and paged, the way `read_topic(details)` pages children (`@services/topics/children-page`).
+- Every tool with an external server audience declares `meta.outputSchema`; the catalog test fails for one that does not. A new list of related rows is bounded and paged, the way `read_topic(details)` pages children (`@services/topics/children-page`).
 - CRUD manage-my tools use `createManageEntityTool(config)`.
 - Lists use batch APIs, never per-entity loop lookups; `read_my_lists(items)` resolves a page's posts with `resolveReadableThreads`, not `resolveReadableThread` per item.
 - Tools reading private fields or writing hydrate `BasicUser` through `requirePrivateToolUser()` and explicitly authorize before mutating services.

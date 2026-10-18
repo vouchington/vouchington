@@ -16,10 +16,10 @@ const tool: MergedToolSource<NotificationToolArgs, { success: true }> = {
     parameters: NOTIFICATION_ID_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Mark Notification Read',
     plan: 'plus',
-    requiredScopes: { mcp: ['notifications:read', 'notifications:write'] },
+    requiredScopes: ['notifications:read', 'notifications:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'PATCH', path: '/api/v1/my/notifications/:id' }],
     outputSchema: successSchema({}),

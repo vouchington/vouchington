@@ -63,13 +63,16 @@ describe('OAuth resource binding routes', () => {
     })
   })
 
-  it('denies a non-administrator access to the admin resource', async () => {
+  it.each([
+    ['admin', 'mcp.admin:read'],
+    ['legal', 'copyright-notices:read'],
+  ] as const)('denies a non-administrator access to the %s resource', async (audience, scope) => {
     const request = createRequest()
     await request.authenticateAs(await createTestUserDirect())
 
     const { location, state } = await authorize(request, {
-      resource: getOAuthResourceUrl('admin'),
-      scope: 'mcp.admin:read',
+      resource: getOAuthResourceUrl(audience),
+      scope,
     })
 
     expect(location.searchParams.get('error')).toBe('access_denied')

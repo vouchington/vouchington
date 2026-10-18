@@ -41,6 +41,8 @@ function basicAuthGate(credentials: string | undefined): BasicAuthGate {
 const BASIC_AUTH_EXEMPT_METHODS_BY_PATH: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ['/api/v1/mcp', new Set(['POST'])],
   ['/api/v1/admin/mcp', new Set(['POST'])],
+  ['/api/v1/community-moderation/mcp', new Set(['POST'])],
+  ['/api/v1/legal/mcp', new Set(['POST'])],
   ['/api/v1/memberships/apple-app-store/notifications', new Set(['POST'])],
   ['/api/v1/memberships/google-play/notifications', new Set(['POST'])],
   ['/.well-known/webfinger', new Set(['GET'])],
@@ -48,6 +50,9 @@ const BASIC_AUTH_EXEMPT_METHODS_BY_PATH: ReadonlyMap<string, ReadonlySet<string>
   ['/.well-known/oauth-authorization-server', new Set(['GET'])],
   ['/.well-known/oauth-protected-resource/api/v1/mcp', new Set(['GET'])],
   ['/.well-known/oauth-protected-resource/api/v1/admin/mcp', new Set(['GET'])],
+  ['/.well-known/oauth-protected-resource/api/v1/community-moderation/mcp', new Set(['GET'])],
+  ['/.well-known/oauth-protected-resource/api/v1/brand/mcp', new Set(['GET'])],
+  ['/.well-known/oauth-protected-resource/api/v1/legal/mcp', new Set(['GET'])],
   ['/nodeinfo/2.0', new Set(['GET'])],
   ['/ap/users/{id}', new Set(['GET'])],
   ['/ap/inbox', new Set(['POST'])],

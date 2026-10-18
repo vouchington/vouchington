@@ -19,6 +19,38 @@ export type {
 
 export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
   ...ADMIN_RESOURCE_DEFINITIONS,
+  'community-moderation:read': {
+    action: 'read',
+    audience: 'community_moderation',
+    descriptionKey: 'community_moderation_read',
+    requiresExactGrant: true,
+    resource: 'community-moderation',
+    surfaces: ['api-key', 'oauth'],
+  },
+  'community-moderation:write': {
+    action: 'write',
+    audience: 'community_moderation',
+    descriptionKey: 'community_moderation_write',
+    requires: 'community-moderation:read',
+    requiresExactGrant: true,
+    resource: 'community-moderation',
+    surfaces: ['api-key', 'oauth'],
+  },
+  'copyright-notices:read': {
+    action: 'read',
+    audience: 'legal',
+    requiresExactGrant: true,
+    resource: 'copyright-notices',
+    surfaces: ['oauth'],
+  },
+  'copyright-notices:write': {
+    action: 'write',
+    audience: 'legal',
+    requires: 'copyright-notices:read',
+    requiresExactGrant: true,
+    resource: 'copyright-notices',
+    surfaces: ['oauth'],
+  },
   'mcp.admin:read': {
     action: 'read',
     audience: 'admin',
@@ -67,6 +99,10 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     Exclude<
       ApiScope,
       | keyof typeof ADMIN_RESOURCE_DEFINITIONS
+      | 'community-moderation:read'
+      | 'community-moderation:write'
+      | 'copyright-notices:read'
+      | 'copyright-notices:write'
       | 'mcp.admin:read'
       | 'mcp.admin:write'
       | 'mcp.user:read'

@@ -15,10 +15,10 @@ const tool: MergedToolSource<ReferralLinkIdArgs, { success: true }> = {
     parameters: REFERRAL_LINK_ID_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Delete Referral Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['referral-links:read', 'referral-links:write'] },
+    requiredScopes: ['referral-links:read', 'referral-links:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/referral-links/:linkId' }],
     outputSchema: REFERRAL_LINK_SUCCESS_SCHEMA,

@@ -13,9 +13,9 @@ const tool: MergedToolSource<Record<string, never>, ToolResult> = {
     parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'List Countries',
-    requiredScopes: { mcp: ['reference-data:read'] },
+    requiredScopes: ['reference-data:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/countries' }],
     outputSchema: successSchema({

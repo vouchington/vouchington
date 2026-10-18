@@ -22,10 +22,10 @@ const tool: MergedToolSource<
     parameters: REFERRAL_LINK_ID_PARAMETERS,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Deactivate Referral Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['referral-links:read', 'referral-links:write'] },
+    requiredScopes: ['referral-links:read', 'referral-links:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     api: [{ method: 'DELETE', path: '/api/v1/referral-links/:linkId/activations' }],
     outputSchema: REFERRAL_LINK_RESULT_SCHEMA,

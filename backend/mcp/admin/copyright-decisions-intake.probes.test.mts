@@ -7,7 +7,7 @@ import {
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 
 import { callMcpTool } from '../../services/mcp-tools/call-tool.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from '../../services/mcp-tools/config.mts'
+import { LEGAL_MCP_SERVER_CONFIG } from '../../services/mcp-tools/config.mts'
 import type { PrivateUser } from '@services/users/types'
 
 const callTestCopyrightWriteTool = (user: PrivateUser, name: string, args: unknown) =>
@@ -16,7 +16,7 @@ const callTestCopyrightWriteTool = (user: PrivateUser, name: string, args: unkno
     args,
     { ...user, membership_plan: null },
     ['copyright-notices:read', 'copyright-notices:write'],
-    ADMIN_MCP_SERVER_CONFIG,
+    LEGAL_MCP_SERVER_CONFIG,
     true,
   )
 

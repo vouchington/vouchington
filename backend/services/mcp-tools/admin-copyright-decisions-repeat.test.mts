@@ -8,7 +8,7 @@ import { unsuspendUser } from '@services/users/suspension'
 import { getPrivateUserByAny } from '@services/users/get'
 
 import { callMcpTool } from './call-tool.mts'
-import { ADMIN_MCP_SERVER_CONFIG } from './config.mts'
+import { LEGAL_MCP_SERVER_CONFIG } from './config.mts'
 import type { PrivateUser } from '@services/users/types'
 
 const callTestCopyrightWriteTool = (user: PrivateUser, name: string, args: unknown) =>
@@ -17,7 +17,7 @@ const callTestCopyrightWriteTool = (user: PrivateUser, name: string, args: unkno
     args,
     { ...user, membership_plan: null },
     ['copyright-notices:read', 'copyright-notices:write'],
-    ADMIN_MCP_SERVER_CONFIG,
+    LEGAL_MCP_SERVER_CONFIG,
     true,
   )
 

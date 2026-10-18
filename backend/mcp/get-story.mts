@@ -59,9 +59,9 @@ const tool: Tool<ToolArgs, ToolResult> = {
     strict: null,
   },
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Get Story',
-    requiredScopes: { mcp: ['posts:read'] },
+    requiredScopes: ['posts:read'],
     annotations: { readOnlyHint: true },
     api: [{ method: 'GET', path: '/api/v1/stories/:id' }],
     outputSchema: foundOrNotFoundSchema({

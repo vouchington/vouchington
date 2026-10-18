@@ -30,10 +30,10 @@ const tool: Tool<AddMyProfileLinkArgs, { success: true; profile_link: ProfileLin
     strict: null,
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Add My Profile Link',
     plan: 'plus',
-    requiredScopes: { mcp: ['profile:read', 'profile:write'] },
+    requiredScopes: ['profile:read', 'profile:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/my/profile/links' }],
     outputSchema: PROFILE_LINK_RESULT_SCHEMA,

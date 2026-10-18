@@ -42,10 +42,10 @@ export default createManageEntityTool<
   removeFn: (user, id) => deleteIndividualRewardsProgramStatusById(user, user, id),
   entity: 'IndividualRewardsProgramStatus',
   meta: {
-    surfaces: ['internal', 'mcp'],
+    audience: 'user',
     title: 'Manage My Rewards Statuses',
     plan: 'plus',
-    requiredScopes: { mcp: ['rewards-statuses:read', 'rewards-statuses:write'] },
+    requiredScopes: ['rewards-statuses:read', 'rewards-statuses:write'],
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [
       { method: 'POST', path: '/api/v1/my/rewards-program-statuses' },

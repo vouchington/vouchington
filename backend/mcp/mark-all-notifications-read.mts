@@ -11,10 +11,10 @@ const tool: MergedToolSource<Record<string, never>, { success: true; marked_read
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   meta: {
-    surfaces: ['mcp'],
+    audience: 'user',
     title: 'Mark All Notifications Read',
     plan: 'plus',
-    requiredScopes: { mcp: ['notifications:read', 'notifications:write'] },
+    requiredScopes: ['notifications:read', 'notifications:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [{ method: 'POST', path: '/api/v1/my/notifications/read-all' }],
     outputSchema: successSchema({ marked_read: { type: 'integer', minimum: 0 } }),
