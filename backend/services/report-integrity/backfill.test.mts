@@ -205,10 +205,10 @@ describe('listPendingReportEntityPage', () => {
       referenceNow: string
     }> = [
       { entityType: 'post', referenceNow: '2026-02-01T00:30:00.000Z' },
-      { entityType: 'comment', referenceNow: '2028-03-01T00:30:00.000Z' },
+      { entityType: 'comment', referenceNow: '2024-03-01T00:30:00.000Z' },
       { entityType: 'user', referenceNow: '2025-01-01T00:30:00.000Z' },
       { entityType: 'url_hostname', referenceNow: '2026-02-01T00:30:00.000Z' },
-      { entityType: 'rss_feed_item', referenceNow: '2028-03-01T00:30:00.000Z' },
+      { entityType: 'rss_feed_item', referenceNow: '2024-03-01T00:30:00.000Z' },
     ]
 
     for (const { entityType, referenceNow } of cases) {
