@@ -168,7 +168,6 @@ export const NATIVE_CONSUMER_MANIFEST_CLAIMS_14 = [
   { key: 'native.swift.importExport.sourceCreated', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.importExport.sourceFileTooLarge', consumers: ['dotnet'] },
   { key: 'native.swift.importExport.sourceInstructions', consumers: ['swift'] },
-  { key: 'native.swift.importExport.sourceLimit', consumers: ['dotnet'] },
   { key: 'native.swift.importExport.sourceType', consumers: ['dotnet', 'swift'] },
   { key: 'native.swift.importExport.sourceUrls', consumers: ['swift'] },
   { key: 'native.swift.importExport.stopMonitoring', consumers: ['dotnet', 'swift'] },
