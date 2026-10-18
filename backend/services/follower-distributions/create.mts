@@ -69,6 +69,7 @@ async function createDistribution(
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const target = await validateTarget(currentUser, input, query)
   const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
+  // ast-grep-ignore: no-three-sequential-awaits -- the advisory lock must be held before the recent-distribution and follower reads so they see what the previous holder committed
   await query(sql`/* createDistribution:lock */
     SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
   `)
