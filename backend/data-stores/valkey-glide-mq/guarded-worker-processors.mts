@@ -77,19 +77,17 @@ export function rejectSelfAdd(queue: string, jobName: string, opts?: JobOptions)
           (opts?.deduplication?.id && opts.deduplication.id === job.dedupId)),
     )
   if (!active) return false
-  const error = Object.assign(
-    new Error(`Job ${active.jobId} tried to add itself to queue ${queue}`),
-    {
-      extra: {
-        queue,
-        jobName,
-        jobId: opts?.jobId ?? null,
-        dedupId: opts?.deduplication?.id ?? null,
-        activeJobId: active.jobId,
-        activeDedupId: active.dedupId ?? null,
-      },
-    },
+  const error: Error & { extra?: Record<string, unknown> } = new Error(
+    `Job ${active.jobId} tried to add itself to queue ${queue}`,
   )
+  error.extra = {
+    queue,
+    jobName,
+    jobId: opts?.jobId ?? null,
+    dedupId: opts?.deduplication?.id ?? null,
+    activeJobId: active.jobId,
+    activeDedupId: active.dedupId ?? null,
+  }
   if (process.env.NODE_ENV !== 'production') throw error
   onError(error)
   return true
