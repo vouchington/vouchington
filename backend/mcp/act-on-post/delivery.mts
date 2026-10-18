@@ -7,7 +7,7 @@ import {
   type SendFollowersInput,
 } from '@services/follower-distributions'
 import { markRead, markUnread } from '@services/read-states'
-import { assertPostReadStateTarget } from '@services/posts/read-state-target'
+import { assertPostReadStateTarget } from '@services/posts/authorization'
 import type { MergedToolSource } from '../create-merged-tool.mts'
 import { POST_TARGET_SCHEMA, postActionMeta } from './meta.mts'
 import { getDelegatedToolAuthority } from '../delegated-authority.mts'

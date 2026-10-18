@@ -5,9 +5,11 @@ import {
   assertPostRatingOrderIndex,
   assertPostRatingTopicId,
   assertPostRatingValue,
-  loadPostRatingTarget,
 } from '@services/posts/post-rating-target'
-import { getAuthorizedPostContributionMembershipPlan } from '@services/posts/authorization'
+import {
+  getAuthorizedPostContributionMembershipPlan,
+  loadPostRatingTarget,
+} from '@services/posts/authorization'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
 import type { MergedToolSource } from '../create-merged-tool.mts'
 import { POST_TARGET_SCHEMA, postActionMeta } from './meta.mts'

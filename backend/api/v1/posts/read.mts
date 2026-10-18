@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { markRead, markUnread } from '@services/read-states'
-import { assertPostReadStateTarget } from '@services/posts/read-state-target'
+import { assertPostReadStateTarget } from '@services/posts/authorization'
 
 app
   .route('/api/v1/posts/:id/read')

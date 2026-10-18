@@ -2,12 +2,14 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { addPostRating, updatePostRating, deletePostRating } from '@services/posts/post-ratings'
-import { getAuthorizedPostContributionMembershipPlan } from '@services/posts/authorization'
+import {
+  getAuthorizedPostContributionMembershipPlan,
+  loadPostRatingTarget,
+} from '@services/posts/authorization'
 import {
   assertPostRatingOrderIndex,
   assertPostRatingTopicId,
   assertPostRatingValue,
-  loadPostRatingTarget,
 } from '@services/posts/post-rating-target'
 import { assertNotSuspended } from '@services/users'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'

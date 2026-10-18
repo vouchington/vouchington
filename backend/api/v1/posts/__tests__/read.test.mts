@@ -79,3 +79,20 @@ describe('DELETE /api/v1/posts/:id/read', () => {
     await request.delete('/api/v1/posts/not-a-uuid/read').expect(422)
   })
 })
+
+describe('/api/v1/posts/:id/read for topic recommendations', () => {
+  it('returns 404 even for the creator, for both mark read and unread', async () => {
+    const user = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Read Recommendation ${createRandomString(8)}`,
+      slug: `read-recommendation-${createRandomString(8)}`,
+      createdById: user.id,
+      markdown: 'content',
+      postType: 'topic_recommendation',
+    })
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request.put(`/api/v1/posts/${postId}/read`).expect(404)
+    await request.delete(`/api/v1/posts/${postId}/read`).expect(404)
+  })
+})
