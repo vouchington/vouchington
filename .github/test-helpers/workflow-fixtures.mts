@@ -7,6 +7,7 @@ export type WorkflowStep = {
   env?: Record<string, string>
   run?: string
   uses?: string
+  with?: Record<string, unknown>
 }
 
 export type WorkflowJob = {

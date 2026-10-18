@@ -14,7 +14,7 @@ type Document = { jobs?: Record<string, { steps?: WorkflowStep[] }> }
 // foreign `repository:` leaves `./.github/actions` unresolved.
 function populatesWorkspaceRoot(step: WorkflowStep): boolean {
   if (!step.uses?.startsWith('actions/checkout@')) return false
-  const { path, repository } = (step.with ?? {}) as { path?: unknown; repository?: unknown }
+  const { path, repository } = step.with ?? {}
   const rootPath = path === undefined || path === '.' || path === './'
   const ownRepository =
     repository === undefined ||
