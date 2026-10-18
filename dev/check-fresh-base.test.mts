@@ -1,5 +1,13 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -148,5 +156,21 @@ describe('dev/check-fresh-base', () => {
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toBe('')
+  })
+
+  it('starts ./dev/cleanup --yes detached, not the reclaim command directly', () => {
+    const cwd = makeRepo()
+    mkdirSync(join(cwd, 'dev'))
+    const fifo = join(cwd, 'cleanup-args')
+    execFileSync('mkfifo', [fifo])
+    writeFileSync(join(cwd, 'dev', 'cleanup'), `#!/bin/sh\nprintf '%s\\n' "$*" > '${fifo}'\n`)
+    chmodSync(join(cwd, 'dev', 'cleanup'), 0o755)
+
+    const result = runCheck(cwd)
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('cleanup')
+    // Opening the FIFO blocks until the detached cleanup writes, so no timer or polling is needed.
+    expect(readFileSync(fifo, 'utf8')).toBe('--yes\n')
   })
 })

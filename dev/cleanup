@@ -48,6 +48,22 @@ should_scan_orphaned_dbs() {
 
 echo -e "${BLUE}=== Voucha Worktree Cleanup ===${NC}\n"
 
+# --- Finished worktrees ---
+# `vouchington worktree reclaim` removes worktrees whose PR is merged or closed at their HEAD (dry
+# run unless --yes). Run it from this checkout, never the one being reclaimed: it skips its caller.
+# The orphan scans below then reclaim the database and Valkey container of any worktree it removed.
+echo -e "${BLUE}Reclaiming finished worktrees...${NC}"
+VOUCHINGTON_CLI="$REPO_ROOT/node_modules/.bin/vouchington"
+RECLAIM_ARGS=(worktree reclaim)
+if $AUTO_YES; then RECLAIM_ARGS+=(--yes); fi
+if [ -x "$VOUCHINGTON_CLI" ]; then
+    (cd "$REPO_ROOT" && "$VOUCHINGTON_CLI" "${RECLAIM_ARGS[@]}") ||
+        echo -e "${YELLOW}Worktree reclaim failed; continuing with orphan cleanup.${NC}"
+else
+    echo -e "${YELLOW}Skipping worktree reclaim: run pnpm install to get vouchington-tooling.${NC}"
+fi
+echo ""
+
 refresh_live_worktree_paths() {
     WORKTREE_PATHS=()
     worktree_paths_append_command_output git_worktree_live_paths "$REPO_ROOT"

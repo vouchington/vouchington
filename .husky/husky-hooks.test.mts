@@ -136,6 +136,33 @@ EOF
     }
   })
 
+  it('post-merge hands finished worktrees to ./dev/cleanup, never the reclaim command', () => {
+    const tmp = mkdtempSync(`${tmpdir()}/voucha-husky-`)
+
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: tmp })
+      mkdirSync(`${tmp}/dev`)
+      const argsFile = `${tmp}/cleanup-args`
+      writeFileSync(
+        `${tmp}/dev/cleanup`,
+        `#!/bin/sh\nprintf '%s\\n' "$*" > ${JSON.stringify(argsFile)}\n`,
+      )
+      chmodSync(`${tmp}/dev/cleanup`, 0o755)
+
+      const result = spawnSync('sh', ['-e', hookPath('post-merge'), '0'], {
+        cwd: tmp,
+        encoding: 'utf8',
+        env: { ...process.env, GITHUB_ACTIONS: '' },
+      })
+
+      expect(result.status).toBe(0)
+      expect(readFileSync(argsFile, 'utf8')).toBe('--yes\n')
+      expect(readFileSync(hookPath('post-merge'), 'utf8')).not.toContain('worktree reclaim')
+    } finally {
+      rmSync(tmp, { force: true, recursive: true })
+    }
+  })
+
   it('keeps dependency-refresh hooks scoped to manifest changes', () => {
     const postRewrite = readFileSync(hookPath('post-rewrite'), 'utf8')
     const postMerge = readFileSync(hookPath('post-merge'), 'utf8')

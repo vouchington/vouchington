@@ -2,9 +2,17 @@
 
 [Back to Dev Environment Reference](README.md#cleanup)
 
-When worktrees are removed without `./dev/teardown`, orphaned databases and Valkey containers may
-remain. `./dev/cleanup` (supports `--yes`) finds and removes them along with prunable worktrees, and
-`./dev/status` warns about them. After moving a checkout, re-run `./dev/initialize web` first so
+`./dev/cleanup` (supports `--yes`) first runs `vouchington worktree reclaim`, which removes
+worktrees whose pull request is merged or closed at their `HEAD` (a dry run without `--yes`; keep
+rules, ignored-file deletion, and limits are in the
+[tooling README, "Reclaiming finished worktrees"](https://github.com/vouchington/vouchington-tooling/blob/main/packages/vouchington-tooling/README.md#reclaiming-finished-worktrees)).
+It runs from the checkout invoking cleanup, which reclaim always keeps. Then it finds and removes the
+orphaned databases and Valkey containers left by any worktree that is gone, and prunable worktrees;
+`./dev/status` warns about them. The post-merge Git hook and the SessionStart hook
+(`dev/check-fresh-base`) call `./dev/cleanup --yes`, never the reclaim command directly, so the
+existing sandbox exclusion and allow rule cover them.
+
+After moving a checkout, re-run `./dev/initialize web` first so
 `.env` names the new resources. Cleanup removes only unreferenced resources in the canonical hashed
 namespace and never offers legacy-named resources for automatic deletion, because another ordinary
 clone may still reference them.
